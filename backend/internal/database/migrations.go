@@ -133,6 +133,23 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_errorlogs_created ON ErrorLogs(CreatedAt);
 		`,
 	},
+	{
+		Version:     2,
+		Description: "Add PluginGitConfig table",
+		SQL: `
+			-- PluginGitConfig table: Git and build settings per plugin
+			CREATE TABLE IF NOT EXISTS PluginGitConfig (
+				PluginId INTEGER PRIMARY KEY,
+				GitEnabled INTEGER DEFAULT 1,
+				GitBranch TEXT DEFAULT 'main',
+				GitRemoteUrl TEXT,
+				BuildEnabled INTEGER DEFAULT 0,
+				BuildCommand TEXT,
+				UpdatedAt TEXT DEFAULT (datetime('now')),
+				FOREIGN KEY (PluginId) REFERENCES Plugins(Id) ON DELETE CASCADE
+			);
+		`,
+	},
 }
 
 // Migrate runs all pending migrations

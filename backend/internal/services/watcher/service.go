@@ -1,175 +1,387 @@
-// Package watcher provides file system watching for plugin directories
+// Package watcher provides file system scanning for plugin directories (hybrid mode)
 package watcher
 
 import (
+	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/plugin"
-	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/ws"
 )
 
-// Config holds watcher configuration
-type Config struct {
-	DB            *database.DB
-	Logger        *logger.Logger
-	PluginService *plugin.Service
-	SyncService   *sync.Service
-	WSHub         *ws.Hub
-	PollInterval  time.Duration
-	DebounceMs    int
+// FileChange represents a detected file modification
+type FileChange struct {
+	Path       string    `json:"path"`
+	ChangeType string    `json:"type"` // created, modified, deleted
+	Hash       string    `json:"hash,omitempty"`
+	Size       int64     `json:"size,omitempty"`
+	ModTime    time.Time `json:"modTime,omitempty"`
 }
 
-// Service manages file watchers for all registered plugins
-type Service struct {
-	db            *database.DB
-	log           *logger.Logger
-	pluginService *plugin.Service
-	syncService   *sync.Service
-	wsHub         *ws.Hub
-	pollInterval  time.Duration
-	debounceMs    int
-	watchers      map[int64]*pluginWatcher
-	mu            sync.RWMutex
-	stopCh        chan struct{}
+// ScanResult contains the outcome of a directory scan
+type ScanResult struct {
+	PluginID     int64        `json:"pluginId"`
+	Path         string       `json:"path"`
+	ScanTime     time.Time    `json:"scanTime"`
+	DurationMs   int64        `json:"durationMs"`
+	FilesScanned int          `json:"filesScanned"`
+	Changes      []FileChange `json:"changes"`
+	TriggerType  string       `json:"triggerType"` // "git_pull" or "manual"
 }
 
-// pluginWatcher watches a single plugin directory
-type pluginWatcher struct {
-	pluginID     int64
-	path         string
-	stopCh       chan struct{}
-	lastScan     map[string]fileInfo
-	excludes     []string
-}
-
-// fileInfo holds file metadata for change detection
+// fileInfo holds cached file metadata for change detection
 type fileInfo struct {
 	ModTime int64
 	Size    int64
 	Hash    string
 }
 
-// New creates a new watcher service
+// pluginScanCache stores the last known state of a plugin's files
+type pluginScanCache struct {
+	pluginID int64
+	path     string
+	excludes []string
+	lastScan map[string]fileInfo
+}
+
+// Config holds watcher configuration
+type Config struct {
+	DB            *database.DB
+	Logger        *logger.Logger
+	PluginService *plugin.Service
+	WSHub         *ws.Hub
+}
+
+// Service provides file scanning operations (hybrid mode - no polling)
+type Service struct {
+	db            *database.DB
+	log           *logger.Logger
+	pluginService *plugin.Service
+	wsHub         *ws.Hub
+	cache         map[int64]*pluginScanCache
+	mu            sync.RWMutex
+}
+
+// New creates a new watcher service (no polling goroutines)
 func New(cfg Config) *Service {
 	return &Service{
 		db:            cfg.DB,
 		log:           cfg.Logger,
 		pluginService: cfg.PluginService,
-		syncService:   cfg.SyncService,
 		wsHub:         cfg.WSHub,
-		pollInterval:  cfg.PollInterval,
-		debounceMs:    cfg.DebounceMs,
-		watchers:      make(map[int64]*pluginWatcher),
-		stopCh:        make(chan struct{}),
+		cache:         make(map[int64]*pluginScanCache),
 	}
 }
 
-// StartAll starts watchers for all plugins with watching enabled
-func (s *Service) StartAll() error {
-	// TODO: Query plugins with WatchEnabled = true
-	// TODO: Start a watcher for each
-	s.log.Info("File watchers started")
-	return nil
-}
+// InitializeCache loads the current file state for a plugin
+func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
+	p, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return err
+	}
 
-// StopAll stops all active watchers
-func (s *Service) StopAll() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for id, w := range s.watchers {
-		close(w.stopCh)
-		delete(s.watchers, id)
-	}
-
-	s.log.Info("File watchers stopped")
-}
-
-// StartPlugin starts watching a specific plugin
-func (s *Service) StartPlugin(pluginID int64, path string, excludes []string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// Check if already watching
-	if _, exists := s.watchers[pluginID]; exists {
-		return nil
-	}
-
-	w := &pluginWatcher{
+	cache := &pluginScanCache{
 		pluginID: pluginID,
-		path:     path,
-		stopCh:   make(chan struct{}),
+		path:     p.Path,
+		excludes: p.ExcludePatterns,
 		lastScan: make(map[string]fileInfo),
-		excludes: excludes,
 	}
 
-	s.watchers[pluginID] = w
+	// Perform initial scan to populate cache (no change detection)
+	s.populateCache(cache)
+	s.cache[pluginID] = cache
 
-	// Start watching goroutine
-	go s.watch(w)
-
-	s.log.Info("Started watching plugin", "pluginId", pluginID, "path", path)
+	s.log.Info("Initialized file cache", "pluginId", pluginID, "files", len(cache.lastScan))
 	return nil
 }
 
-// StopPlugin stops watching a specific plugin
-func (s *Service) StopPlugin(pluginID int64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if w, exists := s.watchers[pluginID]; exists {
-		close(w.stopCh)
-		delete(s.watchers, pluginID)
-		s.log.Info("Stopped watching plugin", "pluginId", pluginID)
-	}
+// TriggerScan performs a manual scan (user clicked refresh)
+func (s *Service) TriggerScan(ctx context.Context, pluginID int64) (*ScanResult, error) {
+	return s.performScan(ctx, pluginID, "manual")
 }
 
-// watch is the main loop for watching a plugin directory
-func (s *Service) watch(w *pluginWatcher) {
-	ticker := time.NewTicker(s.pollInterval)
-	defer ticker.Stop()
+// ScanAfterGitPull performs a scan after git pull (automatic)
+func (s *Service) ScanAfterGitPull(ctx context.Context, pluginID int64) (*ScanResult, error) {
+	return s.performScan(ctx, pluginID, "git_pull")
+}
 
-	// Initial scan
-	s.scanDirectory(w)
+// ScanAll scans all cached plugins
+func (s *Service) ScanAll(ctx context.Context) ([]ScanResult, error) {
+	s.mu.RLock()
+	pluginIDs := make([]int64, 0, len(s.cache))
+	for id := range s.cache {
+		pluginIDs = append(pluginIDs, id)
+	}
+	s.mu.RUnlock()
 
-	for {
-		select {
-		case <-w.stopCh:
-			return
-		case <-ticker.C:
-			changes := s.scanDirectory(w)
-			if len(changes) > 0 {
-				s.handleChanges(w.pluginID, changes)
-			}
+	var results []ScanResult
+	for _, id := range pluginIDs {
+		result, err := s.TriggerScan(ctx, id)
+		if err == nil && result != nil {
+			results = append(results, *result)
 		}
 	}
+	return results, nil
 }
 
-// scanDirectory scans a directory and returns detected changes
-func (s *Service) scanDirectory(w *pluginWatcher) []FileChange {
-	// TODO: Implement directory scanning with MD5 hashing
-	// TODO: Compare with lastScan to detect changes
-	// TODO: Update lastScan with current state
-	return nil
+// ClearCache removes a plugin from the cache
+func (s *Service) ClearCache(pluginID int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.cache, pluginID)
+	s.log.Info("Cleared file cache", "pluginId", pluginID)
 }
 
-// handleChanges processes detected file changes
-func (s *Service) handleChanges(pluginID int64, changes []FileChange) {
-	// TODO: Store changes in database
-	// TODO: Broadcast via WebSocket
-	s.wsHub.Broadcast(ws.EventFileChange, map[string]interface{}{
-		"pluginId": pluginID,
-		"changes":  changes,
+// GetCachedPlugins returns list of plugins with active cache
+func (s *Service) GetCachedPlugins() []int64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ids := make([]int64, 0, len(s.cache))
+	for id := range s.cache {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// performScan executes the actual directory scan
+func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType string) (*ScanResult, error) {
+	startTime := time.Now()
+
+	s.log.Info("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
+
+	// Get or create cache
+	s.mu.Lock()
+	cache, exists := s.cache[pluginID]
+	if !exists {
+		// Initialize cache first
+		s.mu.Unlock()
+		if err := s.InitializeCache(ctx, pluginID); err != nil {
+			return nil, err
+		}
+		s.mu.Lock()
+		cache = s.cache[pluginID]
+	}
+	s.mu.Unlock()
+
+	// Perform scan and detect changes
+	changes := s.scanAndCompare(cache)
+
+	result := &ScanResult{
+		PluginID:     pluginID,
+		Path:         cache.path,
+		ScanTime:     startTime,
+		DurationMs:   time.Since(startTime).Milliseconds(),
+		FilesScanned: len(cache.lastScan),
+		Changes:      changes,
+		TriggerType:  triggerType,
+	}
+
+	// Broadcast changes if any
+	if len(changes) > 0 {
+		s.broadcastChanges(pluginID, changes, triggerType)
+		
+		// Record changes in database
+		for _, c := range changes {
+			s.db.ExecContext(ctx, `
+				INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, DetectedAt)
+				VALUES (?, ?, ?, ?, datetime('now'))
+			`, pluginID, c.Path, c.ChangeType, c.Hash)
+		}
+	}
+
+	s.log.Info("Scan complete", "pluginId", pluginID, "changes", len(changes), "duration", result.DurationMs)
+	return result, nil
+}
+
+// populateCache performs initial scan without change detection
+func (s *Service) populateCache(cache *pluginScanCache) {
+	filepath.Walk(cache.path, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			// Skip excluded directories
+			if info != nil && info.IsDir() && s.isExcluded(filepath.Base(path), cache.excludes) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if s.isExcluded(filepath.Base(path), cache.excludes) {
+			return nil
+		}
+
+		relPath, _ := filepath.Rel(cache.path, path)
+		hash, _ := s.calculateHash(path)
+
+		cache.lastScan[relPath] = fileInfo{
+			ModTime: info.ModTime().Unix(),
+			Size:    info.Size(),
+			Hash:    hash,
+		}
+		return nil
 	})
 }
 
-// FileChange represents a detected file change
-type FileChange struct {
-	Path       string `json:"path"`
-	ChangeType string `json:"type"` // created, modified, deleted, renamed
-	OldPath    string `json:"oldPath,omitempty"`
+// scanAndCompare scans directory and returns detected changes
+func (s *Service) scanAndCompare(cache *pluginScanCache) []FileChange {
+	var changes []FileChange
+	currentFiles := make(map[string]fileInfo)
+
+	// Walk directory
+	filepath.Walk(cache.path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			base := filepath.Base(path)
+			if s.isExcluded(base, cache.excludes) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Skip excluded files
+		base := filepath.Base(path)
+		if s.isExcluded(base, cache.excludes) {
+			return nil
+		}
+
+		relPath, _ := filepath.Rel(cache.path, path)
+		hash, _ := s.calculateHash(path)
+
+		fi := fileInfo{
+			ModTime: info.ModTime().Unix(),
+			Size:    info.Size(),
+			Hash:    hash,
+		}
+		currentFiles[relPath] = fi
+
+		// Compare with last scan
+		if lastInfo, exists := cache.lastScan[relPath]; exists {
+			if lastInfo.Hash != fi.Hash {
+				changes = append(changes, FileChange{
+					Path:       relPath,
+					ChangeType: "modified",
+					Hash:       fi.Hash,
+					Size:       fi.Size,
+					ModTime:    info.ModTime(),
+				})
+			}
+		} else {
+			changes = append(changes, FileChange{
+				Path:       relPath,
+				ChangeType: "created",
+				Hash:       fi.Hash,
+				Size:       fi.Size,
+				ModTime:    info.ModTime(),
+			})
+		}
+
+		return nil
+	})
+
+	// Check for deleted files
+	for path := range cache.lastScan {
+		if _, exists := currentFiles[path]; !exists {
+			changes = append(changes, FileChange{
+				Path:       path,
+				ChangeType: "deleted",
+			})
+		}
+	}
+
+	// Update cache
+	cache.lastScan = currentFiles
+
+	return changes
+}
+
+// broadcastChanges sends file changes via WebSocket
+func (s *Service) broadcastChanges(pluginID int64, changes []FileChange, triggerType string) {
+	var created, modified, deleted int
+	for _, c := range changes {
+		switch c.ChangeType {
+		case "created":
+			created++
+		case "modified":
+			modified++
+		case "deleted":
+			deleted++
+		}
+	}
+
+	s.wsHub.Broadcast(ws.EventFileChange, map[string]interface{}{
+		"pluginId":    pluginID,
+		"triggerType": triggerType,
+		"changes":     changes,
+		"summary": map[string]int{
+			"created":  created,
+			"modified": modified,
+			"deleted":  deleted,
+		},
+	})
+}
+
+// isExcluded checks if a file/directory should be excluded
+func (s *Service) isExcluded(name string, excludes []string) bool {
+	// Always exclude hidden files
+	if strings.HasPrefix(name, ".") {
+		return true
+	}
+
+	// Default excludes
+	defaultExcludes := []string{"node_modules", "vendor", ".git", ".svn", ".idea", ".vscode"}
+	for _, ex := range defaultExcludes {
+		if name == ex {
+			return true
+		}
+	}
+
+	// Custom excludes
+	for _, pattern := range excludes {
+		if matched, _ := filepath.Match(pattern, name); matched {
+			return true
+		}
+	}
+
+	return false
+}
+
+// calculateHash computes MD5 hash of a file
+func (s *Service) calculateHash(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// RecordFileChange records a file change in the database
+func (s *Service) RecordFileChange(ctx context.Context, change *models.FileChange) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO FileChanges (PluginId, FilePath, ChangeType, LocalHash, DetectedAt)
+		VALUES (?, ?, ?, ?, datetime('now'))
+	`, change.PluginID, change.FilePath, change.ChangeType, change.LocalHash)
+	return err
 }
