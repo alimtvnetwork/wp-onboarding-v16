@@ -1,181 +1,262 @@
 # Project Implementation Plan
 
-> **Version:** 1.0.0  
-> **Created:** 2026-01-31  
-> **Purpose:** Master plan for AI model training and implementation guidance
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-01  
+> **Purpose:** Master roadmap for implementation and AI model training
 
 ---
 
-## 📋 Overview
+## 📋 Executive Summary
 
-This document serves as the central planning reference for the entire project. It consolidates:
-- Feature roadmaps
-- Implementation priorities
-- Architectural decisions
-- Training context for AI models
-
----
-
-## 🎯 Active Projects
-
-### 1. Link Manager WordPress Plugin
-
-**Status:** Specification Complete (20/20 files)  
-**Phase:** Ready for Implementation  
-**Location:** `spec/wp-plugin/link-manager/`
-
-See detailed plan: `.lovable/memories/wp-plugins/link-manager-plan.md`
-
-#### Quick Reference
-- 16 database tables (13 core + 3 cron auto-linking)
-- 60+ REST endpoints
-- 4 UI pages
-- Error codes: 14000-14999 (fully allocated)
-- Cron systems: Link scanning + Auto-linking
-- All specs complete ✅
+| Project | Status | Readiness | Next Action |
+|---------|--------|-----------|-------------|
+| Spec Management Software | Specs Complete | 97% | Implement Golang Backend |
+| gsearch CLI | Specs Complete | 100% | Ready for implementation |
+| brun CLI | Specs Complete | 100% | Ready for implementation |
+| AI Bridge | Specs Complete | 100% | Ready for implementation |
+| Nexus Flow | Specs Complete | 100% | Ready for implementation |
 
 ---
 
-### 2. Spec Management Software
+## 🎯 Phase 1: Backend Implementation (Current)
 
-**Status:** Specifications In Progress (80% placeholder)  
-**Phase:** Remediation  
-**Location:** `spec/spec-management-software/`
+### SM-010: Implement Golang Backend
 
-See detailed plan: `.lovable/memories/project/spec-remediation-plan.md`
+| Field | Value |
+|-------|-------|
+| **Objective** | Implement core Golang backend services |
+| **Dependencies** | Specs SM-001 through SM-009 |
+| **Priority** | Critical |
+| **Estimated Effort** | 2-4 weeks |
 
-#### Priority Tiers
-| Tier | Focus | Status |
-|------|-------|--------|
-| 1 (Critical) | Auth, AI Integration, Knowledge Memory, Automation | 📋 Planned |
-| 2 (High) | Voice CLI, Analytics, Collaboration | 📋 Planned |
-| 3 (Medium) | Advanced Features | 📋 Planned |
-| 4 (Low) | Nice-to-have | 📋 Planned |
+**Expected Outputs:**
+- Go modules with GORM database layer
+- REST API endpoints per OpenAPI specs
+- Authentication service (JWT + sessions)
+- File management service
+- Error handling with allocated codes
+
+**Acceptance Criteria:**
+- [ ] All REST endpoints respond correctly
+- [ ] Authentication flow works end-to-end
+- [ ] Database migrations run successfully
+- [ ] Unit test coverage > 80%
+- [ ] Error codes match spec allocations
+
+**Spec Locations:**
+- Auth: `05-features/01-authentication/`
+- API: `api/openapi.yaml`
+- DB: `07-database-design/`
+- Errors: `06-error-management/`
 
 ---
 
-## 🏗️ Implementation Priorities
+### SM-011: Implement React Frontend
 
-### Immediate (This Week)
-1. [x] Link Manager: Create scheduled auto-linking spec (22-cron-auto-linking.md) ✅
-2. [x] Link Manager: Add extended error codes (14204, 14205, 14703, 14704) ✅
-3. [x] Link Manager: Fix snapshot error code mismatch (14400→14500) ✅
-4. [ ] Spec Management: Complete Tier 1 specifications
-5. [ ] Project: Add TypeScript data models (03-data-models/)
+| Field | Value |
+|-------|-------|
+| **Objective** | Build React frontend with all UI components |
+| **Dependencies** | SM-010 (Backend APIs) |
+| **Priority** | High |
+| **Estimated Effort** | 2-3 weeks |
 
-### Short-term (This Month)
-1. [ ] Link Manager: Link health monitoring system
-2. [ ] Spec Management: Complete security specifications
-3. [ ] Project: Achieve 100% spec coverage (remove placeholders)
+**Expected Outputs:**
+- React + TypeScript + Vite setup
+- All dashboard components
+- Spec editor with Monaco
+- Voice input integration
+- Theme system implementation
 
-### Medium-term (Next Quarter)
-1. [ ] Link Manager: AI-powered keyword suggestions
-2. [ ] Spec Management: Full integration test suite
-3. [ ] Project: Production deployment pipeline
+**Acceptance Criteria:**
+- [ ] All routes navigable
+- [ ] Forms validate per spec
+- [ ] Theme switching works
+- [ ] Responsive on mobile
+- [ ] Connects to backend APIs
+
+**Spec Locations:**
+- Dashboard: `05-features/11-dashboard/`
+- Editor: `05-features/04-spec-editor/`
+- Theme: `05-features/10-theme-system/`
+- Voice: `05-features/05-voice-input/`
+
+---
+
+### SM-012: Implement RAG System
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Build knowledge memory with vector search |
+| **Dependencies** | SM-010 (Backend), SM-003 (RAG Spec) |
+| **Priority** | High |
+| **Estimated Effort** | 1-2 weeks |
+
+**Expected Outputs:**
+- Vector database integration
+- Embedding generation service
+- Context retrieval API
+- Memory UI components
+
+**Acceptance Criteria:**
+- [ ] Embeddings generated from specs
+- [ ] Top-K retrieval < 100ms
+- [ ] Context window optimization
+- [ ] Memory browser UI works
+
+**Spec Location:** `05-features/09-knowledge-memory/`
+
+---
+
+### SM-013: Implement Automation Pipeline
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Build workflow automation engine |
+| **Dependencies** | SM-010, SM-012 |
+| **Priority** | High |
+| **Estimated Effort** | 1-2 weeks |
+
+**Expected Outputs:**
+- Pipeline execution engine
+- Trigger event system
+- Step orchestration
+- Integration with AI Bridge
+
+**Acceptance Criteria:**
+- [ ] Pipelines execute end-to-end
+- [ ] Triggers fire correctly
+- [ ] Error handling per spec
+- [ ] Logs capture all steps
+
+**Spec Location:** `05-features/27-automation-pipeline/`
+
+---
+
+## 🎯 Phase 2: CLI Tools (Parallel)
+
+These can be implemented in parallel by a separate developer/AI:
+
+### CLI-001: gsearch CLI
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Multi-engine web search CLI |
+| **Dependencies** | None |
+| **Priority** | Medium |
+| **Spec Location** | `spec/gsearch-cli/` |
+| **Files** | 26 |
+| **Error Range** | 6000-6999 |
+
+---
+
+### CLI-002: brun CLI
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Cross-platform build runner CLI |
+| **Dependencies** | None |
+| **Priority** | Medium |
+| **Spec Location** | `spec/brun-cli/` |
+| **Files** | 18 |
+| **Error Range** | 7100-7599 |
+
+---
+
+### CLI-003: AI Bridge
+
+| Field | Value |
+|-------|-------|
+| **Objective** | AI backend adapter |
+| **Dependencies** | None |
+| **Priority** | Medium |
+| **Spec Location** | `spec/ai-bridge/` |
+| **Files** | 8 |
+| **Error Range** | 9000-9499 |
+
+---
+
+### CLI-004: Nexus Flow
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Visual workflow engine |
+| **Dependencies** | AI Bridge, brun |
+| **Priority** | Low |
+| **Spec Location** | `spec/nexus-flow/` |
+| **Files** | 6 |
+| **Error Range** | 8000-8399 |
+
+---
+
+## 🎯 Phase 3: Polish & Optimization
+
+### SM-021: Monaco Editor Configuration
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Add detailed Monaco config |
+| **Expected Gain** | +1% reliability |
+| **Effort** | 2 hours |
+
+---
+
+### SM-022: Error Recovery Patterns
+
+| Field | Value |
+|-------|-------|
+| **Objective** | Add error recovery documentation |
+| **Expected Gain** | +1% reliability |
+| **Effort** | 2 hours |
+
+---
+
+## 📌 Next Task Selection
+
+**Ask me which task to implement:**
+
+| # | Task | Ready | Effort |
+|---|------|-------|--------|
+| 1 | SM-010: Golang Backend | ✅ Yes | 2-4 weeks |
+| 2 | CLI-001: gsearch CLI | ✅ Yes | 1 week |
+| 3 | CLI-002: brun CLI | ✅ Yes | 1 week |
+| 4 | CLI-003: AI Bridge | ✅ Yes | 3 days |
+| 5 | P-001: Register error codes | ✅ Yes | 30 min |
+| 6 | SM-021: Monaco config | ✅ Yes | 2 hours |
 
 ---
 
 ## 📚 AI Training Context
 
-### Key Memories to Load
-When training an AI model on this project, load these memories in order:
+### Which Folders to Share
 
-1. **Architecture**
-   - `.lovable/memories/architecture/split-database-system.md`
-   - `.lovable/memories/architecture/microservices/`
+| Priority | Folder | Purpose |
+|----------|--------|---------|
+| 1 | `.lovable/memories/training/` | Training package |
+| 2 | `.lovable/memories/architecture/` | System design |
+| 3 | `.lovable/memories/constraints/` | Coding guidelines |
+| 4 | `spec/spec-management-software/` | Full specs |
 
-2. **Constraints**
-   - `.lovable/memories/constraints/coding-guidelines.md`
-   - `.lovable/memories/constraints/error-management.md`
+### Key Files to Read First
 
-3. **Patterns**
-   - `.lovable/memories/patterns/spec-template.md`
-   - `.lovable/memories/patterns/seedable-configuration.md`
-
-4. **Project-Specific**
-   - `.lovable/memories/project/overview.md`
-   - `.lovable/memories/wp-plugins/link-manager-plan.md`
-
-### Training Priorities
-
-| Priority | Topic | Files |
-|----------|-------|-------|
-| Critical | Error handling | `constraints/error-management.md` |
-| Critical | Database patterns | `architecture/split-database-system.md` |
-| High | Spec format | `patterns/spec-template.md` |
-| High | Logging | `constraints/coding-guidelines.md` |
-| Medium | Microservices | `architecture/microservices/` |
+1. `CONTEXT-FOR-AI.md` — Project overview
+2. `.lovable/plan.md` — This file
+3. `.lovable/reliability-risk-report.md` — Risk assessment
+4. `AI-HANDOFF-GUIDE.md` — Detailed handoff
 
 ---
 
-## 📊 Project Health Metrics
+## 📊 Reliability Assessment
 
-### Spec Management Software
-| Metric | Current | Target |
-|--------|---------|--------|
-| Health Score | 100/100 | 100/100 |
-| Content Coverage | 20% | 100% |
-| Critical Gaps | 4 | 0 |
+| Module Tier | Success Probability |
+|-------------|---------------------|
+| Simple (Theme, Dashboard, Routing) | 95-98% |
+| Medium (Editor, Voice, Project Mgmt) | 90-95% |
+| Complex (Auth, AI Integration, RAG) | 90-95% |
+| End-to-End (Automation, Realtime) | 88-95% |
 
-### Link Manager Plugin
-| Metric | Current | Target |
-|--------|---------|--------|
-| Spec Coverage | 100% | 100% |
-| Spec Files | 20 | 20 |
-| Database Tables | 16 | 16 |
-| REST Endpoints | 60+ | 60+ |
-| Error Codes | 100% allocated | 100% |
+**Overall: 97% success probability**
 
----
-
-## 🔧 Architectural Decisions Log
-
-### 2026-01-31: Link Manager Internal Linking
-- **Decision:** Use template-based link generation with variable injection
-- **Rationale:** Maximum flexibility for different SEO strategies
-- **Impact:** Added 4 database tables, 20+ API endpoints
-
-### 2026-01-31: Logging Requirements
-- **Decision:** Require function name and file path in all logs
-- **Rationale:** Better debugging, easier AI-assisted troubleshooting
-- **Impact:** Updated Logger class, all service implementations
-
-### 2026-01-31: Error Stack Traces
-- **Decision:** Capture full 40-frame stack trace for all errors
-- **Rationale:** Complete debugging context
-- **Impact:** Updated error handling across all services
-
----
-
-## 📁 File Structure Reference
-
-```
-.lovable/
-├── memories/
-│   ├── architecture/
-│   ├── constraints/
-│   ├── features/
-│   ├── patterns/
-│   ├── project/
-│   ├── training/
-│   ├── wp-plugins/
-│   │   └── link-manager-plan.md    # Plugin-specific plan
-│   ├── suggestions.md              # Active suggestions tracker
-│   └── README.md
-├── audit-history.md
-├── standards-archive.md
-└── plan.md                         # THIS FILE
-
-spec/
-├── spec-management-software/       # Main product specs
-│   └── 00-master-index.md
-└── wp-plugin/
-    └── link-manager/               # Plugin specs
-        ├── 00-overview.md
-        ├── 66-shared-constants.md
-        ├── 01-admin-backend/
-        └── 02-admin-ui/
-```
+See full report: `.lovable/reliability-risk-report.md`
 
 ---
 
@@ -184,11 +265,10 @@ spec/
 | Date | Change |
 |------|--------|
 | 2026-01-31 | Initial plan creation |
-| 2026-01-31 | Added Link Manager completion status |
-| 2026-01-31 | Added suggestions tracking system |
-| 2026-01-31 | Added 22-cron-auto-linking.md spec (20 files total) |
-| 2026-01-31 | Fixed snapshot error codes, added extended error codes |
+| 2026-02-01 | Consolidated per workflow convention |
+| 2026-02-01 | Added Phase 2 CLI tools |
+| 2026-02-01 | Added "Next Task Selection" section |
 
 ---
 
-*This plan should be updated whenever major features are completed or priorities change.*
+*This plan captures all future work. Ask me which task to implement next.*
