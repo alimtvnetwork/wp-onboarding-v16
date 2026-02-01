@@ -10,170 +10,154 @@
 
 | Area | Status |
 |------|--------|
-| Specification | ✅ Complete (21/21 docs) |
+| Specification | ✅ Complete (27/27 docs) |
+| Implementation Specs | ✅ Complete (6 new docs) |
 | Go Backend Scaffold | ✅ Complete |
 | React Frontend Scaffold | ✅ Complete |
-| Full Implementation | 📝 TODO (Phase 5) |
+| Full Implementation | 🔄 Phase 1 Ready |
 
 ---
 
-## Phase 5: Implementation (Current)
+## Implementation Specs Created
 
-### 5a: Verify Scaffolds ⏳
-
-| Task | Status | Assignee | Notes |
-|------|--------|----------|-------|
-| Confirm Go backend compiles | todo | - | Run `go build ./cmd/server` |
-| Confirm React frontend builds | todo | - | Run `npm run build` |
-| Confirm database migrates | todo | - | Start backend, check app.db created |
-| Document scaffold fixes | todo | - | Record any issues found |
-
-**Objective:** Ensure scaffolded code compiles/builds before adding implementation.  
-**Dependencies:** None.  
-**Expected Output:** Build passes, or list of fixes needed.
+| Doc | Title | Location |
+|-----|-------|----------|
+| 30 | Plugin Service Impl | `03-implementation/30-plugin-service-impl.md` |
+| 31 | Sync Service Impl | `03-implementation/31-sync-service-impl.md` |
+| 32 | Publish Service Impl | `03-implementation/32-publish-service-impl.md` |
+| 33 | Watcher Service Impl | `03-implementation/33-watcher-service-impl.md` |
+| 34 | Git & Build Impl | `03-implementation/34-git-service-impl.md` |
+| 35 | Implementation Plan | `03-implementation/35-implementation-plan.md` |
 
 ---
 
-### 5b: Backend Core Services ⏳
+## Phase 1: Plugin Service (Current - Priority: HIGH)
 
-| Task | Status | Assignee | Notes |
-|------|--------|----------|-------|
-| Site Service - full CRUD | todo | - | Spec: `04-site-service.md` |
-| Site Service - encryption | todo | - | AES-256-GCM for app passwords |
-| Plugin Service - full CRUD | todo | - | Spec: `05-plugin-service.md` |
-| Plugin Service - path validation | todo | - | Verify directory exists |
-| WP REST Client - connection test | todo | - | Spec: `10-wp-rest-client.md` |
-| WP REST Client - plugin list | todo | - | List installed plugins |
-| Error logging to SQLite | todo | - | Spec: `13-error-management.md` |
-| REST API handlers | todo | - | Spec: `11-rest-api-endpoints.md` |
+**Duration:** 2-3 hours  
+**Spec:** `03-implementation/30-plugin-service-impl.md`
 
-**Objective:** Complete CRUD for sites/plugins, WP connection testing.  
-**Dependencies:** 5a complete.  
-**Expected Output:** API endpoints work via curl/Postman.
+| Task | Status | Notes |
+|------|--------|-------|
+| Create types.go | todo | CreateInput, UpdateInput, ScanResult |
+| Implement crud.go | todo | List, GetByID, Create, Update, Delete |
+| Implement scanner.go | todo | ScanDirectory, ValidatePath, findMainPluginFile |
+| Implement mappings.go | todo | GetMappings, CreateMapping, DeleteMapping |
+| Update database migrations | todo | Plugins, PluginMappings tables |
+| Update API handlers | todo | Wire up /api/plugins endpoints |
 
----
-
-### 5c: File Watching & Sync ⏳
-
-| Task | Status | Assignee | Notes |
-|------|--------|----------|-------|
-| File Watcher - fsnotify | todo | - | Spec: `06-file-watcher.md` |
-| File Watcher - debouncing | todo | - | 500ms default |
-| Hash calculation (SHA256) | todo | - | For sync comparison |
-| Sync Service - local diff | todo | - | Spec: `07-sync-service.md` |
-| Sync Service - remote fetch | todo | - | Via WP REST client |
-| WebSocket - file change events | todo | - | Spec: `12-websocket-events.md` |
-
-**Objective:** Detect local file changes, compare with remote.  
-**Dependencies:** 5b complete (Plugin Service, WP Client).  
-**Expected Output:** WebSocket pushes file_change events.
+**Deliverables:**
+- Complete CRUD for plugins
+- Directory scanning working
+- Plugin-site mappings functional
 
 ---
 
-### 5d: Publish & Backup ⏳
+## Phase 2: Sync Service (Next)
 
-| Task | Status | Assignee | Notes |
-|------|--------|----------|-------|
-| Backup Service - download | todo | - | Spec: `09-backup-service.md` |
-| Backup Service - retention | todo | - | Clean old backups |
-| Publish Service - zip creation | todo | - | Spec: `08-publish-service.md` |
-| Publish Service - upload | todo | - | Via WP REST |
-| Publish Service - activation | todo | - | Auto-activate after upload |
-| Rollback functionality | todo | - | Restore from backup |
+**Duration:** 2-3 hours  
+**Spec:** `03-implementation/31-sync-service-impl.md`  
+**Dependencies:** Phase 1
 
-**Objective:** Complete publish and rollback workflows.  
-**Dependencies:** 5c complete (Sync Service for diff).  
-**Expected Output:** Full publish cycle works.
-
----
-
-### 5e: Frontend Implementation ⏳
-
-| Task | Status | Assignee | Notes |
-|------|--------|----------|-------|
-| Site Manager UI - list | todo | - | Spec: `21-site-manager-ui.md` |
-| Site Manager UI - form | todo | - | Add/Edit site |
-| Site Manager UI - test connection | todo | - | Button + status display |
-| Plugin Manager UI - list | todo | - | Spec: `22-plugin-manager-ui.md` |
-| Plugin Manager UI - form | todo | - | Add/Edit plugin |
-| Plugin Manager UI - directory picker | todo | - | May need native bridge |
-| Sync Dashboard - file list | todo | - | Spec: `23-sync-dashboard.md` |
-| Sync Dashboard - publish actions | todo | - | Single file / full plugin |
-| Error Console - list | todo | - | Spec: `24-error-console.md` |
-| Error Console - copy button | todo | - | Format for AI paste |
-| Settings Page | todo | - | Spec: `25-settings-page.md` |
-| WebSocket integration | todo | - | Real-time updates |
-
-**Objective:** Complete React UI for all features.  
-**Dependencies:** 5b-5d complete (API endpoints exist).  
-**Expected Output:** Full UI functional.
+| Task | Status | Notes |
+|------|--------|-------|
+| Create types.go | todo | SyncResult, FileChange |
+| Implement check.go | todo | CheckSync, CheckAllSites |
+| Implement compare.go | todo | compareFiles (local vs remote) |
+| Implement changes.go | todo | RecordFileChange, MarkSynced |
+| Update database migrations | todo | FileChanges table |
+| Update API handlers | todo | Wire up /api/sync endpoints |
 
 ---
 
-### 5f: Integration Testing ⏳
+## Phase 3: File Watcher Service
 
-| Task | Status | Assignee | Notes |
-|------|--------|----------|-------|
-| E2E site connection test | todo | - | Add site → test → verify |
-| E2E publish workflow | todo | - | Change file → publish → verify on WP |
-| Error recovery scenarios | todo | - | Network failure, WP errors |
-| Cross-platform testing | todo | - | Windows, macOS, Linux |
+**Duration:** 2 hours  
+**Spec:** `03-implementation/33-watcher-service-impl.md`  
+**Dependencies:** Phase 1, Phase 2
 
-**Objective:** Verify full workflows work.  
-**Dependencies:** 5e complete.  
-**Expected Output:** All workflows pass.
+| Task | Status | Notes |
+|------|--------|-------|
+| Implement scanner.go | todo | Full directory scan with hash |
+| Implement watcher.go | todo | Main polling loop, debouncing |
+| Implement service.go | todo | StartAll, StopPlugin, TriggerScan |
+| Integration with Sync | todo | Call RecordFileChange on detect |
+
+---
+
+## Phase 4: Publish Service
+
+**Duration:** 3 hours  
+**Spec:** `03-implementation/32-publish-service-impl.md`  
+**Dependencies:** Phase 1, Phase 2, Backup Service
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Implement types.go | todo | PublishOptions, PublishResult |
+| Implement pipeline.go | todo | Orchestrate full pipeline |
+| Implement packager.go | todo | Build ZIP with structure |
+| Implement uploader.go | todo | Send to WP REST API |
+| Update WordPress client | todo | UploadPlugin, ActivatePlugin |
+
+---
+
+## Phase 5: Git & Build Service
+
+**Duration:** 2-3 hours  
+**Spec:** `03-implementation/34-git-service-impl.md`  
+**Dependencies:** Phase 1
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Implement pull.go | todo | Git pull single/batch |
+| Implement build.go | todo | PowerShell/bash execution |
+| Add PluginGitConfig table | todo | Per-plugin settings |
+| Update API handlers | todo | /api/git endpoints |
+
+---
+
+## Phase 6: Integration & Testing
+
+**Duration:** 2-3 hours  
+**Dependencies:** All previous phases
+
+| Task | Status | Notes |
+|------|--------|-------|
+| E2E workflow testing | todo | Create → Map → Sync → Publish |
+| WebSocket verification | todo | All events broadcasting |
+| Frontend integration | todo | Update hooks for real API |
+| Documentation update | todo | README, API docs |
 
 ---
 
 ## Next Task Selection
 
-**Recommended next task (pick one):**
+**Recommended:** Start Phase 1 - Plugin Service Implementation
 
-1. `5a: Verify Go backend compiles` - Critical first step
-2. `5a: Verify React frontend builds` - Can run in parallel with above
-3. `S-006: Verify Go Backend Compiles` (same as #1, from suggestions)
+1. Begin with `types.go` - Define all input/output types
+2. Then `crud.go` - CRUD operations
+3. Then `scanner.go` - Directory scanning
+4. Then `mappings.go` - Site mappings
 
-**Ask user:** Which task should be implemented next?
-
----
-
-## Backlog (Future Phases)
-
-| Phase | Description | Priority |
-|-------|-------------|----------|
-| 6 | Multi-plugin batch operations | medium |
-| 7 | Plugin dependency tracking | low |
-| 8 | Scheduled auto-sync | low |
-| 9 | Webhook notifications | low |
-
----
-
-## Suggestions Backlog
-
-See `.lovable/memory/suggestions/01-suggestions-tracker.md` for AI-generated suggestions.
-
-| ID | Title | Priority | Status |
-|----|-------|----------|--------|
-| S-001 | Add WP API error examples | high | open |
-| S-002 | Document fsnotify platform differences | high | open |
-| S-003 | Specify hash algorithm | medium | open |
-| S-004 | Add error recovery for partial publish | high | open |
-| S-005 | Define WS reconnection recovery | medium | open |
-| S-006 | Verify Go backend compiles | critical | open |
-| S-007 | Verify React frontend builds | critical | open |
+**Command to test:** `cd backend && go build ./cmd/server`
 
 ---
 
 ## Completed
 
 - ✅ Initial spec structure created (2026-02-01)
-- ✅ Removed old specs (wp-plugin-builder, exam-manager, link-manager, powershell-integration)
 - ✅ Phase 1-4 specs completed (2026-02-01)
 - ✅ Go backend scaffolding (2026-02-01)
 - ✅ React frontend scaffolding (2026-02-01)
 - ✅ Database migrations defined (2026-02-01)
 - ✅ API client and WebSocket client (2026-02-01)
+- ✅ Implementation specs created (2026-02-01)
+  - 30-plugin-service-impl.md
+  - 31-sync-service-impl.md
+  - 32-publish-service-impl.md
+  - 33-watcher-service-impl.md
+  - 34-git-service-impl.md
+  - 35-implementation-plan.md
 
 ---
 
-*Update when starting/completing tasks.*
+*Start with Phase 1: Plugin Service Implementation*
