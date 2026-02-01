@@ -200,6 +200,26 @@ export const api = {
   deletePluginMapping: (mappingId: number) =>
     request<void>(`/mappings/${mappingId}`, { method: "DELETE" }),
 
+  // Git operations
+  gitPull: (pluginId: number) =>
+    request<{ success: boolean; filesChanged: number; commitHash: string; branch: string }>(
+      `/git/pull/${pluginId}`, { method: "POST" }
+    ),
+  gitPullAll: () =>
+    request<{ succeeded: number; failed: number; duration: number }>(
+      `/git/pull-all`, { method: "POST" }
+    ),
+
+  // File scanning (hybrid watcher)
+  scanPlugin: (pluginId: number) =>
+    request<{ pluginId: number; filesScanned: number; changes: FileChange[] }>(
+      `/watcher/scan/${pluginId}`, { method: "POST" }
+    ),
+  scanAllPlugins: () =>
+    request<{ results: Array<{ pluginId: number; changes: number }> }>(
+      `/watcher/scan-all`, { method: "POST" }
+    ),
+
   // Sync
   getFileChanges: (pluginId: number, siteId: number) =>
     request<FileChange[]>(`/plugins/${pluginId}/changes?siteId=${siteId}`),

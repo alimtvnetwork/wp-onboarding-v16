@@ -68,6 +68,8 @@ export default function Plugins() {
   const [selectedSites, setSelectedSites] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPulling, setIsPulling] = useState<number | null>(null);
+  const [isScanning, setIsScanning] = useState<number | null>(null);
+  const [isScanningAll, setIsScanningAll] = useState(false);
   const [addMethod, setAddMethod] = useState<"path" | "browse">("path");
 
   const handleInputChange = (field: keyof PluginFormData, value: string | boolean) => {
@@ -122,20 +124,69 @@ export default function Plugins() {
 
   const handleGitPullAll = async () => {
     toast.info("Pulling all plugins...");
-    // TODO: Implement backend endpoint for git pull all
-    toast.success("Git pull completed for all plugins");
+    try {
+      const response = await api.gitPullAll();
+      if (response.success) {
+        toast.success(`Git pull completed: ${response.data?.succeeded || 0} succeeded`);
+        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      } else {
+        toast.error(response.error?.message || "Git pull failed");
+      }
+    } catch (error) {
+      toast.error("Git pull failed");
+    }
   };
 
   const handleGitPull = async (pluginId: number) => {
     setIsPulling(pluginId);
     try {
-      // TODO: Implement backend endpoint for git pull
-      await new Promise((r) => setTimeout(r, 1500)); // Simulated
-      toast.success("Git pull completed");
+      const response = await api.gitPull(pluginId);
+      if (response.success) {
+        toast.success(`Git pull completed: ${response.data?.filesChanged || 0} files changed`);
+        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      } else {
+        toast.error(response.error?.message || "Git pull failed");
+      }
     } catch (error) {
       toast.error("Git pull failed");
     } finally {
       setIsPulling(null);
+    }
+  };
+
+  const handleRefreshScan = async (pluginId: number) => {
+    setIsScanning(pluginId);
+    try {
+      const response = await api.scanPlugin(pluginId);
+      if (response.success) {
+        const changes = response.data?.changes?.length || 0;
+        toast.success(`Scan complete: ${changes} changes detected`);
+        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      } else {
+        toast.error(response.error?.message || "Scan failed");
+      }
+    } catch (error) {
+      toast.error("Scan failed");
+    } finally {
+      setIsScanning(null);
+    }
+  };
+
+  const handleRefreshAll = async () => {
+    setIsScanningAll(true);
+    toast.info("Scanning all plugins...");
+    try {
+      const response = await api.scanAllPlugins();
+      if (response.success) {
+        toast.success("All plugins scanned");
+        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      } else {
+        toast.error(response.error?.message || "Scan failed");
+      }
+    } catch (error) {
+      toast.error("Scan failed");
+    } finally {
+      setIsScanningAll(false);
     }
   };
 
@@ -189,10 +240,24 @@ export default function Plugins() {
         </div>
         <div className="flex gap-2">
           {plugins && plugins.length > 0 && (
-            <Button variant="outline" onClick={handleGitPullAll}>
-              <GitBranch className="h-4 w-4 mr-2" />
-              Git Pull All
-            </Button>
+            <>
+              <Button 
+                variant="outline" 
+                onClick={handleRefreshAll}
+                disabled={isScanningAll}
+              >
+                {isScanningAll ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Refresh All
+              </Button>
+              <Button variant="outline" onClick={handleGitPullAll}>
+                <GitBranch className="h-4 w-4 mr-2" />
+                Git Pull All
+              </Button>
+            </>
           )}
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -239,17 +304,35 @@ export default function Plugins() {
                   </div>
 
                   <div className="flex gap-1 flex-shrink-0">
+                    {/* Refresh/Scan button - always visible */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRefreshScan(plugin.id)}
+                      disabled={isScanning === plugin.id}
+                      title="Scan for file changes"
+                    >
+                      {isScanning === plugin.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                      <span className="ml-1 hidden sm:inline">Scan</span>
+                    </Button>
+
+                    {/* Git Pull button - only for git-enabled plugins */}
                     {plugin.gitEnabled && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleGitPull(plugin.id)}
                         disabled={isPulling === plugin.id}
+                        title="Git pull and scan"
                       >
                         {isPulling === plugin.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <RefreshCw className="h-4 w-4" />
+                          <GitBranch className="h-4 w-4" />
                         )}
                         <span className="ml-1 hidden sm:inline">Pull</span>
                       </Button>

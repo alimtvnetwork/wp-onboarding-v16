@@ -3,6 +3,7 @@ package plugin
 
 import (
 	"context"
+
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
@@ -28,64 +29,29 @@ func New(cfg Config) *Service {
 	}
 }
 
-// List returns all registered plugins
-func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
-	// TODO: Implement database query
-	return []models.Plugin{}, nil
-}
+// Interface methods are implemented in:
+// - crud.go: List, GetByID, Create, Update, Delete, RefreshFileCount
+// - scanner.go: ScanDirectory, ValidatePath
+// - mappings.go: GetMappings, GetMappingsBySite, CreateMapping, DeleteMapping, UpdateMappingsForPlugin
 
-// GetByID returns a plugin by its ID
-func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error) {
-	// TODO: Implement database query
-	return nil, nil
-}
+// ServiceInterface defines the plugin service contract
+type ServiceInterface interface {
+	// CRUD operations
+	List(ctx context.Context) ([]models.Plugin, error)
+	GetByID(ctx context.Context, id int64) (*models.Plugin, error)
+	Create(ctx context.Context, input CreateInput) (*models.Plugin, error)
+	Update(ctx context.Context, id int64, input UpdateInput) (*models.Plugin, error)
+	Delete(ctx context.Context, id int64) error
+	RefreshFileCount(ctx context.Context, id int64) error
 
-// Create registers a new local plugin directory
-func (s *Service) Create(ctx context.Context, plugin *models.Plugin) error {
-	// TODO: Validate path exists and contains valid plugin
-	// TODO: Scan directory for files
-	return nil
-}
+	// Directory scanning
+	ScanDirectory(ctx context.Context, path string) (*ScanResult, error)
+	ValidatePath(ctx context.Context, path string) error
 
-// Update modifies an existing plugin
-func (s *Service) Update(ctx context.Context, plugin *models.Plugin) error {
-	// TODO: Implement update logic
-	return nil
-}
-
-// Delete removes a plugin registration
-func (s *Service) Delete(ctx context.Context, id int64) error {
-	// TODO: Implement delete logic
-	return nil
-}
-
-// ScanDirectory scans a plugin directory and returns file information
-func (s *Service) ScanDirectory(ctx context.Context, id int64) (*ScanResult, error) {
-	// TODO: Implement directory scanning
-	return &ScanResult{}, nil
-}
-
-// GetMappings returns all site mappings for a plugin
-func (s *Service) GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error) {
-	// TODO: Implement database query
-	return []models.PluginMapping{}, nil
-}
-
-// CreateMapping creates a new plugin-site mapping
-func (s *Service) CreateMapping(ctx context.Context, mapping *models.PluginMapping) error {
-	// TODO: Implement create logic
-	return nil
-}
-
-// DeleteMapping removes a plugin-site mapping
-func (s *Service) DeleteMapping(ctx context.Context, mappingID int64) error {
-	// TODO: Implement delete logic
-	return nil
-}
-
-// ScanResult represents the result of a directory scan
-type ScanResult struct {
-	FileCount int      `json:"fileCount"`
-	TotalSize int64    `json:"totalSize"`
-	Files     []string `json:"files,omitempty"`
+	// Mappings
+	GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error)
+	GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, error)
+	CreateMapping(ctx context.Context, input CreateMappingInput) (*models.PluginMapping, error)
+	DeleteMapping(ctx context.Context, mappingID int64) error
+	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
 }
