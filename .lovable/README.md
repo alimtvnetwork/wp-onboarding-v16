@@ -13,8 +13,11 @@
 ├── memory/
 │   ├── 01-conventions.md        # Coding and file naming conventions
 │   ├── 01-workflow.md           # Task tracking guidelines
-│   └── 02-project-context.md    # Project overview and learning materials
-└── plan.md                      # Active roadmap
+│   ├── 02-project-context.md    # Project overview and learning materials
+│   ├── 03-reliability-risk-report.md  # AI handoff reliability assessment
+│   └── suggestions/
+│       └── 01-suggestions-tracker.md  # Consolidated suggestions list
+└── plan.md                      # Active roadmap with prioritized backlog
 ```
 
 ---
