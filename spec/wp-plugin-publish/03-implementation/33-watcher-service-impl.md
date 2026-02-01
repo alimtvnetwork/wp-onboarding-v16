@@ -8,7 +8,11 @@
 
 ## Overview
 
-Complete Go implementation for the File Watcher Service. This service monitors plugin directories for file changes and triggers sync operations via WebSocket notifications.
+**Hybrid Mode Implementation**: The File Watcher Service uses an event-driven approach instead of constant polling. Scans are triggered only by:
+1. **Git Pull** - Automatic scan after commits are pulled
+2. **Manual Trigger** - User clicks "Refresh" button in UI
+
+This is more efficient than polling every N seconds since it only runs when changes are expected.
 
 ---
 
@@ -18,8 +22,44 @@ Complete Go implementation for the File Watcher Service. This service monitors p
 backend/internal/services/watcher/
 ├── service.go      # Main service interface and constructor
 ├── scanner.go      # Directory scanning with hash comparison
-├── watcher.go      # Per-plugin watcher goroutine
 └── types.go        # Types and configuration
+```
+
+---
+
+## Design: No Polling Mode
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Hybrid Watcher Mode                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Trigger Sources:                                            │
+│  ┌─────────────────┐    ┌─────────────────┐                 │
+│  │   Git Pull      │    │  Manual Refresh │                 │
+│  │  (auto-trigger) │    │   (UI button)   │                 │
+│  └────────┬────────┘    └────────┬────────┘                 │
+│           │                       │                          │
+│           └───────────┬───────────┘                          │
+│                       ▼                                      │
+│              ┌─────────────────┐                             │
+│              │   Scan Plugin   │                             │
+│              │   Directory     │                             │
+│              └────────┬────────┘                             │
+│                       │                                      │
+│                       ▼                                      │
+│              ┌─────────────────┐                             │
+│              │ Detect Changes  │                             │
+│              │ (hash compare)  │                             │
+│              └────────┬────────┘                             │
+│                       │                                      │
+│                       ▼                                      │
+│              ┌─────────────────┐                             │
+│              │  Broadcast via  │                             │
+│              │   WebSocket     │                             │
+│              └─────────────────┘                             │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -49,6 +89,7 @@ type ScanResult struct {
 	DurationMs   int64        `json:"durationMs"`
 	FilesScanned int          `json:"filesScanned"`
 	Changes      []FileChange `json:"changes"`
+	TriggerType  string       `json:"triggerType"` // "git_pull" or "manual"
 }
 
 // fileInfo holds cached file metadata for change detection
@@ -58,12 +99,11 @@ type fileInfo struct {
 	Hash    string
 }
 
-// pluginWatcher manages watching for a single plugin
-type pluginWatcher struct {
+// pluginScanCache stores the last known state of a plugin's files
+type pluginScanCache struct {
 	pluginID int64
 	path     string
 	excludes []string
-	stopCh   chan struct{}
 	lastScan map[string]fileInfo
 }
 ```
@@ -78,23 +118,29 @@ package watcher
 import (
 	"context"
 	"sync"
-	"time"
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/services/plugin"
-	"wp-plugin-publish/internal/services/sync"
+	syncSvc "wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/ws"
 )
 
-// Service interface for file watching
+// Service interface for file scanning (no polling - event-driven)
 type Service interface {
-	StartAll(ctx context.Context) error
-	StopAll()
-	StartPlugin(pluginID int64, path string, excludes []string) error
-	StopPlugin(pluginID int64)
-	TriggerScan(pluginID int64) (*ScanResult, error)
-	GetWatchedPlugins() []int64
+	// Manual scan - triggered by user clicking refresh
+	TriggerScan(ctx context.Context, pluginID int64) (*ScanResult, error)
+	
+	// Git-triggered scan - called after successful git pull
+	ScanAfterGitPull(ctx context.Context, pluginID int64) (*ScanResult, error)
+	
+	// Batch operations
+	ScanAll(ctx context.Context) ([]ScanResult, error)
+	
+	// Cache management
+	InitializeCache(ctx context.Context, pluginID int64) error
+	ClearCache(pluginID int64)
+	GetCachedPlugins() []int64
 }
 
 // Config holds watcher configuration
@@ -102,131 +148,150 @@ type Config struct {
 	DB            *database.DB
 	Logger        *logger.Logger
 	PluginService plugin.Service
-	SyncService   sync.Service
+	SyncService   syncSvc.Service
 	WSHub         *ws.Hub
-	PollInterval  time.Duration
-	DebounceMs    int
 }
 
 type serviceImpl struct {
 	db            *database.DB
 	log           *logger.Logger
 	pluginService plugin.Service
-	syncService   sync.Service
+	syncService   syncSvc.Service
 	wsHub         *ws.Hub
-	pollInterval  time.Duration
-	debounceMs    int
-	watchers      map[int64]*pluginWatcher
+	cache         map[int64]*pluginScanCache
 	mu            sync.RWMutex
-	stopCh        chan struct{}
 }
 
-// New creates a new watcher service
+// New creates a new watcher service (no polling goroutines)
 func New(cfg Config) Service {
-	if cfg.PollInterval == 0 {
-		cfg.PollInterval = 5 * time.Second
-	}
-	if cfg.DebounceMs == 0 {
-		cfg.DebounceMs = 500
-	}
-
 	return &serviceImpl{
 		db:            cfg.DB,
 		log:           cfg.Logger,
 		pluginService: cfg.PluginService,
 		syncService:   cfg.SyncService,
 		wsHub:         cfg.WSHub,
-		pollInterval:  cfg.PollInterval,
-		debounceMs:    cfg.DebounceMs,
-		watchers:      make(map[int64]*pluginWatcher),
-		stopCh:        make(chan struct{}),
+		cache:         make(map[int64]*pluginScanCache),
 	}
 }
 
-func (s *serviceImpl) StartAll(ctx context.Context) error {
-	s.log.Info("Starting all file watchers")
-
-	// Query plugins with watch enabled
-	plugins, err := s.pluginService.List(ctx)
+// InitializeCache loads the current file state for a plugin
+// Call this on app startup or when adding a new plugin
+func (s *serviceImpl) InitializeCache(ctx context.Context, pluginID int64) error {
+	plugin, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		return err
 	}
 
-	for _, p := range plugins {
-		if p.WatchEnabled {
-			s.StartPlugin(p.ID, p.Path, p.ExcludePatterns)
-		}
-	}
-
-	s.log.Info("File watchers started", "count", len(s.watchers))
-	return nil
-}
-
-func (s *serviceImpl) StopAll() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for id, w := range s.watchers {
-		close(w.stopCh)
-		delete(s.watchers, id)
-	}
-
-	s.log.Info("All file watchers stopped")
-}
-
-func (s *serviceImpl) StartPlugin(pluginID int64, path string, excludes []string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// Check if already watching
-	if _, exists := s.watchers[pluginID]; exists {
-		s.log.Debug("Plugin already being watched", "pluginId", pluginID)
-		return nil
-	}
-
-	w := &pluginWatcher{
+	cache := &pluginScanCache{
 		pluginID: pluginID,
-		path:     path,
-		excludes: excludes,
-		stopCh:   make(chan struct{}),
+		path:     plugin.Path,
+		excludes: plugin.ExcludePatterns,
 		lastScan: make(map[string]fileInfo),
 	}
 
-	s.watchers[pluginID] = w
+	// Perform initial scan to populate cache (no change detection)
+	s.populateCache(cache)
+	s.cache[pluginID] = cache
 
-	// Start watching goroutine
-	go s.watchLoop(w)
-
-	s.log.Info("Started watching plugin", "pluginId", pluginID, "path", path)
+	s.log.Info("Initialized file cache", "pluginId", pluginID, "files", len(cache.lastScan))
 	return nil
 }
 
-func (s *serviceImpl) StopPlugin(pluginID int64) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if w, exists := s.watchers[pluginID]; exists {
-		close(w.stopCh)
-		delete(s.watchers, pluginID)
-		s.log.Info("Stopped watching plugin", "pluginId", pluginID)
-	}
+// TriggerScan performs a manual scan (user clicked refresh)
+func (s *serviceImpl) TriggerScan(ctx context.Context, pluginID int64) (*ScanResult, error) {
+	return s.performScan(ctx, pluginID, "manual")
 }
 
-func (s *serviceImpl) GetWatchedPlugins() []int64 {
+// ScanAfterGitPull performs a scan after git pull (automatic)
+func (s *serviceImpl) ScanAfterGitPull(ctx context.Context, pluginID int64) (*ScanResult, error) {
+	return s.performScan(ctx, pluginID, "git_pull")
+}
+
+// ScanAll scans all cached plugins
+func (s *serviceImpl) ScanAll(ctx context.Context) ([]ScanResult, error) {
+	s.mu.RLock()
+	pluginIDs := make([]int64, 0, len(s.cache))
+	for id := range s.cache {
+		pluginIDs = append(pluginIDs, id)
+	}
+	s.mu.RUnlock()
+
+	var results []ScanResult
+	for _, id := range pluginIDs {
+		result, err := s.TriggerScan(ctx, id)
+		if err == nil && result != nil {
+			results = append(results, *result)
+		}
+	}
+	return results, nil
+}
+
+func (s *serviceImpl) ClearCache(pluginID int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.cache, pluginID)
+	s.log.Info("Cleared file cache", "pluginId", pluginID)
+}
+
+func (s *serviceImpl) GetCachedPlugins() []int64 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	ids := make([]int64, 0, len(s.watchers))
-	for id := range s.watchers {
+	ids := make([]int64, 0, len(s.cache))
+	for id := range s.cache {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+// performScan executes the actual directory scan
+func (s *serviceImpl) performScan(ctx context.Context, pluginID int64, triggerType string) (*ScanResult, error) {
+	startTime := time.Now()
+
+	s.log.Info("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
+
+	// Get or create cache
+	s.mu.Lock()
+	cache, exists := s.cache[pluginID]
+	if !exists {
+		// Initialize cache first
+		s.mu.Unlock()
+		if err := s.InitializeCache(ctx, pluginID); err != nil {
+			return nil, err
+		}
+		s.mu.Lock()
+		cache = s.cache[pluginID]
+	}
+	s.mu.Unlock()
+
+	// Perform scan and detect changes
+	changes := s.scanAndCompare(cache)
+
+	result := &ScanResult{
+		PluginID:     pluginID,
+		Path:         cache.path,
+		ScanTime:     startTime,
+		DurationMs:   time.Since(startTime).Milliseconds(),
+		FilesScanned: len(cache.lastScan),
+		Changes:      changes,
+		TriggerType:  triggerType,
+	}
+
+	// Broadcast changes if any
+	if len(changes) > 0 {
+		s.broadcastChanges(pluginID, changes, triggerType)
+	}
+
+	return result, nil
 }
 ```
 
 ---
 
-## Implementation: watcher.go
+## Implementation: scanner.go
 
 ```go
 package watcher
