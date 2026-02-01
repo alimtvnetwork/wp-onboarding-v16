@@ -18,24 +18,32 @@
 - [x] Frontend overview
 - [x] Error console UI
 
-### Phase 2: Core Backend (TODO)
-- [ ] Site service (CRUD, connection testing)
-- [ ] Plugin service (directory registration, hash calculation)
-- [ ] WP REST API client
-- [ ] REST API endpoints
-- [ ] WebSocket events
+### Phase 2: Core Backend ✅ (Spec Complete)
+- [x] Site service (CRUD, connection testing)
+- [x] Plugin service (directory registration, hash calculation)
+- [x] WP REST API client
+- [x] REST API endpoints
+- [x] WebSocket events
 
-### Phase 3: Sync & Publish (TODO)
-- [ ] File watcher (fsnotify integration)
-- [ ] Sync service (local vs remote comparison)
-- [ ] Publish service (zip creation, upload)
-- [ ] Backup service (download, rollback)
+### Phase 3: Sync & Publish ✅ (Spec Complete)
+- [x] File watcher (fsnotify integration)
+- [x] Sync service (local vs remote comparison)
+- [x] Publish service (zip creation, upload)
+- [x] Backup service (download, rollback)
 
-### Phase 4: Frontend UI (TODO)
-- [ ] Site manager UI
-- [ ] Plugin manager UI
-- [ ] Sync dashboard
-- [ ] Settings page
+### Phase 4: Frontend UI ✅ (Spec Complete)
+- [x] Site manager UI
+- [x] Plugin manager UI
+- [x] Sync dashboard
+- [x] Settings page
+
+### Phase 5: Implementation (TODO)
+- [ ] Go backend scaffolding
+- [ ] Database migrations
+- [ ] Core services implementation
+- [ ] REST API handlers
+- [ ] React UI implementation
+- [ ] Integration testing
 
 ---
 
@@ -43,8 +51,8 @@
 
 | Status | Count | Description |
 |--------|-------|-------------|
-| ✅ Complete | 10 | Ready for implementation |
-| 📝 TODO | 11 | Needs detailed spec |
+| ✅ Complete | 21 | Ready for implementation |
+| 📝 TODO | 0 | All specs complete |
 
 See `spec/wp-plugin-publish/99-consistency-report.md` for full document checklist.
 
@@ -54,6 +62,7 @@ See `spec/wp-plugin-publish/99-consistency-report.md` for full document checklis
 
 - Initial spec structure created (2026-02-01)
 - Removed old specs (wp-plugin-builder, exam-manager, link-manager, powershell-integration)
+- Phase 2-4 specs completed (2026-02-01)
 
 ---
 
