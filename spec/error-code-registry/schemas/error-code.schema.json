@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Error Code Schema",
+  "description": "Schema for validating standardized error codes",
+  "type": "object",
+  "definitions": {
+    "errorCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,4}-[0-9]{3}-[0-9]{2}$",
+      "description": "Error code in format PROJECT-CATEGORY-NUMBER (e.g., SM-400-01)",
+      "examples": ["GEN-100-01", "SM-400-01", "LM-300-02", "PS-9500-01"]
+    },
+    "errorEntry": {
+      "type": "object",
+      "required": ["code", "name", "message"],
+      "properties": {
+        "code": {
+          "$ref": "#/definitions/errorCode"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "description": "Constant name in UPPER_SNAKE_CASE",
+          "examples": ["CONFIG_MISSING", "AUTH_REQUIRED", "DB_CONNECTION"]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 200,
+          "description": "Human-readable error message"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "general",
+            "authentication",
+            "authorization",
+            "validation",
+            "business_logic",
+            "database",
+            "external_services",
+            "file_system",
+            "network"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["info", "warning", "error", "critical"],
+          "default": "error"
+        },
+        "recoverable": {
+          "type": "boolean",
+          "description": "Whether the error condition can be recovered from",
+          "default": true
+        },
+        "userVisible": {
+          "type": "boolean",
+          "description": "Whether to show this error to end users",
+          "default": true
+        },
+        "httpStatus": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599,
+          "description": "Suggested HTTP status code for API responses"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "project": {
+      "type": "string",
+      "pattern": "^[A-Z]{2,4}$",
+      "description": "Project prefix (2-4 uppercase letters)"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/errorEntry"
+      }
+    }
+  },
+  "required": ["project", "errors"],
+  "additionalProperties": false
+}

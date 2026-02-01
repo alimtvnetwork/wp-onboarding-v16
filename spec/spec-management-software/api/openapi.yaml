@@ -1,0 +1,2593 @@
+openapi: 3.0.3
+info:
+  title: Spec Management Software API
+  description: |
+    REST API for the Spec Management Software - a full-stack specification management
+    application with AI-powered voice-to-spec generation via LLaMA integration.
+    
+    ## Features
+    - User authentication with JWT tokens
+    - Project and file management
+    - Voice-to-spec AI pipeline
+    - RAG-based context retrieval
+    - History and snapshot management
+    - Import/export functionality
+    
+    ## Response Format
+    All endpoints return a consistent envelope:
+    ```json
+    {
+      "success": boolean,
+      "data": object | null,
+      "error": string | null,
+      "meta": { "requestId": string, "timestamp": string, "version": string }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://api.spec-manager.dev/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User registration, login, and session management
+  - name: Projects
+    description: Project lifecycle and management
+  - name: Files
+    description: File and directory operations
+  - name: Instructions
+    description: Voice-to-spec instruction pipeline
+  - name: Ideas
+    description: Idea capture and promotion
+  - name: AI
+    description: AI model management and generation
+  - name: RAG
+    description: Retrieval-Augmented Generation operations
+  - name: History
+    description: Snapshots and version history
+  - name: Export
+    description: Project export operations
+  - name: Import
+    description: Project import operations
+  - name: Config
+    description: System configuration
+
+paths:
+  # ============================================================================
+  # AUTHENTICATION
+  # ============================================================================
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Username or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Authenticate user and get tokens
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '423':
+          description: Account locked due to failed attempts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          description: Invalid or expired refresh token
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout and revoke session
+      operationId: logoutUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                allDevices:
+                  type: boolean
+                  default: false
+                  description: Revoke all sessions for this user
+      responses:
+        '200':
+          description: Logged out successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/sessions:
+    get:
+      tags: [Authentication]
+      summary: List active sessions
+      operationId: listSessions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Session'
+
+  /auth/sessions/{sessionId}:
+    delete:
+      tags: [Authentication]
+      summary: Revoke a specific session
+      operationId: revokeSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session revoked
+        '404':
+          description: Session not found
+
+  # ============================================================================
+  # PROJECTS
+  # ============================================================================
+  /projects:
+    get:
+      tags: [Projects]
+      summary: List all accessible projects
+      operationId: listProjects
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: visibility
+          in: query
+          schema:
+            type: string
+            enum: [user, global]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+    post:
+      tags: [Projects]
+      summary: Create a new project
+      operationId: createProject
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Project'
+
+  /projects/{projectId}:
+    get:
+      tags: [Projects]
+      summary: Get project details
+      operationId: getProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Project details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Project'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Projects]
+      summary: Update project
+      operationId: updateProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
+      responses:
+        '200':
+          description: Project updated
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      operationId: deleteProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: permanent
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Project deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================================================
+  # FILES
+  # ============================================================================
+  /projects/{projectId}/files:
+    get:
+      tags: [Files]
+      summary: List files in directory
+      operationId: listFiles
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: path
+          in: query
+          schema:
+            type: string
+            default: /
+        - name: recursive
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: includeDeleted
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Directory listing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoryListing'
+
+    post:
+      tags: [Files]
+      summary: Create a new file
+      operationId: createFile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFileRequest'
+      responses:
+        '201':
+          description: File created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/File'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: File already exists
+
+  /projects/{projectId}/files/{fileId}:
+    get:
+      tags: [Files]
+      summary: Get file details and content
+      operationId: getFile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FileId'
+        - name: includeContent
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: version
+          in: query
+          schema:
+            type: string
+          description: Specific snapshot version
+      responses:
+        '200':
+          description: File details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/FileWithContent'
+
+    put:
+      tags: [Files]
+      summary: Update file content
+      operationId: updateFile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFileRequest'
+      responses:
+        '200':
+          description: File updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/File'
+        '409':
+          description: Conflict - expectedHash mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponse'
+
+    delete:
+      tags: [Files]
+      summary: Delete file
+      operationId: deleteFile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FileId'
+        - name: permanent
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      deletedAt:
+                        type: string
+                        format: date-time
+                      permanent:
+                        type: boolean
+                      recoveryDeadline:
+                        type: string
+                        format: date-time
+
+  /projects/{projectId}/files/{fileId}/move:
+    patch:
+      tags: [Files]
+      summary: Move or rename file
+      operationId: moveFile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FileId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPath]
+              properties:
+                newPath:
+                  type: string
+                  example: spec/02-backend/03-new-spec.md
+      responses:
+        '200':
+          description: File moved
+        '409':
+          description: Target path already exists
+
+  /projects/{projectId}/directories:
+    post:
+      tags: [Files]
+      summary: Create a directory
+      operationId: createDirectory
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [path]
+              properties:
+                path:
+                  type: string
+                  example: spec/03-new-feature
+      responses:
+        '201':
+          description: Directory created
+
+  # ============================================================================
+  # INSTRUCTIONS
+  # ============================================================================
+  /projects/{projectId}/instructions:
+    get:
+      tags: [Instructions]
+      summary: List instructions for project
+      operationId: listInstructions
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [transcribed, proofreading, proofread, planning, planned, reviewing, ready, executing, completed, failed, cancelled]
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [global, backend, frontend, file]
+      responses:
+        '200':
+          description: List of instructions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Instruction'
+
+    post:
+      tags: [Instructions]
+      summary: Create instruction from text
+      operationId: createInstruction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInstructionRequest'
+      responses:
+        '201':
+          description: Instruction created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Instruction'
+
+  /projects/{projectId}/instructions/voice:
+    post:
+      tags: [Instructions]
+      summary: Create instruction from voice input
+      operationId: createInstructionFromVoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Audio file (WAV, MP3, WebM)
+                scope:
+                  type: string
+                  enum: [global, backend, frontend, file]
+                  default: global
+                targetFilePath:
+                  type: string
+                  description: For file-scoped instructions
+      responses:
+        '202':
+          description: Voice transcription started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Instruction'
+
+  /projects/{projectId}/instructions/{instructionId}:
+    get:
+      tags: [Instructions]
+      summary: Get instruction details
+      operationId: getInstruction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/InstructionId'
+      responses:
+        '200':
+          description: Instruction details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/InstructionDetails'
+
+    patch:
+      tags: [Instructions]
+      summary: Update instruction
+      operationId: updateInstruction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/InstructionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInstructionRequest'
+      responses:
+        '200':
+          description: Instruction updated
+
+  /projects/{projectId}/instructions/{instructionId}/approve:
+    post:
+      tags: [Instructions]
+      summary: Approve instruction for execution
+      operationId: approveInstruction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/InstructionId'
+      responses:
+        '200':
+          description: Instruction approved and execution started
+
+  /projects/{projectId}/instructions/{instructionId}/cancel:
+    post:
+      tags: [Instructions]
+      summary: Cancel instruction
+      operationId: cancelInstruction
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/InstructionId'
+      responses:
+        '200':
+          description: Instruction cancelled
+
+  /projects/{projectId}/instructions/{instructionId}/tasks:
+    get:
+      tags: [Instructions]
+      summary: Get tasks for instruction
+      operationId: getInstructionTasks
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/InstructionId'
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InstructionTask'
+
+  # ============================================================================
+  # IDEAS
+  # ============================================================================
+  /projects/{projectId}/ideas:
+    get:
+      tags: [Ideas]
+      summary: List ideas for project
+      operationId: listIdeas
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, refined, promoted, archived]
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high, critical]
+      responses:
+        '200':
+          description: List of ideas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Idea'
+
+    post:
+      tags: [Ideas]
+      summary: Create idea from text
+      operationId: createIdea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIdeaRequest'
+      responses:
+        '201':
+          description: Idea created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Idea'
+
+  /projects/{projectId}/ideas/voice:
+    post:
+      tags: [Ideas]
+      summary: Create idea from voice input
+      operationId: createIdeaFromVoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                priority:
+                  type: string
+                  enum: [low, medium, high, critical]
+                  default: medium
+      responses:
+        '202':
+          description: Voice transcription started
+
+  /projects/{projectId}/ideas/{ideaId}:
+    get:
+      tags: [Ideas]
+      summary: Get idea details
+      operationId: getIdea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdeaId'
+      responses:
+        '200':
+          description: Idea details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Idea'
+
+    patch:
+      tags: [Ideas]
+      summary: Update idea
+      operationId: updateIdea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdeaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIdeaRequest'
+      responses:
+        '200':
+          description: Idea updated
+
+    delete:
+      tags: [Ideas]
+      summary: Archive or delete idea
+      operationId: deleteIdea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdeaId'
+        - name: permanent
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Idea archived/deleted
+
+  /projects/{projectId}/ideas/{ideaId}/promote:
+    post:
+      tags: [Ideas]
+      summary: Promote idea to instruction
+      operationId: promoteIdea
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/IdeaId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scope:
+                  type: string
+                  enum: [global, backend, frontend, file]
+                  default: global
+                targetFilePath:
+                  type: string
+                executionMode:
+                  type: string
+                  enum: [automatic, approval]
+      responses:
+        '201':
+          description: Idea promoted to instruction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      idea:
+                        $ref: '#/components/schemas/Idea'
+                      instruction:
+                        $ref: '#/components/schemas/Instruction'
+
+  # ============================================================================
+  # AI / MODELS
+  # ============================================================================
+  /ai/models:
+    get:
+      tags: [AI]
+      summary: List available AI models
+      operationId: listModels
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [thinking, writing, voice, coding]
+      responses:
+        '200':
+          description: List of models
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AIModel'
+
+  /ai/models/scan:
+    post:
+      tags: [AI]
+      summary: Scan for new models in configured directories
+      operationId: scanModels
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Scan completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      discovered:
+                        type: integer
+                      added:
+                        type: integer
+                      updated:
+                        type: integer
+
+  /ai/generate:
+    post:
+      tags: [AI]
+      summary: Generate content using AI
+      operationId: generateContent
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Content generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/GenerateResponse'
+
+  /ai/generate/stream:
+    post:
+      tags: [AI]
+      summary: Generate content with streaming response
+      operationId: generateContentStream
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateRequest'
+      responses:
+        '200':
+          description: Streaming response
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /ai/transcribe:
+    post:
+      tags: [AI]
+      summary: Transcribe audio to text
+      operationId: transcribeAudio
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                language:
+                  type: string
+                  example: en
+      responses:
+        '200':
+          description: Transcription result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/TranscriptionResult'
+
+  # ============================================================================
+  # RAG
+  # ============================================================================
+  /projects/{projectId}/rag/query:
+    post:
+      tags: [RAG]
+      summary: Query RAG context for project
+      operationId: queryRAGContext
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RAGQueryRequest'
+      responses:
+        '200':
+          description: RAG context retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/RAGQueryResponse'
+
+  /projects/{projectId}/rag/reindex:
+    post:
+      tags: [RAG]
+      summary: Force reindex project artifacts
+      operationId: reindexProject
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paths:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific paths to reindex (empty = all)
+      responses:
+        '202':
+          description: Reindex started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      jobId:
+                        type: string
+                      estimatedFiles:
+                        type: integer
+
+  /projects/{projectId}/rag/status:
+    get:
+      tags: [RAG]
+      summary: Get RAG index status
+      operationId: getRAGStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      responses:
+        '200':
+          description: Index status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalFiles:
+                        type: integer
+                      indexedFiles:
+                        type: integer
+                      totalChunks:
+                        type: integer
+                      lastIndexedAt:
+                        type: string
+                        format: date-time
+
+  # ============================================================================
+  # HISTORY
+  # ============================================================================
+  /projects/{projectId}/snapshots:
+    get:
+      tags: [History]
+      summary: List project snapshots
+      operationId: listSnapshots
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: fileId
+          in: query
+          schema:
+            type: string
+          description: Filter by file
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of snapshots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Snapshot'
+
+    post:
+      tags: [History]
+      summary: Create manual snapshot
+      operationId: createSnapshot
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Snapshot message/label
+      responses:
+        '201':
+          description: Snapshot created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Snapshot'
+
+  /projects/{projectId}/snapshots/{snapshotId}:
+    get:
+      tags: [History]
+      summary: Get snapshot details
+      operationId: getSnapshot
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: snapshotId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Snapshot details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/SnapshotDetails'
+
+  /projects/{projectId}/snapshots/{snapshotId}/restore:
+    post:
+      tags: [History]
+      summary: Restore project to snapshot
+      operationId: restoreSnapshot
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - name: snapshotId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific files to restore (empty = all)
+      responses:
+        '200':
+          description: Snapshot restored
+
+  /projects/{projectId}/files/{fileId}/diff:
+    get:
+      tags: [History]
+      summary: Get diff between file versions
+      operationId: getFileDiff
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+        - $ref: '#/components/parameters/FileId'
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Source snapshot ID or "current"
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Target snapshot ID or "current"
+      responses:
+        '200':
+          description: Diff result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiffResult'
+
+  # ============================================================================
+  # EXPORT
+  # ============================================================================
+  /projects/{projectId}/export:
+    post:
+      tags: [Export]
+      summary: Create project export
+      operationId: createExport
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProjectId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportOptions'
+      responses:
+        '202':
+          description: Export job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      exportId:
+                        type: string
+                      status:
+                        type: string
+                        enum: [processing, completed, failed]
+                      estimatedSize:
+                        type: integer
+                      estimatedFiles:
+                        type: integer
+
+  /exports/{exportId}/status:
+    get:
+      tags: [Export]
+      summary: Check export status
+      operationId: getExportStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Export status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      exportId:
+                        type: string
+                      status:
+                        type: string
+                        enum: [processing, completed, failed]
+                      progress:
+                        type: integer
+                        minimum: 0
+                        maximum: 100
+                      downloadUrl:
+                        type: string
+                      expiresAt:
+                        type: string
+                        format: date-time
+
+  /exports/{exportId}/download:
+    get:
+      tags: [Export]
+      summary: Download export file
+      operationId: downloadExport
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ZIP file download
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+
+  # ============================================================================
+  # IMPORT
+  # ============================================================================
+  /import:
+    post:
+      tags: [Import]
+      summary: Import project from file
+      operationId: importProject
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: ZIP archive or Markdown file
+                projectName:
+                  type: string
+                  description: Override project name
+                visibility:
+                  type: string
+                  enum: [user, global]
+                  default: user
+      responses:
+        '202':
+          description: Import job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      importId:
+                        type: string
+                      status:
+                        type: string
+                      detectedType:
+                        type: string
+                        enum: [zip, markdown, prd]
+
+  /import/{importId}/status:
+    get:
+      tags: [Import]
+      summary: Check import status
+      operationId: getImportStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: importId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Import status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      importId:
+                        type: string
+                      status:
+                        type: string
+                        enum: [processing, completed, failed]
+                      progress:
+                        type: integer
+                      projectId:
+                        type: string
+                        description: Created project ID (when completed)
+                      errors:
+                        type: array
+                        items:
+                          type: string
+
+  # ============================================================================
+  # CONFIG
+  # ============================================================================
+  /config/llama:
+    get:
+      tags: [Config]
+      summary: Get LLaMA server configuration
+      operationId: getLlamaConfig
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: LLaMA configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/LlamaConfig'
+
+    patch:
+      tags: [Config]
+      summary: Update LLaMA configuration
+      operationId: updateLlamaConfig
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LlamaConfigUpdate'
+      responses:
+        '200':
+          description: Configuration updated
+
+  /config/user/preferences:
+    get:
+      tags: [Config]
+      summary: Get user preferences
+      operationId: getUserPreferences
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/UserPreferences'
+
+    patch:
+      tags: [Config]
+      summary: Update user preferences
+      operationId: updateUserPreferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferencesUpdate'
+      responses:
+        '200':
+          description: Preferences updated
+
+# ==============================================================================
+# COMPONENTS
+# ==============================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Project UUID
+
+    FileId:
+      name: fileId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: File UUID
+
+    InstructionId:
+      name: instructionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Instruction UUID
+
+    IdeaId:
+      name: ideaId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Idea UUID
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    # --------------------------------------------------------------------------
+    # Common
+    # --------------------------------------------------------------------------
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          type: object
+          nullable: true
+        error:
+          type: string
+          example: Invalid credentials
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    ResponseMeta:
+      type: object
+      properties:
+        requestId:
+          type: string
+          example: req_abc123
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          example: "1.0.0"
+
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+        hasMore:
+          type: boolean
+
+    # --------------------------------------------------------------------------
+    # Authentication
+    # --------------------------------------------------------------------------
+    RegisterRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 30
+          pattern: '^[a-zA-Z0-9_]+$'
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+          example: SecureP@ss123
+        displayName:
+          type: string
+          maxLength: 100
+          example: John Doe
+
+    LoginRequest:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+          description: Username or email
+          example: johndoe
+        password:
+          type: string
+          example: SecureP@ss123
+        deviceInfo:
+          type: object
+          properties:
+            userAgent:
+              type: string
+            platform:
+              type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            tokens:
+              $ref: '#/components/schemas/TokenPair'
+        error:
+          type: string
+          nullable: true
+        meta:
+          $ref: '#/components/schemas/ResponseMeta'
+
+    TokenPair:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Access token expiry in seconds
+        tokenType:
+          type: string
+          example: Bearer
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        deviceInfo:
+          type: string
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        lastActiveAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        isCurrent:
+          type: boolean
+
+    # --------------------------------------------------------------------------
+    # Projects
+    # --------------------------------------------------------------------------
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        visibility:
+          type: string
+          enum: [user, global]
+        ownerId:
+          type: string
+          format: uuid
+        fileCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateProjectRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+        visibility:
+          type: string
+          enum: [user, global]
+          default: user
+        category:
+          type: string
+        language:
+          type: string
+        framework:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    UpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        visibility:
+          type: string
+          enum: [user, global]
+        category:
+          type: string
+        language:
+          type: string
+        framework:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    # --------------------------------------------------------------------------
+    # Files
+    # --------------------------------------------------------------------------
+    File:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        path:
+          type: string
+        name:
+          type: string
+        contentHash:
+          type: string
+        sizeBytes:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FileWithContent:
+      allOf:
+        - $ref: '#/components/schemas/File'
+        - type: object
+          properties:
+            content:
+              type: string
+            mimeType:
+              type: string
+              example: text/markdown
+
+    CreateFileRequest:
+      type: object
+      required: [path, content]
+      properties:
+        path:
+          type: string
+          example: spec/01-feature/03-new-spec.md
+        content:
+          type: string
+        createDirectories:
+          type: boolean
+          default: true
+
+    UpdateFileRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        expectedHash:
+          type: string
+          description: SHA-256 hash for optimistic locking
+
+    ConflictResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Content has been modified
+        data:
+          type: object
+          properties:
+            currentHash:
+              type: string
+            expectedHash:
+              type: string
+            currentContent:
+              type: string
+
+    DirectoryListing:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            path:
+              type: string
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum: [file, directory]
+                  name:
+                    type: string
+                  path:
+                    type: string
+                  id:
+                    type: string
+                    description: Only for files
+                  sizeBytes:
+                    type: integer
+                    description: Only for files
+                  fileCount:
+                    type: integer
+                    description: Only for directories
+                  updatedAt:
+                    type: string
+                    format: date-time
+            totalFiles:
+              type: integer
+            totalDirectories:
+              type: integer
+
+    # --------------------------------------------------------------------------
+    # Instructions
+    # --------------------------------------------------------------------------
+    Instruction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        rawTranscription:
+          type: string
+        proofreadText:
+          type: string
+        instructionText:
+          type: string
+        scope:
+          type: string
+          enum: [global, backend, frontend, file]
+        targetFilePath:
+          type: string
+        status:
+          type: string
+          enum: [transcribed, proofreading, proofread, planning, planned, reviewing, ready, executing, completed, failed, cancelled]
+        executionMode:
+          type: string
+          enum: [automatic, approval]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    InstructionDetails:
+      allOf:
+        - $ref: '#/components/schemas/Instruction'
+        - type: object
+          properties:
+            planMarkdown:
+              type: string
+            planJson:
+              type: object
+            tasks:
+              type: array
+              items:
+                $ref: '#/components/schemas/InstructionTask'
+            thinkingModelId:
+              type: string
+            writingModelId:
+              type: string
+            voiceModelId:
+              type: string
+            codingModelId:
+              type: string
+
+    CreateInstructionRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          minLength: 1
+        scope:
+          type: string
+          enum: [global, backend, frontend, file]
+          default: global
+        targetFilePath:
+          type: string
+        executionMode:
+          type: string
+          enum: [automatic, approval]
+        modelOverrides:
+          $ref: '#/components/schemas/ModelOverrides'
+
+    UpdateInstructionRequest:
+      type: object
+      properties:
+        instructionText:
+          type: string
+        scope:
+          type: string
+          enum: [global, backend, frontend, file]
+        targetFilePath:
+          type: string
+        executionMode:
+          type: string
+          enum: [automatic, approval]
+
+    InstructionTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        instructionId:
+          type: string
+          format: uuid
+        parentTaskId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+        taskType:
+          type: string
+          enum: [create, update, delete, refactor, review, verify]
+        modelCategory:
+          type: string
+          enum: [thinking, writing, voice, coding]
+        targetFilePath:
+          type: string
+        status:
+          type: string
+          enum: [pending, blocked, ready, in_progress, completed, failed, skipped]
+        sortOrder:
+          type: integer
+        dependsOn:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    # --------------------------------------------------------------------------
+    # Ideas
+    # --------------------------------------------------------------------------
+    Idea:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+        rawTranscription:
+          type: string
+        proofreadContent:
+          type: string
+        status:
+          type: string
+          enum: [draft, refined, promoted, archived]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        filePath:
+          type: string
+        promotedToInstructionId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateIdeaRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        title:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: medium
+
+    UpdateIdeaRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        status:
+          type: string
+          enum: [draft, refined, archived]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+
+    # --------------------------------------------------------------------------
+    # AI
+    # --------------------------------------------------------------------------
+    AIModel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        fileName:
+          type: string
+        category:
+          type: string
+          enum: [thinking, writing, voice, coding]
+        modelPath:
+          type: string
+        fileSizeBytes:
+          type: integer
+        isEnabled:
+          type: boolean
+        lastScannedAt:
+          type: string
+          format: date-time
+
+    ModelOverrides:
+      type: object
+      properties:
+        thinkingModelId:
+          type: string
+          format: uuid
+        writingModelId:
+          type: string
+          format: uuid
+        voiceModelId:
+          type: string
+          format: uuid
+        codingModelId:
+          type: string
+          format: uuid
+
+    GenerateRequest:
+      type: object
+      required: [prompt]
+      properties:
+        prompt:
+          type: string
+        systemPrompt:
+          type: string
+        category:
+          type: string
+          enum: [thinking, writing, coding]
+          default: writing
+        modelId:
+          type: string
+          format: uuid
+          description: Override model selection
+        maxTokens:
+          type: integer
+          default: 2048
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+          default: 0.7
+        projectId:
+          type: string
+          format: uuid
+          description: For RAG context injection
+
+    GenerateResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        tokensUsed:
+          type: integer
+        durationMs:
+          type: integer
+        modelUsed:
+          type: string
+
+    TranscriptionResult:
+      type: object
+      properties:
+        text:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        durationMs:
+          type: integer
+        languageCode:
+          type: string
+
+    # --------------------------------------------------------------------------
+    # RAG
+    # --------------------------------------------------------------------------
+    RAGQueryRequest:
+      type: object
+      required: [query]
+      properties:
+        query:
+          type: string
+        topK:
+          type: integer
+          default: 5
+          minimum: 1
+          maximum: 20
+        includeRecent:
+          type: boolean
+          default: true
+          description: Include recent artifacts regardless of similarity
+        recentCount:
+          type: integer
+          default: 3
+        tokenBudget:
+          type: integer
+          default: 4000
+          description: Max tokens for context assembly
+
+    RAGQueryResponse:
+      type: object
+      properties:
+        chunks:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              filePath:
+                type: string
+              content:
+                type: string
+              similarity:
+                type: number
+              tokenCount:
+                type: integer
+        recentArtifacts:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              filePath:
+                type: string
+              title:
+                type: string
+              updatedAt:
+                type: string
+                format: date-time
+        totalTokens:
+          type: integer
+        assembledContext:
+          type: string
+          description: Ready-to-use context string
+
+    # --------------------------------------------------------------------------
+    # History
+    # --------------------------------------------------------------------------
+    Snapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        label:
+          type: string
+          example: V01-2026-01-28
+        message:
+          type: string
+        fileCount:
+          type: integer
+        gitCommitHash:
+          type: string
+        createdById:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    SnapshotDetails:
+      allOf:
+        - $ref: '#/components/schemas/Snapshot'
+        - type: object
+          properties:
+            files:
+              type: array
+              items:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  contentHash:
+                    type: string
+                  sizeBytes:
+                    type: integer
+
+    DiffResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            fromVersion:
+              type: string
+            toVersion:
+              type: string
+            hunks:
+              type: array
+              items:
+                type: object
+                properties:
+                  oldStart:
+                    type: integer
+                  oldLines:
+                    type: integer
+                  newStart:
+                    type: integer
+                  newLines:
+                    type: integer
+                  lines:
+                    type: array
+                    items:
+                      type: string
+            additions:
+              type: integer
+            deletions:
+              type: integer
+
+    # --------------------------------------------------------------------------
+    # Export/Import
+    # --------------------------------------------------------------------------
+    ExportOptions:
+      type: object
+      properties:
+        includeHistory:
+          type: boolean
+          default: false
+        includeIdeas:
+          type: boolean
+          default: true
+        includeInstructions:
+          type: boolean
+          default: true
+        selectedFiles:
+          type: array
+          items:
+            type: string
+          description: Empty array = all files
+
+    # --------------------------------------------------------------------------
+    # Config
+    # --------------------------------------------------------------------------
+    LlamaConfig:
+      type: object
+      properties:
+        serverPath:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+        modelsDir:
+          type: string
+        contextSize:
+          type: integer
+        gpuLayers:
+          type: integer
+
+    LlamaConfigUpdate:
+      type: object
+      properties:
+        serverPath:
+          type: string
+        host:
+          type: string
+        port:
+          type: integer
+        modelsDir:
+          type: string
+        contextSize:
+          type: integer
+        gpuLayers:
+          type: integer
+
+    UserPreferences:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+        defaultThinkingModelId:
+          type: string
+          format: uuid
+        defaultWritingModelId:
+          type: string
+          format: uuid
+        defaultVoiceModelId:
+          type: string
+          format: uuid
+        defaultCodingModelId:
+          type: string
+          format: uuid
+        instructionExecutionMode:
+          type: string
+          enum: [automatic, approval]
+
+    UserPreferencesUpdate:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+        defaultThinkingModelId:
+          type: string
+          format: uuid
+        defaultWritingModelId:
+          type: string
+          format: uuid
+        defaultVoiceModelId:
+          type: string
+          format: uuid
+        defaultCodingModelId:
+          type: string
+          format: uuid
+        instructionExecutionMode:
+          type: string
+          enum: [automatic, approval]
+
+security:
+  - BearerAuth: []

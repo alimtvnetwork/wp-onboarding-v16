@@ -1,0 +1,32 @@
+{
+  "projectName": "LLM Runner",
+  "rootDir": ".",
+  "backendDir": "go-backend",
+  "frontendDir": ".",
+  "distDir": "dist",
+  "targetDir": "go-backend/frontend/dist",
+  "dataDir": "go-backend/data",
+  "ports": [8080, 8081],
+  "prerequisites": {
+    "go": true,
+    "node": true,
+    "npm": true
+  },
+  "cleanPaths": [
+    "node_modules",
+    "dist",
+    ".vite",
+    "go-backend/data/*.db",
+    "go-backend/data/*.db-shm",
+    "go-backend/data/*.db-wal"
+  ],
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
+  "runCommand": "go run main.go",
+  "seedingDir": "go-backend/data/seeding",
+  "configFile": "config.json",
+  "configExampleFile": "config.example.json",
+  "requiredModules": [
+    "react-syntax-highlighter"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+    "name": "riseup-asia/plugins-onboard",
+    "description": "Comprehensive WordPress plugin for secure, auditable remote plugin management",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0+",
+    "authors": [
+        {
+            "name": "MD ALIM UL KARIM",
+            "homepage": "https://riseup.asia/"
+        }
+    ],
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Onboard\\": "includes/"
+        },
+        "classmap": [
+            "includes/",
+            "api/",
+            "admin/"
+        ]
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-unit": "phpunit --testsuite \"Unit Tests\"",
+        "test-integration": "phpunit --testsuite \"Integration Tests\""
+    },
+    "config": {
+        "platform": {
+            "php": "7.4"
+        }
+    }
+}
