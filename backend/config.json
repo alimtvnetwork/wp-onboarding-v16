@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "databasePath": "data/app.db",
+  "tempDir": ".temp",
+  "server": {
+    "port": 8080,
+    "wsReconnectDelayMs": 3000
+  },
+  "watcher": {
+    "pollIntervalMs": 5000,
+    "debounceMs": 500,
+    "defaultExcludePatterns": [".git", "node_modules", ".DS_Store", "*.log", ".temp"]
+  },
+  "backup": {
+    "location": "backups",
+    "autoBackupOnPublish": true,
+    "retentionDays": 30,
+    "maxBackupsPerPlugin": 10
+  },
+  "logging": {
+    "level": "info",
+    "retentionDays": 7,
+    "debugMode": false
+  },
+  "wordpress": {
+    "timeoutSeconds": 30,
+    "maxRetries": 3
+  }
+}
