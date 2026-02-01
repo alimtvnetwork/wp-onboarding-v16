@@ -12,6 +12,7 @@ import Dashboard from "@/pages/Dashboard";
 import Sites from "@/pages/Sites";
 import Plugins from "@/pages/Plugins";
 import Sync from "@/pages/Sync";
+import Logs from "@/pages/Logs";
 import Settings from "@/pages/Settings";
 import Errors from "@/pages/Errors";
 import NotFound from "@/pages/NotFound";
@@ -46,6 +47,7 @@ const App = () => (
                 <Route path="sites" element={<Sites />} />
                 <Route path="plugins" element={<Plugins />} />
                 <Route path="sync" element={<Sync />} />
+                <Route path="logs" element={<Logs />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="errors" element={<Errors />} />
               </Route>

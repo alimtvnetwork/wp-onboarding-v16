@@ -69,6 +69,9 @@ export interface Plugin {
   excludePatterns: string[];
   fileCount: number;
   modifiedCount: number;
+  gitEnabled?: boolean;
+  gitRemoteUrl?: string;
+  buildCommand?: string;
   mappings: PluginMapping[];
   createdAt: string;
   updatedAt: string;
@@ -176,7 +179,15 @@ export const api = {
   // Plugins
   getPlugins: () => request<Plugin[]>("/plugins"),
   getPlugin: (id: number) => request<Plugin>(`/plugins/${id}`),
-  createPlugin: (plugin: { name: string; path: string; watchEnabled?: boolean; excludePatterns?: string[] }) =>
+  createPlugin: (plugin: { 
+    name: string; 
+    path: string; 
+    watchEnabled?: boolean; 
+    excludePatterns?: string[];
+    gitEnabled?: boolean;
+    gitRemoteUrl?: string;
+    buildCommand?: string;
+  }) =>
     request<Plugin>("/plugins", { method: "POST", body: JSON.stringify(plugin) }),
   updatePlugin: (id: number, plugin: Partial<Plugin>) =>
     request<Plugin>(`/plugins/${id}`, { method: "PUT", body: JSON.stringify(plugin) }),

@@ -8,6 +8,7 @@ import {
   Settings,
   AlertCircle,
   Plug,
+  ScrollText,
 } from "lucide-react";
 
 const navItems = [
@@ -15,6 +16,7 @@ const navItems = [
   { to: "/sites", label: "Sites", icon: Globe },
   { to: "/plugins", label: "Plugins", icon: Package },
   { to: "/sync", label: "Sync", icon: RefreshCw },
+  { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/errors", label: "Errors", icon: AlertCircle },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
