@@ -7,9 +7,10 @@
     "wsReconnectDelayMs": 3000
   },
   "watcher": {
-    "pollIntervalMs": 5000,
-    "debounceMs": 500,
-    "defaultExcludePatterns": [".git", "node_modules", ".DS_Store", "*.log", ".temp"]
+    "mode": "hybrid",
+    "pollingEnabled": false,
+    "scanAfterGitPull": true,
+    "defaultExcludePatterns": [".git", "node_modules", ".DS_Store", "*.log", ".temp", "vendor", ".idea", ".vscode"]
   },
   "backup": {
     "location": "backups",

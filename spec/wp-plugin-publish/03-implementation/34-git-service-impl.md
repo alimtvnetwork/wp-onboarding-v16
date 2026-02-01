@@ -127,22 +127,24 @@ type GitStatus struct {
 
 // Config holds git service configuration
 type Config struct {
-	DB            *database.DB
-	Logger        *logger.Logger
-	PluginService plugin.Service
-	WSHub         *ws.Hub
-	DefaultBranch string
-	Timeout       int // seconds
+	DB             *database.DB
+	Logger         *logger.Logger
+	PluginService  plugin.Service
+	WatcherService watcher.Service  // Added for hybrid mode
+	WSHub          *ws.Hub
+	DefaultBranch  string
+	Timeout        int // seconds
 }
 
 type serviceImpl struct {
-	db            *database.DB
-	log           *logger.Logger
-	pluginService plugin.Service
-	wsHub         *ws.Hub
-	defaultBranch string
-	timeout       int
-	mu            sync.Mutex
+	db             *database.DB
+	log            *logger.Logger
+	pluginService  plugin.Service
+	watcherService watcher.Service  // Added for hybrid mode
+	wsHub          *ws.Hub
+	defaultBranch  string
+	timeout        int
+	mu             sync.Mutex
 }
 
 // New creates a new git service
@@ -155,12 +157,13 @@ func New(cfg Config) Service {
 	}
 
 	return &serviceImpl{
-		db:            cfg.DB,
-		log:           cfg.Logger,
-		pluginService: cfg.PluginService,
-		wsHub:         cfg.WSHub,
-		defaultBranch: cfg.DefaultBranch,
-		timeout:       cfg.Timeout,
+		db:             cfg.DB,
+		log:            cfg.Logger,
+		pluginService:  cfg.PluginService,
+		watcherService: cfg.WatcherService,
+		wsHub:          cfg.WSHub,
+		defaultBranch:  cfg.DefaultBranch,
+		timeout:        cfg.Timeout,
 	}
 }
 ```
@@ -255,6 +258,17 @@ func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, er
 
 	commitMsg, _ := s.runGitCommand(plugin.Path, "log", "-1", "--format=%s")
 	result.CommitMsg = strings.TrimSpace(commitMsg)
+
+	// ========================================
+	// HYBRID WATCHER: Trigger scan after pull
+	// ========================================
+	if result.FilesChanged > 0 && s.watcherService != nil {
+		s.log.Info("Git pull detected changes, triggering file scan", "pluginId", pluginID)
+		scanResult, _ := s.watcherService.ScanAfterGitPull(ctx, pluginID)
+		if scanResult != nil && len(scanResult.Changes) > 0 {
+			s.log.Info("File scan complete", "changes", len(scanResult.Changes))
+		}
+	}
 
 	// Broadcast pull complete
 	s.wsHub.Broadcast(ws.EventGitPullComplete, map[string]interface{}{
