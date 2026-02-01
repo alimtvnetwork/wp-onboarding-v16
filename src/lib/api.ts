@@ -121,6 +121,11 @@ export interface ErrorLog {
 }
 
 export interface Settings {
+  meta?: {
+    seedVersion: string;
+    currentVersion: string;
+    lastSeededAt?: string;
+  };
   watcher: {
     pollIntervalMs: number;
     debounceMs: number;
@@ -139,7 +144,11 @@ export interface Settings {
   };
   appearance: {
     theme: string;
+    accentColor: string;
+    fontSize: string;
+    borderRadius: string;
     compactMode: boolean;
+    animationsEnabled: boolean;
   };
   server: {
     port: number;
@@ -216,4 +225,9 @@ export const api = {
   getSettings: () => request<Settings>("/settings"),
   updateSettings: (settings: Partial<Settings>) =>
     request<Settings>("/settings", { method: "PUT", body: JSON.stringify(settings) }),
+  updateSetting: (key: string, value: string) =>
+    request<Settings>(`/settings/${encodeURIComponent(key)}`, { 
+      method: "PUT", 
+      body: JSON.stringify({ value }) 
+    }),
 };
