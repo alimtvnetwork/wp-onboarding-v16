@@ -20,14 +20,14 @@ This document tracks cross-references between spec files and validates consisten
 | 01 | Plugin Structure | ✅ Complete | - |
 | 02 | Database Schema | ✅ Complete | 66 (constants) |
 | 03 | Config System | ✅ Complete | 02 (database) |
-| 04 | Site Service | 📝 TODO | 02, 03, 10, 13, 14 |
-| 05 | Plugin Service | 📝 TODO | 02, 03, 13, 14 |
+| 04 | Site Service | ✅ Complete | 02, 03, 10, 13, 14 |
+| 05 | Plugin Service | ✅ Complete | 02, 03, 13, 14 |
 | 06 | File Watcher | 📝 TODO | 05, 12, 13, 14 |
 | 07 | Sync Service | 📝 TODO | 05, 10, 13, 14 |
 | 08 | Publish Service | 📝 TODO | 05, 07, 09, 10, 13, 14 |
 | 09 | Backup Service | 📝 TODO | 02, 10, 13, 14 |
-| 10 | WP REST Client | 📝 TODO | 13, 14 |
-| 11 | REST API Endpoints | 📝 TODO | 04-09, 13 |
+| 10 | WP REST Client | ✅ Complete | 13, 14 |
+| 11 | REST API Endpoints | ✅ Complete | 04-09, 13 |
 | 12 | WebSocket Events | 📝 TODO | 66 (events) |
 | 13 | Error Management | ✅ Complete | 66 (codes) |
 | 14 | Logging System | ✅ Complete | 13 |
@@ -130,11 +130,11 @@ This document tracks cross-references between spec files and validates consisten
 6. ✅ 14-logging-system.md
 7. ✅ 66-shared-constants.md
 
-### Phase 2: Core Backend
-1. 📝 04-site-service.md
-2. 📝 05-plugin-service.md
-3. 📝 10-wp-rest-client.md
-4. 📝 11-rest-api-endpoints.md
+### Phase 2: Core Backend ✅
+1. ✅ 04-site-service.md
+2. ✅ 05-plugin-service.md
+3. ✅ 10-wp-rest-client.md
+4. ✅ 11-rest-api-endpoints.md
 
 ### Phase 3: Sync & Publish
 1. 📝 06-file-watcher.md
