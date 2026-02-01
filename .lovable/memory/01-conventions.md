@@ -9,7 +9,7 @@
 
 ### Numbered Prefix Pattern
 
-All files in memory folders use numbered prefixes:
+All files in memory/spec folders use numbered prefixes:
 
 ```
 01-name-of-file.md
@@ -41,28 +41,82 @@ Each project spec follows this pattern:
 
 ```
 spec/<project-name>/
-├── 00-overview.md           # Project summary
-├── 01-requirements.md       # Functional requirements
-├── 02-data-model.md         # Data structures
-├── 03-api.md                # API endpoints (if applicable)
-└── 99-acceptance.md         # Acceptance criteria
+├── 00-overview.md           # Project summary, document index
+├── 01-core-architecture.md  # System design
+├── 02-cli-interface.md      # CLI commands (if applicable)
+├── ...                      # Feature-specific specs
+├── 66-shared-constants.md   # SSOT for enums, error codes, constants
+├── 99-consistency-report.md # Cross-reference validation
+└── ideas/                   # Feature proposals (numbered)
 ```
 
 **Rules:**
 - Numbered prefixes indicate reading order
 - `00-` for overview/entry point
-- `99-` for acceptance criteria (read last)
+- `66-` for shared constants (SSOT)
+- `99-` for validation/consistency reports
 
 ---
 
-## Code Conventions
+## WordPress Plugin Spec Structure
 
-### React/TypeScript
+For WordPress plugins, follow this enhanced pattern:
 
-- Use functional components
+```
+spec/wp-plugin/<plugin-name>/
+├── 00-overview.md                    # Master index
+├── 01-admin-backend/
+│   ├── 00-overview.md                # Backend summary
+│   └── split-spec/                   # Individual backend specs
+│       ├── 01-coding-spec.md
+│       ├── 02-error-management.md
+│       └── ...
+├── 02-frontend/
+│   ├── 00-overview.md                # Frontend summary
+│   └── split-spec/                   # Individual frontend specs
+├── diagrams/                         # Mermaid/visual diagrams
+├── ideas/                            # Feature proposals
+├── 60-ai-implementation-checklist.md # Critical algorithms
+├── 61-common-implementation-pitfalls.md # Anti-patterns
+├── 66-shared-constants.md            # SSOT
+└── 99-*-report.md                    # Consistency/audit reports
+```
+
+---
+
+## PHP/WordPress Coding Standards
+
+### Database Columns
+- **SQL columns:** PascalCase (`UserId`, `CreatedAt`, `IsEnabled`)
+- **ORM properties:** camelCase (`userId`, `createdAt`, `isEnabled`)
+
+### File Naming
+| Type | Convention | Example |
+|------|------------|---------|
+| Class file | `class-{class-name}.php` | `class-exam-manager.php` |
+| Template | `{template-name}.php` | `single-exam.php` |
+
+### Class Naming
+| Type | Convention | Example |
+|------|------------|---------|
+| Main class | `{Plugin_Name}` | `Exam_Manager` |
+| Admin class | `{Plugin_Name}_Admin` | `Exam_Manager_Admin` |
+
+### Security Requirements
+- Always use nonces for forms
+- Always check capabilities
+- Always sanitize input, escape output
+- Always use prepared statements with `$wpdb`
+
+---
+
+## React/TypeScript Conventions
+
+- Use functional components with hooks
 - Prefer named exports
 - Use semantic Tailwind tokens from design system
-- Keep components focused and small
+- Keep components focused and small (<300 lines)
+- No hardcoded colors—use CSS variables
 
 ### File Organization
 
