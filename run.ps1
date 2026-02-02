@@ -41,9 +41,14 @@ try {
 }
 
 # Resolve paths relative to script directory
+# Resolve paths - handles both relative and absolute paths
 function Resolve-RelativePath($Path) {
     if ([string]::IsNullOrWhiteSpace($Path) -or $Path -eq ".") {
         return $ScriptDir
+    }
+    # Check if path is already absolute (starts with drive letter or UNC path)
+    if ($Path -match '^[A-Za-z]:' -or $Path -match '^\\\\') {
+        return $Path -replace '/', '\'
     }
     return Join-Path $ScriptDir $Path
 }
