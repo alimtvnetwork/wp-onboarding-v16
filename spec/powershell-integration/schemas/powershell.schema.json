@@ -89,8 +89,9 @@
     },
     "pnpmStorePath": {
       "type": "string",
-      "description": "Custom path for pnpm shared store (relative to script). Enables disk savings across projects.",
-      "examples": [".pnpm-store", "../shared-store", "D:/pnpm-store"]
+      "default": "E:/.pnpm-store",
+      "description": "Path for pnpm shared store. Default: E:/.pnpm-store (shared across all projects).",
+      "examples": ["E:/.pnpm-store", ".pnpm-store", "~/.pnpm-store"]
     },
     "cleanPaths": {
       "type": "array",

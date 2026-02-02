@@ -92,7 +92,7 @@ This specification defines a **cross-project reusable** PowerShell integration p
 ```json
 {
   "usePnp": true,
-  "pnpmStorePath": ".pnpm-store"
+  "pnpmStorePath": "E:/.pnpm-store"
 }
 ```
 
@@ -103,9 +103,9 @@ This specification defines a **cross-project reusable** PowerShell integration p
 
 | Option | Path | Description |
 |--------|------|-------------|
-| User Home | `~/.pnpm-store` | Global store shared across all projects |
-| Relative | `.pnpm-store` | Store in project root |
-| Custom | `D:/dev/.pnpm-store` | Custom absolute path |
+| **Default (Recommended)** | `E:/.pnpm-store` | Shared drive for all projects |
+| **Relative (Isolated)** | `.pnpm-store` | Store in project root |
+| **User Home** | `~/.pnpm-store` | Global store in user home |
 
 ---
 
@@ -178,7 +178,7 @@ Create `powershell.json` in project root:
     "pnpm": true
   },
   "usePnp": true,
-  "pnpmStorePath": ".pnpm-store",
+  "pnpmStorePath": "E:/.pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",
@@ -293,7 +293,7 @@ For multiple projects sharing a pnpm store:
 
 ```json
 {
-  "pnpmStorePath": "D:/dev/.pnpm-store"
+  "pnpmStorePath": "E:/.pnpm-store"
 }
 ```
 
