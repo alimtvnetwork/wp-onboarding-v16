@@ -76,7 +76,6 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 
 	backup := &models.Backup{
 		PluginMappingID: mappingID,
-		Filename:        filename,
 		FilePath:        backupPath,
 		FileSize:        size,
 		CreatedAt:       time.Now(),
