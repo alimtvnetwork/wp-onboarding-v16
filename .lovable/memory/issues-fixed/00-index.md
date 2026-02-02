@@ -10,6 +10,7 @@
 | Issue | Category | File |
 |-------|----------|------|
 | pnpm PnP module resolution failures | Build/Dependencies | [01-pnpm-pnp-resolution.md](./01-pnpm-pnp-resolution.md) |
+| pnpm v10 ignored build scripts / PnP ESM loader | Build/Dependencies | [05-pnpm-v10-build-scripts-and-esm.md](./05-pnpm-v10-build-scripts-and-esm.md) |
 | SPA static file 404 errors | Backend/Routing | [02-spa-static-serving.md](./02-spa-static-serving.md) |
 | WebSocket upgrade failures in middleware | Backend/WebSocket | [03-websocket-middleware.md](./03-websocket-middleware.md) |
 | Global error modal not capturing API failures | Frontend/UX | [04-global-error-reporting.md](./04-global-error-reporting.md) |
