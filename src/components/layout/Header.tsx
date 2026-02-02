@@ -23,24 +23,18 @@ const routeNames: Record<string, string> = {
 export function Header() {
   const { setTheme } = useTheme();
   const location = useLocation();
-  const currentRoute = routeNames[location.pathname] || "";
+  const currentRoute = routeNames[location.pathname] || "Dashboard";
 
   return (
-    <header className="h-14 border-b border-border bg-primary flex items-center justify-between px-6">
-      <div className="flex items-center gap-2">
-        <h1 className="text-lg font-bold text-primary-foreground">WP Plugin Publish</h1>
-        {currentRoute && (
-          <>
-            <span className="text-primary-foreground/50">/</span>
-            <span className="text-sm text-primary-foreground/80">{currentRoute}</span>
-          </>
-        )}
-      </div>
+    <header className="h-14 border-b border-border bg-card flex items-center justify-between px-6">
+      <h1 className="text-xl font-semibold text-foreground tracking-tight">
+        {currentRoute}
+      </h1>
 
       <div className="flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted">
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>

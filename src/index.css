@@ -106,8 +106,15 @@ All colors MUST be HSL.
     font-family: 'Poppins', system-ui, sans-serif;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1, h2, h3, h4, h5, h6,
+  .label,
+  th {
     font-family: 'Ubuntu', system-ui, sans-serif;
-    font-weight: 700;
+    font-weight: 600;
+  }
+
+  /* Body text uses Poppins */
+  p, span, li, td, input, textarea, button, a {
+    font-family: 'Poppins', system-ui, sans-serif;
   }
 }
