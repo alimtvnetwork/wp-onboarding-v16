@@ -2,15 +2,28 @@
 
 > **Location:** `.lovable/memory/03-reliability-risk-report.md`  
 > **Created:** 2026-02-01  
+> **Updated:** 2026-02-02  
 > **Purpose:** Assess AI handoff reliability for WP Plugin Publish implementation
 
 ---
 
 ## Executive Summary
 
-The specification set for **WP Plugin Publish** is **HIGH QUALITY** and **READY FOR IMPLEMENTATION**. The 21 spec documents are comprehensive, well-cross-referenced, and include implementation-ready code samples. However, some risks exist.
+The specification set for **WP Plugin Publish** is **HIGH QUALITY** and **READY FOR IMPLEMENTATION**. The project has:
 
-**Overall Reliability Score: 78/100** (Good - Proceed with caution on complex areas)
+- **28 specification documents** (16 backend, 6 frontend, 6 implementation)
+- **6 completed implementation phases** (Plugin, Sync, Git, Watcher, E2E, Error Modal)
+- **4 pending implementation phases** (Site, Publish, Backup, Integration)
+
+**Overall Reliability Score: 82/100** (Good - Continue with pending phases)
+
+| Metric | Value |
+|--------|-------|
+| Specs Complete | 28/28 ✅ |
+| Phases Complete | Phases 1, 2, 5 + E2E + Error Modal ✅ |
+| Phases Pending | Phases 3, 4, 6, 7, 8 📋 |
+| Go Backend | Scaffold complete, needs verification |
+| React Frontend | Scaffold complete, needs verification |
 
 ---
 
@@ -18,55 +31,55 @@ The specification set for **WP Plugin Publish** is **HIGH QUALITY** and **READY 
 
 ### Tier 1: Simple (90-95% success probability)
 
-| Module | Probability | Assumptions |
-|--------|-------------|-------------|
-| Database Schema | 95% | SQLite is well-documented; schema is straightforward |
-| Error Codes/Constants | 95% | SSOT pattern in 66-shared-constants.md is clear |
-| Logging System | 90% | Standard structured logging; spec 14 is detailed |
-| Settings Page UI | 90% | Simple CRUD form; spec 25 is clear |
+| Module | Probability | Assumptions | Status |
+|--------|-------------|-------------|--------|
+| Database Schema | 95% | SQLite well-documented, GORM migrations | ✅ Done |
+| Error Codes/Constants | 95% | SSOT in 66-shared-constants.md | ✅ Done |
+| Logging System | 90% | Standard structured logging | ✅ Done |
+| Plugin Service CRUD | 90% | Types, scanning, mappings implemented | ✅ Done |
+| Sync Service | 85% | MD5 hashing, comparison logic | ✅ Done |
 
-**Rationale:** These modules have minimal external dependencies, well-defined inputs/outputs, and implementation code is provided inline in specs.
+**Rationale:** Completed modules have minimal remaining risk.
 
 ---
 
 ### Tier 2: Medium (75-85% success probability)
 
-| Module | Probability | Assumptions |
-|--------|-------------|-------------|
-| Site Service CRUD | 85% | Encryption handling is specified; validation is clear |
-| Plugin Service CRUD | 85% | Path validation requires filesystem access |
-| REST API Endpoints | 80% | Router setup is specified; needs service wiring |
-| Site Manager UI | 80% | Form validation, connection testing UI |
-| Plugin Manager UI | 80% | Directory picker may need native bridge |
-| Error Console UI | 85% | Copy-to-clipboard is well-specified |
+| Module | Probability | Assumptions | Status |
+|--------|-------------|-------------|--------|
+| Site Service CRUD | 85% | Encryption specified, validation clear | 📋 **NEXT** |
+| REST API Endpoints | 80% | Router setup done, needs wiring | 🔄 In Progress |
+| Site Manager UI | 80% | Form validation, connection testing | 📋 Pending |
+| Git & Build Service | 85% | PowerShell/bash execution | ✅ Done |
+| File Watcher | 85% | Hybrid mode (event-driven, not polling) | ✅ Done |
 
-**Rationale:** These modules require integration between components. Some platform-specific behaviors (directory picker) may need clarification.
+**Rationale:** Site Service is the next priority with well-defined spec.
 
 ---
 
 ### Tier 3: Complex (60-75% success probability)
 
-| Module | Probability | Assumptions |
-|--------|-------------|-------------|
-| File Watcher (fsnotify) | 70% | Platform differences; debouncing logic critical |
-| WP REST Client | 70% | Application Password auth; plugin upload API varies by WP version |
-| Sync Service | 65% | Hash comparison logic; conflict detection edge cases |
-| WebSocket Events | 75% | Hub pattern is clear; reconnection logic needed |
-| Sync Dashboard UI | 65% | Real-time updates; complex state management |
+| Module | Probability | Assumptions | Status |
+|--------|-------------|-------------|--------|
+| WP REST Client | 70% | App Password auth, upload API varies | 🔄 Partial |
+| Publish Service | 65% | ZIP creation, upload, activation | 📋 Pending |
+| WebSocket Real-time | 75% | Hub pattern implemented, reconnection TBD | 🔄 Partial |
+| Sync Dashboard UI | 65% | Real-time updates, complex state | 📋 Pending |
 
-**Rationale:** These modules interact with external systems (filesystem, WordPress REST API) where edge cases are common. Testing is essential.
+**Rationale:** WordPress API interactions have external dependencies. Publish requires multiple orchestrated steps.
 
 ---
 
 ### Tier 4: End-to-End Agentic Workflows (50-65% success probability)
 
-| Module | Probability | Assumptions |
-|--------|-------------|-------------|
-| Publish Service (Full) | 55% | Zip creation + upload + activation + error recovery |
-| Backup & Rollback | 60% | Download + restore + cleanup lifecycle |
-| Full Sync Workflow | 55% | Local watch → diff → publish → confirm chain |
+| Module | Probability | Assumptions | Status |
+|--------|-------------|-------------|--------|
+| Full Publish Pipeline | 55% | Zip + upload + activate + rollback | 📋 Pending |
+| Backup & Restore | 60% | Download + restore lifecycle | 📋 Pending |
+| Full Sync Workflow | 60% | Watch → diff → publish chain | 📋 Pending |
+| Integration Testing | 65% | E2E framework ready, needs real WP site | 📋 Pending |
 
-**Rationale:** These workflows span multiple services and require state coordination. Partial failures need recovery logic. The specs describe the happy path well but error recovery paths need enhancement.
+**Rationale:** End-to-end workflows span multiple services. E2E testing framework is ready but needs execution against real WordPress.
 
 ---
 
@@ -74,141 +87,144 @@ The specification set for **WP Plugin Publish** is **HIGH QUALITY** and **READY 
 
 ### 2.1 High-Risk Failure Areas
 
-| Area | Likely Failure | Root Cause | Symptoms |
-|------|----------------|------------|----------|
-| WP Plugin Upload | 403/401 errors | App password scope insufficient | Publish fails silently |
-| File Watcher | Events lost or duplicated | fsnotify edge cases on Windows | UI shows wrong file count |
-| Sync Hash Comparison | False positives | Binary files, line endings | All files marked "changed" |
-| WebSocket Reconnection | State desync | Missed events during disconnect | UI stale until refresh |
-| Zip Creation | Corrupted zip | Path handling on Windows | WP upload succeeds but activation fails |
+| Area | Likely Failure | Root Cause | Symptoms | Mitigation |
+|------|----------------|------------|----------|------------|
+| WP Plugin Upload | 403/401 errors | App password scope insufficient | Publish fails silently | Add error examples to spec |
+| Site Token Encryption | Decryption fails | Key rotation, encoding | "Invalid credentials" after restart | Document key storage |
+| Zip Creation | Corrupted zip | Path handling on Windows | WP upload succeeds, activation fails | Add Windows path tests |
+| WebSocket Reconnection | State desync | Missed events during disconnect | UI stale until refresh | Define state sync protocol |
 
 ### 2.2 Medium-Risk Failure Areas
 
-| Area | Likely Failure | Root Cause | Symptoms |
-|------|----------------|------------|----------|
-| Password Encryption | Decryption fails | Key rotation, encoding issues | "Invalid credentials" after restart |
-| Directory Picker | Cannot select path | Browser security restrictions | Form won't submit |
-| Backup Retention | Old backups not cleaned | Cron not running | Disk fills up |
-| Error Context | Stack trace missing | Build optimization strips info | Error console shows "[native code]" |
+| Area | Likely Failure | Root Cause | Symptoms | Mitigation |
+|------|----------------|------------|----------|------------|
+| Directory Picker | Cannot select path | Browser security | Form won't submit | Document native bridge |
+| Backup Retention | Old backups not cleaned | Cron not running | Disk fills up | Add cleanup job |
+| Error Context | Stack trace missing | Build optimization | "[native code]" in logs | Source maps |
+| Go Build | Compilation errors | Unverified scaffold | Server won't start | Run `go build` |
 
 ### 2.3 Low-Risk Failure Areas
 
-| Area | Likely Failure | Root Cause | Symptoms |
-|------|----------------|------------|----------|
-| Site List Empty | No sites returned | Database not seeded | Dashboard shows 0/0 |
-| Theme Toggle | Wrong colors | CSS variable precedence | Light mode colors in dark mode |
-| Timestamp Parsing | Wrong timezone | ISO8601 vs local time | Sync times look wrong |
+| Area | Likely Failure | Root Cause | Symptoms | Mitigation |
+|------|----------------|------------|----------|------------|
+| Empty Lists | No data returned | Database not seeded | Dashboard shows 0/0 | Seed config on startup |
+| Timestamp Parsing | Wrong timezone | ISO8601 vs local | Times look wrong | Consistent UTC |
 
 ---
 
 ## 3. Corrective Actions (Prioritized)
 
-### Priority 1: Critical (Must fix before implementation)
+### Priority 1: Critical (Must do before next phase)
 
-| # | What to Change | Where | Expected Reliability Gain |
-|---|----------------|-------|---------------------------|
-| 1 | Add WordPress API error response examples | `10-wp-rest-client.md` | +10% for WP integration |
-| 2 | Document fsnotify platform differences | `06-file-watcher.md` | +8% for file watcher |
-| 3 | Add .gitignore patterns for temp/backup dirs | `01-plugin-structure.md` | Avoid accidental commits |
-| 4 | Define WebSocket reconnection state recovery | `12-websocket-events.md` | +5% for real-time sync |
+| # | Action | Location | Expected Gain | Status |
+|---|--------|----------|---------------|--------|
+| 1 | Verify Go backend compiles | `cd backend && go build ./cmd/server` | +15% confidence | ⏳ S-006 |
+| 2 | Verify React frontend builds | `npm run build` | +10% confidence | ⏳ S-007 |
+| 3 | Implement Site Service | `backend/internal/services/site/` | Unlocks Phase 4 | ⏳ S-008 |
 
-### Priority 2: High (Should fix for reliability)
+### Priority 2: High (Should do for reliability)
 
-| # | What to Change | Where | Expected Reliability Gain |
-|---|----------------|-------|---------------------------|
-| 5 | Add hash algorithm specification (SHA256 vs MD5) | `07-sync-service.md`, `66-shared-constants.md` | +5% for sync accuracy |
-| 6 | Document encryption key storage/rotation | `04-site-service.md` | +5% for security |
-| 7 | Add Windows path normalization rules | `05-plugin-service.md` | +5% for cross-platform |
-| 8 | Specify error recovery for partial publish | `08-publish-service.md` | +8% for publish reliability |
+| # | Action | Location | Expected Gain | Status |
+|---|--------|----------|---------------|--------|
+| 4 | Add WP API error examples | `01-backend/10-wp-rest-client.md` | +10% for WP integration | ⏳ S-001 |
+| 5 | Document error recovery for partial publish | `01-backend/08-publish-service.md` | +8% for publish reliability | ⏳ S-004 |
+| 6 | Define WebSocket reconnection | `01-backend/12-websocket-events.md` | +5% for real-time sync | ⏳ S-005 |
+| 7 | Implement Publish Service | Phase 4 implementation | Core functionality | ⏳ S-009 |
 
 ### Priority 3: Medium (Nice to have)
 
-| # | What to Change | Where | Expected Reliability Gain |
-|---|----------------|-------|---------------------------|
-| 9 | Add UI mockups or wireframes | `02-frontend/` folder | +3% for UI accuracy |
-| 10 | Document backup format versioning | `09-backup-service.md` | +2% for rollback reliability |
-| 11 | Add integration test scenarios | New file: `97-integration-tests.md` | +5% for E2E confidence |
+| # | Action | Location | Expected Gain | Status |
+|---|--------|----------|---------------|--------|
+| 8 | WebSocket real-time updates | Phase 7 | UI responsiveness | ⏳ S-010 |
+| 9 | Run E2E tests against real WP | Phase 8 | End-to-end confidence | ⏳ Pending |
 
 ---
 
 ## 4. Readiness Decision
 
-### ✅ READY FOR IMPLEMENTATION with conditions
+### ✅ READY FOR CONTINUED IMPLEMENTATION
 
-**The spec set is ready for implementation.** The following conditions should be observed:
+The specification set is complete and implementation is in progress. Continue with:
 
-1. **Start with scaffolded components** - Backend main.go and service structure already exist
-2. **Implement Tier 1 modules first** - Build confidence before tackling complex flows
-3. **Add defensive error handling** - Specs describe happy paths; AI should add try/catch patterns
-4. **Test each service before integration** - Don't proceed to Tier 4 until Tier 2/3 work
+1. **Verify scaffolds compile** (S-006, S-007)
+2. **Phase 3: Site Service** (Next priority)
+3. **Phase 4: Publish Service** (After Site Service)
+4. **Phase 6-8: Backup, WebSocket, Integration**
 
-### Must Fix Before Phase 5 Implementation
+### Blocking Issues
 
-| Fix | Status |
-|-----|--------|
-| Verify Go backend compiles | ⏳ TODO |
-| Verify React frontend builds | ⏳ TODO |
-| Test database migration runs | ⏳ TODO |
-| Document encryption key setup | ⏳ TODO |
+| Issue | Impact | Resolution |
+|-------|--------|------------|
+| Go backend not verified | May have compile errors | Run `go build ./cmd/server` |
+| React not verified | May have type errors | Run `npm run build` |
+| Site Service missing | Blocks Publish Service | Implement Phase 3 |
 
 ---
 
 ## 5. AI Handoff Checklist
 
-When handing this spec to another AI:
+When handing this project to another AI:
 
-1. ✅ Provide `CONTEXT-FOR-AI.md` (already exists)
-2. ✅ Provide `.lovable/README.md` (already exists)
-3. ✅ Provide `.lovable/plan.md` (already exists)
-4. ✅ Provide `spec/wp-plugin-publish/00-overview.md` (already exists)
-5. ⏳ Provide this risk report
-6. ⏳ Specify which task to implement (ask user)
+| Step | Document | Status |
+|------|----------|--------|
+| 1 | Provide `CONTEXT-FOR-AI.md` | ✅ Exists |
+| 2 | Provide `.lovable/README.md` | ✅ Exists |
+| 3 | Provide `.lovable/plan.md` | ✅ Exists |
+| 4 | Provide `.lovable/memory/02-project-context.md` | ✅ Exists |
+| 5 | Provide this risk report | ✅ Updated |
+| 6 | Provide `spec/wp-plugin-publish/00-overview.md` | ✅ Exists |
+| 7 | Check suggestions tracker | ✅ `01-suggestions-tracker.md` |
+| 8 | Ask user which task to implement | ⏳ **Do this** |
 
 ---
 
 ## 6. Recommended Implementation Order
 
 ```
-Phase 5a: Verify Scaffolds (1 day)
-├── Confirm Go backend compiles
-├── Confirm React frontend builds
-├── Confirm database creates/migrates
-└── Document any scaffold fixes needed
+Immediate (This Session):
+├── Verify Go backend compiles
+├── Verify React frontend builds
+└── Ask user which task to implement
 
-Phase 5b: Backend Core Services (3-5 days)
-├── 1. Site Service - full CRUD + encryption
-├── 2. Plugin Service - full CRUD + path validation
-├── 3. WP REST Client - connection test + plugin list
-├── 4. Error logging to SQLite
-└── 5. REST API handlers for sites/plugins
+Phase 3: Site Service (2 hours)
+├── CreateSite with encryption
+├── UpdateSite, DeleteSite
+├── TestConnection endpoint
+└── Wire up API handlers
 
-Phase 5c: File Watching & Sync (3-5 days)
-├── 1. File Watcher - fsnotify integration
-├── 2. Hash calculation
-├── 3. Sync Service - local vs remote diff
-└── 4. WebSocket events for file changes
+Phase 4: Publish Service (3 hours)
+├── types.go (PublishOptions, PublishResult)
+├── pipeline.go (orchestration)
+├── packager.go (ZIP creation)
+├── uploader.go (WP REST upload)
+└── Update WordPress client
 
-Phase 5d: Publish & Backup (3-5 days)
-├── 1. Backup Service - download before update
-├── 2. Publish Service - zip + upload + activate
-├── 3. Rollback functionality
-└── 4. Cleanup jobs
+Phase 6: Backup Service (2 hours)
+├── Backup creation before publish
+├── Restore functionality
+└── Cleanup retention policy
 
-Phase 5e: Frontend Implementation (5-7 days)
-├── 1. Site Manager UI with forms
-├── 2. Plugin Manager UI with directory picker
-├── 3. Sync Dashboard with real-time updates
-├── 4. Error Console with copy-to-clipboard
-├── 5. Settings Page
-└── 6. WebSocket integration
+Phase 7: WebSocket Updates (2 hours)
+├── sync:progress events
+├── scan:progress events
+└── Frontend integration
 
-Phase 5f: Integration Testing (2-3 days)
-├── 1. End-to-end site connection test
-├── 2. End-to-end publish workflow test
-├── 3. Error recovery scenarios
-└── 4. Cross-platform testing (Windows/Mac/Linux)
+Phase 8: Integration Testing (2-3 hours)
+├── Run E2E test cases against real WP
+├── Full workflow verification
+└── Cross-platform testing
 ```
 
 ---
 
-*Report generated 2026-02-01. Update after each implementation phase.*
+## 7. Projects in Repository
+
+| Project | Location | Status | Purpose |
+|---------|----------|--------|---------|
+| WP Plugin Publish | `backend/`, `src/`, `spec/wp-plugin-publish/` | 🔄 In Progress | Local WordPress plugin deployment tool |
+| Plugins Onboard | `plugins-onboard/` | ✅ Complete (v1.0.5) | WordPress plugin for remote plugin management |
+| Spec Builder v3 | (Root context) | 📝 Spec only | PRD management tool (referenced in CONTEXT-FOR-AI.md) |
+
+---
+
+*Report updated 2026-02-02. Next: Ask user which task to implement.*

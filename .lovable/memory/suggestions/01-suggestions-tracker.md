@@ -72,7 +72,7 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Created | 2026-02-01 |
 | Source | Lovable (Risk Report) |
 | Project | wp-plugin-publish |
-| Priority | critical |
+| Priority | **critical** |
 | Status | **open** |
 | Description | Run `go build` to confirm backend compiles without errors |
 | Rationale | Scaffolded code may have import or type errors |
@@ -87,7 +87,7 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Created | 2026-02-01 |
 | Source | Lovable (Risk Report) |
 | Project | wp-plugin-publish |
-| Priority | critical |
+| Priority | **critical** |
 | Status | **open** |
 | Description | Run `npm run build` to confirm frontend builds |
 | Rationale | Scaffolded code may have type or import errors |
@@ -102,11 +102,13 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Created | 2026-02-02 |
 | Source | User |
 | Project | wp-plugin-publish |
-| Priority | high |
+| Priority | **high** |
 | Status | **open** |
 | Description | Complete Site Service with CRUD and connection testing |
 | Proposed Change | Implement CreateSite, UpdateSite, DeleteSite, TestConnection handlers |
-| Acceptance Criteria | All site endpoints functional |
+| Acceptance Criteria | All site endpoints functional with encryption |
+| Spec Reference | `spec/wp-plugin-publish/01-backend/04-site-service.md` |
+| Dependencies | None (can start immediately) |
 
 ---
 
@@ -116,11 +118,13 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Created | 2026-02-02 |
 | Source | User |
 | Project | wp-plugin-publish |
-| Priority | high |
+| Priority | **high** |
 | Status | **open** |
 | Description | Create publish service for ZIP upload and file patches |
 | Proposed Change | Implement Phase 4 from implementation plan |
 | Acceptance Criteria | Full and selective file publishing works |
+| Spec Reference | `spec/wp-plugin-publish/03-implementation/32-publish-service-impl.md` |
+| Dependencies | S-008 (Site Service) |
 
 ---
 
@@ -135,12 +139,20 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Description | Add WebSocket events for sync status and file scan progress |
 | Proposed Change | Broadcast sync:progress, scan:progress events |
 | Acceptance Criteria | Plugins page shows real-time progress |
+| Spec Reference | `spec/wp-plugin-publish/01-backend/12-websocket-events.md` |
+| Dependencies | None |
+
+---
+
+## In Progress
+
+*No suggestions currently in progress.*
 
 ---
 
 ## Completed Suggestions
 
-> Moved to `.lovable/memory/suggestions/completed/` folder
+> Moved to `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
 | ID | Title | Completed | Notes |
 |----|-------|-----------|-------|
@@ -156,6 +168,18 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | ID | Title | Rejected | Reason |
 |----|-------|----------|--------|
 | - | No rejected suggestions yet | - | - |
+
+---
+
+## Statistics
+
+| Metric | Count |
+|--------|-------|
+| Open | 8 |
+| In Progress | 0 |
+| Completed | 4 |
+| Rejected | 0 |
+| **Total** | **12** |
 
 ---
 
