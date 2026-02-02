@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Plug,
   ScrollText,
+  FlaskConical,
 } from "lucide-react";
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { to: "/sites", label: "Sites", icon: Globe },
   { to: "/plugins", label: "Plugins", icon: Package },
   { to: "/sync", label: "Sync", icon: RefreshCw },
+  { to: "/tests", label: "E2E Tests", icon: FlaskConical },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/errors", label: "Errors", icon: AlertCircle },
   { to: "/settings", label: "Settings", icon: Settings },

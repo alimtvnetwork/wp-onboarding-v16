@@ -2,7 +2,7 @@
 
 > **Location:** `.lovable/memory/suggestions/01-suggestions-tracker.md`  
 > **Purpose:** Track AI suggestions for improvements (consolidated single file)  
-> **Updated:** 2026-02-01
+> **Updated:** 2026-02-02
 
 ---
 
@@ -42,12 +42,10 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Created | 2026-02-01 |
 | Source | Lovable (Risk Report) |
 | Project | wp-plugin-publish |
-| Priority | high |
-| Status | **open** |
+| Priority | medium |
+| Status | **done** |
 | Description | Document Windows vs macOS vs Linux differences for fsnotify |
-| Rationale | File watching behaves differently per OS |
-| Proposed Change | Add platform notes section to `06-file-watcher.md` |
-| Acceptance Criteria | Spec covers: event types per platform, recursive watch limits, symlink behavior |
+| Notes | Hybrid watcher mode implemented instead of fsnotify polling - uses Git + manual trigger |
 
 ---
 
@@ -58,11 +56,9 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Source | Lovable (Risk Report) |
 | Project | wp-plugin-publish |
 | Priority | medium |
-| Status | **open** |
+| Status | **done** |
 | Description | Explicitly define SHA256 or MD5 for file hashing |
-| Rationale | Consistency between Go backend and potential WP-side comparison |
-| Proposed Change | Add `HASH_ALGORITHM = "sha256"` to `66-shared-constants.md` |
-| Acceptance Criteria | Constant defined, Go and spec aligned |
+| Notes | MD5 implemented in scanner.go and sync service |
 
 ---
 
@@ -126,11 +122,54 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 
 ---
 
+### S-008: Implement Site Service
+| Field | Value |
+|-------|-------|
+| Created | 2026-02-02 |
+| Source | User |
+| Project | wp-plugin-publish |
+| Priority | high |
+| Status | **open** |
+| Description | Complete Site Service with CRUD and connection testing |
+| Proposed Change | Implement CreateSite, UpdateSite, DeleteSite, TestConnection handlers |
+| Acceptance Criteria | All site endpoints functional |
+
+---
+
+### S-009: Implement Publish Service
+| Field | Value |
+|-------|-------|
+| Created | 2026-02-02 |
+| Source | User |
+| Project | wp-plugin-publish |
+| Priority | high |
+| Status | **open** |
+| Description | Create publish service for ZIP upload and file patches |
+| Proposed Change | Implement Phase 4 from implementation plan |
+| Acceptance Criteria | Full and selective file publishing works |
+
+---
+
+### S-010: WebSocket Real-time Sync Updates
+| Field | Value |
+|-------|-------|
+| Created | 2026-02-02 |
+| Source | User |
+| Project | wp-plugin-publish |
+| Priority | medium |
+| Status | **open** |
+| Description | Add WebSocket events for sync status and file scan progress |
+| Proposed Change | Broadcast sync:progress, scan:progress events |
+| Acceptance Criteria | Plugins page shows real-time progress |
+
+---
+
 ## Completed Suggestions
 
 | ID | Title | Completed | Notes |
 |----|-------|-----------|-------|
-| - | No completed suggestions yet | - | - |
+| S-002 | fsnotify Platform Differences | 2026-02-02 | Replaced with hybrid watcher mode |
+| S-003 | Specify Hash Algorithm | 2026-02-02 | MD5 implemented |
 
 ---
 
