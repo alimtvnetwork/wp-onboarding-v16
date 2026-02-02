@@ -70,7 +70,7 @@ func DefaultConfig() *Config {
 		Server: ServerConfig{
 			Port:               8080,
 			WSReconnectDelayMs: 3000,
-			StaticDir:          "../dst",
+			StaticDir:          "frontend/dist",
 		},
 		Watcher: WatcherConfig{
 			PollIntervalMs:         5000,

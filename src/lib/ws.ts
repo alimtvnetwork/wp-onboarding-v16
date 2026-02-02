@@ -2,12 +2,25 @@
 
 type EventHandler = (data: unknown) => void;
 
+function resolveWsUrl(): string {
+  const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
+  if (envUrl) return envUrl;
+
+  // During tests / SSR-like environments
+  if (typeof window === "undefined") {
+    return "ws://localhost:8080/ws";
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}/ws`;
+}
+
 class WebSocketClient {
   private ws: WebSocket | null = null;
   private handlers: Map<string, Set<EventHandler>> = new Map();
   private reconnectTimer: number | null = null;
   private reconnectDelay: number = 3000;
-  private url: string = "ws://localhost:8080/ws";
+  private url: string = resolveWsUrl();
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {

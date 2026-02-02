@@ -1,6 +1,12 @@
 // API client for WP Plugin Publish backend
 
-const API_BASE = "http://localhost:8080/api/v1";
+// Configure via Vite env var:
+// - VITE_API_URL="http://localhost:8080" (origin only)
+// If not provided, default to same-origin so the UI works when served by the Go backend.
+const API_ORIGIN = import.meta.env.VITE_API_URL as string | undefined;
+const API_BASE = API_ORIGIN
+  ? `${API_ORIGIN.replace(/\/$/, "")}/api/v1`
+  : "/api/v1";
 
 export interface ApiResponse<T> {
   success: boolean;

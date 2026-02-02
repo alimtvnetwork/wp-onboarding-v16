@@ -5,7 +5,7 @@
   "server": {
     "port": 8080,
     "wsReconnectDelayMs": 3000,
-    "staticDir": "../dst"
+    "staticDir": "frontend/dist"
   },
   "watcher": {
     "mode": "hybrid",
