@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 // DB wraps the SQL database connection with Split DB support
@@ -28,8 +28,8 @@ func New(path string) (*DB, error) {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
-	// Open database connection with WAL mode
-	sqlDB, err := sql.Open("sqlite3", path+"?_foreign_keys=on&_journal_mode=WAL")
+	// Open database connection with WAL mode (modernc/sqlite uses different driver name)
+	sqlDB, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
@@ -102,7 +102,7 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 	}
 
 	// Open child database
-	child, err := sql.Open("sqlite3", childPath+"?_foreign_keys=on&_journal_mode=WAL")
+	child, err := sql.Open("sqlite", childPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open child database: %w", err)
 	}
