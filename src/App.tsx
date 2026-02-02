@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout/Layout";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { GlobalErrorModal } from "@/components/errors/GlobalErrorModal";
 
 // Pages
 import Dashboard from "@/pages/Dashboard";
@@ -39,6 +40,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <GlobalErrorModal />
         <BrowserRouter>
           <WebSocketProvider>
             <Routes>
