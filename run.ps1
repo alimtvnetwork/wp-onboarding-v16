@@ -260,18 +260,31 @@ function Configure-PnpmStore {
             New-Item -ItemType Directory -Path $PnpmStorePath -Force | Out-Null
         }
         
-        # Set pnpm store directory
+        # Set pnpm store directory globally
         pnpm config set store-dir $PnpmStorePath --global
         if ($LASTEXITCODE -ne 0) {
             Write-Host "  WARNING: Failed to set pnpm store path" -ForegroundColor Yellow
+        } else {
+            Write-Host "  ✓ pnpm store: $PnpmStorePath" -ForegroundColor Green
         }
+        
+        # Use virtual store inside the shared store for minimal local footprint
+        $virtualStorePath = Join-Path $PnpmStorePath "v3"
+        pnpm config set virtual-store-dir $virtualStorePath --global 2>$null
     }
     
-    # Enable PnP if configured
+    # Configure node linker based on usePnp setting
     if ($UsePnp) {
-        Write-Host "  Enabling pnpm with Plug'n'Play (PnP) mode..." -ForegroundColor Gray
+        Write-Host "  Enabling Plug'n'Play (PnP) mode - no node_modules folder" -ForegroundColor Gray
         pnpm config set node-linker pnp --global 2>$null
+        pnpm config set symlink false --global 2>$null
+    } else {
+        # Use hoisted mode but with hard links to store (still efficient)
+        pnpm config set node-linker hoisted --global 2>$null
     }
+    
+    # Always use hard links for maximum efficiency
+    pnpm config set package-import-method hardlink --global 2>$null
 }
 
 function Ensure-FirewallRules {
