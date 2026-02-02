@@ -91,10 +91,34 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
+// Unwrap allows net/http's ResponseController (and other middleware) to reach the
+// underlying ResponseWriter so optional interfaces (Hijacker/Flusher/Pusher)
+// keep working through wrappers.
+func (rw *responseWriter) Unwrap() http.ResponseWriter {
+	return rw.ResponseWriter
+}
+
+// Flush implements http.Flusher for streaming responses (required by some
+// WebSocket upgrade paths).
+func (rw *responseWriter) Flush() {
+	if flusher, ok := rw.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
 // Hijack implements http.Hijacker for WebSocket upgrade support
 func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if hijacker, ok := rw.ResponseWriter.(http.Hijacker); ok {
 		return hijacker.Hijack()
 	}
 	return nil, nil, http.ErrNotSupported
+}
+
+// Push implements http.Pusher (HTTP/2). Not strictly required for WebSockets,
+// but ensures compatibility with servers/proxies that rely on it.
+func (rw *responseWriter) Push(target string, opts *http.PushOptions) error {
+	if pusher, ok := rw.ResponseWriter.(http.Pusher); ok {
+		return pusher.Push(target, opts)
+	}
+	return http.ErrNotSupported
 }
