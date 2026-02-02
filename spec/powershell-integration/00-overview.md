@@ -1,20 +1,26 @@
 # PowerShell Integration for Project Runner
 
-> **Version:** 1.0.0  
-> **Created:** 2026-01-31  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-02  
 > **Status:** Active  
 > **Location:** `spec/powershell-integration/`  
-> **Purpose:** Reusable PowerShell runner for Go backend + React frontend projects
+> **Purpose:** Reusable PowerShell runner for Go backend + React frontend projects with pnpm PnP support
 
 ---
 
 ## Summary
 
-This specification defines a **cross-project reusable** PowerShell integration pattern for building and running fullstack applications with Go backend and React frontend. The system uses a JSON configuration file to define project-specific paths and settings.
+This specification defines a **cross-project reusable** PowerShell integration pattern for building and running fullstack applications with Go backend and React frontend. The system uses a JSON configuration file (`powershell.json`) to define project-specific paths and settings.
+
+**Key Features:**
+- **pnpm Plug'n'Play (PnP)** - Disk-efficient package management with shared store
+- **Relative Path Resolution** - All paths relative to script location (working directory)
+- **Force Reinstall** - Clear caches and reset everything with `-Force` flag
+- **Multi-Project Root Folder** - Shared pnpm store across Node.js projects
 
 **This spec is NOT project-specific** — it can be used by:
+- WP Plugin Publish
 - Spec Management Software
-- Link Manager WP Plugin (dev environment)
 - Any Go + React fullstack project
 
 ---
@@ -23,9 +29,10 @@ This specification defines a **cross-project reusable** PowerShell integration p
 
 - As a developer, I want to run a single command to build and start my fullstack app
 - As a developer, I want clean build options to reset everything when needed
-- As a developer, I want the script to auto-install missing dependencies (Go, Node.js)
+- As a developer, I want the script to auto-install missing dependencies (Go, Node.js, pnpm)
 - As a developer, I want to configure paths via JSON instead of editing the script
 - As a developer, I want firewall rules configured automatically for development
+- As a developer, I want pnpm PnP to save disk space across multiple projects
 
 ---
 
@@ -33,20 +40,24 @@ This specification defines a **cross-project reusable** PowerShell integration p
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        PowerShell Runner Architecture                        │
+│                     PowerShell Runner Architecture v2.0                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
-│   │  run.ps1     │───▶│ powershell.  │───▶│   Project    │                  │
-│   │  (Script)    │    │ json config  │    │   Folders    │                  │
+│   │   run.ps1    │───▶│ powershell.  │───▶│   Project    │                  │
+│   │   (Script)   │    │ json config  │    │   Folders    │                  │
 │   └──────────────┘    └──────────────┘    └──────────────┘                  │
 │          │                   │                    │                          │
-│          ▼                   ▼                    ▼                          │
-│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
-│   │  5-Step      │    │  Project-    │    │  Go Backend  │                  │
-│   │  Pipeline    │    │  Specific    │    │  + React FE  │                  │
-│   │              │    │  Paths       │    │  Running     │                  │
-│   └──────────────┘    └──────────────┘    └──────────────┘                  │
+│          │                   ▼                    ▼                          │
+│          │           ┌──────────────┐    ┌──────────────┐                   │
+│          │           │  pnpm Store  │    │  Go Backend  │                   │
+│          │           │  (Shared)    │    │  + React FE  │                   │
+│          │           └──────────────┘    └──────────────┘                   │
+│          ▼                                                                   │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                         Pipeline Steps                               │   │
+│   │  1. Git Pull → 2. Prerequisites → 3. pnpm Install → 4. Build → 5. Run│  │
+│   └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -58,10 +69,43 @@ This specification defines a **cross-project reusable** PowerShell integration p
 | Step | Name | Description | Flags |
 |------|------|-------------|-------|
 | 1 | Git Pull | Sync latest changes | `-SkipPull` to skip |
-| 2 | Prerequisites | Check/install Go & npm | Auto-install via winget |
-| 3 | Frontend Build | Build React with npm | `-SkipBuild` to skip |
-| 4 | Copy Build | Copy dist to backend | Automatic |
-| 5 | Start Backend | Run Go server | `-BuildOnly` to skip |
+| 2 | Prerequisites | Check/install Go, Node.js, pnpm | Auto-install via winget |
+| 3 | pnpm Install | Install dependencies with PnP | `-Force` clears store & reinstalls |
+| 4 | Frontend Build | Build React with pnpm | `-SkipBuild` to skip |
+| 5 | Copy & Run | Copy dist, start Go server | `-BuildOnly` to skip run |
+
+---
+
+## Package Management: pnpm with Plug'n'Play
+
+### Why pnpm PnP?
+
+| Feature | npm | pnpm PnP |
+|---------|-----|----------|
+| Disk Usage | Full copy per project | Shared store, hard links |
+| Install Speed | Moderate | Fast (cached) |
+| node_modules | Required (~500MB+) | Not required |
+| Deterministic | package-lock.json | pnpm-lock.yaml |
+
+### Configuration
+
+```json
+{
+  "usePnp": true,
+  "pnpmStorePath": ".pnpm-store"
+}
+```
+
+- `usePnp: true` - Enable pnpm with PnP mode
+- `pnpmStorePath` - Custom store location (relative to rootDir or absolute)
+
+### Store Path Options
+
+| Option | Path | Description |
+|--------|------|-------------|
+| User Home | `~/.pnpm-store` | Global store shared across all projects |
+| Relative | `.pnpm-store` | Store in project root |
+| Custom | `D:/dev/.pnpm-store` | Custom absolute path |
 
 ---
 
@@ -70,7 +114,7 @@ This specification defines a **cross-project reusable** PowerShell integration p
 ```
 spec/powershell-integration/
 ├── 00-overview.md               ← This file
-├── 01-configuration-schema.md   ← JSON config format
+├── 01-configuration-schema.md   ← JSON config format with pnpm options
 ├── 02-script-reference.md       ← CLI flags and functions
 ├── 03-integration-guide.md      ← How to add to any project
 ├── 04-error-codes.md            ← Exit codes (9500-9599)
@@ -79,7 +123,7 @@ spec/powershell-integration/
 │   └── powershell.schema.json   ← JSON Schema for validation
 ├── templates/
 │   ├── run.ps1                  ← Main script template
-│   └── powershell.json          ← Example config
+│   └── powershell.json          ← Example config with pnpm
 └── examples/
     └── server-client-project.json  ← Sample for server/client layout
 ```
@@ -89,10 +133,10 @@ spec/powershell-integration/
 ## Quick Start
 
 ```powershell
-# Full build and run
+# Full build and run (pnpm PnP enabled)
 .\run.ps1
 
-# Clean rebuild everything
+# Clean rebuild everything (clears pnpm store cache)
 .\run.ps1 -Force
 
 # Just start backend (skip frontend build)
@@ -106,6 +150,9 @@ spec/powershell-integration/
 
 # Configure firewall (requires Admin)
 .\run.ps1 -OpenFirewall
+
+# Show help
+.\run.ps1 -Help
 ```
 
 ---
@@ -116,25 +163,35 @@ Create `powershell.json` in project root:
 
 ```json
 {
-  "projectName": "my-project",
+  "$schema": "./spec/powershell-integration/schemas/powershell.schema.json",
+  "projectName": "WP Plugin Publish",
   "rootDir": ".",
-  "backendDir": "go-backend",
+  "backendDir": "backend",
   "frontendDir": ".",
   "distDir": "dist",
-  "targetDir": "go-backend/frontend/dist",
-  "dataDir": "go-backend/data",
-  "ports": [8080, 8081],
+  "targetDir": "backend/frontend/dist",
+  "dataDir": "backend/data",
+  "ports": [8080],
   "prerequisites": {
     "go": true,
     "node": true,
-    "npm": true
+    "pnpm": true
   },
+  "usePnp": true,
+  "pnpmStorePath": ".pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",
     ".vite",
-    "go-backend/data/*.db"
-  ]
+    ".pnp.cjs",
+    ".pnp.loader.mjs",
+    "backend/data/*.db"
+  ],
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "runCommand": "go run cmd/server/main.go",
+  "configFile": "config.json",
+  "configExampleFile": "config.example.json"
 }
 ```
 
@@ -146,15 +203,30 @@ Create `powershell.json` in project root:
 
 - **Go**: Installs via `winget install GoLang.Go` if missing
 - **Node.js**: Installs via `winget install OpenJS.NodeJS.LTS` if missing
-- **npm**: Included with Node.js
+- **pnpm**: Installs via `npm install -g pnpm` if missing
 
 ### Force Clean Build
 
 The `-Force` flag removes:
-- `node_modules/` directory
+- `.pnp.cjs` and `.pnp.loader.mjs` files
+- `node_modules/` directory (if exists)
 - `dist/` directory
 - `.vite/` cache
 - SQLite databases (`*.db`, `*.db-shm`, `*.db-wal`)
+- Prunes pnpm store cache
+
+### pnpm Store Management
+
+```powershell
+# Check store status
+pnpm store status
+
+# Prune unused packages
+pnpm store prune
+
+# View store path
+pnpm store path
+```
 
 ### Firewall Configuration
 
@@ -165,27 +237,50 @@ The `-OpenFirewall` flag (requires Administrator):
 
 ---
 
+## Path Resolution
+
+All paths are resolved relative to the script location (`$MyInvocation.MyCommand.Path`).
+
+```
+project-root/           ← Working directory (where run.ps1 lives)
+├── run.ps1             ← Script location (rootDir base)
+├── powershell.json     ← Config file
+├── package.json        ← Frontend (frontendDir: ".")
+├── .pnp.cjs            ← PnP resolution (generated by pnpm)
+├── .pnpm-store/        ← pnpm store (pnpmStorePath)
+├── dist/               ← Build output (distDir: "dist")
+└── backend/            ← Backend (backendDir: "backend")
+    ├── cmd/server/main.go
+    ├── config.json
+    ├── config.example.json
+    ├── frontend/
+    │   └── dist/       ← Target (targetDir)
+    └── data/           ← Data (dataDir)
+        └── *.db
+```
+
+---
+
 ## Using in Projects
-
-### For Spec Management Software
-
-Reference this spec from the main project:
-```markdown
-See [PowerShell Integration](../../powershell-integration/00-overview.md) for build/run scripts.
-```
-
-### For Link Manager
-
-Reference from Link Manager project:
-```markdown
-See [PowerShell Integration](../../../spec/powershell-integration/00-overview.md) for build scripts.
-```
 
 ### For New Projects
 
 1. Copy `templates/run.ps1` to project root
 2. Create `powershell.json` with project-specific paths
-3. Run `.\run.ps1 -Help` to verify
+3. Set `usePnp: true` and configure `pnpmStorePath`
+4. Run `.\run.ps1 -Help` to verify
+
+### Multi-Project Setup (Shared Store)
+
+For multiple projects sharing a pnpm store:
+
+```json
+{
+  "pnpmStorePath": "D:/dev/.pnpm-store"
+}
+```
+
+All projects pointing to the same store share cached packages.
 
 ---
 
@@ -198,18 +293,20 @@ spec/powershell-integration/
 ```
 
 Tell the AI:
-> "Follow the spec at `spec/powershell-integration/` to add the PowerShell build runner. Create a `powershell.json` config for my project structure."
+> "Follow the spec at `spec/powershell-integration/` to add the PowerShell build runner. Create a `powershell.json` config for my project structure. Enable pnpm PnP for disk-efficient package management."
 
 ---
 
 ## Cross-References
 
-| Project | Reference |
-|---------|-----------|
-| Spec Management | `spec/spec-management-software/` uses this for dev builds |
-| Link Manager | `link-manager/` can use this for WordPress dev |
-| General Spec | `spec/general-spec/` patterns followed here |
+| Document | Description |
+|----------|-------------|
+| [Configuration Schema](./01-configuration-schema.md) | JSON config format with pnpm options |
+| [Script Reference](./02-script-reference.md) | CLI flags and functions |
+| [Integration Guide](./03-integration-guide.md) | Step-by-step setup |
+| [Error Codes](./04-error-codes.md) | Exit codes 9500-9599 |
+| [Firewall Rules](./05-firewall-rules.md) | Windows firewall setup |
 
 ---
 
-*This spec enables consistent, reproducible builds across all fullstack projects.*
+*This spec enables consistent, reproducible builds across all fullstack projects with optimized disk usage via pnpm PnP.*

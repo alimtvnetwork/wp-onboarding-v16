@@ -1,14 +1,14 @@
 # PowerShell Runner Configuration Schema
 
-> **Version:** 1.0.0  
-> **Created:** 2026-01-31  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-02  
 > **Status:** Active
 
 ---
 
 ## Overview
 
-The `powershell.json` configuration file defines project-specific paths and settings for the PowerShell build runner. This allows a single generic script to work across multiple projects.
+The `powershell.json` configuration file defines project-specific paths and settings for the PowerShell build runner. This allows a single generic script to work across multiple projects with pnpm Plug'n'Play support.
 
 ---
 
@@ -21,20 +21,24 @@ The `powershell.json` configuration file defines project-specific paths and sett
   "type": "object",
   "required": ["projectName", "backendDir"],
   "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for validation"
+    },
     "projectName": {
       "type": "string",
       "description": "Display name for the project",
-      "examples": ["LLM Runner", "Spec Management", "My App"]
+      "examples": ["WP Plugin Publish", "Spec Management", "My App"]
     },
     "rootDir": {
       "type": "string",
       "default": ".",
-      "description": "Root directory of the project (relative to script location)"
+      "description": "Root directory of the project (relative to script location). Empty string or '.' means current directory."
     },
     "backendDir": {
       "type": "string",
       "description": "Path to Go backend directory",
-      "examples": ["go-backend", "backend", "server"]
+      "examples": ["backend", "go-backend", "server"]
     },
     "frontendDir": {
       "type": "string",
@@ -49,12 +53,12 @@ The `powershell.json` configuration file defines project-specific paths and sett
     "targetDir": {
       "type": "string",
       "description": "Where to copy built frontend for serving by backend",
-      "examples": ["go-backend/frontend/dist", "server/static"]
+      "examples": ["backend/frontend/dist", "server/static"]
     },
     "dataDir": {
       "type": "string",
       "description": "Data directory for databases and storage",
-      "examples": ["go-backend/data", "data"]
+      "examples": ["backend/data", "data"]
     },
     "ports": {
       "type": "array",
@@ -67,29 +71,40 @@ The `powershell.json` configuration file defines project-specific paths and sett
       "properties": {
         "go": {"type": "boolean", "default": true},
         "node": {"type": "boolean", "default": true},
-        "npm": {"type": "boolean", "default": true}
+        "pnpm": {"type": "boolean", "default": true}
       },
       "description": "Which prerequisites to check/install"
+    },
+    "usePnp": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable pnpm Plug'n'Play mode for disk-efficient package management"
+    },
+    "pnpmStorePath": {
+      "type": "string",
+      "default": ".pnpm-store",
+      "description": "Path to pnpm store (relative to rootDir or absolute). Shared across projects for disk efficiency."
     },
     "cleanPaths": {
       "type": "array",
       "items": {"type": "string"},
       "description": "Paths to remove on -Force clean build",
-      "examples": [["node_modules", "dist", ".vite", "go-backend/data/*.db"]]
+      "examples": [["node_modules", "dist", ".vite", ".pnp.cjs", "backend/data/*.db"]]
     },
     "buildCommand": {
       "type": "string",
-      "default": "npm run build",
+      "default": "pnpm run build",
       "description": "Command to build frontend"
+    },
+    "installCommand": {
+      "type": "string",
+      "default": "pnpm install",
+      "description": "Command to install dependencies"
     },
     "runCommand": {
       "type": "string",
       "default": "go run main.go",
       "description": "Command to start backend"
-    },
-    "seedingDir": {
-      "type": "string",
-      "description": "Directory for seed data files"
     },
     "configFile": {
       "type": "string",
@@ -100,6 +115,18 @@ The `powershell.json` configuration file defines project-specific paths and sett
       "type": "string",
       "default": "config.example.json",
       "description": "Template config file to copy if config missing"
+    },
+    "requiredModules": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Node modules to verify exist after install (triggers reinstall if missing)",
+      "examples": [["react", "react-dom", "lucide-react"]]
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "description": "Environment variables to set before running",
+      "examples": [{"NODE_ENV": "production"}]
     }
   }
 }
@@ -114,44 +141,72 @@ The `powershell.json` configuration file defines project-specific paths and sett
 ```json
 {
   "projectName": "My App",
-  "backendDir": "go-backend"
+  "backendDir": "backend"
 }
 ```
 
-Uses all defaults for a standard Go + React setup.
+Uses all defaults including pnpm PnP.
 
-### Full Configuration
+### Full Configuration (pnpm PnP)
 
 ```json
 {
-  "projectName": "LLM Runner",
+  "$schema": "./spec/powershell-integration/schemas/powershell.schema.json",
+  "projectName": "WP Plugin Publish",
   "rootDir": ".",
-  "backendDir": "go-backend",
+  "backendDir": "backend",
   "frontendDir": ".",
   "distDir": "dist",
-  "targetDir": "go-backend/frontend/dist",
-  "dataDir": "go-backend/data",
-  "ports": [8080, 8081],
+  "targetDir": "backend/frontend/dist",
+  "dataDir": "backend/data",
+  "ports": [8080],
   "prerequisites": {
     "go": true,
     "node": true,
-    "npm": true
+    "pnpm": true
   },
+  "usePnp": true,
+  "pnpmStorePath": ".pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",
     ".vite",
-    "go-backend/data/*.db",
-    "go-backend/data/*.db-shm",
-    "go-backend/data/*.db-wal"
+    ".pnp.cjs",
+    ".pnp.loader.mjs",
+    "backend/data/*.db",
+    "backend/data/*.db-shm",
+    "backend/data/*.db-wal"
   ],
-  "buildCommand": "npm run build",
-  "runCommand": "go run main.go",
-  "seedingDir": "go-backend/data/seeding",
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "runCommand": "go run cmd/server/main.go",
   "configFile": "config.json",
-  "configExampleFile": "config.example.json"
+  "configExampleFile": "config.example.json",
+  "requiredModules": [
+    "react",
+    "react-dom",
+    "lucide-react"
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
 ```
+
+### Multi-Project Shared Store
+
+For multiple projects sharing a single pnpm store:
+
+```json
+{
+  "projectName": "Project A",
+  "backendDir": "backend",
+  "usePnp": true,
+  "pnpmStorePath": "D:/dev/.pnpm-store"
+}
+```
+
+All projects with the same `pnpmStorePath` share cached packages, saving significant disk space.
 
 ### Monorepo Configuration
 
@@ -165,24 +220,10 @@ Uses all defaults for a standard Go + React setup.
   "targetDir": "packages/server/public",
   "dataDir": "packages/server/data",
   "ports": [3000, 3001],
-  "buildCommand": "npm run build:web",
+  "usePnp": true,
+  "pnpmStorePath": ".pnpm-store",
+  "buildCommand": "pnpm run build:web",
   "runCommand": "go run cmd/server/main.go"
-}
-```
-
-### Bun Configuration
-
-```json
-{
-  "projectName": "Bun App",
-  "backendDir": "go-backend",
-  "frontendDir": ".",
-  "prerequisites": {
-    "go": true,
-    "node": false,
-    "bun": true
-  },
-  "buildCommand": "bun run build"
 }
 ```
 
@@ -192,37 +233,61 @@ Uses all defaults for a standard Go + React setup.
 
 All paths are resolved relative to the script location (`$MyInvocation.MyCommand.Path`).
 
+**Key Rule:** If `rootDir` is empty or ".", the working directory is where `run.ps1` resides.
+
 ```
-project-root/
-├── run.ps1              ← Script location (RootDir base)
-├── powershell.json      ← Config file
-├── package.json         ← Frontend (frontendDir: ".")
-├── dist/                ← Build output (distDir: "dist")
-└── go-backend/          ← Backend (backendDir: "go-backend")
-    ├── main.go
+project-root/               ← Working directory
+├── run.ps1                 ← Script location (RootDir base)
+├── powershell.json         ← Config file
+├── package.json            ← Frontend (frontendDir: ".")
+├── .pnp.cjs                ← PnP resolution file
+├── .pnpm-store/            ← pnpm store (pnpmStorePath)
+│   └── v3/                 ← Cached packages
+├── dist/                   ← Build output (distDir: "dist")
+└── backend/                ← Backend (backendDir: "backend")
+    ├── cmd/server/main.go
     ├── config.json
+    ├── config.example.json
     ├── frontend/
-    │   └── dist/        ← Target (targetDir)
-    └── data/            ← Data (dataDir)
+    │   └── dist/           ← Target (targetDir)
+    └── data/               ← Data (dataDir)
         └── *.db
 ```
 
 ---
 
+## pnpm Store Path Options
+
+| Option | Configuration | Description |
+|--------|---------------|-------------|
+| **Relative (Default)** | `".pnpm-store"` | Store in project root, isolated per project |
+| **User Home** | `"~/.pnpm-store"` | Global store shared across all projects |
+| **Custom Absolute** | `"D:/dev/.pnpm-store"` | Custom path shared across selected projects |
+
+### Disk Space Savings
+
+With a shared store, common packages like `react`, `typescript`, and `vite` are stored once and hard-linked to all projects. Typical savings: **50-70%** of `node_modules` size.
+
+---
+
 ## Environment Variables
 
-The config can use environment variable expansion:
+The config can set environment variables before running:
 
 ```json
 {
-  "projectName": "{{PROJECT_NAME}}",
-  "dataDir": "{{DATA_PATH}}/data"
+  "env": {
+    "NODE_ENV": "production",
+    "VITE_API_URL": "http://localhost:8080"
+  }
 }
 ```
 
-Script resolves with:
+Script sets these before build/run:
 ```powershell
-$config.dataDir = $config.dataDir -replace '\{\{(\w+)\}\}', { [System.Environment]::GetEnvironmentVariable($matches[1]) }
+foreach ($key in $config.env.PSObject.Properties.Name) {
+    [System.Environment]::SetEnvironmentVariable($key, $config.env.$key, "Process")
+}
 ```
 
 ---
@@ -242,6 +307,10 @@ function Validate-Config($config) {
     if (-not (Test-Path (Join-Path $RootDir $config.backendDir))) {
         throw "powershell.json: backendDir '$($config.backendDir)' not found"
     }
+    if ($config.usePnp -and -not (Test-Command "pnpm")) {
+        Write-Host "Installing pnpm..." -ForegroundColor Yellow
+        npm install -g pnpm
+    }
 }
 ```
 
@@ -249,5 +318,6 @@ function Validate-Config($config) {
 
 ## Cross-References
 
+- [Overview](./00-overview.md) - Architecture and quick start
 - [Script Reference](./02-script-reference.md) - How the script uses this config
 - [Integration Guide](./03-integration-guide.md) - Setup instructions

@@ -1,32 +1,40 @@
 {
-  "projectName": "LLM Runner",
+  "$schema": "../schemas/powershell.schema.json",
+  "projectName": "My Project",
   "rootDir": ".",
-  "backendDir": "go-backend",
+  "backendDir": "backend",
   "frontendDir": ".",
   "distDir": "dist",
-  "targetDir": "go-backend/frontend/dist",
-  "dataDir": "go-backend/data",
-  "ports": [8080, 8081],
+  "targetDir": "backend/frontend/dist",
+  "dataDir": "backend/data",
+  "ports": [8080],
   "prerequisites": {
     "go": true,
     "node": true,
-    "npm": true
+    "pnpm": true
   },
+  "usePnp": true,
+  "pnpmStorePath": ".pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",
     ".vite",
-    "go-backend/data/*.db",
-    "go-backend/data/*.db-shm",
-    "go-backend/data/*.db-wal"
+    ".pnp.cjs",
+    ".pnp.loader.mjs",
+    "backend/data/*.db",
+    "backend/data/*.db-shm",
+    "backend/data/*.db-wal"
   ],
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "runCommand": "go run main.go",
-  "seedingDir": "go-backend/data/seeding",
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "runCommand": "go run cmd/server/main.go",
   "configFile": "config.json",
   "configExampleFile": "config.example.json",
   "requiredModules": [
-    "react-syntax-highlighter"
-  ]
+    "react",
+    "react-dom"
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }

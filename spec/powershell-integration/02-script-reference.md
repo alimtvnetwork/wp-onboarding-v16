@@ -1,7 +1,7 @@
 # PowerShell Script Reference
 
-> **Version:** 1.0.0  
-> **Created:** 2026-01-31  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-02  
 > **Status:** Active
 
 ---
@@ -14,9 +14,8 @@
 | `-BuildOnly` | Switch | Build frontend only, don't start backend |
 | `-SkipBuild` | Switch | Skip frontend build, only run backend |
 | `-SkipPull` | Switch | Skip git pull step |
-| `-Force` | Switch | Clean build: remove caches, node_modules, databases |
+| `-Force` | Switch | Clean build: remove caches, PnP files, prune pnpm store |
 | `-OpenFirewall` | Switch | Add Windows Firewall rules (requires Admin) |
-| `-DevMode` | Switch | Reserved for future use |
 
 ---
 
@@ -26,10 +25,10 @@
 # Show help
 .\run.ps1 -Help
 
-# Full build and run (default)
+# Full build and run (default, uses pnpm PnP)
 .\run.ps1
 
-# Clean rebuild everything
+# Clean rebuild everything (prunes pnpm store)
 .\run.ps1 -Force
 
 # Quick start (skip build)
@@ -85,8 +84,8 @@ function Test-Command($Command) {
 
 **Usage:**
 ```powershell
-if (-not (Test-Command "go")) {
-    Install-Go
+if (-not (Test-Command "pnpm")) {
+    Install-Pnpm
 }
 ```
 
@@ -101,6 +100,26 @@ function Test-IsAdmin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+```
+
+---
+
+### Install-Pnpm
+
+Installs pnpm globally via npm.
+
+```powershell
+function Install-Pnpm {
+    Write-Host "  Installing pnpm globally..." -ForegroundColor Yellow
+    npm install -g pnpm
+    if ($LASTEXITCODE -ne 0) { throw "Failed to install pnpm" }
+    
+    # Refresh PATH
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + 
+                [System.Environment]::GetEnvironmentVariable("Path","User")
+    
+    Write-Host "  ✓ pnpm installed successfully" -ForegroundColor Green
 }
 ```
 
@@ -142,10 +161,10 @@ Creates Windows Firewall inbound rules.
 
 ```powershell
 function Ensure-FirewallRules {
-    param([int[]]$Ports = @(8080, 8081))
+    param([int[]]$Ports = @(8080))
     
     foreach ($p in $Ports) {
-        $ruleName = "LLM Runner (Go Backend) TCP $p"
+        $ruleName = "$ProjectName (Go Backend) TCP $p"
         $existing = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
         
         if ($null -eq $existing) {
@@ -192,50 +211,75 @@ if (-not $SkipPull) {
 
 ```powershell
 # Check Go
-if (-not (Test-Command "go")) {
+if ($config.prerequisites.go -and -not (Test-Command "go")) {
     Install-Go
 }
 
-# Check npm
-if (-not (Test-Command "npm")) {
+# Check Node.js
+if ($config.prerequisites.node -and -not (Test-Command "node")) {
     Install-NodeJS
+}
+
+# Check pnpm
+if ($config.prerequisites.pnpm -and -not (Test-Command "pnpm")) {
+    Install-Pnpm
 }
 ```
 
 **Auto-Install:**
-- Uses winget for Windows package management
+- Uses winget for Go and Node.js
+- Uses npm for pnpm
 - Refreshes PATH after install
 - Warns if restart needed
 
 ---
 
-### Step 3: Frontend Build
+### Step 3: pnpm Install (PnP Mode)
 
 ```powershell
 Push-Location $FrontendDir
 
+# Configure pnpm store path
+if ($config.pnpmStorePath) {
+    $storePath = Join-Path $RootDir $config.pnpmStorePath
+    pnpm config set store-dir $storePath
+}
+
 # Force clean
 if ($Force) {
+    Remove-Item -Recurse -Force ".pnp.cjs" -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force ".pnp.loader.mjs" -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force "node_modules" -ErrorAction SilentlyContinue
-    Remove-Item -Recurse -Force "dist" -ErrorAction SilentlyContinue
-    Remove-Item -Recurse -Force ".vite" -ErrorAction SilentlyContinue
-    # Also clean databases
+    pnpm store prune
 }
 
-# Install dependencies if needed
-if (-not (Test-Path "node_modules")) {
-    npm install
-}
+# Install dependencies
+pnpm install
 
-# Build
-npm run build
+Pop-Location
+```
+
+**PnP Benefits:**
+- No `node_modules` folder needed (or minimal)
+- Faster installs from shared store
+- Disk savings of 50-70%
+
+---
+
+### Step 4: Frontend Build
+
+```powershell
+Push-Location $FrontendDir
+
+# Build the frontend
+pnpm run build
 
 Pop-Location
 ```
 
 ---
 
-### Step 4: Copy Build
+### Step 5: Copy Build
 
 ```powershell
 $SourceDist = Join-Path $RootDir $DistDir
@@ -252,23 +296,21 @@ Copy-Item -Recurse $SourceDist $TargetDist
 
 ---
 
-### Step 5: Start Backend
+### Step 6: Start Backend
 
 ```powershell
 Push-Location $BackendDir
 
 # Create config if missing
-if (-not (Test-Path "config.json")) {
-    Copy-Item "config.example.json" "config.json"
+if (-not (Test-Path $config.configFile)) {
+    Copy-Item $config.configExampleFile $config.configFile
 }
 
 # Create data directories
 New-Item -ItemType Directory -Path "data" -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "data/conversations" -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Path "data/seeding" -ErrorAction SilentlyContinue
 
 # Run
-go run main.go
+Invoke-Expression $config.runCommand
 
 Pop-Location
 ```
@@ -280,30 +322,36 @@ Pop-Location
 The script tracks time for each step:
 
 ```
+========================================
+  WP Plugin Publish - Build & Run Script
+========================================
+
 [1/5] Pulling latest changes from git...
   ✓ Git pull complete
   ⏱ 1.2s
 
 [2/5] Checking prerequisites...
   ✓ Go found: go version go1.21.0 windows/amd64
-  ✓ npm found: 10.2.0
+  ✓ Node.js found: v20.10.0
+  ✓ pnpm found: 8.12.0
   ⏱ 0.3s
 
-[3/5] Building React frontend...
-  Running npm build...
+[3/5] Installing dependencies (pnpm PnP)...
+  Store path: .pnpm-store
+  ✓ Dependencies installed
+  ⏱ 5.2s
+
+[4/5] Building React frontend...
+  Running pnpm build...
   ✓ Frontend built successfully
   ⏱ 12.5s
 
-[4/5] Copying build to Go backend...
-  ✓ Build files copied to go-backend/frontend/dist
-  ⏱ 0.1s
-
 [5/5] Starting Go backend...
 ========================================
-  LLM Runner starting...
+  WP Plugin Publish starting...
   Open: http://localhost:8080
   Press Ctrl+C to stop
-  Build time: 14.1s
+  Build time: 19.2s
 ========================================
 ```
 
@@ -315,13 +363,39 @@ The script tracks time for each step:
 |------|---------|
 | 0 | Success |
 | 1 | Prerequisites installation failed |
-| 2 | npm install failed |
-| 3 | npm build failed |
+| 2 | pnpm install failed |
+| 3 | pnpm build failed |
 | 4 | Go run failed |
+| 5 | Config file not found |
+| 6 | Config validation failed |
+
+---
+
+## pnpm Store Commands
+
+Useful commands for managing the pnpm store:
+
+```powershell
+# View store path
+pnpm store path
+
+# Check store status
+pnpm store status
+
+# Prune unused packages (run periodically)
+pnpm store prune
+
+# Add package
+pnpm add <package>
+
+# Remove package
+pnpm remove <package>
+```
 
 ---
 
 ## Cross-References
 
+- [Overview](./00-overview.md) - Architecture and quick start
 - [Configuration Schema](./01-configuration-schema.md) - JSON config format
 - [Error Codes](./04-error-codes.md) - Detailed error handling
