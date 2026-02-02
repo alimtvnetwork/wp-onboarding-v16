@@ -19,6 +19,9 @@ const (
 	ErrDatabaseInsert  = "E2004" // Insert operation failed
 	ErrDatabaseUpdate  = "E2005" // Update operation failed
 	ErrDatabaseDelete  = "E2006" // Delete operation failed
+	ErrDatabaseScan    = "E2007" // Failed to scan query result
+	ErrDatabaseExec    = "E2008" // Failed to execute statement
+	ErrDuplicate       = "E2009" // Duplicate entry exists
 )
 
 // WordPress API errors (E3xxx)
