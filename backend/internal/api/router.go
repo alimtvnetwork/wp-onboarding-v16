@@ -113,7 +113,8 @@ func NewServer(cfg ServerConfig) *Server {
 
 	// Static file serving with SPA fallback
 	if cfg.StaticDir != "" {
-		spa := spaHandler{staticDir: cfg.StaticDir, indexPath: "index.html"}
+		staticDir := resolveSpaStaticDir(cfg.StaticDir)
+		spa := spaHandler{staticDir: staticDir, indexPath: "index.html"}
 		router.PathPrefix("/").Handler(spa)
 	}
 
@@ -130,6 +131,26 @@ func NewServer(cfg ServerConfig) *Server {
 		server: srv,
 		config: cfg,
 	}
+}
+
+func resolveSpaStaticDir(dir string) string {
+	// Normal case: index.html exists at the configured static dir.
+	if fileExists(filepath.Join(dir, "index.html")) {
+		return dir
+	}
+
+	// Common packaging/copy mistake: copying the entire dist folder into the target
+	// directory, resulting in "<dir>/dist/index.html".
+	if fileExists(filepath.Join(dir, "dist", "index.html")) {
+		return filepath.Join(dir, "dist")
+	}
+
+	return dir
+}
+
+func fileExists(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && !fi.IsDir()
 }
 
 // Start begins listening for HTTP requests
