@@ -87,6 +87,11 @@ $CheckGo = if ($null -ne $Config.prerequisites -and $null -ne $Config.prerequisi
 $CheckNode = if ($null -ne $Config.prerequisites -and $null -ne $Config.prerequisites.node) { $Config.prerequisites.node } else { $true }
 $CheckPnpm = if ($null -ne $Config.prerequisites -and $null -ne $Config.prerequisites.pnpm) { $Config.prerequisites.pnpm } else { $true }
 
+# pnpm version-aware install behavior (pnpm v10+ blocks dependency build scripts by default)
+$PnpmMajor = 0
+$EffectiveInstallCommand = $InstallCommand
+$DidFrontendInstall = $false
+
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # ============================================================================
@@ -195,6 +200,48 @@ function Test-IsAdmin {
 function Refresh-Path {
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + 
                 [System.Environment]::GetEnvironmentVariable("Path", "User")
+}
+
+function Get-PnpmMajorVersion([string]$Version) {
+    try {
+        $major = ($Version -split '\.')[0]
+        return [int]$major
+    } catch {
+        return 0
+    }
+}
+
+function Get-EffectivePnpmInstallCommand([string]$BaseCommand, [int]$Major) {
+    $cmd = $BaseCommand
+    if ($Major -ge 10 -and $cmd -match '(^|\s)pnpm\s+install(\s|$)' -and $cmd -notmatch 'dangerously-allow-all-builds') {
+        # Non-interactive equivalent to pnpm approve-builds
+        $cmd = "$cmd --dangerously-allow-all-builds"
+    }
+    return $cmd
+}
+
+function Enable-PnpmPnpNodeOptions([string]$ProjectDir) {
+    # In pnpm PnP mode, ESM resolution needs the PnP loader.
+    $pnpCjs = Join-Path $ProjectDir ".pnp.cjs"
+    $pnpLoader = Join-Path $ProjectDir ".pnp.loader.mjs"
+
+    $additions = @()
+
+    if (Test-Path $pnpCjs) {
+        if ([string]::IsNullOrWhiteSpace($env:NODE_OPTIONS) -or ($env:NODE_OPTIONS -notmatch [regex]::Escape($pnpCjs))) {
+            $additions += "--require `"$pnpCjs`""
+        }
+    }
+
+    if (Test-Path $pnpLoader) {
+        if ([string]::IsNullOrWhiteSpace($env:NODE_OPTIONS) -or ($env:NODE_OPTIONS -notmatch [regex]::Escape($pnpLoader))) {
+            $additions += "--experimental-loader `"$pnpLoader`""
+        }
+    }
+
+    if ($additions.Count -gt 0) {
+        $env:NODE_OPTIONS = (($env:NODE_OPTIONS + " " + ($additions -join " ")).Trim())
+    }
 }
 
 # ============================================================================
@@ -402,6 +449,12 @@ if ($CheckPnpm) {
     }
     $pnpmVersion = pnpm --version 2>&1
     Write-Host "  ✓ pnpm found: $pnpmVersion" -ForegroundColor Green
+
+    $PnpmMajor = Get-PnpmMajorVersion $pnpmVersion
+    $EffectiveInstallCommand = Get-EffectivePnpmInstallCommand $InstallCommand $PnpmMajor
+    if ($verbose -and $EffectiveInstallCommand -ne $InstallCommand) {
+        Write-Host "  pnpm v$PnpmMajor detected: enabling dependency build scripts during install" -ForegroundColor Gray
+    }
     
     # Configure pnpm store
     Configure-PnpmStore
@@ -427,8 +480,9 @@ if ($install) {
         # Configure pnpm store first
         Configure-PnpmStore
         
-        Invoke-Expression $InstallCommand
+        Invoke-Expression $EffectiveInstallCommand
         if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
+        $DidFrontendInstall = $true
         Write-Host "  ✓ Frontend dependencies installed" -ForegroundColor Green
     }
     finally {
@@ -462,10 +516,15 @@ if ($install) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
-    Write-Host "  .\run.ps1        # Build and run the application" -ForegroundColor Gray
-    Write-Host "  .\run.ps1 -f     # Clean rebuild if needed" -ForegroundColor Gray
+        Write-Host "  .\run.ps1        # Build and run the application" -ForegroundColor Gray
+        Write-Host "  .\run.ps1 -f     # Clean rebuild if needed" -ForegroundColor Gray
     Write-Host ""
-    exit 0
+    if (-not $rebuild) {
+        exit 0
+    }
+
+    Write-Host "Continuing with build/run (-r mode)..." -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # ============================================================================
@@ -526,16 +585,27 @@ if (-not $skipbuild) {
             }
         }
 
-        if ($NeedsInstall -or $force) {
+        if (-not $DidFrontendInstall -and ($NeedsInstall -or $force)) {
             Write-Host "  Installing dependencies with pnpm..." -ForegroundColor Gray
-            Invoke-Expression $InstallCommand
+            Invoke-Expression $EffectiveInstallCommand
             if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
         }
         
         # Build
         Write-Host "  Running build command: $BuildCommand" -ForegroundColor Gray
-        Invoke-Expression $BuildCommand
-        if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+
+        # In PnP mode, ensure Node ESM can resolve packages during vite build
+        $oldNodeOptions = $env:NODE_OPTIONS
+        try {
+            if ($UsePnp) {
+                Enable-PnpmPnpNodeOptions -ProjectDir (Get-Location)
+            }
+            Invoke-Expression $BuildCommand
+            if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+        }
+        finally {
+            $env:NODE_OPTIONS = $oldNodeOptions
+        }
         
         Write-Host "  ✓ Frontend built successfully" -ForegroundColor Green
     }
