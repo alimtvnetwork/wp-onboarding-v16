@@ -197,33 +197,33 @@ type spaHandler struct {
 
 // ServeHTTP handles static file requests and SPA routing
 func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Get the absolute path to prevent directory traversal
-	path := filepath.Join(h.staticDir, filepath.Clean(r.URL.Path))
+	// Clean and normalize the request path.
+	// IMPORTANT: r.URL.Path begins with "/"; joining with an absolute path would drop staticDir.
+	requestedPath := filepath.Clean(r.URL.Path)
+	requestedPath = strings.TrimPrefix(requestedPath, "/")
 
-	// Check if file exists
-	fi, err := os.Stat(path)
-	if os.IsNotExist(err) || fi.IsDir() {
-		// File doesn't exist or is directory, serve index.html for SPA routing
+	// Root or directory routes should render the SPA entrypoint.
+	if requestedPath == "" || requestedPath == "." {
 		http.ServeFile(w, r, filepath.Join(h.staticDir, h.indexPath))
 		return
 	}
 
+	path := filepath.Join(h.staticDir, requestedPath)
+
+	fi, err := os.Stat(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// Missing file (including client-side routes) -> SPA fallback
+			http.ServeFile(w, r, filepath.Join(h.staticDir, h.indexPath))
+			return
+		}
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	// Set proper content type for assets
-	ext := strings.ToLower(filepath.Ext(path))
-	switch ext {
-	case ".js":
-		w.Header().Set("Content-Type", "application/javascript")
-	case ".css":
-		w.Header().Set("Content-Type", "text/css")
-	case ".svg":
-		w.Header().Set("Content-Type", "image/svg+xml")
-	case ".json":
-		w.Header().Set("Content-Type", "application/json")
+	if fi.IsDir() {
+		http.ServeFile(w, r, filepath.Join(h.staticDir, h.indexPath))
+		return
 	}
 
 	// Serve the actual file
