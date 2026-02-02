@@ -34,7 +34,7 @@ type Services struct {
 	Site    *site.Service
 	Plugin  *plugin.Service
 	Watcher *watcher.Service
-	Sync    *sync.Service
+	Sync    sync.Service
 	Publish *publish.Service
 	Backup  *backup.Service
 }
