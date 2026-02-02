@@ -82,8 +82,8 @@ The `powershell.json` configuration file defines project-specific paths and sett
     },
     "pnpmStorePath": {
       "type": "string",
-      "default": ".pnpm-store",
-      "description": "Path to pnpm store (relative to rootDir or absolute). Shared across projects for disk efficiency."
+      "default": "E:/.pnpm-store",
+      "description": "Path to pnpm store. Default: E:/.pnpm-store (shared drive for disk efficiency across projects)."
     },
     "cleanPaths": {
       "type": "array",
@@ -166,7 +166,7 @@ Uses all defaults including pnpm PnP.
     "pnpm": true
   },
   "usePnp": true,
-  "pnpmStorePath": ".pnpm-store",
+  "pnpmStorePath": "E:/.pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",
@@ -202,7 +202,7 @@ For multiple projects sharing a single pnpm store:
   "projectName": "Project A",
   "backendDir": "backend",
   "usePnp": true,
-  "pnpmStorePath": "D:/dev/.pnpm-store"
+  "pnpmStorePath": "E:/.pnpm-store"
 }
 ```
 
@@ -221,7 +221,7 @@ All projects with the same `pnpmStorePath` share cached packages, saving signifi
   "dataDir": "packages/server/data",
   "ports": [3000, 3001],
   "usePnp": true,
-  "pnpmStorePath": ".pnpm-store",
+  "pnpmStorePath": "E:/.pnpm-store",
   "buildCommand": "pnpm run build:web",
   "runCommand": "go run cmd/server/main.go"
 }
@@ -260,9 +260,9 @@ project-root/               ← Working directory
 
 | Option | Configuration | Description |
 |--------|---------------|-------------|
-| **Relative (Default)** | `".pnpm-store"` | Store in project root, isolated per project |
+| **Default (Recommended)** | `"E:/.pnpm-store"` | Shared drive for all projects (default) |
+| **Relative (Isolated)** | `".pnpm-store"` | Store in project root, isolated per project |
 | **User Home** | `"~/.pnpm-store"` | Global store shared across all projects |
-| **Custom Absolute** | `"D:/dev/.pnpm-store"` | Custom path shared across selected projects |
 
 ### Disk Space Savings
 

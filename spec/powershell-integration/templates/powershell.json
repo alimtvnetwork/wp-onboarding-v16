@@ -14,7 +14,7 @@
     "pnpm": true
   },
   "usePnp": true,
-  "pnpmStorePath": ".pnpm-store",
+  "pnpmStorePath": "E:/.pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",
