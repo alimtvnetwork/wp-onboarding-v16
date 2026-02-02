@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -17,10 +20,11 @@ import (
 
 // ServerConfig holds server configuration
 type ServerConfig struct {
-	Port     int
-	Services interface{} // *main.Services
-	WSHub    *ws.Hub
-	Logger   *logger.Logger
+	Port      int
+	StaticDir string
+	Services  interface{} // *main.Services
+	WSHub     *ws.Hub
+	Logger    *logger.Logger
 }
 
 // Server represents the HTTP server
@@ -107,6 +111,12 @@ func NewServer(cfg ServerConfig) *Server {
 	// WebSocket endpoint
 	router.HandleFunc("/ws", cfg.WSHub.HandleWebSocket).Methods("GET")
 
+	// Static file serving with SPA fallback
+	if cfg.StaticDir != "" {
+		spa := spaHandler{staticDir: cfg.StaticDir, indexPath: "index.html"}
+		router.PathPrefix("/").Handler(spa)
+	}
+
 	// Create HTTP server
 	srv := &http.Server{
 		Addr:         fmt.Sprintf("127.0.0.1:%d", cfg.Port),
@@ -177,4 +187,45 @@ func Error(w http.ResponseWriter, status int, code, message string) {
 			Timestamp: time.Now().Format(time.RFC3339),
 		},
 	})
+}
+
+// spaHandler serves static files with SPA fallback for client-side routing
+type spaHandler struct {
+	staticDir string
+	indexPath string
+}
+
+// ServeHTTP handles static file requests and SPA routing
+func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Get the absolute path to prevent directory traversal
+	path := filepath.Join(h.staticDir, filepath.Clean(r.URL.Path))
+
+	// Check if file exists
+	fi, err := os.Stat(path)
+	if os.IsNotExist(err) || fi.IsDir() {
+		// File doesn't exist or is directory, serve index.html for SPA routing
+		http.ServeFile(w, r, filepath.Join(h.staticDir, h.indexPath))
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Set proper content type for assets
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".js":
+		w.Header().Set("Content-Type", "application/javascript")
+	case ".css":
+		w.Header().Set("Content-Type", "text/css")
+	case ".svg":
+		w.Header().Set("Content-Type", "image/svg+xml")
+	case ".json":
+		w.Header().Set("Content-Type", "application/json")
+	}
+
+	// Serve the actual file
+	http.ServeFile(w, r, path)
 }
