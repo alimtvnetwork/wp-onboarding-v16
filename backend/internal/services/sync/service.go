@@ -101,12 +101,11 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	s.broadcastProgress(pluginID, siteID, "checking", 0, "Starting sync check...")
 
 	// Get plugin info
-	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
+	plug, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
 		return result, nil
 	}
-	plug := pluginInfo.(*models.Plugin)
 
 	// Scan local files
 	s.broadcastProgress(pluginID, siteID, "scanning", 20, "Scanning local files...")
@@ -156,11 +155,10 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*Batch
 	}
 
 	// Get plugin info
-	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
+	plug, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		return nil, err
 	}
-	plug := pluginInfo.(*models.Plugin)
 	result.PluginName = plug.Name
 
 	// Get all mappings for this plugin
@@ -195,12 +193,11 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) ([]SyncResult, error)
 	var results []SyncResult
 
 	// Get all plugins
-	plugins, err := s.pluginService.List(ctx)
+	pluginList, err := s.pluginService.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	pluginList := plugins.([]models.Plugin)
 	for _, plug := range pluginList {
 		batchResult, _ := s.CheckAllSites(ctx, plug.ID)
 		if batchResult != nil {
