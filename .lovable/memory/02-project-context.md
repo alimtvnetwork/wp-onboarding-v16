@@ -19,27 +19,30 @@
 
 ## Implementation Status
 
-### Completed
-- ✅ All 21+ spec documents (Phases 1-4)
-- ✅ Go backend scaffold (main.go, services, API, WebSocket)
-- ✅ React frontend scaffold (routing, layout, pages, hooks)
-- ✅ Database migrations
-- ✅ API client and WebSocket client
-- ✅ Plugin Service (CRUD, scanning, mappings) - Phase 1
-- ✅ Sync Service (local/remote comparison, change detection) - Phase 2
-- ✅ Git & Build Service (git pull, build commands) - Phase 5
-- ✅ Hybrid File Watcher (event-driven, not polling)
-- ✅ E2E Test Framework (spec, backend runner, frontend UI)
-- ✅ Error Detail Modal (full debug info, suggested fixes)
-- ✅ Tests page in navigation
+### ✅ Completed
 
-### Pending
-- 📝 Site Service full implementation
-- 📝 Publish Service (ZIP upload, single-file patches) - Phase 4
-- 📝 Backup Service
-- 📝 WebSocket real-time updates for sync progress
-- 📝 Full E2E test case implementations
-- 📝 Integration testing with real WordPress sites
+| Phase | Feature | Date | Notes |
+|-------|---------|------|-------|
+| Spec | 28 spec documents | 2026-02-01 | Includes E2E test spec |
+| Scaffold | Go backend | 2026-02-01 | main.go, services, API, WebSocket |
+| Scaffold | React frontend | 2026-02-01 | Routing, layout, pages, hooks |
+| Phase 1 | Plugin Service | 2026-02-02 | CRUD, scanning, mappings |
+| Phase 2 | Sync Service | 2026-02-02 | Local/remote comparison, MD5 hashing |
+| Phase 5 | Git & Build Service | 2026-02-02 | Git pull, build commands |
+| - | Hybrid File Watcher | 2026-02-02 | Event-driven, not polling |
+| - | E2E Test Framework | 2026-02-02 | 20 test cases, Go runner, React UI |
+| - | Error Detail Modal | 2026-02-02 | Developer debug, copy report |
+| - | Tests page in nav | 2026-02-02 | Tab-based test suite UI |
+
+### 📋 Pending
+
+| Phase | Feature | Priority | Dependencies |
+|-------|---------|----------|--------------|
+| Phase 3 | Site Service | HIGH | None |
+| Phase 4 | Publish Service | HIGH | Site Service |
+| Phase 6 | Backup Service | MEDIUM | Publish Service |
+| Phase 7 | WebSocket real-time | MEDIUM | None |
+| Phase 8 | Integration testing | LOW | All phases |
 
 ---
 
@@ -53,6 +56,7 @@
 | E2E Test Spec | `spec/wp-plugin-publish/04-testing/40-e2e-test-spec.md` |
 | E2E Service | `backend/internal/services/e2e/` |
 | Plan | `.lovable/plan.md` |
+| Suggestions | `.lovable/memory/suggestions/01-suggestions-tracker.md` |
 
 ---
 
@@ -70,8 +74,28 @@
    - One-click copy of full error report for sharing
    - Error code-specific fix suggestions
 
-3. **Navigation Update**
-   - Added "E2E Tests" menu item to sidebar
+3. **UI/UX Improvements**
+   - Unified header with route-based breadcrumbs
+   - Test cases displayed as checkable cards with category tabs
+   - Select All toggle per category
+
+---
+
+## Known Issues / Inconsistencies
+
+1. **Go Backend Not Verified** - Need to run `go build ./cmd/server` locally
+2. **React Build Not Verified** - Need to run `npm run build`
+3. **Site Service Not Implemented** - CRUD handlers pending
+4. **Publish Service Not Implemented** - ZIP upload pending
+
+---
+
+## Next Steps for New AI
+
+1. Read `.lovable/plan.md` for prioritized tasks
+2. Start with **Phase 3: Site Service** implementation
+3. Verify Go backend compiles before adding more code
+4. Check `01-suggestions-tracker.md` for open suggestions
 
 ---
 

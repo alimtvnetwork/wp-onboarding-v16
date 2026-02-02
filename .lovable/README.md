@@ -1,7 +1,7 @@
 # Lovable AI Memory
 
 > **Purpose:** Guidelines for AI models to understand project structure and maintain consistent workflows.  
-> **Updated:** 2026-02-01
+> **Updated:** 2026-02-02
 
 ---
 
@@ -13,10 +13,15 @@
 ├── memory/
 │   ├── 01-conventions.md        # Coding and file naming conventions
 │   ├── 01-workflow.md           # Task tracking guidelines
-│   ├── 02-project-context.md    # Project overview and learning materials
+│   ├── 02-project-context.md    # Project overview and status
 │   ├── 03-reliability-risk-report.md  # AI handoff reliability assessment
+│   ├── features/
+│   │   ├── e2e-testing.md       # E2E test framework details
+│   │   └── error-handling-and-debugging.md  # Error modal details
 │   └── suggestions/
-│       └── 01-suggestions-tracker.md  # Consolidated suggestions list
+│       ├── 01-suggestions-tracker.md  # Active suggestions
+│       └── completed/
+│           └── 01-completed-suggestions.md  # Archived completed items
 └── plan.md                      # Active roadmap with prioritized backlog
 ```
 
@@ -26,82 +31,67 @@
 
 | Document | Purpose |
 |----------|---------|
-| `memory/01-conventions.md` | File naming, folder structure, coding standards |
-| `memory/01-workflow.md` | How to track tasks, suggestions, handoffs |
-| `memory/02-project-context.md` | Project summaries, learning materials |
-| `plan.md` | Prioritized backlog for implementation |
+| `plan.md` | **START HERE** - Prioritized backlog, current status |
+| `memory/02-project-context.md` | Project overview, what's done/pending |
+| `memory/suggestions/01-suggestions-tracker.md` | Open improvement suggestions |
+| `memory/01-conventions.md` | File naming, coding standards |
+| `memory/01-workflow.md` | Task tracking guidelines |
 
 ---
 
 ## For New AI Sessions
 
-1. **Read this README** first
-2. **Read `memory/02-project-context.md`** for project understanding
-3. **Check `plan.md`** for current priorities
+1. **Read `plan.md`** - Current priorities and next tasks
+2. **Read `memory/02-project-context.md`** - Project status
+3. **Check open suggestions** in `memory/suggestions/01-suggestions-tracker.md`
 4. **Follow conventions** in `memory/01-conventions.md`
-5. **Track work** per `memory/01-workflow.md`
+
+---
+
+## Current Project: WP Plugin Publish
+
+**Status Summary:**
+- ✅ Phases 1, 2, 5 complete (Plugin, Sync, Git services)
+- ✅ E2E Testing Framework complete
+- ✅ Error Detail Modal complete
+- 📋 Phase 3 (Site Service) - NEXT
+- 📋 Phase 4 (Publish Service) - Pending
+- 📋 Phases 6-8 - Pending
+
+**Priority:** Implement Site Service (Phase 3)
 
 ---
 
 ## Spec Folder Overview
 
-The `spec/` folder contains project specifications:
-
 ```
-spec/
-├── powershell-integration/      # PowerShell build scripts
-├── wp-plugin-builder/           # WordPress plugin builder CLI (Go)
-│   ├── 00-overview.md           # Start here - 15 spec files
-│   ├── 12-coding-guidelines.md  # PHP/WP coding standards
-│   └── 14-implementation-guide.md # Build order
-└── wp-plugin/
-    ├── exam-manager/            # Exam management plugin - 112 spec files
-    │   ├── 00-overview.md       # Start here
-    │   ├── 60-ai-implementation-checklist.md  # CRITICAL
-    │   ├── 61-common-implementation-pitfalls.md  # MUST READ
-    │   └── 66-shared-constants.md  # SSOT
-    └── link-manager/            # Link management plugin - 30 spec files
-        ├── 00-overview.md       # Start here
-        └── 66-shared-constants.md  # SSOT
+spec/wp-plugin-publish/
+├── 00-overview.md               # Start here
+├── 01-backend/                  # 16 backend specs
+├── 02-frontend/                 # 6 frontend specs
+├── 03-implementation/           # 6 implementation guides
+├── 04-testing/                  # E2E test spec
+└── 66-shared-constants.md       # Single source of truth
 ```
 
 ---
 
-## Learning Path
+## Critical Patterns
 
-### To Understand WordPress Plugin Specs
+### 1. Split Database Architecture
+- Root DB as registry, child DBs for history/cache
+- See `memory/features/e2e-testing.md` for test data isolation
 
-1. Read `spec/wp-plugin/exam-manager/00-overview.md` (master index)
-2. Read `spec/wp-plugin/exam-manager/60-ai-implementation-checklist.md` (critical algorithms)
-3. Read `spec/wp-plugin/exam-manager/61-common-implementation-pitfalls.md` (50+ anti-patterns)
-4. Review `spec/wp-plugin-builder/12-coding-guidelines.md` (PHP/WP standards)
+### 2. Error Codes
+- E1xxx: Validation errors
+- E2xxx: Database/Storage errors
+- E3xxx: Network/API errors
+- E4xxx: File system errors
 
-### To Understand WP Plugin Builder
-
-1. Read `spec/wp-plugin-builder/00-overview.md` (overview)
-2. Read `spec/wp-plugin-builder/01-core-architecture.md` (system design)
-3. Read `spec/wp-plugin-builder/14-implementation-guide.md` (build order)
-
----
-
-## Critical Patterns to Remember
-
-### 1. Database Columns
-- **SQL:** PascalCase (`UserId`, `CreatedAt`)
-- **ORM:** camelCase (`userId`, `createdAt`)
-
-### 2. Progress Calculation
-- Use `floor()` not `round()` - never show 100% unless truly complete
-
-### 3. Deadline Extensions
-- Always calculate from ORIGINAL deadline, not current
-
-### 4. Cookies
-- Always exam-scoped: `eqm_session_{examSlug}`
-
-### 5. No Magic Strings
-- Use enums and constants from `66-shared-constants.md`
+### 3. File Watcher
+- Event-driven, not polling
+- Triggers on Git pull or manual refresh
 
 ---
 
-*Updated 2026-02-01 with comprehensive project context.*
+*Updated 2026-02-02 with comprehensive project context.*

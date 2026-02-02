@@ -1,7 +1,7 @@
 # Active Roadmap
 
 > **Location:** `.lovable/plan.md`  
-> **Updated:** 2026-02-01  
+> **Updated:** 2026-02-02  
 > **Purpose:** Prioritized backlog for AI implementation handoff
 
 ---
@@ -10,85 +10,79 @@
 
 | Area | Status |
 |------|--------|
-| Specification | ✅ Complete (27/27 docs) |
-| Implementation Specs | ✅ Complete (6 new docs) |
+| Specification | ✅ Complete (28 docs including E2E spec) |
+| Implementation Specs | ✅ Complete (6 docs) |
 | Go Backend Scaffold | ✅ Complete |
 | React Frontend Scaffold | ✅ Complete |
-| Full Implementation | 🔄 Phase 1 Ready |
+| Plugin Service | ✅ Complete (Phase 1) |
+| Sync Service | ✅ Complete (Phase 2) |
+| Git & Build Service | ✅ Complete (Phase 5) |
+| Hybrid File Watcher | ✅ Complete |
+| E2E Testing Framework | ✅ Complete |
+| Error Detail Modal | ✅ Complete |
+| Full Implementation | 🔄 Phases 3-4 Pending |
 
 ---
 
-## Implementation Specs Created
+## ✅ Completed Phases
 
-| Doc | Title | Location |
-|-----|-------|----------|
-| 30 | Plugin Service Impl | `03-implementation/30-plugin-service-impl.md` |
-| 31 | Sync Service Impl | `03-implementation/31-sync-service-impl.md` |
-| 32 | Publish Service Impl | `03-implementation/32-publish-service-impl.md` |
-| 33 | Watcher Service Impl | `03-implementation/33-watcher-service-impl.md` |
-| 34 | Git & Build Impl | `03-implementation/34-git-service-impl.md` |
-| 35 | Implementation Plan | `03-implementation/35-implementation-plan.md` |
+### Phase 1: Plugin Service ✅
+- **Completed:** 2026-02-02
+- Types, CRUD, scanner, mappings all implemented
+- Spec: `03-implementation/30-plugin-service-impl.md`
 
----
+### Phase 2: Sync Service ✅
+- **Completed:** 2026-02-02
+- Local/remote comparison, change detection, MD5 hashing
+- Spec: `03-implementation/31-sync-service-impl.md`
 
-## Phase 1: Plugin Service (Current - Priority: HIGH)
+### Phase 5: Git & Build Service ✅
+- **Completed:** 2026-02-02
+- Git pull, build commands, per-plugin config
+- Spec: `03-implementation/34-git-service-impl.md`
 
-**Duration:** 2-3 hours  
-**Spec:** `03-implementation/30-plugin-service-impl.md`
+### Hybrid File Watcher ✅
+- **Completed:** 2026-02-02
+- Event-driven (not polling), triggers after Git pull or manual refresh
+- Spec: `03-implementation/33-watcher-service-impl.md`
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Create types.go | todo | CreateInput, UpdateInput, ScanResult |
-| Implement crud.go | todo | List, GetByID, Create, Update, Delete |
-| Implement scanner.go | todo | ScanDirectory, ValidatePath, findMainPluginFile |
-| Implement mappings.go | todo | GetMappings, CreateMapping, DeleteMapping |
-| Update database migrations | todo | Plugins, PluginMappings tables |
-| Update API handlers | todo | Wire up /api/plugins endpoints |
+### E2E Testing Framework ✅
+- **Completed:** 2026-02-02
+- 20 test cases across 4 categories (Plugin CRUD, Site Connections, Sync Operations, Publish Flow)
+- Go test runner with Split DB integration
+- Frontend UI with category tabs and checkable test cards
+- Spec: `04-testing/40-e2e-test-spec.md`
 
-**Deliverables:**
-- Complete CRUD for plugins
-- Directory scanning working
-- Plugin-site mappings functional
-
----
-
-## Phase 2: Sync Service (Next)
-
-**Duration:** 2-3 hours  
-**Spec:** `03-implementation/31-sync-service-impl.md`  
-**Dependencies:** Phase 1
-
-| Task | Status | Notes |
-|------|--------|-------|
-| Create types.go | todo | SyncResult, FileChange |
-| Implement check.go | todo | CheckSync, CheckAllSites |
-| Implement compare.go | todo | compareFiles (local vs remote) |
-| Implement changes.go | todo | RecordFileChange, MarkSynced |
-| Update database migrations | todo | FileChanges table |
-| Update API handlers | todo | Wire up /api/sync endpoints |
+### Error Detail Modal ✅
+- **Completed:** 2026-02-02
+- Developer-level debug info with Stack Trace, Request/Response tabs
+- Error code-specific suggested fixes
+- Copy full report functionality
 
 ---
 
-## Phase 3: File Watcher Service
+## 📋 Pending Phases
+
+### Phase 3: Site Service (Next - Priority: HIGH)
 
 **Duration:** 2 hours  
-**Spec:** `03-implementation/33-watcher-service-impl.md`  
-**Dependencies:** Phase 1, Phase 2
+**Spec:** `01-backend/04-site-service.md`
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Implement scanner.go | todo | Full directory scan with hash |
-| Implement watcher.go | todo | Main polling loop, debouncing |
-| Implement service.go | todo | StartAll, StopPlugin, TriggerScan |
-| Integration with Sync | todo | Call RecordFileChange on detect |
+| CreateSite handler | todo | With encryption for tokens |
+| UpdateSite handler | todo | Partial updates |
+| DeleteSite handler | todo | With cascade logic |
+| TestConnection handler | todo | Validate WP REST API access |
+| Site validation | todo | URL format, required fields |
 
 ---
 
-## Phase 4: Publish Service
+### Phase 4: Publish Service (Priority: HIGH)
 
 **Duration:** 3 hours  
 **Spec:** `03-implementation/32-publish-service-impl.md`  
-**Dependencies:** Phase 1, Phase 2, Backup Service
+**Dependencies:** Site Service
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -97,67 +91,60 @@
 | Implement packager.go | todo | Build ZIP with structure |
 | Implement uploader.go | todo | Send to WP REST API |
 | Update WordPress client | todo | UploadPlugin, ActivatePlugin |
+| Backup before publish | todo | Integration with backup service |
 
 ---
 
-## Phase 5: Git & Build Service
+### Phase 6: Backup Service
 
-**Duration:** 2-3 hours  
-**Spec:** `03-implementation/34-git-service-impl.md`  
-**Dependencies:** Phase 1
+**Duration:** 2 hours  
+**Spec:** `01-backend/09-backup-service.md`
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Implement pull.go | todo | Git pull single/batch |
-| Implement build.go | todo | PowerShell/bash execution |
-| Add PluginGitConfig table | todo | Per-plugin settings |
-| Update API handlers | todo | /api/git endpoints |
+| Backup creation | todo | Before publish operations |
+| Backup restoration | todo | Rollback capability |
+| Backup cleanup | todo | Retention policy |
 
 ---
 
-## Phase 6: Integration & Testing
+### Phase 7: WebSocket Real-time Updates
+
+**Duration:** 2 hours
+
+| Task | Status | Notes |
+|------|--------|-------|
+| sync:progress events | todo | Real-time sync status |
+| scan:progress events | todo | File scan progress |
+| Frontend integration | todo | Update Plugins page |
+
+---
+
+### Phase 8: Integration Testing
 
 **Duration:** 2-3 hours  
 **Dependencies:** All previous phases
 
 | Task | Status | Notes |
 |------|--------|-------|
-| E2E workflow testing | todo | Create → Map → Sync → Publish |
-| WebSocket verification | todo | All events broadcasting |
-| Frontend integration | todo | Update hooks for real API |
-| Documentation update | todo | README, API docs |
+| Run E2E test cases | todo | Against real WordPress site |
+| Verify Go backend compiles | todo | `go build ./cmd/server` |
+| Frontend production build | todo | `npm run build` |
+| Full workflow testing | todo | Create → Map → Sync → Publish |
 
 ---
 
 ## Next Task Selection
 
-**Recommended:** Start Phase 1 - Plugin Service Implementation
+**Recommended:** Start Phase 3 - Site Service Implementation
 
-1. Begin with `types.go` - Define all input/output types
-2. Then `crud.go` - CRUD operations
-3. Then `scanner.go` - Directory scanning
-4. Then `mappings.go` - Site mappings
+1. Implement CreateSite with token encryption
+2. Implement TestConnection to validate WP REST API
+3. Implement UpdateSite and DeleteSite
+4. Wire up API handlers
 
 **Command to test:** `cd backend && go build ./cmd/server`
 
 ---
 
-## Completed
-
-- ✅ Initial spec structure created (2026-02-01)
-- ✅ Phase 1-4 specs completed (2026-02-01)
-- ✅ Go backend scaffolding (2026-02-01)
-- ✅ React frontend scaffolding (2026-02-01)
-- ✅ Database migrations defined (2026-02-01)
-- ✅ API client and WebSocket client (2026-02-01)
-- ✅ Implementation specs created (2026-02-01)
-  - 30-plugin-service-impl.md
-  - 31-sync-service-impl.md
-  - 32-publish-service-impl.md
-  - 33-watcher-service-impl.md
-  - 34-git-service-impl.md
-  - 35-implementation-plan.md
-
----
-
-*Start with Phase 1: Plugin Service Implementation*
+*Phase 1, 2, 5 + E2E Testing complete. Continue with Phase 3: Site Service.*
