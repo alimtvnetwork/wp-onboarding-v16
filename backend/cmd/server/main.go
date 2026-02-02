@@ -78,9 +78,13 @@ func main() {
 	// Initialize services
 	services := initServices(db, cfg, wsHub, log)
 
-	// Start file watcher for registered plugins
-	if err := services.Watcher.StartAll(); err != nil {
-		log.Error("Failed to start file watchers", "error", err)
+	// Initialize file caches for registered plugins
+	ctx := context.Background()
+	plugins, _ := services.Plugin.List(ctx)
+	for _, p := range plugins {
+		if err := services.Watcher.InitializeCache(ctx, p.ID); err != nil {
+			log.Error("Failed to initialize watcher cache", "pluginId", p.ID, "error", err)
+		}
 	}
 
 	// Start HTTP server
@@ -111,7 +115,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	services.Watcher.StopAll()
+	// Watcher uses hybrid mode - no background polling to stop
 	if err := server.Shutdown(ctx); err != nil {
 		log.Error("Server shutdown error", "error", err)
 	}
@@ -172,13 +176,10 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 	})
 
 	watcherService := watcher.New(watcher.Config{
-		DB:           db,
-		Logger:       log,
+		DB:            db,
+		Logger:        log,
 		PluginService: pluginService,
-		SyncService:  syncService,
-		WSHub:        wsHub,
-		PollInterval: time.Duration(cfg.Watcher.PollIntervalMs) * time.Millisecond,
-		DebounceMs:   cfg.Watcher.DebounceMs,
+		WSHub:         wsHub,
 	})
 
 	return &Services{
