@@ -265,7 +265,7 @@ export const api = {
   // E2E Testing
   getE2ESuites: () => request<unknown[]>("/e2e/suites"),
   getE2ECases: (suiteId: string) => request<unknown[]>(`/e2e/suites/${suiteId}/cases`),
-  startE2ERun: (opts: { suites: string[]; parallel: boolean; stopOnFailure: boolean }) =>
+  startE2ERun: (opts: { suites?: string[]; cases?: string[]; parallel: boolean; stopOnFailure: boolean }) =>
     request<{ runId: string; status: string; totalTests: number }>("/e2e/run", { 
       method: "POST", 
       body: JSON.stringify(opts) 
