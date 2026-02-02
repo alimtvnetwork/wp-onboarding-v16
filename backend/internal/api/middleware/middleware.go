@@ -2,6 +2,8 @@
 package middleware
 
 import (
+	"bufio"
+	"net"
 	"net/http"
 	"runtime/debug"
 	"time"
@@ -12,8 +14,13 @@ import (
 // CORS adds CORS headers for local development
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Allow requests from local development server
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		origin := r.Header.Get("Origin")
+		// Allow any origin for local development
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -82,4 +89,12 @@ type responseWriter struct {
 func (rw *responseWriter) WriteHeader(code int) {
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
+}
+
+// Hijack implements http.Hijacker for WebSocket upgrade support
+func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	if hijacker, ok := rw.ResponseWriter.(http.Hijacker); ok {
+		return hijacker.Hijack()
+	}
+	return nil, nil, http.ErrNotSupported
 }
