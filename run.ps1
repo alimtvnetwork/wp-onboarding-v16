@@ -89,8 +89,12 @@ $CheckPnpm = if ($null -ne $Config.prerequisites -and $null -ne $Config.prerequi
 
 # pnpm version-aware install behavior (pnpm v10+ blocks dependency build scripts by default)
 $PnpmMajor = 0
+$NodeMajor = 0
 $EffectiveInstallCommand = $InstallCommand
 $DidFrontendInstall = $false
+
+# pnpm linker used for this run (computed by Configure-PnpmStore)
+$EffectiveNodeLinker = if ($UsePnp) { "pnp" } else { "isolated" }
 
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -211,6 +215,28 @@ function Get-PnpmMajorVersion([string]$Version) {
     }
 }
 
+function Get-NodeMajorVersion([string]$Version) {
+    try {
+        $v = $Version.Trim()
+        if ($v.StartsWith('v')) { $v = $v.Substring(1) }
+        $major = ($v -split '\.')[0]
+        return [int]$major
+    } catch {
+        return 0
+    }
+}
+
+function Get-DriveRoot([string]$Path) {
+    try {
+        if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
+        $full = [System.IO.Path]::GetFullPath($Path)
+        if ($full -match '^[A-Za-z]:') { return $full.Substring(0, 2).ToUpper() }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
 function Get-EffectivePnpmInstallCommand([string]$BaseCommand, [int]$Major) {
     $cmd = $BaseCommand
     if ($Major -ge 10 -and $cmd -match '(^|\s)pnpm\s+install(\s|$)' -and $cmd -notmatch 'dangerously-allow-all-builds') {
@@ -311,39 +337,55 @@ function Install-Pnpm {
 }
 
 function Configure-PnpmStore {
+    # IMPORTANT:
+    # - virtual-store-dir should NOT be shared between projects.
+    # - writing these settings per-project avoids global config side effects.
+    # - pnpm PnP + Node ESM (Vite) can be fragile on Windows/Node 24, so we fall back to isolated when needed.
+
+    $projectDrive = Get-DriveRoot $FrontendDir
+    $storeDrive = Get-DriveRoot $PnpmStorePath
+    $crossDrive = $false
+    if ($projectDrive -and $storeDrive -and ($projectDrive -ne $storeDrive)) {
+        $crossDrive = $true
+    }
+
+    # Decide linker
+    $nodeLinker = "isolated"
+    if ($UsePnp -and (-not $crossDrive) -and ($NodeMajor -lt 24)) {
+        $nodeLinker = "pnp"
+    }
+
+    # expose for later steps (build uses this)
+    $script:EffectiveNodeLinker = $nodeLinker
+
+    if ($UsePnp -and $nodeLinker -ne "pnp") {
+        Write-Host "  NOTE: Falling back to node-linker=isolated for compatibility (Node v$NodeMajor / cross-drive store)." -ForegroundColor Yellow
+    }
+
+    # Ensure store directory exists
     if ($PnpmStorePath) {
         Write-Host "  Configuring pnpm store path: $PnpmStorePath" -ForegroundColor Gray
-        
-        # Ensure store directory exists
         if (-not (Test-Path $PnpmStorePath)) {
             New-Item -ItemType Directory -Path $PnpmStorePath -Force | Out-Null
         }
-        
-        # Set pnpm store directory globally
-        pnpm config set store-dir $PnpmStorePath --global
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "  WARNING: Failed to set pnpm store path" -ForegroundColor Yellow
-        } else {
-            Write-Host "  ✓ pnpm store: $PnpmStorePath" -ForegroundColor Green
-        }
-        
-        # Use virtual store inside the shared store for minimal local footprint
-        $virtualStorePath = Join-Path $PnpmStorePath "v3"
-        pnpm config set virtual-store-dir $virtualStorePath --global 2>$null
+        pnpm config set --location=project store-dir $PnpmStorePath 2>$null
     }
-    
-    # Configure node linker based on usePnp setting
-    if ($UsePnp) {
-        Write-Host "  Enabling Plug'n'Play (PnP) mode - no node_modules folder" -ForegroundColor Gray
-        pnpm config set node-linker pnp --global 2>$null
-        pnpm config set symlink false --global 2>$null
+
+    # Keep virtual store per-project (shorter paths on Windows, no sharing)
+    pnpm config set --location=project virtual-store-dir .pnpm 2>$null
+
+    # Set linker per-project
+    pnpm config set --location=project node-linker $nodeLinker 2>$null
+
+    # symlink handling
+    if ($nodeLinker -eq "pnp") {
+        pnpm config set --location=project symlink false 2>$null
     } else {
-        # Use hoisted mode but with hard links to store (still efficient)
-        pnpm config set node-linker hoisted --global 2>$null
+        pnpm config set --location=project symlink true 2>$null
     }
-    
-    # Always use hard links for maximum efficiency
-    pnpm config set package-import-method hardlink --global 2>$null
+
+    # Let pnpm pick best method (hardlinks only work same-disk; otherwise pnpm copies)
+    pnpm config set --location=project package-import-method auto 2>$null
 }
 
 function Ensure-FirewallRules {
@@ -439,6 +481,7 @@ if ($CheckNode) {
     }
     $nodeVersion = node --version 2>&1
     Write-Host "  ✓ Node.js found: $nodeVersion" -ForegroundColor Green
+    $NodeMajor = Get-NodeMajorVersion $nodeVersion
 }
 
 # Check pnpm
@@ -560,6 +603,14 @@ if (-not $skipbuild) {
                     }
                 }
             }
+
+            # Always clean pnpm-managed folders when forcing (even if not in config)
+            foreach ($extraPath in @("node_modules", ".pnpm")) {
+                if (Test-Path $extraPath) {
+                    Write-Host "  Removing: $extraPath..." -ForegroundColor Gray
+                    Remove-Item -Recurse -Force $extraPath -ErrorAction SilentlyContinue
+                }
+            }
             
             # Clear pnpm cache if force mode
             if ($CheckPnpm) {
@@ -597,7 +648,7 @@ if (-not $skipbuild) {
         # In PnP mode, ensure Node ESM can resolve packages during vite build
         $oldNodeOptions = $env:NODE_OPTIONS
         try {
-            if ($UsePnp) {
+            if ($EffectiveNodeLinker -eq "pnp") {
                 Enable-PnpmPnpNodeOptions -ProjectDir (Get-Location)
             }
             Invoke-Expression $BuildCommand

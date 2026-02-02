@@ -267,10 +267,10 @@ if ($Force) {
 
 # Install dependencies
 # NOTE: pnpm v10+ blocks dependency build scripts by default.
-# The runner uses a non-interactive allowlist approach by adding:
+# The runner auto-appends:
 #   --dangerously-allow-all-builds
-# to ensure native deps like esbuild/@swc work for Vite.
-pnpm install --dangerously-allow-all-builds
+# when pnpm v10+ is detected, to ensure native deps like esbuild/@swc work for Vite.
+pnpm install
 
 Pop-Location
 ```
@@ -288,11 +288,20 @@ Pop-Location
 Push-Location $FrontendDir
 
 # Build the frontend
-# NOTE: In pnpm PnP mode, Node ESM resolution may require the generated loader:
-#   .pnp.loader.mjs
-# The runner temporarily sets NODE_OPTIONS to include:
-#   --require .pnp.cjs --experimental-loader .pnp.loader.mjs
+# NOTE: When pnpm PnP is enabled, Node ESM tools like Vite may require PnP loader options.
+# The runner handles this automatically when `node-linker=pnp` is active.
 pnpm run build
+
+---
+
+## Important Notes (Windows / Node 24)
+
+If `usePnp` is enabled in `powershell.json`, the runner will **fall back to `node-linker=isolated`** when:
+
+- Node.js major version is **24+**, or
+- The pnpm store is on a **different drive** than the project
+
+This avoids `ERR_MODULE_NOT_FOUND` failures (e.g., Vite failing to resolve `esbuild`).
 
 Pop-Location
 ```
