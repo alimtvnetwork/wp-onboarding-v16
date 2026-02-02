@@ -215,6 +215,23 @@ The `-Force` flag removes:
 - SQLite databases (`*.db`, `*.db-shm`, `*.db-wal`)
 - Prunes pnpm store cache
 
+### Required .gitignore Entries
+
+**IMPORTANT:** Add these entries to your `.gitignore` to exclude pnpm artifacts from version control:
+
+```gitignore
+# pnpm store (local cache)
+.pnpm-store/
+
+# pnpm PnP files (generated)
+.pnp.cjs
+.pnp.loader.mjs
+
+# Build artifacts
+dist/
+.vite/
+```
+
 ### pnpm Store Management
 
 ```powershell
