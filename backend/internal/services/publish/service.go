@@ -165,7 +165,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	stage := s.runStage("package", func() error {
 		s.broadcastProgress(pluginID, siteID, "packaging", 30, "Building package...")
 		
-		plug := pluginInfo.(*models.Plugin)
+		plug := pluginInfo
 		var err error
 		
 		if options.Mode == "selected" && len(options.Files) > 0 {
@@ -233,7 +233,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		result.FilesUpdated = len(options.Files)
 	} else {
 		// Count files in plugin
-		plug := pluginInfo.(*models.Plugin)
+		plug := pluginInfo
 		result.FilesUpdated = plug.FileCount
 	}
 
