@@ -8,10 +8,17 @@ param(
     [switch]$SkipPull,
     [switch]$Force,
     [switch]$Install,
+    [switch]$Rebuild,
     [switch]$OpenFirewall,
     [switch]$Help,
     [switch]$Verbose
 )
+
+# -Rebuild is a convenience flag that combines -Force and -Install
+if ($Rebuild) {
+    $Force = $true
+    $Install = $true
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -100,12 +107,14 @@ if ($Help) {
     Write-Host "  -SkipPull      Skip git pull step"
     Write-Host "  -Force         Clean build: remove caches, dependencies, databases"
     Write-Host "  -Install       Install/update dependencies for both frontend (pnpm) and backend (go mod)"
+    Write-Host "  -Rebuild       Complete clean reinstall (combines -Force + -Install)"
     Write-Host "  -OpenFirewall  (Admin) Add Windows Firewall inbound rules for configured ports"
     Write-Host "  -Verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
     Write-Host "  .\run.ps1                  # Full build and run"
     Write-Host "  .\run.ps1 -Install         # Install/update all dependencies"
+    Write-Host "  .\run.ps1 -Rebuild         # Complete clean reinstall and build"
     Write-Host "  .\run.ps1 -Force           # Clean rebuild everything"
     Write-Host "  .\run.ps1 -SkipBuild       # Just start the backend"
     Write-Host "  .\run.ps1 -BuildOnly       # Build only, don't start server"

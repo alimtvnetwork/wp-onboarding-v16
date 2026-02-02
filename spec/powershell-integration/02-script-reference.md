@@ -16,6 +16,7 @@
 | `-SkipPull` | Switch | Skip git pull step |
 | `-Force` | Switch | Clean build: remove caches, PnP files, prune pnpm store |
 | `-Install` | Switch | Install/update dependencies for both frontend (pnpm) and backend (go mod) |
+| `-Rebuild` | Switch | Complete clean reinstall: combines `-Force` + `-Install` for full reset |
 | `-OpenFirewall` | Switch | Add Windows Firewall rules (requires Admin) |
 
 ---
@@ -28,6 +29,9 @@
 
 # Install/update all dependencies (frontend + backend)
 .\run.ps1 -Install
+
+# Complete clean reinstall (recommended after git pull with new deps)
+.\run.ps1 -Rebuild
 
 # Full build and run (default, uses pnpm PnP)
 .\run.ps1
