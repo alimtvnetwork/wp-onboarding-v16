@@ -31,3 +31,6 @@ dist-ssr
 # Build artifacts
 dist/
 .vite/
+*.db-wal
+*.db-shm
+*.db
