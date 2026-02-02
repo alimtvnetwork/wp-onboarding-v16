@@ -17,7 +17,6 @@ import {
   Globe,
   Plus,
   Loader2,
-  X,
   TestTube,
   Edit,
   Trash2,
@@ -25,11 +24,13 @@ import {
   XCircle,
   HelpCircle,
   ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useErrorStore } from "@/stores/errorStore";
 
 interface SiteFormData {
   name: string;
@@ -46,14 +47,28 @@ const initialFormData: SiteFormData = {
 };
 
 export default function Sites() {
-  const { data: sites, isLoading } = useSites();
+  const { data: sites, isLoading, error: queryError } = useSites();
   const queryClient = useQueryClient();
+  const { captureError, openErrorModal } = useErrorStore();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingSiteId, setEditingSiteId] = useState<number | null>(null);
   const [formData, setFormData] = useState<SiteFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTesting, setIsTesting] = useState<number | null>(null);
+
+  // Helper to show error toast with clickable action to open modal
+  const showErrorWithModal = (apiError: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown }) => {
+    const captured = captureError(apiError, meta);
+    toast.error(apiError.message, {
+      description: "Click for details",
+      action: {
+        label: "View Details",
+        onClick: () => openErrorModal(captured),
+      },
+      duration: 10000,
+    });
+  };
 
   const handleInputChange = (field: keyof SiteFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -65,24 +80,35 @@ export default function Sites() {
       return;
     }
 
+    const requestBody = {
+      name: formData.name,
+      url: formData.url,
+      username: formData.username,
+      applicationPassword: formData.password,
+    };
+
     setIsSubmitting(true);
     try {
-      const response = await api.createSite({
-        name: formData.name,
-        url: formData.url,
-        username: formData.username,
-        applicationPassword: formData.password,
-      });
+      const response = await api.createSite(requestBody);
       if (response.success) {
         toast.success("Site added successfully");
         queryClient.invalidateQueries({ queryKey: ["sites"] });
         setShowAddDialog(false);
         setFormData(initialFormData);
-      } else {
-        toast.error(response.error?.message || "Failed to add site");
+      } else if (response.error) {
+        showErrorWithModal(response.error, {
+          endpoint: "/sites",
+          method: "POST",
+          requestBody: { ...requestBody, applicationPassword: "***" }, // Mask password
+        });
       }
     } catch (error) {
-      toast.error("Failed to add site");
+      showErrorWithModal({
+        code: "E9003",
+        message: "Failed to add site",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      }, { endpoint: "/sites", method: "POST" });
     } finally {
       setIsSubmitting(false);
     }
@@ -100,11 +126,20 @@ export default function Sites() {
         setShowEditDialog(false);
         setEditingSiteId(null);
         setFormData(initialFormData);
-      } else {
-        toast.error(response.error?.message || "Failed to update site");
+      } else if (response.error) {
+        showErrorWithModal(response.error, {
+          endpoint: `/sites/${editingSiteId}`,
+          method: "PUT",
+          requestBody: { ...formData, password: formData.password ? "***" : undefined },
+        });
       }
     } catch (error) {
-      toast.error("Failed to update site");
+      showErrorWithModal({
+        code: "E9003",
+        message: "Failed to update site",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      }, { endpoint: `/sites/${editingSiteId}`, method: "PUT" });
     } finally {
       setIsSubmitting(false);
     }
@@ -118,11 +153,16 @@ export default function Sites() {
       if (response.success) {
         toast.success("Site deleted");
         queryClient.invalidateQueries({ queryKey: ["sites"] });
-      } else {
-        toast.error(response.error?.message || "Failed to delete site");
+      } else if (response.error) {
+        showErrorWithModal(response.error, { endpoint: `/sites/${id}`, method: "DELETE" });
       }
     } catch (error) {
-      toast.error("Failed to delete site");
+      showErrorWithModal({
+        code: "E9003",
+        message: "Failed to delete site",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      }, { endpoint: `/sites/${id}`, method: "DELETE" });
     }
   };
 
@@ -133,12 +173,21 @@ export default function Sites() {
       if (response.success && response.data?.success) {
         toast.success(`Connection successful! WP ${response.data.wpVersion}`);
         queryClient.invalidateQueries({ queryKey: ["sites"] });
+      } else if (response.error) {
+        showErrorWithModal(response.error, { endpoint: `/sites/${id}/test`, method: "POST" });
+        queryClient.invalidateQueries({ queryKey: ["sites"] });
       } else {
+        // API returned success but connection test failed
         toast.error(response.data?.message || "Connection failed");
         queryClient.invalidateQueries({ queryKey: ["sites"] });
       }
     } catch (error) {
-      toast.error("Connection test failed");
+      showErrorWithModal({
+        code: "E9003",
+        message: "Connection test failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      }, { endpoint: `/sites/${id}/test`, method: "POST" });
     } finally {
       setIsTesting(null);
     }
@@ -181,6 +230,62 @@ export default function Sites() {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Show error state when site service is unavailable
+  if (queryError) {
+    const errorInfo = captureError({
+      code: "E9001",
+      message: "Site service not available",
+      details: queryError.message,
+      timestamp: new Date().toISOString(),
+    }, { endpoint: "/sites", method: "GET" });
+
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Sites</h1>
+            <p className="text-muted-foreground">
+              Manage your WordPress site connections
+            </p>
+          </div>
+        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="h-6 w-6 text-destructive flex-shrink-0 mt-0.5" />
+              <div className="flex-1 space-y-2">
+                <h3 className="font-medium">Site service not available</h3>
+                <p className="text-sm text-muted-foreground">
+                  Unable to connect to the backend server. Make sure the server is running.
+                </p>
+                <p className="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded inline-block">
+                  {queryError.message}
+                </p>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openErrorModal(errorInfo)}
+                  >
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    View Error Details
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ["sites"] })}
+                  >
+                    Retry Connection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
