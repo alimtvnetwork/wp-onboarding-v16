@@ -1,9 +1,9 @@
 # PowerShell Integration Guide
 
-> **Version:** 1.0.0  
-> **Created:** 2026-01-31  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-02  
 > **Status:** Active  
-> **Purpose:** Step-by-step guide to integrate the PowerShell runner into any project
+> **Purpose:** Step-by-step guide to integrate the PowerShell runner with pnpm PnP into any project
 
 ---
 
@@ -16,6 +16,7 @@
 | winget | Latest | N/A |
 | Go | 1.21+ | ✅ Yes |
 | Node.js | 18+ LTS | ✅ Yes |
+| pnpm | 8+ | ✅ Yes |
 
 ---
 
@@ -25,10 +26,10 @@ Copy from spec templates to your project:
 
 ```powershell
 # From this spec folder
-Copy-Item "spec/.../30-powershell-integration/templates/run.ps1" "YOUR_PROJECT/run.ps1"
+Copy-Item "spec/powershell-integration/templates/run.ps1" "YOUR_PROJECT/run.ps1"
 ```
 
-Or manually create `run.ps1` in your project root.
+Or use the existing `run.ps1` if already in your project root.
 
 ---
 
@@ -41,27 +42,42 @@ Create `powershell.json` in your project root:
 ```json
 {
   "projectName": "My Project",
-  "backendDir": "go-backend"
+  "backendDir": "backend"
 }
 ```
 
-### Standard Config
+Uses all defaults including pnpm PnP with `.pnpm-store` in project root.
+
+### Standard Config (Recommended)
 
 ```json
 {
+  "$schema": "./spec/powershell-integration/schemas/powershell.schema.json",
   "projectName": "My Project",
   "rootDir": ".",
-  "backendDir": "go-backend",
+  "backendDir": "backend",
   "frontendDir": ".",
   "distDir": "dist",
-  "targetDir": "go-backend/frontend/dist",
-  "dataDir": "go-backend/data",
+  "targetDir": "backend/frontend/dist",
+  "dataDir": "backend/data",
   "ports": [8080],
+  "prerequisites": {
+    "go": true,
+    "node": true,
+    "pnpm": true
+  },
+  "usePnp": true,
+  "pnpmStorePath": ".pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",
-    ".vite"
-  ]
+    ".vite",
+    ".pnp.cjs",
+    ".pnp.loader.mjs"
+  ],
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install",
+  "runCommand": "go run cmd/server/main.go"
 }
 ```
 
@@ -76,14 +92,17 @@ your-project/
 ├── run.ps1                 ← PowerShell script
 ├── powershell.json         ← Configuration
 ├── package.json            ← Frontend dependencies
+├── pnpm-lock.yaml          ← pnpm lockfile (generated)
+├── .pnp.cjs                ← PnP resolution (generated)
+├── .pnpm-store/            ← pnpm store (generated)
 ├── src/                    ← React source
-├── go-backend/             ← Go backend
-│   ├── main.go
+├── backend/                ← Go backend
+│   ├── cmd/server/main.go
 │   ├── config.json         ← (created automatically)
 │   ├── config.example.json ← Template config
 │   └── frontend/
 │       └── dist/           ← Build output copied here
-└── dist/                   ← npm build output
+└── dist/                   ← pnpm build output
 ```
 
 ---
@@ -114,16 +133,18 @@ cd YOUR_PROJECT
 
 [2/5] Checking prerequisites...
   ✓ Go found: go version go1.21.0
-  ✓ npm found: 10.2.0
+  ✓ Node.js found: v20.10.0
+  ✓ pnpm found: 8.12.0
   ⏱ 0.3s
 
-[3/5] Building React frontend...
+[3/5] Installing dependencies (pnpm PnP)...
+  Store path: .pnpm-store
+  ✓ Dependencies installed
+  ⏱ 8.2s
+
+[4/5] Building React frontend...
   ✓ Frontend built successfully
   ⏱ 15.2s
-
-[4/5] Copying build to Go backend...
-  ✓ Build files copied
-  ⏱ 0.1s
 
 [5/5] Starting Go backend...
 ========================================
@@ -148,6 +169,67 @@ This creates inbound rules for your configured ports.
 
 ---
 
+## pnpm PnP Configuration
+
+### Setting Up pnpm Store
+
+The store path can be:
+
+| Type | Configuration | Use Case |
+|------|---------------|----------|
+| **Relative** | `".pnpm-store"` | Single project, isolated |
+| **Shared (Recommended)** | `"D:/dev/.pnpm-store"` | Multiple projects, shared packages |
+| **User Home** | `"~/.pnpm-store"` | Global store for all projects |
+
+### Multi-Project Setup
+
+For maximum disk savings across multiple projects:
+
+1. Choose a central store location: `D:/dev/.pnpm-store`
+2. Configure all projects to use it:
+
+```json
+{
+  "pnpmStorePath": "D:/dev/.pnpm-store"
+}
+```
+
+3. Common packages (React, TypeScript, Vite) are stored once and hard-linked.
+
+### Disk Space Comparison
+
+| Scenario | node_modules | pnpm Store |
+|----------|--------------|------------|
+| 1 project | ~500MB | ~300MB |
+| 5 projects (npm) | ~2.5GB | N/A |
+| 5 projects (pnpm shared) | N/A | ~400MB |
+| **Savings** | - | **~80%** |
+
+---
+
+## Force Reinstall
+
+The `-Force` flag performs a complete clean:
+
+```powershell
+.\run.ps1 -Force
+```
+
+**What it removes:**
+- `.pnp.cjs` and `.pnp.loader.mjs` (PnP resolution files)
+- `node_modules/` directory (if exists)
+- `dist/` directory
+- `.vite/` cache
+- SQLite databases in `dataDir`
+- Prunes pnpm store (removes unused packages)
+
+**When to use:**
+- After major dependency changes
+- When builds fail mysteriously
+- Periodically to clean up unused packages
+
+---
+
 ## Customization
 
 ### Custom Build Command
@@ -156,7 +238,7 @@ If your project uses different build tools:
 
 ```json
 {
-  "buildCommand": "bun run build",
+  "buildCommand": "pnpm run build:prod",
   "runCommand": "go run cmd/server/main.go"
 }
 ```
@@ -171,12 +253,31 @@ For projects with additional caches:
     "node_modules",
     "dist",
     ".vite",
+    ".pnp.cjs",
+    ".pnp.loader.mjs",
     ".next",
-    "go-backend/data/*.db",
+    "backend/data/*.db",
     "tmp/"
   ]
 }
 ```
+
+### Required Modules Check
+
+Ensure critical modules are installed:
+
+```json
+{
+  "requiredModules": [
+    "react",
+    "react-dom",
+    "lucide-react",
+    "@tanstack/react-query"
+  ]
+}
+```
+
+If any are missing after install, triggers a reinstall.
 
 ### Monorepo Setup
 
@@ -188,7 +289,9 @@ For monorepo projects:
   "frontendDir": "packages/web",
   "backendDir": "packages/api",
   "distDir": "build",
-  "targetDir": "packages/api/static"
+  "targetDir": "packages/api/static",
+  "usePnp": true,
+  "pnpmStorePath": ".pnpm-store"
 }
 ```
 
@@ -196,9 +299,9 @@ For monorepo projects:
 
 ## Troubleshooting
 
-### Go Not Found After Install
+### pnpm Not Found After Install
 
-**Problem:** Go installed but not in PATH
+**Problem:** pnpm installed but not in PATH
 
 **Solution:**
 ```powershell
@@ -206,14 +309,25 @@ For monorepo projects:
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 ```
 
-### npm install Fails
+### PnP Resolution Errors
+
+**Problem:** Module not found errors after switching to PnP
+
+**Solution:**
+```powershell
+# Force reinstall
+.\run.ps1 -Force
+```
+
+### pnpm Install Fails
 
 **Problem:** Network issues or corrupt cache
 
 **Solution:**
 ```powershell
-# Clear npm cache
-npm cache clean --force
+# Clear pnpm cache and store
+pnpm store prune
+pnpm cache clean
 
 # Then force rebuild
 .\run.ps1 -Force
@@ -250,6 +364,11 @@ npm cache clean --force
 ### GitHub Actions
 
 ```yaml
+- name: Setup pnpm
+  uses: pnpm/action-setup@v2
+  with:
+    version: 8
+
 - name: Build Frontend
   shell: pwsh
   run: .\run.ps1 -BuildOnly -SkipPull
@@ -270,19 +389,20 @@ npm cache clean --force
 
 When asking an AI to integrate this PowerShell runner:
 
-1. ✅ Share `30-powershell-integration/` spec folder
+1. ✅ Share `spec/powershell-integration/` spec folder
 2. ✅ Provide current project structure
 3. ✅ Specify port requirements
 4. ✅ List any custom build commands
+5. ✅ Indicate pnpm store path preference
 
 **Example Prompt:**
 
-> "Integrate the PowerShell runner from spec `30-powershell-integration/` into this project. The backend is in `server/` and frontend in `client/`. Use port 3000. Follow the integration guide."
+> "Integrate the PowerShell runner from spec `spec/powershell-integration/` into this project. The backend is in `backend/` and frontend in root. Use port 8080. Enable pnpm PnP with a shared store at `D:/dev/.pnpm-store`."
 
 ---
 
 ## Cross-References
 
+- [Overview](./00-overview.md) - Architecture and quick start
 - [Configuration Schema](./01-configuration-schema.md) - JSON config details
 - [Script Reference](./02-script-reference.md) - All CLI flags
-- [SM-010 Backend Spec](../SM-010-golang-backend-implementation.md) - Go backend structure
