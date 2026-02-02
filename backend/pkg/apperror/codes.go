@@ -1,6 +1,12 @@
 // Package apperror - Error codes
 package apperror
 
+// File/Directory error codes
+const (
+	ErrDirRead     = "DIR_READ_ERROR"
+	ErrPathInvalid = "PATH_INVALID"
+)
+
 // Error code categories follow the pattern EXNNN where X is the category
 
 // Configuration errors (E1xxx)
