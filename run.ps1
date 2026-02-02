@@ -3,21 +3,21 @@
 # All paths are relative to script location (working directory)
 
 param(
-    [switch]$BuildOnly,
-    [switch]$SkipBuild,
-    [switch]$SkipPull,
-    [switch]$Force,
-    [switch]$Install,
-    [switch]$Rebuild,
-    [switch]$OpenFirewall,
-    [switch]$Help,
-    [switch]$Verbose
+    [Alias('b')][switch]$buildonly,
+    [Alias('s')][switch]$skipbuild,
+    [Alias('p')][switch]$skippull,
+    [Alias('f')][switch]$force,
+    [Alias('i')][switch]$install,
+    [Alias('r')][switch]$rebuild,
+    [Alias('fw')][switch]$openfirewall,
+    [Alias('h')][switch]$help,
+    [Alias('v')][switch]$verbose
 )
 
-# -Rebuild is a convenience flag that combines -Force and -Install
-if ($Rebuild) {
-    $Force = $true
-    $Install = $true
+# -rebuild is a convenience flag that combines -force and -install
+if ($rebuild) {
+    $force = $true
+    $install = $true
 }
 
 $ErrorActionPreference = "Stop"
@@ -92,7 +92,7 @@ $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 # ============================================================================
 # HELP
 # ============================================================================
-if ($Help) {
+if ($help) {
     Write-Host ""
     Write-Host "$ProjectName - Build & Run Script" -ForegroundColor Cyan
     Write-Host ("=" * ($ProjectName.Length + 22)) -ForegroundColor Cyan
@@ -101,24 +101,24 @@ if ($Help) {
     Write-Host "  .\run.ps1 [flags]"
     Write-Host ""
     Write-Host "FLAGS:" -ForegroundColor Yellow
-    Write-Host "  -Help          Show this help message and exit"
-    Write-Host "  -BuildOnly     Build frontend only, don't start the backend server"
-    Write-Host "  -SkipBuild     Skip frontend build, only run the backend server"
-    Write-Host "  -SkipPull      Skip git pull step"
-    Write-Host "  -Force         Clean build: remove caches, dependencies, databases"
-    Write-Host "  -Install       Install/update dependencies for both frontend (pnpm) and backend (go mod)"
-    Write-Host "  -Rebuild       Complete clean reinstall (combines -Force + -Install)"
-    Write-Host "  -OpenFirewall  (Admin) Add Windows Firewall inbound rules for configured ports"
-    Write-Host "  -Verbose       Show detailed debug output"
+    Write-Host "  -h,  -help          Show this help message and exit"
+    Write-Host "  -b,  -buildonly     Build frontend only, don't start the backend server"
+    Write-Host "  -s,  -skipbuild     Skip frontend build, only run the backend server"
+    Write-Host "  -p,  -skippull      Skip git pull step"
+    Write-Host "  -f,  -force         Clean build: remove caches, dependencies, databases"
+    Write-Host "  -i,  -install       Install/update dependencies (frontend + backend)"
+    Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
+    Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
+    Write-Host "  -v,  -verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
-    Write-Host "  .\run.ps1                  # Full build and run"
-    Write-Host "  .\run.ps1 -Install         # Install/update all dependencies"
-    Write-Host "  .\run.ps1 -Rebuild         # Complete clean reinstall and build"
-    Write-Host "  .\run.ps1 -Force           # Clean rebuild everything"
-    Write-Host "  .\run.ps1 -SkipBuild       # Just start the backend"
-    Write-Host "  .\run.ps1 -BuildOnly       # Build only, don't start server"
-    Write-Host "  .\run.ps1 -SkipPull -Force # Clean build without git pull"
+    Write-Host "  .\run.ps1              # Full build and run"
+    Write-Host "  .\run.ps1 -i           # Install/update all dependencies"
+    Write-Host "  .\run.ps1 -r           # Complete clean reinstall and build"
+    Write-Host "  .\run.ps1 -f           # Clean rebuild everything"
+    Write-Host "  .\run.ps1 -s           # Just start the backend (skip build)"
+    Write-Host "  .\run.ps1 -b           # Build only, don't start server"
+    Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
@@ -130,11 +130,11 @@ if ($Help) {
     }
     Write-Host ""
     Write-Host "STEPS:" -ForegroundColor Yellow
-    Write-Host "  1. Git pull (unless -SkipPull)"
+    Write-Host "  1. Git pull (unless -p)"
     Write-Host "  2. Check prerequisites (Go, Node, pnpm)"
-    Write-Host "  3. Build React frontend (unless -SkipBuild)"
+    Write-Host "  3. Build React frontend (unless -s)"
     Write-Host "  4. Copy build to backend (if targetDir configured)"
-    Write-Host "  5. Start Go backend (unless -BuildOnly)"
+    Write-Host "  5. Start Go backend (unless -b)"
     Write-Host ""
     exit 0
 }
@@ -148,7 +148,7 @@ Write-Host "  $ProjectName - Build & Run Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-if ($Verbose) {
+if ($verbose) {
     Write-Host "Configuration:" -ForegroundColor Gray
     Write-Host "  Script Dir: $ScriptDir" -ForegroundColor Gray
     Write-Host "  Root Dir: $RootDir" -ForegroundColor Gray
@@ -341,7 +341,7 @@ $StepTimes = @{}
 # STEP 1: GIT PULL
 # ============================================================================
 $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
-if (-not $SkipPull) {
+if (-not $skippull) {
     Write-Host "[1/5] Pulling latest changes from git..." -ForegroundColor Yellow
     
     Push-Location $RootDir
@@ -361,7 +361,7 @@ if (-not $SkipPull) {
         Pop-Location
     }
 } else {
-    Write-Host "[1/5] Skipping git pull (-SkipPull)" -ForegroundColor Gray
+    Write-Host "[1/5] Skipping git pull (-p)" -ForegroundColor Gray
 }
 $stepWatch.Stop()
 $StepTimes["Git Pull"] = $stepWatch.Elapsed
@@ -415,7 +415,7 @@ Write-Host ""
 # ============================================================================
 # INSTALL MODE: Install dependencies for both frontend and backend
 # ============================================================================
-if ($Install) {
+if ($install) {
     $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host "[INSTALL] Installing/updating all dependencies..." -ForegroundColor Cyan
     Write-Host ""
@@ -462,8 +462,8 @@ if ($Install) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Next steps:" -ForegroundColor Yellow
-    Write-Host "  .\run.ps1           # Build and run the application" -ForegroundColor Gray
-    Write-Host "  .\run.ps1 -Force    # Clean rebuild if needed" -ForegroundColor Gray
+    Write-Host "  .\run.ps1        # Build and run the application" -ForegroundColor Gray
+    Write-Host "  .\run.ps1 -f     # Clean rebuild if needed" -ForegroundColor Gray
     Write-Host ""
     exit 0
 }
@@ -472,13 +472,13 @@ if ($Install) {
 # STEP 3: FRONTEND BUILD
 # ============================================================================
 $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
-if (-not $SkipBuild) {
+if (-not $skipbuild) {
     Write-Host "[3/5] Building React frontend..." -ForegroundColor Yellow
     
     Push-Location $FrontendDir
     try {
         # Force clean build
-        if ($Force) {
+        if ($force) {
             Write-Host "  FORCE MODE: Cleaning build artifacts..." -ForegroundColor Magenta
             
             foreach ($cleanPath in $CleanPaths) {
@@ -526,7 +526,7 @@ if (-not $SkipBuild) {
             }
         }
 
-        if ($NeedsInstall -or $Force) {
+        if ($NeedsInstall -or $force) {
             Write-Host "  Installing dependencies with pnpm..." -ForegroundColor Gray
             Invoke-Expression $InstallCommand
             if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
@@ -581,7 +581,7 @@ if (-not $SkipBuild) {
     $StepTimes["Copy Build"] = $stepWatch.Elapsed
     Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 } else {
-    Write-Host "[3/5] Skipping frontend build (-SkipBuild)" -ForegroundColor Gray
+    Write-Host "[3/5] Skipping frontend build (-s)" -ForegroundColor Gray
     Write-Host "[4/5] Skipping copy step" -ForegroundColor Gray
     $stepWatch.Stop()
     $StepTimes["Frontend Build"] = [TimeSpan]::Zero
@@ -592,10 +592,10 @@ Write-Host ""
 # ============================================================================
 # BUILD ONLY EXIT
 # ============================================================================
-if ($BuildOnly) {
+if ($buildonly) {
     $TotalStopwatch.Stop()
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  Build complete! (-BuildOnly mode)" -ForegroundColor Cyan
+    Write-Host "  Build complete! (-b mode)" -ForegroundColor Cyan
     Write-Host "  Total time: $(Format-ElapsedTime $TotalStopwatch)" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
@@ -635,7 +635,7 @@ try {
     }
 
     # Firewall rules
-    if ($OpenFirewall) {
+    if ($openfirewall) {
         Write-Host "  Configuring Windows Firewall rules..." -ForegroundColor Yellow
         Ensure-FirewallRules -PortList $Ports
     }

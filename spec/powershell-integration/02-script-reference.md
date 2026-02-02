@@ -8,16 +8,17 @@
 
 ## Command-Line Flags
 
-| Flag | Type | Description |
-|------|------|-------------|
-| `-Help` | Switch | Show help message and exit |
-| `-BuildOnly` | Switch | Build frontend only, don't start backend |
-| `-SkipBuild` | Switch | Skip frontend build, only run backend |
-| `-SkipPull` | Switch | Skip git pull step |
-| `-Force` | Switch | Clean build: remove caches, PnP files, prune pnpm store |
-| `-Install` | Switch | Install/update dependencies for both frontend (pnpm) and backend (go mod) |
-| `-Rebuild` | Switch | Complete clean reinstall: combines `-Force` + `-Install` for full reset |
-| `-OpenFirewall` | Switch | Add Windows Firewall rules (requires Admin) |
+| Short | Long | Type | Description |
+|-------|------|------|-------------|
+| `-h` | `-help` | Switch | Show help message and exit |
+| `-b` | `-buildonly` | Switch | Build frontend only, don't start backend |
+| `-s` | `-skipbuild` | Switch | Skip frontend build, only run backend |
+| `-p` | `-skippull` | Switch | Skip git pull step |
+| `-f` | `-force` | Switch | Clean build: remove caches, PnP files, prune pnpm store |
+| `-i` | `-install` | Switch | Install/update dependencies for both frontend (pnpm) and backend (go mod) |
+| `-r` | `-rebuild` | Switch | Complete clean reinstall: combines `-f` + `-i` for full reset |
+| `-fw` | `-openfirewall` | Switch | Add Windows Firewall rules (requires Admin) |
+| `-v` | `-verbose` | Switch | Show detailed debug output |
 
 ---
 
@@ -25,31 +26,34 @@
 
 ```powershell
 # Show help
-.\run.ps1 -Help
+.\run.ps1 -h
 
 # Install/update all dependencies (frontend + backend)
-.\run.ps1 -Install
+.\run.ps1 -i
 
 # Complete clean reinstall (recommended after git pull with new deps)
-.\run.ps1 -Rebuild
+.\run.ps1 -r
 
-# Full build and run (default, uses pnpm PnP)
+# Full build and run (default)
 .\run.ps1
 
-# Clean rebuild everything (prunes pnpm store)
-.\run.ps1 -Force
+# Clean rebuild everything
+.\run.ps1 -f
 
 # Quick start (skip build)
-.\run.ps1 -SkipBuild
+.\run.ps1 -s
 
 # Build only for CI/CD
-.\run.ps1 -BuildOnly
+.\run.ps1 -b
 
 # Skip git, clean build
-.\run.ps1 -SkipPull -Force
+.\run.ps1 -p -f
 
 # First-time setup with firewall
-.\run.ps1 -OpenFirewall
+.\run.ps1 -fw
+
+# Verbose output for debugging
+.\run.ps1 -v
 ```
 
 ---
