@@ -32,7 +32,10 @@ The project includes a comprehensive Go-based end-to-end (E2E) testing suite tha
 
 ### Frontend (`src/pages/Tests.tsx`)
 
-- Suite selection UI
+- **Unified header**: App title "WP Plugin Publish" with breadcrumb-style section indicator (e.g., "/ E2E Tests")
+- **Tabbed categories**: Plugin CRUD, Site Connections, Sync Operations, Publish Flow
+- **Card-based test cases**: Each test displayed as a selectable card with checkbox, ID badge, description, and step count
+- **Select all per category**: Checkbox to toggle all tests in a category
 - Real-time run progress via WebSocket
 - Run history with expandable results
 - Error detail modal integration
