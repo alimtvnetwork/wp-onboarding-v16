@@ -19,7 +19,7 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 
 ---
 
-## Active Suggestions
+## Active Suggestions (Open)
 
 ### S-001: Add WordPress API Error Examples
 | Field | Value |
@@ -33,32 +33,6 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Rationale | AI needs to know exact error shapes for proper error handling |
 | Proposed Change | Add JSON examples for 401, 403, 404, 500 responses from WP |
 | Acceptance Criteria | Spec includes ≥4 error response examples with codes |
-
----
-
-### S-002: Document fsnotify Platform Differences
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-01 |
-| Source | Lovable (Risk Report) |
-| Project | wp-plugin-publish |
-| Priority | medium |
-| Status | **done** |
-| Description | Document Windows vs macOS vs Linux differences for fsnotify |
-| Notes | Hybrid watcher mode implemented instead of fsnotify polling - uses Git + manual trigger |
-
----
-
-### S-003: Specify Hash Algorithm for Sync
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-01 |
-| Source | Lovable (Risk Report) |
-| Project | wp-plugin-publish |
-| Priority | medium |
-| Status | **done** |
-| Description | Explicitly define SHA256 or MD5 for file hashing |
-| Notes | MD5 implemented in scanner.go and sync service |
 
 ---
 
@@ -166,10 +140,14 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 
 ## Completed Suggestions
 
+> Moved to `.lovable/memory/suggestions/completed/` folder
+
 | ID | Title | Completed | Notes |
 |----|-------|-----------|-------|
 | S-002 | fsnotify Platform Differences | 2026-02-02 | Replaced with hybrid watcher mode |
-| S-003 | Specify Hash Algorithm | 2026-02-02 | MD5 implemented |
+| S-003 | Specify Hash Algorithm | 2026-02-02 | MD5 implemented in scanner.go |
+| S-011 | E2E Testing Framework | 2026-02-02 | 20 test cases, Go runner, React UI |
+| S-012 | Error Detail Modal | 2026-02-02 | Developer debug info with copy feature |
 
 ---
 
