@@ -261,4 +261,21 @@ export const api = {
       method: "PUT", 
       body: JSON.stringify({ value }) 
     }),
+
+  // E2E Testing
+  getE2ESuites: () => request<unknown[]>("/e2e/suites"),
+  getE2ECases: (suiteId: string) => request<unknown[]>(`/e2e/suites/${suiteId}/cases`),
+  startE2ERun: (opts: { suites: string[]; parallel: boolean; stopOnFailure: boolean }) =>
+    request<{ runId: string; status: string; totalTests: number }>("/e2e/run", { 
+      method: "POST", 
+      body: JSON.stringify(opts) 
+    }),
+  abortE2ERun: (runId: string) =>
+    request<void>(`/e2e/runs/${runId}/abort`, { method: "POST" }),
+  getE2ERuns: (limit?: number) =>
+    request<unknown[]>(`/e2e/runs${limit ? `?limit=${limit}` : ""}`),
+  getE2ERun: (runId: string) =>
+    request<unknown>(`/e2e/runs/${runId}`),
+  deleteE2ERun: (runId: string) =>
+    request<void>(`/e2e/runs/${runId}`, { method: "DELETE" }),
 };

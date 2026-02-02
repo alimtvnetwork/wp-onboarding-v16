@@ -15,6 +15,7 @@ import Sync from "@/pages/Sync";
 import Logs from "@/pages/Logs";
 import Settings from "@/pages/Settings";
 import Errors from "@/pages/Errors";
+import Tests from "@/pages/Tests";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ const App = () => (
                 <Route path="sites" element={<Sites />} />
                 <Route path="plugins" element={<Plugins />} />
                 <Route path="sync" element={<Sync />} />
+                <Route path="tests" element={<Tests />} />
                 <Route path="logs" element={<Logs />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="errors" element={<Errors />} />

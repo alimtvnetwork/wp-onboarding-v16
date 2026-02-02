@@ -93,6 +93,15 @@ func NewServer(cfg ServerConfig) *Server {
 	// Mappings endpoints
 	api.HandleFunc("/mappings/{id}", handlers.DeletePluginMapping).Methods("DELETE")
 
+	// E2E Testing endpoints
+	api.HandleFunc("/e2e/suites", handlers.GetE2ESuites).Methods("GET")
+	api.HandleFunc("/e2e/suites/{id}/cases", handlers.GetE2ECases).Methods("GET")
+	api.HandleFunc("/e2e/run", handlers.StartE2ERun).Methods("POST")
+	api.HandleFunc("/e2e/runs", handlers.GetE2ERuns).Methods("GET")
+	api.HandleFunc("/e2e/runs/{id}", handlers.GetE2ERun).Methods("GET")
+	api.HandleFunc("/e2e/runs/{id}", handlers.DeleteE2ERun).Methods("DELETE")
+	api.HandleFunc("/e2e/runs/{id}/abort", handlers.AbortE2ERun).Methods("POST")
+
 	// WebSocket endpoint
 	router.HandleFunc("/ws", cfg.WSHub.HandleWebSocket).Methods("GET")
 
