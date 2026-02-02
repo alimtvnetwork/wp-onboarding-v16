@@ -23,8 +23,9 @@ type Config struct {
 
 // ServerConfig holds HTTP server settings
 type ServerConfig struct {
-	Port               int `json:"port"`
-	WSReconnectDelayMs int `json:"wsReconnectDelayMs"`
+	Port               int    `json:"port"`
+	WSReconnectDelayMs int    `json:"wsReconnectDelayMs"`
+	StaticDir          string `json:"staticDir"`
 }
 
 // WatcherConfig holds file watcher settings
@@ -69,6 +70,7 @@ func DefaultConfig() *Config {
 		Server: ServerConfig{
 			Port:               8080,
 			WSReconnectDelayMs: 3000,
+			StaticDir:          "../dst",
 		},
 		Watcher: WatcherConfig{
 			PollIntervalMs:         5000,

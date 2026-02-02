@@ -89,10 +89,11 @@ func main() {
 
 	// Start HTTP server
 	server := api.NewServer(api.ServerConfig{
-		Port:     cfg.Server.Port,
-		Services: services,
-		WSHub:    wsHub,
-		Logger:   log,
+		Port:      cfg.Server.Port,
+		StaticDir: cfg.Server.StaticDir,
+		Services:  services,
+		WSHub:     wsHub,
+		Logger:    log,
 	})
 	go func() {
 		if err := server.Start(); err != nil {

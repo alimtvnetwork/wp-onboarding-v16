@@ -4,7 +4,8 @@
   "tempDir": ".temp",
   "server": {
     "port": 8080,
-    "wsReconnectDelayMs": 3000
+    "wsReconnectDelayMs": 3000,
+    "staticDir": "../dst"
   },
   "watcher": {
     "mode": "hybrid",
