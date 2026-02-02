@@ -7,6 +7,7 @@ param(
     [switch]$SkipBuild,
     [switch]$SkipPull,
     [switch]$Force,
+    [switch]$Install,
     [switch]$OpenFirewall,
     [switch]$Help,
     [switch]$Verbose
@@ -98,11 +99,13 @@ if ($Help) {
     Write-Host "  -SkipBuild     Skip frontend build, only run the backend server"
     Write-Host "  -SkipPull      Skip git pull step"
     Write-Host "  -Force         Clean build: remove caches, dependencies, databases"
+    Write-Host "  -Install       Install/update dependencies for both frontend (pnpm) and backend (go mod)"
     Write-Host "  -OpenFirewall  (Admin) Add Windows Firewall inbound rules for configured ports"
     Write-Host "  -Verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
     Write-Host "  .\run.ps1                  # Full build and run"
+    Write-Host "  .\run.ps1 -Install         # Install/update all dependencies"
     Write-Host "  .\run.ps1 -Force           # Clean rebuild everything"
     Write-Host "  .\run.ps1 -SkipBuild       # Just start the backend"
     Write-Host "  .\run.ps1 -BuildOnly       # Build only, don't start server"
@@ -399,6 +402,62 @@ $stepWatch.Stop()
 $StepTimes["Prerequisites"] = $stepWatch.Elapsed
 Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 Write-Host ""
+
+# ============================================================================
+# INSTALL MODE: Install dependencies for both frontend and backend
+# ============================================================================
+if ($Install) {
+    $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Host "[INSTALL] Installing/updating all dependencies..." -ForegroundColor Cyan
+    Write-Host ""
+    
+    # Frontend: pnpm install
+    Write-Host "  [Frontend] Running pnpm install..." -ForegroundColor Yellow
+    Push-Location $FrontendDir
+    try {
+        # Configure pnpm store first
+        Configure-PnpmStore
+        
+        Invoke-Expression $InstallCommand
+        if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
+        Write-Host "  ✓ Frontend dependencies installed" -ForegroundColor Green
+    }
+    finally {
+        Pop-Location
+    }
+    
+    # Backend: go mod tidy + go mod download
+    Write-Host ""
+    Write-Host "  [Backend] Running go mod tidy && go mod download..." -ForegroundColor Yellow
+    Push-Location $BackendDir
+    try {
+        go mod tidy
+        if ($LASTEXITCODE -ne 0) { throw "go mod tidy failed" }
+        
+        go mod download
+        if ($LASTEXITCODE -ne 0) { throw "go mod download failed" }
+        
+        Write-Host "  ✓ Backend dependencies installed" -ForegroundColor Green
+    }
+    finally {
+        Pop-Location
+    }
+    
+    $stepWatch.Stop()
+    $StepTimes["Install Dependencies"] = $stepWatch.Elapsed
+    
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Dependencies installed successfully!" -ForegroundColor Cyan
+    Write-Host "  Time: $(Format-ElapsedTime $stepWatch)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Next steps:" -ForegroundColor Yellow
+    Write-Host "  .\run.ps1           # Build and run the application" -ForegroundColor Gray
+    Write-Host "  .\run.ps1 -Force    # Clean rebuild if needed" -ForegroundColor Gray
+    Write-Host ""
+    exit 0
+}
 
 # ============================================================================
 # STEP 3: FRONTEND BUILD

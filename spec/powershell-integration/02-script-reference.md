@@ -15,6 +15,7 @@
 | `-SkipBuild` | Switch | Skip frontend build, only run backend |
 | `-SkipPull` | Switch | Skip git pull step |
 | `-Force` | Switch | Clean build: remove caches, PnP files, prune pnpm store |
+| `-Install` | Switch | Install/update dependencies for both frontend (pnpm) and backend (go mod) |
 | `-OpenFirewall` | Switch | Add Windows Firewall rules (requires Admin) |
 
 ---
@@ -24,6 +25,9 @@
 ```powershell
 # Show help
 .\run.ps1 -Help
+
+# Install/update all dependencies (frontend + backend)
+.\run.ps1 -Install
 
 # Full build and run (default, uses pnpm PnP)
 .\run.ps1
