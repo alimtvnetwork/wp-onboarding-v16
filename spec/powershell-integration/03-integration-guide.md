@@ -83,18 +83,38 @@ Uses all defaults including pnpm PnP with `.pnpm-store` in project root.
 
 ---
 
-## Step 3: Verify Folder Structure
+## Step 3: Update .gitignore
+
+**IMPORTANT:** Add these entries to your `.gitignore` to exclude pnpm artifacts:
+
+```gitignore
+# pnpm store (local cache - do not commit)
+.pnpm-store/
+
+# pnpm PnP files (generated on install)
+.pnp.cjs
+.pnp.loader.mjs
+
+# Build artifacts
+dist/
+.vite/
+```
+
+---
+
+## Step 4: Verify Folder Structure
 
 Ensure your project matches this structure:
 
 ```
 your-project/
+├── .gitignore              ← Must exclude .pnpm-store, .pnp.cjs
 ├── run.ps1                 ← PowerShell script
 ├── powershell.json         ← Configuration
 ├── package.json            ← Frontend dependencies
-├── pnpm-lock.yaml          ← pnpm lockfile (generated)
-├── .pnp.cjs                ← PnP resolution (generated)
-├── .pnpm-store/            ← pnpm store (generated)
+├── pnpm-lock.yaml          ← pnpm lockfile (commit this!)
+├── .pnp.cjs                ← PnP resolution (generated, gitignored)
+├── .pnpm-store/            ← pnpm store (generated, gitignored)
 ├── src/                    ← React source
 ├── backend/                ← Go backend
 │   ├── cmd/server/main.go
@@ -102,12 +122,12 @@ your-project/
 │   ├── config.example.json ← Template config
 │   └── frontend/
 │       └── dist/           ← Build output copied here
-└── dist/                   ← pnpm build output
+└── dist/                   ← pnpm build output (gitignored)
 ```
 
 ---
 
-## Step 4: First Run
+## Step 5: First Run
 
 ```powershell
 # Navigate to project
@@ -156,7 +176,7 @@ cd YOUR_PROJECT
 
 ---
 
-## Step 5: Configure Firewall (Optional)
+## Step 6: Configure Firewall (Optional)
 
 For network access, run as Administrator:
 
