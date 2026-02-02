@@ -13,11 +13,13 @@ import (
 
 // ServiceRegistry holds references to all services
 type ServiceRegistry struct {
-	PluginService  PluginServiceInterface
-	SiteService    SiteServiceInterface
-	SyncService    SyncServiceInterface
-	GitService     GitServiceInterface
-	WatcherService WatcherServiceInterface
+	PluginService   PluginServiceInterface
+	SiteService     SiteServiceInterface
+	SyncService     SyncServiceInterface
+	GitService      GitServiceInterface
+	WatcherService  WatcherServiceInterface
+	PublishService  PublishServiceInterface
+	BackupService   BackupServiceInterface
 }
 
 // PluginServiceInterface defines plugin service methods needed by handlers
@@ -42,6 +44,7 @@ type SiteServiceInterface interface {
 	Update(ctx context.Context, id int64, input interface{}) (interface{}, error)
 	Delete(ctx context.Context, id int64) error
 	TestConnection(ctx context.Context, id int64) (interface{}, error)
+	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (interface{}, error)
 }
 
 // SyncServiceInterface defines sync service methods
@@ -62,6 +65,20 @@ type GitServiceInterface interface {
 type WatcherServiceInterface interface {
 	TriggerScan(ctx context.Context, pluginID int64) (interface{}, error)
 	ScanAll(ctx context.Context) (interface{}, error)
+}
+
+// PublishServiceInterface defines publish service methods
+type PublishServiceInterface interface {
+	Publish(ctx context.Context, pluginID, siteID int64, opts interface{}) (interface{}, error)
+	PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (interface{}, error)
+}
+
+// BackupServiceInterface defines backup service methods
+type BackupServiceInterface interface {
+	List(ctx context.Context, pluginID int64) (interface{}, error)
+	Create(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	Restore(ctx context.Context, backupID int64) error
+	Delete(ctx context.Context, backupID int64) error
 }
 
 // Global service registry - set during server initialization
@@ -111,6 +128,22 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 
 // --- Sites Handlers ---
 
+// SiteCreateInput represents the request body for creating a site
+type SiteCreateInput struct {
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// SiteUpdateInput represents the request body for updating a site
+type SiteUpdateInput struct {
+	Name     *string `json:"name,omitempty"`
+	URL      *string `json:"url,omitempty"`
+	Username *string `json:"username,omitempty"`
+	Password *string `json:"password,omitempty"`
+}
+
 // GetSites returns all registered WordPress sites
 func GetSites(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
@@ -127,27 +160,158 @@ func GetSites(w http.ResponseWriter, r *http.Request) {
 
 // CreateSite creates a new WordPress site connection
 func CreateSite(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	var input SiteCreateInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	// Validate required fields
+	if input.Name == "" {
+		respondError(w, http.StatusBadRequest, "E9002", "Name is required")
+		return
+	}
+	if input.URL == "" {
+		respondError(w, http.StatusBadRequest, "E9002", "URL is required")
+		return
+	}
+	if input.Username == "" {
+		respondError(w, http.StatusBadRequest, "E9002", "Username is required")
+		return
+	}
+	if input.Password == "" {
+		respondError(w, http.StatusBadRequest, "E9002", "Application password is required")
+		return
+	}
+
+	site, err := Services.SiteService.Create(r.Context(), input)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E2004", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"data":    site,
+	})
 }
 
 // GetSite returns a specific site by ID
 func GetSite(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	site, err := Services.SiteService.GetByID(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusNotFound, "E9001", err.Error())
+		return
+	}
+	respondSuccess(w, site)
 }
 
 // UpdateSite updates an existing site
 func UpdateSite(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	var input SiteUpdateInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	site, err := Services.SiteService.Update(r.Context(), id, input)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E2005", err.Error())
+		return
+	}
+	respondSuccess(w, site)
 }
 
 // DeleteSite removes a site
 func DeleteSite(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	if err := Services.SiteService.Delete(r.Context(), id); err != nil {
+		respondError(w, http.StatusBadRequest, "E2006", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"deleted": true})
 }
 
 // TestSiteConnection tests the WordPress REST API connection
 func TestSiteConnection(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	result, err := Services.SiteService.TestConnection(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// TestSiteCredentials tests credentials without saving (for pre-create validation)
+func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	var input struct {
+		URL      string `json:"url"`
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	result, err := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.URL, input.Username, input.Password)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
+		return
+	}
+	respondSuccess(w, result)
 }
 
 // --- Plugins Handlers ---
@@ -484,26 +648,112 @@ func ScanAllPlugins(w http.ResponseWriter, r *http.Request) {
 
 // --- Publish Handlers ---
 
+// PublishInput represents the request body for publishing
+type PublishInput struct {
+	Mode         string   `json:"mode"`         // "full" or "selected"
+	Files        []string `json:"files"`        // files to publish (for "selected" mode)
+	CreateBackup bool     `json:"createBackup"` // create backup before publish
+}
+
 // PublishPlugin publishes plugin changes to a site
 func PublishPlugin(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.PublishService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Publish service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	siteID, err := getIDParam(r, "siteId")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	var input PublishInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	// Default to full publish mode
+	if input.Mode == "" {
+		input.Mode = "full"
+	}
+
+	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, input)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E5006", err.Error())
+		return
+	}
+	respondSuccess(w, result)
 }
 
 // --- Backup Handlers ---
 
 // GetBackups returns backup history for a plugin
 func GetBackups(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, []interface{}{})
+	if Services == nil || Services.BackupService == nil {
+		respondSuccess(w, []interface{}{})
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	backups, err := Services.BackupService.List(r.Context(), pluginID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E6001", err.Error())
+		return
+	}
+	respondSuccess(w, backups)
 }
 
 // RestoreBackup restores a plugin from backup
 func RestoreBackup(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.BackupService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Backup service not available")
+		return
+	}
+
+	backupID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid backup ID")
+		return
+	}
+
+	if err := Services.BackupService.Restore(r.Context(), backupID); err != nil {
+		respondError(w, http.StatusInternalServerError, "E6002", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"restored": true})
 }
 
 // DeleteBackup removes a backup file
 func DeleteBackup(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.BackupService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Backup service not available")
+		return
+	}
+
+	backupID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid backup ID")
+		return
+	}
+
+	if err := Services.BackupService.Delete(r.Context(), backupID); err != nil {
+		respondError(w, http.StatusBadRequest, "E6003", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"deleted": true})
 }
 
 // --- Error Handlers ---

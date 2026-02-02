@@ -16,11 +16,14 @@
 | React Frontend Scaffold | ✅ Complete |
 | Plugin Service | ✅ Complete (Phase 1) |
 | Sync Service | ✅ Complete (Phase 2) |
+| **Site Service** | ✅ **Complete (Phase 3)** |
+| **Publish Service** | ✅ **Complete (Phase 4)** |
 | Git & Build Service | ✅ Complete (Phase 5) |
 | Hybrid File Watcher | ✅ Complete |
 | E2E Testing Framework | ✅ Complete |
 | Error Detail Modal | ✅ Complete |
-| Full Implementation | 🔄 Phases 3-4, 6-8 Pending |
+| **WebSocket Real-time** | ✅ **Complete** |
+| Full Implementation | 🔄 Phases 6-8 Pending |
 
 ---
 
