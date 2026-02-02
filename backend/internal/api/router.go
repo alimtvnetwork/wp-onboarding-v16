@@ -61,6 +61,14 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/plugins/{id}/mappings", handlers.CreatePluginMapping).Methods("POST")
 	api.HandleFunc("/plugins/{id}/changes", handlers.GetFileChanges).Methods("GET")
 
+	// Plugin scanning endpoints
+	api.HandleFunc("/plugins/{id}/scan", handlers.ScanPlugin).Methods("POST")
+	api.HandleFunc("/plugins/scan", handlers.ScanAllPlugins).Methods("POST")
+
+	// Git endpoints
+	api.HandleFunc("/plugins/{id}/git/pull", handlers.GitPull).Methods("POST")
+	api.HandleFunc("/plugins/git/pull", handlers.GitPullAll).Methods("POST")
+
 	// Sync endpoints
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/sync", handlers.CheckSync).Methods("POST")
 	api.HandleFunc("/plugins/{id}/sync/check-all", handlers.CheckAllSites).Methods("POST")

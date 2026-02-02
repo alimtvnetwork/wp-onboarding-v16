@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -9,6 +10,62 @@ import (
 
 	"github.com/gorilla/mux"
 )
+
+// ServiceRegistry holds references to all services
+type ServiceRegistry struct {
+	PluginService  PluginServiceInterface
+	SiteService    SiteServiceInterface
+	SyncService    SyncServiceInterface
+	GitService     GitServiceInterface
+	WatcherService WatcherServiceInterface
+}
+
+// PluginServiceInterface defines plugin service methods needed by handlers
+type PluginServiceInterface interface {
+	List(ctx context.Context) (interface{}, error)
+	GetByID(ctx context.Context, id int64) (interface{}, error)
+	Create(ctx context.Context, input interface{}) (interface{}, error)
+	Update(ctx context.Context, id int64, input interface{}) (interface{}, error)
+	Delete(ctx context.Context, id int64) error
+	GetMappings(ctx context.Context, pluginID int64) (interface{}, error)
+	CreateMapping(ctx context.Context, pluginID int64, input interface{}) (interface{}, error)
+	DeleteMapping(ctx context.Context, id int64) error
+	ScanDirectory(ctx context.Context, path string) (interface{}, error)
+	RefreshFileCount(ctx context.Context, id int64) error
+}
+
+// SiteServiceInterface defines site service methods
+type SiteServiceInterface interface {
+	List(ctx context.Context) (interface{}, error)
+	GetByID(ctx context.Context, id int64) (interface{}, error)
+	Create(ctx context.Context, input interface{}) (interface{}, error)
+	Update(ctx context.Context, id int64, input interface{}) (interface{}, error)
+	Delete(ctx context.Context, id int64) error
+	TestConnection(ctx context.Context, id int64) (interface{}, error)
+}
+
+// SyncServiceInterface defines sync service methods
+type SyncServiceInterface interface {
+	CheckSync(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	CheckAllSites(ctx context.Context, pluginID int64) (interface{}, error)
+	CheckAllPlugins(ctx context.Context) (interface{}, error)
+	GetFileChanges(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+}
+
+// GitServiceInterface defines git service methods
+type GitServiceInterface interface {
+	Pull(ctx context.Context, pluginID int64) (interface{}, error)
+	PullAll(ctx context.Context) (interface{}, error)
+}
+
+// WatcherServiceInterface defines watcher service methods
+type WatcherServiceInterface interface {
+	TriggerScan(ctx context.Context, pluginID int64) (interface{}, error)
+	ScanAll(ctx context.Context) (interface{}, error)
+}
+
+// Global service registry - set during server initialization
+var Services *ServiceRegistry
 
 // Health returns server health status
 func Health(w http.ResponseWriter, r *http.Request) {
@@ -52,12 +109,20 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 	return strconv.ParseInt(vars[name], 10, 64)
 }
 
-// --- Sites Handlers (Placeholder implementations) ---
+// --- Sites Handlers ---
 
 // GetSites returns all registered WordPress sites
 func GetSites(w http.ResponseWriter, r *http.Request) {
-	// TODO: Wire up to site service
-	respondSuccess(w, []interface{}{})
+	if Services == nil || Services.SiteService == nil {
+		respondSuccess(w, []interface{}{})
+		return
+	}
+	sites, err := Services.SiteService.List(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E2001", err.Error())
+		return
+	}
+	respondSuccess(w, sites)
 }
 
 // CreateSite creates a new WordPress site connection
@@ -89,59 +154,332 @@ func TestSiteConnection(w http.ResponseWriter, r *http.Request) {
 
 // GetPlugins returns all registered plugins
 func GetPlugins(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, []interface{}{})
+	if Services == nil || Services.PluginService == nil {
+		respondSuccess(w, []interface{}{})
+		return
+	}
+	plugins, err := Services.PluginService.List(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
+		return
+	}
+	respondSuccess(w, plugins)
 }
 
 // CreatePlugin registers a new local plugin directory
 func CreatePlugin(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	var input map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	plugin, err := Services.PluginService.Create(r.Context(), input)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E3002", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"data":    plugin,
+	})
 }
 
 // GetPlugin returns a specific plugin by ID
 func GetPlugin(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	plugin, err := Services.PluginService.GetByID(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusNotFound, "E3003", err.Error())
+		return
+	}
+	respondSuccess(w, plugin)
 }
 
 // UpdatePlugin updates an existing plugin
 func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	var input map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	plugin, err := Services.PluginService.Update(r.Context(), id, input)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E3004", err.Error())
+		return
+	}
+	respondSuccess(w, plugin)
 }
 
 // DeletePlugin removes a plugin registration
 func DeletePlugin(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	if err := Services.PluginService.Delete(r.Context(), id); err != nil {
+		respondError(w, http.StatusBadRequest, "E3005", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"deleted": true})
 }
 
 // GetPluginMappings returns plugin-site mappings
 func GetPluginMappings(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, []interface{}{})
+	if Services == nil || Services.PluginService == nil {
+		respondSuccess(w, []interface{}{})
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	mappings, err := Services.PluginService.GetMappings(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3006", err.Error())
+		return
+	}
+	respondSuccess(w, mappings)
 }
 
 // CreatePluginMapping creates a new plugin-site mapping
 func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	var input map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	mapping, err := Services.PluginService.CreateMapping(r.Context(), id, input)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E3007", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"data":    mapping,
+	})
 }
 
 // DeletePluginMapping removes a plugin-site mapping
 func DeletePluginMapping(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid mapping ID")
+		return
+	}
+
+	if err := Services.PluginService.DeleteMapping(r.Context(), id); err != nil {
+		respondError(w, http.StatusBadRequest, "E3008", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"deleted": true})
 }
 
 // GetFileChanges returns detected file changes for a plugin
 func GetFileChanges(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, []interface{}{})
+	if Services == nil || Services.SyncService == nil {
+		respondSuccess(w, []interface{}{})
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	// Get siteId from query param if provided
+	var siteID int64
+	if siteIDStr := r.URL.Query().Get("siteId"); siteIDStr != "" {
+		siteID, _ = strconv.ParseInt(siteIDStr, 10, 64)
+	}
+
+	changes, err := Services.SyncService.GetFileChanges(r.Context(), id, siteID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E4001", err.Error())
+		return
+	}
+	respondSuccess(w, changes)
 }
 
 // --- Sync Handlers ---
 
 // CheckSync compares local vs remote plugin files
 func CheckSync(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.SyncService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Sync service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	siteID, err := getIDParam(r, "siteId")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	result, err := Services.SyncService.CheckSync(r.Context(), pluginID, siteID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E4002", err.Error())
+		return
+	}
+	respondSuccess(w, result)
 }
 
 // CheckAllSites checks sync status for all mapped sites
 func CheckAllSites(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	if Services == nil || Services.SyncService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Sync service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	result, err := Services.SyncService.CheckAllSites(r.Context(), pluginID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E4003", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// --- Git Handlers ---
+
+// GitPull performs git pull for a specific plugin
+func GitPull(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.GitService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Git service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	result, err := Services.GitService.Pull(r.Context(), pluginID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E5001", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// GitPullAll performs git pull for all plugins
+func GitPullAll(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.GitService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Git service not available")
+		return
+	}
+
+	result, err := Services.GitService.PullAll(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E5002", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// --- Watcher/Scan Handlers ---
+
+// ScanPlugin triggers a file scan for a specific plugin
+func ScanPlugin(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.WatcherService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Watcher service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	result, err := Services.WatcherService.TriggerScan(r.Context(), pluginID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E6001", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// ScanAllPlugins triggers a file scan for all plugins
+func ScanAllPlugins(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.WatcherService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Watcher service not available")
+		return
+	}
+
+	result, err := Services.WatcherService.ScanAll(r.Context())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E6002", err.Error())
+		return
+	}
+	respondSuccess(w, result)
 }
 
 // --- Publish Handlers ---
@@ -191,7 +529,8 @@ func ClearErrors(w http.ResponseWriter, r *http.Request) {
 func GetSettings(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, map[string]interface{}{
 		"watcher": map[string]interface{}{
-			"pollIntervalMs":         5000,
+			"pollingEnabled":         false,
+			"scanAfterGitPull":       true,
 			"debounceMs":             500,
 			"defaultExcludePatterns": []string{".git", "node_modules", ".DS_Store"},
 		},
