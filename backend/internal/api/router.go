@@ -4,6 +4,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -46,6 +47,7 @@ func NewServer(cfg ServerConfig) *Server {
 	// Sites endpoints
 	api.HandleFunc("/sites", handlers.GetSites).Methods("GET")
 	api.HandleFunc("/sites", handlers.CreateSite).Methods("POST")
+	api.HandleFunc("/sites/test", handlers.TestSiteCredentials).Methods("POST") // Test before create
 	api.HandleFunc("/sites/{id}", handlers.GetSite).Methods("GET")
 	api.HandleFunc("/sites/{id}", handlers.UpdateSite).Methods("PUT")
 	api.HandleFunc("/sites/{id}", handlers.DeleteSite).Methods("DELETE")
@@ -176,6 +178,3 @@ func Error(w http.ResponseWriter, status int, code, message string) {
 		},
 	})
 }
-
-// Required for compilation - placeholder
-import "fmt"

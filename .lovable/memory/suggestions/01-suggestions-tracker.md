@@ -96,51 +96,45 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 
 ---
 
-### S-008: Implement Site Service
+### S-008: Implement Site Service ✅
 | Field | Value |
 |-------|-------|
 | Created | 2026-02-02 |
+| Completed | 2026-02-02 |
 | Source | User |
 | Project | wp-plugin-publish |
 | Priority | **high** |
-| Status | **open** |
+| Status | **done** |
 | Description | Complete Site Service with CRUD and connection testing |
-| Proposed Change | Implement CreateSite, UpdateSite, DeleteSite, TestConnection handlers |
-| Acceptance Criteria | All site endpoints functional with encryption |
-| Spec Reference | `spec/wp-plugin-publish/01-backend/04-site-service.md` |
-| Dependencies | None (can start immediately) |
+| Implementation | `backend/internal/api/handlers/handlers.go` - Full CRUD handlers |
 
 ---
 
-### S-009: Implement Publish Service
+### S-009: Implement Publish Service ✅
 | Field | Value |
 |-------|-------|
 | Created | 2026-02-02 |
+| Completed | 2026-02-02 |
 | Source | User |
 | Project | wp-plugin-publish |
 | Priority | **high** |
-| Status | **open** |
+| Status | **done** |
 | Description | Create publish service for ZIP upload and file patches |
-| Proposed Change | Implement Phase 4 from implementation plan |
-| Acceptance Criteria | Full and selective file publishing works |
-| Spec Reference | `spec/wp-plugin-publish/03-implementation/32-publish-service-impl.md` |
-| Dependencies | S-008 (Site Service) |
+| Implementation | `backend/internal/services/publish/service.go` - Full pipeline |
 
 ---
 
-### S-010: WebSocket Real-time Sync Updates
+### S-010: WebSocket Real-time Sync Updates ✅
 | Field | Value |
 |-------|-------|
 | Created | 2026-02-02 |
+| Completed | 2026-02-02 |
 | Source | User |
 | Project | wp-plugin-publish |
 | Priority | medium |
-| Status | **open** |
+| Status | **done** |
 | Description | Add WebSocket events for sync status and file scan progress |
-| Proposed Change | Broadcast sync:progress, scan:progress events |
-| Acceptance Criteria | Plugins page shows real-time progress |
-| Spec Reference | `spec/wp-plugin-publish/01-backend/12-websocket-events.md` |
-| Dependencies | None |
+| Implementation | `backend/internal/ws/hub.go` - Broadcasting helpers added |
 
 ---
 

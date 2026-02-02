@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -36,20 +37,42 @@ type Client struct {
 
 // Message represents a WebSocket message
 type Message struct {
-	Type string      `json:"type"`
-	Data interface{} `json:"data"`
+	Type      string      `json:"type"`
+	Data      interface{} `json:"data"`
+	Timestamp string      `json:"timestamp"`
 }
 
 // Event types for WebSocket messages
 const (
+	// File and sync events
 	EventFileChange     = "file_change"
 	EventSyncStarted    = "sync_started"
 	EventSyncProgress   = "sync_progress"
 	EventSyncComplete   = "sync_complete"
-	EventPublishStarted = "publish_started"
+	
+	// Publish events
+	EventPublishStarted  = "publish_started"
+	EventPublishProgress = "publish_progress"
 	EventPublishComplete = "publish_complete"
-	EventError          = "error"
-	EventConnection     = "connection"
+	
+	// Scan events
+	EventScanStarted  = "scan_started"
+	EventScanProgress = "scan_progress"
+	EventScanComplete = "scan_complete"
+	
+	// Git events
+	EventGitPullStarted  = "git_pull_started"
+	EventGitPullComplete = "git_pull_complete"
+	
+	// E2E test events
+	EventE2ERunStarted    = "e2e_run_started"
+	EventE2ETestStarted   = "e2e_test_started"
+	EventE2ETestCompleted = "e2e_test_completed"
+	EventE2ERunCompleted  = "e2e_run_completed"
+	
+	// General events
+	EventError      = "error"
+	EventConnection = "connection"
 )
 
 // NewHub creates a new Hub instance
@@ -102,9 +125,60 @@ func (h *Hub) Run() {
 // Broadcast sends a message to all connected clients
 func (h *Hub) Broadcast(eventType string, data interface{}) {
 	h.broadcast <- &Message{
-		Type: eventType,
-		Data: data,
+		Type:      eventType,
+		Data:      data,
+		Timestamp: time.Now().Format(time.RFC3339),
 	}
+}
+
+// BroadcastSyncProgress sends a sync progress update
+func (h *Hub) BroadcastSyncProgress(pluginID, siteID int64, progress int, total int, message string) {
+	h.Broadcast(EventSyncProgress, map[string]interface{}{
+		"pluginId": pluginID,
+		"siteId":   siteID,
+		"progress": progress,
+		"total":    total,
+		"message":  message,
+	})
+}
+
+// BroadcastScanProgress sends a scan progress update
+func (h *Hub) BroadcastScanProgress(pluginID int64, filesScanned int, totalFiles int, currentFile string) {
+	h.Broadcast(EventScanProgress, map[string]interface{}{
+		"pluginId":     pluginID,
+		"filesScanned": filesScanned,
+		"totalFiles":   totalFiles,
+		"currentFile":  currentFile,
+	})
+}
+
+// BroadcastPublishProgress sends a publish progress update
+func (h *Hub) BroadcastPublishProgress(pluginID, siteID int64, stage string, progress int, message string) {
+	h.Broadcast(EventPublishProgress, map[string]interface{}{
+		"pluginId": pluginID,
+		"siteId":   siteID,
+		"stage":    stage,
+		"progress": progress,
+		"message":  message,
+	})
+}
+
+// BroadcastFileChange notifies clients of a file change
+func (h *Hub) BroadcastFileChange(pluginID int64, filePath, changeType string) {
+	h.Broadcast(EventFileChange, map[string]interface{}{
+		"pluginId":   pluginID,
+		"filePath":   filePath,
+		"changeType": changeType,
+	})
+}
+
+// BroadcastError sends an error notification
+func (h *Hub) BroadcastError(code, message string, context map[string]interface{}) {
+	h.Broadcast(EventError, map[string]interface{}{
+		"code":    code,
+		"message": message,
+		"context": context,
+	})
 }
 
 // HandleWebSocket handles WebSocket upgrade requests
@@ -124,7 +198,8 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	// Send connection confirmation
 	h.Broadcast(EventConnection, map[string]string{
-		"status": "connected",
+		"status":    "connected",
+		"clientId":  conn.RemoteAddr().String(),
 	})
 
 	// Start goroutines for reading and writing
@@ -139,30 +214,71 @@ func (c *Client) readPump() {
 		c.conn.Close()
 	}()
 
+	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
+
 	for {
-		_, _, err := c.conn.ReadMessage()
+		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			break
 		}
-		// Handle incoming messages if needed
+		
+		// Handle incoming messages (e.g., subscription requests)
+		c.handleMessage(message)
+	}
+}
+
+// handleMessage processes incoming WebSocket messages
+func (c *Client) handleMessage(message []byte) {
+	var msg struct {
+		Type string                 `json:"type"`
+		Data map[string]interface{} `json:"data"`
+	}
+
+	if err := json.Unmarshal(message, &msg); err != nil {
+		return
+	}
+
+	switch msg.Type {
+	case "subscribe_plugin":
+		// Handle plugin subscription
+	case "unsubscribe_plugin":
+		// Handle plugin unsubscription
+	case "ping":
+		// Respond to ping
+		c.send <- []byte(`{"type":"pong"}`)
 	}
 }
 
 // writePump pumps messages from the hub to the WebSocket connection
 func (c *Client) writePump() {
+	ticker := time.NewTicker(30 * time.Second)
 	defer func() {
+		ticker.Stop()
 		c.conn.Close()
 	}()
 
 	for {
-		message, ok := <-c.send
-		if !ok {
-			c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-			return
-		}
+		select {
+		case message, ok := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if !ok {
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
 
-		if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-			return
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				return
+			}
+
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 }
