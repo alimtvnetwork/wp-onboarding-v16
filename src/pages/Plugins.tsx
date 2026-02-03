@@ -84,12 +84,31 @@ export default function Plugins() {
         clearForm();
         setValidationError(null);
       } else if (response.error) {
-        // Store error message for "Save Anyway" option
+        const msg = response.error.message || "";
+        const code = response.error.code || "";
+        const isDuplicate =
+          code === "E2009" ||
+          msg.includes("E2009") ||
+          msg.toLowerCase().includes("already registered") ||
+          msg.toLowerCase().includes("already exist");
+
+        // If the plugin already exists, treat this as success from a UX perspective
+        // (refresh list + close dialog) so users aren't blocked.
+        if (isDuplicate) {
+          toast.info("Plugin is already registered — refreshing list");
+          queryClient.invalidateQueries({ queryKey: ["plugins"] });
+          setShowAddDialog(false);
+          setValidationError(null);
+          return;
+        }
+
+        // Store error message for "Save Anyway" option (e.g., invalid path)
         setValidationError(response.error.message);
+
         // Capture to error store and show modal for full details
         const captured = captureError(response.error, {
-          endpoint: '/plugins',
-          method: 'POST',
+          endpoint: "/plugins",
+          method: "POST",
           requestBody: { name: formData.name, path: formData.path, gitEnabled: formData.gitEnabled },
         });
         openErrorModal(captured);

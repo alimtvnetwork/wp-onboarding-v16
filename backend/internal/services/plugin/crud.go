@@ -114,13 +114,21 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Plugin
 	}
 
 	// Check for duplicate path (always check, even with forceCreate)
-	var exists int
+	var existingID int64
 	err := s.db.QueryRowContext(ctx,
-		"SELECT 1 FROM Plugins WHERE Path = ?", input.Path,
-	).Scan(&exists)
-	if err != sql.ErrNoRows {
+		"SELECT Id FROM Plugins WHERE Path = ?", input.Path,
+	).Scan(&existingID)
+	if err == nil {
+		// If caller explicitly wants to proceed, make create idempotent and return existing plugin
+		if input.ForceCreate {
+			s.log.Info("Plugin path already registered; returning existing plugin", "pluginId", existingID, "path", input.Path)
+			return s.GetByID(ctx, existingID)
+		}
 		return nil, apperror.New(apperror.ErrDuplicate, "plugin path already registered").
 			WithContext("path", input.Path)
+	}
+	if err != sql.ErrNoRows {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to check plugin path uniqueness")
 	}
 
 	// Scan directory to get file count
