@@ -33,7 +33,7 @@ export function useConnectionTestLogs() {
       };
 
       setState((prev) => {
-        // Start a new test session
+        // Start a new test session - clear previous logs
         if (step === "start") {
           return {
             siteId,
@@ -51,7 +51,29 @@ export function useConnectionTestLogs() {
           };
         }
 
-        // Add step to existing session
+        // Check if this step already exists with "running" status - update it in-place
+        const existingIndex = prev.steps.findIndex(
+          (s) => s.step === step && s.status === "running"
+        );
+
+        if (existingIndex !== -1) {
+          // Update existing step in-place instead of appending
+          const updatedSteps = [...prev.steps];
+          updatedSteps[existingIndex] = {
+            step,
+            status,
+            message,
+            details,
+            timestamp: new Date(),
+          };
+          return {
+            ...prev,
+            siteId: siteId || prev.siteId,
+            steps: updatedSteps,
+          };
+        }
+
+        // Add new step (not found in existing steps)
         return {
           ...prev,
           siteId: siteId || prev.siteId,
