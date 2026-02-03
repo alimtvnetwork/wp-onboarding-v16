@@ -36,7 +36,8 @@ func (a *SiteServiceAdapter) Create(ctx context.Context, input interface{}) (int
 				Name:     getString(m, "name"),
 				URL:      getString(m, "url"),
 				Username: getString(m, "username"),
-				Password: getString(m, "password"),
+				// Accept both "password" and "applicationPassword" keys
+				Password: getStringAny(m, "password", "applicationPassword", "application_password"),
 			}
 		}
 	}
@@ -67,7 +68,8 @@ func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input interfa
 		if v, ok := m["username"].(string); ok {
 			updateInput.Username = &v
 		}
-		if v, ok := m["password"].(string); ok {
+		// Accept both "password" and "applicationPassword" keys
+		if v, ok := firstString(m, "password", "applicationPassword", "application_password"); ok && v != "" {
 			updateInput.Password = &v
 		}
 	}
