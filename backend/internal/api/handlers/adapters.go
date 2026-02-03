@@ -239,7 +239,8 @@ func (a *BackupServiceAdapter) Create(ctx context.Context, pluginID, siteID int6
 }
 
 func (a *BackupServiceAdapter) Restore(ctx context.Context, backupID int64) error {
-	return a.Service.Restore(ctx, backupID)
+	_, err := a.Service.Restore(ctx, backupID)
+	return err
 }
 
 func (a *BackupServiceAdapter) Delete(ctx context.Context, backupID int64) error {
