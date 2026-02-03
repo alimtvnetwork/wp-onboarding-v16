@@ -85,26 +85,30 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 
 	// Step 1: Check if site is reachable
-	c.progress("dns_check", "running", fmt.Sprintf("Resolving %s...", c.baseURL), nil)
+	c.progress("dns_check", "running", fmt.Sprintf("Resolving %s...", c.baseURL), map[string]interface{}{
+		"url": c.baseURL,
+	})
 	resp, err := c.httpClient.Get(c.baseURL)
 	if err != nil {
-		c.progress("dns_check", "error", fmt.Sprintf("Cannot reach site: %v", err), map[string]interface{}{"error": err.Error()})
+		c.progress("dns_check", "error", fmt.Sprintf("Cannot reach site: %v", err), map[string]interface{}{"error": err.Error(), "url": c.baseURL})
 		return nil, fmt.Errorf("cannot reach site: %w", err)
 	}
 	resp.Body.Close()
-	c.progress("dns_check", "success", "Site is reachable", map[string]interface{}{"status": resp.StatusCode})
+	c.progress("dns_check", "success", "Site is reachable", map[string]interface{}{"status": resp.StatusCode, "url": c.baseURL})
 
 	// Step 2: Check WordPress REST API root
-	c.progress("rest_api_check", "running", "Checking WordPress REST API...", nil)
+	c.progress("rest_api_check", "running", "Checking WordPress REST API...", map[string]interface{}{
+		"url": c.baseURL,
+	})
 	resp, err = c.httpClient.Get(fmt.Sprintf("%s/wp-json/", c.baseURL))
 	if err != nil {
-		c.progress("rest_api_check", "error", fmt.Sprintf("REST API not accessible: %v", err), nil)
+		c.progress("rest_api_check", "error", fmt.Sprintf("REST API not accessible: %v", err), map[string]interface{}{"url": c.baseURL})
 		return nil, fmt.Errorf("REST API not accessible: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		c.progress("rest_api_check", "error", "REST API not found - is permalink structure set?", nil)
+		c.progress("rest_api_check", "error", "REST API not found - is permalink structure set?", map[string]interface{}{"url": c.baseURL})
 		return nil, fmt.Errorf("WordPress REST API not found. Ensure permalinks are enabled")
 	}
 
@@ -118,13 +122,16 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			result.SiteDescription = desc
 		}
 	}
-	c.progress("rest_api_check", "success", "REST API is available", map[string]interface{}{"siteName": result.SiteName})
+	c.progress("rest_api_check", "success", "REST API is available", map[string]interface{}{"siteName": result.SiteName, "url": c.baseURL})
 
 	// Step 3: Test authentication with users/me endpoint
-	c.progress("auth_check", "running", fmt.Sprintf("Authenticating as %s...", c.username), nil)
+	c.progress("auth_check", "running", fmt.Sprintf("Authenticating as %s...", c.username), map[string]interface{}{
+		"url":      c.baseURL,
+		"username": c.username,
+	})
 	resp, err = c.request("GET", "/wp/v2/users/me", nil)
 	if err != nil {
-		c.progress("auth_check", "error", fmt.Sprintf("Authentication request failed: %v", err), nil)
+		c.progress("auth_check", "error", fmt.Sprintf("Authentication request failed: %v", err), map[string]interface{}{"url": c.baseURL})
 		return nil, fmt.Errorf("authentication request failed: %w", err)
 	}
 	defer resp.Body.Close()
@@ -132,17 +139,19 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	if resp.StatusCode == 401 {
 		c.progress("auth_check", "error", "Invalid username or application password", map[string]interface{}{
 			"hint": "Generate an application password in WordPress: Users → Profile → Application Passwords",
+			"url":  c.baseURL,
 		})
 		return nil, fmt.Errorf("authentication failed: invalid username or application password")
 	}
 	if resp.StatusCode == 403 {
-		c.progress("auth_check", "error", "Access forbidden - user lacks permissions", nil)
+		c.progress("auth_check", "error", "Access forbidden - user lacks permissions", map[string]interface{}{"url": c.baseURL})
 		return nil, fmt.Errorf("authentication failed: user lacks required permissions")
 	}
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
 		c.progress("auth_check", "error", fmt.Sprintf("Unexpected response: %d", resp.StatusCode), map[string]interface{}{
 			"body": string(body),
+			"url":  c.baseURL,
 		})
 		return nil, fmt.Errorf("unexpected status: %d - %s", resp.StatusCode, string(body))
 	}
@@ -166,13 +175,16 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	c.progress("auth_check", "success", fmt.Sprintf("Authenticated as %s (ID: %d)", result.UserDisplayName, result.UserID), map[string]interface{}{
 		"userId": result.UserID,
 		"roles":  result.UserRoles,
+		"url":    c.baseURL,
 	})
 
 	// Step 4: Check plugin management permissions
-	c.progress("plugin_access_check", "running", "Checking plugin management access...", nil)
+	c.progress("plugin_access_check", "running", "Checking plugin management access...", map[string]interface{}{
+		"url": c.baseURL,
+	})
 	resp, err = c.request("GET", "/wp/v2/plugins", nil)
 	if err != nil {
-		c.progress("plugin_access_check", "error", fmt.Sprintf("Plugin endpoint request failed: %v", err), nil)
+		c.progress("plugin_access_check", "error", fmt.Sprintf("Plugin endpoint request failed: %v", err), map[string]interface{}{"url": c.baseURL})
 		return nil, fmt.Errorf("plugin endpoint not accessible: %w", err)
 	}
 	defer resp.Body.Close()
@@ -180,18 +192,21 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	if resp.StatusCode == 401 || resp.StatusCode == 403 {
 		c.progress("plugin_access_check", "error", "User cannot manage plugins - requires administrator role", map[string]interface{}{
 			"userRoles": result.UserRoles,
+			"url":       c.baseURL,
 		})
 		return nil, fmt.Errorf("insufficient permissions: user cannot manage plugins (requires administrator role)")
 	}
 	if resp.StatusCode == 200 {
 		result.CanManagePlugins = true
-		c.progress("plugin_access_check", "success", "Plugin management access confirmed", nil)
+		c.progress("plugin_access_check", "success", "Plugin management access confirmed", map[string]interface{}{"url": c.baseURL})
 	} else {
-		c.progress("plugin_access_check", "warning", fmt.Sprintf("Plugin endpoint returned %d", resp.StatusCode), nil)
+		c.progress("plugin_access_check", "warning", fmt.Sprintf("Plugin endpoint returned %d", resp.StatusCode), map[string]interface{}{"url": c.baseURL})
 	}
 
 	// Step 5: Test write permissions by creating a draft post (optional, non-destructive)
-	c.progress("write_test", "running", "Testing write permissions...", nil)
+	c.progress("write_test", "running", "Testing write permissions...", map[string]interface{}{
+		"url": c.baseURL,
+	})
 	testPost := map[string]interface{}{
 		"title":   "WP Plugin Publish Connection Test",
 		"content": "This draft was created to test API write permissions. You can safely delete it.",
@@ -199,7 +214,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 	resp, err = c.request("POST", "/wp/v2/posts", testPost)
 	if err != nil {
-		c.progress("write_test", "warning", "Could not test write permissions", map[string]interface{}{"error": err.Error()})
+		c.progress("write_test", "warning", "Could not test write permissions", map[string]interface{}{"error": err.Error(), "url": c.baseURL})
 		// Non-fatal - just report
 	} else {
 		defer resp.Body.Close()
@@ -217,12 +232,13 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 				result.CanWritePosts = true
 				c.progress("write_test", "success", "Write permissions verified (test post created and deleted)", map[string]interface{}{
 					"testPostId": createdPost.ID,
+					"url":        c.baseURL,
 				})
 			}
 		} else if resp.StatusCode == 401 || resp.StatusCode == 403 {
-			c.progress("write_test", "warning", "User cannot create posts", nil)
+			c.progress("write_test", "warning", "User cannot create posts", map[string]interface{}{"url": c.baseURL})
 		} else {
-			c.progress("write_test", "warning", fmt.Sprintf("Write test returned %d", resp.StatusCode), nil)
+			c.progress("write_test", "warning", fmt.Sprintf("Write test returned %d", resp.StatusCode), map[string]interface{}{"url": c.baseURL})
 		}
 	}
 

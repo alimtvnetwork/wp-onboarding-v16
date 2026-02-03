@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSites } from "@/hooks/useSites";
+import { useSettings } from "@/hooks/useSettings";
 import { useConnectionTestLogs } from "@/hooks/useConnectionTestLogs";
+import { useSiteFormPersistence } from "@/hooks/useSiteFormPersistence";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,7 @@ import {
   HelpCircle,
   ExternalLink,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, ApiError } from "@/lib/api";
@@ -34,29 +37,17 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
 
-interface SiteFormData {
-  name: string;
-  url: string;
-  username: string;
-  password: string;
-}
-
-const initialFormData: SiteFormData = {
-  name: "",
-  url: "",
-  username: "",
-  password: "",
-};
-
 export default function Sites() {
   const { data: sites, isLoading, error: queryError } = useSites();
+  const { data: settings } = useSettings();
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
   const connectionLogs = useConnectionTestLogs();
+  const { formData, handleInputChange, clearForm, resetForm, setFormData } = useSiteFormPersistence();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingSiteId, setEditingSiteId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<SiteFormData>(initialFormData);
+  const [editFormData, setEditFormData] = useState({ name: "", url: "", username: "", password: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTesting, setIsTesting] = useState<number | null>(null);
   const [isTestingCredentials, setIsTestingCredentials] = useState(false);
@@ -66,6 +57,9 @@ export default function Sites() {
     siteName?: string;
     canManagePlugins?: boolean;
   } | null>(null);
+
+  // Check if debug mode is enabled in settings
+  const debugMode = settings?.logging?.debugMode ?? false;
 
   // Helper to show error toast with clickable action to open modal
   const showErrorWithModal = (apiError: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown }) => {
@@ -80,10 +74,14 @@ export default function Sites() {
     });
   };
 
-  const handleInputChange = (field: keyof SiteFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear test result when form changes
+  // Wrap handleInputChange to also clear test result
+  const handleFieldChange = useCallback((field: "name" | "url" | "username" | "password", value: string) => {
+    handleInputChange(field, value);
     setCredentialsTestResult(null);
+  }, [handleInputChange]);
+
+  const handleEditFieldChange = (field: keyof typeof editFormData, value: string) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   // Test credentials before saving
@@ -170,7 +168,7 @@ export default function Sites() {
         toast.success("Site added successfully");
         queryClient.invalidateQueries({ queryKey: ["sites"] });
         setShowAddDialog(false);
-        setFormData(initialFormData);
+        clearForm(); // Clear persisted form data on success
       } else if (response.error) {
         showErrorWithModal(response.error, {
           endpoint: "/sites",
@@ -198,22 +196,22 @@ export default function Sites() {
 
     setIsSubmitting(true);
     try {
-      const response = await api.updateSite(editingSiteId, formData);
+      const response = await api.updateSite(editingSiteId, editFormData);
       if (response.success) {
         toast.success("Site updated successfully");
         queryClient.invalidateQueries({ queryKey: ["sites"] });
         setShowEditDialog(false);
         setEditingSiteId(null);
-        setFormData(initialFormData);
+        setEditFormData({ name: "", url: "", username: "", password: "" });
       } else if (response.error) {
         showErrorWithModal(response.error, {
           endpoint: `/sites/${editingSiteId}`,
           method: "PUT",
-          requestBody: { ...formData, password: formData.password ? "***" : undefined },
+          requestBody: { ...editFormData, password: editFormData.password ? "***" : undefined },
         });
       }
     } catch (error) {
-      const captured = captureException(error, { endpoint: `/sites/${editingSiteId}`, method: "PUT", requestBody: { ...formData, password: "***" } });
+      const captured = captureException(error, { endpoint: `/sites/${editingSiteId}`, method: "PUT", requestBody: { ...editFormData, password: "***" } });
       toast.error("Failed to update site", {
         description: "Click for details",
         action: { label: "View Details", onClick: () => openErrorModal(captured) },
@@ -274,7 +272,7 @@ export default function Sites() {
 
   const openEditDialog = (site: { id: number; name: string; url: string; username: string }) => {
     setEditingSiteId(site.id);
-    setFormData({
+    setEditFormData({
       name: site.name,
       url: site.url,
       username: site.username,
@@ -286,7 +284,7 @@ export default function Sites() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "connected":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-primary" />;
       case "disconnected":
         return <XCircle className="h-4 w-4 text-destructive" />;
       default:
@@ -493,7 +491,7 @@ export default function Sites() {
                 id="name"
                 placeholder="My WordPress Site"
                 value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                onChange={(e) => handleFieldChange("name", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -502,7 +500,7 @@ export default function Sites() {
                 id="url"
                 placeholder="https://example.com"
                 value={formData.url}
-                onChange={(e) => handleInputChange("url", e.target.value)}
+                onChange={(e) => handleFieldChange("url", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -511,7 +509,7 @@ export default function Sites() {
                 id="username"
                 placeholder="admin"
                 value={formData.username}
-                onChange={(e) => handleInputChange("username", e.target.value)}
+                onChange={(e) => handleFieldChange("username", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -521,7 +519,7 @@ export default function Sites() {
                 type="password"
                 placeholder="xxxx xxxx xxxx xxxx xxxx xxxx"
                 value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
+                onChange={(e) => handleFieldChange("password", e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
                 Generate an application password in WordPress under Users → Profile
@@ -575,6 +573,7 @@ export default function Sites() {
                 steps={connectionLogs.steps}
                 isActive={connectionLogs.isActive}
                 onClear={connectionLogs.clearLogs}
+                debugMode={debugMode}
               />
             )}
           </div>
@@ -594,9 +593,22 @@ export default function Sites() {
               )}
               Test Connection
             </Button>
+            {/* Show "Save Anyway" when test failed but form is complete */}
+            {credentialsTestResult && !credentialsTestResult.success && formData.name && formData.url && formData.username && formData.password && (
+              <Button
+                variant="outline"
+                onClick={handleAddSite}
+                disabled={isSubmitting}
+                className="border-warning text-warning hover:bg-warning/10"
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Save Anyway
+              </Button>
+            )}
             <Button
               onClick={handleAddSite}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !formData.name || !formData.url || !formData.username || !formData.password}
             >
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Add Site
@@ -619,24 +631,24 @@ export default function Sites() {
               <Label htmlFor="edit-name">Site Name</Label>
               <Input
                 id="edit-name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                value={editFormData.name}
+                onChange={(e) => handleEditFieldChange("name", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-url">Site URL</Label>
               <Input
                 id="edit-url"
-                value={formData.url}
-                onChange={(e) => handleInputChange("url", e.target.value)}
+                value={editFormData.url}
+                onChange={(e) => handleEditFieldChange("url", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-username">Username</Label>
               <Input
                 id="edit-username"
-                value={formData.username}
-                onChange={(e) => handleInputChange("username", e.target.value)}
+                value={editFormData.username}
+                onChange={(e) => handleEditFieldChange("username", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -645,8 +657,8 @@ export default function Sites() {
                 id="edit-password"
                 type="password"
                 placeholder="Leave blank to keep current"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
+                value={editFormData.password}
+                onChange={(e) => handleEditFieldChange("password", e.target.value)}
               />
             </div>
           </div>
