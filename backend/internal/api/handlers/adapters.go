@@ -100,18 +100,16 @@ func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (interface
 }
 
 func (a *PluginServiceAdapter) Create(ctx context.Context, input interface{}) (interface{}, error) {
-	// Convert interface{} to plugin.CreateInput
+	// Convert interface{} to plugin.CreateInput (frontend uses camelCase keys)
 	createInput := plugin.CreateInput{}
 	if m, ok := input.(map[string]interface{}); ok {
-		createInput.Name = getString(m, "name")
-		createInput.Slug = getString(m, "slug")
-		createInput.LocalPath = getString(m, "local_path")
-		if v, ok := m["version"].(string); ok {
-			createInput.Version = &v
-		}
-		if v, ok := m["git_repo"].(string); ok {
-			createInput.GitRepo = &v
-		}
+		createInput.Name = getStringAny(m, "name")
+		createInput.Path = getStringAny(m, "path", "localPath", "local_path")
+		createInput.WatchEnabled = getBoolAny(m, true, "watchEnabled", "watch_enabled")
+		createInput.ExcludePatterns = getStringSliceAny(m, "excludePatterns", "exclude_patterns")
+		createInput.GitEnabled = getBoolAny(m, false, "gitEnabled", "git_enabled")
+		createInput.GitRemoteURL = getStringAny(m, "gitRemoteUrl", "git_remote_url")
+		createInput.BuildCommand = getStringAny(m, "buildCommand", "build_command")
 	}
 	return a.Service.Create(ctx, createInput)
 }
@@ -122,17 +120,23 @@ func (a *PluginServiceAdapter) Update(ctx context.Context, id int64, input inter
 		if v, ok := m["name"].(string); ok {
 			updateInput.Name = &v
 		}
-		if v, ok := m["slug"].(string); ok {
-			updateInput.Slug = &v
+		if v, ok := firstString(m, "path", "localPath", "local_path"); ok {
+			updateInput.Path = &v
 		}
-		if v, ok := m["local_path"].(string); ok {
-			updateInput.LocalPath = &v
+		if v, ok := firstBool(m, "watchEnabled", "watch_enabled"); ok {
+			updateInput.WatchEnabled = &v
 		}
-		if v, ok := m["version"].(string); ok {
-			updateInput.Version = &v
+		if v, ok := firstStringSlice(m, "excludePatterns", "exclude_patterns"); ok {
+			updateInput.ExcludePatterns = &v
 		}
-		if v, ok := m["git_repo"].(string); ok {
-			updateInput.GitRepo = &v
+		if v, ok := firstBool(m, "gitEnabled", "git_enabled"); ok {
+			updateInput.GitEnabled = &v
+		}
+		if v, ok := firstString(m, "gitRemoteUrl", "git_remote_url"); ok {
+			updateInput.GitRemoteURL = &v
+		}
+		if v, ok := firstString(m, "buildCommand", "build_command"); ok {
+			updateInput.BuildCommand = &v
 		}
 	}
 	return a.Service.Update(ctx, id, updateInput)
@@ -148,17 +152,16 @@ func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) 
 
 func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginID int64, input interface{}) (interface{}, error) {
 	createInput := plugin.CreateMappingInput{}
+	createInput.PluginID = pluginID
 	if m, ok := input.(map[string]interface{}); ok {
-		if v, ok := m["site_id"].(float64); ok {
+		if v, ok := m["siteId"].(float64); ok {
+			createInput.SiteID = int64(v)
+		} else if v, ok := m["site_id"].(float64); ok {
 			createInput.SiteID = int64(v)
 		}
-		if v, ok := m["remote_path"].(string); ok {
-			createInput.RemotePath = &v
-		}
-		createInput.Enabled = getBool(m, "enabled", true)
-		createInput.AutoSync = getBool(m, "auto_sync", false)
+		createInput.RemoteSlug = getStringAny(m, "remoteSlug", "remote_slug", "remoteSlug")
 	}
-	return a.Service.CreateMapping(ctx, pluginID, createInput)
+	return a.Service.CreateMapping(ctx, createInput)
 }
 
 func (a *PluginServiceAdapter) DeleteMapping(ctx context.Context, id int64) error {
@@ -277,6 +280,83 @@ func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
 		return v
 	}
 	return defaultVal
+}
+
+func getStringAny(m map[string]interface{}, keys ...string) string {
+	for _, k := range keys {
+		if v, ok := m[k].(string); ok {
+			return v
+		}
+	}
+	return ""
+}
+
+func getBoolAny(m map[string]interface{}, defaultVal bool, keys ...string) bool {
+	for _, k := range keys {
+		if v, ok := m[k].(bool); ok {
+			return v
+		}
+	}
+	return defaultVal
+}
+
+func getStringSliceAny(m map[string]interface{}, keys ...string) []string {
+	for _, k := range keys {
+		if raw, ok := m[k]; ok {
+			if ss, ok := raw.([]string); ok {
+				return ss
+			}
+			if arr, ok := raw.([]interface{}); ok {
+				out := make([]string, 0, len(arr))
+				for _, it := range arr {
+					if s, ok := it.(string); ok {
+						out = append(out, s)
+					}
+				}
+				return out
+			}
+		}
+	}
+	return nil
+}
+
+// Optional getters for Update inputs
+func firstString(m map[string]interface{}, keys ...string) (string, bool) {
+	for _, k := range keys {
+		if v, ok := m[k].(string); ok {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+func firstBool(m map[string]interface{}, keys ...string) (bool, bool) {
+	for _, k := range keys {
+		if v, ok := m[k].(bool); ok {
+			return v, true
+		}
+	}
+	return false, false
+}
+
+func firstStringSlice(m map[string]interface{}, keys ...string) ([]string, bool) {
+	for _, k := range keys {
+		if raw, ok := m[k]; ok {
+			if ss, ok := raw.([]string); ok {
+				return ss, true
+			}
+			if arr, ok := raw.([]interface{}); ok {
+				out := make([]string, 0, len(arr))
+				for _, it := range arr {
+					if s, ok := it.(string); ok {
+						out = append(out, s)
+					}
+				}
+				return out, true
+			}
+		}
+	}
+	return nil, false
 }
 
 // Ensure adapters implement their interfaces
