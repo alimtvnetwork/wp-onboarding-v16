@@ -91,9 +91,17 @@ func main() {
 	server := api.NewServer(api.ServerConfig{
 		Port:      cfg.Server.Port,
 		StaticDir: cfg.Server.StaticDir,
-		Services:  services,
-		WSHub:     wsHub,
-		Logger:    log,
+		Services: &api.ServiceRegistry{
+			Site:    services.Site,
+			Plugin:  services.Plugin,
+			Sync:    services.Sync,
+			Git:     nil, // TODO: Add git service when implemented
+			Watcher: services.Watcher,
+			Publish: services.Publish,
+			Backup:  services.Backup,
+		},
+		WSHub:  wsHub,
+		Logger: log,
 	})
 	go func() {
 		if err := server.Start(); err != nil {
@@ -142,6 +150,7 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		Logger:          log,
 		EncryptionKey:   cfg.Security.EncryptionKey,
 		WPClientFactory: wpClientFactory,
+		WSHub:           wsHub,
 	})
 
 	pluginService := plugin.New(plugin.Config{

@@ -111,6 +111,10 @@ export const WS_EVENTS = {
   SYNC_COMPLETE: "sync_complete",
   PUBLISH_STARTED: "publish_started",
   PUBLISH_COMPLETE: "publish_complete",
+  CONNECTION_TEST_STARTED: "connection_test_started",
+  CONNECTION_TEST_PROGRESS: "connection_test_progress",
+  CONNECTION_TEST_COMPLETE: "connection_test_complete",
   ERROR: "error",
   CONNECTION: "connection",
+  LOG: "log",
 } as const;
