@@ -42,12 +42,17 @@ export function useConnectionTestLogs() {
           };
         }
 
-        // Complete the test
+        // Complete the test - update the "start" step to show final status
         if (step === "complete") {
+          const updatedSteps = prev.steps.map((s) =>
+            s.step === "start" && s.status === "running"
+              ? { ...s, status, timestamp: new Date() }
+              : s
+          );
           return {
             ...prev,
             isActive: false,
-            steps: [...prev.steps, { step, status, message, details, timestamp: new Date() }],
+            steps: [...updatedSteps, { step, status, message, details, timestamp: new Date() }],
           };
         }
 
