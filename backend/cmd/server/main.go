@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/api"
+	"wp-plugin-publish/internal/api/handlers"
 	"wp-plugin-publish/internal/config"
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
@@ -87,18 +88,27 @@ func main() {
 		}
 	}
 
-	// Start HTTP server
+	// Start HTTP server - use handlers.NewServiceRegistry to wrap services with adapters
+	serviceRegistry := handlers.NewServiceRegistry(
+		services.Site,
+		services.Plugin,
+		services.Sync,
+		nil, // TODO: Add git service when implemented
+		services.Watcher,
+		services.Publish,
+		services.Backup,
+	)
 	server := api.NewServer(api.ServerConfig{
 		Port:      cfg.Server.Port,
 		StaticDir: cfg.Server.StaticDir,
 		Services: &api.ServiceRegistry{
-			Site:    services.Site,
-			Plugin:  services.Plugin,
-			Sync:    services.Sync,
-			Git:     nil, // TODO: Add git service when implemented
-			Watcher: services.Watcher,
-			Publish: services.Publish,
-			Backup:  services.Backup,
+			Site:    serviceRegistry.SiteService,
+			Plugin:  serviceRegistry.PluginService,
+			Sync:    serviceRegistry.SyncService,
+			Git:     serviceRegistry.GitService,
+			Watcher: serviceRegistry.WatcherService,
+			Publish: serviceRegistry.PublishService,
+			Backup:  serviceRegistry.BackupService,
 		},
 		WSHub:  wsHub,
 		Logger: log,
