@@ -1,34 +1,59 @@
 # Memory: features/error-handling-and-debugging
 
 > **Location:** `.lovable/memory/features/error-handling-and-debugging.md`  
-> **Updated:** 2026-02-02
+> **Updated:** 2026-02-03
 
 ---
 
 ## Overview
 
-A robust error handling system captures detailed context for every failure. The UI provides interactive modals with copyable debug data, enabling users to easily share full diagnostic information for troubleshooting.
+A robust error handling system captures detailed context for every failure, including **client-side stack traces**. The UI provides interactive modals with copyable debug data, enabling users to easily share full diagnostic information for troubleshooting.
+
+---
+
+## Error Store (`src/stores/errorStore.ts`)
+
+### Key Functions
+
+1. **`captureError(apiError, meta?)`**
+   - Captures API errors from backend responses
+   - Automatically generates client-side stack traces
+   - Parses stack traces to extract file/line/function info
+
+2. **`captureException(error, context?)`**
+   - Captures any JavaScript exception with full stack trace
+   - Used in catch blocks for unexpected errors
+   - Extracts structured info from Error objects
+
+### Stack Trace Capture
+
+```typescript
+// Always captures client stack even for API errors
+const clientStack = captureStackTrace();
+const combinedStack = error.stackTrace 
+  ? `${error.stackTrace}\n\n--- Client Stack ---\n${clientStack}`
+  : clientStack;
+```
 
 ---
 
 ## Error Detail Modal
 
 ### Location
-`src/components/errors/ErrorDetailModal.tsx`
+`src/components/errors/GlobalErrorModal.tsx`
 
 ### Features
 
 1. **Tabbed Interface**
-   - Overview: Message, details, file location
-   - Stack Trace: Full trace with copy button
-   - Request/Response: API call data
+   - Overview: Message, details, file location, stack trace
+   - Request Info: API endpoint, method, request body
+   - Full Context: Complete JSON context data
    - Suggested Fixes: Error code-specific recommendations
 
-2. **Developer Debug Level**
-   - Complete stack traces
-   - Request/response data
-   - Related log entries
-   - File and line number location
+2. **Stack Trace Display**
+   - Shows combined backend + client stack traces
+   - Copy button for each section
+   - Syntax-highlighted pre-formatted display
 
 3. **Copy Functionality**
    - Copy individual sections
@@ -52,25 +77,34 @@ A robust error handling system captures detailed context for every failure. The 
 
 ---
 
-## Suggested Fixes
-
-The modal provides context-aware suggestions based on error code:
+## Usage Pattern
 
 ```typescript
-const fixes: Record<string, string[]> = {
-  E2001: ["Verify WordPress REST API is enabled", "Check site URL"],
-  E3002: ["Verify the plugin path exists", "Check permissions"],
-  E5001: ["Ensure git is installed", "Verify repository URL"],
-  // ... more codes
-};
+// In component
+const { captureError, captureException, openErrorModal } = useErrorStore();
+
+// For API errors (from response.error)
+if (response.error) {
+  showErrorWithModal(response.error, { endpoint, method, requestBody });
+}
+
+// For caught exceptions
+catch (error) {
+  const captured = captureException(error, { endpoint, method });
+  toast.error("Operation failed", {
+    action: { label: "View Details", onClick: () => openErrorModal(captured) },
+  });
+}
 ```
 
 ---
 
 ## Integration
 
+- GlobalErrorModal rendered in App.tsx
 - Errors page shows list of errors with expandable details
 - E2E test failures open error modal on click
+- Toast notifications with "View Details" action
 - Copyable reports for AI/support assistance
 
 ---

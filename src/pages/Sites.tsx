@@ -49,7 +49,7 @@ const initialFormData: SiteFormData = {
 export default function Sites() {
   const { data: sites, isLoading, error: queryError } = useSites();
   const queryClient = useQueryClient();
-  const { captureError, openErrorModal } = useErrorStore();
+  const { captureError, captureException, openErrorModal } = useErrorStore();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingSiteId, setEditingSiteId] = useState<number | null>(null);
@@ -103,12 +103,15 @@ export default function Sites() {
         });
       }
     } catch (error) {
-      showErrorWithModal({
-        code: "E9003",
-        message: "Failed to add site",
-        details: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
-      }, { endpoint: "/sites", method: "POST" });
+      const captured = captureException(error, { endpoint: "/sites", method: "POST", requestBody: { ...requestBody, applicationPassword: "***" } });
+      toast.error("Failed to add site", {
+        description: "Click for details",
+        action: {
+          label: "View Details",
+          onClick: () => openErrorModal(captured),
+        },
+        duration: 10000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -134,12 +137,12 @@ export default function Sites() {
         });
       }
     } catch (error) {
-      showErrorWithModal({
-        code: "E9003",
-        message: "Failed to update site",
-        details: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
-      }, { endpoint: `/sites/${editingSiteId}`, method: "PUT" });
+      const captured = captureException(error, { endpoint: `/sites/${editingSiteId}`, method: "PUT", requestBody: { ...formData, password: "***" } });
+      toast.error("Failed to update site", {
+        description: "Click for details",
+        action: { label: "View Details", onClick: () => openErrorModal(captured) },
+        duration: 10000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -157,12 +160,12 @@ export default function Sites() {
         showErrorWithModal(response.error, { endpoint: `/sites/${id}`, method: "DELETE" });
       }
     } catch (error) {
-      showErrorWithModal({
-        code: "E9003",
-        message: "Failed to delete site",
-        details: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
-      }, { endpoint: `/sites/${id}`, method: "DELETE" });
+      const captured = captureException(error, { endpoint: `/sites/${id}`, method: "DELETE" });
+      toast.error("Failed to delete site", {
+        description: "Click for details",
+        action: { label: "View Details", onClick: () => openErrorModal(captured) },
+        duration: 10000,
+      });
     }
   };
 
@@ -182,12 +185,12 @@ export default function Sites() {
         queryClient.invalidateQueries({ queryKey: ["sites"] });
       }
     } catch (error) {
-      showErrorWithModal({
-        code: "E9003",
-        message: "Connection test failed",
-        details: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
-      }, { endpoint: `/sites/${id}/test`, method: "POST" });
+      const captured = captureException(error, { endpoint: `/sites/${id}/test`, method: "POST" });
+      toast.error("Connection test failed", {
+        description: "Click for details",
+        action: { label: "View Details", onClick: () => openErrorModal(captured) },
+        duration: 10000,
+      });
     } finally {
       setIsTesting(null);
     }
