@@ -22,6 +22,13 @@ type Config struct {
 	Logger          *logger.Logger
 	EncryptionKey   string
 	WPClientFactory func(url, user, pass string) *wordpress.Client
+	WSHub           WSHub // Optional WebSocket hub for live logging
+}
+
+// WSHub interface for broadcasting messages
+type WSHub interface {
+	BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]interface{})
+	BroadcastLog(level string, message string, context map[string]interface{})
 }
 
 // Service provides site management operations
@@ -30,6 +37,7 @@ type Service struct {
 	log             *logger.Logger
 	encryptionKey   []byte
 	wpClientFactory func(url, user, pass string) *wordpress.Client
+	wsHub           WSHub
 }
 
 // New creates a new site service instance
@@ -39,6 +47,7 @@ func New(cfg Config) *Service {
 		log:             cfg.Logger,
 		encryptionKey:   []byte(cfg.EncryptionKey),
 		wpClientFactory: cfg.WPClientFactory,
+		wsHub:           cfg.WSHub,
 	}
 }
 
@@ -283,29 +292,44 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 
 // TestConnection verifies the WordPress REST API is accessible
 func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResult, error) {
+	// Broadcast start
+	s.broadcastProgress(id, "start", "running", "Starting connection test...", nil)
+
 	site, err := s.GetByID(ctx, id)
 	if err != nil {
+		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", map[string]interface{}{"error": err.Error()})
 		return nil, err
 	}
+	s.broadcastProgress(id, "fetch_site", "success", fmt.Sprintf("Retrieved site: %s", site.Name), nil)
 
 	// Decrypt password
+	s.broadcastProgress(id, "decrypt", "running", "Decrypting credentials...", nil)
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
+		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", map[string]interface{}{"error": err.Error()})
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
+	s.broadcastProgress(id, "decrypt", "success", "Credentials decrypted", nil)
 
 	// Create WordPress client
+	s.broadcastProgress(id, "connect", "running", fmt.Sprintf("Connecting to %s...", site.URL), nil)
 	client := s.wpClientFactory(site.URL, site.Username, string(password))
 
 	// Test connection
 	result := &ConnectionResult{}
+	s.broadcastProgress(id, "api_test", "running", "Testing WordPress REST API...", nil)
 	connInfo, err := client.TestConnection()
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
+		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]interface{}{
+			"url":      site.URL,
+			"username": site.Username,
+		})
 		
 		// Update connection status
 		s.updateConnectionStatus(ctx, id, "disconnected")
+		s.broadcastProgress(id, "complete", "error", "Connection test failed", nil)
 		
 		return result, nil
 	}
@@ -315,25 +339,44 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
+	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), map[string]interface{}{
+		"wpVersion": connInfo.WPVersion,
+	})
+
 	// Update connection status and last tested time
 	s.updateConnectionStatus(ctx, id, "connected")
+	s.broadcastProgress(id, "complete", "success", "Connection test completed successfully", nil)
 
 	s.log.Info("Site connection tested", "id", id, "success", result.Success)
 
 	return result, nil
 }
 
-// TestConnectionWithCredentials tests a connection without saving
+// TestConnectionWithCredentials tests a connection without saving (for pre-create validation)
 func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, username, password string) (*ConnectionResult, error) {
 	normalizedURL := normalizeURL(siteURL)
 	
+	// Broadcast progress (use 0 as siteId for pre-create tests)
+	s.broadcastProgress(0, "start", "running", "Testing connection with provided credentials...", nil)
+	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), map[string]interface{}{
+		"originalUrl":   siteURL,
+		"normalizedUrl": normalizedURL,
+	})
+	
+	s.broadcastProgress(0, "connect", "running", fmt.Sprintf("Connecting to %s...", normalizedURL), nil)
 	client := s.wpClientFactory(normalizedURL, username, password)
 
 	result := &ConnectionResult{}
+	s.broadcastProgress(0, "api_test", "running", "Testing WordPress REST API...", nil)
 	connInfo, err := client.TestConnection()
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
+		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]interface{}{
+			"url":      normalizedURL,
+			"username": username,
+		})
+		s.broadcastProgress(0, "complete", "error", "Connection test failed", nil)
 		return result, nil
 	}
 
@@ -342,7 +385,21 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
+	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), map[string]interface{}{
+		"wpVersion": connInfo.WPVersion,
+	})
+	s.broadcastProgress(0, "complete", "success", "Connection test completed successfully", nil)
+
 	return result, nil
+}
+
+// broadcastProgress sends connection test progress via WebSocket
+func (s *Service) broadcastProgress(siteID int64, step, status, message string, details map[string]interface{}) {
+	if s.wsHub != nil {
+		s.wsHub.BroadcastConnectionTestProgress(siteID, step, status, message, details)
+	}
+	// Also log
+	s.log.Debug("Connection test progress", "siteId", siteID, "step", step, "status", status, "message", message)
 }
 
 // GetDecryptedPassword returns the decrypted password for a site
@@ -463,16 +520,51 @@ type ConnectionResult struct {
 }
 
 // normalizeURL normalizes a URL for consistent storage
+// Removes common paths like /wp-admin, /wp-login.php, trailing slashes
 func normalizeURL(rawURL string) string {
 	rawURL = strings.TrimSpace(rawURL)
-	rawURL = strings.TrimSuffix(rawURL, "/")
 	
 	// Ensure protocol
 	if !strings.HasPrefix(rawURL, "http://") && !strings.HasPrefix(rawURL, "https://") {
 		rawURL = "https://" + rawURL
 	}
 	
-	return rawURL
+	// Parse URL to properly handle paths
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		// Fallback to simple cleanup
+		rawURL = strings.TrimSuffix(rawURL, "/")
+		return rawURL
+	}
+	
+	// Remove common WordPress admin paths
+	pathsToStrip := []string{
+		"/wp-admin/",
+		"/wp-admin",
+		"/wp-login.php",
+		"/wp-json/",
+		"/wp-json",
+	}
+	
+	path := parsed.Path
+	for _, p := range pathsToStrip {
+		if strings.HasPrefix(path, p) {
+			path = strings.TrimPrefix(path, strings.TrimSuffix(p, "/"))
+			break
+		}
+		if strings.HasSuffix(path, p) {
+			path = strings.TrimSuffix(path, p)
+			break
+		}
+	}
+	
+	// Clean up the path
+	path = strings.TrimSuffix(path, "/")
+	parsed.Path = path
+	parsed.RawQuery = "" // Remove query params
+	parsed.Fragment = "" // Remove fragments
+	
+	return parsed.String()
 }
 
 // parseNullTime parses a nullable time string

@@ -64,6 +64,11 @@ const (
 	EventGitPullStarted  = "git_pull_started"
 	EventGitPullComplete = "git_pull_complete"
 	
+	// Connection test events
+	EventConnectionTestStarted  = "connection_test_started"
+	EventConnectionTestProgress = "connection_test_progress"
+	EventConnectionTestComplete = "connection_test_complete"
+	
 	// E2E test events
 	EventE2ERunStarted    = "e2e_run_started"
 	EventE2ETestStarted   = "e2e_test_started"
@@ -73,6 +78,7 @@ const (
 	// General events
 	EventError      = "error"
 	EventConnection = "connection"
+	EventLog        = "log"
 )
 
 // NewHub creates a new Hub instance
@@ -176,6 +182,29 @@ func (h *Hub) BroadcastFileChange(pluginID int64, filePath, changeType string) {
 func (h *Hub) BroadcastError(code, message string, context map[string]interface{}) {
 	h.Broadcast(EventError, map[string]interface{}{
 		"code":    code,
+		"message": message,
+		"context": context,
+	})
+}
+
+// BroadcastConnectionTestProgress sends a connection test progress update
+func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]interface{}) {
+	data := map[string]interface{}{
+		"siteId":  siteID,
+		"step":    step,
+		"status":  status,
+		"message": message,
+	}
+	if details != nil {
+		data["details"] = details
+	}
+	h.Broadcast(EventConnectionTestProgress, data)
+}
+
+// BroadcastLog sends a log message to all clients
+func (h *Hub) BroadcastLog(level string, message string, context map[string]interface{}) {
+	h.Broadcast(EventLog, map[string]interface{}{
+		"level":   level,
 		"message": message,
 		"context": context,
 	})

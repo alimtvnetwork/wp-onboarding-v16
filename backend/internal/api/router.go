@@ -22,9 +22,20 @@ import (
 type ServerConfig struct {
 	Port      int
 	StaticDir string
-	Services  interface{} // *main.Services
+	Services  *ServiceRegistry // Typed service registry
 	WSHub     *ws.Hub
 	Logger    *logger.Logger
+}
+
+// ServiceRegistry holds all services for handlers
+type ServiceRegistry struct {
+	Site    handlers.SiteServiceInterface
+	Plugin  handlers.PluginServiceInterface
+	Sync    handlers.SyncServiceInterface
+	Git     handlers.GitServiceInterface
+	Watcher handlers.WatcherServiceInterface
+	Publish handlers.PublishServiceInterface
+	Backup  handlers.BackupServiceInterface
 }
 
 // Server represents the HTTP server
@@ -35,6 +46,19 @@ type Server struct {
 
 // NewServer creates a new HTTP server
 func NewServer(cfg ServerConfig) *Server {
+	// Wire up the handlers service registry from the config
+	if cfg.Services != nil {
+		handlers.Services = &handlers.ServiceRegistry{
+			PluginService:  cfg.Services.Plugin,
+			SiteService:    cfg.Services.Site,
+			SyncService:    cfg.Services.Sync,
+			GitService:     cfg.Services.Git,
+			WatcherService: cfg.Services.Watcher,
+			PublishService: cfg.Services.Publish,
+			BackupService:  cfg.Services.Backup,
+		}
+	}
+
 	router := mux.NewRouter()
 
 	// Apply global middleware

@@ -99,6 +99,43 @@ catch (error) {
 
 ---
 
+## Live Connection Test Logging
+
+When testing WordPress site connections, the backend streams real-time progress via WebSocket.
+
+### WebSocket Events
+
+| Event | Description |
+|-------|-------------|
+| `connection_test_started` | Test begins |
+| `connection_test_progress` | Step-by-step updates (step, status, message, details) |
+| `connection_test_complete` | Test finished |
+
+### Components
+
+1. **`useConnectionTestLogs` Hook** (`src/hooks/useConnectionTestLogs.ts`)
+   - Subscribes to WebSocket connection test events
+   - Maintains state: `siteId`, `isActive`, `steps[]`
+
+2. **`ConnectionTestLogs` Component** (`src/components/sites/ConnectionTestLogs.tsx`)
+   - Displays live log stream with timestamps and status icons
+   - Collapsible panel with copy-to-clipboard functionality
+
+---
+
+## URL Normalization
+
+The backend automatically normalizes site URLs (`backend/internal/services/site/service.go`):
+
+- Strips `/wp-admin`, `/wp-login.php`, `/wp-json` paths
+- Removes query params and fragments
+- Ensures HTTPS protocol
+- Removes trailing slashes
+
+Example: `https://example.com/wp-admin/` → `https://example.com`
+
+---
+
 ## Integration
 
 - GlobalErrorModal rendered in App.tsx
@@ -106,7 +143,8 @@ catch (error) {
 - E2E test failures open error modal on click
 - Toast notifications with "View Details" action
 - Copyable reports for AI/support assistance
+- Sites page shows live connection test logs
 
 ---
 
-*Full debug info with stack trace, request/response, and suggested fixes.*
+*Full debug info with stack trace, request/response, live logs, and suggested fixes.*

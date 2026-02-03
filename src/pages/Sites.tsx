@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useSites } from "@/hooks/useSites";
+import { useConnectionTestLogs } from "@/hooks/useConnectionTestLogs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ConnectionTestLogs } from "@/components/sites/ConnectionTestLogs";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +52,7 @@ export default function Sites() {
   const { data: sites, isLoading, error: queryError } = useSites();
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
+  const connectionLogs = useConnectionTestLogs();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingSiteId, setEditingSiteId] = useState<number | null>(null);
@@ -390,6 +393,15 @@ export default function Sites() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Connection Test Logs */}
+      {connectionLogs.steps.length > 0 && (
+        <ConnectionTestLogs
+          steps={connectionLogs.steps}
+          isActive={connectionLogs.isActive}
+          onClear={connectionLogs.clearLogs}
+        />
       )}
 
       {/* Add Site Dialog */}
