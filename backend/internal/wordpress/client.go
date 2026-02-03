@@ -8,15 +8,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
 // ClientConfig holds WordPress client configuration
 type ClientConfig struct {
-	BaseURL  string
-	Username string
-	Password string
-	Timeout  time.Duration
+	BaseURL   string
+	Username  string
+	Password  string
+	Timeout   time.Duration
+	OnProgress func(step, status, message string, details map[string]interface{})
 }
 
 // Client is a WordPress REST API client
@@ -25,17 +27,26 @@ type Client struct {
 	username   string
 	password   string
 	httpClient *http.Client
+	onProgress func(step, status, message string, details map[string]interface{})
 }
 
 // NewClient creates a new WordPress API client
 func NewClient(cfg ClientConfig) *Client {
 	return &Client{
-		baseURL:  cfg.BaseURL,
+		baseURL:  strings.TrimSuffix(cfg.BaseURL, "/"),
 		username: cfg.Username,
 		password: cfg.Password,
 		httpClient: &http.Client{
 			Timeout: cfg.Timeout,
 		},
+		onProgress: cfg.OnProgress,
+	}
+}
+
+// progress reports progress if a callback is set
+func (c *Client) progress(step, status, message string, details map[string]interface{}) {
+	if c.onProgress != nil {
+		c.onProgress(step, status, message, details)
 	}
 }
 
@@ -60,30 +71,163 @@ func (c *Client) request(method, endpoint string, body interface{}) (*http.Respo
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
 	req.Header.Set("Authorization", "Basic "+auth)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
 
 	return c.httpClient.Do(req)
 }
 
 // TestConnection verifies the API is accessible and credentials are valid
+// This performs multiple checks: site reachability, REST API availability, auth, and write permissions
 func (c *Client) TestConnection() (*ConnectionInfo, error) {
-	resp, err := c.request("GET", "/wp/v2/users/me", nil)
+	result := &ConnectionInfo{
+		Connected: false,
+		Username:  c.username,
+	}
+
+	// Step 1: Check if site is reachable
+	c.progress("dns_check", "running", fmt.Sprintf("Resolving %s...", c.baseURL), nil)
+	resp, err := c.httpClient.Get(c.baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("connection failed: %w", err)
+		c.progress("dns_check", "error", fmt.Sprintf("Cannot reach site: %v", err), map[string]interface{}{"error": err.Error()})
+		return nil, fmt.Errorf("cannot reach site: %w", err)
+	}
+	resp.Body.Close()
+	c.progress("dns_check", "success", "Site is reachable", map[string]interface{}{"status": resp.StatusCode})
+
+	// Step 2: Check WordPress REST API root
+	c.progress("rest_api_check", "running", "Checking WordPress REST API...", nil)
+	resp, err = c.httpClient.Get(fmt.Sprintf("%s/wp-json/", c.baseURL))
+	if err != nil {
+		c.progress("rest_api_check", "error", fmt.Sprintf("REST API not accessible: %v", err), nil)
+		return nil, fmt.Errorf("REST API not accessible: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 404 {
+		c.progress("rest_api_check", "error", "REST API not found - is permalink structure set?", nil)
+		return nil, fmt.Errorf("WordPress REST API not found. Ensure permalinks are enabled")
+	}
+
+	// Parse root response to get WordPress version
+	var rootInfo map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&rootInfo); err == nil {
+		if name, ok := rootInfo["name"].(string); ok {
+			result.SiteName = name
+		}
+		if desc, ok := rootInfo["description"].(string); ok {
+			result.SiteDescription = desc
+		}
+	}
+	c.progress("rest_api_check", "success", "REST API is available", map[string]interface{}{"siteName": result.SiteName})
+
+	// Step 3: Test authentication with users/me endpoint
+	c.progress("auth_check", "running", fmt.Sprintf("Authenticating as %s...", c.username), nil)
+	resp, err = c.request("GET", "/wp/v2/users/me", nil)
+	if err != nil {
+		c.progress("auth_check", "error", fmt.Sprintf("Authentication request failed: %v", err), nil)
+		return nil, fmt.Errorf("authentication request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == 401 {
+		c.progress("auth_check", "error", "Invalid username or application password", map[string]interface{}{
+			"hint": "Generate an application password in WordPress: Users → Profile → Application Passwords",
+		})
+		return nil, fmt.Errorf("authentication failed: invalid username or application password")
+	}
+	if resp.StatusCode == 403 {
+		c.progress("auth_check", "error", "Access forbidden - user lacks permissions", nil)
+		return nil, fmt.Errorf("authentication failed: user lacks required permissions")
+	}
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		c.progress("auth_check", "error", fmt.Sprintf("Unexpected response: %d", resp.StatusCode), map[string]interface{}{
+			"body": string(body),
+		})
+		return nil, fmt.Errorf("unexpected status: %d - %s", resp.StatusCode, string(body))
+	}
+
+	// Parse user info
+	var userInfo struct {
+		ID          int      `json:"id"`
+		Name        string   `json:"name"`
+		Slug        string   `json:"slug"`
+		Roles       []string `json:"roles"`
+		Capabilities map[string]bool `json:"capabilities"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err == nil {
+		result.UserID = userInfo.ID
+		result.UserDisplayName = userInfo.Name
+		result.UserRoles = userInfo.Roles
+		
+		// Check for plugin management capability
+		result.CanManagePlugins = userInfo.Capabilities["activate_plugins"] || userInfo.Capabilities["install_plugins"]
+	}
+	c.progress("auth_check", "success", fmt.Sprintf("Authenticated as %s (ID: %d)", result.UserDisplayName, result.UserID), map[string]interface{}{
+		"userId": result.UserID,
+		"roles":  result.UserRoles,
+	})
+
+	// Step 4: Check plugin management permissions
+	c.progress("plugin_access_check", "running", "Checking plugin management access...", nil)
+	resp, err = c.request("GET", "/wp/v2/plugins", nil)
+	if err != nil {
+		c.progress("plugin_access_check", "error", fmt.Sprintf("Plugin endpoint request failed: %v", err), nil)
+		return nil, fmt.Errorf("plugin endpoint not accessible: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 401 || resp.StatusCode == 403 {
-		return nil, fmt.Errorf("authentication failed: invalid credentials")
+		c.progress("plugin_access_check", "error", "User cannot manage plugins - requires administrator role", map[string]interface{}{
+			"userRoles": result.UserRoles,
+		})
+		return nil, fmt.Errorf("insufficient permissions: user cannot manage plugins (requires administrator role)")
+	}
+	if resp.StatusCode == 200 {
+		result.CanManagePlugins = true
+		c.progress("plugin_access_check", "success", "Plugin management access confirmed", nil)
+	} else {
+		c.progress("plugin_access_check", "warning", fmt.Sprintf("Plugin endpoint returned %d", resp.StatusCode), nil)
 	}
 
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	// Step 5: Test write permissions by creating a draft post (optional, non-destructive)
+	c.progress("write_test", "running", "Testing write permissions...", nil)
+	testPost := map[string]interface{}{
+		"title":   "WP Plugin Publish Connection Test",
+		"content": "This draft was created to test API write permissions. You can safely delete it.",
+		"status":  "draft",
+	}
+	resp, err = c.request("POST", "/wp/v2/posts", testPost)
+	if err != nil {
+		c.progress("write_test", "warning", "Could not test write permissions", map[string]interface{}{"error": err.Error()})
+		// Non-fatal - just report
+	} else {
+		defer resp.Body.Close()
+		if resp.StatusCode == 201 {
+			// Successfully created - now delete it
+			var createdPost struct {
+				ID int `json:"id"`
+			}
+			if err := json.NewDecoder(resp.Body).Decode(&createdPost); err == nil && createdPost.ID > 0 {
+				// Delete the test post
+				deleteResp, _ := c.request("DELETE", fmt.Sprintf("/wp/v2/posts/%d?force=true", createdPost.ID), nil)
+				if deleteResp != nil {
+					deleteResp.Body.Close()
+				}
+				result.CanWritePosts = true
+				c.progress("write_test", "success", "Write permissions verified (test post created and deleted)", map[string]interface{}{
+					"testPostId": createdPost.ID,
+				})
+			}
+		} else if resp.StatusCode == 401 || resp.StatusCode == 403 {
+			c.progress("write_test", "warning", "User cannot create posts", nil)
+		} else {
+			c.progress("write_test", "warning", fmt.Sprintf("Write test returned %d", resp.StatusCode), nil)
+		}
 	}
 
-	return &ConnectionInfo{
-		Connected: true,
-		Username:  c.username,
-	}, nil
+	result.Connected = true
+	return result, nil
 }
 
 // GetPlugins returns a list of installed plugins
@@ -166,9 +310,16 @@ func (c *Client) DeactivatePlugin(slug string) error {
 
 // ConnectionInfo represents WordPress connection details
 type ConnectionInfo struct {
-	Connected bool   `json:"connected"`
-	Username  string `json:"username"`
-	WPVersion string `json:"wpVersion,omitempty"`
+	Connected        bool     `json:"connected"`
+	Username         string   `json:"username"`
+	WPVersion        string   `json:"wpVersion,omitempty"`
+	SiteName         string   `json:"siteName,omitempty"`
+	SiteDescription  string   `json:"siteDescription,omitempty"`
+	UserID           int      `json:"userId,omitempty"`
+	UserDisplayName  string   `json:"userDisplayName,omitempty"`
+	UserRoles        []string `json:"userRoles,omitempty"`
+	CanManagePlugins bool     `json:"canManagePlugins"`
+	CanWritePosts    bool     `json:"canWritePosts"`
 }
 
 // PluginInfo represents a WordPress plugin

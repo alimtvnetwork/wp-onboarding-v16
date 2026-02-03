@@ -410,9 +410,124 @@ func Recovery(log *logger.Logger) func(http.Handler) http.Handler {
 
 ---
 
+## Live Progress Streaming
+
+All long-running operations stream progress via WebSocket to provide real-time feedback.
+
+### WebSocket Events
+
+| Event | Description | Data |
+|-------|-------------|------|
+| `connection_test_started` | Site connection test begins | `{siteId}` |
+| `connection_test_progress` | Step-by-step progress | `{siteId, step, status, message, details}` |
+| `connection_test_complete` | Test finished | `{siteId, success}` |
+| `sync_started` | Sync check begins | `{pluginId, siteId}` |
+| `sync_progress` | Scan/compare progress | `{pluginId, siteId, step, progress, message}` |
+| `sync_complete` | Sync finished | `{pluginId, siteId, inSync}` |
+| `publish_started` | Publish pipeline begins | `{pluginId, siteId}` |
+| `publish_progress` | Stage progress | `{pluginId, siteId, step, progress, message}` |
+| `publish_complete` | Publish finished | `{pluginId, siteId, success}` |
+
+### Progress Event Structure
+
+```json
+{
+  "type": "connection_test_progress",
+  "data": {
+    "siteId": 1,
+    "step": "auth_check",
+    "status": "success",
+    "message": "Authenticated as admin (ID: 1)",
+    "details": {
+      "userId": 1,
+      "roles": ["administrator"]
+    }
+  },
+  "timestamp": "2026-02-04T01:00:00Z"
+}
+```
+
+### Connection Test Steps
+
+The WordPress connection test performs multiple validation steps:
+
+1. **dns_check** — Can we reach the site URL?
+2. **rest_api_check** — Is `/wp-json/` accessible?
+3. **auth_check** — Valid username + application password?
+4. **plugin_access_check** — Can user manage plugins?
+5. **write_test** — Create/delete a draft post (non-destructive verification)
+
+### Testing Command Equivalent
+
+The backend test is equivalent to:
+
+```bash
+# Test authentication via POST (WordPress REST API)
+curl -v \
+  -u 'username:app_password' \
+  -X POST 'https://site.com/wp-json/wp/v2/posts' \
+  -H 'Content-Type: application/json' \
+  -d '{"title":"WP Plugin Publish Test","content":"testing auth","status":"draft"}'
+```
+
+### Connection Result
+
+```go
+type ConnectionInfo struct {
+    Connected        bool     `json:"connected"`
+    Username         string   `json:"username"`
+    WPVersion        string   `json:"wpVersion,omitempty"`
+    SiteName         string   `json:"siteName,omitempty"`
+    SiteDescription  string   `json:"siteDescription,omitempty"`
+    UserID           int      `json:"userId,omitempty"`
+    UserDisplayName  string   `json:"userDisplayName,omitempty"`
+    UserRoles        []string `json:"userRoles,omitempty"`
+    CanManagePlugins bool     `json:"canManagePlugins"`
+    CanWritePosts    bool     `json:"canWritePosts"`
+}
+```
+
+---
+
 ## Frontend Error Display
 
 The React frontend receives error responses and displays them in an Error Console modal. See [24-error-console.md](../02-frontend/24-error-console.md) for UI implementation.
+
+### Error Store (`src/stores/errorStore.ts`)
+
+The Zustand-based error store provides:
+
+1. **`captureError(apiError, meta?)`** — Captures API errors with request context
+2. **`captureException(error, context?)`** — Captures JS exceptions with stack trace
+3. **`openErrorModal(error)`** — Opens the detailed error modal
+
+### Usage Pattern
+
+```typescript
+import { useErrorStore } from "@/stores/errorStore";
+
+const { captureError, captureException, openErrorModal } = useErrorStore();
+
+// For API errors
+if (response.error) {
+  const captured = captureError(response.error, { 
+    endpoint: "/sites", 
+    method: "POST",
+    requestBody: { ...data, password: "***" }
+  });
+  toast.error(response.error.message, {
+    action: { label: "View Details", onClick: () => openErrorModal(captured) }
+  });
+}
+
+// For exceptions
+catch (error) {
+  const captured = captureException(error, { context: "site creation" });
+  toast.error("Operation failed", {
+    action: { label: "Details", onClick: () => openErrorModal(captured) }
+  });
+}
+```
 
 ### Copy-to-Clipboard Format
 
@@ -462,6 +577,9 @@ if site == nil {
 if url == "" {
     return apperror.New(apperror.ErrValidationEmpty, "site URL is required")
 }
+
+// ✅ Stream progress for long operations
+s.broadcastProgress(pluginID, siteID, "packaging", 30, "Building package...")
 ```
 
 ### DON'T

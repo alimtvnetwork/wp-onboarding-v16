@@ -481,13 +481,22 @@ func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, pluginID, sit
 	s.db.ExecContext(ctx, query, status, pluginID, siteID)
 }
 
-// broadcastProgress sends sync progress via WebSocket
-func (s *serviceImpl) broadcastProgress(pluginID, siteID int64, status string, progress int, message string) {
+// broadcastProgress sends sync progress via WebSocket with detailed step info
+func (s *serviceImpl) broadcastProgress(pluginID, siteID int64, step string, progress int, message string) {
 	if s.wsHub == nil {
 		return
 	}
 
-	s.wsHub.BroadcastSyncProgress(pluginID, siteID, progress, 100, message)
+	s.wsHub.Broadcast(ws.EventSyncProgress, map[string]interface{}{
+		"pluginId": pluginID,
+		"siteId":   siteID,
+		"step":     step,
+		"progress": progress,
+		"total":    100,
+		"message":  message,
+	})
+	
+	s.log.Debug("Sync progress", "pluginId", pluginID, "siteId", siteID, "step", step, "progress", progress, "message", message)
 }
 
 // countByType counts changes by type

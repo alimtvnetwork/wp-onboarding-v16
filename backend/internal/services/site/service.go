@@ -21,9 +21,12 @@ type Config struct {
 	DB              *database.DB
 	Logger          *logger.Logger
 	EncryptionKey   string
-	WPClientFactory func(url, user, pass string) *wordpress.Client
+	WPClientFactory WPClientFactory
 	WSHub           WSHub // Optional WebSocket hub for live logging
 }
+
+// WPClientFactory creates WordPress clients with optional progress callback
+type WPClientFactory func(url, user, pass string, onProgress func(step, status, message string, details map[string]interface{})) *wordpress.Client
 
 // WSHub interface for broadcasting messages
 type WSHub interface {
@@ -36,7 +39,7 @@ type Service struct {
 	db              *database.DB
 	log             *logger.Logger
 	encryptionKey   []byte
-	wpClientFactory func(url, user, pass string) *wordpress.Client
+	wpClientFactory WPClientFactory
 	wsHub           WSHub
 }
 
@@ -311,13 +314,15 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	}
 	s.broadcastProgress(id, "decrypt", "success", "Credentials decrypted", nil)
 
-	// Create WordPress client
+	// Create WordPress client with progress callback
 	s.broadcastProgress(id, "connect", "running", fmt.Sprintf("Connecting to %s...", site.URL), nil)
-	client := s.wpClientFactory(site.URL, site.Username, string(password))
+	progressCallback := func(step, status, message string, details map[string]interface{}) {
+		s.broadcastProgress(id, step, status, message, details)
+	}
+	client := s.wpClientFactory(site.URL, site.Username, string(password), progressCallback)
 
 	// Test connection
 	result := &ConnectionResult{}
-	s.broadcastProgress(id, "api_test", "running", "Testing WordPress REST API...", nil)
 	connInfo, err := client.TestConnection()
 	if err != nil {
 		result.Success = false
@@ -363,11 +368,13 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 		"normalizedUrl": normalizedURL,
 	})
 	
-	s.broadcastProgress(0, "connect", "running", fmt.Sprintf("Connecting to %s...", normalizedURL), nil)
-	client := s.wpClientFactory(normalizedURL, username, password)
+	// Create WordPress client with progress callback
+	progressCallback := func(step, status, message string, details map[string]interface{}) {
+		s.broadcastProgress(0, step, status, message, details)
+	}
+	client := s.wpClientFactory(normalizedURL, username, password, progressCallback)
 
 	result := &ConnectionResult{}
-	s.broadcastProgress(0, "api_test", "running", "Testing WordPress REST API...", nil)
 	connInfo, err := client.TestConnection()
 	if err != nil {
 		result.Success = false

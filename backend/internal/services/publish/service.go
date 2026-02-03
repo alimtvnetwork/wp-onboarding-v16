@@ -284,26 +284,31 @@ func (s *Service) runStage(name string, fn func() error) Stage {
 	return stage
 }
 
-// broadcastProgress sends a WebSocket progress event
-func (s *Service) broadcastProgress(pluginID, siteID int64, status string, progress int, message string) {
+// broadcastProgress sends a WebSocket progress event with detailed step info
+func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progress int, message string) {
 	if s.wsHub == nil {
 		return
 	}
 
-	eventType := ws.EventSyncProgress
-	if status == "started" {
+	// Determine event type based on step
+	eventType := ws.EventPublishProgress
+	if step == "started" {
 		eventType = ws.EventPublishStarted
-	} else if status == "completed" || status == "failed" {
+	} else if step == "completed" || step == "failed" {
 		eventType = ws.EventPublishComplete
 	}
 
 	s.wsHub.Broadcast(eventType, map[string]interface{}{
 		"pluginId": pluginID,
 		"siteId":   siteID,
-		"status":   status,
+		"step":     step,
+		"status":   step, // For backward compatibility
 		"progress": progress,
+		"total":    100,
 		"message":  message,
 	})
+	
+	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "step", step, "progress", progress, "message", message)
 }
 
 // createFullZip creates a zip file of the entire plugin directory
