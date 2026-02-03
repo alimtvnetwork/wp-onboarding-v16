@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { api, Plugin, Site } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useErrorStore } from "@/stores/errorStore";
 
 interface PluginFormData {
   name: string;
@@ -76,6 +77,8 @@ export default function Plugins() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const { captureError, openErrorModal } = useErrorStore();
+
   const handleAddPlugin = async () => {
     if (!formData.name || !formData.path) {
       toast.error("Name and path are required");
@@ -96,8 +99,14 @@ export default function Plugins() {
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
         setShowAddDialog(false);
         setFormData(initialFormData);
-      } else {
-        toast.error(response.error?.message || "Failed to register plugin");
+      } else if (response.error) {
+        // Capture to error store and show modal for full details
+        const captured = captureError(response.error, {
+          endpoint: '/plugins',
+          method: 'POST',
+          requestBody: { name: formData.name, path: formData.path, gitEnabled: formData.gitEnabled },
+        });
+        openErrorModal(captured);
       }
     } catch (error) {
       toast.error("Failed to register plugin");
@@ -114,8 +123,12 @@ export default function Plugins() {
       if (response.success) {
         toast.success("Plugin removed");
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
-      } else {
-        toast.error(response.error?.message || "Failed to remove plugin");
+      } else if (response.error) {
+        const captured = captureError(response.error, {
+          endpoint: `/plugins/${id}`,
+          method: 'DELETE',
+        });
+        openErrorModal(captured);
       }
     } catch (error) {
       toast.error("Failed to remove plugin");
