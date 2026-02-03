@@ -12,6 +12,7 @@ type CreateInput struct {
 	GitEnabled      bool     `json:"gitEnabled"`
 	GitRemoteURL    string   `json:"gitRemoteUrl"`
 	BuildCommand    string   `json:"buildCommand"`
+	ForceCreate     bool     `json:"forceCreate"` // Skip path validation errors
 }
 
 // UpdateInput holds data for updating a plugin
