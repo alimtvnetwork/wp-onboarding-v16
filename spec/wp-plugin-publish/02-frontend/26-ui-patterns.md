@@ -4,6 +4,74 @@ This document defines reusable UI patterns and behaviors across the application.
 
 ---
 
+## 26.0 Reusable Components
+
+### LiveLogEntry Component
+**Location**: `src/components/shared/LiveLogEntry.tsx`
+
+A reusable log entry component for displaying real-time operation progress.
+
+```typescript
+import { LiveLogEntry } from "@/components/shared/LiveLogEntry";
+
+<LiveLogEntry
+  timestamp={new Date()}
+  status="running" // "running" | "success" | "error" | "warning" | "info"
+  message="Processing file..."
+>
+  {/* Optional children for additional content */}
+</LiveLogEntry>
+```
+
+#### Props
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `timestamp` | `Date` | Yes | When the log entry occurred |
+| `status` | `LogStatus` | Yes | Current status of the step |
+| `message` | `string` | Yes | Display message |
+| `className` | `string` | No | Additional CSS classes |
+| `children` | `ReactNode` | No | Additional content below message |
+
+#### Status Icons
+| Status | Icon | Color |
+|--------|------|-------|
+| `running` | Spinning Loader2 | `text-primary` |
+| `success` | CheckCircle | `text-primary` |
+| `error` | XCircle | `text-destructive` |
+| `warning` | AlertCircle | `text-warning` |
+| `info` | CheckCircle | `text-muted-foreground` |
+
+---
+
+### BackendStatus Component
+**Location**: `src/components/shared/BackendStatus.tsx`
+
+Displays a warning banner when the Go backend is unavailable.
+
+```typescript
+import { BackendStatus } from "@/components/shared/BackendStatus";
+
+// In Layout.tsx
+<BackendStatus pollInterval={10000} />
+```
+
+#### Detection Logic
+1. Polls `/api/v1/health` endpoint periodically
+2. Checks `Content-Type` header for `application/json`
+3. If HTML is returned instead of JSON, backend is disconnected
+4. Shows fixed banner at top of screen with retry button
+
+#### Props
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `pollInterval` | `number` | `10000` | Polling interval in ms |
+
+---
+
+This document defines reusable UI patterns and behaviors across the application.
+
+---
+
 ## 26.1 Modal/Dialog Behavior
 
 ### Scrolling

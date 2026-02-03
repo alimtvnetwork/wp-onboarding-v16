@@ -1,9 +1,10 @@
 import { ConnectionTestStep } from "@/hooks/useConnectionTestLogs";
 import { cn } from "@/lib/utils";
-import { Loader2, CheckCircle, XCircle, ChevronDown, ChevronUp, Copy, Terminal } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Terminal, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { LiveLogEntry } from "@/components/shared/LiveLogEntry";
 
 interface ConnectionTestLogsProps {
   steps: ConnectionTestStep[];
@@ -63,19 +64,6 @@ export function ConnectionTestLogs({ steps, isActive, onClear, debugMode = false
   if (steps.length === 0) {
     return null;
   }
-
-  const getStepIcon = (status: string) => {
-    switch (status) {
-      case "running":
-        return <Loader2 className="h-3 w-3 animate-spin text-primary" />;
-      case "success":
-        return <CheckCircle className="h-3 w-3 text-primary" />;
-      case "error":
-        return <XCircle className="h-3 w-3 text-destructive" />;
-      default:
-        return null;
-    }
-  };
 
   const copyLogs = () => {
     const logText = steps
@@ -154,43 +142,27 @@ export function ConnectionTestLogs({ steps, isActive, onClear, debugMode = false
 
       {expanded && (
         <div className="border-t max-h-64 overflow-y-auto">
-          <div className="space-y-0.5 p-2 font-mono text-xs">
+          <div className="space-y-0.5 p-2">
             {steps.map((step, idx) => {
               const curlCommand = debugMode && showCurlCommands ? generateCurlCommand(step) : null;
               
               return (
-                <div key={idx}>
-                  <div
-                    className={cn(
-                      "flex items-start gap-2 px-2 py-1 rounded",
-                      step.status === "error" && "bg-destructive/10",
-                      step.status === "success" && "bg-primary/5"
-                    )}
-                  >
-                    <span className="text-muted-foreground shrink-0 w-16">
-                      {step.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                    </span>
-                    <span className="shrink-0">{getStepIcon(step.status)}</span>
-                    <span
-                      className={cn(
-                        "flex-1",
-                        step.status === "error" && "text-destructive",
-                        step.status === "success" && "text-primary"
-                      )}
-                    >
-                      {step.message}
-                    </span>
-                  </div>
+                <LiveLogEntry
+                  key={`${step.step}-${idx}`}
+                  timestamp={step.timestamp}
+                  status={step.status}
+                  message={step.message}
+                >
                   {/* Show curl command when debug mode is on and commands are toggled */}
                   {curlCommand && (
-                    <div className="ml-20 px-2 py-1 bg-muted/50 rounded text-[10px] text-muted-foreground mt-0.5 mb-1 overflow-x-auto">
+                    <div className="ml-20 px-2 py-1 bg-muted/50 rounded text-[10px] text-muted-foreground mt-0.5 mb-1 overflow-x-auto font-mono">
                       <div className="flex items-start gap-2">
                         <Terminal className="h-3 w-3 shrink-0 mt-0.5" />
                         <pre className="whitespace-pre-wrap break-all">{curlCommand}</pre>
                       </div>
                     </div>
                   )}
-                </div>
+                </LiveLogEntry>
               );
             })}
           </div>
