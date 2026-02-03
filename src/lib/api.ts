@@ -195,6 +195,7 @@ export const api = {
     gitEnabled?: boolean;
     gitRemoteUrl?: string;
     buildCommand?: string;
+    forceCreate?: boolean;
   }) =>
     request<Plugin>("/plugins", { method: "POST", body: JSON.stringify(plugin) }),
   updatePlugin: (id: number, plugin: Partial<Plugin>) =>

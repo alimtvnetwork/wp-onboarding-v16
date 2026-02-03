@@ -112,6 +112,7 @@ func (a *PluginServiceAdapter) Create(ctx context.Context, input interface{}) (i
 		createInput.GitEnabled = getBoolAny(m, false, "gitEnabled", "git_enabled")
 		createInput.GitRemoteURL = getStringAny(m, "gitRemoteUrl", "git_remote_url")
 		createInput.BuildCommand = getStringAny(m, "buildCommand", "build_command")
+		createInput.ForceCreate = getBoolAny(m, false, "forceCreate", "force_create")
 	}
 	return a.Service.Create(ctx, createInput)
 }

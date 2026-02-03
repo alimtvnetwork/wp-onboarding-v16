@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePlugins } from "@/hooks/usePlugins";
 import { useSites } from "@/hooks/useSites";
+import { usePluginFormPersistence } from "@/hooks/usePluginFormPersistence";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,63 +30,44 @@ import {
   GitBranch,
   RefreshCw,
   Link2,
-  Unlink,
   Trash2,
-  Settings2,
   Globe,
-  Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { api, Plugin, Site } from "@/lib/api";
+import { api, Plugin } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
-
-interface PluginFormData {
-  name: string;
-  path: string;
-  gitEnabled: boolean;
-  gitRemoteUrl: string;
-  buildCommand: string;
-}
-
-const initialFormData: PluginFormData = {
-  name: "",
-  path: "",
-  gitEnabled: false,
-  gitRemoteUrl: "",
-  buildCommand: "",
-};
 
 export default function Plugins() {
   const { data: plugins, isLoading: pluginsLoading } = usePlugins();
   const { data: sites } = useSites();
   const queryClient = useQueryClient();
+  const { captureError, openErrorModal } = useErrorStore();
+  
+  // Use persistent form hook
+  const { formData, handleInputChange, clearForm } = usePluginFormPersistence();
   
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
-  const [formData, setFormData] = useState<PluginFormData>(initialFormData);
   const [selectedSites, setSelectedSites] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPulling, setIsPulling] = useState<number | null>(null);
   const [isScanning, setIsScanning] = useState<number | null>(null);
   const [isScanningAll, setIsScanningAll] = useState(false);
   const [addMethod, setAddMethod] = useState<"path" | "browse">("path");
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const handleInputChange = (field: keyof PluginFormData, value: string | boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const { captureError, openErrorModal } = useErrorStore();
-
-  const handleAddPlugin = async () => {
+  const handleAddPlugin = async (forceCreate = false) => {
     if (!formData.name || !formData.path) {
       toast.error("Name and path are required");
       return;
     }
 
     setIsSubmitting(true);
+    setValidationError(null);
+    
     try {
       const response = await api.createPlugin({
         name: formData.name,
@@ -93,13 +75,17 @@ export default function Plugins() {
         gitEnabled: formData.gitEnabled,
         gitRemoteUrl: formData.gitRemoteUrl,
         buildCommand: formData.buildCommand,
+        forceCreate, // Allow saving even if path validation fails
       });
       if (response.success) {
         toast.success("Plugin registered successfully");
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
         setShowAddDialog(false);
-        setFormData(initialFormData);
+        clearForm();
+        setValidationError(null);
       } else if (response.error) {
+        // Store error message for "Save Anyway" option
+        setValidationError(response.error.message);
         // Capture to error store and show modal for full details
         const captured = captureError(response.error, {
           endpoint: '/plugins',
@@ -113,6 +99,10 @@ export default function Plugins() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleSaveAnyway = () => {
+    handleAddPlugin(true);
   };
 
   const handleDeletePlugin = async (id: number) => {
@@ -519,14 +509,41 @@ export default function Plugins() {
             )}
           </div>
 
+          {/* Validation Error Banner */}
+          {validationError && (
+            <div className="rounded-lg border border-warning bg-warning/10 p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-warning">Validation Failed</p>
+                  <p className="text-muted-foreground">{validationError}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="pt-4">
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowAddDialog(false);
+              setValidationError(null);
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleAddPlugin} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Register Plugin
-            </Button>
+            {validationError ? (
+              <Button 
+                variant="warning" 
+                onClick={handleSaveAnyway} 
+                disabled={isSubmitting}
+              >
+                {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Save Anyway
+              </Button>
+            ) : (
+              <Button onClick={() => handleAddPlugin(false)} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Register Plugin
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

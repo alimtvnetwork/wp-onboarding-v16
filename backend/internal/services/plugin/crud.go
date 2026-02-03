@@ -104,14 +104,16 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 
 // Create registers a new local plugin directory
 func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Plugin, error) {
-	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path)
+	s.log.Info("Creating plugin", "name", input.Name, "path", input.Path, "forceCreate", input.ForceCreate)
 
-	// Validate path exists and is a valid plugin directory
-	if err := s.ValidatePath(ctx, input.Path); err != nil {
-		return nil, err
+	// Validate path exists and is a valid plugin directory (skip if forceCreate)
+	if !input.ForceCreate {
+		if err := s.ValidatePath(ctx, input.Path); err != nil {
+			return nil, err
+		}
 	}
 
-	// Check for duplicate path
+	// Check for duplicate path (always check, even with forceCreate)
 	var exists int
 	err := s.db.QueryRowContext(ctx,
 		"SELECT 1 FROM Plugins WHERE Path = ?", input.Path,
