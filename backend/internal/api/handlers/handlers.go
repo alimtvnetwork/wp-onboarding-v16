@@ -133,7 +133,9 @@ type SiteCreateInput struct {
 	Name     string `json:"name"`
 	URL      string `json:"url"`
 	Username string `json:"username"`
-	Password string `json:"password"`
+	// Accept both legacy "password" and frontend "applicationPassword"
+	Password            string `json:"password,omitempty"`
+	ApplicationPassword string `json:"applicationPassword,omitempty"`
 }
 
 // SiteUpdateInput represents the request body for updating a site
@@ -141,7 +143,9 @@ type SiteUpdateInput struct {
 	Name     *string `json:"name,omitempty"`
 	URL      *string `json:"url,omitempty"`
 	Username *string `json:"username,omitempty"`
-	Password *string `json:"password,omitempty"`
+	// Accept both legacy "password" and frontend "applicationPassword"
+	Password            *string `json:"password,omitempty"`
+	ApplicationPassword *string `json:"applicationPassword,omitempty"`
 }
 
 // GetSites returns all registered WordPress sites
@@ -169,6 +173,11 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
 		return
+	}
+
+	// Normalize password field (frontend sends applicationPassword)
+	if input.Password == "" && input.ApplicationPassword != "" {
+		input.Password = input.ApplicationPassword
 	}
 
 	// Validate required fields
@@ -238,6 +247,11 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
 		return
+	}
+
+	// Normalize password field (frontend may send applicationPassword)
+	if input.Password == nil && input.ApplicationPassword != nil {
+		input.Password = input.ApplicationPassword
 	}
 
 	site, err := Services.SiteService.Update(r.Context(), id, input)
