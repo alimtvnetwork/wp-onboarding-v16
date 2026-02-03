@@ -180,7 +180,9 @@ export const api = {
   deleteSite: (id: number) =>
     request<void>(`/sites/${id}`, { method: "DELETE" }),
   testConnection: (id: number) =>
-    request<{ success: boolean; wpVersion?: string; message?: string }>(`/sites/${id}/test`, { method: "POST" }),
+    request<{ success: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>(`/sites/${id}/test`, { method: "POST" }),
+  testCredentials: (credentials: { url: string; username: string; password: string }) =>
+    request<{ success: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>("/sites/test", { method: "POST", body: JSON.stringify(credentials) }),
 
   // Plugins
   getPlugins: () => request<Plugin[]>("/plugins"),

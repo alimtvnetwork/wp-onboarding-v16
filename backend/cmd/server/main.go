@@ -134,7 +134,18 @@ func main() {
 
 // initServices creates and wires all application services
 func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logger.Logger) *Services {
-	// WordPress REST API client factory
+	// WordPress REST API client factory with progress callback support
+	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details map[string]interface{})) *wordpress.Client {
+		return wordpress.NewClient(wordpress.ClientConfig{
+			BaseURL:    siteURL,
+			Username:   username,
+			Password:   password,
+			Timeout:    time.Duration(cfg.WordPress.TimeoutSeconds) * time.Second,
+			OnProgress: onProgress,
+		})
+	}
+
+	// Simple client factory for services that don't need progress callbacks
 	wpClientFactory := func(siteURL, username, password string) *wordpress.Client {
 		return wordpress.NewClient(wordpress.ClientConfig{
 			BaseURL:  siteURL,
@@ -149,7 +160,7 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		DB:              db,
 		Logger:          log,
 		EncryptionKey:   cfg.Security.EncryptionKey,
-		WPClientFactory: wpClientFactory,
+		WPClientFactory: wpClientFactoryWithProgress,
 		WSHub:           wsHub,
 	})
 

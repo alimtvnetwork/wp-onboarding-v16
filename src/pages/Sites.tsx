@@ -59,6 +59,13 @@ export default function Sites() {
   const [formData, setFormData] = useState<SiteFormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTesting, setIsTesting] = useState<number | null>(null);
+  const [isTestingCredentials, setIsTestingCredentials] = useState(false);
+  const [credentialsTestResult, setCredentialsTestResult] = useState<{
+    success: boolean;
+    message: string;
+    siteName?: string;
+    canManagePlugins?: boolean;
+  } | null>(null);
 
   // Helper to show error toast with clickable action to open modal
   const showErrorWithModal = (apiError: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown }) => {
@@ -75,6 +82,72 @@ export default function Sites() {
 
   const handleInputChange = (field: keyof SiteFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear test result when form changes
+    setCredentialsTestResult(null);
+  };
+
+  // Test credentials before saving
+  const handleTestCredentials = async () => {
+    if (!formData.url || !formData.username || !formData.password) {
+      toast.error("URL, username, and password are required to test");
+      return;
+    }
+
+    setIsTestingCredentials(true);
+    setCredentialsTestResult(null);
+    connectionLogs.clearLogs();
+
+    try {
+      const response = await api.testCredentials({
+        url: formData.url,
+        username: formData.username,
+        password: formData.password,
+      });
+
+      if (response.success && response.data) {
+        if (response.data.success) {
+          setCredentialsTestResult({
+            success: true,
+            message: response.data.message || "Connection successful",
+            siteName: response.data.siteName,
+            canManagePlugins: response.data.canManagePlugins,
+          });
+          toast.success("Connection successful!", {
+            description: response.data.siteName || response.data.message,
+          });
+        } else {
+          setCredentialsTestResult({
+            success: false,
+            message: response.data.message || "Connection failed",
+          });
+          toast.error("Connection failed", {
+            description: response.data.message,
+          });
+        }
+      } else if (response.error) {
+        setCredentialsTestResult({
+          success: false,
+          message: response.error.message,
+        });
+        showErrorWithModal(response.error, {
+          endpoint: "/sites/test",
+          method: "POST",
+        });
+      }
+    } catch (error) {
+      const captured = captureException(error, { endpoint: "/sites/test", method: "POST" });
+      setCredentialsTestResult({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+      toast.error("Connection test failed", {
+        description: "Click for details",
+        action: { label: "View Details", onClick: () => openErrorModal(captured) },
+        duration: 10000,
+      });
+    } finally {
+      setIsTestingCredentials(false);
+    }
   };
 
   const handleAddSite = async () => {
@@ -454,12 +527,77 @@ export default function Sites() {
                 Generate an application password in WordPress under Users → Profile
               </p>
             </div>
+
+            {/* Test Connection Result */}
+            {credentialsTestResult && (
+              <div
+                className={cn(
+                  "p-3 rounded-lg border",
+                  credentialsTestResult.success
+                    ? "bg-primary/5 border-primary/20"
+                    : "bg-destructive/5 border-destructive/20"
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  {credentialsTestResult.success ? (
+                    <CheckCircle className="h-4 w-4 text-primary" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span
+                    className={cn(
+                      "text-sm font-medium",
+                      credentialsTestResult.success ? "text-primary" : "text-destructive"
+                    )}
+                  >
+                    {credentialsTestResult.success ? "Connection Successful" : "Connection Failed"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {credentialsTestResult.message}
+                </p>
+                {credentialsTestResult.siteName && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Site: {credentialsTestResult.siteName}
+                  </p>
+                )}
+                {credentialsTestResult.success && credentialsTestResult.canManagePlugins === false && (
+                  <p className="text-xs text-destructive mt-1">
+                    ⚠️ User cannot manage plugins - publishing may fail
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Connection Test Logs inline */}
+            {connectionLogs.steps.length > 0 && (
+              <ConnectionTestLogs
+                steps={connectionLogs.steps}
+                isActive={connectionLogs.isActive}
+                onClear={connectionLogs.clearLogs}
+              />
+            )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddSite} disabled={isSubmitting}>
+            <Button
+              variant="secondary"
+              onClick={handleTestCredentials}
+              disabled={isTestingCredentials || !formData.url || !formData.username || !formData.password}
+            >
+              {isTestingCredentials ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <TestTube className="h-4 w-4 mr-2" />
+              )}
+              Test Connection
+            </Button>
+            <Button
+              onClick={handleAddSite}
+              disabled={isSubmitting}
+            >
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Add Site
             </Button>
