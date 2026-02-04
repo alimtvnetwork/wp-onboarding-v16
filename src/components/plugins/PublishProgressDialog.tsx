@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,10 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
-import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Terminal, Settings2 } from "lucide-react";
+import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useErrorStore, BackendLogEntry } from "@/stores/errorStore";
 import { toast } from "sonner";
+import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 
 export interface PublishStage {
   name: string;
@@ -28,13 +28,8 @@ export interface PublishStage {
   completedAt?: string;
 }
 
-interface PublishLogEntry {
-  timestamp: string;
-  level: 'debug' | 'info' | 'warn' | 'error';
-  step: string;
-  message: string;
-  details?: Record<string, unknown>;
-}
+// Re-use LogEntry from LogViewer
+type PublishLogEntry = LogEntry;
 
 interface PublishProgressPayload {
   publishId: string;
@@ -147,8 +142,6 @@ export function PublishProgressDialog({
   
   // Live logs
   const [logs, setLogs] = useState<PublishLogEntry[]>([]);
-  const [showLogs, setShowLogs] = useState(true);
-  const logsEndRef = useRef<HTMLDivElement>(null);
   
   // Upload mode setting
   const [useFileByFile, setUseFileByFile] = useState(() => {
@@ -161,13 +154,6 @@ export function PublishProgressDialog({
     }
     return true; // default to file-by-file
   });
-
-  // Auto-scroll logs
-  useEffect(() => {
-    if (showLogs && logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [logs, showLogs]);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -431,49 +417,13 @@ export function PublishProgressDialog({
             ))}
           </div>
 
-          {/* Live Logs Section */}
-          <div className="border rounded-lg overflow-hidden">
-            <button
-              onClick={() => setShowLogs(!showLogs)}
-              className="w-full flex items-center justify-between p-3 bg-muted/50 hover:bg-muted transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Terminal className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Live Logs</span>
-                <Badge variant="secondary" className="text-xs">{logs.length}</Badge>
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {showLogs ? "Hide" : "Show"}
-              </span>
-            </button>
-            {showLogs && (
-              <ScrollArea className="h-32 bg-background">
-                <div className="p-2 space-y-1 text-xs font-mono">
-                  {logs.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">Waiting for logs...</p>
-                  ) : (
-                    logs.map((log, idx) => (
-                      <div 
-                        key={idx}
-                        className={cn(
-                          "py-0.5 px-1 rounded",
-                          log.level === 'error' && "text-destructive",
-                          log.level === 'warn' && "text-warning",
-                          log.level === 'info' && "text-foreground",
-                          log.level === 'debug' && "text-muted-foreground"
-                        )}
-                      >
-                        <span className="text-muted-foreground">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-                        <span className="text-primary ml-1">[{log.step}]</span>
-                        <span className="ml-1">{log.message}</span>
-                      </div>
-                    ))
-                  )}
-                  <div ref={logsEndRef} />
-                </div>
-              </ScrollArea>
-            )}
-          </div>
+          {/* Live Logs Section - using reusable LogViewer */}
+          <LogViewer
+            logs={logs}
+            title="Live Logs"
+            height="h-32"
+            emptyMessage="Waiting for logs..."
+          />
 
           {/* Success Message */}
           {isComplete && isSuccess && filesUpdated !== null && (

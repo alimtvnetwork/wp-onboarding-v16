@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Terminal, ChevronDown, ChevronUp, Copy } from "lucide-react";
@@ -152,7 +152,3 @@ export function LogViewer({
     </div>
   );
 }
-
-// Re-export for convenience
-import { useState } from "react";
-export type { LogEntry as LogViewerEntry };
