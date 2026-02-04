@@ -360,8 +360,14 @@ export const api = {
     request<PluginMapping[]>(`/plugins/${pluginId}/mappings`),
   createPluginMapping: (pluginId: number, mapping: { siteId: number; remoteSlug: string }) =>
     request<PluginMapping>(`/plugins/${pluginId}/mappings`, { method: "POST", body: JSON.stringify(mapping) }),
+  updatePluginMappings: (pluginId: number, mapping: { siteIds: number[]; remoteSlug: string }) =>
+    request<PluginMapping[]>(`/plugins/${pluginId}/mappings`, { method: "PUT", body: JSON.stringify(mapping) }),
   deletePluginMapping: (mappingId: number) =>
     request<void>(`/mappings/${mappingId}`, { method: "DELETE" }),
+  
+  // Site mappings (plugins linked to a site)
+  getSiteMappings: (siteId: number) =>
+    request<PluginMapping[]>(`/sites/${siteId}/mappings`),
 
   // Git operations
   gitPull: (pluginId: number) =>

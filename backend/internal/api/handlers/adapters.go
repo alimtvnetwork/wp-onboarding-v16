@@ -171,6 +171,14 @@ func (a *PluginServiceAdapter) DeleteMapping(ctx context.Context, id int64) erro
 	return a.Service.DeleteMapping(ctx, id)
 }
 
+func (a *PluginServiceAdapter) GetMappingsBySite(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.GetMappingsBySite(ctx, siteID)
+}
+
+func (a *PluginServiceAdapter) UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error {
+	return a.Service.UpdateMappingsForPlugin(ctx, pluginID, siteIDs, remoteSlug)
+}
+
 func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (interface{}, error) {
 	return a.Service.ScanDirectory(ctx, path)
 }

@@ -6,7 +6,7 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 ## ✅ Phase 1: Site UI + Connection Persistence (COMPLETED)
 
-**Status:** Done
+**Status:** Done (v1.3.0)
 
 ### Completed Tasks
 1. ✅ Tabbed Site dialog (Basic + Connection tabs) to reduce vertical scrolling
@@ -18,21 +18,17 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 ---
 
-## 📋 Phase 2: Plugin-Site Relationships (PLANNED)
+## ✅ Phase 2: Plugin-Site Relationships (COMPLETED)
 
-**Status:** Planned
+**Status:** Done (v1.4.0)
 
-### Goals
-- Enable many-to-many relationship between plugins and sites
-- Allow assigning sites to plugins and vice versa
-- Display linked sites in plugin details
-
-### Tasks
-1. [ ] UI: Add "Sites" section in Plugin detail view showing linked sites
-2. [ ] UI: Add "Link Site" button in Plugin view to select from available sites
-3. [ ] UI: Add "Plugins" section in Site detail view showing linked plugins
-4. [ ] API: Create endpoint to manage site-plugin mappings
-5. [ ] DB: Verify PluginMappings table supports many-to-many properly
+### Completed Tasks
+1. ✅ Backend: Added `PUT /plugins/{id}/mappings` for bulk mapping updates
+2. ✅ Backend: Added `GET /sites/{id}/mappings` to fetch plugins linked to a site
+3. ✅ UI: Plugin mapping dialog with remote slug configuration
+4. ✅ UI: Plugin cards show linked sites as badges
+5. ✅ UI: Site cards show linked plugins as badges
+6. ✅ Extracted SiteCard component with self-contained connection testing
 
 ---
 
@@ -95,6 +91,7 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.4.0 | 2026-02-04 | Phase 2 complete: Plugin-Site relationships |
 | 1.3.0 | 2026-02-04 | Phase 1 complete: Site UI + Connection persistence |
 | 1.2.1 | 2026-02-04 | API connectivity fix + enhanced diagnostics |
 | 1.2.0 | 2026-02-04 | Diagnostics & About Panel |
