@@ -202,41 +202,64 @@ class Riseup_Database {
     }
 
     /**
-     * Create database tables.
+     * Create database tables (migration).
+     * This runs on every init to ensure schema is up to date.
      *
      * @return void
      */
     private function create_tables() {
-        $this->file_logger->info('Creating database tables');
+        $this->file_logger->info('Running database migration - creating/updating tables');
         
         try {
             $table_name = RISEUP_TABLE_TRANSACTIONS;
-            $this->file_logger->debug('Creating table', array('table' => $table_name));
+            $this->file_logger->debug('Migrating table', array('table' => $table_name));
             
-            $sql = "CREATE TABLE IF NOT EXISTS {$table_name} (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                action TEXT NOT NULL,
-                plugin_slug TEXT,
-                post_id INTEGER,
-                user_login TEXT NOT NULL,
-                user_id INTEGER,
-                ip_address TEXT NOT NULL,
-                details TEXT,
-                status TEXT NOT NULL,
-                error_msg TEXT,
-                created_at TEXT NOT NULL
-            )";
-
-            $this->pdo->exec($sql);
-            $this->file_logger->info('Table created', array('table' => $table_name));
+            // Schema version tracking
+            $this->file_logger->debug('Checking schema version');
+            $this->pdo->exec("CREATE TABLE IF NOT EXISTS schema_version (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL
+            )");
+            
+            // Check current version
+            $stmt = $this->pdo->query("SELECT MAX(version) as v FROM schema_version");
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $current_version = (int) ($row['v'] ?? 0);
+            $this->file_logger->info('Current schema version', array('version' => $current_version));
+            
+            // Migration v1: Initial transactions table
+            if ($current_version < 1) {
+                $this->file_logger->info('Applying migration v1: transactions table');
+                
+                $sql = "CREATE TABLE IF NOT EXISTS {$table_name} (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action TEXT NOT NULL,
+                    plugin_slug TEXT,
+                    post_id INTEGER,
+                    user_login TEXT NOT NULL,
+                    user_id INTEGER,
+                    ip_address TEXT NOT NULL,
+                    details TEXT,
+                    status TEXT NOT NULL,
+                    error_msg TEXT,
+                    created_at TEXT NOT NULL
+                )";
+                $this->pdo->exec($sql);
+                $this->file_logger->debug('Table created', array('table' => $table_name));
+                
+                // Record migration
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (1, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v1 applied successfully');
+            }
 
             // Create indexes for common queries
+            $this->file_logger->debug('Creating indexes for table', array('table' => $table_name));
             $indexes = array(
-                'idx_action'     => 'action',
+                'idx_action'      => 'action',
                 'idx_plugin_slug' => 'plugin_slug',
-                'idx_user_login' => 'user_login',
-                'idx_status'     => 'status',
-                'idx_created_at' => 'created_at',
+                'idx_user_login'  => 'user_login',
+                'idx_status'      => 'status',
+                'idx_created_at'  => 'created_at',
             );
             
             foreach ($indexes as $index_name => $column) {
@@ -246,8 +269,13 @@ class Riseup_Database {
             
             $this->file_logger->info('All indexes created');
             
+            // Future migrations can be added here:
+            // if ($current_version < 2) { ... }
+            
+            $this->file_logger->info('Database migration complete');
+            
         } catch (PDOException $e) {
-            $this->file_logger->log_exception($e, 'Failed to create tables');
+            $this->file_logger->log_exception($e, 'Database migration failed');
             throw $e;
         }
     }
