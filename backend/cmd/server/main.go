@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -41,19 +42,22 @@ type Services struct {
 }
 
 func main() {
-	// Initialize logger
+	// Bootstrap logger (minimal, used only until config is loaded)
+	bootstrapLog := logger.New(logger.Config{Level: logger.LevelInfo})
+
+	// Load configuration FIRST so we can use logging.timeFormat
+	cfg, err := config.Load("config.json")
+	if err != nil {
+		bootstrapLog.Fatal("Failed to load config", "error", err)
+	}
+
+	// Initialize the real logger with configured timeFormat (single source of truth)
 	log := logger.New(logger.Config{
-		Level:      logger.LevelInfo,
-		TimeFormat: time.RFC3339,
+		Level:      parseLogLevel(cfg.Logging.Level),
+		TimeFormat: cfg.Logging.TimeFormat,
 	})
 
 	log.Info("Starting application", "name", AppName, "version", AppVersion)
-
-	// Load configuration
-	cfg, err := config.Load("config.json")
-	if err != nil {
-		log.Fatal("Failed to load config", "error", err)
-	}
 
 	// Initialize database
 	db, err := database.New(cfg.DatabasePath)
@@ -140,6 +144,24 @@ func main() {
 	}
 
 	log.Info("Application stopped")
+}
+
+// parseLogLevel converts a string log level to logger.Level
+func parseLogLevel(level string) logger.Level {
+	switch strings.ToLower(strings.TrimSpace(level)) {
+	case "debug":
+		return logger.LevelDebug
+	case "info":
+		return logger.LevelInfo
+	case "warn", "warning":
+		return logger.LevelWarn
+	case "error":
+		return logger.LevelError
+	case "fatal":
+		return logger.LevelFatal
+	default:
+		return logger.LevelInfo
+	}
 }
 
 // initServices creates and wires all application services

@@ -22,7 +22,8 @@
   "logging": {
     "level": "info",
     "retentionDays": 7,
-    "debugMode": false
+    "debugMode": false,
+    "timeFormat": "2006-01-02 03:04:05 PM"
   },
   "wordpress": {
     "timeoutSeconds": 30,
