@@ -18,7 +18,8 @@ type PowerShellConfig struct {
 	WordPressSiteURL     string `json:"wordPressSiteURL"`
 	Username             string `json:"username"`
 	AppPassword          string `json:"appPassword"`
-	OutputZipPath        string `json:"outputZipPath"`
+	PluginSlug           string `json:"pluginSlug,omitempty"`
+	OutputZipPath        string `json:"outputZipPath,omitempty"`
 	ActivateAfterInstall bool   `json:"activateAfterInstall"`
 	DeleteZipAfterUpload bool   `json:"deleteZipAfterUpload"`
 }
@@ -30,10 +31,12 @@ type PowerShellResult struct {
 	Stdout       string `json:"stdout"`
 	Stderr       string `json:"stderr"`
 	ErrorMessage string `json:"errorMessage,omitempty"`
+	Plugin       string `json:"plugin,omitempty"`
+	Activated    bool   `json:"activated,omitempty"`
 }
 
 // RunPowerShellUpload executes the upload-plugin.ps1 script with the given configuration.
-// It creates a temporary config file, runs the script, captures output, and cleans up.
+// It passes config as inline JSON for direct invocation from the app.
 func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(line string)) (*PowerShellResult, error) {
 	// Only available on Windows
 	if runtime.GOOS != "windows" {
@@ -45,28 +48,20 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 		ExitCode: -1,
 	}
 
-	// Create temporary config file
-	tempDir := os.TempDir()
-	configPath := filepath.Join(tempDir, fmt.Sprintf("wp-upload-config-%d.json", os.Getpid()))
-
-	configBytes, err := json.MarshalIndent(cfg, "", "  ")
+	// Serialize config to JSON
+	configBytes, err := json.Marshal(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, configBytes, 0600); err != nil {
-		return nil, fmt.Errorf("write temp config: %w", err)
-	}
-	defer os.Remove(configPath)
-
-	// Build PowerShell command
-	// Use -ExecutionPolicy Bypass to allow script execution
+	// Build PowerShell command with inline JSON config
 	args := []string{
 		"-ExecutionPolicy", "Bypass",
 		"-NoProfile",
 		"-NonInteractive",
 		"-File", scriptPath,
-		"-ConfigPath", configPath,
+		"-JsonConfig", string(configBytes),
+		"-Quiet",
 	}
 
 	cmd := exec.Command("powershell.exe", args...)
@@ -78,7 +73,9 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 
 	// Run the command
 	if onOutput != nil {
-		onOutput(fmt.Sprintf("Executing: powershell.exe %s", strings.Join(args, " ")))
+		onOutput(fmt.Sprintf("Executing PowerShell upload script..."))
+		onOutput(fmt.Sprintf("  Plugin: %s", cfg.PluginFolderPath))
+		onOutput(fmt.Sprintf("  Site: %s", cfg.WordPressSiteURL))
 	}
 
 	err = cmd.Run()
@@ -90,30 +87,125 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 		result.ExitCode = cmd.ProcessState.ExitCode()
 	}
 
-	// Stream output lines if callback provided
-	if onOutput != nil {
-		for _, line := range strings.Split(result.Stdout, "\n") {
+	// Parse JSON output from quiet mode
+	if result.Stdout != "" {
+		var jsonResult map[string]interface{}
+		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
+			if success, ok := jsonResult["success"].(bool); ok {
+				result.Success = success
+			}
+			if plugin, ok := jsonResult["plugin"].(string); ok {
+				result.Plugin = plugin
+			}
+			if activated, ok := jsonResult["activated"].(bool); ok {
+				result.Activated = activated
+			}
+			if errMsg, ok := jsonResult["error"].(string); ok {
+				result.ErrorMessage = errMsg
+			}
+		}
+	}
+
+	// Stream output lines if callback provided (for non-quiet debug)
+	if onOutput != nil && result.Stderr != "" {
+		for _, line := range strings.Split(result.Stderr, "\n") {
 			line = strings.TrimSpace(line)
 			if line != "" {
-				onOutput(line)
-			}
-		}
-		if result.Stderr != "" {
-			for _, line := range strings.Split(result.Stderr, "\n") {
-				line = strings.TrimSpace(line)
-				if line != "" {
-					onOutput("[STDERR] " + line)
-				}
+				onOutput("[PS] " + line)
 			}
 		}
 	}
 
-	if err != nil {
+	if err != nil && result.ErrorMessage == "" {
 		result.ErrorMessage = err.Error()
-		return result, nil // Return result with error info, not an error
 	}
 
-	result.Success = result.ExitCode == 0
+	if result.ExitCode == 0 && result.ErrorMessage == "" {
+		result.Success = true
+	}
+
+	return result, nil
+}
+
+// RunPowerShellUploadDirect executes the upload script with direct command-line parameters.
+// This is simpler than JSON config and works well for programmatic invocation.
+func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, password, slug string, activate bool, onOutput func(line string)) (*PowerShellResult, error) {
+	if runtime.GOOS != "windows" {
+		return nil, fmt.Errorf("PowerShell upload only available on Windows")
+	}
+
+	result := &PowerShellResult{
+		Success:  false,
+		ExitCode: -1,
+	}
+
+	args := []string{
+		"-ExecutionPolicy", "Bypass",
+		"-NoProfile",
+		"-NonInteractive",
+		"-File", scriptPath,
+		"-PluginPath", pluginPath,
+		"-SiteUrl", siteUrl,
+		"-User", username,
+		"-Password", password,
+		"-Quiet",
+		"-DeleteZip",
+	}
+
+	if slug != "" {
+		args = append(args, "-Slug", slug)
+	}
+
+	if activate {
+		args = append(args, "-Activate")
+	}
+
+	cmd := exec.Command("powershell.exe", args...)
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if onOutput != nil {
+		onOutput("Executing PowerShell upload...")
+	}
+
+	err := cmd.Run()
+
+	result.Stdout = stdout.String()
+	result.Stderr = stderr.String()
+
+	if cmd.ProcessState != nil {
+		result.ExitCode = cmd.ProcessState.ExitCode()
+	}
+
+	// Parse JSON output
+	if result.Stdout != "" {
+		var jsonResult map[string]interface{}
+		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
+			if success, ok := jsonResult["success"].(bool); ok {
+				result.Success = success
+			}
+			if plugin, ok := jsonResult["plugin"].(string); ok {
+				result.Plugin = plugin
+			}
+			if activated, ok := jsonResult["activated"].(bool); ok {
+				result.Activated = activated
+			}
+			if errMsg, ok := jsonResult["error"].(string); ok {
+				result.ErrorMessage = errMsg
+			}
+		}
+	}
+
+	if err != nil && result.ErrorMessage == "" {
+		result.ErrorMessage = err.Error()
+	}
+
+	if result.ExitCode == 0 && result.ErrorMessage == "" {
+		result.Success = true
+	}
+
 	return result, nil
 }
 
