@@ -7,7 +7,7 @@ Every backend operation MUST include detailed inner logs that capture:
 ### 1. Connection Operations
 - **WordPress Connection**: Log site URL, username (not password), connection initiation
 - **Database Operations**: Log table name, operation type, affected rows
-- **External API calls**: Log endpoint, method, request size
+- **External API calls**: Log full resolved URL, method, request size, response status, and response body snippet (first ~8KB) on non-2xx
 
 ### 2. File Operations
 - **ZIP Creation**: Log source path, output path, file count, ZIP size in bytes
@@ -47,7 +47,7 @@ The frontend MUST:
 
 ## Timestamp Format Consistency
 
-All logs must use consistent UTC ISO8601 format:
+All streamed operation logs (WebSocket `log` events) MUST use consistent UTC ISO8601 format:
 ```
 2026-02-04T19:21:17.339Z
 ```
