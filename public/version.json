@@ -1,11 +1,24 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
   "buildTime": "2026-02-04T23:45:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.19.1",
+      "date": "2026-02-04",
+      "title": "NULL DateTime Fix & Error Modal Integration",
+      "changes": [
+        "🐛 Fixed 'converting NULL to string is unsupported' crash in publish service",
+        "📋 PublishProgressDialog now links to Error Modal with full stack trace and copy",
+        "🔧 All datetime scanning uses sql.NullString + dbops.ParseNullTime helper",
+        "📖 Updated ORM documentation: raw SQL forbidden, NULL handling patterns mandatory",
+        "✨ Error report includes plugin name, site name, failed stage, and all stage statuses",
+        "📋 Copy Error button generates markdown-formatted error report"
+      ]
+    },
     {
       "version": "1.19.0",
       "date": "2026-02-04",
