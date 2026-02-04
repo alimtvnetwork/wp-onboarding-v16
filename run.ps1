@@ -622,7 +622,9 @@ if (-not $skipbuild) {
         }
         
         # Check if install needed
-        $NeedsInstall = -not (Test-Path "node_modules") -and -not (Test-Path ".pnp.cjs")
+        # -install or -rebuild flags ALWAYS trigger install (user explicitly requested)
+        # Otherwise, install if node_modules and .pnp.cjs are both missing
+        $NeedsInstall = $install -or (-not (Test-Path "node_modules") -and -not (Test-Path ".pnp.cjs"))
         
         # Check for required modules (catches new deps after git pull)
         if (-not $NeedsInstall -and $RequiredModules.Count -gt 0) {
@@ -636,6 +638,7 @@ if (-not $skipbuild) {
             }
         }
 
+        # Also install if -force was passed (clean build needs fresh deps)
         if (-not $DidFrontendInstall -and ($NeedsInstall -or $force)) {
             Write-Host "  Installing dependencies with pnpm..." -ForegroundColor Gray
             Invoke-Expression $EffectiveInstallCommand
