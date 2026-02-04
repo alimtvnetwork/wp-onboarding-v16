@@ -239,9 +239,10 @@ func normalizeUrl(rawUrl string) string {
 }
 
 // seedSitesAndPlugins seeds test sites and plugins from config
+// This implementation maps ALL plugins to ALL sites (requested behaviour)
 func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
-	// Build site name -> ID map for plugin mapping
-	siteNameToId := make(map[string]int64)
+	// Collect all seeded site IDs (for all→all mapping)
+	var allSiteIds []int64
 
 	// Get encryption key from config
 	encryptionKey := []byte(cfg.Security.EncryptionKey)
@@ -261,13 +262,12 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 		// Check if site already exists by URL
 		existingId, err := db.GetSiteIdByUrl(normalizedUrl)
 		if err == nil && existingId > 0 {
-			// Site exists - still populate map for mappings
-			siteNameToId[site.Name] = existingId
+			// Site exists - still add to allSiteIds for mappings
+			allSiteIds = append(allSiteIds, existingId)
 			continue
 		}
 
 		// IMPORTANT: Encrypt password using AES-256-GCM before storing
-		// This is the same encryption used by the site service
 		encryptedPassword, err := crypto.Encrypt(passwordPlaintext, encryptionKey)
 		if err != nil {
 			continue // Skip if encryption fails
@@ -278,10 +278,10 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 		if err != nil {
 			continue // Skip if insert fails (e.g., duplicate)
 		}
-		siteNameToId[site.Name] = id
+		allSiteIds = append(allSiteIds, id)
 	}
 
-	// Seed plugins
+	// Seed plugins and map each to ALL sites
 	for _, plugin := range cfg.Seed.Plugins {
 		var pluginId int64
 
@@ -298,12 +298,10 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 			}
 		}
 
-		// Always create mappings (idempotent via INSERT OR IGNORE)
-		for _, siteName := range plugin.SiteNames {
-			if siteId, ok := siteNameToId[siteName]; ok {
-				remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
-				_ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
-			}
+		// Create mappings to ALL seeded sites (all→all)
+		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
+		for _, siteId := range allSiteIds {
+			_ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
 		}
 	}
 

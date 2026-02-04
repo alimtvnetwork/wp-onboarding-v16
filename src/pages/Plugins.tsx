@@ -274,10 +274,7 @@ export default function Plugins() {
   };
 
   const openPublishDialog = (plugin: Plugin) => {
-    if (!plugin.mappings || plugin.mappings.length === 0) {
-      toast.warning("No sites mapped - add a site first");
-      return;
-    }
+    // Always open dialog - show guidance if no mappings
     setPublishPlugin(plugin);
     setShowPublishDialog(true);
   };
@@ -688,13 +685,13 @@ export default function Plugins() {
                       <span className="ml-1 hidden sm:inline">Sync</span>
                     </Button>
 
-                    {/* Publish button - always visible, disabled if no mappings */}
+                    {/* Publish button - always enabled, shows guidance if no mappings */}
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => openPublishDialog(plugin)}
-                      disabled={!plugin.mappings?.length || isPublishing === plugin.id}
-                      title={plugin.mappings?.length ? "Publish to WordPress sites" : "No sites linked – click Sites to add"}
+                      disabled={isPublishing === plugin.id}
+                      title={plugin.mappings?.length ? "Publish to WordPress sites" : "Click to see how to add sites"}
                       className={cn(
                         plugin.mappings?.length ? "text-primary hover:text-primary" : "text-muted-foreground"
                       )}
@@ -1103,9 +1100,24 @@ export default function Plugins() {
                 ))}
               </div>
             ) : (
-              <p className="text-center py-4 text-muted-foreground">
-                No sites linked to this plugin.
-              </p>
+              <div className="text-center py-6">
+                <Globe className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
+                <p className="text-muted-foreground font-medium">No sites linked to this plugin</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Click the "Sites" button on the plugin card to link WordPress sites first.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    setShowPublishDialog(false);
+                    if (publishPlugin) openMappingDialog(publishPlugin);
+                  }}
+                >
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Link Sites Now
+                </Button>
+              </div>
             )}
           </div>
 

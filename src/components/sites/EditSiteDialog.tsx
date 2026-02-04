@@ -15,12 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2, RefreshCw, CheckCircle, Package, Globe } from "lucide-react";
+import { Loader2, RefreshCw, CheckCircle, Package, Globe, Search } from "lucide-react";
 import { api, ApiError, Site, Plugin, PluginMapping } from "@/lib/api";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
 import { ConnectionTestLogs } from "./ConnectionTestLogs";
 import { useConnectionTestLogs } from "@/hooks/useConnectionTestLogs";
+import { cn } from "@/lib/utils";
 
 interface EditSiteDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
     category: null as string | null,
   });
   const [selectedPlugins, setSelectedPlugins] = useState<number[]>([]);
+  const [pluginSearch, setPluginSearch] = useState("");
 
   const { steps, isActive: testActive, clearLogs } = useConnectionTestLogs();
 
@@ -78,6 +80,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
       });
       setActiveTab("basic");
       setTestSuccess(false);
+      setPluginSearch("");
       clearLogs();
     }
   }, [site, clearLogs]);
@@ -324,36 +327,75 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
               Select plugins to deploy to this site.
             </p>
             
-            {allPlugins && allPlugins.length > 0 ? (
-              <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                {allPlugins.map((plugin: Plugin) => (
-                  <div
-                    key={plugin.id}
-                    className="flex items-center space-x-3 p-2 rounded-lg border hover:bg-muted/50 cursor-pointer"
-                    onClick={() => togglePluginSelection(plugin.id)}
-                  >
-                    <Checkbox
-                      checked={selectedPlugins.includes(plugin.id)}
-                      onCheckedChange={() => togglePluginSelection(plugin.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <Package className="h-4 w-4 text-primary shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{plugin.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{plugin.path}</p>
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search plugins..."
+                value={pluginSearch}
+                onChange={(e) => setPluginSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            
+            {(() => {
+              const filtered = (allPlugins || []).filter((plugin: Plugin) =>
+                plugin.name.toLowerCase().includes(pluginSearch.toLowerCase()) ||
+                plugin.path.toLowerCase().includes(pluginSearch.toLowerCase())
+              );
+              
+              if (filtered.length > 0) {
+                return (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {filtered.map((plugin: Plugin) => (
+                      <div
+                        key={plugin.id}
+                        className={cn(
+                          "flex items-center space-x-3 p-2 rounded-lg border cursor-pointer transition-colors",
+                          selectedPlugins.includes(plugin.id)
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:bg-muted/50"
+                        )}
+                        onClick={() => togglePluginSelection(plugin.id)}
+                      >
+                        <Checkbox
+                          checked={selectedPlugins.includes(plugin.id)}
+                          onCheckedChange={() => togglePluginSelection(plugin.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Package className="h-4 w-4 text-primary shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{plugin.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{plugin.path}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No plugins registered yet.</p>
-                <p className="text-xs">Register plugins from the Plugins page first.</p>
-              </div>
-            )}
+                );
+              }
+              
+              if (allPlugins && allPlugins.length === 0) {
+                return (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No plugins registered yet.</p>
+                    <p className="text-xs">Register plugins from the Plugins page first.</p>
+                  </div>
+                );
+              }
+              
+              if (pluginSearch) {
+                return (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="text-sm">No plugins match "{pluginSearch}"</p>
+                  </div>
+                );
+              }
+              
+              return null;
+            })()}
             
             {selectedPlugins.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-2 border-t">

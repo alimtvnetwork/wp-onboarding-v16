@@ -10,14 +10,35 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/useSettings";
-import { Eye, Archive, FileText, Palette, Loader2 } from "lucide-react";
+import { Eye, Archive, FileText, Palette, Loader2, Upload } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
   const location = useLocation();
+  
+  // Upload mode state (persisted to localStorage)
+  const [uploadMode, setUploadMode] = useState<"file" | "zip">(() => {
+    try {
+      const saved = localStorage.getItem("wppp_upload_mode");
+      return saved === "zip" ? "zip" : "file";
+    } catch {
+      return "file";
+    }
+  });
+  
+  const handleUploadModeChange = (value: string) => {
+    const mode = value as "file" | "zip";
+    setUploadMode(mode);
+    try {
+      localStorage.setItem("wppp_upload_mode", mode);
+    } catch (e) {
+      console.warn("[Settings] Failed to save upload mode:", e);
+    }
+  };
 
   useEffect(() => {
     if (location.hash !== "#about") return;
@@ -139,38 +160,41 @@ export default function Settings() {
         </CardContent>
       </Card>
 
-      {/* Logging */}
+      {/* Publish / Upload Mode */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <FileText className="h-5 w-5" />
-            Logging
+            <Upload className="h-5 w-5" />
+            Publish Settings
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Log Level</Label>
-            <Select defaultValue="info">
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="error">Error</SelectItem>
-                <SelectItem value="warn">Warning</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="debug">Debug</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Enable Debug Mode</Label>
-              <p className="text-xs text-muted-foreground">
-                Include stack traces and verbose output
-              </p>
-            </div>
-            <Switch />
+          <div className="space-y-3">
+            <Label>Upload Mode</Label>
+            <RadioGroup value={uploadMode} onValueChange={handleUploadModeChange} className="space-y-2">
+              <div className="flex items-start space-x-3">
+                <RadioGroupItem value="file" id="upload-file" />
+                <div className="grid gap-0.5 leading-none">
+                  <Label htmlFor="upload-file" className="cursor-pointer font-medium">
+                    File-by-file (default)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Upload changed files individually. Better for small updates and debugging.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <RadioGroupItem value="zip" id="upload-zip" />
+                <div className="grid gap-0.5 leading-none">
+                  <Label htmlFor="upload-zip" className="cursor-pointer font-medium">
+                    ZIP package
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Bundle all files into a ZIP and upload as one package. Faster for large plugins.
+                  </p>
+                </div>
+              </div>
+            </RadioGroup>
           </div>
         </CardContent>
       </Card>
