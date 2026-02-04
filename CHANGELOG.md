@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-02-04
+
+### Added
+- **What's New Popup**: Version-based changelog notification with Latest/Roadmap/History tabs
+- **View Details Button**: Backend Disconnected banner now opens Global Error Modal
+- **PowerShell Versioning**: Script now has version tracking (v1.1.0) with dedicated changelog
+- **Environment Config**: `.env` file with `VITE_API_URL` and `VITE_WS_URL` for local development
+
+### Changed
+- **Rebuild Flow**: `-r` flag now correctly sequences clean → install → build
+- **Install Detection**: Respects pnpm node-linker mode (PnP vs isolated)
+
+### Fixed
+- "vite is not recognized" error when using `-r` rebuild flag
+- PnP artifacts (`.pnp.cjs`, `.pnp.loader.mjs`) now cleaned in force mode
+
+---
+
 ## [1.0.0] - 2026-02-04
 
 ### Added
@@ -14,10 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Plugin Manager**: Scan local plugins, map to remote sites, track sync status
 - **Real-time Sync Dashboard**: WebSocket-powered live updates during sync operations
 - **Global Error Handling**: Tabbed error modal with stack traces, request info, and suggested fixes
-- **Backend Status Banner**: Detects HTML-instead-of-JSON responses with "View Details" button
+- **Backend Status Banner**: Detects HTML-instead-of-JSON responses
 - **Configurable Logging**: 12-hour timestamp format from single source of truth (`config.json`)
-- **PowerShell Runner**: `-r` flag for complete clean rebuild (clean → install → build → run)
-- **What's New Popup**: Version-based changelog notification on app updates
+- **PowerShell Runner**: `-r` flag for complete clean rebuild
 
 ### Technical
 - React 18 + TypeScript + Vite
@@ -38,5 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.1.0]: https://github.com/riseup-asia/wp-onboarding-v5/releases/tag/v1.1.0
 [1.0.0]: https://github.com/riseup-asia/wp-onboarding-v5/releases/tag/v1.0.0
-[Unreleased]: https://github.com/riseup-asia/wp-onboarding-v5/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/riseup-asia/wp-onboarding-v5/compare/v1.1.0...HEAD

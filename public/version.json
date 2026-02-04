@@ -1,7 +1,22 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "releaseDate": "2026-02-04",
   "changelog": [
+    {
+      "version": "1.1.0",
+      "date": "2026-02-04",
+      "title": "Version Tracking & Error Improvements",
+      "changes": [
+        "🆕 What's New popup with changelog, roadmap, and version history",
+        "🔧 Backend Disconnected banner now has 'View Details' button",
+        "📋 PowerShell script versioning (v1.1.0) with dedicated changelog",
+        "🔄 Fixed -r rebuild flag to properly clean → install → build",
+        "⚙️ Added .env file for VITE_API_URL configuration"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.0.0",
       "date": "2026-02-04",
@@ -14,12 +29,15 @@
         "⚙️ Configurable backend with 12-hour timestamp format",
         "🔧 PowerShell runner with -r rebuild flag"
       ],
-      "knownIssues": [
-        "Hosted Lovable preview cannot connect to localhost backend"
-      ]
+      "knownIssues": []
     }
   ],
   "roadmap": [
+    {
+      "status": "completed",
+      "title": "What's New Popup",
+      "description": "Version-based changelog notification system"
+    },
     {
       "status": "planned",
       "title": "E2E Testing Suite",
@@ -34,11 +52,6 @@
       "status": "planned",
       "title": "Git Integration",
       "description": "Commit and push plugin changes directly from the UI"
-    },
-    {
-      "status": "in-progress",
-      "title": "What's New Popup",
-      "description": "Version-based changelog notification system"
     }
   ]
 }

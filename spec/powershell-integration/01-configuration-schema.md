@@ -1,7 +1,7 @@
 # PowerShell Runner Configuration Schema
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-02  
+> **Version:** 2.1.0  
+> **Updated:** 2026-02-04  
 > **Status:** Active
 
 ---
@@ -24,6 +24,11 @@ The `powershell.json` configuration file defines project-specific paths and sett
     "$schema": {
       "type": "string",
       "description": "JSON Schema reference for validation"
+    },
+    "version": {
+      "type": "string",
+      "description": "Configuration/script version for tracking changes",
+      "examples": ["1.0.0", "1.1.0"]
     },
     "projectName": {
       "type": "string",
