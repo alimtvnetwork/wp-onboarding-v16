@@ -159,7 +159,7 @@ func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
 
 	detectedPath := filepath.Join(path, pluginDetectedFile)
 	if err := os.WriteFile(detectedPath, data, 0644); err != nil {
-		return apperror.Wrap(err, apperror.ErrFileWrite, "failed to write plugin detected file")
+		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to write plugin detected file")
 	}
 
 	s.log.Info("Created .plugin-detected.json", "path", detectedPath)
