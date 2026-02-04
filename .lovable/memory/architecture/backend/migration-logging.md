@@ -1,46 +1,47 @@
 # Memory: architecture/backend/migration-logging
 Updated: 2026-02-04
 
-The backend implements comprehensive logging for database migrations and seeding operations. 
+---
+
+## Overview
+
+The logger is explicitly injected into database migration and seeding services. This ensures that every operation—including site/plugin creation and many-to-many mapping attempts—is logged with detailed error context (such as UNIQUE constraint failures) to provide full traceability during system initialization.
+
+---
 
 ## Log Format
 
-All backend logs follow the format:
+All backend logs use the standardized format:
 ```
-[vX.X.X - TIMESTAMP] message key=value... (LEVEL file:line)
+[vX.X.X - TIMESTAMP] MESSAGE key=value ... (LEVEL file:line)
 ```
 
 Example:
 ```
-[v1.18.0 - 2026-02-04 05:30:00 PM] Starting database migrations (INFO migrations.go:34)
-[v1.18.0 - 2026-02-04 05:30:00 PM] Applying migration version=3 description=Add Category field (INFO migrations.go:50)
-[v1.18.0 - 2026-02-04 05:30:00 PM] Migration completed version=3 (INFO migrations.go:65)
+[v1.19.0 - 2026-02-04 05:30:00 PM] === SEEDING START === sites=1 plugins=3 (INFO config.go:268)
+[v1.19.0 - 2026-02-04 05:30:00 PM] Mapping CREATED table=PluginMappings pluginId=1 siteId=1 (INFO dbops.go:195)
 ```
 
-## Migration Logging
+---
 
-The `Migrate()` function in `database/migrations.go` accepts a logger and logs:
-- Migration start and current version
-- Each migration being applied (version + description)
-- Success/failure for each migration
-- Final summary with applied count
+## dbops Package Integration
 
-## Seeding Logging
+Since v1.19.0, all database operations that require traceability use the `dbops` package which provides:
 
-The `SeedIfNeeded()` function in `config/config.go` accepts a logger and logs:
-- Current vs config version comparison
-- Each site being processed (create vs exists)
-- Each plugin being processed (create vs exists)
-- Each mapping creation (success vs duplicate vs failure)
-- Final summary with counts
+1. **Stack Traces**: Captured on all errors
+2. **Table Names**: Logged with every operation
+3. **Affected Rows**: Validated and logged
+4. **Caller Info**: File and line number of the calling code
 
-## Error Tracking
+---
 
-Failed operations are logged with:
-- `WARN` level for non-fatal issues (duplicate mappings, missing plugins)
-- `ERROR` level for fatal issues that stop the process
-- Full error message and context in structured key=value format
+## Files
 
-## Integration
+- `backend/internal/logger/logger.go` - Simplified prefix format `[vX.X.X - TIME]`
+- `backend/internal/database/migrations.go` - Migration logging
+- `backend/internal/config/config.go` - Seeding and mapping logging
+- `backend/internal/database/dbops/dbops.go` - Shared utilities with stack traces
 
-Both `Migrate()` and `SeedIfNeeded()` receive the logger instance from `main.go` to ensure consistent formatting and the version prefix appears in all startup logs.
+---
+
+*Logger is injected via `database.Migrate(db, log)` and `config.SeedIfNeeded(db, cfg, log)`*

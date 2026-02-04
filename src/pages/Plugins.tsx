@@ -539,12 +539,26 @@ export default function Plugins() {
     }
   };
 
-  const openMappingDialog = (plugin: Plugin) => {
+  const openMappingDialog = async (plugin: Plugin) => {
     setSelectedPlugin(plugin);
-    setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
-    // Use plugin name as default remote slug if no mappings exist
-    setRemoteSlug(plugin.mappings?.[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-'));
     setShowMappingDialog(true);
+    
+    // Fetch fresh mappings from API instead of using potentially stale plugin.mappings
+    try {
+      const response = await api.getPluginMappings(plugin.id);
+      if (response.success && response.data) {
+        setSelectedSites(response.data.map((m) => m.siteId));
+        setRemoteSlug(response.data[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-'));
+      } else {
+        // Fallback to local data if API fails
+        setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
+        setRemoteSlug(plugin.mappings?.[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-'));
+      }
+    } catch {
+      // Fallback to local data on error
+      setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
+      setRemoteSlug(plugin.mappings?.[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-'));
+    }
   };
 
   const handleSaveMappings = async () => {
@@ -557,12 +571,21 @@ export default function Plugins() {
         remoteSlug: remoteSlug,
       });
       if (response.success) {
-        toast.success("Site mappings saved", {
+        toast.success("Site mappings saved!", {
           description: `${selectedSites.length} site(s) linked to ${selectedPlugin.name}`,
+          style: {
+            background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+            color: "white",
+            border: "none",
+          },
         });
-        // Invalidate both plugins and sites to ensure bidirectional sync
-        queryClient.invalidateQueries({ queryKey: ["plugins"] });
-        queryClient.invalidateQueries({ queryKey: ["sites"] });
+        // Invalidate AND refetch both plugins and sites to ensure bidirectional sync
+        await queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        await queryClient.invalidateQueries({ queryKey: ["sites"] });
+        // Also invalidate the specific site mappings that may have changed
+        for (const siteId of selectedSites) {
+          queryClient.invalidateQueries({ queryKey: ["sites", siteId, "mappings"] });
+        }
         setShowMappingDialog(false);
       } else if (response.error) {
         const captured = captureError(response.error, {

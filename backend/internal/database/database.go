@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"sync"
 
+	"wp-plugin-publish/internal/database/dbops"
+	"wp-plugin-publish/internal/logger"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -248,12 +251,22 @@ func (db *DB) CreateSeedPlugin(name, path, category string, gitEnabled, autoPubl
 }
 
 // CreateSeedMapping creates a plugin-site mapping for seeding
-func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string) error {
-	_, err := db.Exec(`
+// Returns (created bool, error) - created is true only if a new row was inserted
+func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string, log *logger.Logger) (bool, error) {
+	ctx := dbops.Context{
+		Table:  "PluginMappings",
+		Logger: log,
+		Fields: map[string]interface{}{
+			"pluginId":   pluginID,
+			"siteId":     siteID,
+			"remoteSlug": remoteSlug,
+		},
+	}
+
+	return dbops.CreateMapping(db.DB, ctx, `
 		INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, CreatedAt, UpdatedAt)
 		VALUES (?, ?, ?, datetime('now'), datetime('now'))
 	`, pluginID, siteID, remoteSlug)
-	return err
 }
 
 // GetDbVersion returns the stored database version for changelog comparison
