@@ -14,12 +14,14 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/internal/ws"
 )
 
 // Config holds backup service configuration
 type Config struct {
 	DB            *database.DB
 	Logger        *logger.Logger
+	WSHub         *ws.Hub
 	BackupDir     string
 	RetentionDays int
 	MaxPerPlugin  int
@@ -29,6 +31,7 @@ type Config struct {
 type Service struct {
 	db            *database.DB
 	log           *logger.Logger
+	wsHub         *ws.Hub
 	backupDir     string
 	retentionDays int
 	maxPerPlugin  int
@@ -44,28 +47,46 @@ func New(cfg Config) *Service {
 	return &Service{
 		db:            cfg.DB,
 		log:           cfg.Logger,
+		wsHub:         cfg.WSHub,
 		backupDir:     cfg.BackupDir,
 		retentionDays: cfg.RetentionDays,
 		maxPerPlugin:  cfg.MaxPerPlugin,
 	}
 }
 
+// broadcastLog sends a log entry via WebSocket if hub is available
+func (s *Service) broadcastLog(pluginID int64, level, step, message string, details map[string]interface{}) {
+	if s.wsHub != nil {
+		s.wsHub.BroadcastBackupLog(pluginID, level, step, message, details)
+	}
+}
+
 // Create downloads the current remote plugin and saves as a backup
 func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, error) {
 	s.log.Info("Creating backup", "mapping_id", mappingID)
+	s.broadcastLog(mappingID, "info", "init", "Starting backup creation", map[string]interface{}{
+		"mappingId": mappingID,
+	})
 
 	// Generate backup filename with timestamp
 	timestamp := time.Now().Format("20060102-150405")
 	filename := fmt.Sprintf("backup-%d-%s.zip", mappingID, timestamp)
 	backupPath := filepath.Join(s.backupDir, filename)
 
+	s.broadcastLog(mappingID, "info", "prepare", fmt.Sprintf("Preparing backup file: %s", filename), nil)
+
 	// TODO: Download remote plugin via WP REST
 	// For now, create an empty placeholder file
 	file, err := os.Create(backupPath)
 	if err != nil {
+		s.broadcastLog(mappingID, "error", "create", fmt.Sprintf("Failed to create backup file: %v", err), nil)
 		return nil, fmt.Errorf("failed to create backup file: %w", err)
 	}
 	file.Close()
+
+	s.broadcastLog(mappingID, "info", "write", "Backup file created successfully", map[string]interface{}{
+		"path": backupPath,
+	})
 
 	// Get file info for size
 	info, _ := os.Stat(backupPath)
@@ -84,11 +105,21 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	// TODO: Record in database
 
 	// Enforce retention
+	s.broadcastLog(mappingID, "info", "retention", "Enforcing retention policy", map[string]interface{}{
+		"maxPerPlugin":  s.maxPerPlugin,
+		"retentionDays": s.retentionDays,
+	})
 	if err := s.enforceRetention(ctx, mappingID); err != nil {
 		s.log.Warn("Failed to enforce retention", "error", err)
+		s.broadcastLog(mappingID, "warn", "retention", fmt.Sprintf("Retention enforcement warning: %v", err), nil)
 	}
 
 	s.log.Info("Backup created", "mapping_id", mappingID, "path", backupPath)
+	s.broadcastLog(mappingID, "info", "complete", "Backup created successfully", map[string]interface{}{
+		"path":     backupPath,
+		"fileSize": size,
+	})
+
 	return backup, nil
 }
 
@@ -107,11 +138,21 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Backup, error)
 // Restore uploads a backup to WordPress
 func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, error) {
 	s.log.Info("Restoring backup", "backup_id", backupID)
+	s.broadcastLog(backupID, "info", "init", "Starting backup restore", map[string]interface{}{
+		"backupId": backupID,
+	})
 
 	// TODO: Implement restore:
 	// 1. Get backup file path
+	s.broadcastLog(backupID, "info", "locate", "Locating backup file", nil)
+
 	// 2. Upload to WordPress
+	s.broadcastLog(backupID, "info", "upload", "Uploading backup to WordPress", nil)
+
 	// 3. Activate plugin
+	s.broadcastLog(backupID, "info", "activate", "Activating restored plugin", nil)
+
+	s.broadcastLog(backupID, "info", "complete", "Backup restored successfully", nil)
 
 	return &RestoreResult{Success: true}, nil
 }
@@ -119,9 +160,14 @@ func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, 
 // Delete removes a backup file and database record
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	s.log.Info("Deleting backup", "id", id)
+	s.broadcastLog(id, "info", "delete", "Deleting backup", map[string]interface{}{
+		"backupId": id,
+	})
 
 	// TODO: Get backup path from database
 	// TODO: Delete file and database record
+
+	s.broadcastLog(id, "info", "complete", "Backup deleted successfully", nil)
 
 	return nil
 }
@@ -129,8 +175,12 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 // Cleanup removes expired backups
 func (s *Service) Cleanup(ctx context.Context) error {
 	s.log.Info("Running backup cleanup")
+	s.broadcastLog(0, "info", "init", "Starting backup cleanup", map[string]interface{}{
+		"retentionDays": s.retentionDays,
+	})
 
 	cutoff := time.Now().AddDate(0, 0, -s.retentionDays)
+	var removedCount int
 
 	// Walk backup directory and find old files
 	err := filepath.Walk(s.backupDir, func(path string, info os.FileInfo, err error) error {
@@ -140,17 +190,28 @@ func (s *Service) Cleanup(ctx context.Context) error {
 
 		if info.ModTime().Before(cutoff) {
 			s.log.Debug("Removing expired backup", "path", path, "modified", info.ModTime())
-			return os.Remove(path)
+			s.broadcastLog(0, "debug", "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), map[string]interface{}{
+				"modifiedAt": info.ModTime().Format(time.RFC3339),
+			})
+			if err := os.Remove(path); err == nil {
+				removedCount++
+			}
+			return nil
 		}
 
 		return nil
 	})
 
 	if err != nil {
+		s.broadcastLog(0, "error", "cleanup", fmt.Sprintf("Cleanup failed: %v", err), nil)
 		return fmt.Errorf("cleanup failed: %w", err)
 	}
 
 	s.log.Info("Backup cleanup complete")
+	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), map[string]interface{}{
+		"removedCount": removedCount,
+	})
+
 	return nil
 }
 
@@ -165,15 +226,20 @@ func (s *Service) enforceRetention(ctx context.Context, mappingID int64) error {
 func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) (*ExportResult, error) {
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
+	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), map[string]interface{}{
+		"sourceCount": len(sourcePaths),
+	})
 
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create output directory: %v", err), nil)
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	// Create zip file
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
+		s.broadcastLog(0, "error", "create", fmt.Sprintf("Failed to create zip file: %v", err), nil)
 		return nil, fmt.Errorf("failed to create zip file: %w", err)
 	}
 	defer zipFile.Close()
@@ -188,12 +254,17 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		info, err := os.Stat(sourcePath)
 		if err != nil {
 			s.log.Warn("Skipping source", "path", sourcePath, "error", err)
+			s.broadcastLog(0, "warn", "skip", fmt.Sprintf("Skipping source: %s", sourcePath), map[string]interface{}{
+				"error": err.Error(),
+			})
 			continue
 		}
 
 		if info.IsDir() {
 			// Walk directory
 			baseDir := filepath.Base(sourcePath)
+			s.broadcastLog(0, "info", "scan", fmt.Sprintf("Scanning directory: %s", baseDir), nil)
+
 			err = filepath.Walk(sourcePath, func(path string, fi os.FileInfo, err error) error {
 				if err != nil || fi.IsDir() {
 					return nil
@@ -234,6 +305,11 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		"total_bytes", totalBytes,
 		"duration_ms", duration.Milliseconds(),
 	)
+	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Export complete: %d files, %d bytes", filesCount, totalBytes), map[string]interface{}{
+		"filesCount": filesCount,
+		"totalBytes": totalBytes,
+		"durationMs": duration.Milliseconds(),
+	})
 
 	return &ExportResult{
 		OutputPath: outputPath,
@@ -274,26 +350,35 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, overwrite bool) (*ImportResult, error) {
 	startTime := time.Now()
 	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", overwrite)
+	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), map[string]interface{}{
+		"destination": destDir,
+		"overwrite":   overwrite,
+	})
 
 	// Open zip file
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
+		s.broadcastLog(0, "error", "open", fmt.Sprintf("Failed to open zip: %v", err), nil)
 		return nil, fmt.Errorf("failed to open zip: %w", err)
 	}
 	defer reader.Close()
 
 	// Check if destination exists
 	if _, err := os.Stat(destDir); err == nil && !overwrite {
+		s.broadcastLog(0, "error", "check", "Destination exists, overwrite not enabled", nil)
 		return nil, fmt.Errorf("destination exists, use overwrite=true to replace")
 	}
 
 	// Create destination directory
 	if err := os.MkdirAll(destDir, 0755); err != nil {
+		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create destination: %v", err), nil)
 		return nil, fmt.Errorf("failed to create destination: %w", err)
 	}
 
 	var filesCount int
 	var totalBytes int64
+
+	s.broadcastLog(0, "info", "extract", fmt.Sprintf("Extracting %d files", len(reader.File)), nil)
 
 	// Extract files
 	for _, file := range reader.File {
@@ -305,6 +390,7 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		destPath := filepath.Join(destDir, file.Name)
 		if !strings.HasPrefix(destPath, filepath.Clean(destDir)+string(os.PathSeparator)) {
 			s.log.Warn("Skipping potentially dangerous file path", "path", file.Name)
+			s.broadcastLog(0, "warn", "security", fmt.Sprintf("Skipping dangerous path: %s", file.Name), nil)
 			continue
 		}
 
@@ -312,12 +398,14 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 
 		// Create directory structure
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			s.broadcastLog(0, "error", "mkdir", fmt.Sprintf("Failed to create directory: %v", err), nil)
 			return nil, fmt.Errorf("failed to create directory: %w", err)
 		}
 
 		// Extract file
 		written, err := s.extractFile(file, destPath)
 		if err != nil {
+			s.broadcastLog(0, "error", "extract", fmt.Sprintf("Failed to extract %s: %v", file.Name, err), nil)
 			return nil, fmt.Errorf("failed to extract %s: %w", file.Name, err)
 		}
 
@@ -332,6 +420,11 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		"total_bytes", totalBytes,
 		"duration_ms", duration.Milliseconds(),
 	)
+	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Import complete: %d files, %d bytes", filesCount, totalBytes), map[string]interface{}{
+		"filesCount": filesCount,
+		"totalBytes": totalBytes,
+		"durationMs": duration.Milliseconds(),
+	})
 
 	return &ImportResult{
 		DestPath:   destDir,

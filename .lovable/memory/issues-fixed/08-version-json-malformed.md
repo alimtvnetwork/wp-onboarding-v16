@@ -1,5 +1,5 @@
 # Issue: Malformed version.json Causes App Crash
-Fixed: 2026-02-04
+Fixed: 2026-02-04 (4th occurrence)
 
 ---
 
@@ -8,37 +8,44 @@ Fixed: 2026-02-04
 When updating `public/version.json` to add new changelog entries, the JSON structure was corrupted during the line-replace operation, causing a parse error that crashed the application with:
 
 ```
-SyntaxError: Expected ',' or ']' after array element in JSON at position 1123
+SyntaxError: Expected ',' or ']' after array element in JSON at position XXXX
 ```
 
-The error occurred because:
+The error occurs because:
 1. A new changelog entry was inserted but the previous entry's `changes` array was not properly closed
 2. The next version entry started inside the unclosed array
+3. Using line-replace on JSON files with complex nested structures results in partial replacements
 
 ---
 
 ## Root Cause
 
-Using `lov-line-replace` on JSON files with complex nested structures can result in partial replacements that break JSON validity. The replacement merged two version entries incorrectly.
+Using `lov-line-replace` on JSON files with complex nested structures can result in partial replacements that break JSON validity. **NEVER use line-replace on version.json.**
 
 ---
 
-## Solution
+## Solution - MANDATORY
 
-When editing `version.json`:
-1. **Always validate JSON structure** after changes
-2. **Include complete objects** in replacements (don't cut mid-array)
-3. **Check for closing brackets** `]` and `}` are properly paired
+When editing `public/version.json`:
+1. **ALWAYS use `lov-write` to write the COMPLETE file** - never use line-replace
+2. **Copy the entire existing content first**
+3. **Add new entries at the beginning of the changelog array**
+4. **Validate JSON structure before writing**
 
 ---
 
-## Prevention Rules for AI
+## Prevention Rules for AI - CRITICAL
 
-When updating `public/version.json`:
-1. **Never cut a replacement in the middle of an array or object**
-2. **Always include the full changelog entry** including opening and closing braces/brackets
-3. **Verify the replacement includes proper commas** between array elements
-4. **After editing, mentally validate**: Does each `[` have a `]`? Does each `{` have a `}`?
+1. **NEVER use `lov-line-replace` on `public/version.json`** - always rewrite the entire file
+2. **Always include the full changelog array** when making changes
+3. **Validate JSON structure before submitting**: Does each `[` have a `]`? Does each `{` have a `}`?
+4. **Keep the file organized**: newest entries at the top of changelog array
+
+---
+
+## Occurrence Count
+
+This issue has occurred **4 times**. Each time it was caused by using line-replace instead of full file write.
 
 ---
 
@@ -48,4 +55,4 @@ When updating `public/version.json`:
 
 ---
 
-*This is the third occurrence of this issue. It must be prevented in future updates.*
+*This is a recurring issue that MUST be prevented by using full file writes.*
