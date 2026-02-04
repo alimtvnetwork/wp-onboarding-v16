@@ -622,14 +622,14 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", map[string]interface{}{
 			"siteId":   id,
 			"siteName": site.Name,
-			"siteUrl":  site.Url,
+			"siteUrl":  site.URL,
 		})
 	}
 
 	// Decrypt password
-	decrypted, err := s.decryptPassword(site.PasswordEncrypted)
+	decrypted, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDecryption, "failed to decrypt site password")
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
 	}
 
 	// Create WordPress client with progress callback
@@ -644,7 +644,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 			})
 		}
 	}
-	client := s.wpClientFactory(site.Url, site.Username, decrypted, progressCallback)
+	client := s.wpClientFactory(site.URL, site.Username, string(decrypted), progressCallback)
 
 	// If uploader path not specified, try to determine it
 	if uploaderPath == "" {
@@ -665,7 +665,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		if s.wsHub != nil {
 			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), map[string]interface{}{"siteId": id})
 		}
-		return nil, apperror.Wrap(err, apperror.ErrFilesystem, "failed to create uploader ZIP")
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
 	defer os.Remove(zipPath)
 
@@ -694,11 +694,11 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 			}
 			uploadResult, err = client.UploadPluginViaOnboard(zipPath, true)
 		} else {
-			// No helper plugin available - this is a limitation
+		// No helper plugin available - this is a limitation
 			if s.wsHub != nil {
 				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", map[string]interface{}{"siteId": id})
 			}
-			return nil, apperror.New(apperror.ErrWordPressAPI, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
+			return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
 		}
 	}
 
@@ -706,7 +706,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		if s.wsHub != nil {
 			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), map[string]interface{}{"siteId": id})
 		}
-		return nil, apperror.Wrap(err, apperror.ErrWordPressAPI, "failed to upload uploader plugin")
+		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
 	if s.wsHub != nil {
@@ -720,7 +720,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", map[string]interface{}{
 		"siteId":   id,
 		"siteName": site.Name,
-		"siteUrl":  site.Url,
+		"siteUrl":  site.URL,
 		"result":   uploadResult,
 	})
 
