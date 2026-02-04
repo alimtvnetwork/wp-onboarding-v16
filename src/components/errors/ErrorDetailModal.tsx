@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useVersionInfo } from "@/hooks/useWhatsNew";
 
 interface ErrorLog {
   id: number;
@@ -28,8 +29,14 @@ interface ErrorDetailModalProps {
 }
 
 export function ErrorDetailModal({ open, onOpenChange, error }: ErrorDetailModalProps) {
+  const { data: versionInfo } = useVersionInfo();
+  const appName = versionInfo?.appName || "WP Plugin Publish";
+  const appVersion = versionInfo?.version || "0.0.0";
+
   const copyFullError = () => {
     const text = `## Error Report
+
+**App:** ${appName} v${appVersion}
 
 **ID:** ${error.id}
 **Code:** ${error.code}

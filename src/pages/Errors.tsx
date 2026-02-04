@@ -7,13 +7,20 @@ import { AlertCircle, Trash2, Copy, Loader2, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useVersionInfo } from "@/hooks/useWhatsNew";
 
 export default function Errors() {
   const { data: errors, isLoading } = useErrors();
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const { data: versionInfo } = useVersionInfo();
+
+  const appName = versionInfo?.appName || "WP Plugin Publish";
+  const appVersion = versionInfo?.version || "0.0.0";
 
   const copyToClipboard = (error: typeof errors extends (infer T)[] ? T : never) => {
     const text = `## Error Report
+
+**App:** ${appName} v${appVersion}
 
 **Code:** ${error.code}
 **Level:** ${error.level}

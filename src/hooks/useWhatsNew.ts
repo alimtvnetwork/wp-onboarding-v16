@@ -18,30 +18,42 @@ export interface RoadmapItem {
 }
 
 export interface VersionInfo {
+  appName?: string;
   version: string;
   releaseDate: string;
   changelog: ChangelogEntry[];
   roadmap: RoadmapItem[];
 }
 
-async function fetchVersionInfo(): Promise<VersionInfo> {
-  const response = await fetch("/version.json");
+function resolvePublicUrl(path: string): string {
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/?$/, "/");
+  const cleanPath = path.replace(/^\//, "");
+  return `${base}${cleanPath}`;
+}
+
+export async function fetchVersionInfo(): Promise<VersionInfo> {
+  const response = await fetch(resolvePublicUrl("version.json"));
   if (!response.ok) {
     throw new Error("Failed to fetch version info");
   }
   return response.json();
 }
 
-export function useWhatsNew() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hasNewVersion, setHasNewVersion] = useState(false);
-
-  const { data: versionInfo, isLoading, error } = useQuery({
+/** Read-only access to version.json (no modal state / side effects). */
+export function useVersionInfo() {
+  return useQuery({
     queryKey: ["version-info"],
     queryFn: fetchVersionInfo,
     staleTime: 1000 * 60 * 60, // 1 hour
     retry: 1,
   });
+}
+
+export function useWhatsNew() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hasNewVersion, setHasNewVersion] = useState(false);
+
+  const { data: versionInfo, isLoading, error } = useVersionInfo();
 
   // Check if there's a new version on mount
   useEffect(() => {

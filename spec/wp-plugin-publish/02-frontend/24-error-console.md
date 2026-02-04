@@ -234,6 +234,8 @@ export function ErrorCard({ error }: ErrorCardProps) {
 function formatErrorForCopy(error: ErrorLog): string {
   const lines = [
     '=== WP Plugin Publish Error ===',
+    // MUST be sourced from public/version.json (see useVersionInfo/useWhatsNew)
+    `App: WP Plugin Publish v${currentVersion}`,
     `Timestamp: ${error.createdAt}`,
     `Code: ${error.code}`,
     `Level: ${error.level}`,
@@ -349,6 +351,7 @@ When user clicks "Copy for AI":
 
 ```
 === WP Plugin Publish Error ===
+App: WP Plugin Publish v1.1.0
 Timestamp: 2026-02-01T10:30:00Z
 Code: E3002
 Level: error

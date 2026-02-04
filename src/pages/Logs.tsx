@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useVersionInfo } from "@/hooks/useWhatsNew";
 
 interface LogEntry {
   id: string;
@@ -107,6 +108,10 @@ export default function Logs() {
   const [autoScroll, setAutoScroll] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { lastMessage } = useWebSocket();
+  const { data: versionInfo } = useVersionInfo();
+
+  const appName = versionInfo?.appName || "WP Plugin Publish";
+  const appVersion = versionInfo?.version || "0.0.0";
 
   // Add new log entries from WebSocket
   useEffect(() => {
@@ -136,8 +141,20 @@ export default function Logs() {
   };
 
   const handleExportLogs = () => {
-    const content = filteredLogs
-      .map((l) => `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.source}] ${l.message}`)
+    const headerLines = [
+      `=== ${appName} Logs ===`,
+      `App Version: v${appVersion}`,
+      `Exported: ${new Date().toISOString()}`,
+      "",
+    ];
+
+    const content = headerLines
+      .concat(
+        filteredLogs.map(
+          (l) =>
+            `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.source}] ${l.message}`
+        )
+      )
       .join("\n");
     const blob = new Blob([content], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -165,6 +182,9 @@ export default function Logs() {
           <h1 className="text-2xl font-bold">Logs</h1>
           <p className="text-muted-foreground">
             Real-time activity logs and operation history
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {appName} <span className="font-mono">v{appVersion}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">

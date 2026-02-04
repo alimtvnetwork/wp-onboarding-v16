@@ -2,6 +2,26 @@
 
 All notable changes to the PowerShell runner script (`run.ps1`) will be documented in this file.
 
+## New Entry Template (copy/paste)
+
+Use this template whenever you change `run.ps1` or make a functional/config-schema change to `powershell.json`.
+
+```md
+## [X.Y.Z] - YYYY-MM-DD
+
+### Added
+- ...
+
+### Changed
+- ...
+
+### Fixed
+- ...
+
+### Notes
+- (optional) Migration steps, breaking changes, required config updates
+```
+
 ---
 
 ## [1.1.0] - 2026-02-04

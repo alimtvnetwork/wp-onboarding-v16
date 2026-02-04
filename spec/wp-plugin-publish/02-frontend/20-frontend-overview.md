@@ -133,6 +133,7 @@ Error console for debugging:
 - Filter by level/code
 - Expand for full details
 - Copy to clipboard button
+- Copied reports MUST include app name + version (from `public/version.json`)
 
 ---
 
