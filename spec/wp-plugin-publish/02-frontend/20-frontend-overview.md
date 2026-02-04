@@ -138,10 +138,66 @@ Error console for debugging:
 
 ## API Client
 
+### Endpoint Resolution (CRITICAL)
+
+The API base URL is resolved via environment variables. This is the **single source of truth** for frontend→backend connectivity.
+
+```typescript
+// src/lib/endpoints.ts
+const API_PREFIX = "/api/v1";
+
+export function resolveApiOrigin(): string | undefined {
+  return import.meta.env.VITE_API_URL as string | undefined;
+}
+
+export function resolveApiBase(): string {
+  const origin = resolveApiOrigin();
+  return origin ? `${origin.replace(/\/$/, "")}${API_PREFIX}` : API_PREFIX;
+}
+```
+
+### Environment Variables
+
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `VITE_API_URL` | Backend origin (optional) | `http://localhost:8080` |
+| `VITE_WS_URL` | WebSocket URL (optional) | `ws://localhost:8080/ws` |
+
+If not set, defaults to same-origin (works when UI is served by the Go backend).
+
+### HTML-vs-JSON Detection
+
+The API client detects when the backend returns HTML instead of JSON (common when:
+- UI is loaded from hosted preview instead of localhost
+- Backend is not running
+- Wrong port/URL configured)
+
+When this happens, a structured error `E9005` is raised with full diagnostics:
+
+```typescript
+// Error context includes:
+{
+  requestUrl: "http://localhost:8080/api/v1/plugins",
+  apiBase: "/api/v1",
+  apiOrigin: null,  // or the VITE_API_URL value
+  responseStatus: 200,
+  contentType: "text/html",
+  responsePreview: "<!doctype html>..."
+}
+```
+
+### IMPORTANT: Hosted Preview Limitation
+
+The hosted Lovable preview (`*.lovable.app`) **cannot reach your local Go backend** on `localhost:8080`.
+
+To use the app:
+1. Run the backend: `.\run.ps1 -r`
+2. Open `http://localhost:8080` in your browser (served by Go)
+
+### API Response Wrapper
+
 ```typescript
 // src/lib/api.ts
-const API_BASE = 'http://localhost:8080/api/v1';
-
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
@@ -153,80 +209,14 @@ export interface ApiError {
   message: string;
   details?: string;
   context?: Record<string, unknown>;
-  file?: string;
-  line?: number;
-  function?: string;
-  stackTrace?: string;
   timestamp: string;
 }
 
-async function request<T>(
-  endpoint: string,
-  options?: RequestInit
-): Promise<ApiResponse<T>> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  const data = await response.json();
-  return data;
+// Throws ApiClientError for failed responses (integrates with GlobalErrorModal)
+export function requireSuccess<T>(response: ApiResponse<T>, meta: ApiCallMeta): T {
+  if (response.success) return response.data as T;
+  throw new ApiClientError(response.error!, meta);
 }
-
-export const api = {
-  // Sites
-  getSites: () => request<Site[]>('/sites'),
-  getSite: (id: number) => request<Site>(`/sites/${id}`),
-  createSite: (site: CreateSiteInput) => 
-    request<Site>('/sites', { method: 'POST', body: JSON.stringify(site) }),
-  updateSite: (id: number, site: UpdateSiteInput) =>
-    request<Site>(`/sites/${id}`, { method: 'PUT', body: JSON.stringify(site) }),
-  deleteSite: (id: number) =>
-    request<void>(`/sites/${id}`, { method: 'DELETE' }),
-  testConnection: (id: number) =>
-    request<ConnectionResult>(`/sites/${id}/test`),
-
-  // Plugins
-  getPlugins: () => request<Plugin[]>('/plugins'),
-  getPlugin: (id: number) => request<Plugin>(`/plugins/${id}`),
-  createPlugin: (plugin: CreatePluginInput) =>
-    request<Plugin>('/plugins', { method: 'POST', body: JSON.stringify(plugin) }),
-  updatePlugin: (id: number, plugin: UpdatePluginInput) =>
-    request<Plugin>(`/plugins/${id}`, { method: 'PUT', body: JSON.stringify(plugin) }),
-  deletePlugin: (id: number) =>
-    request<void>(`/plugins/${id}`, { method: 'DELETE' }),
-
-  // Sync
-  checkSync: (pluginId: number) =>
-    request<SyncResult>(`/plugins/${pluginId}/sync/check`),
-  publishPlugin: (pluginId: number, mode: 'single' | 'full') =>
-    request<PublishResult>(`/plugins/${pluginId}/publish`, {
-      method: 'POST',
-      body: JSON.stringify({ mode }),
-    }),
-  getFileChanges: (pluginId: number) =>
-    request<FileChange[]>(`/plugins/${pluginId}/changes`),
-
-  // Backups
-  getBackups: (pluginId: number) =>
-    request<Backup[]>(`/plugins/${pluginId}/backups`),
-  restoreBackup: (backupId: number) =>
-    request<RestoreResult>(`/backups/${backupId}/restore`, { method: 'POST' }),
-
-  // Errors
-  getErrors: (limit?: number) =>
-    request<ErrorLog[]>(`/errors${limit ? `?limit=${limit}` : ''}`),
-  clearErrors: () =>
-    request<void>('/errors', { method: 'DELETE' }),
-
-  // Settings
-  getSettings: () => request<Settings>('/settings'),
-  updateSettings: (settings: UpdateSettingsInput) =>
-    request<Settings>('/settings', { method: 'PUT', body: JSON.stringify(settings) }),
-};
 ```
 
 ---
@@ -235,61 +225,27 @@ export const api = {
 
 ```typescript
 // src/lib/ws.ts
-type EventHandler = (data: any) => void;
+import { resolveWsUrl } from "@/lib/endpoints";
+
+type EventHandler = (data: unknown) => void;
 
 class WebSocketClient {
   private ws: WebSocket | null = null;
   private handlers: Map<string, Set<EventHandler>> = new Map();
-  private reconnectTimer: number | null = null;
+  private url: string = resolveWsUrl();
 
   connect() {
-    this.ws = new WebSocket('ws://localhost:8080/ws');
-
-    this.ws.onopen = () => {
-      console.log('WebSocket connected');
-      if (this.reconnectTimer) {
-        clearTimeout(this.reconnectTimer);
-        this.reconnectTimer = null;
-      }
-    };
-
-    this.ws.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      const { type, data } = message;
-      
-      const typeHandlers = this.handlers.get(type);
-      if (typeHandlers) {
-        typeHandlers.forEach(handler => handler(data));
-      }
-    };
-
-    this.ws.onclose = () => {
-      console.log('WebSocket disconnected, reconnecting...');
-      this.reconnectTimer = setTimeout(() => this.connect(), 3000);
-    };
-  }
-
-  on(event: string, handler: EventHandler) {
-    if (!this.handlers.has(event)) {
-      this.handlers.set(event, new Set());
-    }
-    this.handlers.get(event)!.add(handler);
-
-    return () => {
-      this.handlers.get(event)?.delete(handler);
-    };
-  }
-
-  disconnect() {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-    }
-    this.ws?.close();
+    this.ws = new WebSocket(this.url);
+    // ... reconnect logic
   }
 }
 
 export const wsClient = new WebSocketClient();
 ```
+
+WebSocket URL resolution follows the same pattern as API:
+- Uses `VITE_WS_URL` if set
+- Otherwise derives from `window.location` (same-origin)
 
 ---
 

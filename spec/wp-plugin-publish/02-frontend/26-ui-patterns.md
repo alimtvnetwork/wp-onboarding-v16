@@ -292,28 +292,50 @@ Provide full error details with copy functionality for debugging.
 - Validation failures with technical details
 - Any error where context is important
 
+### Rule of Thumb (MANDATORY)
+
+> **Any user-visible error MUST be capturable in the Error Modal, with the resolved request URL shown.**
+
+If an API call returns **HTML instead of JSON**, this surfaces as error code `E9005` and the modal opens immediately (not just a toast).
+
+### Error Modal Content
+
+The modal MUST display:
+1. **Resolved request URL** — The actual URL the frontend called
+2. **Configured API base** — What `resolveApiBase()` returned
+3. **VITE_API_URL value** — Whether the env var was set
+4. **Request method/body** (with secrets masked)
+5. **Response status and content-type**
+
 ### Implementation
+
 ```typescript
 import { useErrorStore } from "@/stores/errorStore";
 
 const { captureError, openErrorModal } = useErrorStore();
 
-// On API error
-if (!response.success && response.error) {
-  const captured = captureError(response.error, {
-    endpoint: '/api/endpoint',
-    method: 'POST',
-    requestBody: inputData,
+// On API error (structured ApiClientError)
+if (isApiClientError(error)) {
+  const captured = captureError(error.apiError, {
+    endpoint: error.meta.requestUrl,  // <-- full resolved URL
+    method: error.meta.method,
+    requestBody: error.meta.requestBody,
   });
-  openErrorModal(captured);
+  
+  // Auto-open for connectivity errors
+  if (error.apiError.code === "E9005") {
+    openErrorModal(captured);
+  }
 }
 ```
 
-### Modal Features
-- Error code and message
-- Request details (endpoint, method, body with masked secrets)
-- Stack trace (if available)
-- "Copy Full Report" button for support tickets
+### Error Codes for Connectivity Issues
+
+| Code | Meaning |
+|------|---------|
+| `E9003` | Network error (fetch failed) |
+| `E9005` | API returned HTML instead of JSON |
+| `E9006` | Unexpected response format (not JSON, not HTML) |
 
 ---
 
