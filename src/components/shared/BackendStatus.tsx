@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { resolveApiUrl } from "@/lib/endpoints";
 
 interface BackendStatusProps {
   /** Polling interval in ms. Default: 10000 (10 seconds) */
@@ -18,20 +19,22 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
   const checkBackendConnection = async () => {
     setIsChecking(true);
     try {
-      const response = await fetch("/api/v1/health", {
+      const response = await fetch(resolveApiUrl("/health"), {
         method: "GET",
         headers: { Accept: "application/json" },
       });
 
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
-        // Backend returned HTML (probably Vite dev server fallback)
+      // Always read as text first: some servers/dev proxies return HTML but still claim application/json.
+      const raw = await response.text();
+      const trimmed = raw.trim();
+
+      const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+      if (!looksLikeJson) {
         setIsConnected(false);
         return;
       }
 
-      const data = await response.json();
+      const data = JSON.parse(raw) as { success?: boolean; status?: string };
       setIsConnected(data.success === true || data.status === "ok");
     } catch {
       setIsConnected(false);
@@ -88,3 +91,4 @@ function cn(...classes: (string | boolean | undefined)[]) {
 }
 
 export default BackendStatus;
+

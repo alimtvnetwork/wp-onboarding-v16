@@ -48,6 +48,7 @@ type LoggingConfig struct {
 	Level         string `json:"level"`
 	RetentionDays int    `json:"retentionDays"`
 	DebugMode     bool   `json:"debugMode"`
+  TimeFormat    string `json:"timeFormat"`
 }
 
 // SecurityConfig holds security settings
@@ -87,6 +88,9 @@ func DefaultConfig() *Config {
 			Level:         "info",
 			RetentionDays: 7,
 			DebugMode:     false,
+      // Default: [YYYY-MM-DD hh:mm:ss AM/PM]
+      // NOTE: brackets are added by the logger output formatting.
+      TimeFormat: "2006-01-02 03:04:05 PM",
 		},
 		Security: SecurityConfig{
 			EncryptionKey: "", // Must be set via environment or config
