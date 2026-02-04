@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { useSettings } from "@/hooks/useSettings";
+import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
+import { useWhatsNew } from "@/hooks/useWhatsNew";
+import { WhatsNewModal } from "./WhatsNewModal";
 
 interface VersionBadgeProps {
   className?: string;
@@ -8,7 +10,7 @@ interface VersionBadgeProps {
 }
 
 export function VersionBadge({ className, showUpdateIndicator = true }: VersionBadgeProps) {
-  const { data: settings, isLoading } = useSettings();
+  const { currentVersion, hasNewVersion, isLoading, openModal, isModalOpen, closeModal } = useWhatsNew();
 
   if (isLoading) {
     return (
@@ -18,22 +20,28 @@ export function VersionBadge({ className, showUpdateIndicator = true }: VersionB
     );
   }
 
-  const seedVersion = settings?.meta?.seedVersion || "1.0.0";
-  const currentVersion = settings?.meta?.currentVersion || seedVersion;
-  const isUpdated = seedVersion !== currentVersion;
-
   return (
-    <Badge 
-      variant={isUpdated ? "default" : "outline"} 
-      className={className}
-    >
-      {showUpdateIndicator && isUpdated && (
-        <Sparkles className="mr-1 h-3 w-3" />
-      )}
-      v{currentVersion}
-      {showUpdateIndicator && isUpdated && (
-        <span className="ml-1 text-xs opacity-75">(updated)</span>
-      )}
-    </Badge>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={`h-auto p-0 hover:bg-transparent ${className}`}
+        onClick={openModal}
+      >
+        <Badge 
+          variant={hasNewVersion ? "default" : "outline"} 
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+        >
+          {showUpdateIndicator && hasNewVersion && (
+            <Sparkles className="mr-1 h-3 w-3" />
+          )}
+          v{currentVersion}
+          {showUpdateIndicator && hasNewVersion && (
+            <span className="ml-1 text-xs opacity-75">(new!)</span>
+          )}
+        </Badge>
+      </Button>
+      <WhatsNewModal open={isModalOpen} onOpenChange={(open) => !open && closeModal()} />
+    </>
   );
 }

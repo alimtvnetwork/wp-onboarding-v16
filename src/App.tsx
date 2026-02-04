@@ -12,6 +12,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout/Layout";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { GlobalErrorModal } from "@/components/errors/GlobalErrorModal";
+import { WhatsNewModal } from "@/components/settings/WhatsNewModal";
+import { useWhatsNew } from "@/hooks/useWhatsNew";
 import { toast } from "sonner";
 import { isApiClientError } from "@/lib/api";
 import { useErrorStore } from "@/stores/errorStore";
@@ -87,6 +89,17 @@ function WebSocketProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// What's New modal wrapper - handles auto-open on version change
+function WhatsNewProvider({ children }: { children: React.ReactNode }) {
+  const { isModalOpen, closeModal } = useWhatsNew();
+  return (
+    <>
+      {children}
+      <WhatsNewModal open={isModalOpen} onOpenChange={(open) => !open && closeModal()} />
+    </>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" storageKey="wpp-theme">
@@ -96,20 +109,22 @@ const App = () => (
         <GlobalErrorModal />
         <BrowserRouter>
           <WebSocketProvider>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="sites" element={<Sites />} />
-                <Route path="plugins" element={<Plugins />} />
-                <Route path="sync" element={<Sync />} />
-                <Route path="tests" element={<Tests />} />
-                <Route path="logs" element={<Logs />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="errors" element={<Errors />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <WhatsNewProvider>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="sites" element={<Sites />} />
+                  <Route path="plugins" element={<Plugins />} />
+                  <Route path="sync" element={<Sync />} />
+                  <Route path="tests" element={<Tests />} />
+                  <Route path="logs" element={<Logs />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="errors" element={<Errors />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </WhatsNewProvider>
           </WebSocketProvider>
         </BrowserRouter>
       </TooltipProvider>
