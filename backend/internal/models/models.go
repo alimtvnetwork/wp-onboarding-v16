@@ -25,11 +25,13 @@ type Plugin struct {
 	Path            string          `json:"path"`
 	Category        string          `json:"category"`
 	WatchEnabled    bool            `json:"watchEnabled"`
+	AutoPublish     bool            `json:"autoPublish"`
 	ExcludePatterns []string        `json:"excludePatterns"`
 	FileCount       int             `json:"fileCount"`
 	ModifiedCount   int             `json:"modifiedCount,omitempty"`
 	LastScannedAt   *time.Time      `json:"lastScannedAt,omitempty"`
 	Mappings        []PluginMapping `json:"mappings,omitempty"`
+	GitEnabled      bool            `json:"gitEnabled"`
 	CreatedAt       time.Time       `json:"createdAt"`
 	UpdatedAt       time.Time       `json:"updatedAt"`
 }

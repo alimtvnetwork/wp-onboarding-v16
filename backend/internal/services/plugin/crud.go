@@ -16,10 +16,12 @@ func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
 	s.log.Debug("Listing all plugins")
 
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT Id, Name, Path, Category, WatchEnabled, ExcludePatterns, 
-		       FileCount, LastScannedAt, CreatedAt, UpdatedAt
-		FROM Plugins
-		ORDER BY Name ASC
+		SELECT p.Id, p.Name, p.Path, p.Category, p.WatchEnabled, p.AutoPublish, p.ExcludePatterns, 
+		       p.FileCount, p.LastScannedAt, p.CreatedAt, p.UpdatedAt,
+		       COALESCE(g.GitEnabled, 0) as GitEnabled
+		FROM Plugins p
+		LEFT JOIN PluginGitConfig g ON g.PluginId = p.Id
+		ORDER BY p.Name ASC
 	`)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to list plugins")
@@ -32,14 +34,19 @@ func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
 		var category sql.NullString
 		var excludeJSON string
 		var lastScannedAt, createdAtStr, updatedAtStr sql.NullString
+		var autoPublish, gitEnabled int
 
 		err := rows.Scan(
-			&p.ID, &p.Name, &p.Path, &category, &p.WatchEnabled, &excludeJSON,
-			&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr,
+			&p.ID, &p.Name, &p.Path, &category, &p.WatchEnabled, &autoPublish, &excludeJSON,
+			&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr, &gitEnabled,
 		)
 		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan plugin row")
 		}
+
+		// Parse booleans
+		p.AutoPublish = autoPublish == 1
+		p.GitEnabled = gitEnabled == 1
 
 		// Parse category
 		if category.Valid {
@@ -82,15 +89,18 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 	var category sql.NullString
 	var excludeJSON string
 	var lastScannedAt, createdAtStr, updatedAtStr sql.NullString
+	var autoPublish, gitEnabled int
 
 	err := s.db.QueryRowContext(ctx, `
-		SELECT Id, Name, Path, Category, WatchEnabled, ExcludePatterns, 
-		       FileCount, LastScannedAt, CreatedAt, UpdatedAt
-		FROM Plugins
-		WHERE Id = ?
+		SELECT p.Id, p.Name, p.Path, p.Category, p.WatchEnabled, p.AutoPublish, p.ExcludePatterns, 
+		       p.FileCount, p.LastScannedAt, p.CreatedAt, p.UpdatedAt,
+		       COALESCE(g.GitEnabled, 0) as GitEnabled
+		FROM Plugins p
+		LEFT JOIN PluginGitConfig g ON g.PluginId = p.Id
+		WHERE p.Id = ?
 	`, id).Scan(
-		&p.ID, &p.Name, &p.Path, &category, &p.WatchEnabled, &excludeJSON,
-		&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr,
+		&p.ID, &p.Name, &p.Path, &category, &p.WatchEnabled, &autoPublish, &excludeJSON,
+		&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr, &gitEnabled,
 	)
 
 	if err == sql.ErrNoRows {
@@ -100,6 +110,10 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
 	}
+
+	// Parse booleans
+	p.AutoPublish = autoPublish == 1
+	p.GitEnabled = gitEnabled == 1
 
 	// Parse category
 	if category.Valid {
@@ -183,9 +197,9 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Plugin
 
 	// Insert plugin
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO Plugins (Name, Path, WatchEnabled, ExcludePatterns, FileCount, LastScannedAt, CreatedAt, UpdatedAt)
-		VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'), datetime('now'))
-	`, input.Name, input.Path, input.WatchEnabled, string(excludeJSON), fileCount)
+		INSERT INTO Plugins (Name, Path, Category, WatchEnabled, AutoPublish, ExcludePatterns, FileCount, LastScannedAt, CreatedAt, UpdatedAt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'), datetime('now'))
+	`, input.Name, input.Path, input.Category, input.WatchEnabled, input.AutoPublish, string(excludeJSON), fileCount)
 
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create plugin")
@@ -234,6 +248,14 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*mod
 	if input.WatchEnabled != nil {
 		updates = append(updates, "WatchEnabled = ?")
 		args = append(args, *input.WatchEnabled)
+	}
+	if input.AutoPublish != nil {
+		updates = append(updates, "AutoPublish = ?")
+		args = append(args, *input.AutoPublish)
+	}
+	if input.Category != nil {
+		updates = append(updates, "Category = ?")
+		args = append(args, *input.Category)
 	}
 	if input.ExcludePatterns != nil {
 		excludeJSON, _ := json.Marshal(*input.ExcludePatterns)

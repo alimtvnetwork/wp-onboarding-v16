@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.9.0] - 2026-02-04
+
+### Added
+- **Seedable Configuration**: Define sites and plugins in config.json for automatic seeding on startup
+- **Deploy All Button**: Bulk deploy selected plugins to all mapped sites
+- **Auto-Publish Option**: Flag on plugins to automatically publish changes when detected
+- **Improved Error Modal**: Separate Frontend/Backend stack trace tabs for better debugging
+- **Database Migration v4**: Adds AutoPublish column and seed version tracking
+
+### Backend
+- Seed config supports base64-encoded application passwords for security
+- `SeedIfNeeded()` automatically seeds sites/plugins from config on startup
+- New database helpers: `GetSiteIDByURL`, `GetPluginIDByPath`, `CreateSeedSite`, `CreateSeedPlugin`
+- Plugin model includes AutoPublish and GitEnabled fields
+
+---
+
 ## [1.8.0] - 2026-02-04
 
 ### Added

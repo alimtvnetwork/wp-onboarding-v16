@@ -7,7 +7,9 @@ import "time"
 type CreateInput struct {
 	Name            string   `json:"name" validate:"required,max=255"`
 	Path            string   `json:"path" validate:"required,max=4096"`
+	Category        string   `json:"category"`
 	WatchEnabled    bool     `json:"watchEnabled"`
+	AutoPublish     bool     `json:"autoPublish"`
 	ExcludePatterns []string `json:"excludePatterns"`
 	GitEnabled      bool     `json:"gitEnabled"`
 	GitRemoteURL    string   `json:"gitRemoteUrl"`
@@ -19,7 +21,9 @@ type CreateInput struct {
 type UpdateInput struct {
 	Name            *string   `json:"name,omitempty" validate:"omitempty,max=255"`
 	Path            *string   `json:"path,omitempty" validate:"omitempty,max=4096"`
+	Category        *string   `json:"category,omitempty"`
 	WatchEnabled    *bool     `json:"watchEnabled,omitempty"`
+	AutoPublish     *bool     `json:"autoPublish,omitempty"`
 	ExcludePatterns *[]string `json:"excludePatterns,omitempty"`
 	GitEnabled      *bool     `json:"gitEnabled,omitempty"`
 	GitRemoteURL    *string   `json:"gitRemoteUrl,omitempty"`

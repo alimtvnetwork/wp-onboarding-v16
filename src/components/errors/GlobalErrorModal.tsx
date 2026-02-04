@@ -76,16 +76,17 @@ export function GlobalErrorModal() {
 
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="overview" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="request">Request Info</TabsTrigger>
-              <TabsTrigger value="context">Full Context</TabsTrigger>
-              <TabsTrigger value="fixes">Suggested Fixes</TabsTrigger>
+              <TabsTrigger value="request">Request</TabsTrigger>
+              <TabsTrigger value="stack">Stack Trace</TabsTrigger>
+              <TabsTrigger value="context">Context</TabsTrigger>
+              <TabsTrigger value="fixes">Fixes</TabsTrigger>
             </TabsList>
 
             <ScrollArea className="flex-1 mt-4 pr-4">
-              {/* Overview Tab */}
-              <TabsContent value="overview" className="space-y-4 m-0">
+              {/* Overview Tab - Compact summary */}
+              <TabsContent value="overview" className="space-y-3 m-0">
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-1">Message</h4>
                   <p className="text-sm bg-muted p-3 rounded-md">{selectedError.message}</p>
@@ -100,38 +101,113 @@ export function GlobalErrorModal() {
                   </div>
                 )}
 
+                {/* Quick location summary */}
                 {selectedError.file && (
-                  <div>
-                    <h4 className="text-sm font-medium text-muted-foreground mb-1">Location</h4>
-                    <div className="flex items-center gap-2">
-                      <FileCode2 className="h-4 w-4 text-muted-foreground" />
-                      <code className="text-sm bg-muted px-2 py-1 rounded">
-                        {selectedError.file}:{selectedError.line}
-                      </code>
-                      {selectedError.function && (
-                        <span className="text-sm text-muted-foreground">
-                          in <code className="bg-muted px-1 rounded">{selectedError.function}</code>
-                        </span>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileCode2 className="h-4 w-4 text-muted-foreground" />
+                    <code className="bg-muted px-2 py-1 rounded text-xs">
+                      {selectedError.file}:{selectedError.line}
+                    </code>
+                    {selectedError.function && (
+                      <span className="text-muted-foreground">
+                        → <code className="bg-muted px-1 rounded text-xs">{selectedError.function}</code>
+                      </span>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Stack Trace Tab - Split for Frontend/Backend */}
+              <TabsContent value="stack" className="m-0 space-y-4">
+                {selectedError.stackTrace ? (
+                  <>
+                    {/* Determine if we have backend stack trace (Go-style) */}
+                    {(() => {
+                      const stack = selectedError.stackTrace || "";
+                      const isBackendStack = stack.includes("goroutine") || stack.includes(".go:");
+                      const isFrontendStack = stack.includes("at ") || stack.includes(".tsx:") || stack.includes(".ts:");
+                      
+                      return (
+                        <Tabs defaultValue={isBackendStack ? "backend" : "frontend"} className="w-full">
+                          <TabsList className="grid w-full grid-cols-2 mb-3">
+                            <TabsTrigger value="frontend" disabled={!isFrontendStack && isBackendStack}>
+                              Frontend
+                            </TabsTrigger>
+                            <TabsTrigger value="backend" disabled={!isBackendStack && isFrontendStack}>
+                              Backend
+                            </TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="frontend" className="m-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <FileCode2 className="h-4 w-4" />
+                                Frontend Stack Trace
+                              </h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copySection("Frontend stack trace", stack)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-60">
+                              {isFrontendStack ? stack : "No frontend stack trace available"}
+                            </pre>
+                          </TabsContent>
+                          
+                          <TabsContent value="backend" className="m-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                <Network className="h-4 w-4" />
+                                Backend Stack Trace
+                              </h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copySection("Backend stack trace", stack)}
+                              >
+                                <Copy className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-60">
+                              {isBackendStack ? stack : "No backend stack trace available"}
+                            </pre>
+                          </TabsContent>
+                        </Tabs>
+                      );
+                    })()}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileCode2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No stack trace available</p>
                   </div>
                 )}
 
-                {selectedError.stackTrace && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <h4 className="text-sm font-medium text-muted-foreground">Stack Trace</h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copySection("Stack trace", selectedError.stackTrace!)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                {/* Location Details */}
+                {selectedError.file && (
+                  <div className="pt-3 border-t">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Error Location</h4>
+                    <div className="bg-muted p-3 rounded-md space-y-1">
+                      <p className="text-sm flex items-center gap-2">
+                        <span className="text-muted-foreground">File:</span>
+                        <code className="text-xs bg-background/60 px-1 py-0.5 rounded">{selectedError.file}</code>
+                      </p>
+                      {selectedError.line && (
+                        <p className="text-sm flex items-center gap-2">
+                          <span className="text-muted-foreground">Line:</span>
+                          <code className="text-xs bg-background/60 px-1 py-0.5 rounded">{selectedError.line}</code>
+                        </p>
+                      )}
+                      {selectedError.function && (
+                        <p className="text-sm flex items-center gap-2">
+                          <span className="text-muted-foreground">Function:</span>
+                          <code className="text-xs bg-background/60 px-1 py-0.5 rounded">{selectedError.function}</code>
+                        </p>
+                      )}
                     </div>
-                    <pre className="text-xs bg-muted p-4 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-40">
-                      {selectedError.stackTrace}
-                    </pre>
                   </div>
                 )}
               </TabsContent>

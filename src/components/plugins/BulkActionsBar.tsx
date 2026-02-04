@@ -7,7 +7,9 @@ import {
   RefreshCw, 
   Trash2, 
   GitPullRequest,
-  CheckSquare
+  CheckSquare,
+  Upload,
+  Loader2
 } from "lucide-react";
 
 interface BulkActionsBarProps {
@@ -20,7 +22,9 @@ interface BulkActionsBarProps {
   onSyncAll: () => void;
   onGitPullAll: () => void;
   onDeleteAll: () => void;
+  onDeployAll?: () => void;
   isProcessing: boolean;
+  isDeploying?: boolean;
 }
 
 export function BulkActionsBar({
@@ -33,7 +37,9 @@ export function BulkActionsBar({
   onSyncAll,
   onGitPullAll,
   onDeleteAll,
+  onDeployAll,
   isProcessing,
+  isDeploying = false,
 }: BulkActionsBarProps) {
   if (selectedCount === 0) return null;
 
@@ -63,7 +69,24 @@ export function BulkActionsBar({
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Deploy All - Primary action */}
+        {onDeployAll && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onDeployAll}
+            disabled={isProcessing || isDeploying}
+            className="h-8"
+          >
+            {isDeploying ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-1" />
+            )}
+            Deploy All
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
