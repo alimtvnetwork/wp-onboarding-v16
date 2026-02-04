@@ -388,6 +388,11 @@ export const api = {
   // Site mappings (plugins linked to a site)
   getSiteMappings: (siteId: number) =>
     request<PluginMapping[]>(`/sites/${siteId}/mappings`),
+  updateSiteMappings: (siteId: number, pluginIds: number[]) =>
+    request<PluginMapping[]>(`/sites/${siteId}/mappings`, { 
+      method: "PUT", 
+      body: JSON.stringify({ pluginIds }) 
+    }),
 
   // Git operations
   gitPull: (pluginId: number) =>

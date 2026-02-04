@@ -34,6 +34,7 @@ type PluginServiceInterface interface {
 	CreateMapping(ctx context.Context, pluginID int64, input interface{}) (interface{}, error)
 	DeleteMapping(ctx context.Context, id int64) error
 	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
+	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
 	ScanDirectory(ctx context.Context, path string) (interface{}, error)
 	RefreshFileCount(ctx context.Context, id int64) error
 }
@@ -573,6 +574,37 @@ func GetSiteMappings(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E3010", err.Error())
 		return
 	}
+	respondSuccess(w, mappings)
+}
+
+// UpdateSiteMappings bulk-updates all plugin mappings for a site
+func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	var input struct {
+		PluginIDs []int64 `json:"pluginIds"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	if err := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, input.PluginIDs); err != nil {
+		respondError(w, http.StatusBadRequest, "E3011", err.Error())
+		return
+	}
+
+	// Return updated mappings for this site
+	mappings, _ := Services.PluginService.GetMappingsBySite(r.Context(), siteID)
 	respondSuccess(w, mappings)
 }
 

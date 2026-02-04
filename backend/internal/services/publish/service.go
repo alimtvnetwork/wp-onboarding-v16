@@ -285,6 +285,7 @@ func (s *Service) runStage(name string, fn func() error) Stage {
 }
 
 // broadcastProgress sends a WebSocket progress event with detailed step info
+// Updated to match frontend PublishProgressDialog expected payload shape
 func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progress int, message string) {
 	if s.wsHub == nil {
 		return
@@ -298,17 +299,41 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 		eventType = ws.EventPublishComplete
 	}
 
+	// Map step names to stage names for frontend compatibility
+	stage := step
+	switch step {
+	case "started":
+		stage = "backup"
+	case "packaging":
+		stage = "package"
+	case "uploading":
+		stage = "upload"
+	case "activating":
+		stage = "activate"
+	case "cleanup":
+		stage = "cleanup"
+	}
+
+	// Determine status for the current stage
+	status := "running"
+	if step == "completed" {
+		status = "success"
+	} else if step == "failed" {
+		status = "error"
+	}
+
 	s.wsHub.Broadcast(eventType, map[string]interface{}{
 		"pluginId": pluginID,
 		"siteId":   siteID,
-		"step":     step,
-		"status":   step, // For backward compatibility
+		"stage":    stage,
+		"step":     step, // Keep for backward compatibility
+		"status":   status,
 		"progress": progress,
 		"total":    100,
 		"message":  message,
 	})
 	
-	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "step", step, "progress", progress, "message", message)
+	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "step", step, "stage", stage, "progress", progress, "message", message)
 }
 
 // createFullZip creates a zip file of the entire plugin directory

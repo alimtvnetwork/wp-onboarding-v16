@@ -31,7 +31,7 @@ interface PublishProgressPayload {
   stage: string;
   progress: number;
   message: string;
-  status: "running" | "success" | "error";
+  status: string; // Backend sends various status strings
 }
 
 interface PublishCompletePayload {
@@ -115,13 +115,24 @@ export function PublishProgressDialog({
     const unsubStageProgress = wsClient.on("publish_progress", (data: unknown) => {
       const payload = data as PublishProgressPayload;
       if (payload.pluginId === pluginId && payload.siteId === siteId) {
+        // Update the matching stage (use stage field, fallback to step for compat)
+        const stageName = (payload as unknown as Record<string, unknown>).stage as string || payload.stage;
         setStages(prev => prev.map(s => {
-          if (s.name === payload.stage) {
+          if (s.name === stageName) {
+            // Map backend status to frontend status
+            let mappedStatus: PublishStage["status"] = "running";
+            if (payload.status === "success" || payload.status === "completed") mappedStatus = "success";
+            else if (payload.status === "error" || payload.status === "failed") mappedStatus = "error";
+            
             return {
               ...s,
-              status: payload.status,
+              status: mappedStatus,
               message: payload.message,
             };
+          }
+          // Mark previous stages as success if they were running
+          if (s.status === "running" && s.name !== stageName) {
+            return { ...s, status: "success" };
           }
           return s;
         }));
@@ -130,15 +141,18 @@ export function PublishProgressDialog({
     });
 
     const unsubComplete = wsClient.on(WS_EVENTS.PUBLISH_COMPLETE, (data: unknown) => {
-      const payload = data as PublishCompletePayload;
+      const payload = data as PublishCompletePayload & { status?: string; message?: string };
       if (payload.pluginId === pluginId && payload.siteId === siteId) {
+        // Detect success from status field if success boolean not present
+        const wasSuccessful = payload.success ?? (payload.status === "completed" || payload.status === "success");
+        
         setIsComplete(true);
-        setIsSuccess(payload.success);
+        setIsSuccess(wasSuccessful);
         setFilesUpdated(payload.filesUpdated ?? null);
         setOverallProgress(100);
         
-        if (payload.error) {
-          setErrorMessage(payload.error);
+        if (payload.error || (payload.message && !wasSuccessful)) {
+          setErrorMessage(payload.error || payload.message || "Unknown error");
         }
         
         if (payload.stages) {
@@ -147,11 +161,11 @@ export function PublishProgressDialog({
           // Mark all stages as complete if no stages provided
           setStages(prev => prev.map(s => ({
             ...s,
-            status: payload.success ? "success" : (s.status === "running" ? "error" : s.status)
+            status: wasSuccessful ? "success" : (s.status === "running" ? "error" : s.status)
           })));
         }
 
-        onComplete?.(payload.success);
+        onComplete?.(wasSuccessful);
       }
     });
 

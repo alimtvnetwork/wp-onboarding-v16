@@ -287,9 +287,21 @@ export default function Plugins() {
     setShowPublishProgress(true);
     setIsPublishing(plugin.id);
 
+    // Get upload mode from localStorage (file → "selected", zip → "full")
+    let uploadMode: "file" | "zip" = "file";
+    try {
+      const saved = localStorage.getItem("wppp_upload_mode");
+      if (saved === "zip") uploadMode = "zip";
+    } catch {
+      // Default to file mode
+    }
+
+    // Map upload mode to API mode: file → selected (patch-style), zip → full (full package)
+    const publishMode = uploadMode === "zip" ? "full" : "selected";
+
     try {
       const response = await api.publishPlugin(plugin.id, siteId, {
-        mode: "full",
+        mode: publishMode,
         createBackup: true,
       });
       if (response.success) {

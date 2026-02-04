@@ -179,6 +179,10 @@ func (a *PluginServiceAdapter) UpdateMappingsForPlugin(ctx context.Context, plug
 	return a.Service.UpdateMappingsForPlugin(ctx, pluginID, siteIDs, remoteSlug)
 }
 
+func (a *PluginServiceAdapter) UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error {
+	return a.Service.UpdateMappingsForSite(ctx, siteID, pluginIDs)
+}
+
 func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (interface{}, error) {
 	return a.Service.ScanDirectory(ctx, path)
 }
