@@ -58,11 +58,11 @@ type UploaderFileInfo struct {
 	Hash     string `json:"hash"`
 }
 
-// CheckRiseUpUploaderAvailable checks if the Rise Up Uploader plugin is installed.
-// It tries the new namespace first, then falls back to the legacy namespace for backward compatibility.
-func (c *Client) CheckRiseUpUploaderAvailable() (bool, string, error) {
-	// Try Rise Up Uploader first (new namespace)
-	endpoint := fmt.Sprintf("/%s%s", RiseUpUploaderNamespace, EndpointStatus)
+// CheckRiseUpAsiaAvailable checks if the Rise Up Asia plugin is installed.
+// It tries the new namespace first, then falls back to the legacy namespaces for backward compatibility.
+func (c *Client) CheckRiseUpAsiaAvailable() (bool, string, error) {
+	// Try Rise Up Asia first (newest namespace)
+	endpoint := fmt.Sprintf("/%s%s", RiseUpAsiaNamespace, EndpointStatus)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return false, "", err
@@ -70,11 +70,11 @@ func (c *Client) CheckRiseUpUploaderAvailable() (bool, string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return true, RiseUpUploaderNamespace, nil
+		return true, RiseUpAsiaNamespace, nil
 	}
 
-	// Try legacy namespace (plugin-uploader/v1)
-	endpoint = fmt.Sprintf("/%s%s", PluginUploaderNamespace, EndpointStatus)
+	// Try legacy namespace (riseup-uploader/v1)
+	endpoint = fmt.Sprintf("/%s%s", RiseUpUploaderNamespace, EndpointStatus)
 	resp2, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return false, "", err
@@ -82,15 +82,32 @@ func (c *Client) CheckRiseUpUploaderAvailable() (bool, string, error) {
 	defer resp2.Body.Close()
 
 	if resp2.StatusCode == http.StatusOK || resp2.StatusCode == http.StatusUnauthorized || resp2.StatusCode == http.StatusForbidden {
+		return true, RiseUpUploaderNamespace, nil
+	}
+
+	// Try oldest legacy namespace (plugin-uploader/v1)
+	endpoint = fmt.Sprintf("/%s%s", PluginUploaderNamespace, EndpointStatus)
+	resp3, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return false, "", err
+	}
+	defer resp3.Body.Close()
+
+	if resp3.StatusCode == http.StatusOK || resp3.StatusCode == http.StatusUnauthorized || resp3.StatusCode == http.StatusForbidden {
 		return true, PluginUploaderNamespace, nil
 	}
 
 	return false, "", nil
 }
 
-// CheckUploaderHelperAvailable is deprecated, use CheckRiseUpUploaderAvailable.
+// CheckRiseUpUploaderAvailable is deprecated, use CheckRiseUpAsiaAvailable.
+func (c *Client) CheckRiseUpUploaderAvailable() (bool, string, error) {
+	return c.CheckRiseUpAsiaAvailable()
+}
+
+// CheckUploaderHelperAvailable is deprecated, use CheckRiseUpAsiaAvailable.
 func (c *Client) CheckUploaderHelperAvailable() (bool, error) {
-	available, _, err := c.CheckRiseUpUploaderAvailable()
+	available, _, err := c.CheckRiseUpAsiaAvailable()
 	return available, err
 }
 
@@ -139,9 +156,9 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	base64Data := base64.StdEncoding.EncodeToString(fileBytes)
 
 	// Detect which namespace is available
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseUpAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace // default to new namespace
+		namespace = RiseUpAsiaNamespace // default to new namespace
 	}
 
 	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %d bytes (base64) to %s...", len(fileBytes), namespace), map[string]interface{}{

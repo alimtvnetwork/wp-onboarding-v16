@@ -1,11 +1,11 @@
 <?php
 /**
- * Rise Up Uploader - Transaction Logger
+ * Rise Up Asia - Transaction Logger
  *
  * Wrapper for logging operations with user context.
  *
- * @package RiseUpUploader
- * @since   1.2.0
+ * @package RiseUpAsia
+ * @since   1.3.0
  */
 
 if (!defined('ABSPATH')) {

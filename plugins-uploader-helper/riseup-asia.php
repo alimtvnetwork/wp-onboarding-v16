@@ -1,18 +1,18 @@
 <?php
 /**
- * Plugin Name: Rise Up Uploader
+ * Plugin Name: Rise Up Asia
  * Plugin URI: https://riseup-asia.com/
- * Description: Remote plugin management, blog post publishing, and audit logging via REST API with Application Password authentication.
- * Version: 1.2.0
+ * Description: Remote plugin management, blog post publishing, delta file sync, and audit logging via REST API with Application Password authentication.
+ * Version: 1.3.0
  * Author: Rise Up Asia
  * Author URI: https://riseup-asia.com/
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: riseup-uploader
+ * Text Domain: riseup-asia
  * Requires at least: 5.6
  * Requires PHP: 7.4
  *
- * @package RiseUpUploader
+ * @package RiseUpAsia
  */
 
 if (!defined('ABSPATH')) {
@@ -26,6 +26,9 @@ if (!defined('ABSPATH')) {
 // Load constants first.
 require_once __DIR__ . '/includes/constants.php';
 
+// Load ORM before database.
+require_once __DIR__ . '/includes/class-orm.php';
+
 // Load classes.
 require_once __DIR__ . '/includes/class-database.php';
 require_once __DIR__ . '/includes/class-logger.php';
@@ -38,7 +41,7 @@ require_once __DIR__ . '/includes/class-post-manager.php';
 /**
  * Main plugin class.
  */
-class RiseUp_Uploader {
+class RiseUp_Asia {
 
     /**
      * Logger instance.
@@ -64,14 +67,14 @@ class RiseUp_Uploader {
     /**
      * Singleton instance.
      *
-     * @var RiseUp_Uploader|null
+     * @var RiseUp_Asia|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return RiseUp_Uploader
+     * @return RiseUp_Asia
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -1044,4 +1047,4 @@ class RiseUp_Uploader {
 }
 
 // Initialize plugin.
-add_action('plugins_loaded', array('RiseUp_Uploader', 'get_instance'));
+add_action('plugins_loaded', array('RiseUp_Asia', 'get_instance'));
