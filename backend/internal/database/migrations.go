@@ -150,6 +150,21 @@ var migrations = []Migration{
 			);
 		`,
 	},
+	{
+		Version:     3,
+		Description: "Add Category field to Sites and Plugins",
+		SQL: `
+			-- Add Category column to Sites table
+			ALTER TABLE Sites ADD COLUMN Category TEXT DEFAULT '';
+
+			-- Add Category column to Plugins table
+			ALTER TABLE Plugins ADD COLUMN Category TEXT DEFAULT '';
+
+			-- Create indexes for category filtering
+			CREATE INDEX IF NOT EXISTS idx_sites_category ON Sites(Category);
+			CREATE INDEX IF NOT EXISTS idx_plugins_category ON Plugins(Category);
+		`,
+	},
 }
 
 // Migrate runs all pending migrations

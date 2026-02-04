@@ -5,31 +5,33 @@ import "time"
 
 // Site represents a WordPress site connection
 type Site struct {
-	ID                int64     `json:"id"`
-	Name              string    `json:"name"`
-	URL               string    `json:"url"`
-	Username          string    `json:"username"`
-	PasswordEncrypted []byte    `json:"-"`
-	ConnectionStatus  string    `json:"connectionStatus"`
+	ID                int64      `json:"id"`
+	Name              string     `json:"name"`
+	URL               string     `json:"url"`
+	Username          string     `json:"username"`
+	PasswordEncrypted []byte     `json:"-"`
+	Category          string     `json:"category"`
+	ConnectionStatus  string     `json:"connectionStatus"`
 	LastTestedAt      *time.Time `json:"lastTestedAt,omitempty"`
 	LastSyncAt        *time.Time `json:"lastSyncAt,omitempty"`
-	CreatedAt         time.Time `json:"createdAt"`
-	UpdatedAt         time.Time `json:"updatedAt"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
 }
 
 // Plugin represents a local plugin directory
 type Plugin struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	Path            string    `json:"path"`
-	WatchEnabled    bool      `json:"watchEnabled"`
-	ExcludePatterns []string  `json:"excludePatterns"`
-	FileCount       int       `json:"fileCount"`
-	ModifiedCount   int       `json:"modifiedCount,omitempty"`
-	LastScannedAt   *time.Time `json:"lastScannedAt,omitempty"`
+	ID              int64           `json:"id"`
+	Name            string          `json:"name"`
+	Path            string          `json:"path"`
+	Category        string          `json:"category"`
+	WatchEnabled    bool            `json:"watchEnabled"`
+	ExcludePatterns []string        `json:"excludePatterns"`
+	FileCount       int             `json:"fileCount"`
+	ModifiedCount   int             `json:"modifiedCount,omitempty"`
+	LastScannedAt   *time.Time      `json:"lastScannedAt,omitempty"`
 	Mappings        []PluginMapping `json:"mappings,omitempty"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	CreatedAt       time.Time       `json:"createdAt"`
+	UpdatedAt       time.Time       `json:"updatedAt"`
 }
 
 // PluginMapping represents the relationship between a plugin and a site

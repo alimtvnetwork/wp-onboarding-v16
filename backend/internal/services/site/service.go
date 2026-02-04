@@ -57,7 +57,7 @@ func New(cfg Config) *Service {
 // List returns all registered sites
 func (s *Service) List(ctx context.Context) ([]models.Site, error) {
 	query := `
-		SELECT Id, Name, Url, Username, PasswordEncrypted, ConnectionStatus, 
+		SELECT Id, Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, 
 		       LastTestedAt, LastSyncAt, CreatedAt, UpdatedAt
 		FROM Sites
 		ORDER BY Name ASC
@@ -92,7 +92,7 @@ func (s *Service) List(ctx context.Context) ([]models.Site, error) {
 // GetByID returns a site by its ID
 func (s *Service) GetByID(ctx context.Context, id int64) (*models.Site, error) {
 	query := `
-		SELECT Id, Name, Url, Username, PasswordEncrypted, ConnectionStatus, 
+		SELECT Id, Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, 
 		       LastTestedAt, LastSyncAt, CreatedAt, UpdatedAt
 		FROM Sites
 		WHERE Id = ?
@@ -116,7 +116,7 @@ func (s *Service) GetByURL(ctx context.Context, siteURL string) (*models.Site, e
 	normalizedURL := normalizeURL(siteURL)
 	
 	query := `
-		SELECT Id, Name, Url, Username, PasswordEncrypted, ConnectionStatus, 
+		SELECT Id, Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, 
 		       LastTestedAt, LastSyncAt, CreatedAt, UpdatedAt
 		FROM Sites
 		WHERE Url = ?
@@ -463,6 +463,7 @@ func (s *Service) validateInput(input CreateInput) error {
 // scanSite scans a site from database rows
 func (s *Service) scanSite(rows *sql.Rows) (*models.Site, error) {
 	var site models.Site
+	var category sql.NullString
 	var lastTestedAt, lastSyncAt, createdAt, updatedAt sql.NullString
 
 	err := rows.Scan(
@@ -471,6 +472,7 @@ func (s *Service) scanSite(rows *sql.Rows) (*models.Site, error) {
 		&site.URL,
 		&site.Username,
 		&site.PasswordEncrypted,
+		&category,
 		&site.ConnectionStatus,
 		&lastTestedAt,
 		&lastSyncAt,
@@ -481,6 +483,9 @@ func (s *Service) scanSite(rows *sql.Rows) (*models.Site, error) {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to scan site")
 	}
 
+	if category.Valid {
+		site.Category = category.String
+	}
 	site.LastTestedAt = parseNullTime(lastTestedAt)
 	site.LastSyncAt = parseNullTime(lastSyncAt)
 	site.CreatedAt = parseTime(createdAt.String)
@@ -492,6 +497,7 @@ func (s *Service) scanSite(rows *sql.Rows) (*models.Site, error) {
 // scanSiteRow scans a site from a single row
 func (s *Service) scanSiteRow(row *sql.Row) (*models.Site, error) {
 	var site models.Site
+	var category sql.NullString
 	var lastTestedAt, lastSyncAt, createdAt, updatedAt sql.NullString
 
 	err := row.Scan(
@@ -500,6 +506,7 @@ func (s *Service) scanSiteRow(row *sql.Row) (*models.Site, error) {
 		&site.URL,
 		&site.Username,
 		&site.PasswordEncrypted,
+		&category,
 		&site.ConnectionStatus,
 		&lastTestedAt,
 		&lastSyncAt,
@@ -510,6 +517,9 @@ func (s *Service) scanSiteRow(row *sql.Row) (*models.Site, error) {
 		return nil, err
 	}
 
+	if category.Valid {
+		site.Category = category.String
+	}
 	site.LastTestedAt = parseNullTime(lastTestedAt)
 	site.LastSyncAt = parseNullTime(lastSyncAt)
 	site.CreatedAt = parseTime(createdAt.String)

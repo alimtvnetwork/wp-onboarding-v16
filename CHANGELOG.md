@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.7.0] - 2026-02-04
+
+### Added
+- **Dashboard Quick Actions**: Shortcuts to Add Site, Register Plugin, View Logs, Settings
+- **Recent Activity Section**: Dashboard shows latest sites and plugins with timestamps
+- **Category Persistence**: Database migration v3 adds Category field to Sites and Plugins tables
+- **Clickable Stats Cards**: Dashboard stats now link to relevant pages (Sites, Plugins, Errors)
+
+### Backend
+- WebSocket publish progress already emitting stage updates (backup, package, upload, activate)
+- Backend models updated with Category field for sites and plugins
+- SQL queries updated to include Category in all site and plugin operations
+
+---
+
 ## [1.6.0] - 2026-02-04
 
 ### Added
