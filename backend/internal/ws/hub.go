@@ -55,6 +55,11 @@ const (
 	EventPublishProgress = "publish_progress"
 	EventPublishComplete = "publish_complete"
 	
+	// Auto-publish events
+	EventAutoPublishTriggered = "auto_publish_triggered"
+	EventAutoPublishComplete  = "auto_publish_complete"
+	EventAutoPublishFailed    = "auto_publish_failed"
+	
 	// Scan events
 	EventScanStarted  = "scan_started"
 	EventScanProgress = "scan_progress"

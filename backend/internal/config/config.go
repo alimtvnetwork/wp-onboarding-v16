@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"wp-plugin-publish/internal/crypto"
 	"wp-plugin-publish/internal/database"
 )
 
@@ -223,13 +224,16 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 	// Build site name -> ID map for plugin mapping
 	siteNameToID := make(map[string]int64)
 
+	// Get encryption key from config
+	encryptionKey := []byte(cfg.Security.EncryptionKey)
+
 	// Seed sites
 	for _, site := range cfg.Seed.Sites {
-		// Decode base64 password
-		passwordBytes, err := base64.StdEncoding.DecodeString(site.ApplicationPassword)
+		// Decode base64 password to get plaintext
+		passwordPlaintext, err := base64.StdEncoding.DecodeString(site.ApplicationPassword)
 		if err != nil {
 			// Try raw password if base64 decode fails
-			passwordBytes = []byte(site.ApplicationPassword)
+			passwordPlaintext = []byte(site.ApplicationPassword)
 		}
 
 		// Check if site already exists by URL
@@ -239,8 +243,15 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 			continue
 		}
 
-		// Insert site with encrypted password placeholder (encryption handled by service layer)
-		id, err := db.CreateSeedSite(site.Name, site.URL, site.Username, passwordBytes, site.Category)
+		// IMPORTANT: Encrypt password using AES-256-GCM before storing
+		// This is the same encryption used by the site service
+		encryptedPassword, err := crypto.Encrypt(passwordPlaintext, encryptionKey)
+		if err != nil {
+			continue // Skip if encryption fails
+		}
+
+		// Insert site with properly encrypted password
+		id, err := db.CreateSeedSite(site.Name, site.URL, site.Username, encryptedPassword, site.Category)
 		if err != nil {
 			continue // Skip if insert fails (e.g., duplicate)
 		}

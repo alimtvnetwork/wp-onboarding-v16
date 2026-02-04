@@ -54,33 +54,46 @@ type pluginScanCache struct {
 	lastScan map[string]fileInfo
 }
 
+// PublishService interface for triggering auto-publish
+type PublishService interface {
+	PublishPlugin(ctx context.Context, pluginID, siteID int64, mode string, createBackup bool) (int, error)
+}
+
 // Config holds watcher configuration
 type Config struct {
-	DB            *database.DB
-	Logger        *logger.Logger
-	PluginService *plugin.Service
-	WSHub         *ws.Hub
+	DB             *database.DB
+	Logger         *logger.Logger
+	PluginService  *plugin.Service
+	WSHub          *ws.Hub
+	PublishService PublishService // Optional: for auto-publish functionality
 }
 
 // Service provides file scanning operations (hybrid mode - no polling)
 type Service struct {
-	db            *database.DB
-	log           *logger.Logger
-	pluginService *plugin.Service
-	wsHub         *ws.Hub
-	cache         map[int64]*pluginScanCache
-	mu            sync.RWMutex
+	db             *database.DB
+	log            *logger.Logger
+	pluginService  *plugin.Service
+	wsHub          *ws.Hub
+	publishService PublishService
+	cache          map[int64]*pluginScanCache
+	mu             sync.RWMutex
 }
 
 // New creates a new watcher service (no polling goroutines)
 func New(cfg Config) *Service {
 	return &Service{
-		db:            cfg.DB,
-		log:           cfg.Logger,
-		pluginService: cfg.PluginService,
-		wsHub:         cfg.WSHub,
-		cache:         make(map[int64]*pluginScanCache),
+		db:             cfg.DB,
+		log:            cfg.Logger,
+		pluginService:  cfg.PluginService,
+		wsHub:          cfg.WSHub,
+		publishService: cfg.PublishService,
+		cache:          make(map[int64]*pluginScanCache),
 	}
+}
+
+// SetPublishService sets the publish service for auto-publish (called after initialization)
+func (s *Service) SetPublishService(ps PublishService) {
+	s.publishService = ps
 }
 
 // InitializeCache loads the current file state for a plugin
@@ -201,10 +214,71 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 				VALUES (?, ?, ?, ?, datetime('now'))
 			`, pluginID, c.Path, c.ChangeType, c.Hash)
 		}
+
+		// Trigger auto-publish if enabled
+		go s.triggerAutoPublish(ctx, pluginID, changes)
 	}
 
 	s.log.Info("Scan complete", "pluginId", pluginID, "changes", len(changes), "duration", result.DurationMs)
 	return result, nil
+}
+
+// triggerAutoPublish checks if plugin has autoPublish enabled and publishes to all mapped sites
+func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, changes []FileChange) {
+	// Get plugin to check autoPublish flag
+	p, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return
+	}
+
+	if !p.AutoPublish {
+		return
+	}
+
+	if len(p.Mappings) == 0 {
+		s.log.Debug("Auto-publish skipped: no site mappings", "pluginId", pluginID)
+		return
+	}
+
+	s.log.Info("Auto-publish triggered", "pluginId", pluginID, "changes", len(changes), "sites", len(p.Mappings))
+	
+	// Notify clients that auto-publish is starting
+	s.wsHub.Broadcast(ws.EventAutoPublishTriggered, map[string]interface{}{
+		"pluginId":   pluginID,
+		"pluginName": p.Name,
+		"changes":    len(changes),
+		"sites":      len(p.Mappings),
+	})
+
+	if s.publishService == nil {
+		s.log.Warn("Auto-publish: publish service not configured", "pluginId", pluginID)
+		return
+	}
+
+	// Publish to all mapped sites
+	successCount := 0
+	for _, mapping := range p.Mappings {
+		filesUpdated, err := s.publishService.PublishPlugin(ctx, pluginID, mapping.SiteID, "full", true)
+		if err != nil {
+			s.log.Error("Auto-publish failed", "pluginId", pluginID, "siteId", mapping.SiteID, "error", err)
+			s.wsHub.Broadcast(ws.EventAutoPublishFailed, map[string]interface{}{
+				"pluginId": pluginID,
+				"siteId":   mapping.SiteID,
+				"siteName": mapping.SiteName,
+				"error":    err.Error(),
+			})
+			continue
+		}
+		successCount++
+		s.wsHub.Broadcast(ws.EventAutoPublishComplete, map[string]interface{}{
+			"pluginId":     pluginID,
+			"siteId":       mapping.SiteID,
+			"siteName":     mapping.SiteName,
+			"filesUpdated": filesUpdated,
+		})
+	}
+
+	s.log.Info("Auto-publish complete", "pluginId", pluginID, "successfulSites", successCount)
 }
 
 // populateCache performs initial scan without change detection
