@@ -517,19 +517,25 @@ if ($install) {
     Write-Host ""
     
     # Frontend: pnpm install
-    Write-Host "  [Frontend] Running pnpm install..." -ForegroundColor Yellow
-    Push-Location $FrontendDir
-    try {
-        # Configure pnpm store first
-        Configure-PnpmStore
-        
-        Invoke-Expression $EffectiveInstallCommand
-        if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
-        $DidFrontendInstall = $true
-        Write-Host "  ✓ Frontend dependencies installed" -ForegroundColor Green
-    }
-    finally {
-        Pop-Location
+    # NOTE: In -r mode, -force cleaning happens later (Step 3) and would delete a fresh install.
+    # We therefore defer the frontend install until after the force-clean step.
+    if ($rebuild) {
+        Write-Host "  [Frontend] Rebuild mode: deferring pnpm install until after force-clean..." -ForegroundColor Yellow
+    } else {
+        Write-Host "  [Frontend] Running pnpm install..." -ForegroundColor Yellow
+        Push-Location $FrontendDir
+        try {
+            # Configure pnpm store first
+            Configure-PnpmStore
+            
+            Invoke-Expression $EffectiveInstallCommand
+            if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
+            $DidFrontendInstall = $true
+            Write-Host "  ✓ Frontend dependencies installed" -ForegroundColor Green
+        }
+        finally {
+            Pop-Location
+        }
     }
     
     # Backend: go mod tidy + go mod download
@@ -552,21 +558,21 @@ if ($install) {
     $stepWatch.Stop()
     $StepTimes["Install Dependencies"] = $stepWatch.Elapsed
     
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  Dependencies installed successfully!" -ForegroundColor Cyan
-    Write-Host "  Time: $(Format-ElapsedTime $stepWatch)" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "Next steps:" -ForegroundColor Yellow
-        Write-Host "  .\run.ps1        # Build and run the application" -ForegroundColor Gray
-        Write-Host "  .\run.ps1 -f     # Clean rebuild if needed" -ForegroundColor Gray
-    Write-Host ""
     if (-not $rebuild) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Dependencies installed successfully!" -ForegroundColor Cyan
+        Write-Host "  Time: $(Format-ElapsedTime $stepWatch)" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Next steps:" -ForegroundColor Yellow
+            Write-Host "  .\run.ps1        # Build and run the application" -ForegroundColor Gray
+            Write-Host "  .\run.ps1 -f     # Clean rebuild if needed" -ForegroundColor Gray
+        Write-Host ""
         exit 0
     }
 
-    Write-Host "Continuing with build/run (-r mode)..." -ForegroundColor Cyan
+    Write-Host "Continuing with rebuild (-r): will force-clean, then install frontend deps, then build/run..." -ForegroundColor Cyan
     Write-Host ""
 }
 
@@ -605,7 +611,14 @@ if (-not $skipbuild) {
             }
 
             # Always clean pnpm-managed folders when forcing (even if not in config)
-            foreach ($extraPath in @("node_modules", ".pnpm")) {
+            # Remove both node_modules and pnpm PnP artifacts so the install check can't be fooled.
+            foreach ($extraPath in @(
+                "node_modules",
+                ".pnpm",
+                ".pnp.cjs",
+                ".pnp.loader.mjs",
+                ".pnp.data.json"
+            )) {
                 if (Test-Path $extraPath) {
                     Write-Host "  Removing: $extraPath..." -ForegroundColor Gray
                     Remove-Item -Recurse -Force $extraPath -ErrorAction SilentlyContinue
@@ -622,12 +635,14 @@ if (-not $skipbuild) {
         }
         
         # Check if install needed
-        # -install or -rebuild flags ALWAYS trigger install (user explicitly requested)
-        # Otherwise, install if node_modules and .pnp.cjs are both missing
-        $NeedsInstall = $install -or (-not (Test-Path "node_modules") -and -not (Test-Path ".pnp.cjs"))
+        # Dependency presence depends on which pnpm linker is active.
+        $depsPresent = if ($EffectiveNodeLinker -eq "pnp") { (Test-Path ".pnp.cjs") } else { (Test-Path "node_modules") }
+
+        # -install / -rebuild always ensures deps exist before build
+        $NeedsInstall = $install -or (-not $depsPresent)
         
         # Check for required modules (catches new deps after git pull)
-        if (-not $NeedsInstall -and $RequiredModules.Count -gt 0) {
+        if (-not $NeedsInstall -and $EffectiveNodeLinker -ne "pnp" -and $RequiredModules.Count -gt 0) {
             foreach ($m in $RequiredModules) {
                 $modulePath = Join-Path "node_modules" $m
                 if (-not (Test-Path $modulePath)) {
@@ -639,10 +654,11 @@ if (-not $skipbuild) {
         }
 
         # Also install if -force was passed (clean build needs fresh deps)
-        if (-not $DidFrontendInstall -and ($NeedsInstall -or $force)) {
+        if ($NeedsInstall -or $force) {
             Write-Host "  Installing dependencies with pnpm..." -ForegroundColor Gray
             Invoke-Expression $EffectiveInstallCommand
             if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
+            $DidFrontendInstall = $true
         }
         
         # Build
