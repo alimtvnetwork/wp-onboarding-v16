@@ -130,6 +130,10 @@ export default function Sites() {
             <h1 className="text-2xl font-bold">Sites</h1>
             <p className="text-muted-foreground">Manage your WordPress site connections</p>
           </div>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Site
+          </Button>
         </div>
         <Card className="border-destructive/50 bg-destructive/5">
           <CardContent className="pt-6">
@@ -156,6 +160,13 @@ export default function Sites() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Add Site Dialog - available even in error state */}
+        <AddSiteDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+          debugMode={debugMode}
+        />
       </div>
     );
   }
