@@ -1,11 +1,26 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T16:00:00Z",
+  "buildTime": "2026-02-04T18:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.7.0",
+      "date": "2026-02-04",
+      "title": "Dashboard Quick Actions & Category Persistence",
+      "changes": [
+        "🏠 Dashboard quick actions menu with shortcuts to Add Site, Register Plugin, Logs, Settings",
+        "📊 Recent activity section on Dashboard showing latest sites and plugins",
+        "💾 Database migrations for Category field on Sites and Plugins tables",
+        "🔄 Backend WebSocket emit for publish progress stages already implemented",
+        "🎯 Stats cards on Dashboard now link to relevant pages"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.6.0",
       "date": "2026-02-04",

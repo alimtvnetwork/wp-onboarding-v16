@@ -62,22 +62,17 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 ---
 
-## 📋 Phase 4: Advanced Publish Workflow (PLANNED)
+## ✅ Phase 4: Dashboard & Category Persistence (COMPLETED)
 
-**Status:** Planned
+**Status:** Done (v1.7.0)
 
-### Goals
-- Enhanced publish workflow with backend integration
-- Dashboard quick actions menu
-- Test article publishing
-
-### Tasks
-1. [ ] Backend: Add `category` column to Sites and Plugins tables (migration)
-2. [ ] Backend: Update Site/Plugin services to persist categories
-3. [ ] UI: Test article publish feature (create draft post to verify connectivity)
-4. [ ] UI: Dashboard quick actions menu
-5. [ ] UI: Recent activity feed on Dashboard
-6. [ ] Backend: WebSocket emit for publish progress stages
+### Completed Tasks
+1. ✅ Dashboard quick actions menu with shortcuts to Add Site, Register Plugin, Logs, Settings
+2. ✅ Recent activity section on Dashboard showing latest sites and plugins
+3. ✅ Stats cards on Dashboard now link to relevant pages
+4. ✅ Backend: Added `category` column to Sites and Plugins tables (migration v3)
+5. ✅ Backend: Updated Site/Plugin services to persist categories (SQL queries updated)
+6. ✅ Backend: WebSocket emit for publish progress stages (already implemented in publish service)
 
 ---
 
@@ -92,6 +87,7 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 - Plugin version history
 - Rollback functionality
 - Email notifications for publish events
+- Test article publish feature (create draft post to verify connectivity)
 
 ---
 
@@ -99,6 +95,7 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.7.0 | 2026-02-04 | Phase 4: Dashboard quick actions, category persistence |
 | 1.6.0 | 2026-02-04 | Phase 3: Categories, filtering, publish progress, consolidated Sync page |
 | 1.5.0 | 2026-02-04 | Phase 2.5: Sync/Publish UI, EditSiteDialog plugins tab, API fixes |
 | 1.4.0 | 2026-02-04 | Phase 2 complete: Plugin-Site relationships |

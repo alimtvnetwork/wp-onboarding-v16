@@ -235,6 +235,7 @@ export interface Plugin {
   gitRemoteUrl?: string;
   buildCommand?: string;
   mappings: PluginMapping[];
+  lastScannedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -16,7 +16,7 @@ func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
 	s.log.Debug("Listing all plugins")
 
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT Id, Name, Path, WatchEnabled, ExcludePatterns, 
+		SELECT Id, Name, Path, Category, WatchEnabled, ExcludePatterns, 
 		       FileCount, LastScannedAt, CreatedAt, UpdatedAt
 		FROM Plugins
 		ORDER BY Name ASC
@@ -29,15 +29,21 @@ func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
 	var plugins []models.Plugin
 	for rows.Next() {
 		var p models.Plugin
+		var category sql.NullString
 		var excludeJSON string
 		var lastScannedAt, createdAtStr, updatedAtStr sql.NullString
 
 		err := rows.Scan(
-			&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
+			&p.ID, &p.Name, &p.Path, &category, &p.WatchEnabled, &excludeJSON,
 			&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr,
 		)
 		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan plugin row")
+		}
+
+		// Parse category
+		if category.Valid {
+			p.Category = category.String
 		}
 
 		// Parse timestamps from SQLite datetime strings
@@ -73,16 +79,17 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 	s.log.Debug("Getting plugin by ID", "pluginId", id)
 
 	var p models.Plugin
+	var category sql.NullString
 	var excludeJSON string
 	var lastScannedAt, createdAtStr, updatedAtStr sql.NullString
 
 	err := s.db.QueryRowContext(ctx, `
-		SELECT Id, Name, Path, WatchEnabled, ExcludePatterns, 
+		SELECT Id, Name, Path, Category, WatchEnabled, ExcludePatterns, 
 		       FileCount, LastScannedAt, CreatedAt, UpdatedAt
 		FROM Plugins
 		WHERE Id = ?
 	`, id).Scan(
-		&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
+		&p.ID, &p.Name, &p.Path, &category, &p.WatchEnabled, &excludeJSON,
 		&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr,
 	)
 
@@ -92,6 +99,11 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 	}
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
+	}
+
+	// Parse category
+	if category.Valid {
+		p.Category = category.String
 	}
 
 	// Parse timestamps from SQLite datetime strings
