@@ -8,9 +8,40 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+	"time"
 
 	"wp-plugin-publish/internal/logger"
 )
+
+// ParseDateTime parses SQLite datetime strings into time.Time.
+// modernc.org/sqlite returns datetime('now') columns as strings in "YYYY-MM-DD HH:MM:SS".
+// We also support RFC3339 for flexibility.
+func ParseDateTime(s string) time.Time {
+	if strings.TrimSpace(s) == "" {
+		return time.Time{}
+	}
+	// Try SQLite datetime format first
+	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+		return t
+	}
+	// Fallback to RFC3339
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t
+	}
+	return time.Time{}
+}
+
+// ParseNullTime converts sql.NullString to *time.Time using ParseDateTime.
+func ParseNullTime(ns sql.NullString) *time.Time {
+	if !ns.Valid || strings.TrimSpace(ns.String) == "" {
+		return nil
+	}
+	t := ParseDateTime(ns.String)
+	if t.IsZero() {
+		return nil
+	}
+	return &t
+}
 
 // Result represents the outcome of a database operation
 type Result struct {

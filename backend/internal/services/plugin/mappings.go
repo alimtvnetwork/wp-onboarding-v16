@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"strings"
-	"time"
 
+	"wp-plugin-publish/internal/database/dbops"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -30,24 +30,21 @@ func (s *Service) GetMappings(ctx context.Context, pluginID int64) ([]models.Plu
 	for rows.Next() {
 		var m models.PluginMapping
 		var lastSyncAt, lastBackupAt sql.NullString
+		var createdAtStr, updatedAtStr sql.NullString
 
 		err := rows.Scan(
 			&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-			&lastSyncAt, &lastBackupAt, &m.CreatedAt, &m.UpdatedAt,
+			&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
 			&m.SiteName, &m.SiteURL,
 		)
 		if err != nil {
 			continue
 		}
 
-		if lastSyncAt.Valid {
-			t, _ := time.Parse(time.RFC3339, lastSyncAt.String)
-			m.LastSyncAt = &t
-		}
-		if lastBackupAt.Valid {
-			t, _ := time.Parse(time.RFC3339, lastBackupAt.String)
-			m.LastBackupAt = &t
-		}
+		m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
+		m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
+		m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
+		m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
 
 		mappings = append(mappings, m)
 	}
@@ -80,24 +77,21 @@ func (s *Service) GetMappingsBySite(ctx context.Context, siteID int64) ([]models
 		var m models.PluginMapping
 		var lastSyncAt, lastBackupAt sql.NullString
 		var pluginName string
+		var createdAtStr, updatedAtStr sql.NullString
 
 		err := rows.Scan(
 			&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-			&lastSyncAt, &lastBackupAt, &m.CreatedAt, &m.UpdatedAt,
+			&lastSyncAt, &lastBackupAt, &createdAtStr, &updatedAtStr,
 			&pluginName,
 		)
 		if err != nil {
 			continue
 		}
 
-		if lastSyncAt.Valid {
-			t, _ := time.Parse(time.RFC3339, lastSyncAt.String)
-			m.LastSyncAt = &t
-		}
-		if lastBackupAt.Valid {
-			t, _ := time.Parse(time.RFC3339, lastBackupAt.String)
-			m.LastBackupAt = &t
-		}
+		m.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
+		m.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
+		m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
+		m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
 
 		mappings = append(mappings, m)
 	}
@@ -137,6 +131,7 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (
 	id, _ := result.LastInsertId()
 
 	var m models.PluginMapping
+	var createdAtStr, updatedAtStr sql.NullString
 	s.db.QueryRowContext(ctx, `
 		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
 		       pm.CreatedAt, pm.UpdatedAt, s.Name, s.Url
@@ -145,8 +140,10 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (
 		WHERE pm.Id = ?
 	`, id).Scan(
 		&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &m.SyncStatus,
-		&m.CreatedAt, &m.UpdatedAt, &m.SiteName, &m.SiteURL,
+		&createdAtStr, &updatedAtStr, &m.SiteName, &m.SiteURL,
 	)
+	m.CreatedAt = dbops.ParseDateTime(createdAtStr.String)
+	m.UpdatedAt = dbops.ParseDateTime(updatedAtStr.String)
 
 	s.log.Info("Plugin mapping created", "mappingId", id)
 	return &m, nil
