@@ -1,6 +1,8 @@
 // API client for WP Plugin Publish backend
 
 import { resolveApiBase, resolveApiOrigin, resolveApiUrl, toAbsoluteUrl } from "@/lib/endpoints";
+import { logger } from "@/lib/logger";
+import { withCircuitBreaker } from "@/lib/circuitBreaker";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -76,10 +78,18 @@ function looksLikeJson(text: string): boolean {
   return trimmed.startsWith("{") || trimmed.startsWith("[");
 }
 
-async function request<T>(
+/**
+ * Core fetch operation (without circuit breaker - used internally)
+ */
+async function fetchRequest<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
+  const method = (options?.method || 'GET') as ApiMethod;
+  const functionName = `api.${method.toLowerCase()}.${endpoint}`;
+  
+  logger.trace(functionName, 'enter', { endpoint, method });
+  const startTime = Date.now();
   try {
     const apiBase = resolveApiBase();
     const apiOrigin = resolveApiOrigin();
@@ -174,6 +184,9 @@ async function request<T>(
       },
     };
   } catch (error) {
+    const duration = Date.now() - startTime;
+    logger.error(`API request failed: ${endpoint}`, error, { endpoint, method, duration });
+    
     // Raw environment variable values for diagnostics
     const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
     const envViteWsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)";
@@ -195,6 +208,38 @@ async function request<T>(
         timestamp: new Date().toISOString(),
       },
     };
+  } finally {
+    const duration = Date.now() - startTime;
+    logger.trace(functionName, 'exit', { endpoint, method, duration });
+  }
+}
+
+/**
+ * Main request function with circuit breaker protection
+ */
+async function request<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<ApiResponse<T>> {
+  const circuitKey = `api:${endpoint}`;
+  
+  try {
+    return await withCircuitBreaker(circuitKey, () => fetchRequest<T>(endpoint, options));
+  } catch (error) {
+    // If circuit breaker blocked the call, return a user-friendly error
+    if (error instanceof Error && (error as unknown as { code?: string }).code === 'E_CIRCUIT_OPEN') {
+      logger.warn(`Circuit breaker open for ${endpoint}, request blocked`);
+      return {
+        success: false,
+        error: {
+          code: "E_CIRCUIT_OPEN",
+          message: "Too many recent failures for this operation",
+          details: `The circuit breaker has blocked requests to ${endpoint} due to repeated failures. Please wait a moment and try again.`,
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+    throw error;
   }
 }
 
@@ -323,6 +368,12 @@ export interface Settings {
     level: string;
     retentionDays: number;
     debugMode: boolean;
+    // Frontend resilience settings
+    frontendDebugMode?: boolean;
+    retryMaxAttempts?: number;
+    retryInitialDelayMs?: number;
+    circuitBreakerThreshold?: number;
+    circuitBreakerCooldownMs?: number;
   };
   appearance: {
     theme: string;
