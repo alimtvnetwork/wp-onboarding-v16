@@ -34,3 +34,4 @@ dist/
 *.db-wal
 *.db-shm
 *.db
+/backend/data/errors
