@@ -38,5 +38,23 @@
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "wpPlugins": {
+    "defaultUploader": "riseup-asia-uploader",
+    "pluginsDir": "wp-plugins",
+    "plugins": {
+      "riseup-asia-uploader": {
+        "name": "Riseup Asia Uploader",
+        "path": "wp-plugins/riseup-asia-uploader",
+        "mainFile": "riseup-asia-uploader.php",
+        "autoUpload": true
+      },
+      "plugins-onboard": {
+        "name": "Plugins Onboard",
+        "path": "wp-plugins/plugins-onboard",
+        "mainFile": "plugins-onboard.php",
+        "autoUpload": false
+      }
+    }
   }
 }

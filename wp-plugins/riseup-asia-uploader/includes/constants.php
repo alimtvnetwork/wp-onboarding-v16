@@ -21,10 +21,10 @@ if (!defined('RISEUP_VERSION')) {
     define('RISEUP_VERSION', '1.3.0');
 }
 if (!defined('RISEUP_SLUG')) {
-    define('RISEUP_SLUG', 'riseup-asia');
+    define('RISEUP_SLUG', 'riseup-asia-uploader');
 }
 if (!defined('RISEUP_NAME')) {
-    define('RISEUP_NAME', 'Rise Up Asia');
+    define('RISEUP_NAME', 'Riseup Asia Uploader');
 }
 if (!defined('RISEUP_MIN_WP_VERSION')) {
     define('RISEUP_MIN_WP_VERSION', '5.6');
