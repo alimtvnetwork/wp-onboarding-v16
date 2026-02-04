@@ -1,24 +1,32 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.19.1",
+  "version": "1.19.2",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T23:45:00Z",
+  "buildTime": "2026-02-04T19:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.19.2",
+      "date": "2026-02-04",
+      "title": "Enhanced Error Modal & Live Publish Logs",
+      "changes": [
+        "📊 Error modal now has 6 tabs: Overview, Backend, Request, Stack, Context, Fixes",
+        "🔧 Backend logs tab shows execution logs and Go stack traces",
+        "🎨 JSON syntax highlighting in Context tab (keys blue, strings green, numbers amber)",
+        "📜 Live log streaming in Publish dialog with auto-scroll",
+        "⚙️ Upload mode toggle (ZIP vs file-by-file) directly in publish dialog",
+        "🔗 Site URL displayed in publish dialog with direct link to open site",
+        "📋 Copy Full Report now includes backend logs and stack traces",
+        "🐛 Fixed Badge using <div> causing validateDOMNesting warning (now uses <span>)",
+        "📚 Updated error-reporting-standards.md with new requirements"
+      ]
+    },
     {
       "version": "1.19.1",
       "date": "2026-02-04",
       "title": "NULL DateTime Fix & Error Modal Integration",
       "changes": [
-        "🐛 Fixed 'converting NULL to string is unsupported' crash in publish service",
-        "📋 PublishProgressDialog now links to Error Modal with full stack trace and copy",
-        "🔧 All datetime scanning uses sql.NullString + dbops.ParseNullTime helper",
-        "📖 Updated ORM documentation: raw SQL forbidden, NULL handling patterns mandatory",
-        "✨ Error report includes plugin name, site name, failed stage, and all stage statuses",
-        "📋 Copy Error button generates markdown-formatted error report"
-      ]
-    },
     {
       "version": "1.19.0",
       "date": "2026-02-04",
