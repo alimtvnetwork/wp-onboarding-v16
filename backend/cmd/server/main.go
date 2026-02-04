@@ -22,13 +22,9 @@ import (
 	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
+	"wp-plugin-publish/internal/version"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
-)
-
-const (
-	AppName    = "WP Plugin Publish"
-	AppVersion = "1.0.0"
 )
 
 // Services holds all application services
@@ -51,13 +47,18 @@ func main() {
 		bootstrapLog.Fatal("Failed to load config", "error", err)
 	}
 
+	// Load version info from version.json (frontend/dist or public/)
+	versionInfo, _ := version.Load(cfg.Server.StaticDir)
+
 	// Initialize the real logger with configured timeFormat (single source of truth)
 	log := logger.New(logger.Config{
 		Level:      parseLogLevel(cfg.Logging.Level),
 		TimeFormat: cfg.Logging.TimeFormat,
+		AppName:    versionInfo.AppName,
+		AppVersion: versionInfo.Version,
 	})
 
-	log.Info("Starting application", "name", AppName, "version", AppVersion)
+	log.Info("Starting application", "version", versionInfo.String())
 
 	// Initialize database
 	db, err := database.New(cfg.DatabasePath)
@@ -124,7 +125,7 @@ func main() {
 	}()
 
 	log.Info("Server started", "port", cfg.Server.Port)
-	fmt.Printf("\n  %s v%s\n", AppName, AppVersion)
+	fmt.Printf("\n  %s\n", versionInfo.String())
 	fmt.Printf("  Local:   http://localhost:%d\n\n", cfg.Server.Port)
 
 	// Wait for shutdown signal

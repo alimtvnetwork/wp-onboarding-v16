@@ -45,11 +45,14 @@ type Config struct {
 	Output     io.Writer
 	TimeFormat string
 	NoColor    bool
+	AppName    string // Optional: prefix logs with app name
+	AppVersion string // Optional: include version in prefix
 }
 
 // Logger is the main logging struct
 type Logger struct {
 	config Config
+	prefix string // Computed prefix from AppName/AppVersion
 }
 
 // New creates a new logger instance
@@ -60,7 +63,18 @@ func New(cfg Config) *Logger {
 	if cfg.TimeFormat == "" {
 		cfg.TimeFormat = time.RFC3339
 	}
-	return &Logger{config: cfg}
+
+	// Build prefix if app name is provided
+	prefix := ""
+	if cfg.AppName != "" {
+		prefix = "[" + cfg.AppName
+		if cfg.AppVersion != "" {
+			prefix += " v" + cfg.AppVersion
+		}
+		prefix += "] "
+	}
+
+	return &Logger{config: cfg, prefix: prefix}
 }
 
 // log is the internal logging method
@@ -91,8 +105,8 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 		builder.WriteString(levelColors[level])
 	}
 	
-	// Format: [TIME] LEVEL file:line - message key=value...
-	builder.WriteString(fmt.Sprintf("[%s] %-5s %s:%d - %s", timestamp, levelStr, file, line, msg))
+	// Format: [APP vX.X.X] [TIME] LEVEL file:line - message key=value...
+	builder.WriteString(fmt.Sprintf("%s[%s] %-5s %s:%d - %s", l.prefix, timestamp, levelStr, file, line, msg))
 
 	// Add key-value pairs
 	for i := 0; i < len(keyvals); i += 2 {

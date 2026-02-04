@@ -158,8 +158,14 @@ export function WhatsNewModal({ open, onOpenChange }: WhatsNewModalProps) {
             <Sparkles className="h-5 w-5 text-primary" />
             What's New in v{versionInfo.version}
           </DialogTitle>
-          <DialogDescription>
-            Check out the latest updates, upcoming features, and known issues.
+          <DialogDescription className="flex flex-wrap items-center gap-2">
+            <span>Check out the latest updates, upcoming features, and known issues.</span>
+            {(versionInfo.gitCommit || versionInfo.buildTime) && (
+              <span className="text-xs font-mono text-muted-foreground">
+                {versionInfo.gitCommit && `(${versionInfo.gitCommit.substring(0, 7)})`}
+                {versionInfo.buildTime && ` • Built ${new Date(versionInfo.buildTime).toLocaleDateString()}`}
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 

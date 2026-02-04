@@ -14,11 +14,13 @@ export function GlobalErrorModal() {
   const { data: versionInfo } = useVersionInfo();
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
+  const gitCommit = versionInfo?.gitCommit;
+  const buildTime = versionInfo?.buildTime;
   
   if (!selectedError) return null;
 
   const copyFullError = () => {
-    const text = generateErrorReport(selectedError, { appName, appVersion });
+    const text = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
     navigator.clipboard.writeText(text);
     toast.success("Full error report copied to clipboard");
   };
@@ -294,11 +296,21 @@ export function GlobalErrorModal() {
 
 function generateErrorReport(
   error: CapturedError,
-  app?: { appName: string; appVersion: string }
+  app?: { appName: string; appVersion: string; gitCommit?: string; buildTime?: string }
 ): string {
+  const appInfo = [
+    `**App:** ${app?.appName || "WP Plugin Publish"} v${app?.appVersion || "0.0.0"}`,
+  ];
+  if (app?.gitCommit) {
+    appInfo.push(`**Git Commit:** ${app.gitCommit.substring(0, 7)}`);
+  }
+  if (app?.buildTime) {
+    appInfo.push(`**Build Time:** ${app.buildTime}`);
+  }
+
   return `## Error Report
 
-**App:** ${app?.appName || "WP Plugin Publish"} v${app?.appVersion || "0.0.0"}
+${appInfo.join("\n")}
 
 **ID:** ${error.id}
 **Code:** ${error.code}

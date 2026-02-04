@@ -10,7 +10,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/useSettings";
-import { Eye, Archive, FileText, Palette, Settings as SettingsIcon, Loader2 } from "lucide-react";
+import { Eye, Archive, FileText, Palette, Loader2 } from "lucide-react";
+import { AboutPanel } from "@/components/settings/AboutPanel";
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
@@ -199,6 +200,9 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {/* About */}
+      <AboutPanel />
 
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-4 border-t">
