@@ -191,6 +191,10 @@ func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (
 	return a.Service.ScanDirectory(ctx, path)
 }
 
+func (a *PluginServiceAdapter) WritePluginDetected(ctx context.Context, path string) error {
+	return a.Service.WritePluginDetected(ctx, path)
+}
+
 func (a *PluginServiceAdapter) RefreshFileCount(ctx context.Context, id int64) error {
 	return a.Service.RefreshFileCount(ctx, id)
 }
