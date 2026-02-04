@@ -14,9 +14,9 @@
 | `-b` | `-buildonly` | Switch | Build frontend only, don't start backend |
 | `-s` | `-skipbuild` | Switch | Skip frontend build, only run backend |
 | `-p` | `-skippull` | Switch | Skip git pull step |
-| `-f` | `-force` | Switch | Clean build: remove caches, PnP files, prune pnpm store, then reinstall dependencies |
-| `-i` | `-install` | Switch | **Always** install/update dependencies for both frontend (pnpm) and backend (go mod), even if node_modules exists |
-| `-r` | `-rebuild` | Switch | Complete clean reinstall: combines `-f` + `-i` for full nuclear reset |
+| `-f` | `-force` | Switch | Force-clean build artifacts and pnpm folders before building; a fresh install will run if needed |
+| `-i` | `-install` | Switch | Install/update dependencies for frontend (pnpm) and backend (go mod), then exit |
+| `-r` | `-rebuild` | Switch | Full reset: clean first, then install, then build/run (frontend install happens after the clean) |
 | `-fw` | `-openfirewall` | Switch | Add Windows Firewall rules (requires Admin) |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
