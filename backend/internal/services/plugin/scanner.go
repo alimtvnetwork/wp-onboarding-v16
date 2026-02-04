@@ -16,7 +16,7 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-const pluginDetectedFile = ".plugin-detected.json"
+const pluginDetectedFile = "wp-plugin-detected.json"
 
 // ScanDirectory scans a plugin directory and returns file information
 func (s *Service) ScanDirectory(ctx context.Context, path string) (*ScanResult, error) {

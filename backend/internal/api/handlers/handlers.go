@@ -39,6 +39,7 @@ type PluginServiceInterface interface {
 	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
 	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
 	ScanDirectory(ctx context.Context, path string) (interface{}, error)
+	WritePluginDetected(ctx context.Context, path string) error
 	RefreshFileCount(ctx context.Context, id int64) error
 }
 
@@ -958,6 +959,54 @@ func ScanAllPlugins(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E6002", err.Error())
 		return
 	}
+	respondSuccess(w, result)
+}
+
+// ScanDirectoryPath scans a directory path for WordPress plugin and creates wp-plugin-detected.json
+func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	var input struct {
+		Path            string `json:"path"`
+		CreateDetection bool   `json:"createDetection"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	if input.Path == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Path is required")
+		return
+	}
+
+	// Scan the directory
+	result, err := Services.PluginService.ScanDirectory(r.Context(), input.Path)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E6003", err.Error())
+		return
+	}
+
+	// Optionally create wp-plugin-detected.json
+	if input.CreateDetection {
+		if err := Services.PluginService.WritePluginDetected(r.Context(), input.Path); err != nil {
+			// Non-fatal - still return scan result but note the error
+			respondSuccess(w, map[string]interface{}{
+				"scan":           result,
+				"detectionError": err.Error(),
+			})
+			return
+		}
+		respondSuccess(w, map[string]interface{}{
+			"scan":              result,
+			"detectionCreated": true,
+		})
+		return
+	}
+
 	respondSuccess(w, result)
 }
 

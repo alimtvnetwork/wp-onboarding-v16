@@ -130,7 +130,7 @@ foreach ($plugin in $plugins) {
     Write-Status ""
     
     if ($CreateConfigs) {
-        $configPath = Join-Path $plugin.Path ".plugin-detected.json"
+        $configPath = Join-Path $plugin.Path "wp-plugin-detected.json"
         $config = @{
             pluginName = $plugin.Header.PluginName
             version = $plugin.Header.Version
@@ -147,7 +147,7 @@ foreach ($plugin in $plugins) {
         }
         
         $config | ConvertTo-Json -Depth 10 | Set-Content $configPath -Encoding UTF8
-        Write-Status "    Created: .plugin-detected.json" -Color Green
+        Write-Status "    Created: wp-plugin-detected.json" -Color Green
     }
 }
 
