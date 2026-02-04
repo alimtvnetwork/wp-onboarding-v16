@@ -1,11 +1,11 @@
 <?php
 /**
- * Rise Up Asia - Transaction Logger
+ * Riseup Asia Uploader - Transaction Logger
  *
  * Wrapper for logging operations with user context.
  *
- * @package RiseUpAsia
- * @since   1.3.0
+ * @package RiseupAsiaUploader
+ * @since   1.4.0
  */
 
 if (!defined('ABSPATH')) {
@@ -13,30 +13,37 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class RiseUp_Logger
+ * Class Riseup_Logger
  *
  * Provides convenient methods for logging transactions.
  */
-class RiseUp_Logger {
+class Riseup_Logger {
 
     /**
      * Database instance.
      *
-     * @var RiseUp_Database
+     * @var Riseup_Database
      */
     private $db;
 
     /**
+     * File logger instance.
+     *
+     * @var Riseup_File_Logger
+     */
+    private $file_logger;
+
+    /**
      * Singleton instance.
      *
-     * @var RiseUp_Logger|null
+     * @var Riseup_Logger|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return RiseUp_Logger
+     * @return Riseup_Logger
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -49,7 +56,9 @@ class RiseUp_Logger {
      * Constructor.
      */
     private function __construct() {
-        $this->db = RiseUp_Database::get_instance();
+        $this->file_logger = Riseup_File_Logger::get_instance();
+        $this->db = Riseup_Database::get_instance();
+        $this->file_logger->info('Transaction logger initialized');
     }
 
     /**
@@ -62,7 +71,7 @@ class RiseUp_Logger {
         foreach ($ip_keys as $key) {
             if (!empty($_SERVER[$key])) {
                 $ip = $_SERVER[$key];
-                // Handle comma-separated IPs (X-Forwarded-For).
+                // Handle comma-separated IPs (X-Forwarded-For)
                 if (strpos($ip, ',') !== false) {
                     $ip = trim(explode(',', $ip)[0]);
                 }
@@ -105,6 +114,12 @@ class RiseUp_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_plugin_action($action, $plugin_slug, $status = RISEUP_STATUS_SUCCESS, $details = array(), $error_msg = null) {
+        $this->file_logger->info('Logging plugin action', array(
+            'action' => $action,
+            'plugin' => $plugin_slug,
+            'status' => $status,
+        ));
+        
         $user = $this->get_user_info();
         return $this->db->log_transaction(
             $action,
@@ -131,6 +146,12 @@ class RiseUp_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_post_action($action, $post_id, $status = RISEUP_STATUS_SUCCESS, $details = array(), $error_msg = null) {
+        $this->file_logger->info('Logging post action', array(
+            'action'  => $action,
+            'post_id' => $post_id,
+            'status'  => $status,
+        ));
+        
         $user = $this->get_user_info();
         return $this->db->log_transaction(
             $action,
@@ -154,7 +175,9 @@ class RiseUp_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_auth_failure($reason, $details = array()) {
-        // For auth failures, we may not have a valid user.
+        $this->file_logger->warn('Auth failure', array('reason' => $reason));
+        
+        // For auth failures, we may not have a valid user
         $provided_user = isset($details['username']) ? $details['username'] : 'unknown';
         return $this->db->log_transaction(
             RISEUP_ACTION_AUTH_FAILED,
@@ -191,6 +214,7 @@ class RiseUp_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_upload_failed($plugin_slug, $error, $details = array()) {
+        $this->file_logger->error('Upload failed', array('plugin' => $plugin_slug, 'error' => $error));
         return $this->log_plugin_action(RISEUP_ACTION_UPLOAD, $plugin_slug, RISEUP_STATUS_FAILED, $details, $error);
     }
 

@@ -1,11 +1,12 @@
 <?php
 /**
- * Rise Up Asia - Database Handler
+ * Riseup Asia Uploader - Database Handler
  *
  * SQLite database for transaction logging using the micro-ORM.
+ * Database is stored in wp-content/uploads/riseup-asia-uploader/
  *
- * @package RiseUpAsia
- * @since   1.3.0
+ * @package RiseupAsiaUploader
+ * @since   1.4.0
  */
 
 if (!defined('ABSPATH')) {
@@ -13,11 +14,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class RiseUp_Database
+ * Class Riseup_Database
  *
  * Handles all SQLite database operations for transaction logging.
  */
-class RiseUp_Database {
+class Riseup_Database {
 
     /**
      * PDO instance.
@@ -34,16 +35,30 @@ class RiseUp_Database {
     private $db_path;
 
     /**
+     * File logger instance.
+     *
+     * @var Riseup_File_Logger
+     */
+    private $file_logger;
+
+    /**
      * Singleton instance.
      *
-     * @var RiseUp_Database|null
+     * @var Riseup_Database|null
      */
     private static $instance = null;
 
     /**
+     * Whether initialization has been attempted.
+     *
+     * @var bool
+     */
+    private $init_attempted = false;
+
+    /**
      * Get singleton instance.
      *
-     * @return RiseUp_Database
+     * @return Riseup_Database
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -56,8 +71,32 @@ class RiseUp_Database {
      * Constructor.
      */
     private function __construct() {
-        $this->db_path = $this->get_database_path();
-        $this->init_database();
+        $this->file_logger = Riseup_File_Logger::get_instance();
+        $this->file_logger->info('Database constructor called');
+    }
+
+    /**
+     * Initialize database (lazy loading).
+     *
+     * @return bool True if successful.
+     */
+    public function init() {
+        if ($this->init_attempted) {
+            return $this->pdo !== null;
+        }
+        
+        $this->init_attempted = true;
+        $this->file_logger->info('Starting database initialization');
+        
+        try {
+            $this->db_path = $this->get_database_path();
+            $this->file_logger->info('Database path resolved', array('path' => $this->db_path));
+            
+            return $this->init_database();
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Database init failed');
+            return false;
+        }
     }
 
     /**
@@ -66,47 +105,99 @@ class RiseUp_Database {
      * @return string
      */
     private function get_database_path() {
-        $plugin_dir = dirname(__DIR__);
-        $data_dir   = $plugin_dir . '/' . RISEUP_DATA_DIR;
-
-        // Create data directory if it doesn't exist.
-        if (!file_exists($data_dir)) {
-            wp_mkdir_p($data_dir);
-            // Add .htaccess to protect database.
-            file_put_contents($data_dir . '/.htaccess', 'Deny from all');
-            // Add index.php for additional protection.
-            file_put_contents($data_dir . '/index.php', '<?php // Silence is golden.');
+        $this->file_logger->debug('Resolving database path');
+        
+        // Get base directory from file logger
+        $base_dir = $this->file_logger->get_base_dir();
+        
+        $this->file_logger->debug('Base directory', array('dir' => $base_dir));
+        
+        // Ensure base directory exists
+        if (!file_exists($base_dir)) {
+            $this->file_logger->info('Creating base directory', array('dir' => $base_dir));
+            
+            if (!wp_mkdir_p($base_dir)) {
+                $this->file_logger->error('Failed to create base directory', array('dir' => $base_dir));
+                throw new Exception('Failed to create data directory: ' . $base_dir);
+            }
+            
+            // Add .htaccess to protect database
+            $htaccess_path = $base_dir . '/.htaccess';
+            $htaccess_content = "Order deny,allow\nDeny from all\n";
+            if (@file_put_contents($htaccess_path, $htaccess_content) === false) {
+                $this->file_logger->warn('Failed to create .htaccess', array('path' => $htaccess_path));
+            } else {
+                $this->file_logger->debug('.htaccess created', array('path' => $htaccess_path));
+            }
+            
+            // Add index.php for additional protection
+            $index_path = $base_dir . '/index.php';
+            if (@file_put_contents($index_path, '<?php // Silence is golden.') === false) {
+                $this->file_logger->warn('Failed to create index.php', array('path' => $index_path));
+            } else {
+                $this->file_logger->debug('index.php created', array('path' => $index_path));
+            }
         }
-
-        return $data_dir . '/' . RISEUP_DB_FILENAME;
+        
+        $db_path = $base_dir . '/' . RISEUP_DB_FILENAME;
+        $this->file_logger->info('Database path set', array('path' => $db_path));
+        
+        return $db_path;
     }
 
     /**
      * Initialize the database connection and create tables.
      *
-     * @return void
+     * @return bool True if successful.
      */
     private function init_database() {
+        $this->file_logger->info('Initializing PDO connection');
+        
         try {
+            // Check if SQLite extension is available
+            if (!extension_loaded('pdo_sqlite')) {
+                $this->file_logger->error('PDO SQLite extension not loaded');
+                throw new Exception('PDO SQLite extension is not available');
+            }
+            
+            $this->file_logger->debug('Creating PDO connection', array('path' => $this->db_path));
+            
             $this->pdo = new PDO('sqlite:' . $this->db_path);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            
+            $this->file_logger->info('PDO connection established');
 
-            // Enable WAL mode for better performance.
+            // Enable WAL mode for better performance
             if (RISEUP_DB_WAL_MODE) {
+                $this->file_logger->debug('Enabling WAL mode');
                 $this->pdo->exec('PRAGMA journal_mode = WAL');
+                $this->file_logger->info('WAL mode enabled');
             }
 
-            // Enable auto-vacuum.
+            // Enable auto-vacuum
+            $this->file_logger->debug('Setting auto-vacuum');
             $this->pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');
 
-            // Configure the ORM with our PDO instance.
-            RiseUp_ORM::configure($this->pdo);
+            // Configure the ORM with our PDO instance
+            $this->file_logger->debug('Configuring ORM');
+            Riseup_ORM::configure($this->pdo);
+            $this->file_logger->info('ORM configured');
 
-            // Create tables.
+            // Create tables
             $this->create_tables();
+            
+            $this->file_logger->info('Database initialization complete');
+            return true;
+            
         } catch (PDOException $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Database initialization failed: ' . $e->getMessage());
+            $this->file_logger->log_exception($e, 'PDO initialization failed');
+            $this->pdo = null;
+            return false;
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Database initialization failed');
+            $this->pdo = null;
+            return false;
         }
     }
 
@@ -116,28 +207,49 @@ class RiseUp_Database {
      * @return void
      */
     private function create_tables() {
-        $sql = "CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_TRANSACTIONS . " (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            action TEXT NOT NULL,
-            plugin_slug TEXT,
-            post_id INTEGER,
-            user_login TEXT NOT NULL,
-            user_id INTEGER,
-            ip_address TEXT NOT NULL,
-            details TEXT,
-            status TEXT NOT NULL,
-            error_msg TEXT,
-            created_at TEXT NOT NULL
-        )";
+        $this->file_logger->info('Creating database tables');
+        
+        try {
+            $table_name = RISEUP_TABLE_TRANSACTIONS;
+            $this->file_logger->debug('Creating table', array('table' => $table_name));
+            
+            $sql = "CREATE TABLE IF NOT EXISTS {$table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                action TEXT NOT NULL,
+                plugin_slug TEXT,
+                post_id INTEGER,
+                user_login TEXT NOT NULL,
+                user_id INTEGER,
+                ip_address TEXT NOT NULL,
+                details TEXT,
+                status TEXT NOT NULL,
+                error_msg TEXT,
+                created_at TEXT NOT NULL
+            )";
 
-        $this->pdo->exec($sql);
+            $this->pdo->exec($sql);
+            $this->file_logger->info('Table created', array('table' => $table_name));
 
-        // Create indexes for common queries.
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_action ON " . RISEUP_TABLE_TRANSACTIONS . " (action)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_plugin_slug ON " . RISEUP_TABLE_TRANSACTIONS . " (plugin_slug)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_user_login ON " . RISEUP_TABLE_TRANSACTIONS . " (user_login)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_status ON " . RISEUP_TABLE_TRANSACTIONS . " (status)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_created_at ON " . RISEUP_TABLE_TRANSACTIONS . " (created_at)");
+            // Create indexes for common queries
+            $indexes = array(
+                'idx_action'     => 'action',
+                'idx_plugin_slug' => 'plugin_slug',
+                'idx_user_login' => 'user_login',
+                'idx_status'     => 'status',
+                'idx_created_at' => 'created_at',
+            );
+            
+            foreach ($indexes as $index_name => $column) {
+                $this->file_logger->debug('Creating index', array('index' => $index_name, 'column' => $column));
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS {$index_name} ON {$table_name} ({$column})");
+            }
+            
+            $this->file_logger->info('All indexes created');
+            
+        } catch (PDOException $e) {
+            $this->file_logger->log_exception($e, 'Failed to create tables');
+            throw $e;
+        }
     }
 
     /**
@@ -146,7 +258,22 @@ class RiseUp_Database {
      * @return PDO|null
      */
     public function get_pdo() {
+        if (!$this->init_attempted) {
+            $this->init();
+        }
         return $this->pdo;
+    }
+
+    /**
+     * Check if database is ready.
+     *
+     * @return bool
+     */
+    public function is_ready() {
+        if (!$this->init_attempted) {
+            $this->init();
+        }
+        return $this->pdo !== null;
     }
 
     /**
@@ -175,12 +302,18 @@ class RiseUp_Database {
         $status = RISEUP_STATUS_SUCCESS,
         $error_msg = null
     ) {
-        if (!$this->pdo) {
+        if (!$this->is_ready()) {
+            $this->file_logger->warn('Database not ready, cannot log transaction');
             return false;
         }
 
         try {
-            return RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $this->file_logger->debug('Logging transaction', array(
+                'action' => $action,
+                'status' => $status,
+            ));
+            
+            $result = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
                 ->create()
                 ->set('action', $action)
                 ->set('plugin_slug', $plugin_slug)
@@ -193,8 +326,12 @@ class RiseUp_Database {
                 ->set('error_msg', $error_msg)
                 ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'))
                 ->save();
+                
+            $this->file_logger->info('Transaction logged', array('id' => $result));
+            return $result;
+            
         } catch (Exception $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Failed to log transaction: ' . $e->getMessage());
+            $this->file_logger->log_exception($e, 'Failed to log transaction');
             return false;
         }
     }
@@ -209,18 +346,21 @@ class RiseUp_Database {
      * @return array Array with 'total' and 'logs' keys.
      */
     public function query_transactions($filters = array(), $limit = RISEUP_DEFAULT_LIMIT, $offset = 0) {
-        if (!$this->pdo) {
+        if (!$this->is_ready()) {
+            $this->file_logger->warn('Database not ready for query');
             return array('total' => 0, 'logs' => array());
         }
 
-        // Sanitize limit.
+        // Sanitize limit
         $limit = min(max(1, (int) $limit), RISEUP_MAX_LIMIT);
         $offset = max(0, (int) $offset);
 
         try {
+            $this->file_logger->debug('Querying transactions', array('filters' => $filters));
+            
             // Build count query
-            $count_query = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
-            $data_query = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
+            $count_query = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
+            $data_query = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
 
             // Apply filters to both queries
             $this->apply_filters($count_query, $filters);
@@ -236,19 +376,21 @@ class RiseUp_Database {
                 ->offset($offset)
                 ->find_many();
 
-            // Decode JSON details.
+            // Decode JSON details
             foreach ($logs as &$log) {
                 if (!empty($log['details'])) {
                     $log['details'] = json_decode($log['details'], true);
                 }
             }
 
+            $this->file_logger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
+            
             return array(
                 'total' => $total,
                 'logs'  => $logs,
             );
         } catch (Exception $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Failed to query transactions: ' . $e->getMessage());
+            $this->file_logger->log_exception($e, 'Failed to query transactions');
             return array('total' => 0, 'logs' => array());
         }
     }
@@ -256,18 +398,18 @@ class RiseUp_Database {
     /**
      * Apply filters to an ORM query.
      *
-     * @param RiseUp_ORM $query   ORM query instance.
+     * @param Riseup_ORM $query   ORM query instance.
      * @param array      $filters Filters to apply.
      *
      * @return void
      */
     private function apply_filters($query, $filters) {
-        // Filter by plugin.
+        // Filter by plugin
         if (!empty($filters['plugin'])) {
             $query->where('plugin_slug', $filters['plugin']);
         }
 
-        // Filter by action (supports comma-separated list).
+        // Filter by action (supports comma-separated list)
         if (!empty($filters['action'])) {
             $actions = array_map('trim', explode(',', $filters['action']));
             if (count($actions) === 1) {
@@ -277,17 +419,17 @@ class RiseUp_Database {
             }
         }
 
-        // Filter by user.
+        // Filter by user
         if (!empty($filters['user'])) {
             $query->where('user_login', $filters['user']);
         }
 
-        // Filter by status.
+        // Filter by status
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        // Filter by date range.
+        // Filter by date range
         if (!empty($filters['from'])) {
             $query->where_gte('created_at', $filters['from'] . 'T00:00:00Z');
         }
@@ -304,12 +446,12 @@ class RiseUp_Database {
      * @return array|null Transaction data or null.
      */
     public function get_transaction($id) {
-        if (!$this->pdo) {
+        if (!$this->is_ready()) {
             return null;
         }
 
         try {
-            $log = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $log = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
                 ->find_one((int) $id);
 
             if ($log && !empty($log['details'])) {
@@ -318,7 +460,7 @@ class RiseUp_Database {
 
             return $log;
         } catch (Exception $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Failed to get transaction: ' . $e->getMessage());
+            $this->file_logger->log_exception($e, 'Failed to get transaction');
             return null;
         }
     }
@@ -329,18 +471,18 @@ class RiseUp_Database {
      * @return array Statistics.
      */
     public function get_stats() {
-        if (!$this->pdo) {
+        if (!$this->is_ready()) {
             return array();
         }
 
         try {
             $stats = array();
 
-            // Total transactions.
-            $stats['total_transactions'] = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)->count();
+            // Total transactions
+            $stats['total_transactions'] = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)->count();
 
-            // Transactions by action.
-            $by_action = RiseUp_ORM::raw_execute(
+            // Transactions by action
+            $by_action = Riseup_ORM::raw_execute(
                 "SELECT action, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY action"
             );
             $stats['by_action'] = array();
@@ -348,8 +490,8 @@ class RiseUp_Database {
                 $stats['by_action'][$row['action']] = (int) $row['count'];
             }
 
-            // Transactions by status.
-            $by_status = RiseUp_ORM::raw_execute(
+            // Transactions by status
+            $by_status = Riseup_ORM::raw_execute(
                 "SELECT status, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY status"
             );
             $stats['by_status'] = array();
@@ -357,15 +499,15 @@ class RiseUp_Database {
                 $stats['by_status'][$row['status']] = (int) $row['count'];
             }
 
-            // Last 24 hours.
+            // Last 24 hours
             $yesterday = gmdate('Y-m-d\TH:i:s\Z', time() - 86400);
-            $stats['last_24h'] = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $stats['last_24h'] = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
                 ->where_gte('created_at', $yesterday)
                 ->count();
 
             return $stats;
         } catch (Exception $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Failed to get stats: ' . $e->getMessage());
+            $this->file_logger->log_exception($e, 'Failed to get stats');
             return array();
         }
     }
@@ -378,18 +520,21 @@ class RiseUp_Database {
      * @return int Number of deleted records.
      */
     public function cleanup_old_transactions($days_to_keep = 365) {
-        if (!$this->pdo) {
+        if (!$this->is_ready()) {
             return 0;
         }
 
         try {
             $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($days_to_keep * 86400));
             
-            return RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $deleted = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
                 ->where_lt('created_at', $cutoff)
                 ->delete();
+                
+            $this->file_logger->info('Cleanup complete', array('deleted' => $deleted));
+            return $deleted;
         } catch (Exception $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Failed to cleanup transactions: ' . $e->getMessage());
+            $this->file_logger->log_exception($e, 'Failed to cleanup transactions');
             return 0;
         }
     }

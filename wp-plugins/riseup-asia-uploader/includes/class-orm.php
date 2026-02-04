@@ -1,12 +1,12 @@
 <?php
 /**
- * Rise Up Asia - Micro ORM
+ * Riseup Asia Uploader - Micro ORM
  *
  * A lightweight Idiorm-style fluent query builder for SQLite.
  * Provides chainable methods for building and executing SQL queries.
  *
- * @package RiseUpAsia
- * @since   1.3.0
+ * @package RiseupAsiaUploader
+ * @since   1.4.0
  */
 
 if (!defined('ABSPATH')) {
@@ -14,11 +14,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class RiseUp_ORM
+ * Class Riseup_ORM
  *
  * Fluent query builder with method chaining support.
  */
-class RiseUp_ORM {
+class Riseup_ORM {
 
     /**
      * PDO instance (shared across all ORM instances).
@@ -143,12 +143,34 @@ class RiseUp_ORM {
      *
      * @param string $table_name Table name.
      *
-     * @return RiseUp_ORM
+     * @return Riseup_ORM
      */
     public static function for_table($table_name) {
         $orm = new self();
         $orm->table_name = $table_name;
         return $orm;
+    }
+
+    /**
+     * Execute raw SQL query.
+     *
+     * @param string $sql    SQL query.
+     * @param array  $params Parameters.
+     *
+     * @return array Results.
+     */
+    public static function raw_execute($sql, $params = array()) {
+        if (!self::$pdo) {
+            return array();
+        }
+
+        try {
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return array();
+        }
     }
 
     /**
@@ -205,6 +227,19 @@ class RiseUp_ORM {
     // =========================================================================
     // WHERE METHODS
     // =========================================================================
+
+    /**
+     * Generate unique parameter name.
+     *
+     * @param string $column Column name.
+     *
+     * @return string Parameter name.
+     */
+    private function generate_param_name($column) {
+        self::$param_counter++;
+        $safe_column = preg_replace('/[^a-zA-Z0-9_]/', '', $column);
+        return ':' . $safe_column . '_' . self::$param_counter;
+    }
 
     /**
      * Add a WHERE clause with = operator.
@@ -499,38 +534,104 @@ class RiseUp_ORM {
     /**
      * Find a single record by ID.
      *
-     * @param mixed $id Record ID.
+     * @param int $id Record ID.
      *
      * @return array|null Record data or null.
      */
-    public function find_one($id = null) {
-        if ($id !== null) {
-            $this->where($this->id_column, $id);
+    public function find_one($id) {
+        if (!self::$pdo) {
+            return null;
         }
-        $this->limit(1);
 
-        $results = $this->execute_select();
-        return !empty($results) ? $results[0] : null;
+        $sql = "SELECT * FROM {$this->table_name} WHERE {$this->id_column} = :id LIMIT 1";
+        
+        try {
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute(array(':id' => $id));
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: null;
+        } catch (PDOException $e) {
+            return null;
+        }
     }
 
     /**
      * Find multiple records.
      *
-     * @return array Array of records.
+     * @return array Records.
      */
     public function find_many() {
-        return $this->execute_select();
+        if (!self::$pdo) {
+            return array();
+        }
+
+        $sql = $this->build_select_sql();
+        
+        try {
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute($this->where_params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return array();
+        }
     }
 
     /**
-     * Get the count of matching records.
+     * Count records.
      *
      * @return int Count.
      */
     public function count() {
-        $this->select_count('cnt');
-        $result = $this->find_one();
-        return $result ? (int) $result['cnt'] : 0;
+        if (!self::$pdo) {
+            return 0;
+        }
+
+        $sql = "SELECT COUNT(*) as count FROM {$this->table_name}";
+        
+        if (!empty($this->where_clauses)) {
+            $sql .= ' WHERE ' . implode(' AND ', $this->where_clauses);
+        }
+        
+        try {
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute($this->where_params);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int) ($result['count'] ?? 0);
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Build SELECT SQL.
+     *
+     * @return string SQL query.
+     */
+    private function build_select_sql() {
+        $columns = implode(', ', $this->select_columns);
+        $sql = "SELECT {$columns} FROM {$this->table_name}";
+        
+        if (!empty($this->where_clauses)) {
+            $sql .= ' WHERE ' . implode(' AND ', $this->where_clauses);
+        }
+        
+        if (!empty($this->group_by)) {
+            $sql .= ' GROUP BY ' . implode(', ', $this->group_by);
+        }
+        
+        if (!empty($this->order_by)) {
+            $sql .= ' ORDER BY ' . implode(', ', $this->order_by);
+        }
+        
+        if ($this->limit_value !== null) {
+            $sql .= ' LIMIT ' . $this->limit_value;
+        }
+        
+        if ($this->offset_value !== null) {
+            $sql .= ' OFFSET ' . $this->offset_value;
+        }
+        
+        return $sql;
     }
 
     // =========================================================================
@@ -540,13 +641,11 @@ class RiseUp_ORM {
     /**
      * Create a new record instance.
      *
-     * @param array $data Initial data.
-     *
      * @return $this
      */
-    public function create($data = array()) {
+    public function create() {
         $this->is_new = true;
-        $this->data = $data;
+        $this->data = array();
         return $this;
     }
 
@@ -564,310 +663,112 @@ class RiseUp_ORM {
     }
 
     /**
-     * Set multiple values at once.
-     *
-     * @param array $data Associative array of column => value.
-     *
-     * @return $this
-     */
-    public function set_array($data) {
-        $this->data = array_merge($this->data, $data);
-        return $this;
-    }
-
-    /**
-     * Set the ID (for updates).
-     *
-     * @param mixed $id Record ID.
-     *
-     * @return $this
-     */
-    public function set_id($id) {
-        $this->id = $id;
-        $this->is_new = false;
-        return $this;
-    }
-
-    /**
      * Save the record (insert or update).
      *
-     * @return int|false Insert ID for new records, row count for updates, false on error.
+     * @return int|false Insert ID or rows affected, false on error.
      */
     public function save() {
-        if (!self::$pdo || empty($this->data)) {
+        if (!self::$pdo) {
             return false;
         }
 
         try {
             if ($this->is_new) {
-                return $this->execute_insert();
+                return $this->do_insert();
             } else {
-                return $this->execute_update();
+                return $this->do_update();
             }
         } catch (PDOException $e) {
-            error_log('[RiseUp Asia ORM] Save failed: ' . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Delete records matching the current query.
-     *
-     * @return int|false Number of deleted rows or false on error.
-     */
-    public function delete() {
-        if (!self::$pdo) {
-            return false;
-        }
-
-        try {
-            return $this->execute_delete();
-        } catch (PDOException $e) {
-            error_log('[RiseUp Asia ORM] Delete failed: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Delete a record by ID.
-     *
-     * @param mixed $id Record ID.
-     *
-     * @return int|false Number of deleted rows or false on error.
-     */
-    public function delete_by_id($id) {
-        return $this->where($this->id_column, $id)->delete();
-    }
-
-    // =========================================================================
-    // RAW QUERY METHODS
-    // =========================================================================
-
-    /**
-     * Execute a raw SQL query.
-     *
-     * @param string $sql    SQL query.
-     * @param array  $params Parameters.
-     *
-     * @return PDOStatement|false Statement or false on error.
-     */
-    public static function raw_query($sql, $params = array()) {
-        if (!self::$pdo) {
-            return false;
-        }
-
-        try {
-            $stmt = self::$pdo->prepare($sql);
-            $stmt->execute($params);
-            return $stmt;
-        } catch (PDOException $e) {
-            error_log('[RiseUp Asia ORM] Raw query failed: ' . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Execute raw SQL and return all results.
-     *
-     * @param string $sql    SQL query.
-     * @param array  $params Parameters.
-     *
-     * @return array Results.
-     */
-    public static function raw_execute($sql, $params = array()) {
-        $stmt = self::raw_query($sql, $params);
-        return $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : array();
-    }
-
-    // =========================================================================
-    // INTERNAL METHODS
-    // =========================================================================
-
-    /**
-     * Execute SELECT query.
-     *
-     * @return array Results.
-     */
-    private function execute_select() {
-        if (!self::$pdo) {
-            return array();
-        }
-
-        $sql = "SELECT " . implode(', ', $this->select_columns);
-        $sql .= " FROM " . $this->table_name;
-
-        if (!empty($this->where_clauses)) {
-            $sql .= " WHERE " . implode(' AND ', $this->where_clauses);
-        }
-
-        if (!empty($this->group_by)) {
-            $sql .= " GROUP BY " . implode(', ', $this->group_by);
-        }
-
-        if (!empty($this->order_by)) {
-            $sql .= " ORDER BY " . implode(', ', $this->order_by);
-        }
-
-        if ($this->limit_value !== null) {
-            $sql .= " LIMIT " . $this->limit_value;
-        }
-
-        if ($this->offset_value !== null) {
-            $sql .= " OFFSET " . $this->offset_value;
-        }
-
-        try {
-            $stmt = self::$pdo->prepare($sql);
-            $stmt->execute($this->where_params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log('[RiseUp Asia ORM] Select failed: ' . $e->getMessage() . ' SQL: ' . $sql);
-            return array();
-        }
-    }
-
-    /**
-     * Execute INSERT query.
+     * Perform INSERT.
      *
      * @return int|false Insert ID or false.
      */
-    private function execute_insert() {
+    private function do_insert() {
+        if (empty($this->data)) {
+            return false;
+        }
+
         $columns = array_keys($this->data);
         $placeholders = array_map(function($col) {
             return ':' . $col;
         }, $columns);
-
-        $sql = "INSERT INTO " . $this->table_name;
-        $sql .= " (" . implode(', ', $columns) . ")";
-        $sql .= " VALUES (" . implode(', ', $placeholders) . ")";
-
+        
+        $sql = sprintf(
+            "INSERT INTO %s (%s) VALUES (%s)",
+            $this->table_name,
+            implode(', ', $columns),
+            implode(', ', $placeholders)
+        );
+        
         $params = array();
-        foreach ($this->data as $column => $value) {
-            $params[':' . $column] = $value;
+        foreach ($this->data as $col => $val) {
+            $params[':' . $col] = $val;
         }
-
+        
         $stmt = self::$pdo->prepare($sql);
         $stmt->execute($params);
-
-        return self::$pdo->lastInsertId();
+        
+        return (int) self::$pdo->lastInsertId();
     }
 
     /**
-     * Execute UPDATE query.
+     * Perform UPDATE.
      *
-     * @return int Number of affected rows.
+     * @return int Rows affected.
      */
-    private function execute_update() {
+    private function do_update() {
+        if (empty($this->data) || empty($this->where_clauses)) {
+            return 0;
+        }
+
         $set_clauses = array();
         $params = array();
-
-        foreach ($this->data as $column => $value) {
-            $param_name = ':set_' . $column;
-            $set_clauses[] = "{$column} = {$param_name}";
-            $params[$param_name] = $value;
+        
+        foreach ($this->data as $col => $val) {
+            $param_name = ':set_' . $col;
+            $set_clauses[] = "{$col} = {$param_name}";
+            $params[$param_name] = $val;
         }
-
-        $sql = "UPDATE " . $this->table_name;
-        $sql .= " SET " . implode(', ', $set_clauses);
-
-        // Add ID condition if set
-        if ($this->id !== null) {
-            $this->where($this->id_column, $this->id);
-        }
-
-        if (!empty($this->where_clauses)) {
-            $sql .= " WHERE " . implode(' AND ', $this->where_clauses);
-        }
-
+        
+        $sql = sprintf(
+            "UPDATE %s SET %s WHERE %s",
+            $this->table_name,
+            implode(', ', $set_clauses),
+            implode(' AND ', $this->where_clauses)
+        );
+        
         $params = array_merge($params, $this->where_params);
-
+        
         $stmt = self::$pdo->prepare($sql);
         $stmt->execute($params);
-
+        
         return $stmt->rowCount();
     }
 
     /**
-     * Execute DELETE query.
+     * Delete records.
      *
-     * @return int Number of affected rows.
+     * @return int Rows deleted.
      */
-    private function execute_delete() {
-        $sql = "DELETE FROM " . $this->table_name;
-
-        if (!empty($this->where_clauses)) {
-            $sql .= " WHERE " . implode(' AND ', $this->where_clauses);
+    public function delete() {
+        if (!self::$pdo || empty($this->where_clauses)) {
+            return 0;
         }
 
-        $stmt = self::$pdo->prepare($sql);
-        $stmt->execute($this->where_params);
-
-        return $stmt->rowCount();
-    }
-
-    /**
-     * Generate a unique parameter name.
-     *
-     * @param string $column Column name.
-     *
-     * @return string Parameter name.
-     */
-    private function generate_param_name($column) {
-        self::$param_counter++;
-        // Sanitize column name for use in parameter
-        $safe_column = preg_replace('/[^a-zA-Z0-9_]/', '', $column);
-        return ':p_' . $safe_column . '_' . self::$param_counter;
-    }
-
-    // =========================================================================
-    // UTILITY METHODS
-    // =========================================================================
-
-    /**
-     * Begin a transaction.
-     *
-     * @return bool Success.
-     */
-    public static function begin_transaction() {
-        if (self::$pdo) {
-            return self::$pdo->beginTransaction();
+        try {
+            $sql = "DELETE FROM {$this->table_name} WHERE " . implode(' AND ', $this->where_clauses);
+            
+            $stmt = self::$pdo->prepare($sql);
+            $stmt->execute($this->where_params);
+            
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            return 0;
         }
-        return false;
-    }
-
-    /**
-     * Commit a transaction.
-     *
-     * @return bool Success.
-     */
-    public static function commit() {
-        if (self::$pdo) {
-            return self::$pdo->commit();
-        }
-        return false;
-    }
-
-    /**
-     * Rollback a transaction.
-     *
-     * @return bool Success.
-     */
-    public static function rollback() {
-        if (self::$pdo) {
-            return self::$pdo->rollBack();
-        }
-        return false;
-    }
-
-    /**
-     * Get the last insert ID.
-     *
-     * @return string|false Last insert ID or false.
-     */
-    public static function last_insert_id() {
-        if (self::$pdo) {
-            return self::$pdo->lastInsertId();
-        }
-        return false;
     }
 }
