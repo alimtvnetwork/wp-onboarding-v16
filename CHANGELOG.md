@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-02-04
+
+### Added
+- **Tabbed Site Dialogs**: Add/Edit Site forms now use Basic + Connection tabs for reduced vertical scrolling
+- **Connection Status Persistence**: Successful connection test results persist to the database
+- **Green Connected Badge**: Sites show a "Connected" badge after passing connection test
+- **Retest Button**: Connected sites have a visible "Retest" button for manual verification
+- **Improved Site Cards**: Cleaner layout with status badges, action buttons always visible
+
+### Changed
+- **Save Button Always Visible**: Users can save sites without testing (test is optional but recommended)
+- **Refactored Site Components**: Extracted `AddSiteDialog` and `EditSiteDialog` into separate components
+
+---
+
 ## [1.2.1] - 2026-02-04
 
 ### Fixed
