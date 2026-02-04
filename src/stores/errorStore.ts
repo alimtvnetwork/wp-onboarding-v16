@@ -29,7 +29,7 @@ interface ErrorStore {
   recentErrors: CapturedError[];
   
   // Actions
-  captureError: (error: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown; responseStatus?: number }) => CapturedError;
+  captureError: (error: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown; responseStatus?: number; context?: Record<string, unknown> }) => CapturedError;
   captureException: (error: unknown, context?: { endpoint?: string; method?: string; requestBody?: unknown }) => CapturedError;
   openErrorModal: (error: CapturedError) => void;
   closeErrorModal: () => void;
@@ -97,6 +97,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       details: error.details,
       context: {
         ...error.context,
+        ...(meta?.context || {}),
         ...(meta?.requestBody ? { requestData: meta.requestBody } : {}),
       },
       file: error.file || stackInfo.file,
