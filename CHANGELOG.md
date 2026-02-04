@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.11.0] - 2026-02-04
+
+### Added
+- **Version History**: Every publish operation records a version entry with files, git hash, and backup path
+- **Rollback UI**: Expandable Version History panel on plugin cards with rollback and delete buttons
+- **Version API**: `GET /plugins/{id}/versions`, `POST .../versions/{versionId}/rollback`, `DELETE .../versions/{versionId}`
+- **Database Migration v5**: New `PluginVersions` table for version tracking
+
+### Backend
+- New `version` service (`internal/services/version/service.go`) for version CRUD and rollback
+- WebSocket events: `version_created`, `rollback_started`, `rollback_complete`, `rollback_failed`
+- Version numbers auto-increment per plugin-site pair (1.0.1, 1.0.2, etc.)
+
+### Frontend
+- `VersionHistoryPanel` component shows collapsible version list with badges
+- Rollback confirmation dialog with backup info
+- Delete version confirmation with destructive styling
+
+---
+
 ## [1.10.0] - 2026-02-04
 
 ### Added

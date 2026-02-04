@@ -253,6 +253,21 @@ export interface PluginMapping {
   lastBackupAt: string | null;
 }
 
+export interface PluginVersion {
+  id: number;
+  pluginId: number;
+  siteId: number;
+  siteName: string;
+  version: string;
+  backupPath: string;
+  filesUpdated: number;
+  gitCommitHash: string;
+  publishType: string;
+  status: string;
+  notes: string;
+  createdAt: string;
+}
+
 export interface FileChange {
   path: string;
   status: "added" | "modified" | "deleted" | "renamed" | "synced";
@@ -454,6 +469,20 @@ export const api = {
     request<ErrorLog[]>(`/errors${limit ? `?limit=${limit}` : ""}`),
   getError: (id: number) => request<ErrorLog>(`/errors/${id}`),
   clearErrors: () => request<void>("/errors", { method: "DELETE" }),
+
+  // Plugin Version History
+  getPluginVersions: (pluginId: number, siteId?: number, limit?: number) =>
+    request<PluginVersion[]>(
+      `/plugins/${pluginId}/versions${siteId ? `?siteId=${siteId}` : ""}${limit ? `${siteId ? "&" : "?"}limit=${limit}` : ""}`
+    ),
+  getPluginVersion: (pluginId: number, versionId: number) =>
+    request<PluginVersion>(`/plugins/${pluginId}/versions/${versionId}`),
+  rollbackPluginVersion: (pluginId: number, versionId: number) =>
+    request<{ success: boolean; version: string; rolledBackAt: string }>(
+      `/plugins/${pluginId}/versions/${versionId}/rollback`, { method: "POST" }
+    ),
+  deletePluginVersion: (pluginId: number, versionId: number) =>
+    request<void>(`/plugins/${pluginId}/versions/${versionId}`, { method: "DELETE" }),
 
   // Settings
   getSettings: () => request<Settings>("/settings"),

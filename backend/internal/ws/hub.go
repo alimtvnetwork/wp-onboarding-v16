@@ -83,6 +83,12 @@ const (
 	EventConnectionTestProgress = "connection_test_progress"
 	EventConnectionTestComplete = "connection_test_complete"
 	
+	// Version history events
+	EventVersionCreated   = "version_created"
+	EventRollbackStarted  = "rollback_started"
+	EventRollbackComplete = "rollback_complete"
+	EventRollbackFailed   = "rollback_failed"
+	
 	// E2E test events
 	EventE2ERunStarted    = "e2e_run_started"
 	EventE2ETestStarted   = "e2e_test_started"

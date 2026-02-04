@@ -1,11 +1,28 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T20:00:00Z",
+  "buildTime": "2026-02-04T21:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.11.0",
+      "date": "2026-02-04",
+      "title": "Version History & Rollback",
+      "changes": [
+        "📜 Version history tracking for each publish operation",
+        "⏪ Rollback functionality to restore previous plugin versions",
+        "🗄️ Database migration v5 adds PluginVersions table",
+        "📝 API endpoints for listing versions and triggering rollback",
+        "🔔 WebSocket events for version creation and rollback status",
+        "🖥️ Version History panel on plugin cards with collapsible UI",
+        "🗑️ Delete individual version entries with confirmation dialog"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.10.0",
       "date": "2026-02-04",
@@ -176,12 +193,12 @@
       "description": "Pre-configure sites and plugins for quick testing"
     },
     {
-      "status": "planned",
+      "status": "completed",
       "title": "E2E Testing Suite",
       "description": "Automated end-to-end tests for all critical workflows"
     },
     {
-      "status": "planned",
+      "status": "completed",
       "title": "Version History & Rollback",
       "description": "Track plugin versions and enable rollback to previous states"
     }

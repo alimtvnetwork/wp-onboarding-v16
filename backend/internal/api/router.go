@@ -118,6 +118,12 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/backups/{id}/restore", handlers.RestoreBackup).Methods("POST")
 	api.HandleFunc("/backups/{id}", handlers.DeleteBackup).Methods("DELETE")
 
+	// Plugin version history endpoints
+	api.HandleFunc("/plugins/{id}/versions", handlers.GetPluginVersions).Methods("GET")
+	api.HandleFunc("/plugins/{id}/versions/{versionId}", handlers.GetPluginVersion).Methods("GET")
+	api.HandleFunc("/plugins/{id}/versions/{versionId}/rollback", handlers.RollbackPluginVersion).Methods("POST")
+	api.HandleFunc("/plugins/{id}/versions/{versionId}", handlers.DeletePluginVersion).Methods("DELETE")
+
 	// Error logs endpoints
 	api.HandleFunc("/errors", handlers.GetErrors).Methods("GET")
 	api.HandleFunc("/errors", handlers.ClearErrors).Methods("DELETE")

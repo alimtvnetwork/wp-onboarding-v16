@@ -16,6 +16,7 @@ import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import { PublishProgressDialog } from "@/components/plugins/PublishProgressDialog";
 import { BulkActionsBar } from "@/components/plugins/BulkActionsBar";
 import { GitActionsPanel } from "@/components/plugins/GitActionsPanel";
+import { VersionHistoryPanel } from "@/components/plugins/VersionHistoryPanel";
 import {
   Dialog,
   DialogContent,
@@ -812,6 +813,11 @@ export default function Plugins() {
                     <GitActionsPanel plugin={plugin} />
                   </div>
                 )}
+
+                {/* Version History Panel */}
+                <div className="mt-3 pt-3 border-t">
+                  <VersionHistoryPanel plugin={plugin} />
+                </div>
               </CardContent>
             </Card>
           ))}
