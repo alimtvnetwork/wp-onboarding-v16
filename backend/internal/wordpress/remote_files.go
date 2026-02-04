@@ -293,13 +293,13 @@ func (c *Client) UploadPluginViaOnboard(zipPath string, activate bool) (*Uploade
 	uploaderResult := &UploaderUploadResult{
 		Success:   result.Success,
 		Message:   result.Message,
-		Plugin:    result.Plugin,
-		Activated: result.Activated,
+		Plugin:    result.PluginSlug,
+		Activated: false, // Onboard doesn't auto-activate
 	}
 	
-	// If activation requested and not yet activated, try to activate
-	if activate && !result.Activated && result.Plugin != "" {
-		if err := c.ActivatePlugin(result.Plugin); err == nil {
+	// If activation requested, try to activate
+	if activate && result.PluginSlug != "" {
+		if err := c.ActivatePlugin(result.PluginSlug); err == nil {
 			uploaderResult.Activated = true
 		}
 	}
