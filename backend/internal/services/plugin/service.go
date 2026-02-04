@@ -54,4 +54,5 @@ type ServiceInterface interface {
 	CreateMapping(ctx context.Context, input CreateMappingInput) (*models.PluginMapping, error)
 	DeleteMapping(ctx context.Context, mappingID int64) error
 	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
+	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
 }

@@ -3,6 +3,7 @@ package plugin
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"wp-plugin-publish/internal/models"
@@ -190,5 +191,57 @@ func (s *Service) UpdateMappingsForPlugin(ctx context.Context, pluginID int64, s
 		}
 	}
 
+	return nil
+}
+
+// UpdateMappingsForSite replaces all plugin mappings for a site
+// This is the robust endpoint for updating site→plugin relationships from the Edit Site dialog
+func (s *Service) UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error {
+	s.log.Info("Updating site mappings", "siteId", siteID, "plugins", len(pluginIDs))
+
+	// Get existing mappings for this site to preserve remoteSlug values
+	existingMappings, err := s.GetMappingsBySite(ctx, siteID)
+	if err != nil {
+		s.log.Warn("Could not fetch existing mappings", "siteId", siteID, "error", err)
+		existingMappings = []models.PluginMapping{}
+	}
+
+	// Build a map of pluginId → remoteSlug for existing mappings
+	slugByPluginID := make(map[int64]string)
+	for _, m := range existingMappings {
+		slugByPluginID[m.PluginID] = m.RemoteSlug
+	}
+
+	// Delete all existing mappings for this site
+	_, err = s.db.ExecContext(ctx, "DELETE FROM PluginMappings WHERE SiteId = ?", siteID)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to clear existing site mappings")
+	}
+
+	// Create new mappings for each selected plugin
+	for _, pluginID := range pluginIDs {
+		// Use existing slug if available, otherwise generate from plugin name
+		remoteSlug := slugByPluginID[pluginID]
+		if remoteSlug == "" {
+			// Fetch plugin name to generate slug
+			var pluginName string
+			err := s.db.QueryRowContext(ctx, "SELECT Name FROM Plugins WHERE Id = ?", pluginID).Scan(&pluginName)
+			if err == nil {
+				remoteSlug = strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
+			} else {
+				remoteSlug = "plugin"
+			}
+		}
+
+		_, err := s.db.ExecContext(ctx, `
+			INSERT INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
+			VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
+		`, pluginID, siteID, remoteSlug)
+		if err != nil {
+			s.log.Warn("Failed to create site mapping", "siteId", siteID, "pluginId", pluginID, "error", err)
+		}
+	}
+
+	s.log.Info("Site mappings updated", "siteId", siteID, "pluginsLinked", len(pluginIDs))
 	return nil
 }

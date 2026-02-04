@@ -156,34 +156,11 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
         category: formData.category || undefined,
       });
       if (response.success) {
-        // Update plugin mappings for each selected plugin
-        // This is a simplified approach - for each plugin, we update its mappings
-        // to include or exclude this site
-        if (allPlugins) {
-          for (const plugin of allPlugins) {
-            const wasSelected = currentMappings?.some((m: PluginMapping) => m.pluginId === plugin.id);
-            const isSelected = selectedPlugins.includes(plugin.id);
-            
-            if (wasSelected !== isSelected) {
-              // Get current plugin mappings
-              const pluginMappingsRes = await api.getPluginMappings(plugin.id);
-              if (pluginMappingsRes.success && pluginMappingsRes.data) {
-                const currentSiteIds = pluginMappingsRes.data.map((m) => m.siteId);
-                let newSiteIds: number[];
-                
-                if (isSelected && !currentSiteIds.includes(site.id)) {
-                  newSiteIds = [...currentSiteIds, site.id];
-                } else if (!isSelected) {
-                  newSiteIds = currentSiteIds.filter((id) => id !== site.id);
-                } else {
-                  continue;
-                }
-                
-                const remoteSlug = pluginMappingsRes.data[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-');
-                await api.updatePluginMappings(plugin.id, { siteIds: newSiteIds, remoteSlug });
-              }
-            }
-          }
+        // Use the new robust endpoint to update all site mappings in one call
+        const mappingRes = await api.updateSiteMappings(site.id, selectedPlugins);
+        if (!mappingRes.success && mappingRes.error) {
+          console.warn("[EditSiteDialog] Mapping update warning:", mappingRes.error.message);
+          toast.warning("Site saved, but some plugin mappings may not have updated");
         }
 
         toast.success("Site updated successfully");
