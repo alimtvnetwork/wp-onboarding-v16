@@ -496,6 +496,9 @@ func (s *serviceImpl) broadcastProgress(pluginID, siteID int64, step string, pro
 		"message":  message,
 	})
 	
+	// Also broadcast detailed log entry for frontend live log display
+	s.wsHub.BroadcastSyncLog(pluginID, siteID, "info", step, message, nil)
+	
 	s.log.Debug("Sync progress", "pluginId", pluginID, "siteId", siteID, "step", step, "progress", progress, "message", message)
 }
 

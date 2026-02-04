@@ -230,6 +230,58 @@ func (h *Hub) BroadcastLog(level string, message string, context map[string]inte
 	})
 }
 
+// OperationLogEntry represents a single log entry for an operation
+type OperationLogEntry struct {
+	Timestamp string                 `json:"timestamp"`
+	Level     string                 `json:"level"`  // debug, info, warn, error
+	Step      string                 `json:"step"`   // backup, package, upload, activate, etc.
+	Message   string                 `json:"message"`
+	Details   map[string]interface{} `json:"details,omitempty"`
+}
+
+// BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
+func (h *Hub) BroadcastOperationLog(operationType string, pluginID, siteID int64, entry OperationLogEntry) {
+	if entry.Timestamp == "" {
+		entry.Timestamp = time.Now().Format(time.RFC3339)
+	}
+	h.Broadcast(EventLog, map[string]interface{}{
+		"operationType": operationType,
+		"pluginId":      pluginID,
+		"siteId":        siteID,
+		"log":           entry,
+	})
+}
+
+// BroadcastPublishLog is a convenience method for publish operation logs
+func (h *Hub) BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
+	h.BroadcastOperationLog("publish", pluginID, siteID, OperationLogEntry{
+		Level:   level,
+		Step:    step,
+		Message: message,
+		Details: details,
+	})
+}
+
+// BroadcastSyncLog is a convenience method for sync operation logs
+func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
+	h.BroadcastOperationLog("sync", pluginID, siteID, OperationLogEntry{
+		Level:   level,
+		Step:    step,
+		Message: message,
+		Details: details,
+	})
+}
+
+// BroadcastBackupLog is a convenience method for backup operation logs
+func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, details map[string]interface{}) {
+	h.BroadcastOperationLog("backup", pluginID, 0, OperationLogEntry{
+		Level:   level,
+		Step:    step,
+		Message: message,
+		Details: details,
+	})
+}
+
 // HandleWebSocket handles WebSocket upgrade requests
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)

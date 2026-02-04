@@ -332,6 +332,7 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 		status = "error"
 	}
 
+	// Broadcast progress event
 	s.wsHub.Broadcast(eventType, map[string]interface{}{
 		"pluginId": pluginID,
 		"siteId":   siteID,
@@ -342,6 +343,13 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 		"total":    100,
 		"message":  message,
 	})
+	
+	// Also broadcast detailed log entry for frontend live log display
+	logLevel := "info"
+	if step == "failed" {
+		logLevel = "error"
+	}
+	s.wsHub.BroadcastPublishLog(pluginID, siteID, logLevel, stage, message, nil)
 	
 	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "step", step, "stage", stage, "progress", progress, "message", message)
 }
