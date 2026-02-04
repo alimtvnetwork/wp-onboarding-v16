@@ -30,7 +30,16 @@ interface ErrorStore {
   
   // Actions
   captureError: (error: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown; responseStatus?: number; context?: Record<string, unknown> }) => CapturedError;
-  captureException: (error: unknown, context?: { endpoint?: string; method?: string; requestBody?: unknown }) => CapturedError;
+  captureException: (
+    error: unknown,
+    context?: {
+      endpoint?: string;
+      method?: string;
+      requestBody?: unknown;
+      source?: string;
+      context?: Record<string, unknown>;
+    }
+  ) => CapturedError;
   openErrorModal: (error: CapturedError) => void;
   closeErrorModal: () => void;
   clearRecentErrors: () => void;
@@ -130,13 +139,22 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       ? String(error.cause) 
       : undefined;
     
+    const mergedContext: Record<string, unknown> | undefined = (() => {
+      const base: Record<string, unknown> = {
+        ...(context?.context || {}),
+        ...(context?.source ? { source: context.source } : {}),
+        ...(context?.requestBody ? { requestData: context.requestBody } : {}),
+      };
+      return Object.keys(base).length ? base : undefined;
+    })();
+
     const captured: CapturedError = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       code: 'E9003',
       level: 'error',
       message,
       details,
-      context: context?.requestBody ? { requestData: context.requestBody } : undefined,
+      context: mergedContext,
       file: stackInfo.file,
       line: stackInfo.line,
       function: stackInfo.function,
@@ -166,3 +184,4 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     set({ recentErrors: [] });
   },
 }));
+

@@ -34,6 +34,8 @@ export function CategorySelect({
   allowCustom = true,
   className,
 }: CategorySelectProps) {
+  // Radix Select does NOT allow empty-string item values; using one can crash the UI.
+  const NONE_VALUE = "__none__";
   const { categories, addCategory, removeCategory } = useCategories();
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showAddPopover, setShowAddPopover] = useState(false);
@@ -72,14 +74,14 @@ export function CategorySelect({
   return (
     <div className={cn("flex gap-2", className)}>
       <Select
-        value={value || ""}
-        onValueChange={(v) => onValueChange(v || null)}
+        value={value ? value : NONE_VALUE}
+        onValueChange={(v) => onValueChange(v === NONE_VALUE ? null : v)}
       >
         <SelectTrigger className="flex-1">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">
+          <SelectItem value={NONE_VALUE}>
             <span className="text-muted-foreground">No category</span>
           </SelectItem>
           {categories.map((cat) => (
@@ -143,3 +145,4 @@ export function CategorySelect({
     </div>
   );
 }
+
