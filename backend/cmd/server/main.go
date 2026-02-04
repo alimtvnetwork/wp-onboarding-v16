@@ -126,7 +126,8 @@ func main() {
 
 	log.Info("Server started", "port", cfg.Server.Port)
 	fmt.Printf("\n  %s\n", versionInfo.String())
-	fmt.Printf("  Local:   http://localhost:%d\n\n", cfg.Server.Port)
+	fmt.Printf("  Local:     http://localhost:%d\n", cfg.Server.Port)
+	fmt.Printf("  WebSocket: ws://localhost:%d/ws\n\n", cfg.Server.Port)
 
 	// Wait for shutdown signal
 	quit := make(chan os.Signal, 1)

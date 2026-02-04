@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useLocation } from "react-router-dom";
 import { VersionBadge } from "@/components/settings/VersionBadge";
+import { WebSocketIndicator } from "@/components/shared/WebSocketIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,8 +33,14 @@ export function Header() {
         {currentRoute}
       </h1>
 
-      <div className="flex items-center gap-2">
-			<VersionBadge className="mr-1" />
+      <div className="flex items-center gap-3">
+        {/* WebSocket connection indicator */}
+        <WebSocketIndicator showLabel />
+        
+        <div className="h-4 w-px bg-border" />
+        
+        <VersionBadge className="mr-1" />
+        
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted">
