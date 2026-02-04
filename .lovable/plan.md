@@ -1,220 +1,166 @@
-# Active Roadmap
 
-> **Location:** `.lovable/plan.md`  
-> **Updated:** 2026-02-02  
-> **Purpose:** Prioritized backlog for AI implementation handoff
+## What’s actually wrong (root cause)
+- The backend API **is** running at:
+  - **Base:** `http://localhost:8080/api/v1`
+  - **Health:** `GET http://localhost:8080/api/v1/health`
+  - **WebSocket:** `ws://localhost:8080/ws`
+  - (Confirmed in `backend/config.json` port `8080` and `backend/internal/api/router.go` with `PathPrefix("/api/v1")`.)
+- `http://localhost:8080/api/v1` returning **404 is expected today** because there is **no route** registered at `/api/v1` (only `/api/v1/health`, `/api/v1/sites`, etc.).
+- The frontend is falsely reporting “Backend disconnected” because `BackendStatus.tsx` currently treats a healthy response as “not connected”:
+  - Backend returns `{"status":"healthy", ...}`
+  - Frontend only accepts `success: true` or `status: "ok"`
+  - Result: it flags disconnected and generates an E9005 report even when the backend is up.
 
----
-
-## Current Status
-
-| Area | Status |
-|------|--------|
-| Specification | ✅ Complete (28 docs including E2E spec) |
-| Implementation Specs | ✅ Complete (6 docs) |
-| Go Backend Scaffold | ✅ Complete |
-| React Frontend Scaffold | ✅ Complete |
-| Plugin Service | ✅ Complete (Phase 1) |
-| Sync Service | ✅ Complete (Phase 2) |
-| **Site Service** | ✅ **Complete (Phase 3)** |
-| **Publish Service** | ✅ **Complete (Phase 4)** |
-| Git & Build Service | ✅ Complete (Phase 5) |
-| Hybrid File Watcher | ✅ Complete |
-| E2E Testing Framework | ✅ Complete |
-| Error Detail Modal | ✅ Complete |
-| **WebSocket Real-time** | ✅ **Complete** |
-| Full Implementation | 🔄 Phases 6-8 Pending |
+## Goals
+1. Make backend health checks and frontend connectivity detection consistent and correct.
+2. Ensure the error modal and copied diagnostics show:
+   - raw `VITE_API_URL` / `VITE_WS_URL` (even if ignored in hosted preview)
+   - resolved/effective API + WS URLs (with protocol + host + port)
+3. Remove the confusion around `/api/v1` by adding an API index endpoint (optional but recommended).
+4. Update specs so future contributors don’t reintroduce the mismatch.
 
 ---
 
-## ✅ Completed Phases
+## Implementation plan
 
-### Phase 1: Plugin Service ✅
-- **Completed:** 2026-02-02
-- Types, CRUD, scanner, mappings all implemented
-- Spec: `03-implementation/30-plugin-service-impl.md`
+### 1) Backend: standardize `/api/v1/health` response format (match spec)
+**Files**
+- `backend/internal/api/handlers/handlers.go`
 
-### Phase 2: Sync Service ✅
-- **Completed:** 2026-02-02
-- Local/remote comparison, change detection, MD5 hashing
-- Spec: `03-implementation/31-sync-service-impl.md`
+**Change**
+- Update `Health()` to return the project’s standard envelope:
+  - `{"success": true, "data": { "status": "ok", "timestamp": "..." }}`
+- This matches `spec/wp-plugin-publish/01-backend/11-rest-api-endpoints.md` “Response Format” section and prevents frontend ambiguity.
 
-### Phase 5: Git & Build Service ✅
-- **Completed:** 2026-02-02
-- Git pull, build commands, per-plugin config
-- Spec: `03-implementation/34-git-service-impl.md`
-
-### Hybrid File Watcher ✅
-- **Completed:** 2026-02-02
-- Event-driven (not polling), triggers after Git pull or manual refresh
-- Spec: `03-implementation/33-watcher-service-impl.md`
-
-### E2E Testing Framework ✅
-- **Completed:** 2026-02-02
-- 20 test cases across 4 categories (Plugin CRUD, Site Connections, Sync Operations, Publish Flow)
-- Go test runner with Split DB integration
-- Frontend UI with category tabs and checkable test cards
-- Spec: `04-testing/40-e2e-test-spec.md`
-
-### Error Detail Modal ✅
-- **Completed:** 2026-02-02
-- Developer-level debug info with Stack Trace, Request/Response tabs
-- Error code-specific suggested fixes
-- Copy full report functionality
+**Why**
+- Today, `/health` is the only endpoint that does not follow the standard `{success, data}` shape.
 
 ---
 
-## 📋 Pending Phases
+### 2) Backend: add a friendly API index route so `/api/v1` is not 404
+**Files**
+- `backend/internal/api/router.go`
+- `backend/internal/api/handlers/handlers.go`
 
-### Phase 3: Site Service (Next - Priority: HIGH)
+**Change**
+- Register `GET /api/v1` (and `/api/v1/`) returning a small JSON document like:
+  - API name/version
+  - links: `health`, `ws`, etc.
+Example payload:
+```json
+{
+  "success": true,
+  "data": {
+    "name": "WP Plugin Publish API",
+    "version": "v1",
+    "health": "/api/v1/health",
+    "ws": "/ws"
+  }
+}
+```
 
-**Duration:** 2 hours  
-**Spec:** `01-backend/04-site-service.md`  
-**Suggestion:** S-008
-
-| Task | Status | Notes |
-|------|--------|-------|
-| CreateSite handler | todo | With AES-256 encryption for tokens |
-| UpdateSite handler | todo | Partial updates, re-encrypt if password changes |
-| DeleteSite handler | todo | With cascade delete of mappings |
-| TestConnection handler | todo | Validate WP REST API access |
-| ListSites handler | todo | With last sync timestamps |
-| GetSite handler | todo | Single site with mappings |
-| Site validation | todo | URL format, required fields |
-
-**Files to create/modify:**
-- `backend/internal/services/site/types.go`
-- `backend/internal/services/site/service.go`
-- `backend/internal/services/site/encryption.go`
-- `backend/internal/api/sites.go`
-
----
-
-### Phase 4: Publish Service (Priority: HIGH)
-
-**Duration:** 3 hours  
-**Spec:** `03-implementation/32-publish-service-impl.md`  
-**Dependencies:** Site Service  
-**Suggestion:** S-009
-
-| Task | Status | Notes |
-|------|--------|-------|
-| Implement types.go | todo | PublishOptions, PublishResult, StageResult |
-| Implement pipeline.go | todo | Orchestrate full publish pipeline |
-| Implement packager.go | todo | Build ZIP with correct structure |
-| Implement uploader.go | todo | Send to WP REST API |
-| Update WordPress client | todo | UploadPlugin, ActivatePlugin methods |
-| Backup before publish | todo | Integration with backup service |
-| Stage progress events | todo | WebSocket notifications |
-
-**Files to create/modify:**
-- `backend/internal/services/publish/types.go`
-- `backend/internal/services/publish/pipeline.go`
-- `backend/internal/services/publish/packager.go`
-- `backend/internal/services/publish/uploader.go`
-- `backend/internal/wordpress/client.go` (update)
-- `backend/internal/api/publish.go`
+**Why**
+- Users naturally test the base URL in a browser; this prevents the “API not running” false alarm.
 
 ---
 
-### Phase 6: Backup Service (Priority: MEDIUM)
+### 3) Frontend: fix `BackendStatus` connectivity logic so it can’t mis-diagnose JSON as disconnected
+**Files**
+- `src/components/shared/BackendStatus.tsx`
 
-**Duration:** 2 hours  
-**Spec:** `01-backend/09-backup-service.md`
+**Change**
+- Replace the current “connected iff success===true OR status===ok” rule with:
+  1. If response body is HTML → `E9005` (misrouting / hosted preview / wrong base)
+  2. If fetch throws → `E9003` (network/unreachable)
+  3. If response is JSON:
+     - If HTTP status is 2xx → connected
+     - Else → disconnected/unhealthy with a message including status code and parsed JSON preview
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Backup creation | todo | Before publish operations |
-| Backup restoration | todo | Rollback capability |
-| Backup listing | todo | With metadata and size |
-| Backup cleanup | todo | Retention policy (30 days, 10 per plugin) |
-| Backup download | todo | Serve ZIP file |
+**UI improvement**
+- Make the banner message reflect the actual reason (HTML vs network vs non-2xx JSON), instead of always claiming “HTML instead of JSON”.
 
----
-
-### Phase 7: WebSocket Real-time Updates (Priority: MEDIUM)
-
-**Duration:** 2 hours  
-**Suggestion:** S-010
-
-| Task | Status | Notes |
-|------|--------|-------|
-| sync:progress events | todo | Real-time sync status |
-| scan:progress events | todo | File scan progress |
-| publish:progress events | todo | Stage-by-stage updates |
-| Frontend integration | todo | Update Plugins page |
-| Reconnection handling | todo | State recovery after disconnect |
+**Outcome**
+- When backend returns `{"success":true,"data":...}` from `/health`, the banner will disappear and E9005 will no longer be generated incorrectly.
 
 ---
 
-### Phase 8: Integration Testing (Priority: LOW)
+### 4) Frontend: make diagnostics + error modal show both “raw env” and “effective resolved” values (with port/protocol)
+Right now, several places incorrectly label **resolved** origin as “VITE_API_URL”, which hides the real env var state (and can be especially confusing when loopback envs are intentionally ignored in hosted previews).
 
-**Duration:** 2-3 hours  
-**Dependencies:** All previous phases
+**Files**
+- `src/lib/diagnostics.ts`
+- `src/lib/api.ts`
+- `src/components/errors/GlobalErrorModal.tsx`
+- (optional) `src/components/shared/CopyDiagnosticsButton.tsx` (only if types change propagate)
 
-| Task | Status | Notes |
-|------|--------|-------|
-| Verify Go backend compiles | todo | `go build ./cmd/server` (S-006) |
-| Verify React frontend builds | todo | `npm run build` (S-007) |
-| Run E2E test cases | todo | Against real WordPress site |
-| Full workflow testing | todo | Create → Map → Sync → Publish |
-| Cross-platform testing | todo | Windows/Mac/Linux |
+**Changes**
+- In `diagnostics.ts`, include:
+  - `envViteApiUrl` = raw `import.meta.env.VITE_API_URL` (or “(not set)”)
+  - `envViteWsUrl` = raw `import.meta.env.VITE_WS_URL` (or “(not set)”)
+  - `resolvedApiOrigin` = `resolveApiOrigin()` (may be null if ignored)
+  - `effectiveUiOrigin` = `window.location.origin`
+  - `apiBase` and `apiBaseAbsolute` (already present)
+  - `resolvedWsUrl` = `resolveWsUrl()` (already present)
+- Update formatting output so the copied diagnostics clearly shows:
+  - Raw env values
+  - Resolved/effective URLs (including port)
+  - UI origin
 
----
+- In `src/lib/api.ts` (E9005 generation), add raw env fields into `error.context` so the Global Error Modal always has them even if the backend is unreachable.
 
-## Next Task Selection
-
-**Recommended Order:**
-
-1. **Verify scaffolds compile** (S-006, S-007) - 15 min
-   - `cd backend && go build ./cmd/server`
-   - `npm run build`
-
-2. **Phase 3: Site Service** (S-008) - 2 hours
-   - Implement CreateSite with token encryption
-   - Implement TestConnection to validate WP REST API
-   - Implement UpdateSite and DeleteSite
-   - Wire up API handlers
-
-3. **Phase 4: Publish Service** (S-009) - 3 hours
-   - Implement publish pipeline
-   - Create ZIP packager
-   - Add WP upload/activation
-
-4. **Phase 6: Backup Service** - 2 hours
-5. **Phase 7: WebSocket Updates** - 2 hours
-6. **Phase 8: Integration Testing** - 2-3 hours
+- In `GlobalErrorModal` “Request Info” tab:
+  - Show `VITE_API_URL (raw)`, `Resolved API origin`, `Effective API base (absolute)`
+  - Show `VITE_WS_URL (raw)`, `Resolved WS URL`
+  - Keep “Requested URL” and “Configured API base” as today, but add the absolute version to address your “include host + port” requirement.
 
 ---
 
-## Open Suggestions Summary
-
-| ID | Title | Priority | Phase |
-|----|-------|----------|-------|
-| S-006 | Verify Go Backend Compiles | critical | Pre-Phase 3 |
-| S-007 | Verify React Frontend Builds | critical | Pre-Phase 3 |
-| S-008 | Implement Site Service | high | Phase 3 |
-| S-009 | Implement Publish Service | high | Phase 4 |
-| S-010 | WebSocket Real-time Updates | medium | Phase 7 |
-| S-001 | Add WP API Error Examples | high | Spec update |
-| S-004 | Error Recovery for Partial Publish | high | Spec update |
-| S-005 | WebSocket Reconnection | medium | Spec update |
-
-See `.lovable/memory/suggestions/01-suggestions-tracker.md` for full details.
+### 5) Specs: update docs so implementation and expected behavior match
+**Files**
+- `spec/wp-plugin-publish/01-backend/11-rest-api-endpoints.md`
+  - Add `/api/v1/health` endpoint documentation with the standardized `{success:true,data:{...}}` response
+  - Add `/api/v1` index endpoint (if implemented)
+- `spec/wp-plugin-publish/02-frontend/26-ui-patterns.md`
+  - Update BackendStatus “Detection Logic” to reflect the real implementation rules (HTML vs network vs non-2xx)
+  - Update Error Modal requirements to explicitly require:
+    - raw env vars
+    - resolved/effective URLs
 
 ---
 
-## Quick Reference
+### 6) Versioning + changelog
+**Files**
+- `public/version.json`
+- `CHANGELOG.md`
 
-| Resource | Location |
-|----------|----------|
-| Risk Report | `.lovable/memory/03-reliability-risk-report.md` |
-| Project Context | `.lovable/memory/02-project-context.md` |
-| Suggestions | `.lovable/memory/suggestions/01-suggestions-tracker.md` |
-| Master Spec | `spec/wp-plugin-publish/00-overview.md` |
-| Constants SSOT | `spec/wp-plugin-publish/66-shared-constants.md` |
-| Implementation Plan | `spec/wp-plugin-publish/03-implementation/35-implementation-plan.md` |
+**Change**
+- Bump app version (e.g., `1.2.1`) since this fixes production-facing diagnostics and connectivity detection.
 
 ---
 
-*Phases 1, 2, 5 + E2E Testing complete. Continue with Phase 3: Site Service.*
+## How you’ll verify it (end-to-end)
+1. Run locally: `.\run.ps1 -r`
+2. Open:
+   - `http://localhost:8080/api/v1` → should return JSON (no 404) if we add index
+   - `http://localhost:8080/api/v1/health` → should return `{success:true,...}` JSON
+3. In the UI:
+   - BackendStatus banner should NOT appear when backend is running
+   - “Copy Diagnostics” should include:
+     - UI origin with port
+     - API base absolute URL
+     - raw VITE env vars (even if not set)
+     - resolved WS URL
+4. In hosted Lovable preview:
+   - Banner should appear (expected)
+   - Error modal should clearly show:
+     - raw env vars
+     - resolved values (and if loopback is ignored, it should be obvious why the effective base is not localhost)
+
+## Notes / expectations management (important)
+- If you are serving the UI from the Go backend at `http://localhost:8080`, it is valid for `VITE_API_URL` to be **unset**. Requests should work as relative `/api/v1/...`.
+- The key fix is: the app must not treat a healthy JSON response as “disconnected,” and diagnostics must report both raw env inputs and effective resolved outputs so there’s no ambiguity.
+
+
+## Additional Strict Insturctions to follow
+
+Hey, I have seen this mistake to be happen by many times, Lovable and other AI. So make sure that you update your, uh, memory regarding this type of API retrieval and two-way verification. Always before running the code or any endpoint confirmation, just do both ways verification, do some analysis, and also, if you are reaching out to any API and thinking like it's going to give the result, first check the backend. That should be your goal that it's going to have an endpoint there and it's going to resolve some JSON or not. So even with all these specifications where I was very clear, you made several mistake and wasted one hour. That's kind of bad. So for this reason, I want this to have a- have a, like, memory inside your Lovable, but also as a documentation, as a spec file. Like, never do this in terms of frontend and backend endpoint communication. I want a folder like, uh, error resolution, okay? Inside this you write all this things that happened that wasted time, how it could waste people's time, and that could be a retrospective that NoAI should make, and the details should be very clear so that they can fix the issues. If you have any more con- confusion and questions, feel free to let me know.
