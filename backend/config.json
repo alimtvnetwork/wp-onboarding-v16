@@ -1,5 +1,5 @@
 {
-  "version": "1.16.0",
+  "version": "1.17.0",
   
   "databasePath": "data/app.db",
   "tempDir": ".temp",
@@ -24,7 +24,12 @@
     "level": "info",
     "retentionDays": 7,
     "debugMode": false,
-    "timeFormat": "2006-01-02 03:04:05 PM"
+    "timeFormat": "2006-01-02 03:04:05 PM",
+    "frontendDebugMode": false,
+    "retryMaxAttempts": 3,
+    "retryInitialDelayMs": 1000,
+    "circuitBreakerThreshold": 5,
+    "circuitBreakerCooldownMs": 60000
   },
   "wordpress": {
     "timeoutSeconds": 30,

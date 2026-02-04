@@ -1,11 +1,24 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
   "buildTime": "2026-02-04T23:30:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.17.0",
+      "date": "2026-02-04",
+      "title": "Frontend Logging & Resilience System",
+      "changes": [
+        "🐛 Fixed malformed JSON in version changelog causing parse errors",
+        "📊 Frontend function-level logging with file paths and line numbers",
+        "🔄 Automatic retry with exponential backoff for failed API operations",
+        "⚡ Circuit breaker prevents repeated calls to failing functions",
+        "⚙️ Configurable retry and throttling via Settings UI and seed config",
+        "📚 New logging-and-resilience.md architecture documentation"
+      ]
+    },
     {
       "version": "1.16.0",
       "date": "2026-02-04",
@@ -23,6 +36,16 @@
       "date": "2026-02-04",
       "title": "Enhanced Error Reporting System",
       "changes": [
+        "📊 Full stack trace parsing with invocation chain visualization",
+        "🔍 Parsed stack frames table view in Error Modal",
+        "🏷️ Trigger context badges show Component → Action",
+        "📋 Enhanced error reports with call chain and parsed frames",
+        "✅ Mandatory source/triggerComponent/triggerAction in handlers",
+        "📚 New error-reporting-standards.md documentation"
+      ]
+    },
+    {
+      "version": "1.14.0",
       "date": "2026-02-04",
       "title": "Mapping Persistence & Publish Password Fix",
       "changes": [
@@ -257,6 +280,11 @@
       "status": "completed",
       "title": "Version History & Rollback",
       "description": "Track plugin versions and enable rollback to previous states"
+    },
+    {
+      "status": "completed",
+      "title": "Frontend Logging & Resilience",
+      "description": "Structured logging, retry logic, and circuit breaker for reliability"
     }
   ]
 }
