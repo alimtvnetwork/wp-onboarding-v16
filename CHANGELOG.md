@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.5.0] - 2026-02-04
+
+### Added
+- **Sync button** on plugin cards to check sync status with mapped sites
+- **Publish button** on plugin cards with site selection dialog
+- **Plugins tab** in EditSiteDialog to manage plugin-site relationships from site view
+- **Retest Connection button** in EditSiteDialog Connection tab
+
+### Fixed
+- API endpoint mismatch: Scan endpoints now correctly point to `/plugins/{id}/scan`
+- API endpoint mismatch: Git pull endpoints now correctly point to `/plugins/{id}/git/pull`
+- Design token usage: Replaced hardcoded colors with semantic tokens
+
+---
+
+## [1.4.0] - 2026-02-04
+
+### Added
+- **Many-to-Many plugin-site relationships**: Plugins can be deployed to multiple sites
+- Backend `PUT /plugins/{id}/mappings` endpoint for bulk mapping updates
+- Backend `GET /sites/{id}/mappings` endpoint for site-specific plugin listings
+- Plugin cards display linked sites as badges
+- Site cards display linked plugins as badges
+- Plugin mapping dialog with remote slug configuration
+- SiteCard component with self-contained connection testing and retest button
+
+---
+
+
 All notable changes to **WP Plugin Publish** (frontend dashboard) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

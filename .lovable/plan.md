@@ -32,6 +32,20 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 ---
 
+## ✅ Phase 2.5: Plugin Sync & Publish UI (COMPLETED)
+
+**Status:** Done (v1.5.0)
+
+### Completed Tasks
+1. ✅ Fixed API endpoint mismatch (scan, git pull endpoints)
+2. ✅ EditSiteDialog now has 3 tabs: Basic, Connection, Plugins
+3. ✅ Retest Connection button in EditSiteDialog
+4. ✅ Plugin cards show Sync button (for mapped plugins)
+5. ✅ Plugin cards show Publish button with site selection dialog
+6. ✅ Can manage plugin-site relationships from EditSiteDialog
+
+---
+
 ## 📋 Phase 3: Categories + Filtering (PLANNED)
 
 **Status:** Planned
@@ -53,23 +67,21 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 ---
 
-## 📋 Phase 4: Publish Workflow (PLANNED)
+## 📋 Phase 4: Advanced Publish Workflow (PLANNED)
 
 **Status:** Planned
 
 ### Goals
-- Add Publish button to plugins
-- Enable test article publishing
-- Dashboard menu for quick actions
+- Enhanced publish workflow with progress tracking
+- Dashboard quick actions menu
+- Test article publishing
 
 ### Tasks
-1. [ ] UI: Add "Publish" button on plugin cards
-2. [ ] UI: Publish confirmation dialog with site selection
-3. [ ] UI: Publish progress indicator with real-time updates
-4. [ ] Backend: Implement publish workflow (backup → package → upload → activate)
-5. [ ] UI: Test article publish feature (create draft post to verify connectivity)
-6. [ ] UI: Dashboard quick actions menu
-7. [ ] UI: Recent activity feed on Dashboard
+1. [ ] UI: Publish progress indicator with real-time WebSocket updates
+2. [ ] UI: Test article publish feature (create draft post to verify connectivity)
+3. [ ] UI: Dashboard quick actions menu
+4. [ ] UI: Recent activity feed on Dashboard
+5. [ ] Backend: Enhanced publish pipeline feedback
 
 ---
 
@@ -91,6 +103,7 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.5.0 | 2026-02-04 | Phase 2.5: Sync/Publish UI, EditSiteDialog plugins tab, API fixes |
 | 1.4.0 | 2026-02-04 | Phase 2 complete: Plugin-Site relationships |
 | 1.3.0 | 2026-02-04 | Phase 1 complete: Site UI + Connection persistence |
 | 1.2.1 | 2026-02-04 | API connectivity fix + enhanced diagnostics |

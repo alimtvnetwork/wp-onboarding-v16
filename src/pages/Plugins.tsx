@@ -32,6 +32,8 @@ import {
   Link2,
   Trash2,
   Globe,
+  Upload,
+  CloudUpload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
@@ -56,9 +58,13 @@ export default function Plugins() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPulling, setIsPulling] = useState<number | null>(null);
   const [isScanning, setIsScanning] = useState<number | null>(null);
+  const [isSyncing, setIsSyncing] = useState<number | null>(null);
+  const [isPublishing, setIsPublishing] = useState<number | null>(null);
   const [isScanningAll, setIsScanningAll] = useState(false);
   const [addMethod, setAddMethod] = useState<"path" | "browse">("path");
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [publishPlugin, setPublishPlugin] = useState<Plugin | null>(null);
 
   const handleAddPlugin = async (forceCreate = false) => {
     if (!formData.name || !formData.path) {
@@ -213,6 +219,65 @@ export default function Plugins() {
     }
   };
 
+  const handleSyncPlugin = async (plugin: Plugin) => {
+    if (!plugin.mappings || plugin.mappings.length === 0) {
+      toast.warning("No sites mapped - add a site first");
+      return;
+    }
+
+    setIsSyncing(plugin.id);
+    try {
+      // Sync with all mapped sites
+      let totalChanges = 0;
+      for (const mapping of plugin.mappings) {
+        const response = await api.checkSync(plugin.id, mapping.siteId);
+        if (response.success) {
+          totalChanges += response.data?.changedFiles || 0;
+        }
+      }
+      toast.success(`Sync check complete: ${totalChanges} changes detected`);
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+    } catch (error) {
+      toast.error("Sync check failed");
+    } finally {
+      setIsSyncing(null);
+    }
+  };
+
+  const openPublishDialog = (plugin: Plugin) => {
+    if (!plugin.mappings || plugin.mappings.length === 0) {
+      toast.warning("No sites mapped - add a site first");
+      return;
+    }
+    setPublishPlugin(plugin);
+    setShowPublishDialog(true);
+  };
+
+  const handlePublish = async (plugin: Plugin, siteId: number) => {
+    setIsPublishing(plugin.id);
+    try {
+      const response = await api.publishPlugin(plugin.id, siteId, {
+        mode: "full",
+        createBackup: true,
+      });
+      if (response.success) {
+        toast.success(`Published ${response.data?.filesUpdated || 0} files`);
+        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        setShowPublishDialog(false);
+      } else if (response.error) {
+        const captured = captureError(response.error, {
+          endpoint: `/plugins/${plugin.id}/sites/${siteId}/publish`,
+          method: "POST",
+        });
+        openErrorModal(captured);
+      }
+    } catch (error) {
+      toast.error("Publish failed");
+    } finally {
+      setIsPublishing(null);
+    }
+  };
+
   const openMappingDialog = (plugin: Plugin) => {
     setSelectedPlugin(plugin);
     setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
@@ -340,6 +405,43 @@ export default function Plugins() {
                   </div>
 
                   <div className="flex gap-1 flex-shrink-0">
+                    {/* Sync button - for plugins with mappings */}
+                    {plugin.mappings && plugin.mappings.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSyncPlugin(plugin)}
+                        disabled={isSyncing === plugin.id}
+                        title="Check sync status with sites"
+                      >
+                        {isSyncing === plugin.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CloudUpload className="h-4 w-4" />
+                        )}
+                        <span className="ml-1 hidden sm:inline">Sync</span>
+                      </Button>
+                    )}
+
+                    {/* Publish button - for plugins with mappings */}
+                    {plugin.mappings && plugin.mappings.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openPublishDialog(plugin)}
+                        disabled={isPublishing === plugin.id}
+                        title="Publish to WordPress sites"
+                        className="text-primary hover:text-primary"
+                      >
+                        {isPublishing === plugin.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        <span className="ml-1 hidden sm:inline">Publish</span>
+                      </Button>
+                    )}
+
                     {/* Refresh/Scan button - always visible */}
                     <Button
                       variant="ghost"
@@ -418,7 +520,7 @@ export default function Plugins() {
                 <div className="flex items-center gap-4 pt-3 border-t text-sm">
                   <span className="flex items-center gap-1.5">
                     {plugin.watchEnabled ? (
-                      <Eye className="h-4 w-4 text-green-500" />
+                      <Eye className="h-4 w-4 text-primary" />
                     ) : (
                       <EyeOff className="h-4 w-4 text-muted-foreground" />
                     )}
@@ -431,7 +533,7 @@ export default function Plugins() {
                   </span>
 
                   {plugin.modifiedCount > 0 && (
-                    <span className="flex items-center gap-1.5 text-amber-600">
+                    <span className="flex items-center gap-1.5 text-warning">
                       <AlertCircle className="h-4 w-4" />
                       {plugin.modifiedCount} modified
                     </span>
@@ -670,6 +772,60 @@ export default function Plugins() {
             <Button onClick={handleSaveMappings} disabled={isSubmitting || !remoteSlug}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Mappings
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish Dialog */}
+      <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-primary" />
+              Publish Plugin
+            </DialogTitle>
+            <DialogDescription>
+              Deploy <strong>{publishPlugin?.name}</strong> to a WordPress site.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Select a site to publish this plugin to:
+            </p>
+            
+            {publishPlugin?.mappings && publishPlugin.mappings.length > 0 ? (
+              <div className="space-y-2">
+                {publishPlugin.mappings.map((mapping) => (
+                  <Button
+                    key={mapping.id}
+                    variant="outline"
+                    className="w-full justify-start h-auto py-3"
+                    onClick={() => handlePublish(publishPlugin, mapping.siteId)}
+                    disabled={isPublishing !== null}
+                  >
+                    <Globe className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <div className="text-left">
+                      <p className="font-medium">{mapping.siteName}</p>
+                      <p className="text-xs text-muted-foreground">{mapping.siteUrl}</p>
+                    </div>
+                    {isPublishing === publishPlugin.id && (
+                      <Loader2 className="h-4 w-4 ml-auto animate-spin" />
+                    )}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-4 text-muted-foreground">
+                No sites linked to this plugin.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPublishDialog(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
