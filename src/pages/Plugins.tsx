@@ -672,42 +672,40 @@ export default function Plugins() {
                   </div>
 
                   <div className="flex gap-1 flex-shrink-0">
-                    {/* Sync button - for plugins with mappings */}
-                    {plugin.mappings && plugin.mappings.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSyncPlugin(plugin)}
-                        disabled={isSyncing === plugin.id}
-                        title="Check sync status with sites"
-                      >
-                        {isSyncing === plugin.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <CloudUpload className="h-4 w-4" />
-                        )}
-                        <span className="ml-1 hidden sm:inline">Sync</span>
-                      </Button>
-                    )}
+                    {/* Sync button - always visible, disabled if no mappings */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSyncPlugin(plugin)}
+                      disabled={!plugin.mappings?.length || isSyncing === plugin.id}
+                      title={plugin.mappings?.length ? "Check sync status with sites" : "No sites linked – click Sites to add"}
+                    >
+                      {isSyncing === plugin.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CloudUpload className="h-4 w-4" />
+                      )}
+                      <span className="ml-1 hidden sm:inline">Sync</span>
+                    </Button>
 
-                    {/* Publish button - for plugins with mappings */}
-                    {plugin.mappings && plugin.mappings.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openPublishDialog(plugin)}
-                        disabled={isPublishing === plugin.id}
-                        title="Publish to WordPress sites"
-                        className="text-primary hover:text-primary"
-                      >
-                        {isPublishing === plugin.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4" />
-                        )}
-                        <span className="ml-1 hidden sm:inline">Publish</span>
-                      </Button>
-                    )}
+                    {/* Publish button - always visible, disabled if no mappings */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openPublishDialog(plugin)}
+                      disabled={!plugin.mappings?.length || isPublishing === plugin.id}
+                      title={plugin.mappings?.length ? "Publish to WordPress sites" : "No sites linked – click Sites to add"}
+                      className={cn(
+                        plugin.mappings?.length ? "text-primary hover:text-primary" : "text-muted-foreground"
+                      )}
+                    >
+                      {isPublishing === plugin.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                      <span className="ml-1 hidden sm:inline">Publish</span>
+                    </Button>
 
                     {/* Refresh/Scan button - always visible */}
                     <Button
@@ -1015,6 +1013,7 @@ export default function Plugins() {
                       <Checkbox
                         checked={selectedSites.includes(site.id)}
                         onCheckedChange={() => toggleSiteSelection(site.id)}
+                        onClick={(e) => e.stopPropagation()}
                       />
                       <Globe className="h-4 w-4 text-muted-foreground" />
                       <div className="flex-1 min-w-0">

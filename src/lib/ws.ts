@@ -8,11 +8,15 @@ class WebSocketClient {
   private reconnectTimer: number | null = null;
   private reconnectDelay: number = 3000;
   private url: string = resolveWsUrl();
+  private isReconnectEnabled: boolean = true;
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {
       return;
     }
+
+    // Ensure reconnect is enabled when explicitly connecting
+    this.isReconnectEnabled = true;
 
     try {
       this.ws = new WebSocket(this.url);
@@ -40,8 +44,10 @@ class WebSocketClient {
       };
 
       this.ws.onclose = () => {
-        console.log("[WS] Disconnected, reconnecting...");
-        this.scheduleReconnect();
+        console.log("[WS] Disconnected");
+        if (this.isReconnectEnabled) {
+          this.scheduleReconnect();
+        }
       };
 
       this.ws.onerror = (error) => {
@@ -49,17 +55,21 @@ class WebSocketClient {
       };
     } catch (error) {
       console.error("[WS] Failed to connect:", error);
-      this.scheduleReconnect();
+      if (this.isReconnectEnabled) {
+        this.scheduleReconnect();
+      }
     }
   }
 
   private scheduleReconnect() {
-    if (this.reconnectTimer) {
+    if (this.reconnectTimer || !this.isReconnectEnabled) {
       return;
     }
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
-      this.connect();
+      if (this.isReconnectEnabled) {
+        this.connect();
+      }
     }, this.reconnectDelay);
   }
 
@@ -79,12 +89,18 @@ class WebSocketClient {
   }
 
   disconnect() {
+    this.isReconnectEnabled = false;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
     this.ws?.close();
     this.ws = null;
+  }
+
+  // Check if WebSocket is connected
+  isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN;
   }
 }
 

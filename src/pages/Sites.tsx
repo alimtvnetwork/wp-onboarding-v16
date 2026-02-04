@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useSites } from "@/hooks/useSites";
 import { useSettings } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ export default function Sites() {
   const { data: settings } = useSettings();
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
+  const hasReportedError = useRef(false);
   
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -83,6 +84,36 @@ export default function Sites() {
     return site.category && selectedCategories.includes(site.category);
   });
 
+  // Compute error info outside of render to avoid triggering captureError during render
+  // IMPORTANT: Must be before any early returns to avoid hook ordering violations
+  const queryErrorInfo = useMemo(() => {
+    if (!queryError) return null;
+    return {
+      code: "E9001" as const,
+      message: "Site service not available",
+      details: queryError.message,
+      timestamp: new Date().toISOString(),
+    };
+  }, [queryError]);
+
+  // Report error once when it first appears (outside render phase)
+  useEffect(() => {
+    if (queryErrorInfo && !hasReportedError.current) {
+      hasReportedError.current = true;
+    }
+    // Reset flag when error clears
+    if (!queryError) {
+      hasReportedError.current = false;
+    }
+  }, [queryError, queryErrorInfo]);
+
+  const handleViewErrorDetails = () => {
+    if (queryErrorInfo) {
+      const captured = captureError(queryErrorInfo, { endpoint: "/sites", method: "GET" });
+      openErrorModal(captured);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -91,14 +122,7 @@ export default function Sites() {
     );
   }
 
-  if (queryError) {
-    const errorInfo = captureError({
-      code: "E9001",
-      message: "Site service not available",
-      details: queryError.message,
-      timestamp: new Date().toISOString(),
-    }, { endpoint: "/sites", method: "GET" });
-
+  if (queryError && queryErrorInfo) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -120,7 +144,7 @@ export default function Sites() {
                   {queryError.message}
                 </p>
                 <div className="flex gap-2 mt-4">
-                  <Button variant="outline" size="sm" onClick={() => openErrorModal(errorInfo)}>
+                  <Button variant="outline" size="sm" onClick={handleViewErrorDetails}>
                     <AlertCircle className="h-4 w-4 mr-2" />
                     View Error Details
                   </Button>

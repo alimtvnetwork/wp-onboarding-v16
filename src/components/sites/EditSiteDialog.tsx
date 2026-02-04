@@ -335,6 +335,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
                     <Checkbox
                       checked={selectedPlugins.includes(plugin.id)}
                       onCheckedChange={() => togglePluginSelection(plugin.id)}
+                      onClick={(e) => e.stopPropagation()}
                     />
                     <div className="flex items-center gap-2 flex-1 min-w-0">
                       <Package className="h-4 w-4 text-primary shrink-0" />
