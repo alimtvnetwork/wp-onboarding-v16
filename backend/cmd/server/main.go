@@ -5,8 +5,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -26,6 +29,28 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
 )
+
+var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
+type stripAnsiWriter struct{ w io.Writer }
+
+func (s stripAnsiWriter) Write(p []byte) (int, error) {
+	clean := ansiRegexp.ReplaceAll(p, nil)
+	_, err := s.w.Write(clean)
+	// Always report the original length so the upstream logger doesn't think it's a short write.
+	return len(p), err
+}
+
+type errorOnlyWriter struct{ w io.Writer }
+
+func (e errorOnlyWriter) Write(p []byte) (int, error) {
+	clean := string(ansiRegexp.ReplaceAll(p, nil))
+	if strings.Contains(clean, "(ERROR ") || strings.Contains(clean, "(FATAL ") {
+		_, err := e.w.Write([]byte(clean))
+		return len(p), err
+	}
+	return len(p), nil
+}
 
 // Services holds all application services
 type Services struct {
@@ -50,9 +75,44 @@ func main() {
 	// Load version info from version.json (frontend/dist or public/)
 	versionInfo, _ := version.Load(cfg.Server.StaticDir)
 
+	// Ensure on-disk log files exist for troubleshooting bundles.
+	// Paths:
+	//   data/errors/log.txt       (all backend logs)
+	//   data/errors/error.log.txt (errors + fatals only)
+	logOutput := io.Writer(os.Stdout)
+	errorsDir := filepath.Join(filepath.Dir(cfg.DatabasePath), "errors")
+	if err := os.MkdirAll(errorsDir, 0755); err != nil {
+		bootstrapLog.Error("Failed to create errors dir", "path", errorsDir, "error", err)
+	} else {
+		allLogPath := filepath.Join(errorsDir, "log.txt")
+		errLogPath := filepath.Join(errorsDir, "error.log.txt")
+
+		allFile, err1 := os.OpenFile(allLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		errFile, err2 := os.OpenFile(errLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err1 != nil || err2 != nil {
+			bootstrapLog.Error("Failed to open on-disk log files", "allLog", allLogPath, "errorLog", errLogPath, "err1", err1, "err2", err2)
+			if allFile != nil {
+				allFile.Close()
+			}
+			if errFile != nil {
+				errFile.Close()
+			}
+		} else {
+			defer allFile.Close()
+			defer errFile.Close()
+			logOutput = io.MultiWriter(
+				os.Stdout,
+				stripAnsiWriter{w: allFile},
+				errorOnlyWriter{w: stripAnsiWriter{w: errFile}},
+			)
+			bootstrapLog.Info("On-disk logs enabled", "log", allLogPath, "errorLog", errLogPath)
+		}
+	}
+
 	// Initialize the real logger with configured timeFormat (single source of truth)
 	log := logger.New(logger.Config{
 		Level:      parseLogLevel(cfg.Logging.Level),
+		Output:     logOutput,
 		TimeFormat: cfg.Logging.TimeFormat,
 		AppName:    versionInfo.AppName,
 		AppVersion: versionInfo.Version,

@@ -35,6 +35,8 @@ describe("Settings Page - Upload Mode", () => {
   it("renders the Publish Settings card with upload mode options", () => {
     render(<Settings />, { wrapper: createWrapper() });
 
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
     expect(screen.getByText("Publish Settings")).toBeInTheDocument();
     expect(screen.getByText("Upload Mode")).toBeInTheDocument();
     expect(screen.getByText("File-by-file (default)")).toBeInTheDocument();
@@ -44,12 +46,16 @@ describe("Settings Page - Upload Mode", () => {
   it("defaults to file-by-file mode when localStorage is empty", () => {
     render(<Settings />, { wrapper: createWrapper() });
 
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
     const fileRadio = screen.getByRole("radio", { name: /file-by-file/i });
     expect(fileRadio).toBeChecked();
   });
 
   it("persists zip mode selection to localStorage", async () => {
     render(<Settings />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
 
     const zipRadio = screen.getByRole("radio", { name: /zip package/i });
     fireEvent.click(zipRadio);
@@ -63,6 +69,8 @@ describe("Settings Page - Upload Mode", () => {
     localStorage.setItem("wppp_upload_mode", "zip");
     render(<Settings />, { wrapper: createWrapper() });
 
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
     const zipRadio = screen.getByRole("radio", { name: /zip package/i });
     expect(zipRadio).toBeChecked();
   });
@@ -70,14 +78,21 @@ describe("Settings Page - Upload Mode", () => {
   it("renders all settings cards", () => {
     render(<Settings />, { wrapper: createWrapper() });
 
-    expect(screen.getByText("File Watching")).toBeInTheDocument();
-    expect(screen.getByText("Backups")).toBeInTheDocument();
+    // Sidebar tabs
+    expect(screen.getByRole("button", { name: "File Watching" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Backups" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Publish" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Appearance" })).toBeInTheDocument();
+
+    // Spot-check tab content renders when selected
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
     expect(screen.getByText("Publish Settings")).toBeInTheDocument();
-    expect(screen.getByText("Appearance")).toBeInTheDocument();
   });
 
   it("has functional poll interval selector", () => {
     render(<Settings />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: "File Watching" }));
 
     expect(screen.getByText("Poll Interval")).toBeInTheDocument();
     expect(screen.getByText("How often to check for file changes")).toBeInTheDocument();
@@ -85,6 +100,8 @@ describe("Settings Page - Upload Mode", () => {
 
   it("has functional backup settings", () => {
     render(<Settings />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: "Backups" }));
 
     expect(screen.getByText("Auto-backup before publish")).toBeInTheDocument();
     expect(screen.getByText("Retention Days")).toBeInTheDocument();
@@ -96,11 +113,15 @@ describe("Settings Page - Appearance", () => {
   it("renders theme selector", () => {
     render(<Settings />, { wrapper: createWrapper() });
 
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
+
     expect(screen.getByText("Theme")).toBeInTheDocument();
   });
 
   it("renders compact mode toggle", () => {
     render(<Settings />, { wrapper: createWrapper() });
+
+    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
 
     expect(screen.getByText("Compact Mode")).toBeInTheDocument();
     expect(screen.getByText("Reduce spacing for more content density")).toBeInTheDocument();
@@ -108,11 +129,11 @@ describe("Settings Page - Appearance", () => {
 });
 
 describe("Settings Page - Actions", () => {
-  it("renders Save and Reset buttons", () => {
+  it("renders developer actions", () => {
     render(<Settings />, { wrapper: createWrapper() });
 
-    expect(screen.getByRole("button", { name: /save/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /reset to defaults/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Developer" }));
+    expect(screen.getByRole("button", { name: /reset all circuits/i })).toBeInTheDocument();
   });
 });
 

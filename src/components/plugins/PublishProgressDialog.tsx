@@ -489,6 +489,10 @@ export function PublishProgressDialog({
                                 siteName,
                                 failedStage: failedStage?.name,
                                 stageStatuses: stages.map(s => ({ name: s.name, status: s.status, message: s.message })),
+                                backendLogFiles: {
+                                  log: "data/errors/log.txt",
+                                  errorLog: "data/errors/error.log.txt",
+                                },
                               },
                               backendLogs,
                               backendStackTrace: backendStackTrace || undefined,
