@@ -1,7 +1,8 @@
 # PowerShell Integration Guide
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-02  
+> **Spec Version:** 2.1.0  
+> **Script Version:** 1.1.0  
+> **Updated:** 2026-02-04  
 > **Status:** Active  
 > **Purpose:** Step-by-step guide to integrate the PowerShell runner with pnpm PnP into any project
 
@@ -53,6 +54,7 @@ Uses all defaults including pnpm PnP with `.pnpm-store` in project root.
 ```json
 {
   "$schema": "./spec/powershell-integration/schemas/powershell.schema.json",
+  "version": "1.1.0",
   "projectName": "My Project",
   "rootDir": ".",
   "backendDir": "backend",
@@ -73,7 +75,8 @@ Uses all defaults including pnpm PnP with `.pnpm-store` in project root.
     "dist",
     ".vite",
     ".pnp.cjs",
-    ".pnp.loader.mjs"
+    ".pnp.loader.mjs",
+    ".pnp.data.json"
   ],
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install",
