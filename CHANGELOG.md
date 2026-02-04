@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.12.0] - 2026-02-04
+
+### Fixed
+- **Blank Screen on Add/Edit Site**: Removed state updates during render phase that caused infinite loops
+- **Plugin-Site Mappings**: Seeding now correctly creates mappings even when plugins/sites already exist
+- **Checkbox Double-Toggle**: Added `e.stopPropagation()` to prevent parent click handlers from double-toggling
+- **Seeded Site Status**: Sites from seed config now default to `ConnectionStatus = 'connected'`
+
+### Added
+- **Global Error Handler**: Unhandled promise rejections now show detailed error modal with source function
+- **URL Normalization**: Seed config URLs are normalized (strips `/wp-admin`, enforces HTTPS)
+- **WebSocket Reconnect Control**: Added `isReconnectEnabled` flag to prevent unwanted reconnection attempts
+
+### Changed
+- **Sync/Publish Buttons**: Now always visible on plugin cards (disabled with tooltip when no sites mapped)
+- **Naming Convention**: Database functions now use `Id` instead of `ID`, `Url` instead of `URL`
+
+---
+
 ## [1.11.0] - 2026-02-04
 
 ### Added

@@ -219,16 +219,38 @@ func seedFromConfig(db *database.DB, cfg *Config) error {
 	return nil
 }
 
+// normalizeUrl strips common WordPress paths and enforces HTTPS
+func normalizeUrl(rawUrl string) string {
+	u := strings.TrimSpace(rawUrl)
+	// Remove trailing slashes
+	u = strings.TrimRight(u, "/")
+	// Strip common WP paths
+	for _, suffix := range []string{"/wp-admin", "/wp-login.php", "/wp-json"} {
+		u = strings.TrimSuffix(u, suffix)
+	}
+	// Enforce HTTPS
+	if strings.HasPrefix(u, "http://") {
+		u = "https://" + strings.TrimPrefix(u, "http://")
+	}
+	if !strings.HasPrefix(u, "https://") {
+		u = "https://" + u
+	}
+	return u
+}
+
 // seedSitesAndPlugins seeds test sites and plugins from config
 func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 	// Build site name -> ID map for plugin mapping
-	siteNameToID := make(map[string]int64)
+	siteNameToId := make(map[string]int64)
 
 	// Get encryption key from config
 	encryptionKey := []byte(cfg.Security.EncryptionKey)
 
 	// Seed sites
 	for _, site := range cfg.Seed.Sites {
+		// Normalize URL before checking/inserting
+		normalizedUrl := normalizeUrl(site.URL)
+
 		// Decode base64 password to get plaintext
 		passwordPlaintext, err := base64.StdEncoding.DecodeString(site.ApplicationPassword)
 		if err != nil {
@@ -237,9 +259,10 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 		}
 
 		// Check if site already exists by URL
-		existingID, err := db.GetSiteIDByURL(site.URL)
-		if err == nil && existingID > 0 {
-			siteNameToID[site.Name] = existingID
+		existingId, err := db.GetSiteIdByUrl(normalizedUrl)
+		if err == nil && existingId > 0 {
+			// Site exists - still populate map for mappings
+			siteNameToId[site.Name] = existingId
 			continue
 		}
 
@@ -250,33 +273,36 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 			continue // Skip if encryption fails
 		}
 
-		// Insert site with properly encrypted password
-		id, err := db.CreateSeedSite(site.Name, site.URL, site.Username, encryptedPassword, site.Category)
+		// Insert site with properly encrypted password and normalized URL
+		id, err := db.CreateSeedSite(site.Name, normalizedUrl, site.Username, encryptedPassword, site.Category)
 		if err != nil {
 			continue // Skip if insert fails (e.g., duplicate)
 		}
-		siteNameToID[site.Name] = id
+		siteNameToId[site.Name] = id
 	}
 
 	// Seed plugins
 	for _, plugin := range cfg.Seed.Plugins {
+		var pluginId int64
+
 		// Check if plugin already exists by path
-		existingID, err := db.GetPluginIDByPath(plugin.Path)
-		if err == nil && existingID > 0 {
-			continue
+		existingId, err := db.GetPluginIdByPath(plugin.Path)
+		if err == nil && existingId > 0 {
+			// Plugin exists - use existing ID for mappings
+			pluginId = existingId
+		} else {
+			// Insert new plugin
+			pluginId, err = db.CreateSeedPlugin(plugin.Name, plugin.Path, plugin.Category, plugin.GitEnabled, plugin.AutoPublish)
+			if err != nil {
+				continue // Skip if insert fails
+			}
 		}
 
-		// Insert plugin
-		pluginID, err := db.CreateSeedPlugin(plugin.Name, plugin.Path, plugin.Category, plugin.GitEnabled, plugin.AutoPublish)
-		if err != nil {
-			continue
-		}
-
-		// Create mappings for each linked site
+		// Always create mappings (idempotent via INSERT OR IGNORE)
 		for _, siteName := range plugin.SiteNames {
-			if siteID, ok := siteNameToID[siteName]; ok {
+			if siteId, ok := siteNameToId[siteName]; ok {
 				remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
-				_ = db.CreateSeedMapping(pluginID, siteID, remoteSlug)
+				_ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
 			}
 		}
 	}

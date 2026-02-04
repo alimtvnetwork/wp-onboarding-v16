@@ -192,25 +192,26 @@ func (db *DB) Path() string {
 	return db.path
 }
 
-// GetSiteIDByURL returns the site ID for a given URL
-func (db *DB) GetSiteIDByURL(url string) (int64, error) {
+// GetSiteIdByUrl returns the site ID for a given URL
+func (db *DB) GetSiteIdByUrl(url string) (int64, error) {
 	var id int64
 	err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", url).Scan(&id)
 	return id, err
 }
 
-// GetPluginIDByPath returns the plugin ID for a given path
-func (db *DB) GetPluginIDByPath(path string) (int64, error) {
+// GetPluginIdByPath returns the plugin ID for a given path
+func (db *DB) GetPluginIdByPath(path string) (int64, error) {
 	var id int64
 	err := db.QueryRow("SELECT Id FROM Plugins WHERE Path = ?", path).Scan(&id)
 	return id, err
 }
 
 // CreateSeedSite creates a site for seeding (password must be pre-encrypted by caller)
+// Seeded sites default to ConnectionStatus = 'connected' for quick testing
 func (db *DB) CreateSeedSite(name, url, username string, passwordEncrypted []byte, category string) (int64, error) {
 	result, err := db.Exec(`
 		INSERT INTO Sites (Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, CreatedAt, UpdatedAt)
-		VALUES (?, ?, ?, ?, ?, 'unknown', datetime('now'), datetime('now'))
+		VALUES (?, ?, ?, ?, ?, 'connected', datetime('now'), datetime('now'))
 	`, name, url, username, passwordEncrypted, category)
 	if err != nil {
 		return 0, err

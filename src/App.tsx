@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -86,30 +87,85 @@ function WebSocketProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Global unhandled rejection handler component
+function GlobalErrorHandler({ children }: { children: React.ReactNode }) {
+  const { captureException, openErrorModal } = useErrorStore.getState();
+
+  React.useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      // Extract meaningful info from the rejection
+      const reason = event.reason;
+      let errorMessage = "Unhandled async error";
+      let errorDetails = "";
+      let errorSource = "Unknown source";
+
+      if (reason instanceof Error) {
+        errorMessage = reason.message || "Async operation failed";
+        errorDetails = reason.stack || "";
+        // Try to extract function name from stack trace
+        const stackLines = reason.stack?.split("\n") || [];
+        if (stackLines.length > 1) {
+          const callerLine = stackLines[1]?.trim();
+          const funcMatch = callerLine?.match(/at\s+(\S+)/);
+          if (funcMatch) {
+            errorSource = funcMatch[1];
+          }
+        }
+      } else if (typeof reason === "string") {
+        errorMessage = reason;
+      } else if (reason && typeof reason === "object") {
+        errorMessage = (reason as { message?: string }).message || JSON.stringify(reason);
+      }
+
+      console.error(`[GlobalErrorHandler] Unhandled rejection in ${errorSource}:`, reason);
+
+      const captured = captureException(reason, {
+        endpoint: `unhandled:${errorSource}`,
+        method: "ASYNC",
+      });
+
+      toast.error(`Async error in ${errorSource}`, {
+        description: errorMessage.slice(0, 80) + (errorMessage.length > 80 ? "..." : ""),
+        action: { label: "View Details", onClick: () => openErrorModal(captured) },
+        duration: 10000,
+      });
+
+      event.preventDefault();
+    };
+
+    window.addEventListener("unhandledrejection", handleRejection);
+    return () => window.removeEventListener("unhandledrejection", handleRejection);
+  }, []);
+
+  return <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider defaultTheme="system" storageKey="wpp-theme">
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <GlobalErrorModal />
-        <BrowserRouter>
-          <WebSocketProvider>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="sites" element={<Sites />} />
-                <Route path="plugins" element={<Plugins />} />
-                <Route path="tests" element={<Tests />} />
-                <Route path="logs" element={<Logs />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="errors" element={<Errors />} />
-              </Route>
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </WebSocketProvider>
-        </BrowserRouter>
+        <GlobalErrorHandler>
+          <Toaster />
+          <Sonner />
+          <GlobalErrorModal />
+          <BrowserRouter>
+            <WebSocketProvider>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="sites" element={<Sites />} />
+                  <Route path="plugins" element={<Plugins />} />
+                  <Route path="tests" element={<Tests />} />
+                  <Route path="logs" element={<Logs />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="errors" element={<Errors />} />
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </WebSocketProvider>
+          </BrowserRouter>
+        </GlobalErrorHandler>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>

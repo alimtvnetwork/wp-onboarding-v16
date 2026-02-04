@@ -1,11 +1,29 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T21:00:00Z",
+  "buildTime": "2026-02-04T22:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.12.0",
+      "date": "2026-02-04",
+      "title": "Stability Fixes & Seeding Improvements",
+      "changes": [
+        "🔧 Fixed blank screen when clicking Add Site / Edit Site dialogs",
+        "🔗 Seeded plugins now correctly linked to seeded sites",
+        "✅ Fixed checkbox double-toggle in plugin-site mapping dialogs",
+        "📤 Sync and Publish buttons now always visible (disabled if no sites mapped)",
+        "🟢 Seeded sites default to Connected status for quick testing",
+        "🌐 URL normalization in seed config (strips /wp-admin, enforces HTTPS)",
+        "🔄 WebSocket reconnection stability improvements",
+        "⚠️ Global unhandled promise rejection handler with detailed error modal"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.11.0",
       "date": "2026-02-04",
