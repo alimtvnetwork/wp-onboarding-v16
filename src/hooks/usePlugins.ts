@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, Plugin } from "@/lib/api";
+import { api, Plugin, requireSuccess } from "@/lib/api";
 
 export function usePlugins() {
   return useQuery({
     queryKey: ["plugins"],
     queryFn: async () => {
       const response = await api.getPlugins();
-      if (!response.success) throw new Error(response.error?.message);
-      return response.data as Plugin[];
+      return requireSuccess(response, { endpoint: "/plugins", method: "GET" });
     },
   });
 }
@@ -17,8 +16,7 @@ export function usePlugin(id: number) {
     queryKey: ["plugins", id],
     queryFn: async () => {
       const response = await api.getPlugin(id);
-      if (!response.success) throw new Error(response.error?.message);
-      return response.data as Plugin;
+      return requireSuccess(response, { endpoint: `/plugins/${id}`, method: "GET" });
     },
     enabled: !!id,
   });

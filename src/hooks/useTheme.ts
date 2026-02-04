@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSettings } from "./useSettings";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { api, requireSuccess } from "@/lib/api";
 
 export type Theme = 
   | "light"
@@ -137,8 +137,12 @@ export function useTheme() {
   const updateSettingMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
       const response = await api.updateSetting(key, value);
-      if (!response.success) throw new Error(response.error?.message);
-      return response;
+      // Ensure errors surface in the GlobalErrorModal with the full resolved URL.
+      return requireSuccess(response, {
+        endpoint: `/settings/${encodeURIComponent(key)}`,
+        method: "PUT",
+        requestBody: { value },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });

@@ -39,8 +39,11 @@ export function GlobalErrorModal() {
           <div className="flex items-center gap-3">
             <AlertCircle className={cn(
               "h-6 w-6",
-              selectedError.level === "error" ? "text-red-500" :
-              selectedError.level === "warn" ? "text-yellow-500" : "text-blue-500"
+              selectedError.level === "error"
+                ? "text-destructive"
+                : selectedError.level === "warn"
+                  ? "text-warning"
+                  : "text-muted-foreground"
             )} />
             <div>
               <DialogTitle className="flex items-center gap-2">
@@ -144,6 +147,43 @@ export function GlobalErrorModal() {
                           </Badge>
                         </p>
                       )}
+
+                      {/* Extra diagnostics (API base + resolved URL) */}
+                      {(() => {
+                        const ctx = (selectedError.context || {}) as Record<string, unknown>;
+                        const requestUrl = typeof ctx.requestUrl === "string" ? ctx.requestUrl : undefined;
+                        const apiBase = typeof ctx.apiBase === "string" ? ctx.apiBase : undefined;
+                        const apiOrigin = typeof ctx.apiOrigin === "string" ? ctx.apiOrigin : undefined;
+
+                        if (!requestUrl && !apiBase && !apiOrigin) return null;
+
+                        return (
+                          <div className="pt-2 border-t border-border/60 space-y-1">
+                            {requestUrl && (
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">Requested URL: </span>
+                                <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                  {requestUrl}
+                                </code>
+                              </p>
+                            )}
+                            {apiBase && (
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">Configured API base: </span>
+                                <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                  {apiBase}
+                                </code>
+                              </p>
+                            )}
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">VITE_API_URL: </span>
+                              <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                {apiOrigin || "(not set)"}
+                              </code>
+                            </p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -281,6 +321,11 @@ function getSuggestedFixes(code: string): string[] {
     E7001: ["Test suite may not be configured", "Check E2E test configuration"],
     E9001: ["Service may still be initializing", "Restart the backend server"],
     E9003: ["Check network connectivity", "Verify backend server is running on correct port"],
+    E9005: [
+      "Set VITE_API_URL to your backend origin (e.g. http://localhost:8080)",
+      "If you are using the hosted preview, it cannot reach your localhost backend—open the UI from your local backend URL instead",
+    ],
+    E9006: ["Verify the endpoint returns JSON", "Check response content-type and server error logs"],
     E9004: ["This feature is not yet implemented", "Check documentation for available features"],
   };
   return fixes[code] || [
@@ -290,3 +335,4 @@ function getSuggestedFixes(code: string): string[] {
     "Contact support if the issue persists",
   ];
 }
+

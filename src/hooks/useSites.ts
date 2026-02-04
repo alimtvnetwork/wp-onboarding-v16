@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, Site } from "@/lib/api";
+import { api, requireSuccess, Site } from "@/lib/api";
 
 export function useSites() {
   return useQuery({
     queryKey: ["sites"],
     queryFn: async () => {
       const response = await api.getSites();
-      if (!response.success) throw new Error(response.error?.message);
-      return response.data as Site[];
+      return requireSuccess(response, { endpoint: "/sites", method: "GET" });
     },
   });
 }
@@ -17,8 +16,7 @@ export function useSite(id: number) {
     queryKey: ["sites", id],
     queryFn: async () => {
       const response = await api.getSite(id);
-      if (!response.success) throw new Error(response.error?.message);
-      return response.data as Site;
+      return requireSuccess(response, { endpoint: `/sites/${id}`, method: "GET" });
     },
     enabled: !!id,
   });

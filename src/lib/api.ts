@@ -1,12 +1,6 @@
 // API client for WP Plugin Publish backend
 
-// Configure via Vite env var:
-// - VITE_API_URL="http://localhost:8080" (origin only)
-// If not provided, default to same-origin so the UI works when served by the Go backend.
-const API_ORIGIN = import.meta.env.VITE_API_URL as string | undefined;
-const API_BASE = API_ORIGIN
-  ? `${API_ORIGIN.replace(/\/$/, "")}/api/v1`
-  : "/api/v1";
+import { resolveApiBase, resolveApiOrigin, resolveApiUrl, toAbsoluteUrl } from "@/lib/endpoints";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -26,21 +20,145 @@ export interface ApiError {
   timestamp: string;
 }
 
+export type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+export type ApiCallMeta = {
+  endpoint: string; // e.g. "/plugins"
+  method?: ApiMethod;
+  requestBody?: unknown;
+};
+
+export class ApiClientError extends Error {
+  readonly apiError: ApiError;
+  readonly meta: Required<Pick<ApiCallMeta, "endpoint">> & {
+    method?: ApiMethod;
+    requestBody?: unknown;
+    apiOrigin?: string;
+    apiBase: string;
+    requestUrl: string;
+  };
+
+  constructor(apiError: ApiError, meta: ApiCallMeta) {
+    super(apiError.message);
+    this.name = "ApiClientError";
+    this.apiError = apiError;
+    const apiBase = resolveApiBase();
+    const requestUrl = toAbsoluteUrl(resolveApiUrl(meta.endpoint));
+    this.meta = {
+      endpoint: meta.endpoint,
+      method: meta.method,
+      requestBody: meta.requestBody,
+      apiOrigin: resolveApiOrigin(),
+      apiBase,
+      requestUrl,
+    };
+  }
+}
+
+export function isApiClientError(err: unknown): err is ApiClientError {
+  return err instanceof ApiClientError;
+}
+
+export function requireSuccess<T>(response: ApiResponse<T>, meta: ApiCallMeta): T {
+  if (response.success) return response.data as T;
+  const apiError: ApiError =
+    response.error ||
+    ({
+      code: "E9999",
+      message: "Unknown API error",
+      timestamp: new Date().toISOString(),
+    } as ApiError);
+  throw new ApiClientError(apiError, meta);
+}
+
+function looksLikeJson(text: string): boolean {
+  const trimmed = text.trim();
+  return trimmed.startsWith("{") || trimmed.startsWith("[");
+}
+
 async function request<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const apiBase = resolveApiBase();
+    const apiOrigin = resolveApiOrigin();
+    const url = resolveApiUrl(endpoint);
+    const requestUrl = toAbsoluteUrl(url);
+
+    const headers = new Headers(options?.headers);
+    headers.set("Accept", "application/json");
+    // Only set Content-Type when we actually send a body.
+    if (options?.body != null && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    const response = await fetch(url, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...options?.headers,
-      },
+      headers,
     });
 
-    const data = await response.json();
-    return data;
+    // Read as text first so we can gracefully handle HTML even when the server lies about Content-Type.
+    const raw = await response.text();
+    const contentType = response.headers.get("content-type") || "";
+    const preview = raw.slice(0, 800);
+
+    // JSON happy-path
+    if (looksLikeJson(raw)) {
+      return JSON.parse(raw) as ApiResponse<T>;
+    }
+
+    // HTML / SPA fallback detection
+    const rawTrim = raw.trim();
+    const looksLikeHtml = rawTrim.startsWith("<!") || rawTrim.startsWith("<html") || /<html[\s>]/i.test(raw);
+
+    if (looksLikeHtml || !contentType.includes("application/json")) {
+      return {
+        success: false,
+        error: {
+          code: "E9005",
+          message: "API returned HTML instead of JSON",
+          details:
+            "This usually means the UI is not talking to the Go backend (wrong base URL/port, or preview environment).\n" +
+            `Requested URL: ${requestUrl}\n` +
+            `Configured API base: ${apiBase}\n` +
+            `VITE_API_URL: ${apiOrigin || "(not set)"}\n` +
+            "Fix: set VITE_API_URL to your backend origin (e.g. http://localhost:8080) and reload.\n" +
+            `HTTP ${response.status} (${contentType || "no content-type"})`,
+          context: {
+            requestUrl,
+            apiBase,
+            apiOrigin: apiOrigin || null,
+            responseStatus: response.status,
+            contentType: contentType || null,
+            responsePreview: preview,
+          },
+          timestamp: new Date().toISOString(),
+        },
+      };
+    }
+
+    // Unexpected non-JSON (but not HTML)
+    return {
+      success: false,
+      error: {
+        code: "E9006",
+        message: "Unexpected API response format",
+        details:
+          `Expected JSON but got: ${contentType || "unknown"}\n` +
+          `Requested URL: ${requestUrl}\n` +
+          `Preview: ${preview}`,
+        context: {
+          requestUrl,
+          apiBase,
+          apiOrigin: apiOrigin || null,
+          responseStatus: response.status,
+          contentType: contentType || null,
+          responsePreview: preview,
+        },
+        timestamp: new Date().toISOString(),
+      },
+    };
   } catch (error) {
     return {
       success: false,
@@ -48,10 +166,24 @@ async function request<T>(
         code: "E9003",
         message: "Network error",
         details: error instanceof Error ? error.message : "Unknown error",
+        context: {
+          apiBase: resolveApiBase(),
+          apiOrigin: resolveApiOrigin() || null,
+        },
         timestamp: new Date().toISOString(),
       },
     };
   }
+}
+
+export function getApiDiagnostics() {
+  const apiBase = resolveApiBase();
+  const apiOrigin = resolveApiOrigin();
+  return {
+    apiOrigin: apiOrigin || null,
+    apiBase,
+    apiBaseAbsolute: toAbsoluteUrl(apiBase),
+  };
 }
 
 // Types
@@ -288,3 +420,4 @@ export const api = {
   deleteE2ERun: (runId: string) =>
     request<void>(`/e2e/runs/${runId}`, { method: "DELETE" }),
 };
+

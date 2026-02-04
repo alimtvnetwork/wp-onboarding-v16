@@ -1,19 +1,6 @@
-// WebSocket client for real-time updates
+import { resolveWsUrl } from "@/lib/endpoints";
 
 type EventHandler = (data: unknown) => void;
-
-function resolveWsUrl(): string {
-  const envUrl = import.meta.env.VITE_WS_URL as string | undefined;
-  if (envUrl) return envUrl;
-
-  // During tests / SSR-like environments
-  if (typeof window === "undefined") {
-    return "ws://localhost:8080/ws";
-  }
-
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws`;
-}
 
 class WebSocketClient {
   private ws: WebSocket | null = null;
@@ -118,3 +105,4 @@ export const WS_EVENTS = {
   CONNECTION: "connection",
   LOG: "log",
 } as const;
+
