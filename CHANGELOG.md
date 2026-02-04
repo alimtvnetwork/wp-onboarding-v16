@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-02-04
+
+### Added
+- **Copy Diagnostics Button**: Small button to copy API base, WS URL, and app version for support/debugging
+- **About Panel in Settings**: Shows app name/version, script version, and links to changelogs
+- **Build Metadata**: `version.json` now includes `gitCommit`, `buildTime`, and `scriptVersion`
+- **Backend Version Logging**: Server logs now prefixed with app name + version at startup
+- **What's New Build Info**: Modal now shows git commit and build date
+
+### Changed
+- Updated `VersionInfo` interface to support build metadata fields
+
+---
+
 ## [1.1.0] - 2026-02-04
 
 ### Added
@@ -55,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.2.0]: https://github.com/riseup-asia/wp-onboarding-v5/releases/tag/v1.2.0
 [1.1.0]: https://github.com/riseup-asia/wp-onboarding-v5/releases/tag/v1.1.0
 [1.0.0]: https://github.com/riseup-asia/wp-onboarding-v5/releases/tag/v1.0.0
-[Unreleased]: https://github.com/riseup-asia/wp-onboarding-v5/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/riseup-asia/wp-onboarding-v5/compare/v1.2.0...HEAD

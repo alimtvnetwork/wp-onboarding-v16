@@ -1,8 +1,23 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "releaseDate": "2026-02-04",
+  "gitCommit": "dev",
+  "buildTime": "2026-02-04T12:00:00Z",
+  "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.2.0",
+      "date": "2026-02-04",
+      "title": "Diagnostics & About Panel",
+      "changes": [
+        "🛠️ Copy Diagnostics button for quick support info",
+        "ℹ️ About panel in Settings with app/script versions",
+        "🔧 Build metadata (git commit, build time) in version.json",
+        "📋 Backend now logs app name + version at startup"
+      ],
+      "knownIssues": []
+    },
     {
       "version": "1.1.0",
       "date": "2026-02-04",

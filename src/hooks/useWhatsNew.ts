@@ -21,6 +21,9 @@ export interface VersionInfo {
   appName?: string;
   version: string;
   releaseDate: string;
+  gitCommit?: string;
+  buildTime?: string;
+  scriptVersion?: string;
   changelog: ChangelogEntry[];
   roadmap: RoadmapItem[];
 }
