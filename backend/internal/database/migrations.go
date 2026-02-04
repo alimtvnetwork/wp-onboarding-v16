@@ -179,6 +179,33 @@ var migrations = []Migration{
 			INSERT OR IGNORE INTO AppConfig (Key, Value) VALUES ('db.version', '1.8.0');
 		`,
 	},
+	{
+		Version:     5,
+		Description: "Add PluginVersions table for version history and rollback",
+		SQL: `
+			-- PluginVersions table: Track each publish operation for rollback support
+			CREATE TABLE IF NOT EXISTS PluginVersions (
+				Id INTEGER PRIMARY KEY AUTOINCREMENT,
+				PluginId INTEGER NOT NULL,
+				SiteId INTEGER NOT NULL,
+				Version TEXT NOT NULL,
+				BackupPath TEXT,
+				FilesUpdated INTEGER DEFAULT 0,
+				GitCommitHash TEXT,
+				PublishType TEXT DEFAULT 'full',
+				Status TEXT DEFAULT 'completed',
+				Notes TEXT,
+				CreatedAt TEXT DEFAULT (datetime('now')),
+				FOREIGN KEY (PluginId) REFERENCES Plugins(Id) ON DELETE CASCADE,
+				FOREIGN KEY (SiteId) REFERENCES Sites(Id) ON DELETE CASCADE
+			);
+
+			-- Create indexes for efficient queries
+			CREATE INDEX IF NOT EXISTS idx_pluginversions_plugin ON PluginVersions(PluginId);
+			CREATE INDEX IF NOT EXISTS idx_pluginversions_site ON PluginVersions(SiteId);
+			CREATE INDEX IF NOT EXISTS idx_pluginversions_created ON PluginVersions(CreatedAt DESC);
+		`,
+	},
 }
 
 // Migrate runs all pending migrations

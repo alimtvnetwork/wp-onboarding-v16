@@ -278,3 +278,125 @@ func (db *DB) SetDbVersion(version string) error {
 	`, version, version)
 	return err
 }
+
+// CreatePluginVersion records a new version entry after a publish operation
+func (db *DB) CreatePluginVersion(pluginID, siteID int64, version, backupPath string, filesUpdated int, gitCommitHash, publishType, notes string) (int64, error) {
+	result, err := db.Exec(`
+		INSERT INTO PluginVersions (PluginId, SiteId, Version, BackupPath, FilesUpdated, GitCommitHash, PublishType, Status, Notes, CreatedAt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 'completed', ?, datetime('now'))
+	`, pluginID, siteID, version, backupPath, filesUpdated, gitCommitHash, publishType, notes)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+// GetPluginVersions returns version history for a plugin, optionally filtered by site
+func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]map[string]interface{}, error) {
+	query := `
+		SELECT pv.Id, pv.PluginId, pv.SiteId, s.Name as SiteName, pv.Version, pv.BackupPath, 
+			   pv.FilesUpdated, pv.GitCommitHash, pv.PublishType, pv.Status, pv.Notes, pv.CreatedAt
+		FROM PluginVersions pv
+		LEFT JOIN Sites s ON pv.SiteId = s.Id
+		WHERE pv.PluginId = ?
+	`
+	args := []interface{}{pluginID}
+
+	if siteID != nil && *siteID > 0 {
+		query += " AND pv.SiteId = ?"
+		args = append(args, *siteID)
+	}
+
+	query += " ORDER BY pv.CreatedAt DESC LIMIT ?"
+	args = append(args, limit)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var versions []map[string]interface{}
+	for rows.Next() {
+		var id, pluginId, siteId, filesUpdated int64
+		var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
+		
+		err := rows.Scan(&id, &pluginId, &siteId, &siteName, &version, &backupPath, 
+			&filesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
+		if err != nil {
+			continue
+		}
+
+		v := map[string]interface{}{
+			"id":            id,
+			"pluginId":      pluginId,
+			"siteId":        siteId,
+			"siteName":      siteName.String,
+			"version":       version.String,
+			"backupPath":    backupPath.String,
+			"filesUpdated":  filesUpdated,
+			"gitCommitHash": gitCommitHash.String,
+			"publishType":   publishType.String,
+			"status":        status.String,
+			"notes":         notes.String,
+			"createdAt":     createdAt.String,
+		}
+		versions = append(versions, v)
+	}
+
+	if versions == nil {
+		versions = []map[string]interface{}{}
+	}
+	return versions, nil
+}
+
+// GetPluginVersionByID returns a specific version entry
+func (db *DB) GetPluginVersionByID(versionID int64) (map[string]interface{}, error) {
+	var id, pluginId, siteId, filesUpdated int64
+	var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
+
+	err := db.QueryRow(`
+		SELECT pv.Id, pv.PluginId, pv.SiteId, s.Name as SiteName, pv.Version, pv.BackupPath, 
+			   pv.FilesUpdated, pv.GitCommitHash, pv.PublishType, pv.Status, pv.Notes, pv.CreatedAt
+		FROM PluginVersions pv
+		LEFT JOIN Sites s ON pv.SiteId = s.Id
+		WHERE pv.Id = ?
+	`, versionID).Scan(&id, &pluginId, &siteId, &siteName, &version, &backupPath, 
+		&filesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"id":            id,
+		"pluginId":      pluginId,
+		"siteId":        siteId,
+		"siteName":      siteName.String,
+		"version":       version.String,
+		"backupPath":    backupPath.String,
+		"filesUpdated":  filesUpdated,
+		"gitCommitHash": gitCommitHash.String,
+		"publishType":   publishType.String,
+		"status":        status.String,
+		"notes":         notes.String,
+		"createdAt":     createdAt.String,
+	}, nil
+}
+
+// DeletePluginVersion removes a version entry
+func (db *DB) DeletePluginVersion(versionID int64) error {
+	_, err := db.Exec("DELETE FROM PluginVersions WHERE Id = ?", versionID)
+	return err
+}
+
+// GetNextVersionNumber generates the next version number for a plugin-site combination
+func (db *DB) GetNextVersionNumber(pluginID, siteID int64) (string, error) {
+	var count int
+	err := db.QueryRow(`
+		SELECT COUNT(*) FROM PluginVersions WHERE PluginId = ? AND SiteId = ?
+	`, pluginID, siteID).Scan(&count)
+	if err != nil {
+		return "1.0.0", nil
+	}
+	return fmt.Sprintf("1.0.%d", count+1), nil
+}

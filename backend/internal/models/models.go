@@ -96,6 +96,22 @@ type Backup struct {
 	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
 }
 
+// PluginVersion represents a publish operation history entry for rollback support
+type PluginVersion struct {
+	ID            int64     `json:"id"`
+	PluginID      int64     `json:"pluginId"`
+	SiteID        int64     `json:"siteId"`
+	SiteName      string    `json:"siteName,omitempty"`
+	Version       string    `json:"version"`
+	BackupPath    string    `json:"backupPath,omitempty"`
+	FilesUpdated  int       `json:"filesUpdated"`
+	GitCommitHash string    `json:"gitCommitHash,omitempty"`
+	PublishType   string    `json:"publishType"`
+	Status        string    `json:"status"`
+	Notes         string    `json:"notes,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
+}
+
 // ErrorLog represents an application error entry
 type ErrorLog struct {
 	ID         int64     `json:"id"`

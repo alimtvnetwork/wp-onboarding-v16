@@ -915,6 +915,118 @@ func DeleteBackup(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, map[string]interface{}{"deleted": true})
 }
 
+// --- Plugin Version History Handlers ---
+
+// VersionServiceInterface defines version history service methods
+type VersionServiceInterface interface {
+	GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) (interface{}, error)
+	GetVersion(ctx context.Context, versionID int64) (interface{}, error)
+	Rollback(ctx context.Context, versionID int64) (interface{}, error)
+	DeleteVersion(ctx context.Context, versionID int64) error
+}
+
+// VersionService holds the version service instance
+var VersionService VersionServiceInterface
+
+// GetPluginVersions returns version history for a plugin
+func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
+	if VersionService == nil {
+		respondSuccess(w, []interface{}{})
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	// Optional site filter
+	var siteID *int64
+	if siteIDStr := r.URL.Query().Get("siteId"); siteIDStr != "" {
+		if parsed, err := strconv.ParseInt(siteIDStr, 10, 64); err == nil {
+			siteID = &parsed
+		}
+	}
+
+	// Optional limit
+	limit := 50
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
+		}
+	}
+
+	versions, err := VersionService.GetVersions(r.Context(), pluginID, siteID, limit)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E8001", err.Error())
+		return
+	}
+	respondSuccess(w, versions)
+}
+
+// GetPluginVersion returns a specific version entry
+func GetPluginVersion(w http.ResponseWriter, r *http.Request) {
+	if VersionService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Version service not available")
+		return
+	}
+
+	versionID, err := getIDParam(r, "versionId")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid version ID")
+		return
+	}
+
+	version, err := VersionService.GetVersion(r.Context(), versionID)
+	if err != nil {
+		respondError(w, http.StatusNotFound, "E8002", err.Error())
+		return
+	}
+	respondSuccess(w, version)
+}
+
+// RollbackPluginVersion restores a plugin to a previous version
+func RollbackPluginVersion(w http.ResponseWriter, r *http.Request) {
+	if VersionService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Version service not available")
+		return
+	}
+
+	versionID, err := getIDParam(r, "versionId")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid version ID")
+		return
+	}
+
+	result, err := VersionService.Rollback(r.Context(), versionID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E8003", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// DeletePluginVersion removes a version entry
+func DeletePluginVersion(w http.ResponseWriter, r *http.Request) {
+	if VersionService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Version service not available")
+		return
+	}
+
+	versionID, err := getIDParam(r, "versionId")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid version ID")
+		return
+	}
+
+	if err := VersionService.DeleteVersion(r.Context(), versionID); err != nil {
+		respondError(w, http.StatusBadRequest, "E8004", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"deleted": true})
+}
+
 // --- Error Handlers ---
 
 // GetErrors returns application error logs
