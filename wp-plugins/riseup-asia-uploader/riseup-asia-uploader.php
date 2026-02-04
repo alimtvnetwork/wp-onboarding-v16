@@ -107,9 +107,18 @@ class Riseup_Asia {
         $this->file_logger->info('Plugin constructor starting', array('version' => RISEUP_VERSION));
 
         try {
-            // Initialize database (lazy init - doesn't connect until needed).
+            // Initialize database and run migrations immediately.
             $this->db = Riseup_Database::get_instance();
             $this->file_logger->info('Database instance created');
+            
+            // Run database initialization (creates tables if not exist).
+            $this->file_logger->info('Running database migration/initialization');
+            $db_ready = $this->db->init();
+            if ($db_ready) {
+                $this->file_logger->info('Database initialized successfully');
+            } else {
+                $this->file_logger->error('Database initialization failed - some features may not work');
+            }
 
             // Initialize transaction logger (depends on database).
             $this->logger = Riseup_Logger::get_instance();
