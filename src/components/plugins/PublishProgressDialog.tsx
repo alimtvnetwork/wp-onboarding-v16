@@ -79,9 +79,19 @@ function buildErrorReport(
 ): string {
   const timestamp = new Date().toISOString();
   const failedStage = stages.find(s => s.status === "error");
-  
-  const logSection = logs.length > 0 
-    ? `### Execution Logs\n\`\`\`\n${logs.map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.step}] ${l.message}`).join('\n')}\n\`\`\`\n`
+
+  const logLines = logs.map((l) => {
+    const base = `[${l.timestamp}] [${l.level.toUpperCase()}] [${l.step}] ${l.message}`;
+    if (!l.details || Object.keys(l.details).length === 0) return base;
+    try {
+      return `${base}\n  details=${JSON.stringify(l.details)}`;
+    } catch {
+      return `${base}\n  details=[unserializable]`;
+    }
+  });
+
+  const logSection = logs.length > 0
+    ? `### Execution Logs\n\`\`\`\n${logLines.join("\n")}\n\`\`\`\n`
     : "";
   
   return `## Publish Error Report
@@ -202,14 +212,6 @@ export function PublishProgressDialog({
         // Add log entry if provided
         if (payload.log) {
           setLogs(prev => [...prev, payload.log!]);
-        } else if (payload.message) {
-          // Create log from progress message
-          setLogs(prev => [...prev, {
-            timestamp: new Date().toISOString(),
-            level: 'info',
-            step: stageName,
-            message: payload.message,
-          }]);
         }
         
         setStages(prev => prev.map(s => {

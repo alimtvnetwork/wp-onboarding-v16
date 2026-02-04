@@ -10,6 +10,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+func utcTimestamp() string {
+	// Fixed UTC ISO8601 format with milliseconds for consistency across backend + frontend
+	return time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
+}
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		// Allow connections from local development
@@ -153,7 +158,7 @@ func (h *Hub) Broadcast(eventType string, data interface{}) {
 	h.broadcast <- &Message{
 		Type:      eventType,
 		Data:      data,
-		Timestamp: time.Now().Format(time.RFC3339),
+		Timestamp: utcTimestamp(),
 	}
 }
 
@@ -242,7 +247,7 @@ type OperationLogEntry struct {
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
 func (h *Hub) BroadcastOperationLog(operationType string, pluginID, siteID int64, entry OperationLogEntry) {
 	if entry.Timestamp == "" {
-		entry.Timestamp = time.Now().Format(time.RFC3339)
+		entry.Timestamp = utcTimestamp()
 	}
 	h.Broadcast(EventLog, map[string]interface{}{
 		"operationType": operationType,

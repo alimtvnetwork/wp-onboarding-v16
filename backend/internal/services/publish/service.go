@@ -249,7 +249,10 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 				"error": err.Error(),
 			})
 		} else {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "upload", "Upload completed successfully", nil)
+			// NOTE: uploadPlugin is currently a stub unless a remote upload endpoint exists.
+			s.broadcastDetailedLog(pluginID, siteID, "warn", "upload", "Upload stage completed (no remote upload endpoint configured; currently simulated)", map[string]interface{}{
+				"zipPath": zipPath,
+			})
 		}
 		return err
 	})
@@ -263,15 +266,63 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	// Stage 4: Activate plugin
 	stage = s.runStage("activate", func() error {
 		s.broadcastProgress(pluginID, siteID, "activating", 80, "Activating plugin...")
-		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", fmt.Sprintf("Activating plugin: %s", mapping.RemoteSlug), map[string]interface{}{
-			"remoteSlug": mapping.RemoteSlug,
-			"siteUrl":    siteInfo.URL,
-		})
-		err := wpClient.ActivatePlugin(mapping.RemoteSlug)
-		if err != nil {
-			s.broadcastDetailedLog(pluginID, siteID, "error", "activate", fmt.Sprintf("Activation failed: %s", err.Error()), nil)
+
+		resolvedIdentifier := mapping.RemoteSlug
+		if id, resolveErr := wpClient.ResolvePluginIdentifier(mapping.RemoteSlug); resolveErr == nil {
+			resolvedIdentifier = id
+			if resolvedIdentifier != mapping.RemoteSlug {
+				s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Resolved plugin identifier for activation", map[string]interface{}{
+					"remoteSlug":          mapping.RemoteSlug,
+					"resolvedIdentifier":  resolvedIdentifier,
+					"siteUrl":             siteInfo.URL,
+				})
+			}
 		} else {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully", nil)
+			s.broadcastDetailedLog(pluginID, siteID, "warn", "activate", "Could not resolve plugin identifier; attempting activation with mapping slug", map[string]interface{}{
+				"remoteSlug": mapping.RemoteSlug,
+				"siteUrl":    siteInfo.URL,
+				"error":      resolveErr.Error(),
+			})
+		}
+
+		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", fmt.Sprintf("Activating plugin: %s", resolvedIdentifier), map[string]interface{}{
+			"remoteSlug":         mapping.RemoteSlug,
+			"resolvedIdentifier": resolvedIdentifier,
+			"siteUrl":            siteInfo.URL,
+		})
+
+		err := wpClient.ActivatePlugin(resolvedIdentifier)
+		if err != nil {
+			details := map[string]interface{}{
+				"remoteSlug":         mapping.RemoteSlug,
+				"resolvedIdentifier": resolvedIdentifier,
+				"siteUrl":            siteInfo.URL,
+			}
+			if apiErr, ok := err.(*wordpress.APIError); ok {
+				details["request"] = map[string]interface{}{
+					"method":   apiErr.Method,
+					"endpoint": apiErr.Endpoint,
+					"url":      apiErr.URL,
+				}
+				details["response"] = map[string]interface{}{
+					"status": apiErr.StatusCode,
+					"body":   apiErr.ResponseBody,
+				}
+			}
+
+			s.broadcastDetailedLog(pluginID, siteID, "error", "activate", fmt.Sprintf("Activation failed: %s", err.Error()), details)
+			// Critical: ensure the frontend sees the activation stage as failed (so it doesn't get overwritten by cleanup).
+			s.broadcastStageStatus(pluginID, siteID, "activate", "error", 85, err.Error(), details)
+		} else {
+			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully", map[string]interface{}{
+				"remoteSlug":         mapping.RemoteSlug,
+				"resolvedIdentifier": resolvedIdentifier,
+				"siteUrl":            siteInfo.URL,
+			})
+			s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated successfully", map[string]interface{}{
+				"remoteSlug":         mapping.RemoteSlug,
+				"resolvedIdentifier": resolvedIdentifier,
+			})
 		}
 		return err
 	})
@@ -429,6 +480,37 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, logLevel, stage, message, nil)
 	
 	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "step", step, "stage", stage, "progress", progress, "message", message)
+}
+
+// broadcastStageStatus explicitly marks a publish stage as success/error.
+// This is used for late-stage failures (e.g. activation) where a subsequent stage (cleanup)
+// would otherwise cause the UI to incorrectly treat the prior stage as successful.
+func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, status string, progress int, message string, details map[string]interface{}) {
+	if s.wsHub == nil {
+		return
+	}
+
+	payload := map[string]interface{}{
+		"pluginId": pluginID,
+		"siteId":   siteID,
+		"stage":    stage,
+		"step":     stage,
+		"status":   status,
+		"progress": progress,
+		"total":    100,
+		"message":  message,
+	}
+	if details != nil {
+		payload["details"] = details
+	}
+
+	s.wsHub.Broadcast(ws.EventPublishProgress, payload)
+
+	level := "info"
+	if status == "error" {
+		level = "error"
+	}
+	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, stage, message, details)
 }
 
 // broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility

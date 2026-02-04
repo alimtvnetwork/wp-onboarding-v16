@@ -7,10 +7,32 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"net/http"
 	"strings"
 	"time"
 )
+
+// APIError contains rich request/response context for failed WordPress REST calls.
+// It intentionally keeps Error() short/stable (so user-facing messages remain readable)
+// while exposing full diagnostics via fields.
+type APIError struct {
+	Operation     string
+	Method        string
+	Endpoint      string
+	URL           string
+	StatusCode    int
+	ResponseBody  string
+	PluginSlugIn  string
+	PluginIDUsed  string
+}
+
+func (e *APIError) Error() string {
+	if e.Operation != "" {
+		return fmt.Sprintf("%s: status %d", e.Operation, e.StatusCode)
+	}
+	return fmt.Sprintf("WordPress API request failed: status %d", e.StatusCode)
+}
 
 // ClientConfig holds WordPress client configuration
 type ClientConfig struct {
@@ -74,6 +96,49 @@ func (c *Client) request(method, endpoint string, body interface{}) (*http.Respo
 	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
 
 	return c.httpClient.Do(req)
+}
+
+func (c *Client) fullURL(endpoint string) string {
+	return fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+}
+
+func escapePathSegmentPreservingPercent(s string) string {
+	// If caller already provided an escaped segment (e.g., contains %2F), avoid double-encoding.
+	// This is not a full validation; it's a pragmatic guard for our plugin identifier use-case.
+	if strings.Contains(strings.ToLower(s), "%2f") {
+		return s
+	}
+	return url.PathEscape(s)
+}
+
+// ResolvePluginIdentifier attempts to map a short slug (e.g. "akismet") to the full plugin
+// identifier used by WP REST API (e.g. "akismet/akismet.php").
+// If slug already looks like a full identifier (contains "/"), it is returned as-is.
+func (c *Client) ResolvePluginIdentifier(slug string) (string, error) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return "", fmt.Errorf("empty plugin slug")
+	}
+	if strings.Contains(slug, "/") {
+		return slug, nil
+	}
+
+	plugs, err := c.GetPlugins()
+	if err != nil {
+		return slug, err
+	}
+
+	target := strings.ToLower(slug)
+	for _, p := range plugs {
+		pluginID := strings.ToLower(strings.TrimSpace(p.Plugin))
+		textDomain := strings.ToLower(strings.TrimSpace(p.TextDomain))
+
+		if pluginID == target || textDomain == target || strings.HasPrefix(pluginID, target+"/") {
+			return p.Plugin, nil
+		}
+	}
+
+	return slug, fmt.Errorf("plugin not found: %s", slug)
 }
 
 // TestConnection verifies the API is accessible and credentials are valid
@@ -268,7 +333,8 @@ func (c *Client) GetPlugins() ([]PluginInfo, error) {
 
 // GetPlugin returns information about a specific plugin
 func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
-	resp, err := c.request("GET", "/wp/v2/plugins/"+slug, nil)
+	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(slug)
+	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +358,14 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 
 // ActivatePlugin activates a plugin
 func (c *Client) ActivatePlugin(slug string) error {
-	resp, err := c.request("PUT", "/wp/v2/plugins/"+slug, map[string]string{
+	resolvedID, resolveErr := c.ResolvePluginIdentifier(slug)
+	if resolveErr != nil {
+		// Keep going with the given slug, but the error can be surfaced upstream via extra logs.
+		resolvedID = slug
+	}
+
+	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(resolvedID)
+	resp, err := c.request("PUT", endpoint, map[string]string{
 		"status": "active",
 	})
 	if err != nil {
@@ -301,7 +374,21 @@ func (c *Client) ActivatePlugin(slug string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("failed to activate plugin: status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		body := string(bodyBytes)
+		if len(body) > 8192 {
+			body = body[:8192] + "..."
+		}
+		return &APIError{
+			Operation:    "failed to activate plugin",
+			Method:       "PUT",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: body,
+			PluginSlugIn: slug,
+			PluginIDUsed: resolvedID,
+		}
 	}
 
 	return nil
@@ -309,7 +396,8 @@ func (c *Client) ActivatePlugin(slug string) error {
 
 // DeactivatePlugin deactivates a plugin
 func (c *Client) DeactivatePlugin(slug string) error {
-	resp, err := c.request("PUT", "/wp/v2/plugins/"+slug, map[string]string{
+	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(slug)
+	resp, err := c.request("PUT", endpoint, map[string]string{
 		"status": "inactive",
 	})
 	if err != nil {
@@ -318,7 +406,21 @@ func (c *Client) DeactivatePlugin(slug string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("failed to deactivate plugin: status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		body := string(bodyBytes)
+		if len(body) > 8192 {
+			body = body[:8192] + "..."
+		}
+		return &APIError{
+			Operation:    "failed to deactivate plugin",
+			Method:       "PUT",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: body,
+			PluginSlugIn: slug,
+			PluginIDUsed: slug,
+		}
 	}
 
 	return nil
