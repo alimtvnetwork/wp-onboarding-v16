@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { AddSiteDialog } from "@/components/sites/AddSiteDialog";
 import { EditSiteDialog } from "@/components/sites/EditSiteDialog";
 import { SiteCard } from "@/components/sites/SiteCard";
+import { CategoryFilter } from "@/components/shared/CategoryFilter";
+import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import {
   Globe,
   Plus,
@@ -26,7 +28,8 @@ export default function Sites() {
   
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingSite, setEditingSite] = useState<Pick<Site, "id" | "name" | "url" | "username" | "connectionStatus" | "lastTestedAt"> | null>(null);
+  const [editingSite, setEditingSite] = useState<Pick<Site, "id" | "name" | "url" | "username" | "category" | "connectionStatus" | "lastTestedAt"> | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const debugMode = settings?.logging?.debugMode ?? false;
 
@@ -62,11 +65,23 @@ export default function Sites() {
       name: site.name,
       url: site.url,
       username: site.username,
+      category: site.category,
       connectionStatus: site.connectionStatus,
       lastTestedAt: site.lastTestedAt,
     });
     setShowEditDialog(true);
   };
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
+  };
+
+  const filteredSites = sites?.filter((site) => {
+    if (selectedCategories.length === 0) return true;
+    return site.category && selectedCategories.includes(site.category);
+  });
 
   if (isLoading) {
     return (
@@ -134,7 +149,23 @@ export default function Sites() {
         </Button>
       </div>
 
-      {sites?.length === 0 ? (
+      {/* Category Filter */}
+      {sites && sites.length > 0 && (
+        <CategoryFilter
+          selectedCategories={selectedCategories}
+          onCategoryToggle={handleCategoryToggle}
+          onClearAll={() => setSelectedCategories([])}
+        />
+      )}
+
+      {filteredSites?.length === 0 && sites?.length !== 0 ? (
+        <EmptyState
+          icon={Globe}
+          title="No sites match filter"
+          description="Try selecting different categories or clear the filter."
+          action={{ label: "Clear Filter", onClick: () => setSelectedCategories([]) }}
+        />
+      ) : filteredSites?.length === 0 ? (
         <EmptyState
           icon={Globe}
           title="No sites connected"
@@ -143,7 +174,7 @@ export default function Sites() {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sites?.map((site) => (
+          {filteredSites?.map((site) => (
             <SiteCard
               key={site.id}
               site={site}

@@ -214,6 +214,7 @@ export interface Site {
   name: string;
   url: string;
   username: string;
+  category: string | null;
   connectionStatus: "connected" | "disconnected" | "unknown";
   lastTestedAt: string | null;
   lastSyncAt: string | null;
@@ -225,6 +226,7 @@ export interface Plugin {
   id: number;
   name: string;
   path: string;
+  category: string | null;
   watchEnabled: boolean;
   excludePatterns: string[];
   fileCount: number;
@@ -327,9 +329,9 @@ export const api = {
   // Sites
   getSites: () => request<Site[]>("/sites"),
   getSite: (id: number) => request<Site>(`/sites/${id}`),
-  createSite: (site: { name: string; url: string; username: string; applicationPassword: string }) =>
+  createSite: (site: { name: string; url: string; username: string; applicationPassword: string; category?: string }) =>
     request<Site>("/sites", { method: "POST", body: JSON.stringify(site) }),
-  updateSite: (id: number, site: Partial<Site> & { applicationPassword?: string }) =>
+  updateSite: (id: number, site: Partial<Site> & { applicationPassword?: string; category?: string }) =>
     request<Site>(`/sites/${id}`, { method: "PUT", body: JSON.stringify(site) }),
   deleteSite: (id: number) =>
     request<void>(`/sites/${id}`, { method: "DELETE" }),
@@ -344,6 +346,7 @@ export const api = {
   createPlugin: (plugin: { 
     name: string; 
     path: string; 
+    category?: string;
     watchEnabled?: boolean; 
     excludePatterns?: string[];
     gitEnabled?: boolean;

@@ -46,24 +46,19 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 ---
 
-## 📋 Phase 3: Categories + Filtering (PLANNED)
+## ✅ Phase 3: Categories + Filtering + Publish Progress (COMPLETED)
 
-**Status:** Planned
+**Status:** Done (v1.6.0)
 
-### Goals
-- Add categories to both sites and plugins
-- Enable filtering by category, name, and relationships
-
-### Tasks
-1. [ ] DB: Add `category` column to Sites table (migration)
-2. [ ] DB: Add `category` column to Plugins table (migration)
-3. [ ] Backend: Update Site/Plugin services to handle categories
-4. [ ] UI: Add category field to Add/Edit Site dialogs
-5. [ ] UI: Add category field to Add/Edit Plugin dialogs
-6. [ ] UI: Add filter bar on Sites page (by category)
-7. [ ] UI: Add filter bar on Plugins page (by site, category, name)
-8. [ ] Predefined categories: Production, Staging, Development (sites); Core, Premium, Custom (plugins)
-9. [ ] Custom category support: Allow users to add their own categories
+### Completed Tasks
+1. ✅ Real-time publish progress dialog with WebSocket updates (backup, package, upload, activate stages)
+2. ✅ Category system for sites and plugins (Production, Staging, Development + custom categories)
+3. ✅ Category selector with add custom category popover
+4. ✅ Category filter bar on Sites page
+5. ✅ Category filter bar on Plugins page
+6. ✅ Category badges displayed on site and plugin cards
+7. ✅ Consolidated Sync page into Plugins page (removed standalone Sync tab)
+8. ✅ Updated API types to include `category` field for Site and Plugin
 
 ---
 
@@ -72,16 +67,17 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 **Status:** Planned
 
 ### Goals
-- Enhanced publish workflow with progress tracking
+- Enhanced publish workflow with backend integration
 - Dashboard quick actions menu
 - Test article publishing
 
 ### Tasks
-1. [ ] UI: Publish progress indicator with real-time WebSocket updates
-2. [ ] UI: Test article publish feature (create draft post to verify connectivity)
-3. [ ] UI: Dashboard quick actions menu
-4. [ ] UI: Recent activity feed on Dashboard
-5. [ ] Backend: Enhanced publish pipeline feedback
+1. [ ] Backend: Add `category` column to Sites and Plugins tables (migration)
+2. [ ] Backend: Update Site/Plugin services to persist categories
+3. [ ] UI: Test article publish feature (create draft post to verify connectivity)
+4. [ ] UI: Dashboard quick actions menu
+5. [ ] UI: Recent activity feed on Dashboard
+6. [ ] Backend: WebSocket emit for publish progress stages
 
 ---
 
@@ -103,6 +99,7 @@ This document tracks the phased implementation of features for the WP Plugin Pub
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 1.6.0 | 2026-02-04 | Phase 3: Categories, filtering, publish progress, consolidated Sync page |
 | 1.5.0 | 2026-02-04 | Phase 2.5: Sync/Publish UI, EditSiteDialog plugins tab, API fixes |
 | 1.4.0 | 2026-02-04 | Phase 2 complete: Plugin-Site relationships |
 | 1.3.0 | 2026-02-04 | Phase 1 complete: Site UI + Connection persistence |

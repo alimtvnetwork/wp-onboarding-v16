@@ -20,7 +20,6 @@ import { useErrorStore } from "@/stores/errorStore";
 import Dashboard from "@/pages/Dashboard";
 import Sites from "@/pages/Sites";
 import Plugins from "@/pages/Plugins";
-import Sync from "@/pages/Sync";
 import Logs from "@/pages/Logs";
 import Settings from "@/pages/Settings";
 import Errors from "@/pages/Errors";
@@ -102,7 +101,6 @@ const App = () => (
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="sites" element={<Sites />} />
                 <Route path="plugins" element={<Plugins />} />
-                <Route path="sync" element={<Sync />} />
                 <Route path="tests" element={<Tests />} />
                 <Route path="logs" element={<Logs />} />
                 <Route path="settings" element={<Settings />} />
