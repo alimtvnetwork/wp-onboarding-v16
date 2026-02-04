@@ -26,7 +26,7 @@ export default function Sites() {
   
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingSite, setEditingSite] = useState<Pick<Site, "id" | "name" | "url" | "username"> | null>(null);
+  const [editingSite, setEditingSite] = useState<Pick<Site, "id" | "name" | "url" | "username" | "connectionStatus" | "lastTestedAt"> | null>(null);
 
   const debugMode = settings?.logging?.debugMode ?? false;
 
@@ -62,6 +62,8 @@ export default function Sites() {
       name: site.name,
       url: site.url,
       username: site.username,
+      connectionStatus: site.connectionStatus,
+      lastTestedAt: site.lastTestedAt,
     });
     setShowEditDialog(true);
   };

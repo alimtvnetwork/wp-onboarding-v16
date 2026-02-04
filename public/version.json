@@ -1,11 +1,26 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T14:00:00Z",
+  "buildTime": "2026-02-04T14:30:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.5.0",
+      "date": "2026-02-04",
+      "title": "Sync & Publish UI",
+      "changes": [
+        "🔄 Sync button on plugin cards to check status with mapped sites",
+        "📤 Publish button with site selection dialog",
+        "📑 Plugins tab in EditSiteDialog for managing relationships",
+        "🔁 Retest Connection button in EditSiteDialog",
+        "🔧 Fixed API endpoint mismatches (scan, git pull)"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.4.0",
       "date": "2026-02-04",
