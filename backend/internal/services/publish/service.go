@@ -4,6 +4,7 @@ package publish
 import (
 	"archive/zip"
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/database/dbops"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/backup"
@@ -546,7 +548,7 @@ func (s *Service) getMapping(ctx context.Context, pluginID, siteID int64) (*mode
 	row := s.db.QueryRowContext(ctx, query, pluginID, siteID)
 	
 	var mapping models.PluginMapping
-	var lastSyncAt, lastBackupAt, createdAt, updatedAt string
+	var lastSyncAt, lastBackupAt, createdAt, updatedAt sql.NullString
 	
 	err := row.Scan(
 		&mapping.ID,
@@ -563,6 +565,12 @@ func (s *Service) getMapping(ctx context.Context, pluginID, siteID int64) (*mode
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "mapping not found")
 	}
 
+	// Parse nullable datetime fields
+	mapping.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
+	mapping.LastBackupAt = dbops.ParseNullTime(lastBackupAt)
+	mapping.CreatedAt = dbops.ParseDateTime(createdAt.String)
+	mapping.UpdatedAt = dbops.ParseDateTime(updatedAt.String)
+
 	return &mapping, nil
 }
 
@@ -578,7 +586,7 @@ func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) (*models
 	row := s.db.QueryRowContext(ctx, query, siteID)
 	
 	var site models.Site
-	var lastTestedAt, lastSyncAt, createdAt, updatedAt string
+	var lastTestedAt, lastSyncAt, createdAt, updatedAt sql.NullString
 	
 	err := row.Scan(
 		&site.ID,
@@ -595,6 +603,12 @@ func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) (*models
 	if err != nil {
 		return nil, "", apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
+
+	// Parse nullable datetime fields
+	site.LastTestedAt = dbops.ParseNullTime(lastTestedAt)
+	site.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
+	site.CreatedAt = dbops.ParseDateTime(createdAt.String)
+	site.UpdatedAt = dbops.ParseDateTime(updatedAt.String)
 
 	// Decrypt password using the site password decryptor
 	var password string

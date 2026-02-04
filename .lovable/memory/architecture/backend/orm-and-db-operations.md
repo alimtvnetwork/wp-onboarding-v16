@@ -9,13 +9,59 @@ The backend uses the `modernc.org/sqlite` pure-Go driver with a shared `dbops` u
 
 ---
 
-## Key Principles
+## CRITICAL RULES
 
-1. **Use dbops Package**: All INSERT/UPDATE/DELETE operations should use the `dbops` package functions instead of raw `db.Exec()` calls
-2. **Log Table Names**: Every database operation must include the table name in logs
-3. **Track Affected Rows**: Use `RowsAffected()` to verify operations actually modified data
-4. **Stack Traces on Error**: Errors automatically capture call stack for debugging
-5. **Model-First Approach**: Work with model structs, use FindOrCreate patterns
+### 1. Raw SQL is Forbidden (99% of cases)
+- **NEVER** write raw SQL queries inline in services
+- **ONLY** use raw SQL for:
+  - Complex JOINs that cannot be expressed through views
+  - Migration scripts
+- For JOINs: Create database VIEWS instead of inline queries
+
+### 2. NULL Handling for DateTime Fields
+SQLite with `modernc.org/sqlite` returns datetime as strings. **ALWAYS** use `sql.NullString` for nullable datetime columns:
+
+```go
+// WRONG - will crash on NULL values:
+var lastSyncAt, createdAt string
+row.Scan(&lastSyncAt, &createdAt)
+
+// CORRECT - handles NULL safely:
+var lastSyncAt, createdAt sql.NullString
+row.Scan(&lastSyncAt, &createdAt)
+mapping.LastSyncAt = dbops.ParseNullTime(lastSyncAt)
+mapping.CreatedAt = dbops.ParseDateTime(createdAt.String)
+```
+
+### 3. Table Name Constants (Use Model Reflection)
+- All table names MUST come from a centralized constant or model reflection
+- Never hardcode table names in SQL strings
+
+```go
+// Define in models or constants package:
+const (
+    TablePluginMappings = "PluginMappings"
+    TableSites          = "Sites"
+    TablePlugins        = "Plugins"
+)
+
+// Use in queries:
+query := fmt.Sprintf("SELECT * FROM %s WHERE Id = ?", models.TablePluginMappings)
+```
+
+### 4. Database Views for JOINs
+Create views on startup for frequently used JOINs:
+
+```sql
+-- Create view for mapping with site info
+CREATE VIEW IF NOT EXISTS ViewPluginMappingsWithSite AS
+SELECT 
+    pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
+    pm.LastSyncAt, pm.LastBackupAt, pm.CreatedAt, pm.UpdatedAt,
+    s.Name AS SiteName, s.Url AS SiteUrl
+FROM PluginMappings pm
+JOIN Sites s ON pm.SiteId = s.Id;
+```
 
 ---
 
@@ -23,11 +69,9 @@ The backend uses the `modernc.org/sqlite` pure-Go driver with a shared `dbops` u
 
 | Function | Purpose |
 |----------|---------|
-| `ExecInsert(db, ctx, query, args...)` | Insert with affected rows + last insert ID logging |
-| `ExecUpdate(db, ctx, query, args...)` | Update with affected rows tracking |
-| `ExecDelete(db, ctx, query, args...)` | Delete with affected rows tracking |
-| `FindOrCreate(db, ctx, selectQuery, selectArgs, insertQuery, insertArgs)` | Find existing or create new |
-| `CreateMapping(db, ctx, query, args...)` | Many-to-many relationship creation with duplicate handling |
+| `ParseDateTime(s string)` | Parse SQLite datetime string to time.Time |
+| `ParseNullTime(ns sql.NullString)` | Parse nullable datetime to *time.Time |
+| `ExecWithLog(db, query, args...)` | Execute with table name logging and affected rows |
 
 ---
 
@@ -46,50 +90,23 @@ ctx := dbops.Context{
 
 ---
 
-## Example Usage
+## Error Handling Pattern
 
-```go
-// Instead of raw SQL:
-// _, err := db.Exec("INSERT INTO PluginMappings ...")
-
-// Use dbops:
-created, err := dbops.CreateMapping(db.DB, dbops.Context{
-    Table:  "PluginMappings",
-    Logger: log,
-    Fields: map[string]interface{}{
-        "pluginId": pluginID,
-        "siteId":   siteID,
-    },
-}, `INSERT OR IGNORE INTO PluginMappings ...`, pluginID, siteID, remoteSlug)
-```
-
----
-
-## Expected Log Output
-
-Success:
-```
-[v1.19.0 - 2026-02-04 05:30:00 PM] Mapping CREATED table=PluginMappings pluginId=1 siteId=1 created=true (INFO dbops.go:195)
-```
-
-Duplicate (not an error):
-```
-[v1.19.0 - 2026-02-04 05:30:00 PM] Mapping EXISTS table=PluginMappings pluginId=1 siteId=1 exists=true (DEBUG dbops.go:210)
-```
-
-Error with stack trace:
-```
-[v1.19.0 - 2026-02-04 05:30:00 PM] DB INSERT FAILED on PluginMappings table=PluginMappings error="foreign key constraint failed" stackTrace="  at dbops.CreateMapping (dbops.go:165)\n  at database.CreateSeedMapping (database.go:260)\n..." (ERROR dbops.go:240)
-```
+Every SQL error MUST:
+1. Include the table name
+2. Include the full stack trace
+3. Be captured in the error modal with Copy capability
 
 ---
 
 ## Files
 
-- `backend/internal/database/dbops/dbops.go` - Shared utilities package
+- `backend/internal/database/dbops/dbops.go` - Shared utilities package with ParseDateTime, ParseNullTime
 - `backend/internal/database/database.go` - Uses dbops for CreateSeedMapping
 - `backend/internal/config/config.go` - Seeding logic with enhanced logging
+- `backend/internal/services/publish/service.go` - Uses sql.NullString for nullable fields
+- `backend/internal/services/plugin/mappings.go` - Uses dbops.ParseNullTime for all datetime parsing
 
 ---
 
-*All new database operations should use the dbops package for consistency and traceability.*
+*All database operations MUST use the dbops package for datetime parsing and follow the NULL-safe patterns above.*
