@@ -1,8 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, Info, GitCommit, Clock, Terminal, FileText } from "lucide-react";
+import { ExternalLink, GitCommit, Clock, Terminal, FileText } from "lucide-react";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { CopyDiagnosticsButton } from "@/components/shared/CopyDiagnosticsButton";
 
@@ -16,15 +15,13 @@ export function AboutPanel() {
   const scriptVersion = versionInfo?.scriptVersion;
 
   return (
-    <div id="about">
-      <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Info className="h-5 w-5" />
-          About
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div id="about" className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold mb-1">About</h2>
+        <p className="text-sm text-muted-foreground">Application info and diagnostics</p>
+      </div>
+
+      <div className="space-y-4">
         {/* App Info */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">{appName}</span>
@@ -81,7 +78,6 @@ export function AboutPanel() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs"
               asChild
             >
               <a
@@ -97,7 +93,6 @@ export function AboutPanel() {
             <Button
               variant="outline"
               size="sm"
-              className="h-7 text-xs"
               asChild
             >
               <a
@@ -125,8 +120,7 @@ export function AboutPanel() {
           </div>
           <CopyDiagnosticsButton variant="outline" size="sm" />
         </div>
-      </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
