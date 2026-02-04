@@ -1,240 +1,265 @@
 
-# Backend Migration & Seeding Logging Fix (v1.18.0)
+# Critical Fix: Seeding, Mapping Persistence & Bidirectional Sync (v1.19.0)
 
-## Problem Summary
+## Problem Analysis
 
-1. **No logging in migration/seeding** - When plugins fail to map to sites, there's no trace because errors are silently ignored
-2. **Logger format too verbose** - Currently shows `[WP Plugin Publish v1.17.0]` but should just be `[v1.17.0]`
-3. **No logger passed to migration/seeding functions** - They can't log anything currently
+Based on the screenshot and code analysis, multiple interconnected issues are causing mapping failures:
+
+### Issue 1: INSERT OR IGNORE Silent Failures
+The `CreateSeedMapping` function in `backend/internal/database/database.go` uses `INSERT OR IGNORE`, which:
+- Returns `nil` error even when no row is inserted (constraint violation)
+- Causes the code to incorrectly count "created" mappings
+- No `RowsAffected()` check to verify actual insertion
+
+### Issue 2: Config Uses siteNames But Logic Ignores It
+The `SeedPlugin` struct has `siteNames []string` but `seedSitesAndPlugins()` maps ALL plugins to ALL sites regardless. This is confusing and the user wants explicit site IDs.
+
+### Issue 3: Frontend Bidirectional Sync Broken
+- Edit Site dialog saves to `/sites/{id}/mappings` (PUT)
+- Plugins page reads from `plugin.mappings` (populated by `List()`)
+- Cache invalidation happens but queries may not refetch properly
+- Tab state resets when switching between tabs
+
+### Issue 4: Version Comparison May Prevent Seeding
+If the database already has `seed_version = 1.18.0` and config is `1.18.0`, seeding is skipped entirely. The `ensureMappingsExist` function runs but may not find sites/plugins if they were created with different paths.
 
 ---
 
-## Implementation Plan
+## Solution Architecture
 
-### 1. Simplify Logger Prefix Format
+### Phase 1: Fix Database Seeding with Proper Validation
 
-**File: `backend/internal/logger/logger.go`**
+**File: `backend/internal/database/database.go`**
 
-Current format (line 68-75):
+Replace `CreateSeedMapping` to return actual insertion status:
+
 ```go
-prefix := ""
-if cfg.AppName != "" {
-    prefix = "[" + cfg.AppName
-    if cfg.AppVersion != "" {
-        prefix += " v" + cfg.AppVersion
+// CreateSeedMapping creates a plugin-site mapping for seeding
+// Returns (created bool, error) - created is true only if a new row was inserted
+func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string) (bool, error) {
+    result, err := db.Exec(`
+        INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
+        VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
+    `, pluginID, siteID, remoteSlug)
+    if err != nil {
+        return false, err
     }
-    prefix += "] "
+    rows, _ := result.RowsAffected()
+    return rows > 0, nil
 }
 ```
-
-New format - only version in one bracket:
-```go
-prefix := ""
-if cfg.AppVersion != "" {
-    prefix = "[v" + cfg.AppVersion + "] "
-}
-```
-
-This changes output from:
-```
-[WP Plugin Publish v1.17.0] [2026-02-04 03:04:05 PM] INFO file.go:123 - message
-```
-To:
-```
-[v1.17.0] [2026-02-04 03:04:05 PM] INFO file.go:123 - message
-```
-
----
-
-### 2. Add Logger to Migration Function
-
-**File: `backend/internal/database/migrations.go`**
-
-Update `Migrate()` to accept and use a logger:
-
-```go
-func Migrate(db *DB, log *logger.Logger) error {
-    log.Info("Starting database migrations")
-    
-    // ... existing migrations table creation ...
-    
-    log.Debug("Current migration version", "version", currentVersion)
-    
-    for _, m := range migrations {
-        if m.Version <= currentVersion {
-            continue
-        }
-        
-        log.Info("Applying migration", "version", m.Version, "description", m.Description)
-        
-        // ... existing transaction logic ...
-        
-        if _, err := tx.Exec(m.SQL); err != nil {
-            tx.Rollback()
-            log.Error("Migration failed", "version", m.Version, "description", m.Description, "error", err)
-            return fmt.Errorf("failed to apply migration %d (%s): %w", m.Version, m.Description, err)
-        }
-        
-        log.Info("Migration completed", "version", m.Version)
-    }
-    
-    log.Info("All migrations complete", "version", len(migrations))
-    return nil
-}
-```
-
----
-
-### 3. Add Logger to Seeding Functions
 
 **File: `backend/internal/config/config.go`**
 
-Update `SeedIfNeeded()` and helper functions to accept and use a logger:
+Update callers to use new signature and add detailed logging:
 
 ```go
-func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
-    log.Info("Checking seed requirements", "configVersion", cfg.Version)
-    
-    currentVersion, err := db.GetSeedVersion()
-    if err != nil {
-        log.Error("Failed to get seed version", "error", err)
-        return err
-    }
-    log.Debug("Current seed version", "version", currentVersion)
-    
-    if compareVersions(cfg.Version, currentVersion) > 0 {
-        log.Info("Seeding database", "from", currentVersion, "to", cfg.Version)
-        if err := seedFromConfig(db, cfg, log); err != nil {
-            log.Error("Seeding failed", "error", err)
-            return err
-        }
-        // ... version update ...
-    }
-    
-    if cfg.Seed.Enabled {
-        log.Info("Ensuring all plugin→site mappings exist")
-        if err := ensureMappingsExist(db, cfg, log); err != nil {
-            log.Error("Mapping verification failed", "error", err)
-            return err
-        }
-    }
-    
-    return nil
+// In seedSitesAndPlugins
+created, err := db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+if err != nil {
+    log.Warn("Failed to create mapping", "pluginId", pluginId, "siteId", siteId, "error", err)
+} else if created {
+    mappingsCreated++
+    log.Info("Created seed mapping", "pluginId", pluginId, "siteId", siteId, "remoteSlug", remoteSlug)
+} else {
+    log.Debug("Mapping already exists (skipped)", "pluginId", pluginId, "siteId", siteId)
 }
 ```
 
-Update `seedSitesAndPlugins()` with detailed logging:
+### Phase 2: Simplify Config with Site IDs (Optional Approach)
+
+**File: `backend/internal/config/config.go`**
+
+Add `siteIds` field to `SeedPlugin` as an alternative to `siteNames`:
+
+```go
+type SeedPlugin struct {
+    Name        string   `json:"name"`
+    Path        string   `json:"path"`
+    Category    string   `json:"category"`
+    GitEnabled  bool     `json:"gitEnabled"`
+    AutoPublish bool     `json:"autoPublish"`
+    SiteNames   []string `json:"siteNames"`   // Names of sites to link (legacy)
+    SiteIds     []int64  `json:"siteIds"`     // Explicit site IDs (preferred)
+    MapToAll    bool     `json:"mapToAll"`    // If true, map to ALL seeded sites
+}
+```
+
+**File: `backend/config.json`**
+
+Update config to use explicit mappings or `mapToAll`:
+
+```json
+"plugins": [
+  {
+    "name": "Plugins Onboard",
+    "path": "D:\\wp-work\\...",
+    "mapToAll": true
+  }
+]
+```
+
+### Phase 3: Force Fresh Seeding on Version Bump
+
+**File: `backend/config.json`**
+
+Bump version to `1.19.0` to force re-seeding:
+
+```json
+"version": "1.19.0",
+```
+
+**File: `backend/internal/config/config.go`**
+
+Add a `forceReseed` option or clear mappings before re-seeding:
+
+```go
+// Before creating mappings, optionally clear existing seed mappings
+// This ensures fresh state when version bumps
+if cfg.Seed.ClearOnReseed {
+    db.Exec("DELETE FROM PluginMappings WHERE SyncStatus = 'pending'")
+}
+```
+
+### Phase 4: Fix Frontend Bidirectional Cache Sync
+
+**File: `src/components/sites/EditSiteDialog.tsx`**
+
+Ensure mappings are refetched after save:
+
+```tsx
+// After successful save
+queryClient.invalidateQueries({ queryKey: ["sites"] });
+queryClient.invalidateQueries({ queryKey: ["plugins"] });
+queryClient.invalidateQueries({ queryKey: ["sites", site.id, "mappings"] });
+
+// Force refetch plugins to get fresh mappings
+await queryClient.refetchQueries({ queryKey: ["plugins"] });
+```
+
+**File: `src/pages/Plugins.tsx`**
+
+When opening mapping dialog, fetch fresh data:
+
+```tsx
+const openMappingDialog = async (plugin: Plugin) => {
+    // Fetch fresh mappings from API instead of using stale plugin.mappings
+    try {
+        const response = await api.getPluginMappings(plugin.id);
+        if (response.success && response.data) {
+            setSelectedSites(response.data.map((m) => m.siteId));
+            setRemoteSlug(response.data[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-'));
+        } else {
+            setSelectedSites([]);
+            setRemoteSlug(plugin.name.toLowerCase().replace(/\s+/g, '-'));
+        }
+    } catch {
+        setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
+    }
+    setSelectedPlugin(plugin);
+    setShowMappingDialog(true);
+};
+```
+
+### Phase 5: Add Colorful Success Toast
+
+**File: `src/components/sites/EditSiteDialog.tsx`**
+
+Use styled success toast:
+
+```tsx
+toast.success("Site updated successfully!", {
+    description: `${selectedPlugins.length} plugin(s) linked`,
+    icon: "✅",
+    style: {
+        background: "linear-gradient(to right, #22c55e, #16a34a)",
+        color: "white",
+        border: "none",
+    },
+});
+```
+
+**File: `src/pages/Plugins.tsx`**
+
+Same for plugin mapping save:
+
+```tsx
+toast.success("Site mappings saved!", {
+    description: `${selectedSites.length} site(s) linked to ${selectedPlugin.name}`,
+    icon: "🔗",
+    style: {
+        background: "linear-gradient(to right, #3b82f6, #2563eb)",
+        color: "white",
+        border: "none",
+    },
+});
+```
+
+### Phase 6: Comprehensive Backend Logging
+
+**File: `backend/internal/config/config.go`**
+
+Add granular logging to trace every step:
 
 ```go
 func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error {
-    log.Info("Starting site and plugin seeding", 
-        "siteCount", len(cfg.Seed.Sites),
-        "pluginCount", len(cfg.Seed.Plugins))
+    log.Info("=== SEEDING START ===", "sites", len(cfg.Seed.Sites), "plugins", len(cfg.Seed.Plugins))
     
-    // ... for each site ...
-    log.Debug("Processing seed site", "name", site.Name, "url", normalizedUrl)
-    
-    if existingId > 0 {
-        log.Debug("Site already exists", "name", site.Name, "id", existingId)
-    } else {
-        log.Info("Created seed site", "name", site.Name, "id", id)
-    }
-    
-    // ... for each plugin ...
-    log.Debug("Processing seed plugin", "name", plugin.Name, "path", plugin.Path)
-    
-    // ... for each mapping ...
-    if err := db.CreateSeedMapping(pluginId, siteId, remoteSlug); err != nil {
-        log.Warn("Failed to create mapping", "pluginId", pluginId, "siteId", siteId, "error", err)
-    } else {
-        log.Debug("Created mapping", "pluginId", pluginId, "siteId", siteId)
-    }
-    
-    log.Info("Seeding complete", "sitesTotal", len(allSiteIds), "pluginsTotal", len(cfg.Seed.Plugins))
-    return nil
-}
-```
-
-Update `ensureMappingsExist()` with logging:
-
-```go
-func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error {
-    log.Debug("Verifying mappings exist for all seeded plugins")
-    
-    // ... get site IDs ...
-    log.Debug("Found sites for mapping", "count", len(siteIds))
-    
-    mappingsCreated := 0
-    for _, plugin := range cfg.Seed.Plugins {
-        pluginId, err := db.GetPluginIdByPath(plugin.Path)
-        if err != nil || pluginId == 0 {
-            log.Warn("Plugin not found for mapping", "name", plugin.Name, "path", plugin.Path, "error", err)
-            continue
+    // Log each site being processed
+    for i, site := range cfg.Seed.Sites {
+        normalizedUrl := normalizeUrl(site.URL)
+        log.Info("Processing site", "index", i+1, "name", site.Name, "rawUrl", site.URL, "normalizedUrl", normalizedUrl)
+        
+        existingId, err := db.GetSiteIdByUrl(normalizedUrl)
+        if err != nil && err != sql.ErrNoRows {
+            log.Error("DB error checking site", "error", err)
         }
         
-        for _, siteId := range siteIds {
-            if err := db.CreateSeedMapping(pluginId, siteId, remoteSlug); err != nil {
-                log.Warn("Mapping creation failed", "pluginId", pluginId, "siteId", siteId, "error", err)
+        if existingId > 0 {
+            log.Info("Site exists in DB", "id", existingId, "name", site.Name)
+            allSiteIds = append(allSiteIds, existingId)
+        } else {
+            // Create site...
+            log.Info("Creating new site", "name", site.Name)
+        }
+    }
+    
+    log.Info("Site processing complete", "siteIds", allSiteIds)
+    
+    // Log each plugin being processed
+    for i, plugin := range cfg.Seed.Plugins {
+        log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", plugin.Path)
+        
+        existingId, err := db.GetPluginIdByPath(plugin.Path)
+        if err != nil && err != sql.ErrNoRows {
+            log.Error("DB error checking plugin", "error", err)
+        }
+        
+        if existingId > 0 {
+            log.Info("Plugin exists in DB", "id", existingId, "name", plugin.Name)
+        } else {
+            // Create plugin...
+            log.Info("Creating new plugin", "name", plugin.Name)
+        }
+        
+        // Log mapping creation attempts
+        for _, siteId := range allSiteIds {
+            log.Debug("Attempting mapping", "pluginId", pluginId, "siteId", siteId)
+            created, err := db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+            if err != nil {
+                log.Error("Mapping INSERT failed", "pluginId", pluginId, "siteId", siteId, "error", err)
+            } else if created {
+                log.Info("Mapping CREATED", "pluginId", pluginId, "siteId", siteId)
             } else {
-                mappingsCreated++
+                log.Debug("Mapping EXISTS (skipped)", "pluginId", pluginId, "siteId", siteId)
             }
         }
     }
     
-    log.Info("Mapping verification complete", "mappingsVerified", mappingsCreated)
+    log.Info("=== SEEDING COMPLETE ===")
     return nil
 }
 ```
-
----
-
-### 4. Update main.go to Pass Logger
-
-**File: `backend/cmd/server/main.go`**
-
-Update calls to pass the logger:
-
-```go
-// Run migrations (now with logging)
-if err := database.Migrate(db, log); err != nil {
-    log.Fatal("Failed to run migrations", "error", err)
-}
-
-// Seed from config if needed (now with logging)
-if err := config.SeedIfNeeded(db, cfg, log); err != nil {
-    log.Fatal("Failed to seed database", "error", err)
-}
-```
-
----
-
-### 5. Update Version and Documentation
-
-**File: `backend/config.json`**
-
-Bump version to `1.18.0`
-
-**File: `public/version.json`**
-
-Add changelog entry:
-```json
-{
-  "version": "1.18.0",
-  "date": "2026-02-04",
-  "title": "Enhanced Migration & Seeding Logging",
-  "changes": [
-    "📊 Detailed logging for all migration steps with version tracking",
-    "🌱 Comprehensive seeding logs showing site/plugin creation and mapping",
-    "🔧 Simplified log prefix format: [vX.X.X] instead of full app name",
-    "⚠️ Warning logs for failed mapping attempts with error details",
-    "📋 Debug logs for each site/plugin processed during seed"
-  ]
-}
-```
-
-**File: `.lovable/memory/architecture/backend/migration-logging.md`**
-
-Create new memory file documenting the logging architecture.
 
 ---
 
@@ -242,43 +267,66 @@ Create new memory file documenting the logging architecture.
 
 | File | Changes |
 |------|---------|
-| `backend/internal/logger/logger.go` | Simplify prefix to just `[vX.X.X]` |
-| `backend/internal/database/migrations.go` | Add logger parameter, log each migration step |
-| `backend/internal/config/config.go` | Add logger to SeedIfNeeded and helpers, log all operations |
-| `backend/cmd/server/main.go` | Pass logger to Migrate() and SeedIfNeeded() |
-| `backend/config.json` | Bump version to 1.18.0 |
-| `public/version.json` | Add v1.18.0 changelog |
-| `.lovable/memory/architecture/backend/migration-logging.md` | Document the logging architecture |
+| `backend/internal/database/database.go` | Update `CreateSeedMapping` to return `(bool, error)` with `RowsAffected()` check |
+| `backend/internal/config/config.go` | Update callers, add granular logging, support `mapToAll` option |
+| `backend/config.json` | Bump to v1.19.0, add `mapToAll: true` to plugins |
+| `src/components/sites/EditSiteDialog.tsx` | Fix cache sync, add colorful success toast |
+| `src/pages/Plugins.tsx` | Fetch fresh mappings on dialog open, add colorful success toast |
+| `public/version.json` | Add v1.19.0 changelog |
+| `.lovable/memory/features/seeding/automatic-mappings.md` | Update documentation |
+
+---
+
+## Implementation Order
+
+1. Fix `CreateSeedMapping` to return actual insertion status
+2. Update `config.go` callers with proper error handling
+3. Add comprehensive seeding logs
+4. Bump version to 1.19.0 to force re-seed
+5. Fix frontend cache invalidation and refetch
+6. Add colorful success toasts
+7. Test end-to-end: delete database, restart backend, verify mappings appear
 
 ---
 
 ## Expected Log Output After Fix
-I want this below formating
-
-
-When the backend starts with seeding enabled:
-```
-[v1.18.0 - 2026-02-04 05:30:00 PM] Starting application version=WP Plugin  Publish v1.18.0 (INFO main.go:61)
-[v1.18.0 - 2026-02-04 05:30:00 PM] Starting database migrations (INFO migrations.go:34)
-[v1.18.0 - 2026-02-04 05:30:00 PM] Current migration version version=5 (DEBUG migrations.go:42)
 
 ```
-
-If a mapping fails:
-```
-[v1.18.0 - 2026-02-04 05:30:00 PM] Failed to create mapping pluginId=2 siteId=1 error=UNIQUE constraint failed (WARN config.go:315)
+[v1.19.0 - 2026-02-04 06:30:00 PM] === SEEDING START === sites=1 plugins=3 (INFO config.go:268)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Processing site index=1 name=Atto Property Demo rawUrl=https://demoat.attoproperty.com.au normalizedUrl=https://demoat.attoproperty.com.au (INFO config.go:272)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new site name=Atto Property Demo (INFO config.go:285)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Site created id=1 name=Atto Property Demo (INFO config.go:295)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Site processing complete siteIds=[1] (INFO config.go:300)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Processing plugin index=1 name=Plugins Onboard path=D:\wp-work\... (INFO config.go:305)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new plugin name=Plugins Onboard (INFO config.go:315)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Plugin created id=1 name=Plugins Onboard (INFO config.go:325)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Mapping CREATED pluginId=1 siteId=1 (INFO config.go:340)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Processing plugin index=2 name=Category Generator path=D:\wp-work\... (INFO config.go:305)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new plugin name=Category Generator (INFO config.go:315)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Plugin created id=2 name=Category Generator (INFO config.go:325)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Mapping CREATED pluginId=2 siteId=1 (INFO config.go:340)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Processing plugin index=3 name=Link Manager path=D:\wp-work\... (INFO config.go:305)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new plugin name=Link Manager (INFO config.go:315)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Plugin created id=3 name=Link Manager (INFO config.go:325)
+[v1.19.0 - 2026-02-04 06:30:00 PM] Mapping CREATED pluginId=3 siteId=1 (INFO config.go:340)
+[v1.19.0 - 2026-02-04 06:30:00 PM] === SEEDING COMPLETE === (INFO config.go:350)
 ```
 
 ---
 
 ## Testing Checklist
 
-1. **Delete database** and restart backend - verify full migration + seeding logs appear
-2. **Check mapping creation** - verify plugins show site badges
-3. **Intentionally break a plugin path** in config.json - verify warning appears in logs
-4. **Verify log format** - confirm only `[vX.X.X]` prefix, not full app name
+1. **Delete `data/app.db`** and restart backend
+2. **Verify logs** show all 3 mappings created with `Mapping CREATED` messages
+3. **Check database** - PluginMappings table should have 3 rows
+4. **Open Plugins page** - each plugin card should show site badge
+5. **Edit Site → Plugins tab** - verify all 3 plugins are checked
+6. **Edit Plugin → Sites** - verify site is selected
+7. **Toggle a plugin off from Site, save** - verify change persists on refresh
+8. **Toggle site on from Plugin, save** - verify change appears in Edit Site dialog
 
+Additional Strict Instructions, must follow and override:
 
-Additional Instructins
+Okay. So if there is a error found, make sure the stack trace is there. And for the database affected rows or anything, try to have a global... I mean, a root level function that is shared across everywhere. And that function can also check the database, what, what is expected and what kind of change it should do, and what are the affected rows. If not, then it will create a stack trace of from where it is calling and how it is calling. Also, the table name should be there in the log so that it can be understood very well. And also, one more thing that is very cru- critical, as I can see, that you are using, uh, raw SQL. I mean, raw SQL should be avoided 99% of the time. Why you are doing this? I have in the specification that you should use ORM everywhere. So what is the reason behind using the raw SQL? It doesn't make any sense. Uh, there is a very good way that you could avoid the raw SQL and use the ORM to make the relationship. Try to find the record first and then insert, uh, inside its relationship data so that model... Work with the model, okay? That should be the priority. Update the memory regarding this and plan ahead. Okay? Do you understand? Do you have any question, confusion? If yes, let me know.
 
-So, uh, sites and plugins relationship, that i- still is buggy. So, if I create a relationship in the sites section, um, for the plugins, now the save persists in the s- sites section. That means sites section, if I open this site and go to plugin and then save, it works. It's, it's there persistent. But if I go to plugins now, open these sites, these are not selected. It's, it's pretty bad. The programming is pretty bad. You are not logging properly. Again, mentioning very clearly, you should log every time, uh, so that we can understand what's going on. Um, and there should be toast notification for, for saving the green, nice logo with very colorful notification needs to be there. And the saving is not correct. That means when I go to plugins and click on sites, I don't see the mapped, uh, sites. So it looks really, really bad. And, and when we switch the tabs, it should actually remain on that state. That re- state is gone. Okay? So let's say in the sites section, we, we went to the edit view. Okay? So, and from there we go to plugin and come back. It should actually have that edit view, which we worked on. And also in the plugin section, it shows a very big path. It actually shows a horizontal, um, scroll bar. It looks really bad. So the paths needs to be wrapped in a overflow wrap so that it does not look very bad. And also for the path, um, try to have the, let's say, copy option so that we can copy and check. So these are on top of my head. Try to write code in a, in a effective way so that it does not get broken every time.
+Make sure the saving and retrival is okay for the screen for the data, use util functions to avoid redundant codes always 
