@@ -1,11 +1,23 @@
+// Package wordpress provides remote file/upload capabilities via the Onboard companion plugin API.
 package wordpress
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
+
+// OnboardNamespace is the REST API namespace for the companion plugin.
+// This matches ONBOARD_API_NAMESPACE/ONBOARD_API_VERSION in plugins-onboard/includes/constants.php
+const OnboardNamespace = "onboard-plugin/v1"
 
 // RemoteFile represents a file in a remote WordPress plugin
 type RemoteFile struct {
@@ -15,10 +27,24 @@ type RemoteFile struct {
 	ModifiedAt time.Time `json:"modifiedAt"`
 }
 
-// GetPluginFiles retrieves the list of files for a remote plugin
-// This requires the plugins-onboard companion plugin to be installed
+// OnboardUploadResult represents the response from the upload endpoint.
+type OnboardUploadResult struct {
+	Success      bool   `json:"success"`
+	Message      string `json:"message"`
+	PluginSlug   string `json:"plugin_slug,omitempty"`
+	PluginName   string `json:"plugin_name,omitempty"`
+	Version      string `json:"version,omitempty"`
+	PreviousVer  string `json:"previous_version,omitempty"`
+	FilesUpdated int    `json:"files_updated,omitempty"`
+	Overwritten  bool   `json:"overwritten,omitempty"`
+}
+
+// GetPluginFiles retrieves the list of files for a remote plugin.
+// This requires the plugins-onboard companion plugin to be installed.
 func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile, error) {
-	resp, err := c.request("GET", "/plugins-onboard/v1/files/"+slug, nil)
+	// Use the correct namespace: onboard-plugin/v1
+	endpoint := fmt.Sprintf("/%s/plugins/%s/files", OnboardNamespace, slug)
+	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin files: %w", err)
 	}
@@ -38,4 +64,186 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 	}
 
 	return files, nil
+}
+
+// RequestMutationToken requests a mutation token from the companion plugin for a specific action.
+// Valid actions: upload, enable, disable, delete, restore, backup_manual, debug_enable, debug_disable
+func (c *Client) RequestMutationToken(action string) (string, error) {
+	endpoint := fmt.Sprintf("/%s/request-mutation?action=%s", OnboardNamespace, action)
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return "", fmt.Errorf("request mutation token: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	body := string(bodyBytes)
+
+	if resp.StatusCode != http.StatusOK {
+		return "", &APIError{
+			Operation:    "request mutation token",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(body, 8192),
+		}
+	}
+
+	// Response format: { "mutation_token": "abc123", "expires_in": 1200 }
+	var result struct {
+		MutationToken string `json:"mutation_token"`
+		ExpiresIn     int    `json:"expires_in"`
+	}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return "", fmt.Errorf("parse mutation token response: %w (body: %s)", err, truncateBody(body, 500))
+	}
+
+	if result.MutationToken == "" {
+		return "", fmt.Errorf("empty mutation token in response: %s", truncateBody(body, 500))
+	}
+
+	return result.MutationToken, nil
+}
+
+// UploadPluginZip uploads a plugin ZIP file to WordPress via the companion plugin's upload endpoint.
+// It first requests a mutation token, then POSTs the ZIP as multipart form-data.
+func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
+	c.progress("upload", "running", fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug), nil)
+
+	mutationToken, err := c.RequestMutationToken("upload")
+	if err != nil {
+		return nil, fmt.Errorf("get upload mutation token: %w", err)
+	}
+
+	c.progress("upload", "running", fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), map[string]interface{}{
+		"tokenLength": len(mutationToken),
+	})
+
+	// Open the ZIP file
+	file, err := os.Open(zipPath)
+	if err != nil {
+		return nil, fmt.Errorf("open zip file: %w", err)
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("stat zip file: %w", err)
+	}
+
+	// Create multipart form
+	var reqBody bytes.Buffer
+	writer := multipart.NewWriter(&reqBody)
+
+	// Add the ZIP file part
+	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(zipPath))
+	if err != nil {
+		return nil, fmt.Errorf("create form file: %w", err)
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		return nil, fmt.Errorf("copy file to form: %w", err)
+	}
+
+	// Add plugin slug field
+	if err := writer.WriteField("plugin_slug", pluginSlug); err != nil {
+		return nil, fmt.Errorf("write plugin_slug field: %w", err)
+	}
+
+	// Add overwrite=true to replace existing
+	if err := writer.WriteField("overwrite", "true"); err != nil {
+		return nil, fmt.Errorf("write overwrite field: %w", err)
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("close multipart writer: %w", err)
+	}
+
+	// Build the upload URL
+	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
+	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+
+	c.progress("upload", "running", fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), map[string]interface{}{
+		"zipSize":  stat.Size(),
+		"zipFile":  filepath.Base(zipPath),
+		"endpoint": endpoint,
+	})
+
+	req, err := http.NewRequest("POST", url, &reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("create upload request: %w", err)
+	}
+
+	// Auth header
+	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
+	req.Header.Set("Authorization", "Basic "+auth)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("upload request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, _ := io.ReadAll(resp.Body)
+	respBody := string(respBytes)
+
+	c.progress("upload", "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), map[string]interface{}{
+		"status": resp.StatusCode,
+		"body":   truncateBody(respBody, 500),
+	})
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return nil, &APIError{
+			Operation:    "upload plugin zip",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          url,
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(respBody, 8192),
+			PluginSlugIn: pluginSlug,
+		}
+	}
+
+	var result OnboardUploadResult
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		// If JSON parsing fails but status was OK, treat as success
+		result.Success = true
+		result.Message = "Upload completed"
+	}
+
+	return &result, nil
+}
+
+// CheckOnboardPluginAvailable checks if the companion plugin is installed and available.
+func (c *Client) CheckOnboardPluginAvailable() (bool, error) {
+	endpoint := fmt.Sprintf("/%s/plugins/list", OnboardNamespace)
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	// 404 means the route doesn't exist (plugin not installed)
+	if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+
+	// 401/403 means auth required - plugin exists but we need credentials
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return true, nil
+	}
+
+	// 200 means plugin is available and we're authenticated
+	return resp.StatusCode == http.StatusOK, nil
+}
+
+// truncateBody truncates a string to maxLen for error messages.
+func truncateBody(body string, maxLen int) string {
+	if len(body) > maxLen {
+		return body[:maxLen] + "..."
+	}
+	return body
 }

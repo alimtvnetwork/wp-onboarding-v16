@@ -32,14 +32,15 @@ const (
 
 // WordPress API errors (E3xxx)
 const (
-	ErrWPConnection    = "E3001" // Failed to connect to WordPress
-	ErrWPAuth          = "E3002" // Authentication failed
-	ErrWPAPIDisabled   = "E3003" // REST API is disabled
-	ErrWPPluginList    = "E3004" // Failed to list plugins
-	ErrWPPluginGet     = "E3005" // Failed to get plugin info
-	ErrWPPluginUpload  = "E3006" // Failed to upload plugin
+	ErrWPConnection     = "E3001" // Failed to connect to WordPress
+	ErrWPAuth           = "E3002" // Authentication failed
+	ErrWPAPIDisabled    = "E3003" // REST API is disabled
+	ErrWPPluginList     = "E3004" // Failed to list plugins
+	ErrWPPluginGet      = "E3005" // Failed to get plugin info
+	ErrWPPluginUpload   = "E3006" // Failed to upload plugin
 	ErrWPPluginActivate = "E3007" // Failed to activate plugin
-	ErrWPTimeout       = "E3008" // Request timed out
+	ErrWPTimeout        = "E3008" // Request timed out
+	ErrWPUploadFailed   = "E3009" // Plugin upload to WordPress failed
 )
 
 // File system errors (E4xxx)
