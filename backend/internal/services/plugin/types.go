@@ -39,15 +39,22 @@ type CreateMappingInput struct {
 
 // ScanResult represents the result of a directory scan
 type ScanResult struct {
-	Path       string     `json:"path"`
-	IsValid    bool       `json:"isValid"`
-	PluginName string     `json:"pluginName,omitempty"`
-	Version    string     `json:"version,omitempty"`
-	MainFile   string     `json:"mainFile,omitempty"`
-	FileCount  int        `json:"fileCount"`
-	TotalSize  int64      `json:"totalSize"`
-	Files      []FileInfo `json:"files,omitempty"`
-	Error      string     `json:"error,omitempty"`
+	Path        string     `json:"path"`
+	IsValid     bool       `json:"isValid"`
+	PluginName  string     `json:"pluginName,omitempty"`
+	Version     string     `json:"version,omitempty"`
+	MainFile    string     `json:"mainFile,omitempty"`
+	Description string     `json:"description,omitempty"`
+	Author      string     `json:"author,omitempty"`
+	AuthorURI   string     `json:"authorUri,omitempty"`
+	PluginURI   string     `json:"pluginUri,omitempty"`
+	TextDomain  string     `json:"textDomain,omitempty"`
+	RequiresPHP string     `json:"requiresPHP,omitempty"`
+	RequiresWP  string     `json:"requiresWP,omitempty"`
+	FileCount   int        `json:"fileCount"`
+	TotalSize   int64      `json:"totalSize"`
+	Files       []FileInfo `json:"files,omitempty"`
+	Error       string     `json:"error,omitempty"`
 }
 
 // FileInfo holds metadata about a single file
@@ -57,4 +64,20 @@ type FileInfo struct {
 	Hash        string    `json:"hash"`
 	ModifiedAt  time.Time `json:"modifiedAt"`
 	IsDirectory bool      `json:"isDirectory"`
+}
+
+// PluginDetected represents a detected WordPress plugin written to .plugin-detected.json
+type PluginDetected struct {
+	PluginName  string `json:"pluginName"`
+	Version     string `json:"version"`
+	Slug        string `json:"slug"`
+	MainFile    string `json:"mainFile"`
+	Description string `json:"description,omitempty"`
+	Author      string `json:"author,omitempty"`
+	AuthorURI   string `json:"authorUri,omitempty"`
+	PluginURI   string `json:"pluginUri,omitempty"`
+	TextDomain  string `json:"textDomain,omitempty"`
+	RequiresPHP string `json:"requiresPHP,omitempty"`
+	RequiresWP  string `json:"requiresWP,omitempty"`
+	DetectedAt  string `json:"detectedAt"`
 }
