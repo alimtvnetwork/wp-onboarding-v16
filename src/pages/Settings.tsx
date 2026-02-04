@@ -12,9 +12,18 @@ import { Button } from "@/components/ui/button";
 import { useSettings } from "@/hooks/useSettings";
 import { Eye, Archive, FileText, Palette, Loader2 } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash !== "#about") return;
+    const el = document.getElementById("about");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [location.hash]);
 
   if (isLoading) {
     return (
