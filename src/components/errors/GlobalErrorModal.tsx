@@ -662,13 +662,35 @@ export function GlobalErrorModal() {
         <div className="flex justify-end gap-2 pt-4 border-t">
           <Button 
             variant="outline" 
-            onClick={() => {
-              // Download error bundle from backend
-              const link = document.createElement("a");
-              link.href = "/api/v1/errors/bundle";
-              link.download = `error-bundle-${new Date().toISOString().slice(0, 10)}.zip`;
-              link.click();
-              toast.success("Downloading error bundle...");
+            onClick={async () => {
+              try {
+                const report = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
+
+                const resp = await fetch("/api/v1/errors/bundle", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ report }),
+                });
+
+                if (!resp.ok) {
+                  throw new Error(`bundle download failed: ${resp.status}`);
+                }
+
+                const blob = await resp.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = `error-bundle-${new Date().toISOString().slice(0, 10)}.zip`;
+                link.click();
+                window.URL.revokeObjectURL(url);
+
+                toast.success("Downloading error bundle...");
+              } catch (err) {
+                console.error(err);
+                toast.error("Failed to download error bundle");
+              }
             }}
           >
             <Download className="h-4 w-4 mr-2" />

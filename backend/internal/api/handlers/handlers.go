@@ -1275,6 +1275,20 @@ func DeleteE2ERun(w http.ResponseWriter, r *http.Request) {
 func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	dataDir := "data/errors"
 
+	// Optional: include a frontend-provided error report inside the bundle.
+	// This allows the UI to bundle both on-disk logs + the human-readable report.
+	report := ""
+	if r.Method == http.MethodPost {
+		var payload struct {
+			Report string `json:"report"`
+		}
+		bodyBytes, _ := io.ReadAll(io.LimitReader(r.Body, 2*1024*1024))
+		if len(bodyBytes) > 0 {
+			_ = json.Unmarshal(bodyBytes, &payload)
+			report = payload.Report
+		}
+	}
+
 	logFile := dataDir + "/log.txt"
 	errorFile := dataDir + "/error.log.txt"
 
@@ -1307,6 +1321,13 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if report != "" {
+		reportWriter, err := zipWriter.Create("report.md")
+		if err == nil {
+			_, _ = io.WriteString(reportWriter, report)
+		}
+	}
+
 	// Include a manifest with timestamp
 	manifest := struct {
 		GeneratedAt string   `json:"generatedAt"`
@@ -1320,6 +1341,9 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	}
 	if errorExists {
 		manifest.Files = append(manifest.Files, "error.log.txt")
+	}
+	if report != "" {
+		manifest.Files = append(manifest.Files, "report.md")
 	}
 
 	manifestWriter, err := zipWriter.Create("manifest.json")

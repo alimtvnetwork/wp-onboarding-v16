@@ -217,6 +217,40 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	return &result, nil
 }
 
+// EnablePlugin activates/enables a plugin on the remote WordPress site via the companion plugin API.
+// Requires the plugins-onboard companion plugin to be installed on the remote site.
+func (c *Client) EnablePlugin(pluginSlug string) error {
+	mutationToken, err := c.RequestMutationToken("enable")
+	if err != nil {
+		return fmt.Errorf("get enable mutation token: %w", err)
+	}
+
+	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/%s/enable", OnboardNamespace, mutationToken, pluginSlug)
+	resp, err := c.request("POST", endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("enable plugin request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	body := string(bodyBytes)
+
+	if resp.StatusCode != http.StatusOK {
+		return &APIError{
+			Operation:    "failed to enable plugin",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(body, 8192),
+			PluginSlugIn: pluginSlug,
+			PluginIDUsed: pluginSlug,
+		}
+	}
+
+	return nil
+}
+
 // CheckOnboardPluginAvailable checks if the companion plugin is installed and available.
 func (c *Client) CheckOnboardPluginAvailable() (bool, error) {
 	endpoint := fmt.Sprintf("/%s/plugins/list", OnboardNamespace)

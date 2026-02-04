@@ -129,7 +129,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/errors", handlers.GetErrors).Methods("GET")
 	api.HandleFunc("/errors", handlers.ClearErrors).Methods("DELETE")
 	api.HandleFunc("/errors/{id}", handlers.GetError).Methods("GET")
-	api.HandleFunc("/errors/bundle", handlers.DownloadErrorBundle).Methods("GET")
+	api.HandleFunc("/errors/bundle", handlers.DownloadErrorBundle).Methods("GET", "POST")
 
 	// Settings endpoints
 	api.HandleFunc("/settings", handlers.GetSettings).Methods("GET")
