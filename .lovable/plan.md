@@ -1,211 +1,114 @@
 
-
-# Enhanced Error Reporting System
+# Bug Fix Plan: Mapping Persistence & Publish Flow
 
 ## Summary
 
-The user requests a significant improvement to the error reporting system to make errors more detailed, traceable, and actionable. The current implementation captures basic stack traces but lacks:
+The user has identified three interconnected bugs affecting the plugin-site mapping system and publish workflow:
 
-1. **Call chain visibility** - No clear hierarchy showing which function called which
-2. **File paths in stack traces** - Often missing or unparsed
-3. **Frontend invocation context** - What UI action triggered the error
-4. **Persistent documentation** - Guidelines for future development
+1. **Plugin-Site Mappings Not Persisting** - When selecting sites for a plugin (from Plugins page) or plugins for a site (from Edit Site dialog), selections don't persist after save/refresh
+2. **Seeding Config Missing Automatic Mappings** - Seeded plugins should automatically map to seeded sites during database initialization
+3. **Publish Button Not Working** - The publish flow has issues with WebSocket payload handling and progress display
 
 ---
 
-## Current State Analysis
+## Root Cause Analysis
 
-### What Exists
+### Issue 1: Mappings Not Persisting
 
-- `errorStore.ts` captures errors with basic stack trace parsing
-- `GlobalErrorModal.tsx` displays errors in a 5-tab layout
-- `captureException` accepts a `source` parameter for manual annotation
-- Stack traces are captured but parsing is minimal (only extracts first meaningful line)
+**Frontend Side (Plugins Page - `src/pages/Plugins.tsx`):**
+- When `openMappingDialog` is called, it correctly reads existing mappings from `plugin.mappings`
+- When `handleSaveMappings` is called, it sends the correct API request
+- **Problem**: The `plugin.mappings` array is populated by the backend when listing plugins, but we need to verify the backend is correctly returning mappings with the plugin list
 
-### What's Missing
+**Backend Side (`backend/internal/services/plugin/service.go`):**
+- The `List` function fetches plugins but may not be joining with `PluginMappings` table
+- Need to verify that `GetMappings` is called for each plugin or that mappings are fetched in a single query
 
-1. **Invocation Chain** - When an error occurs in `api.updateSiteMappings`, we don't see:
-   - UI component that triggered it (e.g., "EditSiteDialog")
-   - Handler function (e.g., "handleSave")
-   - Intermediate calls (e.g., "saveMappings")
+**Frontend Side (Edit Site Dialog - `src/components/sites/EditSiteDialog.tsx`):**
+- The component correctly fetches current mappings via `api.getSiteMappings`
+- It correctly calls `api.updateSiteMappings` on save
+- **Verified**: The backend handler (`UpdateSiteMappings`) correctly handles float64→int64 conversion
 
-2. **File Path Extraction** - Current regex only parses first stack frame; fails on minified bundles
+### Issue 2: Seeding Config Not Creating Mappings
 
-3. **Mandatory Source Context** - No enforcement that `source` is always provided
+**Backend Config (`backend/internal/config/config.go`):**
+- The `seedSitesAndPlugins` function (lines 243-309) does create mappings for all sites
+- **However**: The seeding logic only runs when `cfg.Version > currentVersion`
+- **Problem**: If the database already has a seed version, new mappings won't be created even if site/plugin combinations are missing
+
+### Issue 3: Publish Button Not Working
+
+**Frontend (`src/components/plugins/PublishProgressDialog.tsx`):**
+- The component listens for WebSocket events correctly
+- **Problem**: The stage name mapping logic may not match what the backend sends
+
+**Backend (`backend/internal/services/publish/service.go`):**
+- `broadcastProgress` sends events with both `stage` and `step` fields
+- The frontend expects specific stage names (`backup`, `package`, `upload`, `activate`)
 
 ---
 
 ## Technical Implementation Plan
 
-### Phase 1: Enhance Error Store (Core Changes)
+### Phase 1: Fix Plugin List to Include Mappings
 
-**File: `src/stores/errorStore.ts`**
+**File: `backend/internal/services/plugin/service.go`**
+
+The `List` function needs to fetch mappings for each plugin. Currently, it may return plugins without their mappings populated.
 
 ```text
 Changes:
-1. Add new CapturedError fields:
-   - `invocationChain: string[]` - Array of function calls leading to error
-   - `triggerComponent?: string` - UI component that initiated the action
-   - `triggerAction?: string` - User action (click, submit, etc.)
-
-2. Enhance stack trace parsing:
-   - Parse ALL stack frames, not just first
-   - Handle both dev (full paths) and prod (minified) formats
-   - Extract file:line:column for each frame
-
-3. Add `createErrorContext` helper:
-   - Generates consistent context object
-   - Captures component name, function name, action type
-   - Builds invocation chain from call sites
+1. After fetching all plugins, call GetMappings for each
+2. OR use a single JOIN query to fetch all mappings in one go
+3. Populate plugin.Mappings field before returning
 ```
 
-**New Interface:**
+### Phase 2: Fix Mapping Persistence in Plugins Page
 
-```typescript
-interface ErrorContext {
-  source: string;           // REQUIRED: "ComponentName.functionName"
-  triggerComponent?: string; // UI component (EditSiteDialog)
-  triggerAction?: string;    // User action (save_clicked)
-  parentSource?: string;     // Caller function for chain building
-  context?: Record<string, unknown>;
-}
-```
+**File: `src/pages/Plugins.tsx`**
 
-### Phase 2: Enhanced Stack Trace Parsing
-
-**File: `src/stores/errorStore.ts`**
+The `openMappingDialog` function reads from `plugin.mappings` which comes from the API response. If the backend correctly returns mappings, this should work. Need to verify query invalidation triggers a refetch.
 
 ```text
-New function: parseFullStackTrace(stack: string)
-
-Returns:
-{
-  frames: Array<{
-    function: string;
-    file: string;
-    line: number;
-    column: number;
-    isInternal: boolean; // true if from node_modules
-  }>;
-  primaryFrame: { function, file, line } | null;
-  invocationChain: string[];
-}
-
-Features:
-- Parses all lines matching "at X (file:line:col)"
-- Filters out internal/library frames
-- Builds human-readable invocation chain
-- Handles async/Promise frames
+Verify:
+1. After handleSaveMappings succeeds, queryClient.invalidateQueries triggers
+2. The plugins query refetches with updated mappings
+3. The plugin list re-renders with new mapping badges
 ```
 
-### Phase 3: Update Error Report Generation
+### Phase 3: Fix Seed Mapping Logic
 
-**File: `src/components/errors/GlobalErrorModal.tsx`**
+**File: `backend/internal/config/config.go`**
+
+The current seeding creates all-to-all mappings but may be skipped if seed version hasn't changed.
 
 ```text
-Update generateErrorReport() to include:
-
-### Invocation Chain
-EditSiteDialog.handleSave
-  → saveMappings
-    → api.updateSiteMappings
-      → request (src/lib/api.ts:96)
-        → Error: JSON parse failed
-
-### Trigger Context
-- Component: EditSiteDialog
-- Action: save_clicked
-- Source: EditSiteDialog.handleSave
-
-### Full Stack Trace (Parsed)
-| # | Function           | File                  | Line |
-|---|--------------------|-----------------------|------|
-| 1 | handleSave         | EditSiteDialog.tsx    | 142  |
-| 2 | saveMappings       | EditSiteDialog.tsx    | 98   |
-| 3 | updateSiteMappings | api.ts                | 391  |
-| 4 | request            | api.ts                | 96   |
+Changes:
+1. In seedSitesAndPlugins, check if mapping already exists before creating
+2. Update version to trigger re-seeding OR
+3. Add a separate "ensure mappings" function that runs on every startup
 ```
 
-### Phase 4: UI Enhancements
+### Phase 4: Fix Publish Progress WebSocket Events
 
-**File: `src/components/errors/GlobalErrorModal.tsx`**
+**File: `backend/internal/services/publish/service.go`**
+
+The `broadcastProgress` function needs to ensure stage names match frontend expectations.
 
 ```text
-New sections in modal:
-
-1. "Call Chain" section in Overview tab:
-   - Visual tree/list of function calls
-   - Clickable to expand each frame
-
-2. Enhanced Stack Trace tab:
-   - Parsed table view (function | file | line)
-   - Raw view toggle
-   - "App code only" filter toggle
-
-3. Trigger Context badge:
-   - Shows component + action that caused error
-   - e.g., "EditSiteDialog → save_clicked"
+Verify/Fix:
+1. Ensure stage names are exactly: backup, package, upload, activate, cleanup
+2. Ensure status values are: running, success, error (not completed/failed)
+3. Include filesUpdated in the complete event
 ```
 
-### Phase 5: Enforce Source Annotation
+**File: `src/components/plugins/PublishProgressDialog.tsx`**
 
-**Update all components to use consistent pattern:**
-
-```typescript
-// EVERY async handler MUST follow this pattern
-const handleSave = async () => {
-  try {
-    // ... logic
-  } catch (error) {
-    captureException(error, {
-      source: "EditSiteDialog.handleSave",
-      triggerComponent: "EditSiteDialog",
-      triggerAction: "save_clicked",
-      context: { siteId, pluginIds }
-    });
-    throw error; // Re-throw if needed
-  }
-};
+```text
+Verify/Fix:
+1. Status mapping handles all backend statuses correctly
+2. Stage name matching is case-sensitive and exact
 ```
-
-### Phase 6: Update Memory Documentation
-
-**New File: `.lovable/memory/architecture/frontend/error-reporting-standards.md`**
-
-```markdown
-# Error Reporting Standards
-
-## Mandatory Requirements
-
-1. **Every `captureException` call MUST include:**
-   - `source`: Format "ComponentName.functionName"
-   - `triggerComponent`: UI component name (if user-triggered)
-   - `triggerAction`: User action description (if applicable)
-
-2. **Never swallow errors without logging:**
-   - Always call captureException before catching
-   - Include full context (IDs, relevant state)
-
-3. **Stack trace must show:**
-   - File path (not just function name)
-   - Line number
-   - Full call chain (1-2 levels up)
-
-## Error Report Must Include
-
-- Invocation chain (which function called which)
-- Trigger context (UI component + action)
-- Parsed stack frames with file:line
-- Full raw stack trace
-- Request/response details (for API errors)
-```
-
-**Update: `.lovable/memory/issues-fixed/07-null-check-error-source.md`**
-
-Add section on enhanced requirements:
-- Call chain must be visible
-- File paths must be extracted
-- No credit for swallowed errors
 
 ---
 
@@ -213,73 +116,186 @@ Add section on enhanced requirements:
 
 | File | Changes |
 |------|---------|
-| `src/stores/errorStore.ts` | Add invocation chain, enhanced parsing, new fields |
-| `src/components/errors/GlobalErrorModal.tsx` | Add call chain display, parsed stack table |
-| `src/lib/api.ts` | Add source context to all error paths |
-| `src/components/sites/EditSiteDialog.tsx` | Add full error context |
-| `src/components/sites/AddSiteDialog.tsx` | Add full error context |
-| `src/pages/Plugins.tsx` | Add full error context to publish/mapping handlers |
-| `src/App.tsx` | Enhance GlobalErrorHandler with better chain extraction |
-| `.lovable/memory/architecture/frontend/error-reporting-standards.md` | NEW: Standards doc |
-| `.lovable/memory/issues-fixed/07-null-check-error-source.md` | Update with new requirements |
+| `backend/internal/services/plugin/service.go` | Ensure List() returns plugins with mappings populated |
+| `backend/internal/config/config.go` | Add mapping existence check in seeding, bump version |
+| `backend/internal/services/publish/service.go` | Verify/fix WebSocket event payload format |
+| `src/components/plugins/PublishProgressDialog.tsx` | Ensure robust status mapping |
+| `public/version.json` | Bump to v1.16.0, add changelog entry |
+| `backend/config.json` | Bump version to trigger re-seed |
 
 ---
 
-## Example Output (After Implementation)
+## Detailed Changes
 
-```markdown
-## Error Report
+### 1. Plugin Service - Populate Mappings in List
 
-**App:** WP Plugin Publish v1.14.0
-**ID:** 1770222691715-xyz123
-**Code:** E9003
-**Level:** error
-**Timestamp:** 2026-02-04T16:31:31.715Z
+**File: `backend/internal/services/plugin/service.go`**
 
-### Trigger Context
-**Component:** EditSiteDialog
-**Action:** save_clicked
-**Source:** EditSiteDialog.handleSave
+Add mapping population to the `List` method:
 
-### Invocation Chain
+```go
+func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
+    // ... existing query to get plugins ...
+    
+    // Populate mappings for each plugin
+    for i := range plugins {
+        mappings, err := s.GetMappings(ctx, plugins[i].ID)
+        if err == nil {
+            plugins[i].Mappings = mappings
+        }
+    }
+    
+    return plugins, nil
+}
 ```
-EditSiteDialog.handleSave (EditSiteDialog.tsx:142)
-  └─ api.updateSiteMappings (api.ts:391)
-       └─ request (api.ts:96)
-            └─ JSON.parse [native]
+
+### 2. Config - Ensure Mappings on Startup
+
+**File: `backend/internal/config/config.go`**
+
+Modify `seedSitesAndPlugins` to check for existing mappings:
+
+```go
+// Before creating mapping, check if it exists
+func (db *DB) MappingExists(pluginId, siteId int64) bool {
+    var exists int
+    err := db.QueryRow("SELECT 1 FROM PluginMappings WHERE PluginId = ? AND SiteId = ?", pluginId, siteId).Scan(&exists)
+    return err == nil
+}
+
+// In seedSitesAndPlugins:
+for _, siteId := range allSiteIds {
+    if !db.MappingExists(pluginId, siteId) {
+        _ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+    }
+}
 ```
 
-### Message
-Expected ',' or ']' after array element in JSON at position 834
+Also bump `config.json` version to trigger re-seeding.
 
-### Parsed Stack Frames
-| # | Function           | File                     | Line |
-|---|--------------------| -------------------------|------|
-| 1 | handleSave         | EditSiteDialog.tsx       | 142  |
-| 2 | updateSiteMappings | api.ts                   | 391  |
-| 3 | request            | api.ts                   | 96   |
+### 3. Publish Service - Fix WebSocket Payload
 
-### Full Stack Trace
+**File: `backend/internal/services/publish/service.go`**
+
+The `broadcastProgress` function needs minor fixes:
+
+```go
+func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progress int, message string) {
+    // ... existing code ...
+    
+    // Ensure consistent status values
+    status := "running"
+    if step == "completed" {
+        status = "success"  // Frontend expects "success" not "completed"
+    } else if step == "failed" {
+        status = "error"    // Frontend expects "error" not "failed"
+    }
+    
+    s.wsHub.Broadcast(eventType, map[string]interface{}{
+        "pluginId": pluginID,
+        "siteId":   siteID,
+        "stage":    stage,
+        "status":   status,
+        "progress": progress,
+        "total":    100,
+        "message":  message,
+    })
+}
 ```
-SyntaxError: Expected ',' or ']' after array element in JSON at position 834
-    at JSON.parse (<anonymous>)
-    at request (http://localhost:5173/src/lib/api.ts:96:23)
-    at updateSiteMappings (http://localhost:5173/src/lib/api.ts:391:3)
-    at handleSave (http://localhost:5173/src/components/sites/EditSiteDialog.tsx:142:5)
+
+### 4. PublishProgressDialog - Robust Status Handling
+
+**File: `src/components/plugins/PublishProgressDialog.tsx`**
+
+The component already handles status mapping at lines 123-125, but should be more robust:
+
+```typescript
+// Add more backend status variations
+let mappedStatus: PublishStage["status"] = "running";
+const normalizedStatus = (payload.status || "").toLowerCase();
+if (["success", "completed", "done"].includes(normalizedStatus)) {
+    mappedStatus = "success";
+} else if (["error", "failed", "failure"].includes(normalizedStatus)) {
+    mappedStatus = "error";
+}
 ```
+
+### 5. Version Bump
+
+**File: `public/version.json`**
+
+```json
+{
+  "version": "1.16.0",
+  "changelog": [
+    {
+      "version": "1.16.0",
+      "date": "2026-02-04",
+      "title": "Mapping Persistence & Publish Fixes",
+      "changes": [
+        "🔧 Fixed plugin mappings not persisting after save in both Plugins and Sites views",
+        "🌱 Seeding now ensures all plugins are mapped to all sites on every startup",
+        "📡 Fixed publish progress WebSocket events to correctly update UI stages",
+        "✅ Plugin list now correctly includes mappings for display"
+      ]
+    }
+  ]
+}
+```
+
+**File: `backend/config.json`**
+
+Bump version string to trigger re-seeding:
+```json
+{
+  "version": "1.16.0",
+  ...
+}
 ```
 
 ---
 
-## Summary of Improvements
+## Testing Checklist
 
-| Before | After |
-|--------|-------|
-| "SyntaxError at position 834" | Full call chain showing EditSiteDialog → api → JSON.parse |
-| No file path | File path with line number for each frame |
-| Missing trigger context | Shows "EditSiteDialog → save_clicked" |
-| Basic stack dump | Parsed table + visual call chain |
-| Optional source param | Mandatory source with component/action |
+After implementation, verify:
 
-This ensures every error is immediately traceable to its origin in the UI and codebase.
+1. **Plugin Mappings (Plugins Page)**
+   - Open Plugins page
+   - Click "Sites" on a plugin
+   - Select multiple sites
+   - Click "Save Mappings"
+   - Refresh page
+   - Verify selected sites still appear as badges on plugin card
 
+2. **Site Mappings (Edit Site Dialog)**
+   - Open Sites page
+   - Click Edit on a site
+   - Go to Plugins tab
+   - Select multiple plugins
+   - Click Save
+   - Refresh page
+   - Re-open Edit dialog
+   - Verify plugins are still selected
+
+3. **Seeded Mappings**
+   - Delete database file
+   - Restart backend
+   - Verify all seeded plugins show all seeded sites as badges
+
+4. **Publish Flow**
+   - Select a plugin with sites mapped
+   - Click Publish
+   - Select a site
+   - Verify progress dialog shows stages updating
+   - Verify completion message appears
+
+---
+
+## Summary
+
+This fix addresses three interconnected issues in the mapping and publish system:
+
+1. **Backend Plugin List** - Add mapping population to ensure frontend receives complete data
+2. **Seed Logic** - Add idempotent mapping creation that runs on every startup
+3. **WebSocket Payloads** - Normalize status values between backend and frontend
+4. **Version Bump** - Trigger re-seeding and document changes
