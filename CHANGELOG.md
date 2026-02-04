@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.6.0] - 2026-02-04
+
+### Added
+- **Real-time Publish Progress Dialog**: Shows backup, package, upload, activate stages with WebSocket updates
+- **Category System**: Sites and plugins support Production, Staging, Development categories + custom categories
+- **Category Filtering UI**: Filter sites and plugins by category with badge-based selection
+- **Category Badges**: Display category on site and plugin cards
+
+### Changed
+- **Removed Sync Page**: Sync functionality consolidated into Plugins page (sync and publish buttons on plugin cards)
+- **Navigation**: Sync tab removed from sidebar
+
+---
+
 ## [1.5.0] - 2026-02-04
 
 ### Added

@@ -5,6 +5,7 @@ const STORAGE_KEY = "wppp_plugin_form_draft";
 export interface PluginFormData {
   name: string;
   path: string;
+  category: string;
   gitEnabled: boolean;
   gitRemoteUrl: string;
   buildCommand: string;
@@ -13,6 +14,7 @@ export interface PluginFormData {
 const initialFormData: PluginFormData = {
   name: "",
   path: "",
+  category: "",
   gitEnabled: false,
   gitRemoteUrl: "",
   buildCommand: "",
@@ -34,6 +36,7 @@ export function usePluginFormPersistence() {
         setFormData({
           name: parsed.name || "",
           path: parsed.path || "",
+          category: parsed.category || "",
           gitEnabled: parsed.gitEnabled ?? false,
           gitRemoteUrl: parsed.gitRemoteUrl || "",
           buildCommand: parsed.buildCommand || "",

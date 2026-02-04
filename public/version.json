@@ -1,11 +1,26 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T14:30:00Z",
+  "buildTime": "2026-02-04T16:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.6.0",
+      "date": "2026-02-04",
+      "title": "Categories, Filtering & Publish Progress",
+      "changes": [
+        "📊 Real-time publish progress dialog with backup/package/upload/activate stages",
+        "🏷️ Category system for sites and plugins (Production, Staging, Development + custom)",
+        "🔍 Category-based filtering UI on Sites and Plugins pages",
+        "🗑️ Removed standalone Sync page - sync features consolidated into Plugins page",
+        "✨ Category badges display on site and plugin cards"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.5.0",
       "date": "2026-02-04",

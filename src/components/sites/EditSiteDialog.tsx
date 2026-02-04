@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CategorySelect } from "@/components/shared/CategorySelect";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,7 @@ import { useConnectionTestLogs } from "@/hooks/useConnectionTestLogs";
 interface EditSiteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  site: Pick<Site, "id" | "name" | "url" | "username" | "connectionStatus" | "lastTestedAt"> | null;
+  site: Pick<Site, "id" | "name" | "url" | "username" | "category" | "connectionStatus" | "lastTestedAt"> | null;
 }
 
 export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps) {
@@ -39,6 +40,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
     url: "",
     username: "",
     password: "",
+    category: null as string | null,
   });
   const [selectedPlugins, setSelectedPlugins] = useState<number[]>([]);
 
@@ -72,6 +74,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
         url: site.url,
         username: site.username,
         password: "",
+        category: site.category || null,
       });
       setActiveTab("basic");
       setTestSuccess(false);
@@ -145,7 +148,10 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
     setIsSubmitting(true);
     try {
       // Update site details
-      const response = await api.updateSite(site.id, formData);
+      const response = await api.updateSite(site.id, {
+        ...formData,
+        category: formData.category || undefined,
+      });
       if (response.success) {
         // Update plugin mappings for each selected plugin
         // This is a simplified approach - for each plugin, we update its mappings
@@ -246,6 +252,14 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
                 id="edit-url"
                 value={formData.url}
                 onChange={(e) => handleFieldChange("url", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <CategorySelect
+                value={formData.category}
+                onValueChange={(val) => handleFieldChange("category", val || "")}
+                placeholder="Select category..."
               />
             </div>
           </TabsContent>

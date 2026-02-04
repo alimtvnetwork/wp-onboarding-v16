@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConnectionTestLogs } from "@/components/sites/ConnectionTestLogs";
+import { CategorySelect } from "@/components/shared/CategorySelect";
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTestingCredentials, setIsTestingCredentials] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
+  const [category, setCategory] = useState<string | null>(null);
   const [credentialsTestResult, setCredentialsTestResult] = useState<{
     success: boolean;
     message: string;
@@ -56,6 +58,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
       setCredentialsTestResult(null);
       connectionLogs.clearLogs();
       setActiveTab("basic");
+      setCategory(null);
     }
   }, [open]);
 
@@ -143,6 +146,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
       url: formData.url,
       username: formData.username,
       applicationPassword: formData.password,
+      category: category || undefined,
       // If connection was tested successfully, pass that info
       ...(credentialsTestResult?.success && {
         connectionStatus: "connected",
@@ -225,6 +229,14 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
                 placeholder="https://example.com"
                 value={formData.url}
                 onChange={(e) => handleFieldChange("url", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <CategorySelect
+                value={category}
+                onValueChange={setCategory}
+                placeholder="Select category..."
               />
             </div>
           </TabsContent>

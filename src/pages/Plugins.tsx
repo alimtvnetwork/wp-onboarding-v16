@@ -10,6 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { CategorySelect } from "@/components/shared/CategorySelect";
+import { CategoryFilter } from "@/components/shared/CategoryFilter";
+import { CategoryBadge } from "@/components/shared/CategoryBadge";
+import { PublishProgressDialog } from "@/components/plugins/PublishProgressDialog";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +69,9 @@ export default function Plugins() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [publishPlugin, setPublishPlugin] = useState<Plugin | null>(null);
+  const [publishSiteId, setPublishSiteId] = useState<number | null>(null);
+  const [showPublishProgress, setShowPublishProgress] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const handleAddPlugin = async (forceCreate = false) => {
     if (!formData.name || !formData.path) {
@@ -79,6 +86,7 @@ export default function Plugins() {
       const response = await api.createPlugin({
         name: formData.name,
         path: formData.path,
+        category: formData.category || undefined,
         gitEnabled: formData.gitEnabled,
         gitRemoteUrl: formData.gitRemoteUrl,
         buildCommand: formData.buildCommand,
@@ -254,7 +262,13 @@ export default function Plugins() {
   };
 
   const handlePublish = async (plugin: Plugin, siteId: number) => {
+    // Open progress dialog instead of inline publishing
+    setPublishPlugin(plugin);
+    setPublishSiteId(siteId);
+    setShowPublishDialog(false);
+    setShowPublishProgress(true);
     setIsPublishing(plugin.id);
+
     try {
       const response = await api.publishPlugin(plugin.id, siteId, {
         mode: "full",
@@ -263,7 +277,6 @@ export default function Plugins() {
       if (response.success) {
         toast.success(`Published ${response.data?.filesUpdated || 0} files`);
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
-        setShowPublishDialog(false);
       } else if (response.error) {
         const captured = captureError(response.error, {
           endpoint: `/plugins/${plugin.id}/sites/${siteId}/publish`,
@@ -277,6 +290,24 @@ export default function Plugins() {
       setIsPublishing(null);
     }
   };
+
+  const handlePublishComplete = (success: boolean) => {
+    if (success) {
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+    }
+    setIsPublishing(null);
+  };
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
+    );
+  };
+
+  const filteredPlugins = plugins?.filter((plugin) => {
+    if (selectedCategories.length === 0) return true;
+    return plugin.category && selectedCategories.includes(plugin.category);
+  });
 
   const openMappingDialog = (plugin: Plugin) => {
     setSelectedPlugin(plugin);
@@ -367,8 +398,24 @@ export default function Plugins() {
         </div>
       </div>
 
+      {/* Category Filter */}
+      {plugins && plugins.length > 0 && (
+        <CategoryFilter
+          selectedCategories={selectedCategories}
+          onCategoryToggle={handleCategoryToggle}
+          onClearAll={() => setSelectedCategories([])}
+        />
+      )}
+
       {/* Plugin List */}
-      {plugins?.length === 0 ? (
+      {filteredPlugins?.length === 0 && plugins?.length !== 0 ? (
+        <EmptyState
+          icon={Package}
+          title="No plugins match filter"
+          description="Try selecting different categories or clear the filter."
+          action={{ label: "Clear Filter", onClick: () => setSelectedCategories([]) }}
+        />
+      ) : filteredPlugins?.length === 0 ? (
         <EmptyState
           icon={Package}
           title="No plugins registered"
@@ -380,7 +427,7 @@ export default function Plugins() {
         />
       ) : (
         <div className="space-y-4">
-          {plugins?.map((plugin) => (
+          {filteredPlugins?.map((plugin) => (
             <Card key={plugin.id} className="overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4">
@@ -389,8 +436,9 @@ export default function Plugins() {
                       <Package className="h-5 w-5 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <CardTitle className="text-base flex items-center gap-2">
+                      <CardTitle className="text-base flex items-center gap-2 flex-wrap">
                         {plugin.name}
+                        <CategoryBadge category={plugin.category} size="sm" />
                         {plugin.gitEnabled && (
                           <Badge variant="secondary" className="text-xs">
                             <GitBranch className="h-3 w-3 mr-1" />
@@ -583,6 +631,14 @@ export default function Plugins() {
                 <p className="text-xs text-muted-foreground">
                   Full path to your plugin directory
                 </p>
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <CategorySelect
+                  value={formData.category || null}
+                  onValueChange={(val) => handleInputChange("category", val || "")}
+                  placeholder="Select category..."
+                />
               </div>
             </TabsContent>
 
@@ -830,6 +886,17 @@ export default function Plugins() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Publish Progress Dialog */}
+      <PublishProgressDialog
+        open={showPublishProgress}
+        onOpenChange={setShowPublishProgress}
+        pluginName={publishPlugin?.name || ""}
+        siteName={publishPlugin?.mappings?.find(m => m.siteId === publishSiteId)?.siteName || ""}
+        pluginId={publishPlugin?.id || 0}
+        siteId={publishSiteId || 0}
+        onComplete={handlePublishComplete}
+      />
     </div>
   );
 }

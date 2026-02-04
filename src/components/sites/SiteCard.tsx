@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import {
   Globe,
   Loader2,
@@ -114,7 +115,10 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
               <Globe className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-base truncate">{site.name}</CardTitle>
+              <CardTitle className="text-base truncate flex items-center gap-2">
+                {site.name}
+                <CategoryBadge category={site.category} size="sm" />
+              </CardTitle>
               <a
                 href={site.url}
                 target="_blank"
