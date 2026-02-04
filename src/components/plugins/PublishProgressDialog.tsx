@@ -15,11 +15,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
-import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Settings2, ListChecks, Terminal } from "lucide-react";
+import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Settings2, ListChecks, Terminal, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useErrorStore, BackendLogEntry } from "@/stores/errorStore";
 import { toast } from "sonner";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
+import { ActivationDiagnostics } from "@/components/plugins/ActivationDiagnostics";
 
 export interface PublishStage {
   name: string;
@@ -348,7 +349,7 @@ export function PublishProgressDialog({
 
         {/* Tabbed content for better screen fit */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+          <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
             <TabsTrigger value="progress" className="gap-1">
               <ListChecks className="h-3 w-3" />
               Progress
@@ -357,6 +358,10 @@ export function PublishProgressDialog({
               <Terminal className="h-3 w-3" />
               Logs
               <Badge variant="secondary" className="ml-1 text-xs">{logs.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="diagnostics" className="gap-1">
+              <Activity className="h-3 w-3" />
+              Diagnostics
             </TabsTrigger>
             <TabsTrigger value="settings" className="gap-1" disabled={isComplete}>
               <Settings2 className="h-3 w-3" />
@@ -522,6 +527,11 @@ export function PublishProgressDialog({
               emptyMessage="Waiting for publish to start..."
               className="h-full"
             />
+          </TabsContent>
+
+          {/* Diagnostics Tab */}
+          <TabsContent value="diagnostics" className="flex-1 overflow-hidden mt-4">
+            <ActivationDiagnostics logs={logs} className="h-full" />
           </TabsContent>
 
           {/* Settings Tab */}

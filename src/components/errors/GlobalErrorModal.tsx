@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -660,6 +660,20 @@ export function GlobalErrorModal() {
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              // Download error bundle from backend
+              const link = document.createElement("a");
+              link.href = "/api/v1/errors/bundle";
+              link.download = `error-bundle-${new Date().toISOString().slice(0, 10)}.zip`;
+              link.click();
+              toast.success("Downloading error bundle...");
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download Bundle
+          </Button>
           <Button variant="outline" onClick={closeErrorModal}>
             Close
           </Button>

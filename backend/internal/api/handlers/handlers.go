@@ -2,9 +2,12 @@
 package handlers
 
 import (
+	"archive/zip"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -1266,4 +1269,82 @@ func DeleteE2ERun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondSuccess(w, map[string]interface{}{"deleted": true})
+}
+
+// DownloadErrorBundle creates and serves a ZIP bundle of error logs for debugging
+func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
+	dataDir := "data/errors"
+
+	logFile := dataDir + "/log.txt"
+	errorFile := dataDir + "/error.log.txt"
+
+	// Check if files exist
+	logExists := fileExists(logFile)
+	errorExists := fileExists(errorFile)
+
+	if !logExists && !errorExists {
+		respondError(w, http.StatusNotFound, "E9001", "No error log files found")
+		return
+	}
+
+	// Create in-memory zip
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", "attachment; filename=error-bundle-"+time.Now().Format("20060102-150405")+".zip")
+
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	if logExists {
+		if err := addFileToZip(zipWriter, logFile, "log.txt"); err != nil {
+			// Already started writing, can't change headers
+			return
+		}
+	}
+
+	if errorExists {
+		if err := addFileToZip(zipWriter, errorFile, "error.log.txt"); err != nil {
+			return
+		}
+	}
+
+	// Include a manifest with timestamp
+	manifest := struct {
+		GeneratedAt string   `json:"generatedAt"`
+		Files       []string `json:"files"`
+	}{
+		GeneratedAt: time.Now().Format(time.RFC3339),
+		Files:       []string{},
+	}
+	if logExists {
+		manifest.Files = append(manifest.Files, "log.txt")
+	}
+	if errorExists {
+		manifest.Files = append(manifest.Files, "error.log.txt")
+	}
+
+	manifestWriter, err := zipWriter.Create("manifest.json")
+	if err == nil {
+		json.NewEncoder(manifestWriter).Encode(manifest)
+	}
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func addFileToZip(zipWriter *zip.Writer, srcPath, destName string) error {
+	file, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer, err := zipWriter.Create(destName)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(writer, file)
+	return err
 }
