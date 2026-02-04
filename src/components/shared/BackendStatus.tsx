@@ -16,7 +16,7 @@ interface BackendStatusProps {
 export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
   const [isConnected, setIsConnected] = useState(true);
   const [isChecking, setIsChecking] = useState(false);
-  const [lastError, setLastError] = useState<{ message: string; url: string } | null>(null);
+  const [lastError, setLastError] = useState<{ code: string; message: string; url: string } | null>(null);
   const { captureError, openErrorModal } = useErrorStore();
 
   const checkBackendConnection = async () => {
@@ -36,6 +36,7 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
       const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
       if (!looksLikeJson) {
         const errorInfo = {
+          code: "E9005",
           message: "Backend returned HTML instead of JSON. This usually means the backend is not running or the API URL is misconfigured.",
           url: healthUrl,
         };
@@ -52,7 +53,11 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
       }
     } catch (err) {
       const errorInfo = {
-        message: err instanceof Error ? err.message : "Network error - backend unreachable",
+        code: "E9003",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Network error - backend unreachable",
         url: healthUrl,
       };
       setLastError(errorInfo);
@@ -68,9 +73,10 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
     
     const captured = captureError(
       {
-        code: "E9005",
+        code: lastError?.code || "E9005",
         message: lastError?.message || "Backend disconnected",
-        details: `The frontend cannot reach the backend API. This is expected in the hosted Lovable preview since it cannot connect to localhost.`,
+        details:
+          "The frontend cannot reach the backend API. If you're using the hosted preview, it cannot connect to your local backend—open the app from your local backend URL instead (e.g. http://localhost:8080).",
         timestamp: new Date().toISOString(),
       },
       {
@@ -79,8 +85,9 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
         context: {
           requestUrl: lastError?.url || resolveApiUrl("/health"),
           apiBase,
+          apiOrigin: apiOrigin || null,
           VITE_API_URL: apiOrigin || "(not set)",
-          VITE_WS_URL: import.meta.env.VITE_WS_URL || "(not set)",
+          VITE_WS_URL: (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)",
           suggestion: "Run .\\run.ps1 -r locally and open http://localhost:8080 in your browser",
         },
       }

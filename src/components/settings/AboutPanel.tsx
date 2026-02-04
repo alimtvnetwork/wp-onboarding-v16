@@ -7,7 +7,7 @@ import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { CopyDiagnosticsButton } from "@/components/shared/CopyDiagnosticsButton";
 
 export function AboutPanel() {
-  const { data: versionInfo, isLoading } = useVersionInfo();
+  const { data: versionInfo } = useVersionInfo();
 
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
@@ -16,7 +16,8 @@ export function AboutPanel() {
   const scriptVersion = versionInfo?.scriptVersion;
 
   return (
-    <Card>
+    <div id="about">
+      <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Info className="h-5 w-5" />
@@ -84,7 +85,7 @@ export function AboutPanel() {
               asChild
             >
               <a
-                href="https://github.com/your-repo/CHANGELOG.md"
+                href="https://github.com/riseup-asia/wp-onboarding-v5/blob/main/CHANGELOG.md"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -100,7 +101,7 @@ export function AboutPanel() {
               asChild
             >
               <a
-                href="https://github.com/your-repo/spec/powershell-integration/CHANGELOG.md"
+                href="https://github.com/riseup-asia/wp-onboarding-v5/blob/main/spec/powershell-integration/CHANGELOG.md"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -125,7 +126,8 @@ export function AboutPanel() {
           <CopyDiagnosticsButton variant="outline" size="sm" />
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }
 
