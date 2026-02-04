@@ -23,8 +23,13 @@ import {
   Info,
   AlertTriangle,
   Bug,
-  RefreshCw,
-  Filter,
+  Wifi,
+  WifiOff,
+  Upload,
+  CloudUpload,
+  GitBranch,
+  Link,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -39,59 +44,6 @@ interface LogEntry {
   details?: Record<string, unknown>;
 }
 
-const mockLogs: LogEntry[] = [
-  {
-    id: "1",
-    timestamp: new Date().toISOString(),
-    level: "info",
-    source: "sync",
-    message: "Starting sync check for plugin 'my-plugin'",
-  },
-  {
-    id: "2",
-    timestamp: new Date(Date.now() - 1000).toISOString(),
-    level: "debug",
-    source: "watcher",
-    message: "File change detected: src/includes/class-main.php",
-  },
-  {
-    id: "3",
-    timestamp: new Date(Date.now() - 2000).toISOString(),
-    level: "info",
-    source: "sync",
-    message: "Comparing 45 local files with remote",
-  },
-  {
-    id: "4",
-    timestamp: new Date(Date.now() - 3000).toISOString(),
-    level: "warn",
-    source: "sync",
-    message: "3 files differ from remote version",
-  },
-  {
-    id: "5",
-    timestamp: new Date(Date.now() - 4000).toISOString(),
-    level: "info",
-    source: "publish",
-    message: "Uploading changed files as zip archive",
-  },
-  {
-    id: "6",
-    timestamp: new Date(Date.now() - 5000).toISOString(),
-    level: "info",
-    source: "publish",
-    message: "Upload complete: 125KB transferred",
-  },
-  {
-    id: "7",
-    timestamp: new Date(Date.now() - 10000).toISOString(),
-    level: "error",
-    source: "connection",
-    message: "Failed to connect to site 'staging.example.com'",
-    details: { code: 401, reason: "Invalid credentials" },
-  },
-];
-
 const levelConfig = {
   info: { icon: Info, color: "text-blue-500", bg: "bg-blue-500/10" },
   warn: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10" },
@@ -99,28 +51,253 @@ const levelConfig = {
   debug: { icon: Bug, color: "text-muted-foreground", bg: "bg-muted" },
 };
 
+// Map WebSocket event types to log entries
+function wsEventToLogEntry(message: { type: string; data: unknown; timestamp: string }): LogEntry | null {
+  const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const data = message.data as Record<string, unknown>;
+
+  switch (message.type) {
+    // Connection events
+    case "connection":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "connection",
+        message: `WebSocket ${data?.status || "connected"}`,
+        details: data,
+      };
+
+    // File change events
+    case "file_change":
+      const summary = data?.summary as Record<string, number> | undefined;
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "watcher",
+        message: `File changes detected in plugin ${data?.pluginId}: ${summary?.created || 0} created, ${summary?.modified || 0} modified, ${summary?.deleted || 0} deleted`,
+        details: data,
+      };
+
+    // Publish events
+    case "publish_started":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "publish",
+        message: `Publishing plugin ${data?.pluginId} to site ${data?.siteId}`,
+        details: data,
+      };
+    case "publish_progress":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "debug",
+        source: "publish",
+        message: `[${data?.stage}] ${data?.message || `Progress: ${data?.progress}%`}`,
+        details: data,
+      };
+    case "publish_complete":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "publish",
+        message: `Publish complete: ${data?.filesUpdated || 0} files updated`,
+        details: data,
+      };
+
+    // Auto-publish events
+    case "auto_publish_triggered":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "auto-publish",
+        message: `Auto-publish triggered for "${data?.pluginName}" (${data?.changes} changes → ${data?.sites} sites)`,
+        details: data,
+      };
+    case "auto_publish_complete":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "auto-publish",
+        message: `Auto-published to "${data?.siteName}": ${data?.filesUpdated} files updated`,
+        details: data,
+      };
+    case "auto_publish_failed":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "error",
+        source: "auto-publish",
+        message: `Auto-publish failed for "${data?.siteName}": ${data?.error}`,
+        details: data,
+      };
+
+    // Sync events
+    case "sync_started":
+    case "sync_progress":
+    case "sync_complete":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: message.type === "sync_complete" ? "info" : "debug",
+        source: "sync",
+        message: data?.message as string || `Sync ${message.type.replace("sync_", "")}`,
+        details: data,
+      };
+
+    // Scan events
+    case "scan_started":
+    case "scan_progress":
+    case "scan_complete":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "debug",
+        source: "scan",
+        message: data?.currentFile 
+          ? `Scanning: ${data.currentFile}` 
+          : `Scan ${message.type.replace("scan_", "")}`,
+        details: data,
+      };
+
+    // Git events
+    case "git_pull_started":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "git",
+        message: `Git pull started for plugin ${data?.pluginId}`,
+        details: data,
+      };
+    case "git_pull_complete":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "git",
+        message: `Git pull complete: ${data?.filesChanged || 0} files changed`,
+        details: data,
+      };
+    case "git_pull_failed":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "error",
+        source: "git",
+        message: `Git pull failed: ${data?.error}`,
+        details: data,
+      };
+    case "git_commit_complete":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "git",
+        message: `Committed: ${data?.message}`,
+        details: data,
+      };
+    case "git_push_complete":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "info",
+        source: "git",
+        message: "Git push complete",
+        details: data,
+      };
+
+    // Connection test events
+    case "connection_test_progress":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: data?.status === "error" ? "error" : data?.status === "warning" ? "warn" : "info",
+        source: "connection",
+        message: `[${data?.step}] ${data?.message}`,
+        details: data,
+      };
+
+    // Direct log events
+    case "log":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: (data?.level as LogEntry["level"]) || "info",
+        source: (data?.context as Record<string, unknown>)?.source as string || "backend",
+        message: data?.message as string || "Unknown log",
+        details: data?.context as Record<string, unknown>,
+      };
+
+    // Error events
+    case "error":
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "error",
+        source: "error",
+        message: `[${data?.code}] ${data?.message}`,
+        details: data,
+      };
+
+    default:
+      // Log unknown events as debug
+      return {
+        id,
+        timestamp: message.timestamp,
+        level: "debug",
+        source: "unknown",
+        message: `Event: ${message.type}`,
+        details: data,
+      };
+  }
+}
+
 export default function Logs() {
-  const [logs, setLogs] = useState<LogEntry[]>(mockLogs);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [isPaused, setIsPaused] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { lastMessage } = useWebSocket();
+  const { lastMessage, isConnected } = useWebSocket();
   const { data: versionInfo } = useVersionInfo();
 
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
 
+  // Add connection status log on mount
+  useEffect(() => {
+    const entry: LogEntry = {
+      id: "initial-status",
+      timestamp: new Date().toISOString(),
+      level: isConnected ? "info" : "warn",
+      source: "connection",
+      message: isConnected 
+        ? "Connected to backend WebSocket - listening for live logs" 
+        : "WebSocket disconnected - logs will appear when connected",
+    };
+    setLogs((prev) => [entry, ...prev.filter(l => l.id !== "initial-status")]);
+  }, [isConnected]);
+
   // Add new log entries from WebSocket
   useEffect(() => {
-    if (lastMessage && lastMessage.type === "log" && !isPaused) {
-      setLogs((prev) => [lastMessage.data as LogEntry, ...prev].slice(0, 1000));
+    if (lastMessage && !isPaused) {
+      const logEntry = wsEventToLogEntry(lastMessage);
+      if (logEntry) {
+        setLogs((prev) => [logEntry, ...prev].slice(0, 1000));
+      }
     }
   }, [lastMessage, isPaused]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to top (newest logs first)
   useEffect(() => {
     if (autoScroll && scrollRef.current) {
       scrollRef.current.scrollTop = 0;
@@ -175,13 +352,46 @@ export default function Logs() {
     });
   };
 
+  const getSourceIcon = (source: string) => {
+    switch (source) {
+      case "publish":
+        return Upload;
+      case "sync":
+        return CloudUpload;
+      case "git":
+        return GitBranch;
+      case "connection":
+        return Link;
+      case "watcher":
+      case "scan":
+        return FileText;
+      case "auto-publish":
+        return Upload;
+      default:
+        return Info;
+    }
+  };
+
   return (
     <div className="space-y-6 h-full flex flex-col">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Logs</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            Logs
+            {isConnected ? (
+              <Badge variant="secondary" className="bg-primary/10 text-primary">
+                <Wifi className="h-3 w-3 mr-1" />
+                Live
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="bg-muted">
+                <WifiOff className="h-3 w-3 mr-1" />
+                Disconnected
+              </Badge>
+            )}
+          </h1>
           <p className="text-muted-foreground">
-            Real-time activity logs and operation history
+            Real-time activity logs from the backend
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {appName} <span className="font-mono">v{appVersion}</span>
@@ -306,15 +516,18 @@ export default function Logs() {
             {filteredLogs.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <ScrollText className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p>No log entries</p>
+                <p>No log entries yet</p>
                 <p className="text-xs mt-1">
-                  Logs will appear here as operations occur
+                  {isConnected 
+                    ? "Logs will appear here as operations occur" 
+                    : "Connect to the backend to see live logs"}
                 </p>
               </div>
             ) : (
               filteredLogs.map((log) => {
                 const config = levelConfig[log.level];
                 const Icon = config.icon;
+                const SourceIcon = getSourceIcon(log.source);
                 return (
                   <div
                     key={log.id}
@@ -327,12 +540,13 @@ export default function Logs() {
                       {formatTime(log.timestamp)}
                     </span>
                     <Icon className={cn("h-4 w-4 flex-shrink-0 mt-0.5", config.color)} />
-                    <Badge variant="outline" className="text-xs px-1.5 py-0">
+                    <Badge variant="outline" className="text-xs px-1.5 py-0 flex items-center gap-1">
+                      <SourceIcon className="h-3 w-3" />
                       {log.source}
                     </Badge>
                     <span className="flex-1 break-all">{log.message}</span>
-                    {log.details && (
-                      <code className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded hidden group-hover:block">
+                    {log.details && Object.keys(log.details).length > 0 && (
+                      <code className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded hidden group-hover:block max-w-[300px] truncate">
                         {JSON.stringify(log.details)}
                       </code>
                     )}

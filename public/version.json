@@ -1,22 +1,22 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T19:30:00Z",
+  "buildTime": "2026-02-04T20:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
     {
-      "version": "1.9.0",
+      "version": "1.10.0",
       "date": "2026-02-04",
-      "title": "Seedable Config, Bulk Deploy & Error Modal Improvements",
+      "title": "Auto-Publish, Live Logs & Encryption Fix",
       "changes": [
-        "🌱 Seedable configuration for sites and plugins in config.json",
-        "🚀 Deploy All button for bulk publishing selected plugins",
-        "📊 Improved Error Modal with separate Frontend/Backend stack trace tabs",
-        "⚡ Auto-publish option for plugins (triggers deploy on file changes)",
-        "📦 Database migration v4 adds AutoPublish column and seed version tracking",
-        "🔒 Application passwords stored as base64 in seed config for security"
+        "⚡ Auto-publish: Plugins with autoPublish flag auto-deploy on file changes",
+        "📺 Live Logs page connected to WebSocket for real-time backend events",
+        "🔐 Fixed seed password encryption - now uses proper AES-256-GCM",
+        "📦 Shared crypto package for consistent encryption across modules",
+        "🔔 WebSocket events for auto-publish lifecycle (triggered, complete, failed)",
+        "📊 Logs page shows connection status with Live/Disconnected badge"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"

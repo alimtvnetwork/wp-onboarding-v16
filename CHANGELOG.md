@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.10.0] - 2026-02-04
+
+### Added
+- **Auto-Publish**: Plugins with `autoPublish=true` automatically deploy to all mapped sites when file changes detected
+- **Live Logs Page**: Connected to WebSocket for real-time backend events (publish, sync, git, connection, errors)
+- **Shared Crypto Package**: `internal/crypto/crypto.go` for consistent AES-256-GCM encryption
+
+### Fixed
+- **Seed Password Encryption**: Passwords in config.json are now properly encrypted before database storage
+- **WebSocket Events**: Added missing PUBLISH_PROGRESS and auto-publish events to frontend
+
+### Backend
+- Watcher service triggers auto-publish via `PublishService` interface
+- New WebSocket events: `auto_publish_triggered`, `auto_publish_complete`, `auto_publish_failed`
+- Config seeding uses shared crypto package for password encryption
+
+---
+
 ## [1.9.0] - 2026-02-04
 
 ### Added
