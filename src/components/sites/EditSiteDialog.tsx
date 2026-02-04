@@ -168,9 +168,13 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
         if (!mappingRes.success && mappingRes.error) {
           console.warn("[EditSiteDialog] Mapping update warning:", mappingRes.error.message);
           toast.warning("Site saved, but some plugin mappings may not have updated");
+        } else {
+          toast.success("Site updated successfully", {
+            description: `${selectedPlugins.length} plugin(s) linked`,
+          });
         }
 
-        toast.success("Site updated successfully");
+        // Invalidate both sites and plugins to ensure bidirectional sync
         queryClient.invalidateQueries({ queryKey: ["sites"] });
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
         onOpenChange(false);

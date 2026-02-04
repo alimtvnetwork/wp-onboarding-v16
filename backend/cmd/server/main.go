@@ -67,13 +67,13 @@ func main() {
 	}
 	defer db.Close()
 
-	// Run migrations
-	if err := database.Migrate(db); err != nil {
+	// Run migrations (with logging)
+	if err := database.Migrate(db, log); err != nil {
 		log.Fatal("Failed to run migrations", "error", err)
 	}
 
-	// Seed from config if needed
-	if err := config.SeedIfNeeded(db, cfg); err != nil {
+	// Seed from config if needed (with logging)
+	if err := config.SeedIfNeeded(db, cfg, log); err != nil {
 		log.Fatal("Failed to seed database", "error", err)
 	}
 
