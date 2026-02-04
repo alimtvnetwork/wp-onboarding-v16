@@ -1,21 +1,21 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T18:00:00Z",
+  "buildTime": "2026-02-04T19:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
     {
-      "version": "1.7.0",
+      "version": "1.8.0",
       "date": "2026-02-04",
-      "title": "Dashboard Quick Actions & Category Persistence",
+      "title": "Bulk Operations & Git Integration",
       "changes": [
-        "🏠 Dashboard quick actions menu with shortcuts to Add Site, Register Plugin, Logs, Settings",
-        "📊 Recent activity section on Dashboard showing latest sites and plugins",
-        "💾 Database migrations for Category field on Sites and Plugins tables",
-        "🔄 Backend WebSocket emit for publish progress stages already implemented",
-        "🎯 Stats cards on Dashboard now link to relevant pages"
+        "✅ Bulk plugin selection with checkbox UI",
+        "📦 Bulk actions: Enable Watch, Disable Watch, Sync All, Git Pull, Delete",
+        "🔀 Git panel on plugin cards with status, commit, and push",
+        "📊 Git status shows branch, ahead/behind, staged/modified/untracked counts",
+        "🚀 Backend endpoints for git status, commit, and push operations"
       ],
       "knownIssues": [
         "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"

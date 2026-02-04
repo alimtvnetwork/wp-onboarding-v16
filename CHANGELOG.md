@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.8.0] - 2026-02-04
+
+### Added
+- **Bulk Plugin Operations**: Multi-select plugins with checkbox UI
+- **Bulk Actions Bar**: Enable Watch, Disable Watch, Sync All, Git Pull All, Delete Selected
+- **Git Actions Panel**: Expandable panel on git-enabled plugin cards
+- **Git Status**: Shows branch, ahead/behind counts, staged/modified/untracked files
+- **Git Commit**: Stage all changes and commit with message from UI
+- **Git Push**: Push commits to remote repository from UI
+
+### Backend
+- `GET /plugins/{id}/git/status` - Get git repository status
+- `POST /plugins/{id}/git/commit` - Commit staged changes
+- `POST /plugins/{id}/git/push` - Push to remote
+
+---
+
 ## [1.7.0] - 2026-02-04
 
 ### Added

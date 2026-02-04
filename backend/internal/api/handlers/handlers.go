@@ -61,6 +61,9 @@ type SyncServiceInterface interface {
 type GitServiceInterface interface {
 	Pull(ctx context.Context, pluginID int64) (interface{}, error)
 	PullAll(ctx context.Context) (interface{}, error)
+	Status(ctx context.Context, pluginID int64) (interface{}, error)
+	Commit(ctx context.Context, pluginID int64, message string) (interface{}, error)
+	Push(ctx context.Context, pluginID int64) (interface{}, error)
 }
 
 // WatcherServiceInterface defines watcher service methods
@@ -683,6 +686,82 @@ func GitPullAll(w http.ResponseWriter, r *http.Request) {
 	result, err := Services.GitService.PullAll(r.Context())
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E5002", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// GitStatus returns git status for a specific plugin
+func GitStatus(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.GitService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Git service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	result, err := Services.GitService.Status(r.Context(), pluginID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E5003", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// GitCommit commits changes for a specific plugin
+func GitCommit(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.GitService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Git service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	var input struct {
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	if input.Message == "" {
+		respondError(w, http.StatusBadRequest, "E1003", "Commit message is required")
+		return
+	}
+
+	result, err := Services.GitService.Commit(r.Context(), pluginID, input.Message)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E5004", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// GitPush pushes commits to remote for a specific plugin
+func GitPush(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.GitService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Git service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	result, err := Services.GitService.Push(r.Context(), pluginID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E5005", err.Error())
 		return
 	}
 	respondSuccess(w, result)

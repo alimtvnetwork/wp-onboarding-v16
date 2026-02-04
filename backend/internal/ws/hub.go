@@ -61,8 +61,17 @@ const (
 	EventScanComplete = "scan_complete"
 	
 	// Git events
-	EventGitPullStarted  = "git_pull_started"
-	EventGitPullComplete = "git_pull_complete"
+	EventGitPullStarted   = "git_pull_started"
+	EventGitPullComplete  = "git_pull_complete"
+	EventGitPullFailed    = "git_pull_failed"
+	EventGitPullAllComplete = "git_pull_all_complete"
+	EventGitCommitComplete = "git_commit_complete"
+	EventGitPushComplete  = "git_push_complete"
+	
+	// Build events
+	EventBuildStarted  = "build_started"
+	EventBuildComplete = "build_complete"
+	EventBuildFailed   = "build_failed"
 	
 	// Connection test events
 	EventConnectionTestStarted  = "connection_test_started"

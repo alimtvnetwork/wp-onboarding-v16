@@ -382,6 +382,35 @@ export const api = {
     request<{ succeeded: number; failed: number; duration: number }>(
       `/plugins/git/pull`, { method: "POST" }
     ),
+  gitStatus: (pluginId: number) =>
+    request<{ 
+      branch: string; 
+      ahead: number; 
+      behind: number; 
+      staged: number; 
+      modified: number; 
+      untracked: number; 
+      hasChanges: boolean;
+      lastCommit?: string;
+    }>(`/plugins/${pluginId}/git/status`),
+  gitCommit: (pluginId: number, message: string) =>
+    request<{ success: boolean; commitHash: string }>(
+      `/plugins/${pluginId}/git/commit`, { method: "POST", body: JSON.stringify({ message }) }
+    ),
+  gitPush: (pluginId: number) =>
+    request<{ success: boolean; pushed: number }>(
+      `/plugins/${pluginId}/git/push`, { method: "POST" }
+    ),
+
+  // Bulk operations
+  bulkUpdatePlugins: (pluginIds: number[], update: { watchEnabled?: boolean }) =>
+    request<{ updated: number }>(
+      `/plugins/bulk`, { method: "PATCH", body: JSON.stringify({ pluginIds, ...update }) }
+    ),
+  bulkDeletePlugins: (pluginIds: number[]) =>
+    request<{ deleted: number }>(
+      `/plugins/bulk`, { method: "DELETE", body: JSON.stringify({ pluginIds }) }
+    ),
 
   // File scanning (hybrid watcher)
   scanPlugin: (pluginId: number) =>

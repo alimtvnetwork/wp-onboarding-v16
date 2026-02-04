@@ -371,6 +371,178 @@ func (s *Service) UpdateConfig(ctx context.Context, config PluginGitConfig) erro
 	return err
 }
 
+// StatusResult represents git status information
+type StatusResult struct {
+	PluginID   int64  `json:"pluginId"`
+	Branch     string `json:"branch"`
+	Ahead      int    `json:"ahead"`
+	Behind     int    `json:"behind"`
+	Staged     int    `json:"staged"`
+	Modified   int    `json:"modified"`
+	Untracked  int    `json:"untracked"`
+	HasChanges bool   `json:"hasChanges"`
+	LastCommit string `json:"lastCommit,omitempty"`
+}
+
+// Status returns git status for a plugin
+func (s *Service) Status(ctx context.Context, pluginID int64) (*StatusResult, error) {
+	p, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &StatusResult{PluginID: pluginID}
+
+	// Check if git repo
+	gitDir := filepath.Join(p.Path, ".git")
+	if !dirExists(gitDir) {
+		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+	}
+
+	// Get branch
+	branch, _ := s.runGitCommand(p.Path, "rev-parse", "--abbrev-ref", "HEAD")
+	result.Branch = strings.TrimSpace(branch)
+
+	// Get ahead/behind
+	s.runGitCommand(p.Path, "fetch", "--quiet")
+	revList, _ := s.runGitCommand(p.Path, "rev-list", "--left-right", "--count", result.Branch+"...origin/"+result.Branch)
+	parts := strings.Fields(revList)
+	if len(parts) == 2 {
+		result.Ahead, _ = strconv.Atoi(parts[0])
+		result.Behind, _ = strconv.Atoi(parts[1])
+	}
+
+	// Get staged files count
+	staged, _ := s.runGitCommand(p.Path, "diff", "--cached", "--name-only")
+	if staged != "" {
+		result.Staged = len(strings.Split(strings.TrimSpace(staged), "\n"))
+	}
+
+	// Get modified files count
+	modified, _ := s.runGitCommand(p.Path, "diff", "--name-only")
+	if modified != "" {
+		result.Modified = len(strings.Split(strings.TrimSpace(modified), "\n"))
+	}
+
+	// Get untracked files count
+	untracked, _ := s.runGitCommand(p.Path, "ls-files", "--others", "--exclude-standard")
+	if untracked != "" {
+		result.Untracked = len(strings.Split(strings.TrimSpace(untracked), "\n"))
+	}
+
+	result.HasChanges = result.Staged > 0 || result.Modified > 0 || result.Untracked > 0
+
+	// Get last commit message
+	lastCommit, _ := s.runGitCommand(p.Path, "log", "-1", "--format=%s")
+	result.LastCommit = strings.TrimSpace(lastCommit)
+
+	return result, nil
+}
+
+// CommitResult represents git commit result
+type CommitResult struct {
+	PluginID   int64  `json:"pluginId"`
+	Success    bool   `json:"success"`
+	CommitHash string `json:"commitHash"`
+	Message    string `json:"message,omitempty"`
+}
+
+// Commit stages all changes and commits with the given message
+func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*CommitResult, error) {
+	p, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &CommitResult{PluginID: pluginID}
+
+	// Check if git repo
+	gitDir := filepath.Join(p.Path, ".git")
+	if !dirExists(gitDir) {
+		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+	}
+
+	// Stage all changes
+	if _, err := s.runGitCommand(p.Path, "add", "-A"); err != nil {
+		result.Success = false
+		result.Message = "Failed to stage changes"
+		return result, err
+	}
+
+	// Commit
+	output, err := s.runGitCommand(p.Path, "commit", "-m", message)
+	if err != nil {
+		result.Success = false
+		result.Message = "Failed to commit: " + output
+		return result, err
+	}
+
+	// Get commit hash
+	hash, _ := s.runGitCommand(p.Path, "rev-parse", "--short", "HEAD")
+	result.CommitHash = strings.TrimSpace(hash)
+	result.Success = true
+
+	s.wsHub.Broadcast(ws.EventGitCommitComplete, map[string]interface{}{
+		"pluginId":   pluginID,
+		"success":    true,
+		"commitHash": result.CommitHash,
+	})
+
+	s.log.Info("Git commit complete", "pluginId", pluginID, "hash", result.CommitHash)
+	return result, nil
+}
+
+// PushResult represents git push result
+type PushResult struct {
+	PluginID int64  `json:"pluginId"`
+	Success  bool   `json:"success"`
+	Pushed   int    `json:"pushed"`
+	Message  string `json:"message,omitempty"`
+}
+
+// Push pushes commits to remote
+func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error) {
+	p, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &PushResult{PluginID: pluginID}
+
+	// Check if git repo
+	gitDir := filepath.Join(p.Path, ".git")
+	if !dirExists(gitDir) {
+		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
+	}
+
+	// Get current branch
+	branch, _ := s.runGitCommand(p.Path, "rev-parse", "--abbrev-ref", "HEAD")
+	branch = strings.TrimSpace(branch)
+
+	// Count commits to push
+	revList, _ := s.runGitCommand(p.Path, "rev-list", "--count", branch+"...origin/"+branch)
+	result.Pushed, _ = strconv.Atoi(strings.TrimSpace(revList))
+
+	// Push
+	output, err := s.runGitCommand(p.Path, "push", "origin", branch)
+	if err != nil {
+		result.Success = false
+		result.Message = "Failed to push: " + output
+		return result, err
+	}
+
+	result.Success = true
+
+	s.wsHub.Broadcast(ws.EventGitPushComplete, map[string]interface{}{
+		"pluginId": pluginID,
+		"success":  true,
+		"pushed":   result.Pushed,
+	})
+
+	s.log.Info("Git push complete", "pluginId", pluginID, "pushed", result.Pushed)
+	return result, nil
+}
+
 // runGitCommand executes a git command in the specified directory
 func (s *Service) runGitCommand(dir string, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
