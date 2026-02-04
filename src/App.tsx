@@ -13,6 +13,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Layout } from "@/components/layout/Layout";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { GlobalErrorModal } from "@/components/errors/GlobalErrorModal";
+import { AppErrorBoundary } from "@/components/errors/AppErrorBoundary";
 import { toast } from "sonner";
 import { isApiClientError } from "@/lib/api";
 import { useErrorStore } from "@/stores/errorStore";
@@ -54,6 +55,7 @@ function showGlobalError(error: unknown, context?: { endpoint?: string; method?:
   const captured = captureException(error, {
     endpoint: context?.endpoint,
     method: context?.method,
+    source: "App.showGlobalError",
   });
   toast.error("Request failed", {
     description: "Click for details",
@@ -122,6 +124,7 @@ function GlobalErrorHandler({ children }: { children: React.ReactNode }) {
       const captured = captureException(reason, {
         endpoint: `unhandled:${errorSource}`,
         method: "ASYNC",
+        source: "App.GlobalErrorHandler.unhandledrejection",
       });
 
       toast.error(`Async error in ${errorSource}`, {
@@ -148,23 +151,25 @@ const App = () => (
           <Toaster />
           <Sonner />
           <GlobalErrorModal />
-          <BrowserRouter>
-            <WebSocketProvider>
-              <Routes>
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<Navigate to="/dashboard" replace />} />
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="sites" element={<Sites />} />
-                  <Route path="plugins" element={<Plugins />} />
-                  <Route path="tests" element={<Tests />} />
-                  <Route path="logs" element={<Logs />} />
-                  <Route path="settings" element={<Settings />} />
-                  <Route path="errors" element={<Errors />} />
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </WebSocketProvider>
-          </BrowserRouter>
+          <AppErrorBoundary>
+            <BrowserRouter>
+              <WebSocketProvider>
+                <Routes>
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<Navigate to="/dashboard" replace />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="sites" element={<Sites />} />
+                    <Route path="plugins" element={<Plugins />} />
+                    <Route path="tests" element={<Tests />} />
+                    <Route path="logs" element={<Logs />} />
+                    <Route path="settings" element={<Settings />} />
+                    <Route path="errors" element={<Errors />} />
+                  </Route>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </WebSocketProvider>
+            </BrowserRouter>
+          </AppErrorBoundary>
         </GlobalErrorHandler>
       </TooltipProvider>
     </ThemeProvider>
