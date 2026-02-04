@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "releaseDate": "2026-02-04",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-02-04",
+      "title": "Initial Release",
+      "changes": [
+        "🎉 Site management with WordPress REST API integration",
+        "🔌 Plugin manager with file watcher support",
+        "🔄 Real-time sync dashboard",
+        "🛡️ Global error handling with detailed modal",
+        "⚙️ Configurable backend with 12-hour timestamp format",
+        "🔧 PowerShell runner with -r rebuild flag"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend"
+      ]
+    }
+  ],
+  "roadmap": [
+    {
+      "status": "planned",
+      "title": "E2E Testing Suite",
+      "description": "Automated end-to-end tests for all critical workflows"
+    },
+    {
+      "status": "planned",
+      "title": "Bulk Plugin Operations",
+      "description": "Enable/disable/sync multiple plugins at once"
+    },
+    {
+      "status": "planned",
+      "title": "Git Integration",
+      "description": "Commit and push plugin changes directly from the UI"
+    },
+    {
+      "status": "in-progress",
+      "title": "What's New Popup",
+      "description": "Version-based changelog notification system"
+    }
+  ]
+}
