@@ -25,6 +25,15 @@
       "date": "2026-02-04",
       "title": "Migration Logging & Mapping Sync",
       "changes": [
+        "📊 Detailed logging for all migration steps with version tracking",
+        "🌱 Comprehensive seeding logs showing site/plugin creation and mapping",
+        "🔧 Simplified log format: [vX.X.X - TIME] message (LEVEL file:line)",
+        "⚠️ Warning logs for failed mapping attempts with error details",
+        "🔗 Fixed bidirectional plugin↔site mapping sync",
+        "✅ Success toast notifications on save operations"
+      ]
+    },
+    {
       "version": "1.17.0",
       "date": "2026-02-04",
       "title": "Frontend Logging & Resilience System",
