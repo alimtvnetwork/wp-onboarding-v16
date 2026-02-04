@@ -30,15 +30,19 @@ func (s *Service) List(ctx context.Context) ([]models.Plugin, error) {
 	for rows.Next() {
 		var p models.Plugin
 		var excludeJSON string
-		var lastScannedAt sql.NullString
+		var lastScannedAt, createdAtStr, updatedAtStr sql.NullString
 
 		err := rows.Scan(
 			&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
-			&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
+			&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr,
 		)
 		if err != nil {
 			return nil, apperror.Wrap(err, apperror.ErrDatabaseScan, "failed to scan plugin row")
 		}
+
+		// Parse timestamps from SQLite datetime strings
+		p.CreatedAt = parseDateTime(createdAtStr.String)
+		p.UpdatedAt = parseDateTime(updatedAtStr.String)
 
 		// Parse exclude patterns JSON
 		if excludeJSON != "" {
@@ -70,7 +74,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 
 	var p models.Plugin
 	var excludeJSON string
-	var lastScannedAt sql.NullString
+	var lastScannedAt, createdAtStr, updatedAtStr sql.NullString
 
 	err := s.db.QueryRowContext(ctx, `
 		SELECT Id, Name, Path, WatchEnabled, ExcludePatterns, 
@@ -79,7 +83,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 		WHERE Id = ?
 	`, id).Scan(
 		&p.ID, &p.Name, &p.Path, &p.WatchEnabled, &excludeJSON,
-		&p.FileCount, &lastScannedAt, &p.CreatedAt, &p.UpdatedAt,
+		&p.FileCount, &lastScannedAt, &createdAtStr, &updatedAtStr,
 	)
 
 	if err == sql.ErrNoRows {
@@ -89,6 +93,10 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
 	}
+
+	// Parse timestamps from SQLite datetime strings
+	p.CreatedAt = parseDateTime(createdAtStr.String)
+	p.UpdatedAt = parseDateTime(updatedAtStr.String)
 
 	if excludeJSON != "" {
 		json.Unmarshal([]byte(excludeJSON), &p.ExcludePatterns)
@@ -100,6 +108,23 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 
 	p.Mappings, _ = s.GetMappings(ctx, p.ID)
 	return &p, nil
+}
+
+// parseDateTime parses SQLite datetime strings into time.Time
+// SQLite stores datetime() as "YYYY-MM-DD HH:MM:SS" format
+func parseDateTime(s string) time.Time {
+	if s == "" {
+		return time.Time{}
+	}
+	// Try SQLite datetime format first
+	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+		return t
+	}
+	// Fallback to RFC3339
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t
+	}
+	return time.Time{}
 }
 
 // Create registers a new local plugin directory
