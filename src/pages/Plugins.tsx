@@ -557,8 +557,12 @@ export default function Plugins() {
         remoteSlug: remoteSlug,
       });
       if (response.success) {
-        toast.success("Site mappings updated");
+        toast.success("Site mappings saved", {
+          description: `${selectedSites.length} site(s) linked to ${selectedPlugin.name}`,
+        });
+        // Invalidate both plugins and sites to ensure bidirectional sync
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        queryClient.invalidateQueries({ queryKey: ["sites"] });
         setShowMappingDialog(false);
       } else if (response.error) {
         const captured = captureError(response.error, {
@@ -700,7 +704,7 @@ export default function Plugins() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <CardTitle className="text-base flex items-center gap-2 flex-wrap">
-                        {plugin.name}
+                        <span className="truncate max-w-[200px]">{plugin.name}</span>
                         <CategoryBadge category={plugin.category} size="sm" />
                         {plugin.gitEnabled && (
                           <Badge variant="secondary" className="text-xs">
@@ -709,7 +713,15 @@ export default function Plugins() {
                           </Badge>
                         )}
                       </CardTitle>
-                      <p className="text-sm text-muted-foreground font-mono truncate">
+                      <p 
+                        className="text-sm text-muted-foreground font-mono break-all line-clamp-2 cursor-pointer hover:text-foreground transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(plugin.path);
+                          toast.success("Path copied to clipboard");
+                        }}
+                        title="Click to copy path"
+                      >
                         {plugin.path}
                       </p>
                     </div>

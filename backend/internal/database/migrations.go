@@ -3,6 +3,8 @@ package database
 
 import (
 	"fmt"
+
+	"wp-plugin-publish/internal/logger"
 )
 
 // Migration represents a database migration
@@ -209,7 +211,9 @@ var migrations = []Migration{
 }
 
 // Migrate runs all pending migrations
-func Migrate(db *DB) error {
+func Migrate(db *DB, log *logger.Logger) error {
+	log.Info("Starting database migrations")
+
 	// Create migrations table if not exists
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS _migrations (
@@ -219,6 +223,7 @@ func Migrate(db *DB) error {
 		)
 	`)
 	if err != nil {
+		log.Error("Failed to create migrations table", "error", err)
 		return fmt.Errorf("failed to create migrations table: %w", err)
 	}
 
@@ -226,23 +231,31 @@ func Migrate(db *DB) error {
 	var currentVersion int
 	err = db.QueryRow("SELECT COALESCE(MAX(Version), 0) FROM _migrations").Scan(&currentVersion)
 	if err != nil {
+		log.Error("Failed to get current migration version", "error", err)
 		return fmt.Errorf("failed to get current migration version: %w", err)
 	}
 
+	log.Debug("Current migration version", "version", currentVersion)
+
 	// Apply pending migrations
+	appliedCount := 0
 	for _, m := range migrations {
 		if m.Version <= currentVersion {
 			continue
 		}
 
+		log.Info("Applying migration", "version", m.Version, "description", m.Description)
+
 		// Run migration in transaction
 		tx, err := db.Begin()
 		if err != nil {
+			log.Error("Failed to begin transaction", "version", m.Version, "error", err)
 			return fmt.Errorf("failed to begin transaction for migration %d: %w", m.Version, err)
 		}
 
 		if _, err := tx.Exec(m.SQL); err != nil {
 			tx.Rollback()
+			log.Error("Migration SQL failed", "version", m.Version, "description", m.Description, "error", err)
 			return fmt.Errorf("failed to apply migration %d (%s): %w", m.Version, m.Description, err)
 		}
 
@@ -251,12 +264,23 @@ func Migrate(db *DB) error {
 			m.Version, m.Description,
 		); err != nil {
 			tx.Rollback()
+			log.Error("Failed to record migration", "version", m.Version, "error", err)
 			return fmt.Errorf("failed to record migration %d: %w", m.Version, err)
 		}
 
 		if err := tx.Commit(); err != nil {
+			log.Error("Failed to commit migration", "version", m.Version, "error", err)
 			return fmt.Errorf("failed to commit migration %d: %w", m.Version, err)
 		}
+
+		log.Info("Migration completed", "version", m.Version)
+		appliedCount++
+	}
+
+	if appliedCount > 0 {
+		log.Info("Migrations applied", "count", appliedCount, "currentVersion", len(migrations))
+	} else {
+		log.Debug("No new migrations to apply", "currentVersion", currentVersion)
 	}
 
 	return nil

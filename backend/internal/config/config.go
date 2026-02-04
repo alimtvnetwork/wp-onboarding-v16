@@ -10,6 +10,7 @@ import (
 
 	"wp-plugin-publish/internal/crypto"
 	"wp-plugin-publish/internal/database"
+	"wp-plugin-publish/internal/logger"
 )
 
 // Config represents the application configuration
@@ -87,11 +88,11 @@ type SeedSite struct {
 
 // SeedPlugin represents a plugin to seed
 type SeedPlugin struct {
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Category    string `json:"category"`
-	GitEnabled  bool   `json:"gitEnabled"`
-	AutoPublish bool   `json:"autoPublish"`
+	Name        string   `json:"name"`
+	Path        string   `json:"path"`
+	Category    string   `json:"category"`
+	GitEnabled  bool     `json:"gitEnabled"`
+	AutoPublish bool     `json:"autoPublish"`
 	SiteNames   []string `json:"siteNames"` // Names of sites to link
 }
 
@@ -170,27 +171,39 @@ func Load(path string) (*Config, error) {
 }
 
 // SeedIfNeeded seeds the database from config if version is newer
-func SeedIfNeeded(db *database.DB, cfg *Config) error {
+func SeedIfNeeded(db *database.DB, cfg *Config, log *logger.Logger) error {
+	log.Info("Checking seed requirements", "configVersion", cfg.Version, "seedEnabled", cfg.Seed.Enabled)
+
 	// Get current seed version from database
 	currentVersion, err := db.GetSeedVersion()
 	if err != nil {
+		log.Error("Failed to get seed version from database", "error", err)
 		return err
 	}
+	log.Debug("Current seed version", "version", currentVersion)
 
 	// Compare versions and seed if config is newer
 	if compareVersions(cfg.Version, currentVersion) > 0 {
-		if err := seedFromConfig(db, cfg); err != nil {
+		log.Info("Seeding database", "from", currentVersion, "to", cfg.Version)
+		if err := seedFromConfig(db, cfg, log); err != nil {
+			log.Error("Seeding failed", "error", err)
 			return err
 		}
 		if err := db.SetSeedVersion(cfg.Version); err != nil {
+			log.Error("Failed to update seed version", "error", err)
 			return err
 		}
+		log.Info("Seed version updated", "version", cfg.Version)
+	} else {
+		log.Debug("No seeding required", "configVersion", cfg.Version, "dbVersion", currentVersion)
 	}
 
 	// ALWAYS ensure mappings exist on every startup (idempotent)
 	// This catches cases where plugins/sites exist but mappings are missing
 	if cfg.Seed.Enabled {
-		if err := ensureMappingsExist(db, cfg); err != nil {
+		log.Info("Ensuring all plugin→site mappings exist")
+		if err := ensureMappingsExist(db, cfg, log); err != nil {
+			log.Error("Mapping verification failed", "error", err)
 			return err
 		}
 	}
@@ -199,7 +212,9 @@ func SeedIfNeeded(db *database.DB, cfg *Config) error {
 }
 
 // seedFromConfig populates database with default values from config
-func seedFromConfig(db *database.DB, cfg *Config) error {
+func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
+	log.Debug("Seeding default settings")
+
 	// Seed default settings
 	settings := map[string]interface{}{
 		"watcher.pollIntervalMs":     cfg.Watcher.PollIntervalMs,
@@ -213,13 +228,14 @@ func seedFromConfig(db *database.DB, cfg *Config) error {
 
 	for key, value := range settings {
 		if err := db.SetSettingIfNotExists(key, value); err != nil {
-			return err
+			log.Warn("Failed to set setting", "key", key, "error", err)
 		}
 	}
 
 	// Seed sites and plugins if enabled
 	if cfg.Seed.Enabled {
-		if err := seedSitesAndPlugins(db, cfg); err != nil {
+		log.Info("Seeding sites and plugins", "siteCount", len(cfg.Seed.Sites), "pluginCount", len(cfg.Seed.Plugins))
+		if err := seedSitesAndPlugins(db, cfg, log); err != nil {
 			return err
 		}
 	}
@@ -248,7 +264,7 @@ func normalizeUrl(rawUrl string) string {
 
 // seedSitesAndPlugins seeds test sites and plugins from config
 // This implementation maps ALL plugins to ALL sites (requested behaviour)
-func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
+func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error {
 	// Collect all seeded site IDs (for all→all mapping)
 	var allSiteIds []int64
 
@@ -256,21 +272,23 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 	encryptionKey := []byte(cfg.Security.EncryptionKey)
 
 	// Seed sites
+	log.Debug("Processing seed sites", "count", len(cfg.Seed.Sites))
 	for _, site := range cfg.Seed.Sites {
 		// Normalize URL before checking/inserting
 		normalizedUrl := normalizeUrl(site.URL)
+		log.Debug("Processing seed site", "name", site.Name, "url", normalizedUrl)
 
 		// Decode base64 password to get plaintext
 		passwordPlaintext, err := base64.StdEncoding.DecodeString(site.ApplicationPassword)
 		if err != nil {
-			// Try raw password if base64 decode fails
+			log.Warn("Base64 decode failed for site password, using raw", "site", site.Name)
 			passwordPlaintext = []byte(site.ApplicationPassword)
 		}
 
 		// Check if site already exists by URL
 		existingId, err := db.GetSiteIdByUrl(normalizedUrl)
 		if err == nil && existingId > 0 {
-			// Site exists - still add to allSiteIds for mappings
+			log.Debug("Site already exists", "name", site.Name, "id", existingId)
 			allSiteIds = append(allSiteIds, existingId)
 			continue
 		}
@@ -278,74 +296,123 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 		// IMPORTANT: Encrypt password using AES-256-GCM before storing
 		encryptedPassword, err := crypto.Encrypt(passwordPlaintext, encryptionKey)
 		if err != nil {
-			continue // Skip if encryption fails
+			log.Error("Failed to encrypt password for site", "site", site.Name, "error", err)
+			continue
 		}
 
 		// Insert site with properly encrypted password and normalized URL
 		id, err := db.CreateSeedSite(site.Name, normalizedUrl, site.Username, encryptedPassword, site.Category)
 		if err != nil {
-			continue // Skip if insert fails (e.g., duplicate)
+			log.Error("Failed to create seed site", "name", site.Name, "error", err)
+			continue
 		}
+		log.Info("Created seed site", "name", site.Name, "id", id)
 		allSiteIds = append(allSiteIds, id)
 	}
 
 	// Seed plugins and map each to ALL sites
+	log.Debug("Processing seed plugins", "count", len(cfg.Seed.Plugins))
 	for _, plugin := range cfg.Seed.Plugins {
+		log.Debug("Processing seed plugin", "name", plugin.Name, "path", plugin.Path)
+
 		var pluginId int64
 
 		// Check if plugin already exists by path
 		existingId, err := db.GetPluginIdByPath(plugin.Path)
 		if err == nil && existingId > 0 {
-			// Plugin exists - use existing ID for mappings
+			log.Debug("Plugin already exists", "name", plugin.Name, "id", existingId)
 			pluginId = existingId
 		} else {
 			// Insert new plugin
 			pluginId, err = db.CreateSeedPlugin(plugin.Name, plugin.Path, plugin.Category, plugin.GitEnabled, plugin.AutoPublish)
 			if err != nil {
-				continue // Skip if insert fails
+				log.Error("Failed to create seed plugin", "name", plugin.Name, "path", plugin.Path, "error", err)
+				continue
 			}
+			log.Info("Created seed plugin", "name", plugin.Name, "id", pluginId)
 		}
 
 		// Create mappings to ALL seeded sites (all→all)
 		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
+		mappingsCreated := 0
 		for _, siteId := range allSiteIds {
-			_ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+			err := db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+			if err != nil {
+				// Check if it's a duplicate error (expected for existing mappings)
+				if strings.Contains(err.Error(), "UNIQUE") {
+					log.Debug("Mapping already exists", "pluginId", pluginId, "siteId", siteId)
+				} else {
+					log.Warn("Failed to create mapping", "pluginId", pluginId, "siteId", siteId, "error", err)
+				}
+			} else {
+				mappingsCreated++
+				log.Debug("Created mapping", "pluginId", pluginId, "siteId", siteId, "remoteSlug", remoteSlug)
+			}
+		}
+		if mappingsCreated > 0 {
+			log.Info("Plugin mappings created", "plugin", plugin.Name, "mappings", mappingsCreated)
 		}
 	}
 
+	log.Info("Seeding complete", "sitesTotal", len(allSiteIds), "pluginsTotal", len(cfg.Seed.Plugins))
 	return nil
 }
 
 // ensureMappingsExist ensures all plugin→site mappings exist (idempotent, runs every startup)
 // This handles cases where plugins/sites exist but mappings were not created
-func ensureMappingsExist(db *database.DB, cfg *Config) error {
+func ensureMappingsExist(db *database.DB, cfg *Config, log *logger.Logger) error {
+	log.Debug("Verifying mappings exist for all seeded plugins")
+
 	// Get all site IDs
 	var siteIds []int64
 	for _, site := range cfg.Seed.Sites {
 		normalizedUrl := normalizeUrl(site.URL)
 		if id, err := db.GetSiteIdByUrl(normalizedUrl); err == nil && id > 0 {
 			siteIds = append(siteIds, id)
+		} else {
+			log.Warn("Site not found in database", "name", site.Name, "url", normalizedUrl, "error", err)
 		}
 	}
 
 	if len(siteIds) == 0 {
-		return nil // No sites to map
+		log.Debug("No sites found for mapping verification")
+		return nil
 	}
 
+	log.Debug("Found sites for mapping", "count", len(siteIds))
+
 	// Ensure each plugin is mapped to all sites
+	mappingsCreated := 0
 	for _, plugin := range cfg.Seed.Plugins {
 		pluginId, err := db.GetPluginIdByPath(plugin.Path)
 		if err != nil || pluginId == 0 {
-			continue // Plugin doesn't exist, skip
+			log.Warn("Plugin not found for mapping", "name", plugin.Name, "path", plugin.Path, "error", err)
+			continue
 		}
 
 		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
 		for _, siteId := range siteIds {
 			// CreateSeedMapping uses INSERT OR IGNORE, so this is idempotent
-			_ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+			err := db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+			if err != nil {
+				if strings.Contains(err.Error(), "UNIQUE") {
+					// Mapping already exists - this is expected
+					log.Debug("Mapping already exists", "pluginId", pluginId, "siteId", siteId)
+				} else {
+					log.Warn("Mapping creation failed", "pluginId", pluginId, "siteId", siteId, "error", err)
+				}
+			} else {
+				mappingsCreated++
+				log.Debug("Created missing mapping", "pluginId", pluginId, "siteId", siteId)
+			}
 		}
 	}
 
+	if mappingsCreated > 0 {
+		log.Info("Mapping verification complete", "mappingsCreated", mappingsCreated)
+	} else {
+		log.Debug("All mappings already exist")
+	}
 	return nil
 }
 

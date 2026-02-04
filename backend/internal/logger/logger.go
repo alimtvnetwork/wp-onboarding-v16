@@ -64,14 +64,10 @@ func New(cfg Config) *Logger {
 		cfg.TimeFormat = time.RFC3339
 	}
 
-	// Build prefix if app name is provided
+	// Build prefix with just version number (cleaner format)
 	prefix := ""
-	if cfg.AppName != "" {
-		prefix = "[" + cfg.AppName
-		if cfg.AppVersion != "" {
-			prefix += " v" + cfg.AppVersion
-		}
-		prefix += "] "
+	if cfg.AppVersion != "" {
+		prefix = "[v" + cfg.AppVersion
 	}
 
 	return &Logger{config: cfg, prefix: prefix}
@@ -105,8 +101,12 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 		builder.WriteString(levelColors[level])
 	}
 	
-	// Format: [APP vX.X.X] [TIME] LEVEL file:line - message key=value...
-	builder.WriteString(fmt.Sprintf("%s[%s] %-5s %s:%d - %s", l.prefix, timestamp, levelStr, file, line, msg))
+	// Format: [vX.X.X - TIME] message key=value... (LEVEL file:line)
+	if l.prefix != "" {
+		builder.WriteString(fmt.Sprintf("%s - %s] %s", l.prefix, timestamp, msg))
+	} else {
+		builder.WriteString(fmt.Sprintf("[%s] %s", timestamp, msg))
+	}
 
 	// Add key-value pairs
 	for i := 0; i < len(keyvals); i += 2 {
@@ -114,6 +114,9 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 			builder.WriteString(fmt.Sprintf(" %v=%v", keyvals[i], keyvals[i+1]))
 		}
 	}
+
+	// Add level and location at the end
+	builder.WriteString(fmt.Sprintf(" (%s %s:%d)", levelStr, file, line))
 
 	if !l.config.NoColor {
 		builder.WriteString(colorReset)
