@@ -46,19 +46,35 @@ const combinedStack = error.stackTrace
 
 1. **Tabbed Interface**
    - Overview: Message, details, file location, stack trace
-   - Request Info: API endpoint, method, request body
+   - Request Info: API endpoint, method, request body, **resolved URL**
    - Full Context: Complete JSON context data
    - Suggested Fixes: Error code-specific recommendations
 
-2. **Stack Trace Display**
+2. **API Connectivity Display** *(Mandatory)*
+   - **Request URL:** Fully resolved URL that was actually called
+   - **API Base:** Configured base from `resolveApiBase()`
+   - **VITE_API_URL:** Environment variable state (set or not)
+
+3. **Stack Trace Display**
    - Shows combined backend + client stack traces
    - Copy button for each section
    - Syntax-highlighted pre-formatted display
 
-3. **Copy Functionality**
+4. **Copy Functionality**
    - Copy individual sections
    - Copy full Markdown-formatted report
    - Shareable format for support tickets
+
+### Connectivity Error Detection
+
+The API client detects HTML-instead-of-JSON responses (e.g., when backend is down and dev server serves the SPA fallback):
+
+| Code | Meaning |
+|------|---------|
+| `E9005` | Received HTML instead of JSON—likely port/URL mismatch |
+| `E9006` | Network/fetch failure—backend unreachable |
+
+**Rule:** Always show the resolved request URL in error modals so users can verify the correct endpoint.
 
 ---
 

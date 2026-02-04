@@ -131,4 +131,39 @@ src/
 
 ---
 
+## API & Endpoint Configuration
+
+### Endpoint Resolution (`src/lib/endpoints.ts`)
+
+All API and WebSocket URLs are resolved through a centralized module:
+
+| Env Variable | Purpose | Example |
+|--------------|---------|---------|
+| `VITE_API_URL` | Backend origin | `http://localhost:8080` |
+| `VITE_WS_URL` | WebSocket URL | `ws://localhost:8080/ws` |
+
+**Rules:**
+- Never hardcode `localhost:8080` in components
+- Always use `resolveApiUrl()` or `resolveWsUrl()`
+- Detect HTML-instead-of-JSON responses (error code `E9005`)
+
+### Error Modal Requirements
+
+**Mandatory:** Every user-visible error must display in the **Global Error Modal** with:
+- Fully resolved request URL (`requestUrl`)
+- Configured API base (`apiBase`)
+- `VITE_API_URL` environment state
+
+---
+
+## Backend Logging
+
+### Timestamp Configuration
+
+- **Single source of truth:** `config.json` → `logging.timeFormat`
+- **Default format:** `2006-01-02 03:04:05 PM` (12-hour clock)
+- **Never hardcode** timestamp formats in logger code
+
+---
+
 *Keep this file updated when conventions change.*
