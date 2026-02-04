@@ -22,9 +22,9 @@ class Riseup_Logger {
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var Riseup_Database|null
      */
-    private $db;
+    private $db = null;
 
     /**
      * File logger instance.
@@ -57,8 +57,20 @@ class Riseup_Logger {
      */
     private function __construct() {
         $this->file_logger = Riseup_File_Logger::get_instance();
-        $this->db = Riseup_Database::get_instance();
+        // NOTE: We get the database instance lazily to avoid circular dependency
         $this->file_logger->info('Transaction logger initialized');
+    }
+
+    /**
+     * Get database instance (lazy loading).
+     *
+     * @return Riseup_Database
+     */
+    private function get_db() {
+        if ($this->db === null) {
+            $this->db = Riseup_Database::get_instance();
+        }
+        return $this->db;
     }
 
     /**
@@ -73,7 +85,8 @@ class Riseup_Logger {
                 $ip = $_SERVER[$key];
                 // Handle comma-separated IPs (X-Forwarded-For)
                 if (strpos($ip, ',') !== false) {
-                    $ip = trim(explode(',', $ip)[0]);
+                    $parts = explode(',', $ip);
+                    $ip = trim($parts[0]);
                 }
                 if (filter_var($ip, FILTER_VALIDATE_IP)) {
                     return $ip;
@@ -89,6 +102,14 @@ class Riseup_Logger {
      * @return array User info with 'login' and 'id'.
      */
     private function get_user_info() {
+        // Check if WordPress user functions are available
+        if (!function_exists('wp_get_current_user')) {
+            return array(
+                'login' => 'anonymous',
+                'id'    => 0,
+            );
+        }
+        
         $current_user = wp_get_current_user();
         if ($current_user && $current_user->ID > 0) {
             return array(
@@ -121,7 +142,7 @@ class Riseup_Logger {
         ));
         
         $user = $this->get_user_info();
-        return $this->db->log_transaction(
+        return $this->get_db()->log_transaction(
             $action,
             $plugin_slug,
             null, // post_id
@@ -153,7 +174,7 @@ class Riseup_Logger {
         ));
         
         $user = $this->get_user_info();
-        return $this->db->log_transaction(
+        return $this->get_db()->log_transaction(
             $action,
             null, // plugin_slug
             $post_id,
@@ -179,7 +200,7 @@ class Riseup_Logger {
         
         // For auth failures, we may not have a valid user
         $provided_user = isset($details['username']) ? $details['username'] : 'unknown';
-        return $this->db->log_transaction(
+        return $this->get_db()->log_transaction(
             RISEUP_ACTION_AUTH_FAILED,
             null,
             null,
