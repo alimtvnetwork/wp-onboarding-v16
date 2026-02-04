@@ -1,332 +1,300 @@
 
-# Critical Fix: Seeding, Mapping Persistence & Bidirectional Sync (v1.19.0)
+# Rise Up Uploader Plugin - Enhancement Plan
 
-## Problem Analysis
-
-Based on the screenshot and code analysis, multiple interconnected issues are causing mapping failures:
-
-### Issue 1: INSERT OR IGNORE Silent Failures
-The `CreateSeedMapping` function in `backend/internal/database/database.go` uses `INSERT OR IGNORE`, which:
-- Returns `nil` error even when no row is inserted (constraint violation)
-- Causes the code to incorrectly count "created" mappings
-- No `RowsAffected()` check to verify actual insertion
-
-### Issue 2: Config Uses siteNames But Logic Ignores It
-The `SeedPlugin` struct has `siteNames []string` but `seedSitesAndPlugins()` maps ALL plugins to ALL sites regardless. This is confusing and the user wants explicit site IDs.
-
-### Issue 3: Frontend Bidirectional Sync Broken
-- Edit Site dialog saves to `/sites/{id}/mappings` (PUT)
-- Plugins page reads from `plugin.mappings` (populated by `List()`)
-- Cache invalidation happens but queries may not refetch properly
-- Tab state resets when switching between tabs
-
-### Issue 4: Version Comparison May Prevent Seeding
-If the database already has `seed_version = 1.18.0` and config is `1.18.0`, seeding is skipped entirely. The `ensureMappingsExist` function runs but may not find sites/plugins if they were created with different paths.
+## Summary
+Transform the existing `Plugin Uploader Helper` WordPress plugin into a professional **Rise Up Uploader** plugin with:
+- Centralized constants file (no magic strings)
+- SQLite database for transaction logging (audit trail)
+- REST API for querying logs with filtering and pagination
+- Blog post/category publishing capabilities
+- Corresponding Go backend constants and integration
 
 ---
 
-## Solution Architecture
+## Phase 1: WordPress Plugin Restructure
 
-### Phase 1: Fix Database Seeding with Proper Validation
+### 1.1 Create Constants File
+Create `plugins-uploader-helper/includes/constants.php` with all string constants:
 
-**File: `backend/internal/database/database.go`**
+```php
+// Plugin Identity
+RISEUP_UPLOADER_VERSION = '1.2.0'
+RISEUP_UPLOADER_SLUG = 'riseup-uploader'
+RISEUP_UPLOADER_NAME = 'Rise Up Uploader'
 
-Replace `CreateSeedMapping` to return actual insertion status:
+// REST API
+RISEUP_API_NAMESPACE = 'riseup-uploader'
+RISEUP_API_VERSION = 'v1'
 
-```go
-// CreateSeedMapping creates a plugin-site mapping for seeding
-// Returns (created bool, error) - created is true only if a new row was inserted
-func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string) (bool, error) {
-    result, err := db.Exec(`
-        INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, SyncStatus, CreatedAt, UpdatedAt)
-        VALUES (?, ?, ?, 'pending', datetime('now'), datetime('now'))
-    `, pluginID, siteID, remoteSlug)
-    if err != nil {
-        return false, err
-    }
-    rows, _ := result.RowsAffected()
-    return rows > 0, nil
-}
+// Database
+RISEUP_DB_NAME = 'riseup_uploader.db'
+RISEUP_TABLE_TRANSACTIONS = 'transactions'
+
+// Actions
+RISEUP_ACTION_UPLOAD = 'upload'
+RISEUP_ACTION_ENABLE = 'enable'
+RISEUP_ACTION_DISABLE = 'disable'
+RISEUP_ACTION_DELETE = 'delete'
+RISEUP_ACTION_FILE_REPLACE = 'file_replace'
+RISEUP_ACTION_FILE_DELETE = 'file_delete'
+RISEUP_ACTION_POST_CREATE = 'post_create'
+RISEUP_ACTION_POST_UPDATE = 'post_update'
+RISEUP_ACTION_CATEGORY_CREATE = 'category_create'
+
+// Response Messages
+RISEUP_MSG_SUCCESS = 'Operation completed successfully'
+RISEUP_MSG_UNAUTHORIZED = 'Authentication required'
+RISEUP_MSG_FORBIDDEN = 'Insufficient permissions'
+// ... more messages
 ```
 
-**File: `backend/internal/config/config.go`**
+### 1.2 Create Database Class
+Create `plugins-uploader-helper/includes/class-database.php`:
 
-Update callers to use new signature and add detailed logging:
-
-```go
-// In seedSitesAndPlugins
-created, err := db.CreateSeedMapping(pluginId, siteId, remoteSlug)
-if err != nil {
-    log.Warn("Failed to create mapping", "pluginId", pluginId, "siteId", siteId, "error", err)
-} else if created {
-    mappingsCreated++
-    log.Info("Created seed mapping", "pluginId", pluginId, "siteId", siteId, "remoteSlug", remoteSlug)
-} else {
-    log.Debug("Mapping already exists (skipped)", "pluginId", pluginId, "siteId", siteId)
-}
+```text
++-----------------------------------------------------------+
+|                    transactions table                      |
++-----------------------------------------------------------+
+| id          | INTEGER PRIMARY KEY AUTOINCREMENT           |
+| action      | TEXT NOT NULL (upload/enable/disable/etc)   |
+| plugin_slug | TEXT (nullable for non-plugin operations)   |
+| post_id     | INTEGER (nullable, for blog operations)     |
+| user_login  | TEXT NOT NULL (WordPress username)          |
+| user_id     | INTEGER (WordPress user ID)                 |
+| ip_address  | TEXT NOT NULL                               |
+| details     | TEXT (JSON blob with extra context)         |
+| status      | TEXT NOT NULL (success/failed)              |
+| error_msg   | TEXT (nullable)                             |
+| created_at  | TEXT NOT NULL (ISO8601 timestamp)           |
++-----------------------------------------------------------+
 ```
 
-### Phase 2: Simplify Config with Site IDs (Optional Approach)
+Features:
+- PDO SQLite connection with WAL mode
+- Auto-create table on first use
+- Log every operation with user context
+- Query methods with filtering and pagination
 
-**File: `backend/internal/config/config.go`**
+### 1.3 Update Main Plugin File
+Rename and restructure `plugin-uploader-helper.php` to `riseup-uploader.php`:
 
-Add `siteIds` field to `SeedPlugin` as an alternative to `siteNames`:
+- Update plugin header (Rise Up Asia branding)
+- Load constants file first
+- Initialize database on activation
+- Replace all magic strings with constants
+- Add authentication verification wrapper
+- Log every operation to SQLite
 
-```go
-type SeedPlugin struct {
-    Name        string   `json:"name"`
-    Path        string   `json:"path"`
-    Category    string   `json:"category"`
-    GitEnabled  bool     `json:"gitEnabled"`
-    AutoPublish bool     `json:"autoPublish"`
-    SiteNames   []string `json:"siteNames"`   // Names of sites to link (legacy)
-    SiteIds     []int64  `json:"siteIds"`     // Explicit site IDs (preferred)
-    MapToAll    bool     `json:"mapToAll"`    // If true, map to ALL seeded sites
-}
+### 1.4 Add Blog Post Publishing Endpoints
+
+New REST routes:
+```text
+POST /riseup-uploader/v1/posts          - Create a post
+PUT  /riseup-uploader/v1/posts/{id}     - Update a post
+GET  /riseup-uploader/v1/posts          - List posts
+POST /riseup-uploader/v1/categories     - Create category
+GET  /riseup-uploader/v1/categories     - List categories
 ```
 
-**File: `backend/config.json`**
-
-Update config to use explicit mappings or `mapToAll`:
-
+Request body for post creation:
 ```json
-"plugins": [
-  {
-    "name": "Plugins Onboard",
-    "path": "D:\\wp-work\\...",
-    "mapToAll": true
-  }
-]
-```
-
-### Phase 3: Force Fresh Seeding on Version Bump
-
-**File: `backend/config.json`**
-
-Bump version to `1.19.0` to force re-seeding:
-
-```json
-"version": "1.19.0",
-```
-
-**File: `backend/internal/config/config.go`**
-
-Add a `forceReseed` option or clear mappings before re-seeding:
-
-```go
-// Before creating mappings, optionally clear existing seed mappings
-// This ensures fresh state when version bumps
-if cfg.Seed.ClearOnReseed {
-    db.Exec("DELETE FROM PluginMappings WHERE SyncStatus = 'pending'")
+{
+  "title": "My Post Title",
+  "slug": "my-post-slug",
+  "content": "<p>HTML content...</p>",
+  "status": "publish|draft",
+  "categories": [1, 2, 3]
 }
 ```
 
-### Phase 4: Fix Frontend Bidirectional Cache Sync
+### 1.5 Add Transaction Log Query Endpoint
 
-**File: `src/components/sites/EditSiteDialog.tsx`**
-
-Ensure mappings are refetched after save:
-
-```tsx
-// After successful save
-queryClient.invalidateQueries({ queryKey: ["sites"] });
-queryClient.invalidateQueries({ queryKey: ["plugins"] });
-queryClient.invalidateQueries({ queryKey: ["sites", site.id, "mappings"] });
-
-// Force refetch plugins to get fresh mappings
-await queryClient.refetchQueries({ queryKey: ["plugins"] });
+```text
+GET /riseup-uploader/v1/logs
+  ?plugin=<slug>          - Filter by plugin
+  ?action=upload,enable   - Filter by action types
+  ?user=<username>        - Filter by user
+  ?status=success|failed  - Filter by status
+  ?from=2026-01-01        - Date range start
+  ?to=2026-02-01          - Date range end
+  ?limit=50               - Page size (default 50, max 500)
+  ?offset=0               - Pagination offset
 ```
 
-**File: `src/pages/Plugins.tsx`**
-
-When opening mapping dialog, fetch fresh data:
-
-```tsx
-const openMappingDialog = async (plugin: Plugin) => {
-    // Fetch fresh mappings from API instead of using stale plugin.mappings
-    try {
-        const response = await api.getPluginMappings(plugin.id);
-        if (response.success && response.data) {
-            setSelectedSites(response.data.map((m) => m.siteId));
-            setRemoteSlug(response.data[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-'));
-        } else {
-            setSelectedSites([]);
-            setRemoteSlug(plugin.name.toLowerCase().replace(/\s+/g, '-'));
-        }
-    } catch {
-        setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
+Response:
+```json
+{
+  "success": true,
+  "total": 1234,
+  "limit": 50,
+  "offset": 0,
+  "logs": [
+    {
+      "id": 1,
+      "action": "upload",
+      "plugin_slug": "category-generator",
+      "user_login": "admin",
+      "ip_address": "192.168.1.100",
+      "status": "success",
+      "created_at": "2026-02-04T12:00:00Z"
     }
-    setSelectedPlugin(plugin);
-    setShowMappingDialog(true);
-};
-```
-
-### Phase 5: Add Colorful Success Toast
-
-**File: `src/components/sites/EditSiteDialog.tsx`**
-
-Use styled success toast:
-
-```tsx
-toast.success("Site updated successfully!", {
-    description: `${selectedPlugins.length} plugin(s) linked`,
-    icon: "✅",
-    style: {
-        background: "linear-gradient(to right, #22c55e, #16a34a)",
-        color: "white",
-        border: "none",
-    },
-});
-```
-
-**File: `src/pages/Plugins.tsx`**
-
-Same for plugin mapping save:
-
-```tsx
-toast.success("Site mappings saved!", {
-    description: `${selectedSites.length} site(s) linked to ${selectedPlugin.name}`,
-    icon: "🔗",
-    style: {
-        background: "linear-gradient(to right, #3b82f6, #2563eb)",
-        color: "white",
-        border: "none",
-    },
-});
-```
-
-### Phase 6: Comprehensive Backend Logging
-
-**File: `backend/internal/config/config.go`**
-
-Add granular logging to trace every step:
-
-```go
-func seedSitesAndPlugins(db *database.DB, cfg *Config, log *logger.Logger) error {
-    log.Info("=== SEEDING START ===", "sites", len(cfg.Seed.Sites), "plugins", len(cfg.Seed.Plugins))
-    
-    // Log each site being processed
-    for i, site := range cfg.Seed.Sites {
-        normalizedUrl := normalizeUrl(site.URL)
-        log.Info("Processing site", "index", i+1, "name", site.Name, "rawUrl", site.URL, "normalizedUrl", normalizedUrl)
-        
-        existingId, err := db.GetSiteIdByUrl(normalizedUrl)
-        if err != nil && err != sql.ErrNoRows {
-            log.Error("DB error checking site", "error", err)
-        }
-        
-        if existingId > 0 {
-            log.Info("Site exists in DB", "id", existingId, "name", site.Name)
-            allSiteIds = append(allSiteIds, existingId)
-        } else {
-            // Create site...
-            log.Info("Creating new site", "name", site.Name)
-        }
-    }
-    
-    log.Info("Site processing complete", "siteIds", allSiteIds)
-    
-    // Log each plugin being processed
-    for i, plugin := range cfg.Seed.Plugins {
-        log.Info("Processing plugin", "index", i+1, "name", plugin.Name, "path", plugin.Path)
-        
-        existingId, err := db.GetPluginIdByPath(plugin.Path)
-        if err != nil && err != sql.ErrNoRows {
-            log.Error("DB error checking plugin", "error", err)
-        }
-        
-        if existingId > 0 {
-            log.Info("Plugin exists in DB", "id", existingId, "name", plugin.Name)
-        } else {
-            // Create plugin...
-            log.Info("Creating new plugin", "name", plugin.Name)
-        }
-        
-        // Log mapping creation attempts
-        for _, siteId := range allSiteIds {
-            log.Debug("Attempting mapping", "pluginId", pluginId, "siteId", siteId)
-            created, err := db.CreateSeedMapping(pluginId, siteId, remoteSlug)
-            if err != nil {
-                log.Error("Mapping INSERT failed", "pluginId", pluginId, "siteId", siteId, "error", err)
-            } else if created {
-                log.Info("Mapping CREATED", "pluginId", pluginId, "siteId", siteId)
-            } else {
-                log.Debug("Mapping EXISTS (skipped)", "pluginId", pluginId, "siteId", siteId)
-            }
-        }
-    }
-    
-    log.Info("=== SEEDING COMPLETE ===")
-    return nil
+  ]
 }
 ```
 
 ---
 
-## Files to Modify
+## Phase 2: Go Backend Constants
 
-| File | Changes |
-|------|---------|
-| `backend/internal/database/database.go` | Update `CreateSeedMapping` to return `(bool, error)` with `RowsAffected()` check |
-| `backend/internal/config/config.go` | Update callers, add granular logging, support `mapToAll` option |
-| `backend/config.json` | Bump to v1.19.0, add `mapToAll: true` to plugins |
-| `src/components/sites/EditSiteDialog.tsx` | Fix cache sync, add colorful success toast |
-| `src/pages/Plugins.tsx` | Fetch fresh mappings on dialog open, add colorful success toast |
-| `public/version.json` | Add v1.19.0 changelog |
-| `.lovable/memory/features/seeding/automatic-mappings.md` | Update documentation |
+### 2.1 Create WordPress Constants Package
+Create `backend/internal/wordpress/constants.go`:
+
+```go
+package wordpress
+
+// REST API Namespaces
+const (
+    RiseUpUploaderNamespace = "riseup-uploader/v1"
+    OnboardNamespace        = "onboard-plugin/v1"  // legacy
+)
+
+// Endpoints
+const (
+    EndpointStatus     = "/status"
+    EndpointUpload     = "/upload"
+    EndpointPlugins    = "/plugins"
+    EndpointPluginInfo = "/plugins/%s"
+    EndpointEnable     = "/plugins/%s/enable"
+    EndpointDisable    = "/plugins/%s/disable"
+    EndpointDelete     = "/plugins/%s/delete"
+    EndpointFiles      = "/plugins/%s/files"
+    EndpointLogs       = "/logs"
+    EndpointPosts      = "/posts"
+    EndpointCategories = "/categories"
+)
+
+// Actions (match PHP constants)
+const (
+    ActionUpload      = "upload"
+    ActionEnable      = "enable"
+    ActionDisable     = "disable"
+    ActionDelete      = "delete"
+    ActionFileReplace = "file_replace"
+    ActionFileDelete  = "file_delete"
+    ActionPostCreate  = "post_create"
+    ActionPostUpdate  = "post_update"
+)
+
+// HTTP Headers
+const (
+    HeaderAuth        = "Authorization"
+    HeaderContentType = "Content-Type"
+    HeaderUserAgent   = "User-Agent"
+    UserAgentValue    = "WP-Plugin-Publish/1.0"
+)
+
+// Content Types
+const (
+    ContentTypeJSON      = "application/json"
+    ContentTypeMultipart = "multipart/form-data"
+)
+```
+
+### 2.2 Update uploader.go
+Replace hardcoded strings with constants:
+- Change `UploaderNamespace` to use `RiseUpUploaderNamespace`
+- Update all endpoint construction to use constants
+- Add methods for blog post publishing
+
+### 2.3 Update publish service
+- Add fallback chain: RiseUp Uploader → Onboard Plugin → WP Core API
+- Log which companion was detected
+
+---
+
+## Phase 3: File Structure
+
+### WordPress Plugin (Final)
+```text
+plugins-uploader-helper/
+├── riseup-uploader.php              # Main plugin file (renamed)
+├── includes/
+│   ├── constants.php                # All string constants
+│   ├── class-database.php           # SQLite database handler
+│   ├── class-logger.php             # Transaction logging
+│   └── class-post-manager.php       # Blog post operations
+├── data/
+│   └── .gitkeep                     # Database will be created here
+└── README.md                        # Updated documentation
+```
+
+### Go Backend Changes
+```text
+backend/internal/wordpress/
+├── constants.go       # NEW: All REST API constants
+├── client.go          # Update to use constants
+├── uploader.go        # Update namespace, add post methods
+├── remote_files.go    # Update to use constants
+└── powershell.go      # No changes needed
+```
+
+---
+
+## Technical Details
+
+### Authentication Flow
+Every REST request will:
+1. Check `Authorization` header (Basic auth with Application Password)
+2. Validate credentials via `wp_authenticate_application_password()`
+3. Verify user has required capability
+4. Log the attempt (success or failure) to SQLite
+
+### Database Location
+SQLite file: `wp-content/plugins/riseup-uploader/data/riseup_uploader.db`
+- Created with `PRAGMA journal_mode = WAL` for performance
+- Auto-vacuum enabled
+- Foreign keys off (single table)
+
+### Pagination Implementation
+```php
+$stmt = $pdo->prepare("
+    SELECT * FROM transactions
+    WHERE (:plugin IS NULL OR plugin_slug = :plugin)
+      AND (:action IS NULL OR action = :action)
+      AND (:user IS NULL OR user_login = :user)
+      AND (:status IS NULL OR status = :status)
+      AND (:from IS NULL OR created_at >= :from)
+      AND (:to IS NULL OR created_at <= :to)
+    ORDER BY created_at DESC
+    LIMIT :limit OFFSET :offset
+");
+```
 
 ---
 
 ## Implementation Order
 
-1. Fix `CreateSeedMapping` to return actual insertion status
-2. Update `config.go` callers with proper error handling
-3. Add comprehensive seeding logs
-4. Bump version to 1.19.0 to force re-seed
-5. Fix frontend cache invalidation and refetch
-6. Add colorful success toasts
-7. Test end-to-end: delete database, restart backend, verify mappings appear
-
----
-
-## Expected Log Output After Fix
-
-```
-[v1.19.0 - 2026-02-04 06:30:00 PM] === SEEDING START === sites=1 plugins=3 (INFO config.go:268)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Processing site index=1 name=Atto Property Demo rawUrl=https://demoat.attoproperty.com.au normalizedUrl=https://demoat.attoproperty.com.au (INFO config.go:272)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new site name=Atto Property Demo (INFO config.go:285)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Site created id=1 name=Atto Property Demo (INFO config.go:295)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Site processing complete siteIds=[1] (INFO config.go:300)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Processing plugin index=1 name=Plugins Onboard path=D:\wp-work\... (INFO config.go:305)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new plugin name=Plugins Onboard (INFO config.go:315)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Plugin created id=1 name=Plugins Onboard (INFO config.go:325)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Mapping CREATED pluginId=1 siteId=1 (INFO config.go:340)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Processing plugin index=2 name=Category Generator path=D:\wp-work\... (INFO config.go:305)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new plugin name=Category Generator (INFO config.go:315)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Plugin created id=2 name=Category Generator (INFO config.go:325)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Mapping CREATED pluginId=2 siteId=1 (INFO config.go:340)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Processing plugin index=3 name=Link Manager path=D:\wp-work\... (INFO config.go:305)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Creating new plugin name=Link Manager (INFO config.go:315)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Plugin created id=3 name=Link Manager (INFO config.go:325)
-[v1.19.0 - 2026-02-04 06:30:00 PM] Mapping CREATED pluginId=3 siteId=1 (INFO config.go:340)
-[v1.19.0 - 2026-02-04 06:30:00 PM] === SEEDING COMPLETE === (INFO config.go:350)
-```
+1. **PHP Constants File** - Foundation for all strings
+2. **PHP Database Class** - SQLite setup and queries
+3. **PHP Logger Class** - Transaction logging wrapper
+4. **Update Main Plugin** - Rebrand and integrate
+5. **Add Log Query Endpoint** - REST API for logs
+6. **Add Post Publishing** - Blog post/category endpoints
+7. **Go Constants Package** - Backend string centralization
+8. **Update Go Client** - Use new namespace and add post methods
+9. **Update Memory Files** - Document the changes
 
 ---
 
 ## Testing Checklist
 
-1. **Delete `data/app.db`** and restart backend
-2. **Verify logs** show all 3 mappings created with `Mapping CREATED` messages
-3. **Check database** - PluginMappings table should have 3 rows
-4. **Open Plugins page** - each plugin card should show site badge
-5. **Edit Site → Plugins tab** - verify all 3 plugins are checked
-6. **Edit Plugin → Sites** - verify site is selected
-7. **Toggle a plugin off from Site, save** - verify change persists on refresh
-8. **Toggle site on from Plugin, save** - verify change appears in Edit Site dialog
-
-Additional Strict Instructions, must follow and override:
-
-Okay. So if there is a error found, make sure the stack trace is there. And for the database affected rows or anything, try to have a global... I mean, a root level function that is shared across everywhere. And that function can also check the database, what, what is expected and what kind of change it should do, and what are the affected rows. If not, then it will create a stack trace of from where it is calling and how it is calling. Also, the table name should be there in the log so that it can be understood very well. And also, one more thing that is very cru- critical, as I can see, that you are using, uh, raw SQL. I mean, raw SQL should be avoided 99% of the time. Why you are doing this? I have in the specification that you should use ORM everywhere. So what is the reason behind using the raw SQL? It doesn't make any sense. Uh, there is a very good way that you could avoid the raw SQL and use the ORM to make the relationship. Try to find the record first and then insert, uh, inside its relationship data so that model... Work with the model, okay? That should be the priority. Update the memory regarding this and plan ahead. Okay? Do you understand? Do you have any question, confusion? If yes, let me know.
-
-Make sure the saving and retrival is okay for the screen for the data, use util functions to avoid redundant codes always 
+- [ ] Plugin activates without errors
+- [ ] SQLite database is created on first use
+- [ ] All operations are logged to database
+- [ ] Log query endpoint returns correct results
+- [ ] Pagination works correctly
+- [ ] Authentication blocks unauthorized requests
+- [ ] Blog post creation works
+- [ ] Category creation works
+- [ ] Go backend detects new plugin correctly
+- [ ] Upload flow works end-to-end
