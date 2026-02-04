@@ -22,41 +22,49 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// SitePasswordDecryptor interface for getting decrypted site passwords
+type SitePasswordDecryptor interface {
+	GetDecryptedPassword(ctx context.Context, siteID int64) (string, error)
+}
+
 // Config holds publish service configuration
 type Config struct {
-	DB              *database.DB
-	Logger          *logger.Logger
-	PluginService   *plugin.Service
-	BackupService   *backup.Service
-	SyncService     sync.Service
-	WPClientFactory func(url, user, pass string) *wordpress.Client
-	TempDir         string
-	WSHub           *ws.Hub
+	DB                    *database.DB
+	Logger                *logger.Logger
+	PluginService         *plugin.Service
+	BackupService         *backup.Service
+	SyncService           sync.Service
+	SitePasswordDecryptor SitePasswordDecryptor
+	WPClientFactory       func(url, user, pass string) *wordpress.Client
+	TempDir               string
+	WSHub                 *ws.Hub
 }
 
 // Service provides plugin publishing operations
 type Service struct {
-	db              *database.DB
-	log             *logger.Logger
-	pluginService   *plugin.Service
-	backupService   *backup.Service
-	syncService     sync.Service
-	wpClientFactory func(url, user, pass string) *wordpress.Client
-	tempDir         string
-	wsHub           *ws.Hub
+	db                    *database.DB
+	log                   *logger.Logger
+	pluginService         *plugin.Service
+	backupService         *backup.Service
+	syncService           sync.Service
+	sitePasswordDecryptor SitePasswordDecryptor
+	wpClientFactory       func(url, user, pass string) *wordpress.Client
+	tempDir               string
+	wsHub                 *ws.Hub
 }
 
 // New creates a new publish service
 func New(cfg Config) *Service {
 	return &Service{
-		db:              cfg.DB,
-		log:             cfg.Logger,
-		pluginService:   cfg.PluginService,
-		backupService:   cfg.BackupService,
-		syncService:     cfg.SyncService,
-		wpClientFactory: cfg.WPClientFactory,
-		tempDir:         cfg.TempDir,
-		wsHub:           cfg.WSHub,
+		db:                    cfg.DB,
+		log:                   cfg.Logger,
+		pluginService:         cfg.PluginService,
+		backupService:         cfg.BackupService,
+		syncService:           cfg.SyncService,
+		sitePasswordDecryptor: cfg.SitePasswordDecryptor,
+		wpClientFactory:       cfg.WPClientFactory,
+		tempDir:               cfg.TempDir,
+		wsHub:                 cfg.WSHub,
 	}
 }
 
@@ -588,9 +596,15 @@ func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) (*models
 		return nil, "", apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
 
-	// Note: Password decryption should use the site service's encryption key
-	// For now, return empty - actual implementation needs encryption key from config
-	password := "" // TODO: Decrypt using site service
+	// Decrypt password using the site password decryptor
+	var password string
+	if s.sitePasswordDecryptor != nil {
+		password, err = s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
+		if err != nil {
+			s.log.Warn("Failed to decrypt password", "siteId", siteID, "error", err)
+			return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt site password")
+		}
+	}
 	
 	return &site, password, nil
 }
