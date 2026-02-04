@@ -187,6 +187,14 @@ func SeedIfNeeded(db *database.DB, cfg *Config) error {
 		}
 	}
 
+	// ALWAYS ensure mappings exist on every startup (idempotent)
+	// This catches cases where plugins/sites exist but mappings are missing
+	if cfg.Seed.Enabled {
+		if err := ensureMappingsExist(db, cfg); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -301,6 +309,39 @@ func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
 		// Create mappings to ALL seeded sites (all→all)
 		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
 		for _, siteId := range allSiteIds {
+			_ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
+		}
+	}
+
+	return nil
+}
+
+// ensureMappingsExist ensures all plugin→site mappings exist (idempotent, runs every startup)
+// This handles cases where plugins/sites exist but mappings were not created
+func ensureMappingsExist(db *database.DB, cfg *Config) error {
+	// Get all site IDs
+	var siteIds []int64
+	for _, site := range cfg.Seed.Sites {
+		normalizedUrl := normalizeUrl(site.URL)
+		if id, err := db.GetSiteIdByUrl(normalizedUrl); err == nil && id > 0 {
+			siteIds = append(siteIds, id)
+		}
+	}
+
+	if len(siteIds) == 0 {
+		return nil // No sites to map
+	}
+
+	// Ensure each plugin is mapped to all sites
+	for _, plugin := range cfg.Seed.Plugins {
+		pluginId, err := db.GetPluginIdByPath(plugin.Path)
+		if err != nil || pluginId == 0 {
+			continue // Plugin doesn't exist, skip
+		}
+
+		remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
+		for _, siteId := range siteIds {
+			// CreateSeedMapping uses INSERT OR IGNORE, so this is idempotent
 			_ = db.CreateSeedMapping(pluginId, siteId, remoteSlug)
 		}
 	}
