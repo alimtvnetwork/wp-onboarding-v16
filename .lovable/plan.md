@@ -1,300 +1,279 @@
-
-# Rise Up Uploader Plugin - Enhancement Plan
+# Rise Up Asia Plugin - Enhancement Plan (Phase 2)
 
 ## Summary
-Transform the existing `Plugin Uploader Helper` WordPress plugin into a professional **Rise Up Uploader** plugin with:
-- Centralized constants file (no magic strings)
-- SQLite database for transaction logging (audit trail)
-- REST API for querying logs with filtering and pagination
-- Blog post/category publishing capabilities
-- Corresponding Go backend constants and integration
+Enhance the Rise Up Asia WordPress plugin with delta file sync, ignore patterns, micro-ORM, media library uploads, and self-upload capability.
+
+**Previous Phase (Completed):**
+- Created Rise Up Uploader with constants, SQLite logging, blog posts, categories
+- Added Go backend constants
 
 ---
 
-## Phase 1: WordPress Plugin Restructure
+## Phase 1: Plugin Renaming & Branding
 
-### 1.1 Create Constants File
-Create `plugins-uploader-helper/includes/constants.php` with all string constants:
+### 1.1 Rename to "Rise Up Asia"
+- Update plugin header: `Rise Up Asia` (with lowercase "up")
+- Update API namespace: `riseup-asia/v1`
+- Update all constants to use `RISEUP_ASIA_` prefix
+- Rename folder: `plugins-uploader-helper` → `riseup-asia`
+
+---
+
+## Phase 2: Micro-ORM Implementation
+
+### 2.1 Create ORM Wrapper
+Create `includes/class-orm.php` with Idiorm-style fluent interface:
 
 ```php
-// Plugin Identity
-RISEUP_UPLOADER_VERSION = '1.2.0'
-RISEUP_UPLOADER_SLUG = 'riseup-uploader'
-RISEUP_UPLOADER_NAME = 'Rise Up Uploader'
+// Usage examples:
+$logs = ORM::for_table('transactions')
+    ->where('action', 'upload')
+    ->where_gte('created_at', '2026-01-01')
+    ->order_by_desc('created_at')
+    ->limit(50)
+    ->find_many();
 
-// REST API
-RISEUP_API_NAMESPACE = 'riseup-uploader'
-RISEUP_API_VERSION = 'v1'
-
-// Database
-RISEUP_DB_NAME = 'riseup_uploader.db'
-RISEUP_TABLE_TRANSACTIONS = 'transactions'
-
-// Actions
-RISEUP_ACTION_UPLOAD = 'upload'
-RISEUP_ACTION_ENABLE = 'enable'
-RISEUP_ACTION_DISABLE = 'disable'
-RISEUP_ACTION_DELETE = 'delete'
-RISEUP_ACTION_FILE_REPLACE = 'file_replace'
-RISEUP_ACTION_FILE_DELETE = 'file_delete'
-RISEUP_ACTION_POST_CREATE = 'post_create'
-RISEUP_ACTION_POST_UPDATE = 'post_update'
-RISEUP_ACTION_CATEGORY_CREATE = 'category_create'
-
-// Response Messages
-RISEUP_MSG_SUCCESS = 'Operation completed successfully'
-RISEUP_MSG_UNAUTHORIZED = 'Authentication required'
-RISEUP_MSG_FORBIDDEN = 'Insufficient permissions'
-// ... more messages
-```
-
-### 1.2 Create Database Class
-Create `plugins-uploader-helper/includes/class-database.php`:
-
-```text
-+-----------------------------------------------------------+
-|                    transactions table                      |
-+-----------------------------------------------------------+
-| id          | INTEGER PRIMARY KEY AUTOINCREMENT           |
-| action      | TEXT NOT NULL (upload/enable/disable/etc)   |
-| plugin_slug | TEXT (nullable for non-plugin operations)   |
-| post_id     | INTEGER (nullable, for blog operations)     |
-| user_login  | TEXT NOT NULL (WordPress username)          |
-| user_id     | INTEGER (WordPress user ID)                 |
-| ip_address  | TEXT NOT NULL                               |
-| details     | TEXT (JSON blob with extra context)         |
-| status      | TEXT NOT NULL (success/failed)              |
-| error_msg   | TEXT (nullable)                             |
-| created_at  | TEXT NOT NULL (ISO8601 timestamp)           |
-+-----------------------------------------------------------+
+$log = ORM::for_table('transactions')
+    ->create()
+    ->set('action', 'upload')
+    ->set('plugin_slug', 'my-plugin')
+    ->save();
 ```
 
 Features:
-- PDO SQLite connection with WAL mode
-- Auto-create table on first use
-- Log every operation with user context
-- Query methods with filtering and pagination
+- Fluent query builder
+- Automatic escaping via PDO prepared statements
+- CRUD operations (create, read, update, delete)
+- Method chaining
+- Works with existing PDO connection
 
-### 1.3 Update Main Plugin File
-Rename and restructure `plugin-uploader-helper.php` to `riseup-uploader.php`:
+### 2.2 Update Database Class
+Refactor `class-database.php` to use the new ORM wrapper while maintaining backward compatibility.
 
-- Update plugin header (Rise Up Asia branding)
-- Load constants file first
-- Initialize database on activation
-- Replace all magic strings with constants
-- Add authentication verification wrapper
-- Log every operation to SQLite
+---
 
-### 1.4 Add Blog Post Publishing Endpoints
+## Phase 3: Delta File Sync with Ignore Patterns
 
-New REST routes:
-```text
-POST /riseup-uploader/v1/posts          - Create a post
-PUT  /riseup-uploader/v1/posts/{id}     - Update a post
-GET  /riseup-uploader/v1/posts          - List posts
-POST /riseup-uploader/v1/categories     - Create category
-GET  /riseup-uploader/v1/categories     - List categories
-```
+### 3.1 Add `.uploadignore` Support
+Create `includes/class-upload-ignore.php`:
 
-Request body for post creation:
-```json
-{
-  "title": "My Post Title",
-  "slug": "my-post-slug",
-  "content": "<p>HTML content...</p>",
-  "status": "publish|draft",
-  "categories": [1, 2, 3]
+```php
+class RiseUp_Upload_Ignore {
+    // Parse .uploadignore file (gitignore syntax)
+    public function parse($plugin_dir);
+    
+    // Check if a file path matches ignore patterns
+    public function should_ignore($relative_path);
 }
 ```
 
-### 1.5 Add Transaction Log Query Endpoint
+Supported patterns:
+- `*.log` - Ignore all .log files
+- `node_modules/` - Ignore entire directory
+- `!important.log` - Exception (don't ignore)
+- `#` - Comments
+- `vendor/` - Ignore vendor folder
 
-```text
-GET /riseup-uploader/v1/logs
-  ?plugin=<slug>          - Filter by plugin
-  ?action=upload,enable   - Filter by action types
-  ?user=<username>        - Filter by user
-  ?status=success|failed  - Filter by status
-  ?from=2026-01-01        - Date range start
-  ?to=2026-02-01          - Date range end
-  ?limit=50               - Page size (default 50, max 500)
-  ?offset=0               - Pagination offset
+### 3.2 New Endpoint: Delta Sync Upload
+```
+POST /riseup-asia/v1/plugins/{slug}/sync
+```
+
+Request body:
+```json
+{
+  "files": [
+    {
+      "path": "includes/class-helper.php",
+      "content": "<base64>",
+      "action": "replace"
+    },
+    {
+      "path": "old-file.php",
+      "action": "delete"
+    }
+  ]
+}
 ```
 
 Response:
 ```json
 {
   "success": true,
-  "total": 1234,
-  "limit": 50,
-  "offset": 0,
-  "logs": [
-    {
-      "id": 1,
-      "action": "upload",
-      "plugin_slug": "category-generator",
-      "user_login": "admin",
-      "ip_address": "192.168.1.100",
-      "status": "success",
-      "created_at": "2026-02-04T12:00:00Z"
-    }
-  ]
+  "files_updated": 3,
+  "files_deleted": 1,
+  "files_ignored": 2,
+  "ignored_patterns": ["*.log", "node_modules/"]
 }
 ```
 
 ---
 
-## Phase 2: Go Backend Constants
+## Phase 4: Media Library Upload
 
-### 2.1 Create WordPress Constants Package
-Create `backend/internal/wordpress/constants.go`:
+### 4.1 Create Media Manager Class
+Create `includes/class-media-manager.php`:
 
-```go
-package wordpress
-
-// REST API Namespaces
-const (
-    RiseUpUploaderNamespace = "riseup-uploader/v1"
-    OnboardNamespace        = "onboard-plugin/v1"  // legacy
-)
-
-// Endpoints
-const (
-    EndpointStatus     = "/status"
-    EndpointUpload     = "/upload"
-    EndpointPlugins    = "/plugins"
-    EndpointPluginInfo = "/plugins/%s"
-    EndpointEnable     = "/plugins/%s/enable"
-    EndpointDisable    = "/plugins/%s/disable"
-    EndpointDelete     = "/plugins/%s/delete"
-    EndpointFiles      = "/plugins/%s/files"
-    EndpointLogs       = "/logs"
-    EndpointPosts      = "/posts"
-    EndpointCategories = "/categories"
-)
-
-// Actions (match PHP constants)
-const (
-    ActionUpload      = "upload"
-    ActionEnable      = "enable"
-    ActionDisable     = "disable"
-    ActionDelete      = "delete"
-    ActionFileReplace = "file_replace"
-    ActionFileDelete  = "file_delete"
-    ActionPostCreate  = "post_create"
-    ActionPostUpdate  = "post_update"
-)
-
-// HTTP Headers
-const (
-    HeaderAuth        = "Authorization"
-    HeaderContentType = "Content-Type"
-    HeaderUserAgent   = "User-Agent"
-    UserAgentValue    = "WP-Plugin-Publish/1.0"
-)
-
-// Content Types
-const (
-    ContentTypeJSON      = "application/json"
-    ContentTypeMultipart = "multipart/form-data"
-)
-```
-
-### 2.2 Update uploader.go
-Replace hardcoded strings with constants:
-- Change `UploaderNamespace` to use `RiseUpUploaderNamespace`
-- Update all endpoint construction to use constants
-- Add methods for blog post publishing
-
-### 2.3 Update publish service
-- Add fallback chain: RiseUp Uploader → Onboard Plugin → WP Core API
-- Log which companion was detected
-
----
-
-## Phase 3: File Structure
-
-### WordPress Plugin (Final)
-```text
-plugins-uploader-helper/
-├── riseup-uploader.php              # Main plugin file (renamed)
-├── includes/
-│   ├── constants.php                # All string constants
-│   ├── class-database.php           # SQLite database handler
-│   ├── class-logger.php             # Transaction logging
-│   └── class-post-manager.php       # Blog post operations
-├── data/
-│   └── .gitkeep                     # Database will be created here
-└── README.md                        # Updated documentation
-```
-
-### Go Backend Changes
-```text
-backend/internal/wordpress/
-├── constants.go       # NEW: All REST API constants
-├── client.go          # Update to use constants
-├── uploader.go        # Update namespace, add post methods
-├── remote_files.go    # Update to use constants
-└── powershell.go      # No changes needed
-```
-
----
-
-## Technical Details
-
-### Authentication Flow
-Every REST request will:
-1. Check `Authorization` header (Basic auth with Application Password)
-2. Validate credentials via `wp_authenticate_application_password()`
-3. Verify user has required capability
-4. Log the attempt (success or failure) to SQLite
-
-### Database Location
-SQLite file: `wp-content/plugins/riseup-uploader/data/riseup_uploader.db`
-- Created with `PRAGMA journal_mode = WAL` for performance
-- Auto-vacuum enabled
-- Foreign keys off (single table)
-
-### Pagination Implementation
 ```php
-$stmt = $pdo->prepare("
-    SELECT * FROM transactions
-    WHERE (:plugin IS NULL OR plugin_slug = :plugin)
-      AND (:action IS NULL OR action = :action)
-      AND (:user IS NULL OR user_login = :user)
-      AND (:status IS NULL OR status = :status)
-      AND (:from IS NULL OR created_at >= :from)
-      AND (:to IS NULL OR created_at <= :to)
-    ORDER BY created_at DESC
-    LIMIT :limit OFFSET :offset
-");
+class RiseUp_Media_Manager {
+    // Upload image to WordPress Media Library
+    public function upload_image($base64_data, $filename, $alt_text = '');
+    
+    // Get attachment URL by ID
+    public function get_attachment_url($attachment_id);
+    
+    // Delete attachment
+    public function delete_attachment($attachment_id);
+}
+```
+
+### 4.2 New Endpoint: Media Upload
+```
+POST /riseup-asia/v1/media
+```
+
+Request body:
+```json
+{
+  "filename": "hero-image.jpg",
+  "content": "<base64>",
+  "alt_text": "Hero banner image"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "attachment_id": 123,
+  "url": "https://example.com/wp-content/uploads/2026/02/hero-image.jpg",
+  "thumbnail": "https://example.com/wp-content/uploads/2026/02/hero-image-150x150.jpg"
+}
+```
+
+### 4.3 Update Post Creation
+Enhance `/posts` endpoint to accept `featured_image` (attachment ID or base64).
+
+---
+
+## Phase 5: Upload + Enable Endpoint
+
+### 5.1 New Endpoint: Upload Active
+```
+POST /riseup-asia/v1/upload-active
+```
+
+Same as `/upload` but always activates the plugin after upload.
+
+Response includes activation status and any activation errors.
+
+---
+
+## Phase 6: Self-Upload Capability
+
+### 6.1 New Endpoint: Export Self
+```
+GET /riseup-asia/v1/export-self
+```
+
+Returns the Rise Up Asia plugin as a base64-encoded ZIP, allowing it to be uploaded to other WordPress sites.
+
+Response:
+```json
+{
+  "success": true,
+  "plugin_name": "Rise Up Asia",
+  "version": "1.3.0",
+  "plugin_zip": "<base64>",
+  "checksum": "md5hash"
+}
+```
+
+### 6.2 Backend Integration
+- Add Rise Up Asia to seed configuration as a default plugin
+- Create helper method to package and upload the plugin to target sites
+
+---
+
+## Phase 7: Go Backend Updates
+
+### 7.1 Update Constants
+Update `backend/internal/wordpress/constants.go`:
+- Change namespace to `riseup-asia/v1`
+- Add new endpoints (sync, media, upload-active, export-self)
+
+### 7.2 Add to Seed Configuration
+Update `backend/config.json`:
+```json
+{
+  "plugins": [
+    {
+      "name": "Rise Up Asia",
+      "path": "riseup-asia",
+      "slug": "riseup-asia",
+      "category": "core"
+    }
+  ]
+}
+```
+
+### 7.3 New Uploader Methods
+Add methods to Go client:
+- `SyncFilesViaUploader()` - Delta file sync
+- `UploadMediaViaUploader()` - Media library upload
+- `ExportUploaderPlugin()` - Get self-export ZIP
+- `BootstrapUploaderToSite()` - Install Rise Up Asia on a new site
+
+---
+
+## File Structure (Final)
+
+```
+riseup-asia/
+├── riseup-asia.php               # Main plugin file
+├── includes/
+│   ├── constants.php             # All string constants
+│   ├── class-orm.php             # NEW: Micro-ORM wrapper
+│   ├── class-database.php        # Database handler (uses ORM)
+│   ├── class-logger.php          # Transaction logging
+│   ├── class-post-manager.php    # Blog post operations
+│   ├── class-media-manager.php   # NEW: Media library uploads
+│   └── class-upload-ignore.php   # NEW: .uploadignore parser
+├── data/
+│   └── riseup_asia.db            # SQLite database
+├── .uploadignore.example         # Example ignore file
+└── README.md
 ```
 
 ---
 
 ## Implementation Order
 
-1. **PHP Constants File** - Foundation for all strings
-2. **PHP Database Class** - SQLite setup and queries
-3. **PHP Logger Class** - Transaction logging wrapper
-4. **Update Main Plugin** - Rebrand and integrate
-5. **Add Log Query Endpoint** - REST API for logs
-6. **Add Post Publishing** - Blog post/category endpoints
-7. **Go Constants Package** - Backend string centralization
-8. **Update Go Client** - Use new namespace and add post methods
-9. **Update Memory Files** - Document the changes
+1. Rename plugin to "Rise Up Asia" and update namespace
+2. Create micro-ORM wrapper
+3. Refactor database class to use ORM
+4. Create .uploadignore parser
+5. Add delta sync endpoint
+6. Create media manager class
+7. Add media upload endpoint
+8. Enhance post endpoint with featured image
+9. Add upload-active endpoint
+10. Add export-self endpoint
+11. Update Go backend constants
+12. Add to seed configuration
+13. Update memory documentation
 
 ---
 
 ## Testing Checklist
 
 - [ ] Plugin activates without errors
-- [ ] SQLite database is created on first use
-- [ ] All operations are logged to database
-- [ ] Log query endpoint returns correct results
-- [ ] Pagination works correctly
-- [ ] Authentication blocks unauthorized requests
-- [ ] Blog post creation works
-- [ ] Category creation works
-- [ ] Go backend detects new plugin correctly
-- [ ] Upload flow works end-to-end
+- [ ] ORM queries work correctly
+- [ ] .uploadignore patterns are respected
+- [ ] Delta sync updates correct files
+- [ ] Media uploads to WordPress library
+- [ ] Posts can have featured images
+- [ ] Upload-active endpoint works
+- [ ] Export-self returns valid ZIP
+- [ ] Go backend detects new namespace
+- [ ] Seed configuration includes Rise Up Asia
