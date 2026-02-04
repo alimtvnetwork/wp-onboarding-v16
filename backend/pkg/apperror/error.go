@@ -33,17 +33,18 @@ func (e *AppError) Unwrap() error {
 	return e.Cause
 }
 
-// New creates a new AppError with caller context
+// New creates a new AppError with caller context and full stack trace
 func New(code, message string) *AppError {
 	err := &AppError{
 		Code:    code,
 		Message: message,
 	}
 	err.captureContext(2)
+	err.StackTrace = captureStackTrace(2) // Always capture stack trace
 	return err
 }
 
-// Wrap wraps an existing error with additional context
+// Wrap wraps an existing error with additional context and full stack trace
 func Wrap(cause error, code, message string) *AppError {
 	err := &AppError{
 		Code:    code,
@@ -54,6 +55,7 @@ func Wrap(cause error, code, message string) *AppError {
 		err.Details = cause.Error()
 	}
 	err.captureContext(2)
+	err.StackTrace = captureStackTrace(2) // Always capture stack trace
 	return err
 }
 
@@ -100,13 +102,22 @@ func (e *AppError) captureContext(skip int) {
 // captureStackTrace captures a full stack trace
 func captureStackTrace(skip int) string {
 	var builder strings.Builder
-	pcs := make([]uintptr, 32)
+	pcs := make([]uintptr, 64) // Increased buffer for deeper stacks
 	n := runtime.Callers(skip+1, pcs)
 	frames := runtime.CallersFrames(pcs[:n])
 
+	frameNum := 0
 	for {
 		frame, more := frames.Next()
-		fmt.Fprintf(&builder, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
+		// Skip runtime internals for cleaner output
+		if strings.Contains(frame.Function, "runtime.") && !strings.Contains(frame.Function, "runtime.main") {
+			if !more {
+				break
+			}
+			continue
+		}
+		fmt.Fprintf(&builder, "  #%d %s\n      %s:%d\n", frameNum, frame.Function, frame.File, frame.Line)
+		frameNum++
 		if !more {
 			break
 		}

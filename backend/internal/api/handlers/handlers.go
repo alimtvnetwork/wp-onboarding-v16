@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -1234,9 +1235,52 @@ func DeletePluginVersion(w http.ResponseWriter, r *http.Request) {
 
 // --- Error Handlers ---
 
-// GetErrors returns application error logs
+// GetErrors returns application error logs - streams the error log file
 func GetErrors(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, []interface{}{})
+	dataDir := "data/errors"
+
+	// Check query params for which log to return
+	logType := r.URL.Query().Get("type") // "all" or "errors", defaults to "errors"
+	if logType == "" {
+		logType = "errors"
+	}
+
+	var logPath string
+	if logType == "all" {
+		logPath = dataDir + "/log.txt"
+	} else {
+		logPath = dataDir + "/error.log.txt"
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		respondSuccess(w, map[string]interface{}{
+			"content":  "",
+			"path":     logPath,
+			"exists":   false,
+			"logType":  logType,
+		})
+		return
+	}
+
+	// Read file content
+	content, err := os.ReadFile(logPath)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E4001", "Failed to read log file: "+err.Error())
+		return
+	}
+
+	// Get file info
+	info, _ := os.Stat(logPath)
+	
+	respondSuccess(w, map[string]interface{}{
+		"content":    string(content),
+		"path":       logPath,
+		"exists":     true,
+		"logType":    logType,
+		"size":       info.Size(),
+		"modifiedAt": info.ModTime().Format(time.RFC3339),
+	})
 }
 
 // GetError returns a specific error by ID
@@ -1246,7 +1290,105 @@ func GetError(w http.ResponseWriter, r *http.Request) {
 
 // ClearErrors removes all error logs
 func ClearErrors(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	dataDir := "data/errors"
+	
+	logPath := dataDir + "/log.txt"
+	errorPath := dataDir + "/error.log.txt"
+	
+	cleared := []string{}
+	
+	// Truncate log.txt
+	if err := os.Truncate(logPath, 0); err == nil {
+		cleared = append(cleared, "log.txt")
+	}
+	
+	// Truncate error.log.txt
+	if err := os.Truncate(errorPath, 0); err == nil {
+		cleared = append(cleared, "error.log.txt")
+	}
+	
+	respondSuccess(w, map[string]interface{}{
+		"cleared": cleared,
+		"message": "Log files cleared",
+	})
+}
+
+// StreamErrorLogs streams the error log file content for real-time viewing
+func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
+	dataDir := "data/errors"
+
+	// Check query params
+	logType := r.URL.Query().Get("type") // "all" or "errors"
+	if logType == "" {
+		logType = "all"
+	}
+	
+	// Tail mode - get last N lines
+	tailLines := 100
+	if tailStr := r.URL.Query().Get("tail"); tailStr != "" {
+		if n, err := strconv.Atoi(tailStr); err == nil && n > 0 && n <= 10000 {
+			tailLines = n
+		}
+	}
+
+	var logPath string
+	if logType == "errors" {
+		logPath = dataDir + "/error.log.txt"
+	} else {
+		logPath = dataDir + "/log.txt"
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		respondSuccess(w, map[string]interface{}{
+			"lines":   []string{},
+			"path":    logPath,
+			"exists":  false,
+			"logType": logType,
+		})
+		return
+	}
+
+	// Read file content
+	content, err := os.ReadFile(logPath)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E4001", "Failed to read log file: "+err.Error())
+		return
+	}
+
+	// Split into lines and get tail
+	allLines := splitLines(string(content))
+	var lines []string
+	if len(allLines) > tailLines {
+		lines = allLines[len(allLines)-tailLines:]
+	} else {
+		lines = allLines
+	}
+
+	// Get file info
+	info, _ := os.Stat(logPath)
+
+	respondSuccess(w, map[string]interface{}{
+		"lines":      lines,
+		"totalLines": len(allLines),
+		"path":       logPath,
+		"exists":     true,
+		"logType":    logType,
+		"size":       info.Size(),
+		"modifiedAt": info.ModTime().Format(time.RFC3339),
+	})
+}
+
+// splitLines splits content into lines, filtering empty lines
+func splitLines(content string) []string {
+	rawLines := strings.Split(content, "\n")
+	lines := make([]string, 0, len(rawLines))
+	for _, line := range rawLines {
+		if strings.TrimSpace(line) != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines
 }
 
 // --- Settings Handlers ---

@@ -95,12 +95,12 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 	levelStr := levelNames[level]
 
 	var builder strings.Builder
-	
+
 	// Add color if enabled
 	if !l.config.NoColor {
 		builder.WriteString(levelColors[level])
 	}
-	
+
 	// Format: [vX.X.X - TIME] message key=value... (LEVEL file:line)
 	if l.prefix != "" {
 		builder.WriteString(fmt.Sprintf("%s - %s] %s", l.prefix, timestamp, msg))
@@ -117,6 +117,14 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 
 	// Add level and location at the end
 	builder.WriteString(fmt.Sprintf(" (%s %s:%d)", levelStr, file, line))
+
+	// For ERROR and FATAL levels, append full stack trace
+	if level >= LevelError {
+		stackTrace := CaptureStackTrace(3)
+		builder.WriteString("\n--- Stack Trace ---\n")
+		builder.WriteString(stackTrace)
+		builder.WriteString("--- End Stack Trace ---")
+	}
 
 	if !l.config.NoColor {
 		builder.WriteString(colorReset)
@@ -141,12 +149,12 @@ func (l *Logger) Warn(msg string, keyvals ...interface{}) {
 	l.log(LevelWarn, msg, keyvals...)
 }
 
-// Error logs an error message
+// Error logs an error message with full stack trace
 func (l *Logger) Error(msg string, keyvals ...interface{}) {
 	l.log(LevelError, msg, keyvals...)
 }
 
-// Fatal logs a fatal message and exits
+// Fatal logs a fatal message with full stack trace and exits
 func (l *Logger) Fatal(msg string, keyvals ...interface{}) {
 	l.log(LevelFatal, msg, keyvals...)
 	os.Exit(1)
@@ -156,4 +164,51 @@ func (l *Logger) Fatal(msg string, keyvals ...interface{}) {
 func (l *Logger) WithContext(keyvals ...interface{}) *Logger {
 	// TODO: Implement context inheritance
 	return l
+}
+
+// CaptureStackTrace captures a full stack trace starting from skip frames up
+func CaptureStackTrace(skip int) string {
+	var builder strings.Builder
+	pcs := make([]uintptr, 64) // Increased buffer for deeper stacks
+	n := runtime.Callers(skip+1, pcs)
+	frames := runtime.CallersFrames(pcs[:n])
+
+	frameNum := 0
+	for {
+		frame, more := frames.Next()
+		// Skip runtime internals
+		if strings.Contains(frame.Function, "runtime.") && !strings.Contains(frame.Function, "runtime.main") {
+			if !more {
+				break
+			}
+			continue
+		}
+		fmt.Fprintf(&builder, "  #%d %s\n      %s:%d\n", frameNum, frame.Function, frame.File, frame.Line)
+		frameNum++
+		if !more {
+			break
+		}
+	}
+
+	return builder.String()
+}
+
+// LogProcessOutput logs the output of an external process with proper formatting
+func (l *Logger) LogProcessOutput(processName string, stdout, stderr string) {
+	if stdout != "" {
+		l.Info(fmt.Sprintf("[%s] stdout", processName), "output", stdout)
+	}
+	if stderr != "" {
+		l.Warn(fmt.Sprintf("[%s] stderr", processName), "output", stderr)
+	}
+}
+
+// LogProcessError logs a process execution error with full context
+func (l *Logger) LogProcessError(processName string, cmd string, err error, stdout, stderr string) {
+	l.Error(fmt.Sprintf("[%s] execution failed", processName),
+		"command", cmd,
+		"error", err,
+		"stdout", stdout,
+		"stderr", stderr,
+	)
 }
