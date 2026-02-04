@@ -153,12 +153,21 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	}
 
 	// Create WordPress client
+	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
+	s.broadcastDetailedLog(pluginID, siteID, "info", "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), map[string]interface{}{
+		"siteUrl":  siteInfo.URL,
+		"username": siteInfo.Username,
+	})
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 
 	// Stage 1: Create backup (optional)
 	if options.CreateBackup {
 		stage := s.runStage("backup", func() error {
 			s.broadcastProgress(pluginID, siteID, "backup", 10, "Creating backup...")
+			s.broadcastDetailedLog(pluginID, siteID, "info", "backup", "Initiating remote plugin backup", map[string]interface{}{
+				"mappingId":  mapping.ID,
+				"remoteSlug": mapping.RemoteSlug,
+			})
 			// TODO: Implement backup creation via s.backupService
 			return nil
 		})
@@ -172,22 +181,48 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 	// Stage 2: Build package
 	var zipPath string
+	var fileCount int
 	stage := s.runStage("package", func() error {
 		s.broadcastProgress(pluginID, siteID, "packaging", 30, "Building package...")
 		
 		plug := pluginInfo
 		var err error
 		
+		s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Packaging plugin from: %s", plug.Path), map[string]interface{}{
+			"pluginPath":      plug.Path,
+			"pluginName":      plug.Name,
+			"mode":            options.Mode,
+			"excludePatterns": plug.ExcludePatterns,
+		})
+		
 		if options.Mode == "selected" && len(options.Files) > 0 {
+			fileCount = len(options.Files)
+			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", fileCount), map[string]interface{}{
+				"selectedFiles": options.Files,
+			})
 			zipPath, err = s.createSelectiveZip(plug.Path, plug.Name, options.Files)
 		} else {
+			fileCount = plug.FileCount
+			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating full ZIP with ~%d files", fileCount), nil)
 			zipPath, err = s.createFullZip(plug.Path, plug.Name, plug.ExcludePatterns)
 		}
+		
+		if err == nil && zipPath != "" {
+			if info, statErr := os.Stat(zipPath); statErr == nil {
+				s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), map[string]interface{}{
+					"zipPath":  zipPath,
+					"zipSize":  info.Size(),
+					"fileCount": fileCount,
+				})
+			}
+		}
+		
 		return err
 	})
 	result.Stages = append(result.Stages, stage)
 	if stage.Status == "failed" {
 		result.ErrorMessage = stage.Message
+		s.broadcastDetailedLog(pluginID, siteID, "error", "package", fmt.Sprintf("Package failed: %s", stage.Message), nil)
 		s.broadcastProgress(pluginID, siteID, "failed", 30, stage.Message)
 		return result, nil
 	}
@@ -195,6 +230,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	// Ensure cleanup
 	defer func() {
 		if zipPath != "" {
+			s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), nil)
 			os.Remove(zipPath)
 		}
 	}()
@@ -202,7 +238,20 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	// Stage 3: Upload to WordPress
 	stage = s.runStage("upload", func() error {
 		s.broadcastProgress(pluginID, siteID, "uploading", 60, "Uploading to WordPress...")
-		return s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
+		s.broadcastDetailedLog(pluginID, siteID, "info", "upload", fmt.Sprintf("Uploading to %s as plugin: %s", siteInfo.URL, mapping.RemoteSlug), map[string]interface{}{
+			"targetSite":  siteInfo.URL,
+			"remoteSlug":  mapping.RemoteSlug,
+			"zipPath":     zipPath,
+		})
+		err := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
+		if err != nil {
+			s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", err.Error()), map[string]interface{}{
+				"error": err.Error(),
+			})
+		} else {
+			s.broadcastDetailedLog(pluginID, siteID, "info", "upload", "Upload completed successfully", nil)
+		}
+		return err
 	})
 	result.Stages = append(result.Stages, stage)
 	if stage.Status == "failed" {
@@ -214,7 +263,17 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	// Stage 4: Activate plugin
 	stage = s.runStage("activate", func() error {
 		s.broadcastProgress(pluginID, siteID, "activating", 80, "Activating plugin...")
-		return wpClient.ActivatePlugin(mapping.RemoteSlug)
+		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", fmt.Sprintf("Activating plugin: %s", mapping.RemoteSlug), map[string]interface{}{
+			"remoteSlug": mapping.RemoteSlug,
+			"siteUrl":    siteInfo.URL,
+		})
+		err := wpClient.ActivatePlugin(mapping.RemoteSlug)
+		if err != nil {
+			s.broadcastDetailedLog(pluginID, siteID, "error", "activate", fmt.Sprintf("Activation failed: %s", err.Error()), nil)
+		} else {
+			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully", nil)
+		}
+		return err
 	})
 	result.Stages = append(result.Stages, stage)
 	if stage.Status == "failed" {
@@ -228,6 +287,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	// Stage 5: Mark files as synced
 	stage = s.runStage("cleanup", func() error {
 		s.broadcastProgress(pluginID, siteID, "cleanup", 95, "Marking files as synced...")
+		s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", "Updating local sync state", nil)
 		if options.Mode == "selected" && len(options.Files) > 0 {
 			return s.syncService.MarkSynced(ctx, pluginID, siteID, options.Files)
 		}
@@ -249,17 +309,34 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 	// Broadcast complete
 	status := "completed"
+	completionMessage := fmt.Sprintf("Published %d files in %dms", result.FilesUpdated, result.Duration)
 	if !result.Success {
 		status = "failed"
+		completionMessage = result.ErrorMessage
+		if completionMessage == "" {
+			completionMessage = "Publish failed - check logs for details"
+		}
 	}
-	s.broadcastProgress(pluginID, siteID, status, 100, "Publish complete")
+	
+	s.broadcastDetailedLog(pluginID, siteID, func() string {
+		if result.Success {
+			return "info"
+		}
+		return "error"
+	}(), "complete", completionMessage, map[string]interface{}{
+		"success":      result.Success,
+		"filesUpdated": result.FilesUpdated,
+		"durationMs":   result.Duration,
+	})
+	s.broadcastProgress(pluginID, siteID, status, 100, completionMessage)
 
 	s.log.Info("Plugin published", 
 		"pluginId", pluginID, 
 		"siteId", siteID, 
 		"mode", options.Mode,
 		"files", result.FilesUpdated,
-		"duration", result.Duration)
+		"duration", result.Duration,
+		"success", result.Success)
 
 	return result, nil
 }
@@ -353,6 +430,25 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 	
 	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "step", step, "stage", stage, "progress", progress, "message", message)
 }
+
+// broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility
+func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
+	if s.wsHub == nil {
+		return
+	}
+	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, step, message, details)
+	
+	// Also log to server logger for backend trace
+	switch level {
+	case "error":
+		s.log.Error(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+	case "warn":
+		s.log.Warn(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+	case "debug":
+		s.log.Debug(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+	default:
+		s.log.Info(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+	}
 
 // createFullZip creates a zip file of the entire plugin directory
 func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns []string) (string, error) {

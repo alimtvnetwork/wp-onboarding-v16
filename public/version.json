@@ -1,11 +1,24 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.19.3",
+  "version": "1.19.4",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T19:10:00Z",
+  "buildTime": "2026-02-04T19:30:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.19.4",
+      "date": "2026-02-04",
+      "title": "Detailed Backend Logging & UI Fixes",
+      "changes": [
+        "📋 Added detailed inner logs: WordPress connection, ZIP path, file counts, sizes",
+        "📑 PublishProgressDialog now uses tabs (Progress | Logs | Settings) for better fit",
+        "🔔 WebSocket reconnect toast notifications when connection restored",
+        "🔗 Sync button now opens SyncProgressDialog with real-time logs",
+        "📊 broadcastDetailedLog() sends structured log data with context",
+        "📝 Memory updated with logging requirements and error modal standards"
+      ]
+    },
     {
       "version": "1.19.3",
       "date": "2026-02-04",

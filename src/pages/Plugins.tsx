@@ -283,18 +283,20 @@ export default function Plugins() {
       return;
     }
 
+    // Open sync progress dialog for the first mapped site
+    // TODO: Add site selection if multiple sites are mapped
+    const firstMapping = plugin.mappings[0];
+    setSyncPlugin(plugin);
+    setSyncSiteId(firstMapping.siteId);
+    setShowSyncProgress(true);
     setIsSyncing(plugin.id);
+
     try {
-      // Sync with all mapped sites
-      let totalChanges = 0;
-      for (const mapping of plugin.mappings) {
-        const response = await api.checkSync(plugin.id, mapping.siteId);
-        if (response.success) {
-          totalChanges += response.data?.changedFiles || 0;
-        }
+      // Trigger sync via API - the dialog will track progress via WebSocket
+      const response = await api.checkSync(plugin.id, firstMapping.siteId);
+      if (!response.success && response.error) {
+        toast.error(response.error.message || "Sync check failed");
       }
-      toast.success(`Sync check complete: ${totalChanges} changes detected`);
-      queryClient.invalidateQueries({ queryKey: ["plugins"] });
     } catch (error) {
       toast.error("Sync check failed");
     } finally {
