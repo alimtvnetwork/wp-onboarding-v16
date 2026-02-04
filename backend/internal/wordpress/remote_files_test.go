@@ -32,6 +32,27 @@ func TestCheckOnboardPluginAvailable_UsesOnboardNamespace(t *testing.T) {
 	}
 }
 
+func TestCheckUploaderHelperAvailable_UsesUploaderNamespace(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/wp-json/plugin-uploader/v1/status" {
+			t.Fatalf("unexpected path: %s, expected /wp-json/plugin-uploader/v1/status", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","version":"1.1.0"}`))
+	}))
+	defer server.Close()
+
+	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	ok, err := c.CheckUploaderHelperAvailable()
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+	if !ok {
+		t.Fatalf("expected available=true")
+	}
+}
+
 func TestRequestMutationToken_UsesOnboardNamespace(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/wp-json/onboard-plugin/v1/request-mutation" {
@@ -117,6 +138,63 @@ func TestUploadPluginZip_PostsToOnboardUploadEndpoint(t *testing.T) {
 	}
 }
 
+func TestUploadPluginViaUploader_PostsToUploaderEndpoint(t *testing.T) {
+	tmpDir := t.TempDir()
+	zipPath := filepath.Join(tmpDir, "test-plugin.zip")
+	if err := os.WriteFile(zipPath, []byte("fake-zip-data"), 0644); err != nil {
+		t.Fatalf("write temp zip: %v", err)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/wp-json/plugin-uploader/v1/upload" {
+			t.Fatalf("unexpected path: %s, expected /wp-json/plugin-uploader/v1/upload", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		if r.Header.Get("Content-Type") != "application/json" {
+			t.Fatalf("unexpected content-type: %s", r.Header.Get("Content-Type"))
+		}
+
+		var body map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode body: %v", err)
+		}
+
+		if body["plugin_name"] != "test-plugin.zip" {
+			t.Fatalf("unexpected plugin_name: %v", body["plugin_name"])
+		}
+		if body["plugin_data"] == nil || body["plugin_data"] == "" {
+			t.Fatalf("expected plugin_data to be set")
+		}
+		if body["activate"] != true {
+			t.Fatalf("expected activate=true")
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(UploaderUploadResult{
+			Success:   true,
+			Message:   "Plugin installed and activated successfully.",
+			Plugin:    "test-plugin/test-plugin.php",
+			Activated: true,
+		})
+	}))
+	defer server.Close()
+
+	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	res, err := c.UploadPluginViaUploader(zipPath, true)
+	if err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+	if res == nil || !res.Success {
+		t.Fatalf("expected success result")
+	}
+	if !res.Activated {
+		t.Fatalf("expected activated=true")
+	}
+}
+
 func TestEnablePlugin_UsesOnboardNamespaceAndEnableRoute(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -144,6 +222,46 @@ func TestEnablePlugin_UsesOnboardNamespaceAndEnableRoute(t *testing.T) {
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
 	if err := c.EnablePlugin("category-generator"); err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+}
+
+func TestEnablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/wp-json/plugin-uploader/v1/plugins/my-plugin/enable" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true,"message":"Plugin activated successfully.","slug":"my-plugin"}`))
+	}))
+	defer server.Close()
+
+	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	if err := c.EnablePluginViaUploader("my-plugin"); err != nil {
+		t.Fatalf("expected nil error, got: %v", err)
+	}
+}
+
+func TestDisablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/wp-json/plugin-uploader/v1/plugins/my-plugin/disable" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		if r.Method != http.MethodPost {
+			t.Fatalf("unexpected method: %s", r.Method)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"success":true}`))
+	}))
+	defer server.Close()
+
+	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
+	if err := c.DisablePluginViaUploader("my-plugin"); err != nil {
 		t.Fatalf("expected nil error, got: %v", err)
 	}
 }
