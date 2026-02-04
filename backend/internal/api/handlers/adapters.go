@@ -88,6 +88,10 @@ func (a *SiteServiceAdapter) TestConnectionWithCredentials(ctx context.Context, 
 	return a.Service.TestConnectionWithCredentials(ctx, url, username, password)
 }
 
+func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (interface{}, error) {
+	return a.Service.BootstrapUploader(ctx, id, uploaderPath)
+}
+
 // PluginServiceAdapter wraps *plugin.Service to implement PluginServiceInterface
 type PluginServiceAdapter struct {
 	*plugin.Service
