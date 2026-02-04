@@ -85,10 +85,11 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
     }
   }, [site, clearLogs]);
 
-  // Initialize selected plugins from mappings
+  // Initialize selected plugins from mappings - this effect runs when currentMappings changes
   useEffect(() => {
-    if (currentMappings && currentMappings.length > 0) {
-      setSelectedPlugins(currentMappings.map((m: PluginMapping) => m.pluginId));
+    if (currentMappings && Array.isArray(currentMappings)) {
+      const pluginIds = currentMappings.map((m: PluginMapping) => m.pluginId);
+      setSelectedPlugins(pluginIds);
     } else {
       setSelectedPlugins([]);
     }
@@ -169,14 +170,23 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
           console.warn("[EditSiteDialog] Mapping update warning:", mappingRes.error.message);
           toast.warning("Site saved, but some plugin mappings may not have updated");
         } else {
-          toast.success("Site updated successfully", {
+          toast.success("Site updated successfully!", {
             description: `${selectedPlugins.length} plugin(s) linked`,
+            style: {
+              background: "linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 50%) 100%)",
+              color: "white",
+              border: "none",
+            },
           });
         }
 
-        // Invalidate both sites and plugins to ensure bidirectional sync
-        queryClient.invalidateQueries({ queryKey: ["sites"] });
-        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        // Invalidate AND refetch both sites and plugins to ensure bidirectional sync
+        await queryClient.invalidateQueries({ queryKey: ["sites"] });
+        await queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        await queryClient.invalidateQueries({ queryKey: ["sites", site.id, "mappings"] });
+        // Force refetch to ensure data is fresh
+        await queryClient.refetchQueries({ queryKey: ["plugins"] });
+        
         onOpenChange(false);
       } else if (response.error) {
         showErrorWithModal(response.error, {

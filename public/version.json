@@ -1,27 +1,30 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T23:30:00Z",
+  "buildTime": "2026-02-04T23:45:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.19.0",
+      "date": "2026-02-04",
+      "title": "DB Operations & Bidirectional Sync Fix",
+      "changes": [
+        "🔧 Created shared dbops package with stack traces, table names, and affected rows logging",
+        "📊 CreateSeedMapping now returns (created bool, error) with proper row count validation",
+        "🔗 Fixed bidirectional plugin↔site sync: UI now fetches fresh mappings from API",
+        "✅ Colorful gradient success toasts for save operations",
+        "🌱 Enhanced seeding logs: === SEEDING START/COMPLETE === with full traceability",
+        "📋 All DB operations now log table name, operation type, and caller info",
+        "⚠️ Stack trace capture on all database errors for debugging"
+      ]
+    },
     {
       "version": "1.18.0",
       "date": "2026-02-04",
       "title": "Migration Logging & Mapping Sync",
       "changes": [
-        "📊 Detailed logging for all migration steps with version tracking",
-        "🌱 Comprehensive seeding logs showing site/plugin creation and mapping",
-        "🔧 Simplified log format: [vX.X.X - TIME] message (LEVEL file:line)",
-        "⚠️ Warning logs for failed mapping attempts with error details",
-        "🔗 Fixed bidirectional plugin↔site mapping sync",
-        "✅ Success toast notifications on save operations",
-        "📋 Plugin paths now wrap properly without horizontal scroll",
-        "📎 Copy button for plugin paths"
-      ]
-    },
-    {
       "version": "1.17.0",
       "date": "2026-02-04",
       "title": "Frontend Logging & Resilience System",
