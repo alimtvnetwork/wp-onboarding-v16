@@ -220,10 +220,6 @@ func (db *DB) CreateSeedSite(name, url, username string, passwordEncrypted []byt
 
 // CreateSeedPlugin creates a plugin for seeding
 func (db *DB) CreateSeedPlugin(name, path, category string, gitEnabled, autoPublish bool) (int64, error) {
-	gitEnabledInt := 0
-	if gitEnabled {
-		gitEnabledInt = 1
-	}
 	autoPublishInt := 0
 	if autoPublish {
 		autoPublishInt = 1
