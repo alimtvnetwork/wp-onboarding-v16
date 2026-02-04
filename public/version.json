@@ -1,11 +1,26 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T13:00:00Z",
+  "buildTime": "2026-02-04T14:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.4.0",
+      "date": "2026-02-04",
+      "title": "Plugin-Site Relationships",
+      "changes": [
+        "🔗 Many-to-many plugin-site linking with bulk update API",
+        "📦 Plugin cards show linked sites with badges",
+        "🌐 Site cards show linked plugins",
+        "📝 Remote slug configuration in mapping dialog",
+        "🔄 Full CRUD for plugin mappings (create, update, delete)"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.3.0",
       "date": "2026-02-04",

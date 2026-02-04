@@ -82,6 +82,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/{id}", handlers.UpdateSite).Methods("PUT")
 	api.HandleFunc("/sites/{id}", handlers.DeleteSite).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/test", handlers.TestSiteConnection).Methods("POST")
+	api.HandleFunc("/sites/{id}/mappings", handlers.GetSiteMappings).Methods("GET")
 
 	// Plugins endpoints
 	api.HandleFunc("/plugins", handlers.GetPlugins).Methods("GET")
@@ -91,6 +92,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/plugins/{id}", handlers.DeletePlugin).Methods("DELETE")
 	api.HandleFunc("/plugins/{id}/mappings", handlers.GetPluginMappings).Methods("GET")
 	api.HandleFunc("/plugins/{id}/mappings", handlers.CreatePluginMapping).Methods("POST")
+	api.HandleFunc("/plugins/{id}/mappings", handlers.UpdatePluginMappings).Methods("PUT")
 	api.HandleFunc("/plugins/{id}/changes", handlers.GetFileChanges).Methods("GET")
 
 	// Plugin scanning endpoints

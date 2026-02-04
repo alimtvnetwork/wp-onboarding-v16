@@ -30,8 +30,10 @@ type PluginServiceInterface interface {
 	Update(ctx context.Context, id int64, input interface{}) (interface{}, error)
 	Delete(ctx context.Context, id int64) error
 	GetMappings(ctx context.Context, pluginID int64) (interface{}, error)
+	GetMappingsBySite(ctx context.Context, siteID int64) (interface{}, error)
 	CreateMapping(ctx context.Context, pluginID int64, input interface{}) (interface{}, error)
 	DeleteMapping(ctx context.Context, id int64) error
+	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
 	ScanDirectory(ctx context.Context, path string) (interface{}, error)
 	RefreshFileCount(ctx context.Context, id int64) error
 }
@@ -516,6 +518,59 @@ func DeletePluginMapping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondSuccess(w, map[string]interface{}{"deleted": true})
+}
+
+// UpdatePluginMappings bulk-updates all site mappings for a plugin
+func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	var input struct {
+		SiteIDs    []int64 `json:"siteIds"`
+		RemoteSlug string  `json:"remoteSlug"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	if err := Services.PluginService.UpdateMappingsForPlugin(r.Context(), id, input.SiteIDs, input.RemoteSlug); err != nil {
+		respondError(w, http.StatusBadRequest, "E3009", err.Error())
+		return
+	}
+
+	// Return updated mappings
+	mappings, _ := Services.PluginService.GetMappings(r.Context(), id)
+	respondSuccess(w, mappings)
+}
+
+// GetSiteMappings returns all plugin mappings for a site
+func GetSiteMappings(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.PluginService == nil {
+		respondSuccess(w, []interface{}{})
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	mappings, err := Services.PluginService.GetMappingsBySite(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3010", err.Error())
+		return
+	}
+	respondSuccess(w, mappings)
 }
 
 // GetFileChanges returns detected file changes for a plugin

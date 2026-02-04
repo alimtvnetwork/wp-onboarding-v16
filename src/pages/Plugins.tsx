@@ -52,6 +52,7 @@ export default function Plugins() {
   const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
   const [selectedSites, setSelectedSites] = useState<number[]>([]);
+  const [remoteSlug, setRemoteSlug] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPulling, setIsPulling] = useState<number | null>(null);
   const [isScanning, setIsScanning] = useState<number | null>(null);
@@ -215,6 +216,8 @@ export default function Plugins() {
   const openMappingDialog = (plugin: Plugin) => {
     setSelectedPlugin(plugin);
     setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
+    // Use plugin name as default remote slug if no mappings exist
+    setRemoteSlug(plugin.mappings?.[0]?.remoteSlug || plugin.name.toLowerCase().replace(/\s+/g, '-'));
     setShowMappingDialog(true);
   };
 
@@ -223,10 +226,21 @@ export default function Plugins() {
 
     setIsSubmitting(true);
     try {
-      // TODO: Call API to update mappings
-      toast.success("Site mappings updated");
-      queryClient.invalidateQueries({ queryKey: ["plugins"] });
-      setShowMappingDialog(false);
+      const response = await api.updatePluginMappings(selectedPlugin.id, {
+        siteIds: selectedSites,
+        remoteSlug: remoteSlug,
+      });
+      if (response.success) {
+        toast.success("Site mappings updated");
+        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        setShowMappingDialog(false);
+      } else if (response.error) {
+        const captured = captureError(response.error, {
+          endpoint: `/plugins/${selectedPlugin.id}/mappings`,
+          method: "PUT",
+        });
+        openErrorModal(captured);
+      }
     } catch (error) {
       toast.error("Failed to update mappings");
     } finally {
@@ -569,51 +583,70 @@ export default function Plugins() {
 
       {/* Site Mapping Dialog */}
       <Dialog open={showMappingDialog} onOpenChange={setShowMappingDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Map to Sites</DialogTitle>
+            <DialogTitle>Link to Sites</DialogTitle>
             <DialogDescription>
-              Select which WordPress sites should receive this plugin.
+              Select which WordPress sites should receive "{selectedPlugin?.name}".
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4">
+          <div className="space-y-4 py-4">
+            {/* Remote Slug */}
+            <div className="space-y-2">
+              <Label htmlFor="remote-slug">Plugin Folder Name (on remote sites)</Label>
+              <Input
+                id="remote-slug"
+                placeholder="my-plugin"
+                value={remoteSlug}
+                onChange={(e) => setRemoteSlug(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                The folder name in wp-content/plugins/ on the target sites
+              </p>
+            </div>
+
+            {/* Site Selection */}
             {sites && sites.length > 0 ? (
-              <div className="space-y-3">
-                {sites.map((site) => (
-                  <div
-                    key={site.id}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                      selectedSites.includes(site.id)
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50"
-                    )}
-                    onClick={() => toggleSiteSelection(site.id)}
-                  >
-                    <Checkbox
-                      checked={selectedSites.includes(site.id)}
-                      onCheckedChange={() => toggleSiteSelection(site.id)}
-                    />
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{site.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {site.url}
-                      </p>
-                    </div>
-                    <span
+              <div className="space-y-2">
+                <Label>Target Sites</Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {sites.map((site) => (
+                    <div
+                      key={site.id}
                       className={cn(
-                        "w-2 h-2 rounded-full flex-shrink-0",
-                        site.connectionStatus === "connected"
-                          ? "bg-green-500"
-                          : site.connectionStatus === "disconnected"
-                          ? "bg-red-500"
-                          : "bg-gray-400"
+                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                        selectedSites.includes(site.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/50"
                       )}
-                    />
-                  </div>
-                ))}
+                      onClick={() => toggleSiteSelection(site.id)}
+                    >
+                      <Checkbox
+                        checked={selectedSites.includes(site.id)}
+                        onCheckedChange={() => toggleSiteSelection(site.id)}
+                      />
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{site.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {site.url}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-full flex-shrink-0",
+                          site.connectionStatus === "connected"
+                            ? "bg-primary"
+                            : site.connectionStatus === "disconnected"
+                            ? "bg-destructive"
+                            : "bg-muted-foreground"
+                        )}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
@@ -622,13 +655,19 @@ export default function Plugins() {
                 <p className="text-sm">Add a WordPress site first</p>
               </div>
             )}
+
+            {selectedSites.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {selectedSites.length} site{selectedSites.length !== 1 ? "s" : ""} selected
+              </p>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowMappingDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveMappings} disabled={isSubmitting}>
+            <Button onClick={handleSaveMappings} disabled={isSubmitting || !remoteSlug}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save Mappings
             </Button>

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-02-04
+
+### Added
+- **Plugin-Site Many-to-Many Linking**: Full support for linking plugins to multiple sites and vice versa
+- **Bulk Mapping Update API**: `PUT /plugins/{id}/mappings` endpoint for updating all site mappings at once
+- **Site Mappings Endpoint**: `GET /sites/{id}/mappings` to fetch plugins linked to a site
+- **Remote Slug Configuration**: Configure the plugin folder name on target WordPress sites
+- **Site Cards Show Plugins**: Each site card displays badges for linked plugins
+- **Plugin Cards Show Sites**: Plugin list shows linked site badges
+
+### Changed
+- **Mapping Dialog**: Redesigned with remote slug input and improved site selection
+- **SiteCard Component**: Extracted reusable component with self-contained connection testing
+
+---
+
 ## [1.3.0] - 2026-02-04
 
 ### Added
