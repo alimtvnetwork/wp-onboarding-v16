@@ -28,7 +28,7 @@ import Errors from "@/pages/Errors";
 import Tests from "@/pages/Tests";
 import NotFound from "@/pages/NotFound";
 
-function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string }) {
+function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string; triggerComponent?: string; triggerAction?: string }) {
   const { captureError, captureException, openErrorModal } = useErrorStore.getState();
 
   if (isApiClientError(error)) {
@@ -37,6 +37,11 @@ function showGlobalError(error: unknown, context?: { endpoint?: string; method?:
       method: error.meta.method,
       requestBody: error.meta.requestBody,
       responseStatus: (error.apiError.context?.responseStatus as number | undefined) ?? undefined,
+      context: {
+        source: "App.showGlobalError",
+        triggerComponent: context?.triggerComponent,
+        triggerAction: context?.triggerAction,
+      },
     });
 
     if (error.apiError.code === "E9005") {
@@ -53,9 +58,11 @@ function showGlobalError(error: unknown, context?: { endpoint?: string; method?:
   }
 
   const captured = captureException(error, {
+    source: "App.showGlobalError",
+    triggerComponent: context?.triggerComponent || "QueryClient",
+    triggerAction: context?.triggerAction || "async_operation",
     endpoint: context?.endpoint,
     method: context?.method,
-    source: "App.showGlobalError",
   });
   toast.error("Request failed", {
     description: "Click for details",
@@ -98,19 +105,27 @@ function GlobalErrorHandler({ children }: { children: React.ReactNode }) {
       // Extract meaningful info from the rejection
       const reason = event.reason;
       let errorMessage = "Unhandled async error";
-      let errorDetails = "";
       let errorSource = "Unknown source";
+      let errorFunction = "anonymous";
+      let errorFile = "";
 
       if (reason instanceof Error) {
         errorMessage = reason.message || "Async operation failed";
-        errorDetails = reason.stack || "";
-        // Try to extract function name from stack trace
+        // Try to extract function name and file from stack trace
         const stackLines = reason.stack?.split("\n") || [];
         if (stackLines.length > 1) {
           const callerLine = stackLines[1]?.trim();
-          const funcMatch = callerLine?.match(/at\s+(\S+)/);
+          // Parse: "at functionName (file:line:col)" or "at file:line:col"
+          const funcMatch = callerLine?.match(/at\s+(?:async\s+)?(.+?)\s+\((.+?):(\d+):\d+\)/);
           if (funcMatch) {
-            errorSource = funcMatch[1];
+            errorFunction = funcMatch[1];
+            errorFile = funcMatch[2];
+            errorSource = `${errorFunction} (${errorFile.split('/').pop()}:${funcMatch[3]})`;
+          } else {
+            const simpleMatch = callerLine?.match(/at\s+(\S+)/);
+            if (simpleMatch) {
+              errorSource = simpleMatch[1];
+            }
           }
         }
       } else if (typeof reason === "string") {
@@ -122,9 +137,15 @@ function GlobalErrorHandler({ children }: { children: React.ReactNode }) {
       console.error(`[GlobalErrorHandler] Unhandled rejection in ${errorSource}:`, reason);
 
       const captured = captureException(reason, {
+        source: `GlobalErrorHandler.unhandledrejection → ${errorFunction}`,
+        triggerComponent: "GlobalErrorHandler",
+        triggerAction: "unhandled_rejection",
         endpoint: `unhandled:${errorSource}`,
         method: "ASYNC",
-        source: "App.GlobalErrorHandler.unhandledrejection",
+        context: {
+          originalSource: errorSource,
+          errorFile,
+        }
       });
 
       toast.error(`Async error in ${errorSource}`, {

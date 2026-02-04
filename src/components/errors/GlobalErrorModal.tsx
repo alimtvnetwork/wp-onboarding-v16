@@ -1,10 +1,11 @@
-import { useErrorStore, CapturedError } from '@/stores/errorStore';
+import { useState } from "react";
+import { useErrorStore, CapturedError, StackFrame } from '@/stores/errorStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -16,6 +17,8 @@ export function GlobalErrorModal() {
   const appVersion = versionInfo?.version || "0.0.0";
   const gitCommit = versionInfo?.gitCommit;
   const buildTime = versionInfo?.buildTime;
+  const [showRawStack, setShowRawStack] = useState(false);
+  const [showInternalFrames, setShowInternalFrames] = useState(false);
   
   if (!selectedError) return null;
 
@@ -37,6 +40,11 @@ export function GlobalErrorModal() {
   };
 
   const suggestedFixes = getSuggestedFixes(selectedError.code);
+  
+  // Get frames to display (filter internal if needed)
+  const displayFrames = showInternalFrames 
+    ? selectedError.parsedFrames 
+    : selectedError.parsedFrames?.filter(f => !f.isInternal);
 
   return (
     <Dialog open={isModalOpen} onOpenChange={closeErrorModal}>
@@ -85,8 +93,29 @@ export function GlobalErrorModal() {
             </TabsList>
 
             <ScrollArea className="flex-1 mt-4 pr-4">
-              {/* Overview Tab - Compact summary */}
+              {/* Overview Tab - Compact summary with Call Chain */}
               <TabsContent value="overview" className="space-y-3 m-0">
+                {/* Trigger Context Badge */}
+                {(selectedError.triggerComponent || selectedError.triggerAction) && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="bg-primary/5 border-primary/20">
+                      <Layers className="h-3 w-3 mr-1" />
+                      {selectedError.triggerComponent || "Unknown"}
+                      {selectedError.triggerAction && (
+                        <>
+                          <ChevronRight className="h-3 w-3 mx-1" />
+                          {selectedError.triggerAction}
+                        </>
+                      )}
+                    </Badge>
+                    {selectedError.context?.source && (
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {String(selectedError.context.source)}
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <h4 className="text-sm font-medium text-muted-foreground mb-1">Message</h4>
                   <p className="text-sm bg-muted p-3 rounded-md">{selectedError.message}</p>
@@ -98,6 +127,36 @@ export function GlobalErrorModal() {
                     <p className="text-sm bg-muted p-3 rounded-md whitespace-pre-wrap">
                       {selectedError.details}
                     </p>
+                  </div>
+                )}
+
+                {/* Invocation Chain - Visual Tree */}
+                {selectedError.invocationChain && selectedError.invocationChain.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                      <Layers className="h-4 w-4" />
+                      Call Chain
+                    </h4>
+                    <div className="bg-muted p-3 rounded-md">
+                      <div className="space-y-1">
+                        {selectedError.invocationChain.map((call, index) => (
+                          <div 
+                            key={index}
+                            className="flex items-center gap-1 text-xs font-mono"
+                            style={{ marginLeft: `${index * 12}px` }}
+                          >
+                            {index > 0 && (
+                              <span className="text-muted-foreground">└─</span>
+                            )}
+                            <span className={cn(
+                              index === 0 ? "text-primary font-semibold" : "text-foreground"
+                            )}>
+                              {call}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -117,73 +176,177 @@ export function GlobalErrorModal() {
                 )}
               </TabsContent>
 
-              {/* Stack Trace Tab - Split for Frontend/Backend */}
+              {/* Stack Trace Tab - Enhanced with Parsed Table */}
               <TabsContent value="stack" className="m-0 space-y-4">
-                {selectedError.stackTrace ? (
+                {/* View Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={showRawStack ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => setShowRawStack(false)}
+                    >
+                      Parsed
+                    </Button>
+                    <Button
+                      variant={showRawStack ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowRawStack(true)}
+                    >
+                      Raw
+                    </Button>
+                  </div>
+                  {!showRawStack && (
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showInternalFrames}
+                        onChange={(e) => setShowInternalFrames(e.target.checked)}
+                        className="rounded"
+                      />
+                      Show internal frames
+                    </label>
+                  )}
+                </div>
+
+                {showRawStack ? (
+                  // Raw Stack Trace View
                   <>
-                    {/* Determine if we have backend stack trace (Go-style) */}
-                    {(() => {
-                      const stack = selectedError.stackTrace || "";
-                      const isBackendStack = stack.includes("goroutine") || stack.includes(".go:");
-                      const isFrontendStack = stack.includes("at ") || stack.includes(".tsx:") || stack.includes(".ts:");
-                      
-                      return (
-                        <Tabs defaultValue={isBackendStack ? "backend" : "frontend"} className="w-full">
-                          <TabsList className="grid w-full grid-cols-2 mb-3">
-                            <TabsTrigger value="frontend" disabled={!isFrontendStack && isBackendStack}>
-                              Frontend
-                            </TabsTrigger>
-                            <TabsTrigger value="backend" disabled={!isBackendStack && isFrontendStack}>
-                              Backend
-                            </TabsTrigger>
-                          </TabsList>
+                    {selectedError.stackTrace ? (
+                      <>
+                        {(() => {
+                          const stack = selectedError.stackTrace || "";
+                          const isBackendStack = stack.includes("goroutine") || stack.includes(".go:");
+                          const isFrontendStack = stack.includes("at ") || stack.includes(".tsx:") || stack.includes(".ts:");
                           
-                          <TabsContent value="frontend" className="m-0">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                <FileCode2 className="h-4 w-4" />
-                                Frontend Stack Trace
-                              </h4>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copySection("Frontend stack trace", stack)}
-                              >
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-60">
-                              {isFrontendStack ? stack : "No frontend stack trace available"}
-                            </pre>
-                          </TabsContent>
-                          
-                          <TabsContent value="backend" className="m-0">
-                            <div className="flex items-center justify-between mb-2">
-                              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                <Network className="h-4 w-4" />
-                                Backend Stack Trace
-                              </h4>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => copySection("Backend stack trace", stack)}
-                              >
-                                <Copy className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-60">
-                              {isBackendStack ? stack : "No backend stack trace available"}
-                            </pre>
-                          </TabsContent>
-                        </Tabs>
-                      );
-                    })()}
+                          return (
+                            <Tabs defaultValue={isBackendStack ? "backend" : "frontend"} className="w-full">
+                              <TabsList className="grid w-full grid-cols-2 mb-3">
+                                <TabsTrigger value="frontend" disabled={!isFrontendStack && isBackendStack}>
+                                  Frontend
+                                </TabsTrigger>
+                                <TabsTrigger value="backend" disabled={!isBackendStack && isFrontendStack}>
+                                  Backend
+                                </TabsTrigger>
+                              </TabsList>
+                              
+                              <TabsContent value="frontend" className="m-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                    <FileCode2 className="h-4 w-4" />
+                                    Frontend Stack Trace
+                                  </h4>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copySection("Frontend stack trace", stack)}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-60">
+                                  {isFrontendStack ? stack : "No frontend stack trace available"}
+                                </pre>
+                              </TabsContent>
+                              
+                              <TabsContent value="backend" className="m-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                    <Network className="h-4 w-4" />
+                                    Backend Stack Trace
+                                  </h4>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => copySection("Backend stack trace", stack)}
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-60">
+                                  {isBackendStack ? stack : "No backend stack trace available"}
+                                </pre>
+                              </TabsContent>
+                            </Tabs>
+                          );
+                        })()}
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileCode2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No stack trace available</p>
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileCode2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No stack trace available</p>
-                  </div>
+                  // Parsed Stack Frames Table View
+                  <>
+                    {displayFrames && displayFrames.length > 0 ? (
+                      <div className="border rounded-md overflow-hidden">
+                        <table className="w-full text-xs">
+                          <thead className="bg-muted">
+                            <tr>
+                              <th className="text-left p-2 font-medium text-muted-foreground">#</th>
+                              <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
+                              <th className="text-left p-2 font-medium text-muted-foreground">File</th>
+                              <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {displayFrames.map((frame, index) => (
+                              <tr 
+                                key={index} 
+                                className={cn(
+                                  "border-t border-border/50",
+                                  index === 0 && "bg-primary/5",
+                                  frame.isInternal && "opacity-50"
+                                )}
+                              >
+                                <td className="p-2 font-mono text-muted-foreground">{index + 1}</td>
+                                <td className="p-2 font-mono">
+                                  <span className={cn(index === 0 && "text-primary font-semibold")}>
+                                    {frame.function}
+                                  </span>
+                                </td>
+                                <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]">
+                                  {frame.file}
+                                </td>
+                                <td className="p-2 font-mono text-right">{frame.line}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        <div className="flex justify-end p-2 bg-muted/50 border-t">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const tableText = displayFrames
+                                .map((f, i) => `${i + 1}. ${f.function} (${f.file}:${f.line})`)
+                                .join('\n');
+                              copySection("Stack frames", tableText);
+                            }}
+                          >
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileCode2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">No parsed stack frames available</p>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          onClick={() => setShowRawStack(true)}
+                          className="mt-2"
+                        >
+                          View raw stack trace
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Location Details */}
@@ -421,6 +584,37 @@ function generateErrorReport(
     appInfo.push(`**Build Time:** ${app.buildTime}`);
   }
 
+  // Build trigger context section
+  const triggerContext = [];
+  if (error.triggerComponent) {
+    triggerContext.push(`**Component:** ${error.triggerComponent}`);
+  }
+  if (error.triggerAction) {
+    triggerContext.push(`**Action:** ${error.triggerAction}`);
+  }
+  if (error.context?.source) {
+    triggerContext.push(`**Source:** ${error.context.source}`);
+  }
+  const triggerSection = triggerContext.length > 0 
+    ? `### Trigger Context\n${triggerContext.join("\n")}\n` 
+    : "";
+
+  // Build invocation chain section
+  const chainSection = error.invocationChain && error.invocationChain.length > 0
+    ? `### Invocation Chain\n\`\`\`\n${error.invocationChain.map((call, i) => 
+        `${'  '.repeat(i)}${i > 0 ? '└─ ' : ''}${call}`
+      ).join('\n')}\n\`\`\`\n`
+    : "";
+
+  // Build parsed stack frames table
+  const framesSection = error.parsedFrames && error.parsedFrames.length > 0
+    ? `### Parsed Stack Frames\n| # | Function | File | Line |\n|---|----------|------|------|\n${
+        error.parsedFrames.slice(0, 10).map((f, i) => 
+          `| ${i + 1} | ${f.function} | ${f.file} | ${f.line} |`
+        ).join('\n')
+      }\n`
+    : "";
+
   return `## Error Report
 
 ${appInfo.join("\n")}
@@ -430,15 +624,18 @@ ${appInfo.join("\n")}
 **Level:** ${error.level}
 **Timestamp:** ${error.createdAt}
 
+${triggerSection}
+${chainSection}
 ### Message
 ${error.message}
 
 ${error.details ? `### Details\n${error.details}\n` : ""}
 ${error.endpoint ? `### Request\n**${error.method || "GET"}** ${error.endpoint}\n${error.responseStatus ? `**Status:** ${error.responseStatus}\n` : ""}` : ""}
 ${error.requestBody ? `### Request Body\n\`\`\`json\n${JSON.stringify(error.requestBody, null, 2)}\n\`\`\`\n` : ""}
+${framesSection}
 ${error.file ? `### Location\n\`${error.file}:${error.line}\` (${error.function})\n` : ""}
 ${error.context && Object.keys(error.context).length > 0 ? `### Context\n\`\`\`json\n${JSON.stringify(error.context, null, 2)}\n\`\`\`\n` : ""}
-${error.stackTrace ? `### Stack Trace\n\`\`\`\n${error.stackTrace}\n\`\`\`` : ""}
+${error.stackTrace ? `### Full Stack Trace\n\`\`\`\n${error.stackTrace}\n\`\`\`` : ""}
 
 ---
 *Generated by WP Plugin Publish Error Reporter*
@@ -475,4 +672,3 @@ function getSuggestedFixes(code: string): string[] {
     "Contact support if the issue persists",
   ];
 }
-

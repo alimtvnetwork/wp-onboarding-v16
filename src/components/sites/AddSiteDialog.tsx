@@ -146,7 +146,13 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
         showErrorWithModal(response.error, { endpoint: "/sites/test", method: "POST" });
       }
     } catch (error) {
-      const captured = captureException(error, { endpoint: "/sites/test", method: "POST", source: "AddSiteDialog.handleTestCredentials" });
+      const captured = captureException(error, { 
+        source: "AddSiteDialog.handleTestCredentials",
+        triggerComponent: "AddSiteDialog",
+        triggerAction: "test_connection",
+        endpoint: "/sites/test", 
+        method: "POST" 
+      });
       setCredentialsTestResult({
         success: false,
         message: error instanceof Error ? error.message : "Unknown error",
@@ -231,10 +237,13 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
       }
     } catch (error) {
       const captured = captureException(error, {
+        source: "AddSiteDialog.handleAddSite",
+        triggerComponent: "AddSiteDialog",
+        triggerAction: "save_clicked",
         endpoint: "/sites",
         method: "POST",
         requestBody: { ...requestBody, applicationPassword: "***" },
-        source: "AddSiteDialog.handleAddSite",
+        context: { selectedPluginCount: selectedPluginIds.length }
       });
       toast.error("Failed to add site", {
         description: "Click for details",
