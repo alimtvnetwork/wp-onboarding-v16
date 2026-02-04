@@ -1,7 +1,8 @@
 # PowerShell Script Reference
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-02  
+> **Spec Version:** 2.1.0  
+> **Script Version:** 1.1.0  
+> **Updated:** 2026-02-04  
 > **Status:** Active
 
 ---
@@ -257,11 +258,13 @@ if ($config.pnpmStorePath) {
     pnpm config set store-dir $storePath
 }
 
-# Force clean
+# Force clean (removes ALL pnpm artifacts including PnP loaders)
 if ($Force) {
+    Remove-Item -Recurse -Force "node_modules" -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force ".pnpm" -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force ".pnp.cjs" -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force ".pnp.loader.mjs" -ErrorAction SilentlyContinue
-    Remove-Item -Recurse -Force "node_modules" -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force ".pnp.data.json" -ErrorAction SilentlyContinue
     pnpm store prune
 }
 
@@ -270,6 +273,9 @@ if ($Force) {
 # The runner auto-appends:
 #   --dangerously-allow-all-builds
 # when pnpm v10+ is detected, to ensure native deps like esbuild/@swc work for Vite.
+#
+# IMPORTANT: -rebuild (-r) defers install until AFTER force-clean to avoid
+# installing then immediately deleting node_modules.
 pnpm install
 
 Pop-Location
@@ -279,6 +285,10 @@ Pop-Location
 - No `node_modules` folder needed (or minimal)
 - Faster installs from shared store
 - Disk savings of 50-70%
+
+**Install Detection (v1.1.0+):**
+- Respects `EffectiveNodeLinker` setting (PnP checks `.pnp.cjs`, isolated checks `node_modules`)
+- `-i` and `-r` flags always trigger install, even if deps appear present
 
 ---
 
