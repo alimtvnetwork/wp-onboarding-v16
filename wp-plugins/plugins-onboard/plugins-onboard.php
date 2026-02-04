@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Plugins Onboard
- * Plugin URI: https://riseup-asia.com/
+ * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Manages plugin onboarding and snapshots with robust security, OAuth 2.0 authentication, and comprehensive audit logging.
  * Version: 1.0.8
- * Author: Alim Ul Karim
- * Author URI: https://riseup-asia.com/
+ * Author: MD ALIM UL KARIM
+ * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: plugins-onboard

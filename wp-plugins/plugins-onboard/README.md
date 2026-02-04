@@ -519,10 +519,10 @@ See [LICENSE](https://www.gnu.org/licenses/gpl-2.0.html) for details.
 
 ## Author
 
-**Alim Ul Karim**  
+**MD ALIM UL KARIM**  
 
-- Website: [https://riseup-asia.com/](https://riseup-asia.com/)
-- Email: contact@riseup-asia.com
+- Profile: [https://rasia.pro/alim-r-profile-v1](https://rasia.pro/alim-r-profile-v1)
+- Company: Riseup Asia
 
 ---
 

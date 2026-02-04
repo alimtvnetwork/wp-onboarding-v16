@@ -49,7 +49,7 @@
     "plugins": [
       {
         "name": "Riseup Asia Uploader",
-        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\plugins-uploader-helper",
+        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\wp-plugins\\riseup-asia-uploader",
         "category": "Core",
         "gitEnabled": false,
         "autoPublish": false,
@@ -57,7 +57,7 @@
       },
       {
         "name": "Plugins Onboard",
-        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\plugins-onboard",
+        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\wp-plugins\\plugins-onboard",
         "category": "Development",
         "gitEnabled": true,
         "autoPublish": false,

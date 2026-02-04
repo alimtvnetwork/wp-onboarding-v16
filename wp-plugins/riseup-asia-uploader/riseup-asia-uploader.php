@@ -1,18 +1,18 @@
 <?php
 /**
- * Plugin Name: Rise Up Asia
- * Plugin URI: https://riseup-asia.com/
+ * Plugin Name: Riseup Asia Uploader
+ * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, and audit logging via REST API with Application Password authentication.
  * Version: 1.3.0
- * Author: Rise Up Asia
- * Author URI: https://riseup-asia.com/
+ * Author: MD ALIM UL KARIM
+ * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: riseup-asia
+ * Text Domain: riseup-asia-uploader
  * Requires at least: 5.6
  * Requires PHP: 7.4
  *
- * @package RiseUpAsia
+ * @package RiseUpAsiaUploader
  */
 
 if (!defined('ABSPATH')) {
