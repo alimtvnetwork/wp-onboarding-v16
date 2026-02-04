@@ -327,6 +327,19 @@ class OnboardAPI {
             return new WP_Error('https_required', 'HTTPS is required', array('status' => 403));
         }
 
+		// Support WordPress Application Passwords (Basic Auth) for non-interactive clients.
+		// When the REST API authenticates the request via Basic Auth, WordPress sets the current user.
+		// We allow that path as an alternative to the companion OAuth bearer token.
+		if (is_user_logged_in() && (current_user_can('install_plugins') || current_user_can('activate_plugins'))) {
+			$user = wp_get_current_user();
+			$request->set_param('_decoded_token', array(
+				'auth_type' => 'basic',
+				'user_id'   => $user ? $user->ID : 0,
+			));
+			$request->set_param('_app_id', 'wp-user-' . ($user ? $user->ID : 0));
+			return true;
+		}
+
         $auth_header = $request->get_header('Authorization');
         if (!$auth_header || strpos($auth_header, 'Bearer ') !== 0) {
             return new WP_Error('missing_token', 'Missing Authorization header', array('status' => 401));
