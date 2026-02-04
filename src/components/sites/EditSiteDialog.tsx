@@ -126,7 +126,14 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
         toast.error(response.data?.message || "Connection failed");
       }
     } catch (error) {
-      const captured = captureException(error, { endpoint: `/sites/${site.id}/test`, method: "POST" });
+      const captured = captureException(error, { 
+        source: "EditSiteDialog.handleTestConnection",
+        triggerComponent: "EditSiteDialog",
+        triggerAction: "test_connection",
+        endpoint: `/sites/${site.id}/test`, 
+        method: "POST",
+        context: { siteId: site.id }
+      });
       toast.error("Connection test failed", {
         description: "Click for details",
         action: { label: "View Details", onClick: () => openErrorModal(captured) },
@@ -176,9 +183,13 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
       }
     } catch (error) {
       const captured = captureException(error, {
+        source: "EditSiteDialog.handleEditSite",
+        triggerComponent: "EditSiteDialog",
+        triggerAction: "save_clicked",
         endpoint: `/sites/${site.id}`,
         method: "PUT",
         requestBody: { ...formData, password: "***" },
+        context: { siteId: site.id, selectedPluginCount: selectedPlugins.length }
       });
       toast.error("Failed to update site", {
         description: "Click for details",

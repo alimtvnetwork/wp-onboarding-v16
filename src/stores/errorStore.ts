@@ -1,6 +1,41 @@
 import { create } from 'zustand';
 import { ApiError } from '@/lib/api';
 
+/**
+ * Parsed stack frame with file, line, column info
+ */
+export interface StackFrame {
+  function: string;
+  file: string;
+  line: number;
+  column?: number;
+  isInternal: boolean; // true if from node_modules or browser internals
+}
+
+/**
+ * Full parsed stack trace result
+ */
+export interface ParsedStackTrace {
+  frames: StackFrame[];
+  primaryFrame: StackFrame | null;
+  invocationChain: string[];
+  rawStack: string;
+}
+
+/**
+ * Error context required for all captureException calls
+ */
+export interface ErrorContext {
+  source: string;              // REQUIRED: "ComponentName.functionName"
+  triggerComponent?: string;   // UI component (EditSiteDialog)
+  triggerAction?: string;      // User action (save_clicked, button_click, form_submit)
+  parentSource?: string;       // Caller function for chain building
+  endpoint?: string;
+  method?: string;
+  requestBody?: unknown;
+  context?: Record<string, unknown>;
+}
+
 export interface CapturedError {
   id: string;
   code: string;
@@ -18,6 +53,11 @@ export interface CapturedError {
   method?: string;
   requestBody?: unknown;
   responseStatus?: number;
+  // NEW: Enhanced error reporting fields
+  invocationChain?: string[];
+  parsedFrames?: StackFrame[];
+  triggerComponent?: string;
+  triggerAction?: string;
 }
 
 interface ErrorStore {
@@ -32,7 +72,7 @@ interface ErrorStore {
   captureError: (error: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown; responseStatus?: number; context?: Record<string, unknown> }) => CapturedError;
   captureException: (
     error: unknown,
-    context?: {
+    context?: ErrorContext | {
       endpoint?: string;
       method?: string;
       requestBody?: unknown;
@@ -63,25 +103,144 @@ function captureStackTrace(error?: unknown): string {
 }
 
 /**
- * Parse stack trace to extract file, line, function info
+ * Parse ALL stack frames from a stack trace string
+ * Handles both development (full paths) and production (minified) formats
+ */
+export function parseFullStackTrace(stack: string): ParsedStackTrace {
+  const result: ParsedStackTrace = {
+    frames: [],
+    primaryFrame: null,
+    invocationChain: [],
+    rawStack: stack,
+  };
+  
+  if (!stack) return result;
+  
+  const lines = stack.split('\n');
+  
+  for (const line of lines) {
+    // Skip empty lines and error message lines
+    if (!line.trim() || !line.includes('at ')) continue;
+    
+    // Pattern 1: "at functionName (file:line:col)"
+    // Pattern 2: "at file:line:col" (anonymous function)
+    // Pattern 3: "at async functionName (file:line:col)"
+    // Pattern 4: Webpack/Vite: "at functionName (http://localhost:5173/src/file.tsx:123:45)"
+    
+    let funcName = 'anonymous';
+    let filePath = '';
+    let lineNum = 0;
+    let colNum: number | undefined;
+    
+    // Try to match with function name: "at funcName (path:line:col)"
+    const withFuncMatch = line.match(/at\s+(?:async\s+)?(.+?)\s+\((.+?):(\d+):(\d+)\)/);
+    if (withFuncMatch) {
+      funcName = withFuncMatch[1].trim();
+      filePath = withFuncMatch[2];
+      lineNum = parseInt(withFuncMatch[3], 10);
+      colNum = parseInt(withFuncMatch[4], 10);
+    } else {
+      // Try anonymous: "at path:line:col"
+      const anonMatch = line.match(/at\s+(.+?):(\d+):(\d+)/);
+      if (anonMatch) {
+        filePath = anonMatch[1].trim();
+        lineNum = parseInt(anonMatch[2], 10);
+        colNum = parseInt(anonMatch[3], 10);
+      }
+    }
+    
+    if (!filePath) continue;
+    
+    // Determine if this is an internal frame (node_modules, browser internals)
+    const isInternal = 
+      filePath.includes('node_modules') ||
+      filePath.includes('chrome-extension://') ||
+      filePath.startsWith('<anonymous>') ||
+      filePath.includes('@tanstack') ||
+      filePath.includes('react-dom') ||
+      filePath.includes('react.') ||
+      filePath.includes('scheduler.') ||
+      funcName.startsWith('Object.') ||
+      funcName === 'Module' ||
+      funcName === '<anonymous>';
+    
+    // Clean up file path for display
+    let cleanFile = filePath;
+    // Extract just the filename from URLs like http://localhost:5173/src/components/File.tsx
+    const urlMatch = filePath.match(/\/src\/(.+)$/);
+    if (urlMatch) {
+      cleanFile = 'src/' + urlMatch[1];
+    } else {
+      // Handle file:// URLs or plain paths
+      const fileMatch = filePath.match(/([^/\\]+\.(tsx?|jsx?|mjs|cjs))$/i);
+      if (fileMatch) {
+        cleanFile = fileMatch[1];
+      }
+    }
+    
+    result.frames.push({
+      function: funcName,
+      file: cleanFile,
+      line: lineNum,
+      column: colNum,
+      isInternal,
+    });
+  }
+  
+  // Find the first non-internal frame as the primary frame
+  result.primaryFrame = result.frames.find(f => !f.isInternal) || result.frames[0] || null;
+  
+  // Build invocation chain from non-internal frames (app code only)
+  result.invocationChain = result.frames
+    .filter(f => !f.isInternal && f.function !== 'anonymous')
+    .slice(0, 8) // Limit to 8 levels
+    .map(f => `${f.function} (${f.file}:${f.line})`);
+  
+  return result;
+}
+
+/**
+ * Legacy parse function for backward compatibility
  */
 function parseStackTrace(stack: string): { file?: string; line?: number; function?: string } {
-  if (!stack) return {};
-  
-  // Try to parse the first meaningful stack line
-  const lines = stack.split('\n');
-  for (const line of lines) {
-    // Match patterns like: "at functionName (file.ts:123:45)" or "at file.ts:123:45"
-    const match = line.match(/at\s+(?:(.+?)\s+\()?(.+?):(\d+):\d+\)?/);
-    if (match) {
-      return {
-        function: match[1] || undefined,
-        file: match[2],
-        line: parseInt(match[3], 10),
-      };
-    }
+  const parsed = parseFullStackTrace(stack);
+  if (parsed.primaryFrame) {
+    return {
+      file: parsed.primaryFrame.file,
+      line: parsed.primaryFrame.line,
+      function: parsed.primaryFrame.function,
+    };
   }
   return {};
+}
+
+/**
+ * Build invocation chain from error context
+ */
+function buildInvocationChain(
+  parsedChain: string[],
+  source?: string,
+  parentSource?: string
+): string[] {
+  const chain: string[] = [];
+  
+  // Add explicit source context first
+  if (source) {
+    chain.push(source);
+  }
+  if (parentSource && parentSource !== source) {
+    chain.push(parentSource);
+  }
+  
+  // Add parsed stack frames
+  for (const frame of parsedChain) {
+    // Avoid duplicates
+    if (!chain.some(c => c.includes(frame.split(' ')[0]))) {
+      chain.push(frame);
+    }
+  }
+  
+  return chain;
 }
 
 export const useErrorStore = create<ErrorStore>((set, get) => ({
@@ -96,7 +255,13 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       ? `${error.stackTrace}\n\n--- Client Stack ---\n${clientStack}`
       : clientStack;
     
+    const parsed = parseFullStackTrace(error.stackTrace || clientStack);
     const stackInfo = parseStackTrace(error.stackTrace || clientStack);
+    
+    // Extract source from context if available
+    const source = typeof meta?.context?.source === 'string' ? meta.context.source : undefined;
+    const triggerComponent = typeof meta?.context?.triggerComponent === 'string' ? meta.context.triggerComponent : undefined;
+    const triggerAction = typeof meta?.context?.triggerAction === 'string' ? meta.context.triggerAction : undefined;
     
     const captured: CapturedError = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -118,6 +283,11 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       method: meta?.method,
       requestBody: meta?.requestBody,
       responseStatus: meta?.responseStatus,
+      // NEW: Enhanced fields
+      invocationChain: buildInvocationChain(parsed.invocationChain, source),
+      parsedFrames: parsed.frames.filter(f => !f.isInternal),
+      triggerComponent,
+      triggerAction,
     };
     
     set((state) => ({
@@ -129,9 +299,11 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
   
   /**
    * Capture any JavaScript exception with full stack trace
+   * MUST include source in context for proper error reporting
    */
   captureException: (error, context) => {
     const stack = captureStackTrace(error);
+    const parsed = parseFullStackTrace(stack);
     const stackInfo = parseStackTrace(stack);
     
     const message = error instanceof Error ? error.message : String(error);
@@ -139,10 +311,24 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       ? String(error.cause) 
       : undefined;
     
+    // Extract enhanced context fields
+    const source = context?.source;
+    const triggerComponent = 'triggerComponent' in (context || {}) 
+      ? (context as ErrorContext).triggerComponent 
+      : undefined;
+    const triggerAction = 'triggerAction' in (context || {})
+      ? (context as ErrorContext).triggerAction
+      : undefined;
+    const parentSource = 'parentSource' in (context || {})
+      ? (context as ErrorContext).parentSource
+      : undefined;
+    
     const mergedContext: Record<string, unknown> | undefined = (() => {
       const base: Record<string, unknown> = {
         ...(context?.context || {}),
-        ...(context?.source ? { source: context.source } : {}),
+        ...(source ? { source } : {}),
+        ...(triggerComponent ? { triggerComponent } : {}),
+        ...(triggerAction ? { triggerAction } : {}),
         ...(context?.requestBody ? { requestData: context.requestBody } : {}),
       };
       return Object.keys(base).length ? base : undefined;
@@ -163,6 +349,11 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       endpoint: context?.endpoint,
       method: context?.method,
       requestBody: context?.requestBody,
+      // NEW: Enhanced fields
+      invocationChain: buildInvocationChain(parsed.invocationChain, source, parentSource),
+      parsedFrames: parsed.frames.filter(f => !f.isInternal),
+      triggerComponent,
+      triggerAction,
     };
     
     set((state) => ({
@@ -184,4 +375,3 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     set({ recentErrors: [] });
   },
 }));
-

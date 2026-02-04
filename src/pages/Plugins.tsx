@@ -172,11 +172,28 @@ export default function Plugins() {
         const captured = captureError(response.error, {
           endpoint: `/plugins/${id}`,
           method: 'DELETE',
+          context: {
+            source: "Plugins.handleDeletePlugin",
+            triggerComponent: "Plugins",
+            triggerAction: "delete_clicked",
+            pluginId: id
+          }
         });
         openErrorModal(captured);
       }
     } catch (error) {
-      toast.error("Failed to remove plugin");
+      const { captureException, openErrorModal: showModal } = useErrorStore.getState();
+      const captured = captureException(error, {
+        source: "Plugins.handleDeletePlugin",
+        triggerComponent: "Plugins",
+        triggerAction: "delete_clicked",
+        endpoint: `/plugins/${id}`,
+        method: "DELETE",
+        context: { pluginId: id }
+      });
+      toast.error("Failed to remove plugin", {
+        action: { label: "Details", onClick: () => showModal(captured) }
+      });
     }
   };
 
@@ -311,11 +328,29 @@ export default function Plugins() {
         const captured = captureError(response.error, {
           endpoint: `/plugins/${plugin.id}/sites/${siteId}/publish`,
           method: "POST",
+          context: {
+            source: "Plugins.handlePublish",
+            triggerComponent: "Plugins",
+            triggerAction: "publish_initiated",
+            pluginId: plugin.id,
+            siteId
+          }
         });
         openErrorModal(captured);
       }
     } catch (error) {
-      toast.error("Publish failed");
+      const { captureException, openErrorModal: showModal } = useErrorStore.getState();
+      const captured = captureException(error, {
+        source: "Plugins.handlePublish",
+        triggerComponent: "Plugins",
+        triggerAction: "publish_initiated",
+        endpoint: `/plugins/${plugin.id}/sites/${siteId}/publish`,
+        method: "POST",
+        context: { pluginId: plugin.id, siteId }
+      });
+      toast.error("Publish failed", {
+        action: { label: "Details", onClick: () => showModal(captured) }
+      });
     } finally {
       setIsPublishing(null);
     }

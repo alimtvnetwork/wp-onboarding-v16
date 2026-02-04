@@ -1,11 +1,24 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T23:00:00Z",
+  "buildTime": "2026-02-04T23:30:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.15.0",
+      "date": "2026-02-04",
+      "title": "Enhanced Error Reporting System",
+      "changes": [
+        "📊 Full stack trace parsing with invocation chain visualization",
+        "🔍 Parsed stack frames table view in Error Modal (toggle between Parsed/Raw)",
+        "🏷️ Trigger context badges show Component → Action that caused errors",
+        "📋 Enhanced error reports include call chain, parsed frames table, and trigger info",
+        "✅ All async handlers now include mandatory source, triggerComponent, triggerAction",
+        "📚 New error-reporting-standards.md documentation for future development"
+      ]
+    },
     {
       "version": "1.14.0",
       "date": "2026-02-04",
@@ -15,18 +28,6 @@
         "🔐 Publish service now correctly decrypts site passwords",
         "📡 Added SitePasswordDecryptor interface for proper credential handling",
         "🔄 Version bump triggers re-seed to ensure all-to-all mappings"
-      ]
-    },
-    {
-      "version": "1.13.0",
-      "date": "2026-02-04",
-      "title": "Robust Site Mappings & Publish Fixes",
-      "changes": [
-        "🔗 New PUT /sites/{id}/mappings endpoint for atomic site→plugin mapping updates",
-        "📦 Upload Mode setting now controls publish mode (file→selected, zip→full)",
-        "📡 Fixed WebSocket publish events to match frontend progress dialog shape",
-        "🔌 Edit Site dialog now uses robust single-call mapping update",
-        "🔄 Seeded plugins still map to ALL seeded sites on startup"
       ]
     },
     {
