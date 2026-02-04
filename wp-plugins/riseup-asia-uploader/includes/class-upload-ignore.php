@@ -1,10 +1,10 @@
 <?php
 /**
- * Rise Up Asia - Upload Ignore Parser
+ * Riseup Asia Uploader - Upload Ignore Parser
  *
  * Parses .uploadignore files using gitignore-style pattern matching.
  *
- * @package RiseUpAsia
+ * @package RiseupAsiaUploader
  * @since   1.4.0
  */
 
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 /**
  * Upload Ignore Parser class.
  */
-class RiseUp_Upload_Ignore {
+class Riseup_Upload_Ignore {
 
     /**
      * Include patterns (files to ignore).
@@ -39,6 +39,20 @@ class RiseUp_Upload_Ignore {
     private $loaded = false;
 
     /**
+     * File logger instance.
+     *
+     * @var Riseup_File_Logger
+     */
+    private $file_logger;
+
+    /**
+     * Constructor.
+     */
+    public function __construct() {
+        $this->file_logger = Riseup_File_Logger::get_instance();
+    }
+
+    /**
      * Load patterns from .uploadignore file.
      *
      * @param string $plugin_dir The plugin directory path.
@@ -48,37 +62,51 @@ class RiseUp_Upload_Ignore {
     public function load($plugin_dir) {
         $ignore_file = rtrim($plugin_dir, '/\\') . '/' . RISEUP_IGNORE_FILENAME;
 
+        $this->file_logger->debug('Loading uploadignore', array('path' => $ignore_file));
+
         if (!file_exists($ignore_file)) {
+            $this->file_logger->debug('No uploadignore file found');
             $this->loaded = false;
             return false;
         }
 
-        $content = file_get_contents($ignore_file);
-        if ($content === false) {
+        try {
+            $content = file_get_contents($ignore_file);
+            if ($content === false) {
+                $this->file_logger->warn('Failed to read uploadignore file');
+                $this->loaded = false;
+                return false;
+            }
+
+            $lines = explode("\n", $content);
+            foreach ($lines as $line) {
+                $line = trim($line);
+
+                // Skip empty lines and comments.
+                if ($line === '' || strpos($line, '#') === 0) {
+                    continue;
+                }
+
+                // Handle negation patterns.
+                if (strpos($line, '!') === 0) {
+                    $pattern = substr($line, 1);
+                    $this->negations[] = $this->compile_pattern($pattern);
+                } else {
+                    $this->patterns[] = $this->compile_pattern($line);
+                }
+            }
+
+            $this->loaded = true;
+            $this->file_logger->info('Uploadignore loaded', array(
+                'patterns'  => count($this->patterns),
+                'negations' => count($this->negations),
+            ));
+            return true;
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to load uploadignore');
             $this->loaded = false;
             return false;
         }
-
-        $lines = explode("\n", $content);
-        foreach ($lines as $line) {
-            $line = trim($line);
-
-            // Skip empty lines and comments.
-            if ($line === '' || strpos($line, '#') === 0) {
-                continue;
-            }
-
-            // Handle negation patterns.
-            if (strpos($line, '!') === 0) {
-                $pattern = substr($line, 1);
-                $this->negations[] = $this->compile_pattern($pattern);
-            } else {
-                $this->patterns[] = $this->compile_pattern($line);
-            }
-        }
-
-        $this->loaded = true;
-        return true;
     }
 
     /**
@@ -216,7 +244,7 @@ class RiseUp_Upload_Ignore {
      *
      * @param string $plugin_dir The plugin directory.
      *
-     * @return RiseUp_Upload_Ignore The instance.
+     * @return Riseup_Upload_Ignore The instance.
      */
     public static function from_directory($plugin_dir) {
         $instance = new self();

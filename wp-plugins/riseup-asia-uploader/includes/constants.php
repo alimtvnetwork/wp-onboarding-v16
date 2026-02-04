@@ -1,12 +1,12 @@
 <?php
 /**
- * Rise Up Asia - Plugin Constants
+ * Riseup Asia Uploader - Plugin Constants
  *
  * All string constants centralized to avoid magic strings.
  * These can be overridden by defining them before this file is loaded.
  *
- * @package RiseUpAsia
- * @since   1.3.0
+ * @package RiseupAsiaUploader
+ * @since   1.4.0
  */
 
 if (!defined('ABSPATH')) {
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.3.0');
+    define('RISEUP_VERSION', '1.4.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -31,6 +31,29 @@ if (!defined('RISEUP_MIN_WP_VERSION')) {
 }
 if (!defined('RISEUP_MIN_PHP_VERSION')) {
     define('RISEUP_MIN_PHP_VERSION', '7.4');
+}
+
+// =============================================================================
+// PATHS - All relative to wp-content/uploads/{plugin-slug}/
+// =============================================================================
+
+if (!defined('RISEUP_UPLOADS_SUBDIR')) {
+    define('RISEUP_UPLOADS_SUBDIR', 'riseup-asia-uploader');
+}
+if (!defined('RISEUP_LOGS_SUBDIR')) {
+    define('RISEUP_LOGS_SUBDIR', 'logs');
+}
+if (!defined('RISEUP_LOG_FILENAME')) {
+    define('RISEUP_LOG_FILENAME', 'log.txt');
+}
+if (!defined('RISEUP_ERROR_LOG_FILENAME')) {
+    define('RISEUP_ERROR_LOG_FILENAME', 'error.txt');
+}
+if (!defined('RISEUP_DB_FILENAME')) {
+    define('RISEUP_DB_FILENAME', 'riseup-asia-uploader.db');
+}
+if (!defined('RISEUP_TEMP_SUBDIR')) {
+    define('RISEUP_TEMP_SUBDIR', 'temp');
 }
 
 // =============================================================================
@@ -53,12 +76,38 @@ if (!defined('RISEUP_LEGACY_NAMESPACE')) {
 }
 
 // =============================================================================
+// REST API ENDPOINTS (plain strings, no regex)
+// =============================================================================
+
+if (!defined('RISEUP_ENDPOINT_STATUS')) {
+    define('RISEUP_ENDPOINT_STATUS', 'status');
+}
+if (!defined('RISEUP_ENDPOINT_UPLOAD')) {
+    define('RISEUP_ENDPOINT_UPLOAD', 'upload');
+}
+if (!defined('RISEUP_ENDPOINT_PLUGINS')) {
+    define('RISEUP_ENDPOINT_PLUGINS', 'plugins');
+}
+if (!defined('RISEUP_ENDPOINT_EXPORT_SELF')) {
+    define('RISEUP_ENDPOINT_EXPORT_SELF', 'export-self');
+}
+if (!defined('RISEUP_ENDPOINT_POSTS')) {
+    define('RISEUP_ENDPOINT_POSTS', 'posts');
+}
+if (!defined('RISEUP_ENDPOINT_CATEGORIES')) {
+    define('RISEUP_ENDPOINT_CATEGORIES', 'categories');
+}
+if (!defined('RISEUP_ENDPOINT_LOGS')) {
+    define('RISEUP_ENDPOINT_LOGS', 'logs');
+}
+if (!defined('RISEUP_ENDPOINT_LOGS_STATS')) {
+    define('RISEUP_ENDPOINT_LOGS_STATS', 'logs/stats');
+}
+
+// =============================================================================
 // DATABASE CONFIGURATION
 // =============================================================================
 
-if (!defined('RISEUP_DB_FILENAME')) {
-    define('RISEUP_DB_FILENAME', 'riseup_asia.db');
-}
 if (!defined('RISEUP_TABLE_TRANSACTIONS')) {
     define('RISEUP_TABLE_TRANSACTIONS', 'transactions');
 }
@@ -217,17 +266,6 @@ if (!defined('RISEUP_MAX_LIMIT')) {
 }
 
 // =============================================================================
-// DIRECTORIES
-// =============================================================================
-
-if (!defined('RISEUP_TEMP_DIR')) {
-    define('RISEUP_TEMP_DIR', 'temp');
-}
-if (!defined('RISEUP_DATA_DIR')) {
-    define('RISEUP_DATA_DIR', 'data');
-}
-
-// =============================================================================
 // IGNORE FILE
 // =============================================================================
 
@@ -262,9 +300,26 @@ if (!defined('RISEUP_HTTP_SERVER_ERROR')) {
 }
 
 // =============================================================================
-// LOGGING
+// LOG LEVELS
+// =============================================================================
+
+if (!defined('RISEUP_LOG_LEVEL_DEBUG')) {
+    define('RISEUP_LOG_LEVEL_DEBUG', 'DEBUG');
+}
+if (!defined('RISEUP_LOG_LEVEL_INFO')) {
+    define('RISEUP_LOG_LEVEL_INFO', 'INFO');
+}
+if (!defined('RISEUP_LOG_LEVEL_WARN')) {
+    define('RISEUP_LOG_LEVEL_WARN', 'WARN');
+}
+if (!defined('RISEUP_LOG_LEVEL_ERROR')) {
+    define('RISEUP_LOG_LEVEL_ERROR', 'ERROR');
+}
+
+// =============================================================================
+// LOGGING PREFIX
 // =============================================================================
 
 if (!defined('RISEUP_LOG_PREFIX')) {
-    define('RISEUP_LOG_PREFIX', '[Rise Up Asia]');
+    define('RISEUP_LOG_PREFIX', '[Riseup Asia]');
 }
