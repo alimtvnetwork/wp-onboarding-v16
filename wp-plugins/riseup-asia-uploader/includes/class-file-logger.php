@@ -30,30 +30,30 @@ class Riseup_File_Logger {
     /**
      * Base directory for plugin data.
      *
-     * @var string
+     * @var string|null
      */
-    private $base_dir;
+    private $base_dir = null;
 
     /**
      * Logs directory.
      *
-     * @var string
+     * @var string|null
      */
-    private $logs_dir;
+    private $logs_dir = null;
 
     /**
      * Path to general log file.
      *
-     * @var string
+     * @var string|null
      */
-    private $log_file;
+    private $log_file = null;
 
     /**
      * Path to error log file.
      *
-     * @var string
+     * @var string|null
      */
-    private $error_file;
+    private $error_file = null;
 
     /**
      * Whether the logger is initialized.
@@ -76,25 +76,37 @@ class Riseup_File_Logger {
 
     /**
      * Private constructor.
+     * NOTE: We do NOT call wp_upload_dir() here to avoid early WordPress function calls.
      */
     private function __construct() {
-        $this->initialize_paths();
+        // Paths will be initialized lazily on first use
     }
 
     /**
-     * Initialize log file paths.
+     * Initialize log file paths (lazy initialization).
+     * This is called on first log attempt to ensure WordPress is fully loaded.
      *
-     * @return void
+     * @return bool True if successful.
      */
     private function initialize_paths() {
-        // Get WordPress uploads directory
-        $upload_dir = wp_upload_dir();
-        
-        if (isset($upload_dir['error']) && $upload_dir['error']) {
-            // Fallback to plugin directory if uploads not available
+        if ($this->initialized) {
+            return true;
+        }
+
+        // Check if WordPress functions are available
+        if (!function_exists('wp_upload_dir')) {
+            // Fallback to plugin directory if WordPress not ready
             $this->base_dir = dirname(__DIR__) . '/data';
         } else {
-            $this->base_dir = $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR;
+            // Get WordPress uploads directory
+            $upload_dir = wp_upload_dir();
+            
+            if (isset($upload_dir['error']) && $upload_dir['error']) {
+                // Fallback to plugin directory if uploads not available
+                $this->base_dir = dirname(__DIR__) . '/data';
+            } else {
+                $this->base_dir = $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR;
+            }
         }
         
         $this->logs_dir   = $this->base_dir . '/' . RISEUP_LOGS_SUBDIR;
@@ -102,7 +114,7 @@ class Riseup_File_Logger {
         $this->error_file = $this->logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
         
         // Create directories
-        $this->ensure_directories();
+        return $this->ensure_directories();
     }
 
     /**
@@ -111,35 +123,40 @@ class Riseup_File_Logger {
      * @return bool True if successful.
      */
     private function ensure_directories() {
-        try {
-            if (!file_exists($this->base_dir)) {
-                if (!wp_mkdir_p($this->base_dir)) {
-                    return false;
-                }
-                // Protect with .htaccess
-                $htaccess = $this->base_dir . '/.htaccess';
-                if (!file_exists($htaccess)) {
-                    @file_put_contents($htaccess, "Order deny,allow\nDeny from all\n");
-                }
-                // Add index.php for extra protection
-                $index = $this->base_dir . '/index.php';
-                if (!file_exists($index)) {
-                    @file_put_contents($index, '<?php // Silence is golden.');
-                }
-            }
-            
-            if (!file_exists($this->logs_dir)) {
-                if (!wp_mkdir_p($this->logs_dir)) {
+        // Use native PHP functions to avoid WordPress dependency issues
+        if (!file_exists($this->base_dir)) {
+            // Use mkdir with recursive flag
+            if (!@mkdir($this->base_dir, 0755, true)) {
+                // Try wp_mkdir_p as fallback if available
+                if (function_exists('wp_mkdir_p') && !wp_mkdir_p($this->base_dir)) {
+                    error_log('[Riseup Asia] Failed to create base directory: ' . $this->base_dir);
                     return false;
                 }
             }
             
-            $this->initialized = true;
-            return true;
-        } catch (Exception $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Failed to create log directories: ' . $e->getMessage());
-            return false;
+            // Protect with .htaccess
+            $htaccess = $this->base_dir . '/.htaccess';
+            if (!file_exists($htaccess)) {
+                @file_put_contents($htaccess, "Order deny,allow\nDeny from all\n");
+            }
+            // Add index.php for extra protection
+            $index = $this->base_dir . '/index.php';
+            if (!file_exists($index)) {
+                @file_put_contents($index, '<?php // Silence is golden.');
+            }
         }
+        
+        if (!file_exists($this->logs_dir)) {
+            if (!@mkdir($this->logs_dir, 0755, true)) {
+                if (function_exists('wp_mkdir_p') && !wp_mkdir_p($this->logs_dir)) {
+                    error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logs_dir);
+                    return false;
+                }
+            }
+        }
+        
+        $this->initialized = true;
+        return true;
     }
 
     /**
@@ -148,6 +165,9 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_base_dir() {
+        if ($this->base_dir === null) {
+            $this->initialize_paths();
+        }
         return $this->base_dir;
     }
 
@@ -157,6 +177,9 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_logs_dir() {
+        if ($this->logs_dir === null) {
+            $this->initialize_paths();
+        }
         return $this->logs_dir;
     }
 
@@ -172,7 +195,8 @@ class Riseup_File_Logger {
      * @return string Formatted log entry.
      */
     private function format_entry($level, $message, $file, $line, $context = array()) {
-        $timestamp = gmdate('Y-m-d\TH:i:s.v\Z');
+        // Use date() instead of gmdate() with .v for PHP 7.4 compatibility
+        $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
         $basename  = basename($file);
         
         $entry = sprintf(
@@ -185,7 +209,8 @@ class Riseup_File_Logger {
         );
         
         if (!empty($context)) {
-            $entry .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES);
+            $json_flags = defined('JSON_UNESCAPED_SLASHES') ? JSON_UNESCAPED_SLASHES : 0;
+            $entry .= ' ' . json_encode($context, $json_flags);
         }
         
         return $entry . PHP_EOL;
@@ -200,24 +225,24 @@ class Riseup_File_Logger {
      * @return bool True on success.
      */
     private function write($entry, $is_error = false) {
+        // Initialize paths on first write
         if (!$this->initialized) {
-            $this->ensure_directories();
+            if (!$this->initialize_paths()) {
+                // Fallback to error_log if we can't write to file
+                error_log('[Riseup Asia] ' . trim($entry));
+                return false;
+            }
         }
         
-        try {
-            // Always write to main log
-            @file_put_contents($this->log_file, $entry, FILE_APPEND | LOCK_EX);
-            
-            // Also write errors to error log
-            if ($is_error) {
-                @file_put_contents($this->error_file, $entry, FILE_APPEND | LOCK_EX);
-            }
-            
-            return true;
-        } catch (Exception $e) {
-            error_log(RISEUP_LOG_PREFIX . ' Failed to write log: ' . $e->getMessage());
-            return false;
+        // Always write to main log
+        $result = @file_put_contents($this->log_file, $entry, FILE_APPEND | LOCK_EX);
+        
+        // Also write errors to error log
+        if ($is_error) {
+            @file_put_contents($this->error_file, $entry, FILE_APPEND | LOCK_EX);
         }
+        
+        return $result !== false;
     }
 
     /**
@@ -312,8 +337,8 @@ class Riseup_File_Logger {
     /**
      * Log an exception.
      *
-     * @param Exception $e       Exception to log.
-     * @param string    $context Additional context message.
+     * @param Exception|Throwable $e       Exception to log.
+     * @param string              $context Additional context message.
      *
      * @return bool
      */
