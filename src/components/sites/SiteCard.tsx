@@ -15,6 +15,7 @@ import {
   HelpCircle,
   ExternalLink,
   Package,
+  Upload,
 } from "lucide-react";
 import { api, Site, PluginMapping } from "@/lib/api";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
   const [testingSiteId, setTestingSiteId] = useState<number | null>(null);
+  const [deployingUploader, setDeployingUploader] = useState(false);
 
   // Fetch linked plugins for this site
   const { data: mappings } = useQuery({
@@ -70,6 +72,37 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
       });
     } finally {
       setTestingSiteId(null);
+    }
+  };
+
+  const handleDeployUploader = async () => {
+    setDeployingUploader(true);
+    try {
+      const response = await api.bootstrapUploader(site.id);
+      if (response.success && response.data?.success) {
+        toast.success("Riseup Asia Uploader deployed!", {
+          description: response.data.activated ? "Plugin is active" : "Plugin uploaded but not activated",
+        });
+        queryClient.invalidateQueries({ queryKey: ["sites"] });
+      } else if (response.error) {
+        const captured = captureError(response.error, { endpoint: `/sites/${site.id}/bootstrap-uploader`, method: "POST" });
+        toast.error(response.error.message, {
+          description: "Click for details",
+          action: { label: "View Details", onClick: () => openErrorModal(captured) },
+          duration: 10000,
+        });
+      } else {
+        toast.error("Deploy failed");
+      }
+    } catch (error) {
+      const captured = captureException(error, { endpoint: `/sites/${site.id}/bootstrap-uploader`, method: "POST" });
+      toast.error("Deploy failed", {
+        description: "Click for details",
+        action: { label: "View Details", onClick: () => openErrorModal(captured) },
+        duration: 10000,
+      });
+    } finally {
+      setDeployingUploader(false);
     }
   };
 
@@ -200,6 +233,21 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
 
         {/* Action buttons */}
         <div className="flex gap-1 pt-2 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1"
+            onClick={handleDeployUploader}
+            disabled={deployingUploader || site.connectionStatus !== "connected"}
+            title={site.connectionStatus !== "connected" ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
+          >
+            {deployingUploader ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-1" />
+            )}
+            Deploy
+          </Button>
           <Button
             variant="ghost"
             size="sm"

@@ -5,8 +5,8 @@ package wordpress
 // =============================================================================
 
 const (
-	// RiseUpAsiaNamespace is the REST API namespace for the Rise Up Asia plugin.
-	RiseUpAsiaNamespace = "riseup-asia/v1"
+	// RiseupAsiaNamespace is the REST API namespace for the Riseup Asia Uploader plugin.
+	RiseupAsiaNamespace = "riseup-asia-uploader/v1"
 
 	// RiseUpUploaderNamespace is the legacy namespace (kept for backward compatibility).
 	RiseUpUploaderNamespace = "riseup-uploader/v1"
@@ -14,7 +14,7 @@ const (
 	// OnboardNamespace is the legacy REST API namespace for the Onboard plugin.
 	OnboardNamespace = "onboard-plugin/v1"
 
-	// PluginUploaderNamespace is deprecated, use RiseUpAsiaNamespace.
+	// PluginUploaderNamespace is deprecated, use RiseupAsiaNamespace.
 	// Kept for backward compatibility.
 	PluginUploaderNamespace = "plugin-uploader/v1"
 )

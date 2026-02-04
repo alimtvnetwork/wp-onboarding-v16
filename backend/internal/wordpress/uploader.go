@@ -58,11 +58,11 @@ type UploaderFileInfo struct {
 	Hash     string `json:"hash"`
 }
 
-// CheckRiseUpAsiaAvailable checks if the Rise Up Asia plugin is installed.
-// It tries the new namespace first, then falls back to the legacy namespaces for backward compatibility.
-func (c *Client) CheckRiseUpAsiaAvailable() (bool, string, error) {
-	// Try Rise Up Asia first (newest namespace)
-	endpoint := fmt.Sprintf("/%s%s", RiseUpAsiaNamespace, EndpointStatus)
+// CheckRiseupAsiaAvailable checks if the Riseup Asia Uploader plugin is installed.
+// It tries the new namespace first, then falls back to legacy namespaces for backward compatibility.
+func (c *Client) CheckRiseupAsiaAvailable() (bool, string, error) {
+	// Try Riseup Asia Uploader first (newest namespace)
+	endpoint := fmt.Sprintf("/%s%s", RiseupAsiaNamespace, EndpointStatus)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return false, "", err
@@ -70,7 +70,7 @@ func (c *Client) CheckRiseUpAsiaAvailable() (bool, string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return true, RiseUpAsiaNamespace, nil
+		return true, RiseupAsiaNamespace, nil
 	}
 
 	// Try legacy namespace (riseup-uploader/v1)
@@ -100,14 +100,14 @@ func (c *Client) CheckRiseUpAsiaAvailable() (bool, string, error) {
 	return false, "", nil
 }
 
-// CheckRiseUpUploaderAvailable is deprecated, use CheckRiseUpAsiaAvailable.
+// CheckRiseUpUploaderAvailable is deprecated, use CheckRiseupAsiaAvailable.
 func (c *Client) CheckRiseUpUploaderAvailable() (bool, string, error) {
-	return c.CheckRiseUpAsiaAvailable()
+	return c.CheckRiseupAsiaAvailable()
 }
 
-// CheckUploaderHelperAvailable is deprecated, use CheckRiseUpAsiaAvailable.
+// CheckUploaderHelperAvailable is deprecated, use CheckRiseupAsiaAvailable.
 func (c *Client) CheckUploaderHelperAvailable() (bool, error) {
-	available, _, err := c.CheckRiseUpAsiaAvailable()
+	available, _, err := c.CheckRiseupAsiaAvailable()
 	return available, err
 }
 
@@ -156,9 +156,9 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	base64Data := base64.StdEncoding.EncodeToString(fileBytes)
 
 	// Detect which namespace is available
-	_, namespace, _ := c.CheckRiseUpAsiaAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpAsiaNamespace // default to new namespace
+		namespace = RiseupAsiaNamespace // default to new namespace
 	}
 
 	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %d bytes (base64) to %s...", len(fileBytes), namespace), map[string]interface{}{
@@ -452,11 +452,11 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	return nil
 }
 
-// DeleteFileViaUploader deletes a single file from a plugin via the Rise Up Uploader.
+// DeleteFileViaUploader deletes a single file from a plugin via the Riseup Asia Uploader.
 func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace
+		namespace = RiseupAsiaNamespace
 	}
 
 	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
@@ -484,7 +484,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	if resp.StatusCode != http.StatusOK {
 		respBytes, _ := io.ReadAll(resp.Body)
 		return &APIError{
-			Operation:    "delete file via Rise Up Uploader",
+			Operation:    "delete file via Riseup Asia Uploader",
 			Method:       "DELETE",
 			Endpoint:     endpoint,
 			URL:          url,
@@ -495,4 +495,158 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	}
 
 	return nil
+}
+
+// =============================================================================
+// DELTA SYNC TYPES AND METHODS
+// =============================================================================
+
+// SyncFile represents a single file in a sync request.
+type SyncFile struct {
+	Path    string `json:"path"`
+	Content string `json:"content,omitempty"` // base64 encoded
+	Action  string `json:"action"`            // "replace" or "delete"
+}
+
+// SyncFileResult represents the result of syncing a single file.
+type SyncFileResult struct {
+	Path   string `json:"path"`
+	Action string `json:"action"`
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// SyncResult represents the result of a delta sync operation.
+type SyncResult struct {
+	Success      bool             `json:"success"`
+	FilesUpdated int              `json:"files_updated"`
+	FilesDeleted int              `json:"files_deleted"`
+	FilesIgnored int              `json:"files_ignored"`
+	IgnoredFiles []string         `json:"ignored_files"`
+	Results      []SyncFileResult `json:"results"`
+}
+
+// SyncPluginFilesViaUploader performs a delta sync of multiple files to a plugin.
+func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
+	if namespace == "" {
+		namespace = RiseupAsiaNamespace
+	}
+
+	c.progress(ActionSync, "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), map[string]interface{}{
+		"slug":      slug,
+		"fileCount": len(files),
+		"namespace": namespace,
+	})
+
+	endpoint := fmt.Sprintf("/%s"+EndpointSync, namespace, slug)
+
+	body := map[string]interface{}{
+		"files": files,
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal sync request: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("create sync request: %w", err)
+	}
+
+	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderContentType, ContentTypeJSON)
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("sync request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, _ := io.ReadAll(resp.Body)
+	respBody := string(respBytes)
+
+	c.progress(ActionSync, "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), map[string]interface{}{
+		"status": resp.StatusCode,
+		"body":   truncateBody(respBody, 500),
+	})
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &APIError{
+			Operation:    "sync plugin files via Riseup Asia Uploader",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          url,
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(respBody, 8192),
+			PluginSlugIn: slug,
+		}
+	}
+
+	var result SyncResult
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		return nil, fmt.Errorf("decode sync result: %w", err)
+	}
+
+	return &result, nil
+}
+
+// =============================================================================
+// EXPORT SELF TYPES AND METHODS
+// =============================================================================
+
+// ExportSelfResult represents the result of exporting the uploader plugin.
+type ExportSelfResult struct {
+	Success    bool   `json:"success"`
+	PluginName string `json:"plugin_name"`
+	Version    string `json:"version"`
+	PluginSlug string `json:"plugin_slug"`
+	PluginZip  string `json:"plugin_zip"` // base64 encoded
+	Checksum   string `json:"checksum"`
+	FileCount  int    `json:"file_count"`
+}
+
+// ExportSelfFromSite fetches the Riseup Asia Uploader plugin as a ZIP from a site.
+func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
+	if namespace == "" {
+		return nil, fmt.Errorf("Riseup Asia Uploader not available on site")
+	}
+
+	c.progress(ActionExportSelf, "running", "Exporting Riseup Asia Uploader plugin...", nil)
+
+	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointExportSelf)
+
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("export-self request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBytes, _ := io.ReadAll(resp.Body)
+	respBody := string(respBytes)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &APIError{
+			Operation:    "export self via Riseup Asia Uploader",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(respBody, 8192),
+		}
+	}
+
+	var result ExportSelfResult
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		return nil, fmt.Errorf("decode export-self result: %w", err)
+	}
+
+	c.progress(ActionExportSelf, "completed", fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
+
+	return &result, nil
 }

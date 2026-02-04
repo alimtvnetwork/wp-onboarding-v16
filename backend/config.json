@@ -48,6 +48,14 @@
     ],
     "plugins": [
       {
+        "name": "Riseup Asia Uploader",
+        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\plugins-uploader-helper",
+        "category": "Core",
+        "gitEnabled": false,
+        "autoPublish": false,
+        "siteNames": ["Atto Property Demo"]
+      },
+      {
         "name": "Plugins Onboard",
         "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\plugins-onboard",
         "category": "Development",

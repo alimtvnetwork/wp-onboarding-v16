@@ -1,131 +1,74 @@
 
 # Riseup Asia Plugin - Phase 2 Enhancement Plan
 
-## Summary
+## ✅ COMPLETED
 
-This plan addresses four requirements:
-1. Rename namespace constant to `RiseupAsiaNamespace` with value `"riseup-asia-uploader/v1"`
-2. Add Riseup Asia plugin to seed configuration so it auto-maps to all sites
-3. Add single-button "Deploy Self" capability to upload the plugin to connected websites
-4. Implement `.uploadignore` parser and delta sync endpoint for multi-file uploads
+### Part 1: Namespace Renaming
+- [x] Updated `backend/internal/wordpress/constants.go` - `RiseupAsiaNamespace = "riseup-asia-uploader/v1"`
+- [x] Updated `plugins-uploader-helper/includes/constants.php` - `RISEUP_API_NAMESPACE = 'riseup-asia-uploader'`
+- [x] Updated all references in `uploader.go` to use new namespace
 
----
+### Part 2: Seed Configuration
+- [x] Added Riseup Asia Uploader to `backend/config.json` with category "Core"
+- [x] Plugin auto-maps to all configured sites via existing seeding logic
 
-## Part 1: Namespace Renaming
+### Part 3: Upload Ignore Parser
+- [x] Created `plugins-uploader-helper/includes/class-upload-ignore.php` (PHP)
+- [x] Created `backend/internal/services/plugin/ignore.go` (Go)
+- [x] Created `plugins-uploader-helper/.uploadignore.example` template
 
-### 1.1 Go Backend Constants
-**File:** `backend/internal/wordpress/constants.go`
+### Part 4: Delta Sync Endpoint
+- [x] Added `POST /riseup-asia-uploader/v1/plugins/{slug}/sync` PHP endpoint
+- [x] Added `SyncPluginFilesViaUploader()` method to Go client
+- [x] Supports `.uploadignore` pattern matching
 
-Change:
-```go
-// OLD
-RiseUpAsiaNamespace = "riseup-asia/v1"
+### Part 5: Export-Self Endpoint
+- [x] Added `GET /riseup-asia-uploader/v1/export-self` PHP endpoint
+- [x] Added `ExportSelfFromSite()` method to Go client
 
-// NEW  
-RiseupAsiaNamespace = "riseup-asia-uploader/v1"
-```
+### Part 6: Bootstrap Uploader API
+- [x] Added `POST /api/v1/sites/{id}/bootstrap-uploader` backend endpoint
+- [x] Added `BootstrapUploader()` method to Site service
+- [x] Added "Deploy" button to SiteCard frontend component
+- [x] Added `bootstrapUploader()` API method
 
-Update all references from `RiseUpAsiaNamespace` to `RiseupAsiaNamespace` throughout the backend.
-
-### 1.2 PHP Plugin Constants
-**File:** `plugins-uploader-helper/includes/constants.php`
-
-Change:
-```php
-// OLD
-define('RISEUP_API_NAMESPACE', 'riseup-asia');
-
-// NEW
-define('RISEUP_API_NAMESPACE', 'riseup-asia-uploader');
-```
+### Part 7: Memory Updates
+- [x] Updated `.lovable/memory/architecture/backend/wordpress-integration.md`
 
 ---
 
-## Part 2: Add Rise Up Asia to Seed Configuration
+## File Changes Summary
 
-### 2.1 Update Seed Config
-**File:** `backend/config.json`
-
-Add to the `plugins` array:
-```json
-{
-  "name": "Riseup Asia Uploader",
-  "path": "riseup-asia-uploader",
-  "category": "Core",
-  "gitEnabled": false,
-  "autoPublish": false,
-  "siteNames": ["Atto Property Demo"]
-}
-```
-
-so change path name accordingly
-
-The `path` should be relative to the project root or an absolute path depending on your deployment.
-
-**Note:** Since the seed config uses `siteNames: []`, it will auto-map to all sites due to the `ensureMappingsExist` logic that runs on every startup.
+| File | Status |
+|------|--------|
+| `backend/internal/wordpress/constants.go` | ✅ Updated |
+| `backend/internal/wordpress/uploader.go` | ✅ Updated |
+| `backend/config.json` | ✅ Updated |
+| `plugins-uploader-helper/includes/constants.php` | ✅ Updated |
+| `plugins-uploader-helper/includes/class-upload-ignore.php` | ✅ Created |
+| `plugins-uploader-helper/riseup-asia.php` | ✅ Updated |
+| `plugins-uploader-helper/.uploadignore.example` | ✅ Created |
+| `backend/internal/services/plugin/ignore.go` | ✅ Created |
+| `backend/internal/api/handlers/handlers.go` | ✅ Updated |
+| `backend/internal/api/router.go` | ✅ Updated |
+| `backend/internal/services/site/service.go` | ✅ Updated |
+| `src/components/sites/SiteCard.tsx` | ✅ Updated |
+| `src/lib/api.ts` | ✅ Updated |
+| `.lovable/memory/architecture/backend/wordpress-integration.md` | ✅ Updated |
 
 ---
 
-## Part 3: Deploy Self Capability
+## Testing Checklist
 
-### 3.1 PHP Export-Self Endpoint
-**File:** `plugins-uploader-helper/riseup-asia.php`
-
-Add new REST route:
-```
-GET /riseup-asia-uploader/v1/export-self
-```
-
-Response:
-```json
-{
-  "success": true,
-  "plugin_name": "Riseup Asia Uploader",
-  "version": "1.3.0",
-  "plugin_zip": "<base64-encoded-zip>",
-  "checksum": "<md5-hash>"
-}
-```
-
-Implementation:
-- Zip the current plugin directory (excluding `.uploadignore` patterns)
-- Base64 encode the ZIP
-- Calculate MD5 checksum
-- Return in response
-
-### 3.2 Go Backend Methods
-**File:** `backend/internal/wordpress/uploader.go`
-
-Add new methods:
-```go
-// ExportSelfFromSite fetches the Rise Up Asia plugin ZIP from a site
-func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error)
-
-// BootstrapRiseupAsiaToSite uploads Rise Up Asia plugin to a new site
-func (c *Client) BootstrapRiseupAsiaToSite(targetSite SiteCredentials) error
-```
-
-### 3.3 API Endpoint for Deploy Self
-**File:** `backend/internal/api/handlers/handlers.go`
-
-Add new endpoint:
-```
-POST /api/v1/sites/{id}/bootstrap-uploader
-```
-
-This endpoint:
-1. Reads Riseup Asia plugin from local `plugins-uploader-helper/` directory
-2. Creates a ZIP file
-3. Uploads to the target site using standard WordPress API
-4. Activates the plugin
-
-### 3.4 Frontend Deploy Button
-**File:** `src/components/sites/SiteCard.tsx`
-
-Add a "Deploy Uploader" button that:
-- Calls `POST /api/v1/sites/{id}/bootstrap-uploader`
-- Shows progress in a dialog
-- Reports success/failure
+- [ ] Namespace `riseup-asia-uploader/v1` works in PHP and Go
+- [ ] Riseup Asia appears in seeded plugins list
+- [ ] Plugin maps to all configured sites on startup
+- [ ] `.uploadignore` patterns are correctly parsed
+- [ ] Ignored files are skipped during sync
+- [ ] Delta sync updates/deletes correct files
+- [ ] Export-self returns valid base64 ZIP
+- [ ] Bootstrap uploader deploys plugin to new site
+- [ ] All transactions logged to SQLite
 
 ---
 
