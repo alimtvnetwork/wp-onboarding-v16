@@ -1,4 +1,4 @@
-// Package wordpress provides uploader capabilities using the Plugin Uploader Helper API.
+// Package wordpress provides uploader capabilities using the Rise Up Uploader API.
 package wordpress
 
 import (
@@ -12,8 +12,7 @@ import (
 	"path/filepath"
 )
 
-// UploaderNamespace is the REST API namespace for the Plugin Uploader Helper.
-const UploaderNamespace = "plugin-uploader/v1"
+// Note: RiseUpUploaderNamespace is defined in constants.go
 
 // UploaderStatus represents the /status endpoint response.
 type UploaderStatus struct {
@@ -59,32 +58,54 @@ type UploaderFileInfo struct {
 	Hash     string `json:"hash"`
 }
 
-// CheckUploaderHelperAvailable checks if the Plugin Uploader Helper is installed.
-func (c *Client) CheckUploaderHelperAvailable() (bool, error) {
-	endpoint := fmt.Sprintf("/%s/status", UploaderNamespace)
+// CheckRiseUpUploaderAvailable checks if the Rise Up Uploader plugin is installed.
+// It tries the new namespace first, then falls back to the legacy namespace for backward compatibility.
+func (c *Client) CheckRiseUpUploaderAvailable() (bool, string, error) {
+	// Try Rise Up Uploader first (new namespace)
+	endpoint := fmt.Sprintf("/%s%s", RiseUpUploaderNamespace, EndpointStatus)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 	defer resp.Body.Close()
 
-	// 404 means the route doesn't exist (plugin not installed)
-	if resp.StatusCode == http.StatusNotFound {
-		return false, nil
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return true, RiseUpUploaderNamespace, nil
 	}
 
-	// 401/403 means auth required - plugin exists but we need credentials
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return true, nil
+	// Try legacy namespace (plugin-uploader/v1)
+	endpoint = fmt.Sprintf("/%s%s", PluginUploaderNamespace, EndpointStatus)
+	resp2, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return false, "", err
+	}
+	defer resp2.Body.Close()
+
+	if resp2.StatusCode == http.StatusOK || resp2.StatusCode == http.StatusUnauthorized || resp2.StatusCode == http.StatusForbidden {
+		return true, PluginUploaderNamespace, nil
 	}
 
-	// 200 means plugin is available and we're authenticated
-	return resp.StatusCode == http.StatusOK, nil
+	return false, "", nil
 }
 
-// GetUploaderStatus gets the Plugin Uploader Helper status.
+// CheckUploaderHelperAvailable is deprecated, use CheckRiseUpUploaderAvailable.
+func (c *Client) CheckUploaderHelperAvailable() (bool, error) {
+	available, _, err := c.CheckRiseUpUploaderAvailable()
+	return available, err
+}
+
+// GetUploaderStatus gets the Rise Up Uploader status.
 func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
-	endpoint := fmt.Sprintf("/%s/status", UploaderNamespace)
+	// Detect which namespace is available
+	_, namespace, err := c.CheckRiseUpUploaderAvailable()
+	if err != nil {
+		return nil, err
+	}
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace // default
+	}
+
+	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointStatus)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -103,10 +124,10 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	return &status, nil
 }
 
-// UploadPluginViaUploader uploads a plugin ZIP via the Plugin Uploader Helper.
+// UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // This uses base64-encoded upload for reliability (like the PowerShell script).
 func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*UploaderUploadResult, error) {
-	c.progress("upload", "running", fmt.Sprintf("Reading %s for upload...", filepath.Base(zipPath)), nil)
+	c.progress(ActionUpload, "running", fmt.Sprintf("Reading %s for upload...", filepath.Base(zipPath)), nil)
 
 	// Read the ZIP file
 	fileBytes, err := os.ReadFile(zipPath)
@@ -117,16 +138,23 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	// Encode to base64
 	base64Data := base64.StdEncoding.EncodeToString(fileBytes)
 
-	c.progress("upload", "running", fmt.Sprintf("Uploading %d bytes (base64) to Plugin Uploader Helper...", len(fileBytes)), map[string]interface{}{
-		"zipSize": len(fileBytes),
-		"zipFile": filepath.Base(zipPath),
+	// Detect which namespace is available
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace // default to new namespace
+	}
+
+	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %d bytes (base64) to %s...", len(fileBytes), namespace), map[string]interface{}{
+		"zipSize":   len(fileBytes),
+		"zipFile":   filepath.Base(zipPath),
+		"namespace": namespace,
 	})
 
-	// Build request body
+	// Build request body - use plugin_zip for Rise Up Uploader, plugin_data for legacy
 	body := map[string]interface{}{
-		"plugin_name": filepath.Base(zipPath),
-		"plugin_data": base64Data,
-		"activate":    activate,
+		"plugin_zip": base64Data, // Rise Up Uploader format
+		"slug":       filepath.Base(zipPath),
+		"activate":   activate,
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -135,7 +163,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	}
 
 	// Build request
-	endpoint := fmt.Sprintf("/%s/upload", UploaderNamespace)
+	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointUpload)
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
@@ -144,9 +172,9 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set("Authorization", "Basic "+auth)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderContentType, ContentTypeJSON)
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -157,14 +185,14 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress("upload", "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), map[string]interface{}{
+	c.progress(ActionUpload, "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), map[string]interface{}{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 500),
 	})
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &APIError{
-			Operation:    "upload plugin via uploader helper",
+			Operation:    "upload plugin via Rise Up Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          url,
@@ -183,9 +211,14 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	return &result, nil
 }
 
-// EnablePluginViaUploader enables (activates) a plugin via the Plugin Uploader Helper.
+// EnablePluginViaUploader enables (activates) a plugin via the Rise Up Uploader.
 func (c *Client) EnablePluginViaUploader(slug string) error {
-	endpoint := fmt.Sprintf("/%s/plugins/%s/enable", UploaderNamespace, slug)
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace
+	}
+
+	endpoint := fmt.Sprintf("/%s"+EndpointEnable, namespace, slug)
 	resp, err := c.request("POST", endpoint, nil)
 	if err != nil {
 		return fmt.Errorf("enable plugin request failed: %w", err)
@@ -197,7 +230,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
-			Operation:    "enable plugin via uploader helper",
+			Operation:    "enable plugin via Rise Up Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
@@ -210,9 +243,14 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 	return nil
 }
 
-// DisablePluginViaUploader disables (deactivates) a plugin via the Plugin Uploader Helper.
+// DisablePluginViaUploader disables (deactivates) a plugin via the Rise Up Uploader.
 func (c *Client) DisablePluginViaUploader(slug string) error {
-	endpoint := fmt.Sprintf("/%s/plugins/%s/disable", UploaderNamespace, slug)
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace
+	}
+
+	endpoint := fmt.Sprintf("/%s"+EndpointDisable, namespace, slug)
 	resp, err := c.request("POST", endpoint, nil)
 	if err != nil {
 		return fmt.Errorf("disable plugin request failed: %w", err)
@@ -224,7 +262,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
-			Operation:    "disable plugin via uploader helper",
+			Operation:    "disable plugin via Rise Up Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
@@ -237,9 +275,14 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 	return nil
 }
 
-// DeletePluginViaUploader deletes a plugin via the Plugin Uploader Helper.
+// DeletePluginViaUploader deletes a plugin via the Rise Up Uploader.
 func (c *Client) DeletePluginViaUploader(slug string) error {
-	endpoint := fmt.Sprintf("/%s/plugins/%s/delete", UploaderNamespace, slug)
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace
+	}
+
+	endpoint := fmt.Sprintf("/%s"+EndpointDelete, namespace, slug)
 
 	// Build DELETE request
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
@@ -249,8 +292,8 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set("Authorization", "Basic "+auth)
-	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -263,7 +306,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
-			Operation:    "delete plugin via uploader helper",
+			Operation:    "delete plugin via Rise Up Uploader",
 			Method:       "DELETE",
 			Endpoint:     endpoint,
 			URL:          url,
@@ -276,9 +319,14 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 	return nil
 }
 
-// ListPluginsViaUploader lists all plugins via the Plugin Uploader Helper.
+// ListPluginsViaUploader lists all plugins via the Rise Up Uploader.
 func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
-	endpoint := fmt.Sprintf("/%s/plugins", UploaderNamespace)
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace
+	}
+
+	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointPlugins)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -301,9 +349,14 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	return response.Plugins, nil
 }
 
-// ListPluginFilesViaUploader lists files in a plugin via the Plugin Uploader Helper.
+// ListPluginFilesViaUploader lists files in a plugin via the Rise Up Uploader.
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
-	endpoint := fmt.Sprintf("/%s/plugins/%s/files", UploaderNamespace, slug)
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace
+	}
+
+	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -327,21 +380,21 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 	return response.Files, nil
 }
 
-// ReplaceFileViaUploader replaces a single file in a plugin via the Plugin Uploader Helper.
+// ReplaceFileViaUploader replaces a single file in a plugin via the Rise Up Uploader.
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
-	endpoint := fmt.Sprintf("/%s/plugins/%s/files", UploaderNamespace, slug)
-
-	encoding := "plain"
-	contentStr := string(content)
-	if isBase64 {
-		encoding = "base64"
-		contentStr = base64.StdEncoding.EncodeToString(content)
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace
 	}
 
+	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
+
+	// Always use base64 encoding for Rise Up Uploader
+	contentStr := base64.StdEncoding.EncodeToString(content)
+
 	body := map[string]string{
-		"path":     relPath,
-		"content":  contentStr,
-		"encoding": encoding,
+		"path":    relPath,
+		"content": contentStr,
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -350,15 +403,15 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	}
 
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest("PUT", url, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set("Authorization", "Basic "+auth)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderContentType, ContentTypeJSON)
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -369,8 +422,8 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	if resp.StatusCode != http.StatusOK {
 		respBytes, _ := io.ReadAll(resp.Body)
 		return &APIError{
-			Operation:    "replace file via uploader helper",
-			Method:       "PUT",
+			Operation:    "replace file via Rise Up Uploader",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          url,
 			StatusCode:   resp.StatusCode,
@@ -382,9 +435,14 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	return nil
 }
 
-// DeleteFileViaUploader deletes a single file from a plugin via the Plugin Uploader Helper.
+// DeleteFileViaUploader deletes a single file from a plugin via the Rise Up Uploader.
 func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
-	endpoint := fmt.Sprintf("/%s/plugins/%s/files", UploaderNamespace, slug)
+	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	if namespace == "" {
+		namespace = RiseUpUploaderNamespace
+	}
+
+	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
 
 	body := map[string]string{"path": relPath}
 	jsonBody, _ := json.Marshal(body)
@@ -396,9 +454,9 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set("Authorization", "Basic "+auth)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderContentType, ContentTypeJSON)
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -409,7 +467,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	if resp.StatusCode != http.StatusOK {
 		respBytes, _ := io.ReadAll(resp.Body)
 		return &APIError{
-			Operation:    "delete file via uploader helper",
+			Operation:    "delete file via Rise Up Uploader",
 			Method:       "DELETE",
 			Endpoint:     endpoint,
 			URL:          url,
