@@ -165,9 +165,13 @@ export function GlobalErrorModal() {
                         const ctx = (selectedError.context || {}) as Record<string, unknown>;
                         const requestUrl = typeof ctx.requestUrl === "string" ? ctx.requestUrl : undefined;
                         const apiBase = typeof ctx.apiBase === "string" ? ctx.apiBase : undefined;
-                        const apiOrigin = typeof ctx.apiOrigin === "string" ? ctx.apiOrigin : undefined;
+                        const apiBaseAbsolute = typeof ctx.apiBaseAbsolute === "string" ? ctx.apiBaseAbsolute : undefined;
+                        const rawViteApiUrl = typeof ctx["VITE_API_URL (raw)"] === "string" ? ctx["VITE_API_URL (raw)"] : undefined;
+                        const rawViteWsUrl = typeof ctx["VITE_WS_URL (raw)"] === "string" ? ctx["VITE_WS_URL (raw)"] : undefined;
+                        const resolvedApiOrigin = typeof ctx.resolvedApiOrigin === "string" ? ctx.resolvedApiOrigin : undefined;
+                        const uiOrigin = typeof ctx.uiOrigin === "string" ? ctx.uiOrigin : undefined;
 
-                        if (!requestUrl && !apiBase && !apiOrigin) return null;
+                        if (!requestUrl && !apiBase && !rawViteApiUrl) return null;
 
                         return (
                           <div className="pt-2 border-t border-border/60 space-y-1">
@@ -181,18 +185,51 @@ export function GlobalErrorModal() {
                             )}
                             {apiBase && (
                               <p className="text-sm">
-                                <span className="text-muted-foreground">Configured API base: </span>
+                                <span className="text-muted-foreground">API Base (relative): </span>
                                 <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
                                   {apiBase}
                                 </code>
                               </p>
                             )}
-                            <p className="text-sm">
-                              <span className="text-muted-foreground">VITE_API_URL: </span>
-                              <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
-                                {apiOrigin || "(not set)"}
-                              </code>
-                            </p>
+                            {apiBaseAbsolute && (
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">API Base (absolute): </span>
+                                <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                  {apiBaseAbsolute}
+                                </code>
+                              </p>
+                            )}
+                            {uiOrigin && (
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">UI Origin: </span>
+                                <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                  {uiOrigin}
+                                </code>
+                              </p>
+                            )}
+                            <div className="pt-1 mt-1 border-t border-border/40">
+                              <p className="text-xs text-muted-foreground mb-1">Environment Variables (raw):</p>
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">VITE_API_URL: </span>
+                                <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                  {rawViteApiUrl || "(not set)"}
+                                </code>
+                              </p>
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">VITE_WS_URL: </span>
+                                <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                  {rawViteWsUrl || "(not set)"}
+                                </code>
+                              </p>
+                            </div>
+                            {resolvedApiOrigin && (
+                              <p className="text-sm">
+                                <span className="text-muted-foreground">Resolved API Origin: </span>
+                                <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">
+                                  {resolvedApiOrigin}
+                                </code>
+                              </p>
+                            )}
                           </div>
                         );
                       })()}

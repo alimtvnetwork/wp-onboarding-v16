@@ -1,11 +1,26 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T12:00:00Z",
+  "buildTime": "2026-02-04T12:30:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.2.1",
+      "date": "2026-02-04",
+      "title": "API Connectivity & Diagnostics Fix",
+      "changes": [
+        "🔧 Backend health endpoint now returns standard envelope format",
+        "📡 Added GET /api/v1 index endpoint (prevents 404 on base URL)",
+        "🔍 BackendStatus detection logic fixed: 2xx JSON = connected",
+        "📋 Enhanced diagnostics: shows raw env vars + resolved URLs",
+        "📖 Error modal now displays UI origin, API base (absolute), raw VITE env vars"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.2.0",
       "date": "2026-02-04",

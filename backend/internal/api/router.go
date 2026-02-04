@@ -69,7 +69,9 @@ func NewServer(cfg ServerConfig) *Server {
 	// API v1 routes
 	api := router.PathPrefix("/api/v1").Subrouter()
 
-	// Health check
+	// API index and health check
+	api.HandleFunc("", handlers.APIIndex).Methods("GET")
+	api.HandleFunc("/", handlers.APIIndex).Methods("GET")
 	api.HandleFunc("/health", handlers.Health).Methods("GET")
 
 	// Sites endpoints

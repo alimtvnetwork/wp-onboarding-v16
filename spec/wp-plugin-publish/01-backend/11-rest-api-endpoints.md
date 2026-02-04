@@ -19,6 +19,53 @@ The backend HTTP API provides RESTful endpoints for the React frontend to intera
 
 ---
 
+## API Index & Health
+
+### API Index
+
+```
+GET /api/v1
+GET /api/v1/
+```
+
+Returns API metadata. Useful for verifying the API is running.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "name": "WP Plugin Publish API",
+    "version": "v1",
+    "health": "/api/v1/health",
+    "ws": "/ws"
+  }
+}
+```
+
+### Health Check
+
+```
+GET /api/v1/health
+```
+
+Returns server health status using the **standard envelope format**.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "ok",
+    "timestamp": "2026-02-04T10:00:00Z"
+  }
+}
+```
+
+> **Important:** The health endpoint MUST return the standard `{success:true, data:{...}}` envelope, not a custom format like `{status:"healthy"}`. Frontend connectivity detection relies on parsing JSON and checking HTTP status codes.
+
+---
+
 ## Response Format
 
 ### Success Response
