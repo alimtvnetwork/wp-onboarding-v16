@@ -14,6 +14,8 @@ import { CategorySelect } from "@/components/shared/CategorySelect";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import { PublishProgressDialog } from "@/components/plugins/PublishProgressDialog";
+import { BulkActionsBar } from "@/components/plugins/BulkActionsBar";
+import { GitActionsPanel } from "@/components/plugins/GitActionsPanel";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Package,
   Plus,
@@ -38,6 +50,8 @@ import {
   Globe,
   Upload,
   CloudUpload,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
@@ -72,6 +86,11 @@ export default function Plugins() {
   const [publishSiteId, setPublishSiteId] = useState<number | null>(null);
   const [showPublishProgress, setShowPublishProgress] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  // Bulk selection state
+  const [selectedPluginIds, setSelectedPluginIds] = useState<Set<number>>(new Set());
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const handleAddPlugin = async (forceCreate = false) => {
     if (!formData.name || !formData.path) {
@@ -309,6 +328,137 @@ export default function Plugins() {
     return plugin.category && selectedCategories.includes(plugin.category);
   });
 
+  // Bulk selection handlers
+  const togglePluginSelection = (pluginId: number) => {
+    setSelectedPluginIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(pluginId)) {
+        newSet.delete(pluginId);
+      } else {
+        newSet.add(pluginId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllPlugins = () => {
+    if (filteredPlugins) {
+      setSelectedPluginIds(new Set(filteredPlugins.map((p) => p.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedPluginIds(new Set());
+  };
+
+  const handleBulkEnableWatch = async () => {
+    setIsBulkProcessing(true);
+    try {
+      const ids = Array.from(selectedPluginIds);
+      let successCount = 0;
+      for (const id of ids) {
+        const response = await api.updatePlugin(id, { watchEnabled: true });
+        if (response.success) successCount++;
+      }
+      toast.success(`Enabled watching on ${successCount} plugins`);
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      clearSelection();
+    } catch (error) {
+      toast.error("Failed to update plugins");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDisableWatch = async () => {
+    setIsBulkProcessing(true);
+    try {
+      const ids = Array.from(selectedPluginIds);
+      let successCount = 0;
+      for (const id of ids) {
+        const response = await api.updatePlugin(id, { watchEnabled: false });
+        if (response.success) successCount++;
+      }
+      toast.success(`Disabled watching on ${successCount} plugins`);
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      clearSelection();
+    } catch (error) {
+      toast.error("Failed to update plugins");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkSync = async () => {
+    setIsBulkProcessing(true);
+    toast.info("Syncing selected plugins...");
+    try {
+      const ids = Array.from(selectedPluginIds);
+      let totalChanges = 0;
+      for (const id of ids) {
+        const plugin = plugins?.find((p) => p.id === id);
+        if (plugin?.mappings) {
+          for (const mapping of plugin.mappings) {
+            const response = await api.checkSync(id, mapping.siteId);
+            if (response.success) {
+              totalChanges += response.data?.changedFiles || 0;
+            }
+          }
+        }
+      }
+      toast.success(`Sync complete: ${totalChanges} total changes detected`);
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      clearSelection();
+    } catch (error) {
+      toast.error("Failed to sync plugins");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkGitPull = async () => {
+    setIsBulkProcessing(true);
+    toast.info("Pulling from git for selected plugins...");
+    try {
+      const ids = Array.from(selectedPluginIds);
+      let successCount = 0;
+      for (const id of ids) {
+        const plugin = plugins?.find((p) => p.id === id);
+        if (plugin?.gitEnabled) {
+          const response = await api.gitPull(id);
+          if (response.success) successCount++;
+        }
+      }
+      toast.success(`Git pull complete: ${successCount} plugins updated`);
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      clearSelection();
+    } catch (error) {
+      toast.error("Git pull failed");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setIsBulkProcessing(true);
+    try {
+      const ids = Array.from(selectedPluginIds);
+      let successCount = 0;
+      for (const id of ids) {
+        const response = await api.deletePlugin(id);
+        if (response.success) successCount++;
+      }
+      toast.success(`Deleted ${successCount} plugins`);
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      clearSelection();
+      setShowBulkDeleteConfirm(false);
+    } catch (error) {
+      toast.error("Failed to delete plugins");
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
   const openMappingDialog = (plugin: Plugin) => {
     setSelectedPlugin(plugin);
     setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
@@ -407,6 +557,20 @@ export default function Plugins() {
         />
       )}
 
+      {/* Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedPluginIds.size}
+        totalCount={filteredPlugins?.length || 0}
+        onSelectAll={selectAllPlugins}
+        onClearSelection={clearSelection}
+        onEnableWatch={handleBulkEnableWatch}
+        onDisableWatch={handleBulkDisableWatch}
+        onSyncAll={handleBulkSync}
+        onGitPullAll={handleBulkGitPull}
+        onDeleteAll={() => setShowBulkDeleteConfirm(true)}
+        isProcessing={isBulkProcessing}
+      />
+
       {/* Plugin List */}
       {filteredPlugins?.length === 0 && plugins?.length !== 0 ? (
         <EmptyState
@@ -428,10 +592,27 @@ export default function Plugins() {
       ) : (
         <div className="space-y-4">
           {filteredPlugins?.map((plugin) => (
-            <Card key={plugin.id} className="overflow-hidden">
+            <Card 
+              key={plugin.id} 
+              className={cn(
+                "overflow-hidden transition-colors",
+                selectedPluginIds.has(plugin.id) && "border-primary bg-primary/5"
+              )}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 min-w-0 flex-1">
+                    {/* Selection Checkbox */}
+                    <button
+                      onClick={() => togglePluginSelection(plugin.id)}
+                      className="p-2 rounded-lg hover:bg-muted flex-shrink-0 transition-colors"
+                    >
+                      {selectedPluginIds.has(plugin.id) ? (
+                        <CheckSquare className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Square className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </button>
                     <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
                       <Package className="h-5 w-5 text-primary" />
                     </div>
@@ -587,6 +768,13 @@ export default function Plugins() {
                     </span>
                   )}
                 </div>
+
+                {/* Git Actions Panel */}
+                {plugin.gitEnabled && (
+                  <div className="mt-3 pt-3 border-t">
+                    <GitActionsPanel plugin={plugin} />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -897,6 +1085,33 @@ export default function Plugins() {
         siteId={publishSiteId || 0}
         onComplete={handlePublishComplete}
       />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedPluginIds.size} plugins?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected plugins
+              and remove all their site mappings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isBulkProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

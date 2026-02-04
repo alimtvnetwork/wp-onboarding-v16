@@ -101,6 +101,9 @@ func NewServer(cfg ServerConfig) *Server {
 
 	// Git endpoints
 	api.HandleFunc("/plugins/{id}/git/pull", handlers.GitPull).Methods("POST")
+	api.HandleFunc("/plugins/{id}/git/status", handlers.GitStatus).Methods("GET")
+	api.HandleFunc("/plugins/{id}/git/commit", handlers.GitCommit).Methods("POST")
+	api.HandleFunc("/plugins/{id}/git/push", handlers.GitPush).Methods("POST")
 	api.HandleFunc("/plugins/git/pull", handlers.GitPullAll).Methods("POST")
 
 	// Sync endpoints
