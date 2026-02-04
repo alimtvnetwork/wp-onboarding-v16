@@ -1,7 +1,8 @@
 # PowerShell Integration for Project Runner
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-02  
+> **Spec Version:** 2.1.0  
+> **Script Version:** 1.1.0  
+> **Updated:** 2026-02-04  
 > **Status:** Active  
 > **Location:** `spec/powershell-integration/`  
 > **Purpose:** Reusable PowerShell runner for Go backend + React frontend projects with pnpm PnP support
@@ -164,6 +165,7 @@ Create `powershell.json` in project root:
 ```json
 {
   "$schema": "./spec/powershell-integration/schemas/powershell.schema.json",
+  "version": "1.1.0",
   "projectName": "WP Plugin Publish",
   "rootDir": ".",
   "backendDir": "backend",
