@@ -36,6 +36,17 @@ export interface ErrorContext {
   context?: Record<string, unknown>;
 }
 
+/**
+ * Backend log entry from operation execution
+ */
+export interface BackendLogEntry {
+  timestamp: string;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  step?: string;
+  details?: Record<string, unknown>;
+}
+
 export interface CapturedError {
   id: string;
   code: string;
@@ -53,11 +64,15 @@ export interface CapturedError {
   method?: string;
   requestBody?: unknown;
   responseStatus?: number;
-  // NEW: Enhanced error reporting fields
+  // Enhanced error reporting fields
   invocationChain?: string[];
   parsedFrames?: StackFrame[];
   triggerComponent?: string;
   triggerAction?: string;
+  // Backend execution logs
+  backendLogs?: BackendLogEntry[];
+  backendStackTrace?: string;
+  siteUrl?: string;
 }
 
 interface ErrorStore {
@@ -69,7 +84,16 @@ interface ErrorStore {
   recentErrors: CapturedError[];
   
   // Actions
-  captureError: (error: ApiError, meta?: { endpoint?: string; method?: string; requestBody?: unknown; responseStatus?: number; context?: Record<string, unknown> }) => CapturedError;
+  captureError: (error: ApiError, meta?: { 
+    endpoint?: string; 
+    method?: string; 
+    requestBody?: unknown; 
+    responseStatus?: number; 
+    context?: Record<string, unknown>;
+    backendLogs?: BackendLogEntry[];
+    backendStackTrace?: string;
+    siteUrl?: string;
+  }) => CapturedError;
   captureException: (
     error: unknown,
     context?: ErrorContext | {
@@ -78,6 +102,9 @@ interface ErrorStore {
       requestBody?: unknown;
       source?: string;
       context?: Record<string, unknown>;
+      backendLogs?: BackendLogEntry[];
+      backendStackTrace?: string;
+      siteUrl?: string;
     }
   ) => CapturedError;
   openErrorModal: (error: CapturedError) => void;
@@ -283,11 +310,15 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       method: meta?.method,
       requestBody: meta?.requestBody,
       responseStatus: meta?.responseStatus,
-      // NEW: Enhanced fields
+      // Enhanced fields
       invocationChain: buildInvocationChain(parsed.invocationChain, source),
       parsedFrames: parsed.frames.filter(f => !f.isInternal),
       triggerComponent,
       triggerAction,
+      // Backend execution data
+      backendLogs: meta?.backendLogs,
+      backendStackTrace: meta?.backendStackTrace,
+      siteUrl: meta?.siteUrl,
     };
     
     set((state) => ({
@@ -349,11 +380,15 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       endpoint: context?.endpoint,
       method: context?.method,
       requestBody: context?.requestBody,
-      // NEW: Enhanced fields
+      // Enhanced fields
       invocationChain: buildInvocationChain(parsed.invocationChain, source, parentSource),
       parsedFrames: parsed.frames.filter(f => !f.isInternal),
       triggerComponent,
       triggerAction,
+      // Backend execution data (from context if available)
+      backendLogs: 'backendLogs' in (context || {}) ? (context as { backendLogs?: BackendLogEntry[] }).backendLogs : undefined,
+      backendStackTrace: 'backendStackTrace' in (context || {}) ? (context as { backendStackTrace?: string }).backendStackTrace : undefined,
+      siteUrl: 'siteUrl' in (context || {}) ? (context as { siteUrl?: string }).siteUrl : undefined,
     };
     
     set((state) => ({

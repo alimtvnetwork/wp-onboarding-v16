@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
+import { JsonHighlighter } from "@/components/shared/JsonHighlighter";
 
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal } = useErrorStore();
@@ -84,10 +85,14 @@ export function GlobalErrorModal() {
 
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="overview" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="backend" disabled={!selectedError.backendLogs?.length && !selectedError.backendStackTrace}>
+                <Server className="h-3 w-3 mr-1" />
+                Backend
+              </TabsTrigger>
               <TabsTrigger value="request">Request</TabsTrigger>
-              <TabsTrigger value="stack">Stack Trace</TabsTrigger>
+              <TabsTrigger value="stack">Stack</TabsTrigger>
               <TabsTrigger value="context">Context</TabsTrigger>
               <TabsTrigger value="fixes">Fixes</TabsTrigger>
             </TabsList>
@@ -375,6 +380,102 @@ export function GlobalErrorModal() {
                 )}
               </TabsContent>
 
+              {/* Backend Logs & Stack Tab */}
+              <TabsContent value="backend" className="m-0 space-y-4">
+                {/* Site URL if available */}
+                {selectedError.siteUrl && (
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Target Site:</span>
+                    <a 
+                      href={selectedError.siteUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline flex items-center gap-1"
+                    >
+                      {selectedError.siteUrl}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+
+                {/* Backend Execution Logs */}
+                {selectedError.backendLogs && selectedError.backendLogs.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <Terminal className="h-4 w-4" />
+                        Execution Logs ({selectedError.backendLogs.length} entries)
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const logText = selectedError.backendLogs!
+                            .map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] ${l.step ? `[${l.step}] ` : ''}${l.message}`)
+                            .join('\n');
+                          copySection("Backend logs", logText);
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48 rounded-md border">
+                      <div className="p-3 space-y-1">
+                        {selectedError.backendLogs.map((log, idx) => (
+                          <div 
+                            key={idx}
+                            className={cn(
+                              "text-xs font-mono py-1 px-2 rounded",
+                              log.level === 'error' && "bg-destructive/10 text-destructive",
+                              log.level === 'warn' && "bg-warning/10 text-warning",
+                              log.level === 'info' && "bg-primary/10 text-primary",
+                              log.level === 'debug' && "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            <span className="text-muted-foreground">[{log.timestamp}]</span>
+                            {log.step && <span className="text-primary ml-1">[{log.step}]</span>}
+                            <span className="ml-1">{log.message}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {/* Backend Stack Trace */}
+                {selectedError.backendStackTrace && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <Server className="h-4 w-4" />
+                        Go Stack Trace
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copySection("Backend stack trace", selectedError.backendStackTrace!)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48 rounded-md border bg-muted">
+                      <pre className="text-xs p-3 font-mono whitespace-pre-wrap">
+                        {selectedError.backendStackTrace}
+                      </pre>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {!selectedError.backendLogs?.length && !selectedError.backendStackTrace && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Server className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No backend logs captured</p>
+                    <p className="text-xs mt-1">Backend logs are captured during publish, sync, and test operations</p>
+                  </div>
+                )}
+              </TabsContent>
+
               {/* Request Info Tab */}
               <TabsContent value="request" className="m-0 space-y-4">
                 {(selectedError.endpoint || selectedError.method) && (
@@ -506,7 +607,7 @@ export function GlobalErrorModal() {
                 )}
               </TabsContent>
 
-              {/* Full Context Tab */}
+              {/* Full Context Tab - with JSON Highlighting */}
               <TabsContent value="context" className="m-0 space-y-4">
                 {selectedError.context && Object.keys(selectedError.context).length > 0 ? (
                   <div>
@@ -522,9 +623,11 @@ export function GlobalErrorModal() {
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
-                    <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto font-mono">
-                      {JSON.stringify(selectedError.context, null, 2)}
-                    </pre>
+                    <ScrollArea className="h-64 rounded-md border bg-muted">
+                      <div className="p-3">
+                        <JsonHighlighter json={selectedError.context} />
+                      </div>
+                    </ScrollArea>
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
@@ -615,6 +718,25 @@ function generateErrorReport(
       }\n`
     : "";
 
+  // Build backend logs section
+  const backendLogsSection = error.backendLogs && error.backendLogs.length > 0
+    ? `### Backend Execution Logs\n\`\`\`\n${
+        error.backendLogs.map(l => 
+          `[${l.timestamp}] [${l.level.toUpperCase()}]${l.step ? ` [${l.step}]` : ''} ${l.message}`
+        ).join('\n')
+      }\n\`\`\`\n`
+    : "";
+
+  // Build backend stack trace section
+  const backendStackSection = error.backendStackTrace
+    ? `### Backend Stack Trace (Go)\n\`\`\`\n${error.backendStackTrace}\n\`\`\`\n`
+    : "";
+
+  // Build site URL section
+  const siteUrlSection = error.siteUrl
+    ? `### Target Site\n${error.siteUrl}\n`
+    : "";
+
   return `## Error Report
 
 ${appInfo.join("\n")}
@@ -626,16 +748,19 @@ ${appInfo.join("\n")}
 
 ${triggerSection}
 ${chainSection}
+${siteUrlSection}
 ### Message
 ${error.message}
 
 ${error.details ? `### Details\n${error.details}\n` : ""}
 ${error.endpoint ? `### Request\n**${error.method || "GET"}** ${error.endpoint}\n${error.responseStatus ? `**Status:** ${error.responseStatus}\n` : ""}` : ""}
 ${error.requestBody ? `### Request Body\n\`\`\`json\n${JSON.stringify(error.requestBody, null, 2)}\n\`\`\`\n` : ""}
+${backendLogsSection}
+${backendStackSection}
 ${framesSection}
 ${error.file ? `### Location\n\`${error.file}:${error.line}\` (${error.function})\n` : ""}
 ${error.context && Object.keys(error.context).length > 0 ? `### Context\n\`\`\`json\n${JSON.stringify(error.context, null, 2)}\n\`\`\`\n` : ""}
-${error.stackTrace ? `### Full Stack Trace\n\`\`\`\n${error.stackTrace}\n\`\`\`` : ""}
+${error.stackTrace ? `### Frontend Stack Trace\n\`\`\`\n${error.stackTrace}\n\`\`\`` : ""}
 
 ---
 *Generated by WP Plugin Publish Error Reporter*

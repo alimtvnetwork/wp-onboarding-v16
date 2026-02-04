@@ -120,38 +120,99 @@ A properly formatted error report includes:
 - Response status
 - Additional context
 - Suggested fixes
+- **Backend execution logs** (for operations like publish, sync, backup)
+- **Backend stack trace** (Go stack trace when available)
+- **Target site URL** (for WordPress operations)
+
+## Error Modal Tabs (Required)
+
+The Global Error Modal MUST include these 6 tabs:
+
+1. **Overview**: Error code, message, timestamp, trigger context, invocation chain
+2. **Backend**: Backend execution logs, Go stack trace, target site URL
+3. **Request**: API endpoint, method, status, request body
+4. **Stack**: Parsed frontend stack frames with file/line, raw stack trace toggle
+5. **Context**: Full JSON context with syntax highlighting (via `JsonHighlighter`)
+6. **Fixes**: Suggested fixes based on error code
+
+## Backend Logs Capture
+
+All long-running operations MUST stream logs via WebSocket:
+- Logs stored as `BackendLogEntry[]`: `{ timestamp, level, message, step?, details? }`
+- Backend stack traces (Go) captured separately from frontend traces
+- "Copy Full Report" includes BOTH frontend and backend logs/traces
+
+### Capturing Backend Logs
+
+```typescript
+captureError(error, {
+  endpoint: '/api/...',
+  method: 'POST',
+  context: {
+    source: 'ComponentName.functionName',
+    triggerComponent: 'ComponentName',
+    triggerAction: 'action_name',
+  },
+  backendLogs: [...],        // Array of backend log entries
+  backendStackTrace: '...',  // Go stack trace if available
+  siteUrl: 'https://...',    // Target site URL if applicable
+});
+```
+
+## UI Requirements
+
+### ScrollArea for Code Sections
+All code sections (stack trace, logs, context) MUST use `ScrollArea` with fixed height to prevent modal overflow.
+
+### JSON Syntax Highlighting
+All JSON context displays use the `JsonHighlighter` component:
+- Keys: blue
+- Strings: green
+- Numbers: amber
+- Booleans: purple
+- Null: muted italic
+
+### Live Log Streaming
+Operations show real-time logs in collapsible panel:
+- Auto-scroll to bottom as new entries arrive
+- Color-coded by level (error=destructive, warn=warning, info=primary, debug=muted)
 
 ## Example Error Report
 
 ```markdown
 ## Error Report
 
-**App:** WP Plugin Publish v1.14.0
+**App:** WP Plugin Publish v1.19.1
 **ID:** 1770222691715-xyz123
 **Code:** E9003
 
 ### Trigger Context
-**Component:** EditSiteDialog
-**Action:** save_clicked
-**Source:** EditSiteDialog.handleSave
+**Component:** PublishProgressDialog
+**Action:** publish_failed
+**Source:** PublishProgressDialog.onComplete
 
-### Invocation Chain
+### Target Site
+https://example.com/wp-admin
+
+### Backend Execution Logs
 ```
-EditSiteDialog.handleSave (EditSiteDialog.tsx:142)
-  └─ api.updateSiteMappings (api.ts:391)
-       └─ request (api.ts:96)
-            └─ JSON.parse [native]
+[2026-02-04T18:49:58.000Z] [INFO] [init] Starting publish for Plugin to Site
+[2026-02-04T18:49:58.100Z] [INFO] [backup] Creating backup...
+[2026-02-04T18:49:58.500Z] [ERROR] [upload] Failed to upload: connection refused
 ```
 
-### Message
-Expected ',' or ']' after array element in JSON at position 834
+### Backend Stack Trace (Go)
+```
+goroutine 1 [running]:
+main.publishHandler(...)
+  /app/handlers/publish.go:142
+```
 
 ### Parsed Stack Frames
 | # | Function | File | Line |
 |---|----------|------|------|
-| 1 | handleSave | EditSiteDialog.tsx | 142 |
-| 2 | updateSiteMappings | api.ts | 391 |
-| 3 | request | api.ts | 96 |
+| 1 | onComplete | PublishProgressDialog.tsx | 245 |
+| 2 | handlePublish | Plugins.tsx | 89 |
 ```
 
 ## Enforcement
@@ -160,8 +221,10 @@ Expected ',' or ']' after array element in JSON at position 834
 - AI agents must include proper error context in all generated code
 - Missing `source` parameter should trigger linting warnings
 
-## Related Documentation
+## Related Files
 
-- `.lovable/memory/issues-fixed/07-null-check-error-source.md`
-- `src/stores/errorStore.ts` - Error store implementation
-- `src/components/errors/GlobalErrorModal.tsx` - Error display UI
+- `src/stores/errorStore.ts` - Error store with `BackendLogEntry` type
+- `src/components/errors/GlobalErrorModal.tsx` - Modal with 6 tabs
+- `src/components/shared/JsonHighlighter.tsx` - JSON syntax highlighting
+- `src/components/plugins/PublishProgressDialog.tsx` - Live log streaming example
+- `.lovable/memory/issues-fixed/04-global-error-reporting.md` - Original issue documentation
