@@ -449,6 +449,7 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	default:
 		s.log.Info(message, "pluginId", pluginID, "siteId", siteID, "step", step)
 	}
+}
 
 // createFullZip creates a zip file of the entire plugin directory
 func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns []string) (string, error) {
