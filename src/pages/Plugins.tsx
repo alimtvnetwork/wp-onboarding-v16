@@ -14,6 +14,8 @@ import { CategorySelect } from "@/components/shared/CategorySelect";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import { PublishProgressDialog } from "@/components/plugins/PublishProgressDialog";
+import { SyncProgressDialog } from "@/components/plugins/SyncProgressDialog";
+import { BackupProgressDialog } from "@/components/backup/BackupProgressDialog";
 import { BulkActionsBar } from "@/components/plugins/BulkActionsBar";
 import { GitActionsPanel } from "@/components/plugins/GitActionsPanel";
 import { VersionHistoryPanel } from "@/components/plugins/VersionHistoryPanel";
@@ -53,6 +55,7 @@ import {
   CloudUpload,
   CheckSquare,
   Square,
+  Archive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
@@ -87,6 +90,15 @@ export default function Plugins() {
   const [publishSiteId, setPublishSiteId] = useState<number | null>(null);
   const [showPublishProgress, setShowPublishProgress] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  
+  // Sync progress dialog state
+  const [showSyncProgress, setShowSyncProgress] = useState(false);
+  const [syncPlugin, setSyncPlugin] = useState<Plugin | null>(null);
+  const [syncSiteId, setSyncSiteId] = useState<number | null>(null);
+  
+  // Backup progress dialog state
+  const [showBackupProgress, setShowBackupProgress] = useState(false);
+  const [backupPlugin, setBackupPlugin] = useState<Plugin | null>(null);
   
   // Bulk selection state
   const [selectedPluginIds, setSelectedPluginIds] = useState<Set<number>>(new Set());
@@ -819,6 +831,19 @@ export default function Plugins() {
                         <span className="ml-1 hidden sm:inline">Pull</span>
                       </Button>
                     )}
+                    {/* Backup button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setBackupPlugin(plugin);
+                        setShowBackupProgress(true);
+                      }}
+                      title="Create backup of plugin on remote site"
+                    >
+                      <Archive className="h-4 w-4" />
+                      <span className="ml-1 hidden sm:inline">Backup</span>
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1220,6 +1245,35 @@ export default function Plugins() {
         pluginId={publishPlugin?.id || 0}
         siteId={publishSiteId || 0}
         onComplete={handlePublishComplete}
+      />
+
+      {/* Sync Progress Dialog */}
+      <SyncProgressDialog
+        open={showSyncProgress}
+        onOpenChange={setShowSyncProgress}
+        pluginName={syncPlugin?.name || ""}
+        siteName={syncPlugin?.mappings?.find(m => m.siteId === syncSiteId)?.siteName || ""}
+        pluginId={syncPlugin?.id || 0}
+        siteId={syncSiteId || 0}
+        onComplete={(success) => {
+          if (success) {
+            queryClient.invalidateQueries({ queryKey: ["plugins"] });
+          }
+        }}
+      />
+
+      {/* Backup Progress Dialog */}
+      <BackupProgressDialog
+        open={showBackupProgress}
+        onOpenChange={setShowBackupProgress}
+        operation="create"
+        pluginName={backupPlugin?.name}
+        mappingId={backupPlugin?.id}
+        onComplete={(success) => {
+          if (success) {
+            toast.success("Backup created successfully");
+          }
+        }}
       />
 
       {/* Bulk Delete Confirmation Dialog */}
