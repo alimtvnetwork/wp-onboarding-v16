@@ -56,15 +56,30 @@ import { BackendStatus } from "@/components/shared/BackendStatus";
 ```
 
 #### Detection Logic
-1. Polls `/api/v1/health` endpoint periodically
-2. Checks `Content-Type` header for `application/json`
-3. If HTML is returned instead of JSON, backend is disconnected
-4. Shows fixed banner at top of screen with retry button
+
+The component uses a **three-tier detection system**:
+
+1. **HTML Response (E9005):** If response body starts with `<!` or `<html`, the backend is not running or URL is misconfigured (SPA fallback serving index.html)
+
+2. **Network Error (E9003):** If `fetch()` throws an exception, the backend is unreachable (server not running, wrong port, CORS blocked)
+
+3. **JSON Response:**
+   - **HTTP 2xx:** Backend is connected (regardless of response content)
+   - **HTTP non-2xx:** Backend is reachable but unhealthy (show status code and message)
+
+> **CRITICAL:** Do NOT check for specific response fields like `success === true` or `status === "ok"`. Any 2xx JSON response indicates the backend is running.
 
 #### Props
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `pollInterval` | `number` | `10000` | Polling interval in ms |
+
+#### Banner Messages
+
+The banner message varies by disconnect reason:
+- **HTML:** "Backend disconnected — API requests are returning HTML instead of JSON"
+- **Network:** "Backend unreachable — network error or server not running"
+- **Non-2xx:** "Backend error — {status code}: {error message}"
 
 ---
 
@@ -301,12 +316,19 @@ If an API call returns **HTML instead of JSON**, this surfaces as error code `E9
 ### Error Modal Content
 
 The modal MUST display:
-0. **App name + version** — e.g. `WP Plugin Publish v1.1.0` (from `public/version.json`)
+0. **App name + version** — e.g. `WP Plugin Publish v1.2.1` (from `public/version.json`)
 1. **Resolved request URL** — The actual URL the frontend called
-2. **Configured API base** — What `resolveApiBase()` returned
-3. **VITE_API_URL value** — Whether the env var was set
-4. **Request method/body** (with secrets masked)
-5. **Response status and content-type**
+2. **API Base (relative)** — What `resolveApiBase()` returned (e.g. `/api/v1`)
+3. **API Base (absolute)** — Full URL with host and port (e.g. `http://localhost:8080/api/v1`)
+4. **UI Origin** — Where the frontend is running (e.g. `http://localhost:8080`)
+5. **Raw environment variables:**
+   - `VITE_API_URL (raw)` — Exactly what was set, or "(not set)"
+   - `VITE_WS_URL (raw)` — Exactly what was set, or "(not set)"
+6. **Resolved API Origin** — After loopback filtering (may be null in hosted preview)
+7. **Request method/body** (with secrets masked)
+8. **Response status and content-type**
+
+> **Important:** Always show both **raw** environment variable values and **resolved/effective** URLs. This helps diagnose cases where the env var is set to localhost but ignored in hosted previews.
 
 ### Implementation
 

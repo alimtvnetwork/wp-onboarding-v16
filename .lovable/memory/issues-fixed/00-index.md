@@ -14,6 +14,8 @@
 | SPA static file 404 errors | Backend/Routing | [02-spa-static-serving.md](./02-spa-static-serving.md) |
 | WebSocket upgrade failures in middleware | Backend/WebSocket | [03-websocket-middleware.md](./03-websocket-middleware.md) |
 | Global error modal not capturing API failures | Frontend/UX | [04-global-error-reporting.md](./04-global-error-reporting.md) |
+| SQLite datetime scanning issues | Backend/Database | [06-sqlite-datetime-scanning.md](./06-sqlite-datetime-scanning.md) |
+| Health endpoint format mismatch | Frontend/Backend | [See spec/error-resolution/01-health-endpoint-mismatch.md](../../../spec/error-resolution/01-health-endpoint-mismatch.md) |
 
 ---
 

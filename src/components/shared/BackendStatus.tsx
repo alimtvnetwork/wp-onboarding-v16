@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { AlertTriangle, RefreshCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { resolveApiUrl, resolveApiBase, resolveApiOrigin } from "@/lib/endpoints";
+import { resolveApiUrl, resolveApiBase, toAbsoluteUrl } from "@/lib/endpoints";
 import { useErrorStore } from "@/stores/errorStore";
 
 interface BackendStatusProps {
@@ -9,20 +9,31 @@ interface BackendStatusProps {
   pollInterval?: number;
 }
 
+type DisconnectReason = "html" | "network" | "non2xx";
+
 /**
  * Displays a banner when the backend is disconnected.
- * Detects backend unavailability by checking if API responses return HTML instead of JSON.
+ * Detection logic:
+ * 1. If response body is HTML → E9005 (misrouting/hosted preview)
+ * 2. If fetch throws → E9003 (network/unreachable)
+ * 3. If response is JSON with 2xx → connected
+ * 4. If response is JSON with non-2xx → disconnected/unhealthy
  */
 export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
   const [isConnected, setIsConnected] = useState(true);
   const [isChecking, setIsChecking] = useState(false);
-  const [lastError, setLastError] = useState<{ code: string; message: string; url: string } | null>(null);
+  const [lastError, setLastError] = useState<{
+    code: string;
+    message: string;
+    url: string;
+    reason: DisconnectReason;
+  } | null>(null);
   const { captureError, openErrorModal } = useErrorStore();
 
   const checkBackendConnection = async () => {
     setIsChecking(true);
     const healthUrl = resolveApiUrl("/health");
-    
+
     try {
       const response = await fetch(healthUrl, {
         method: "GET",
@@ -34,24 +45,40 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
       const trimmed = raw.trim();
 
       const looksLikeJson = trimmed.startsWith("{") || trimmed.startsWith("[");
+
+      // Case 1: HTML returned instead of JSON
       if (!looksLikeJson) {
         const errorInfo = {
           code: "E9005",
-          message: "Backend returned HTML instead of JSON. This usually means the backend is not running or the API URL is misconfigured.",
+          message:
+            "Backend returned HTML instead of JSON. This usually means the backend is not running or the API URL is misconfigured.",
           url: healthUrl,
+          reason: "html" as DisconnectReason,
         };
         setLastError(errorInfo);
         setIsConnected(false);
         return;
       }
 
-      const data = JSON.parse(raw) as { success?: boolean; status?: string };
-      const connected = data.success === true || data.status === "ok";
-      setIsConnected(connected);
-      if (connected) {
+      // Case 2: JSON response - check HTTP status
+      if (response.ok) {
+        // 2xx with JSON = connected
+        setIsConnected(true);
         setLastError(null);
+      } else {
+        // Non-2xx JSON response = backend is reachable but unhealthy
+        const data = JSON.parse(raw) as { error?: { message?: string } };
+        const errorInfo = {
+          code: "E9003",
+          message: `Backend returned HTTP ${response.status}: ${data.error?.message || "Unknown error"}`,
+          url: healthUrl,
+          reason: "non2xx" as DisconnectReason,
+        };
+        setLastError(errorInfo);
+        setIsConnected(false);
       }
     } catch (err) {
+      // Case 3: Network error - fetch failed
       const errorInfo = {
         code: "E9003",
         message:
@@ -59,6 +86,7 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
             ? err.message
             : "Network error - backend unreachable",
         url: healthUrl,
+        reason: "network" as DisconnectReason,
       };
       setLastError(errorInfo);
       setIsConnected(false);
@@ -69,8 +97,9 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
 
   const handleViewDetails = () => {
     const apiBase = resolveApiBase();
-    const apiOrigin = resolveApiOrigin();
-    
+    const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
+    const envViteWsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)";
+
     const captured = captureError(
       {
         code: lastError?.code || "E9005",
@@ -85,10 +114,12 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
         context: {
           requestUrl: lastError?.url || resolveApiUrl("/health"),
           apiBase,
-          apiOrigin: apiOrigin || null,
-          VITE_API_URL: apiOrigin || "(not set)",
-          VITE_WS_URL: (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)",
-          suggestion: "Run .\\run.ps1 -r locally and open http://localhost:8080 in your browser",
+          apiBaseAbsolute: toAbsoluteUrl(apiBase),
+          "VITE_API_URL (raw)": envViteApiUrl,
+          "VITE_WS_URL (raw)": envViteWsUrl,
+          uiOrigin: typeof window !== "undefined" ? window.location.origin : "N/A",
+          suggestion:
+            "Run .\\run.ps1 -r locally and open http://localhost:8080 in your browser",
         },
       }
     );
@@ -108,18 +139,35 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
     return null;
   }
 
+  // Generate banner message based on reason
+  const getBannerMessage = () => {
+    if (!lastError) return "Backend disconnected";
+    switch (lastError.reason) {
+      case "html":
+        return "Backend disconnected — API requests are returning HTML instead of JSON";
+      case "network":
+        return "Backend unreachable — network error or server not running";
+      case "non2xx":
+        return `Backend error — ${lastError.message}`;
+      default:
+        return "Backend disconnected";
+    }
+  };
+
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] bg-warning text-warning-foreground px-4 py-2">
       <div className="container mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" />
-          <span className="text-sm font-medium">
-            Backend disconnected — API requests are returning HTML instead of JSON
-          </span>
+          <span className="text-sm font-medium">{getBannerMessage()}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs opacity-80">
-            Run <code className="bg-warning-foreground/10 px-1 rounded">.\run.ps1 -r</code> to start the backend
+            Run{" "}
+            <code className="bg-warning-foreground/10 px-1 rounded">
+              .\run.ps1 -r
+            </code>{" "}
+            to start the backend
           </span>
           <Button
             variant="ghost"
@@ -152,4 +200,3 @@ function cn(...classes: (string | boolean | undefined)[]) {
 }
 
 export default BackendStatus;
-

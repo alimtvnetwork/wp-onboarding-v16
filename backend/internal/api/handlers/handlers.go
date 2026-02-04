@@ -84,11 +84,22 @@ type BackupServiceInterface interface {
 // Global service registry - set during server initialization
 var Services *ServiceRegistry
 
-// Health returns server health status
+// Health returns server health status (standard envelope format)
 func Health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"healthy","timestamp":"` + time.Now().Format(time.RFC3339) + `"}`))
+	respondSuccess(w, map[string]interface{}{
+		"status":    "ok",
+		"timestamp": time.Now().Format(time.RFC3339),
+	})
+}
+
+// APIIndex returns API metadata for the base /api/v1 endpoint
+func APIIndex(w http.ResponseWriter, r *http.Request) {
+	respondSuccess(w, map[string]interface{}{
+		"name":    "WP Plugin Publish API",
+		"version": "v1",
+		"health":  "/api/v1/health",
+		"ws":      "/ws",
+	})
 }
 
 // --- Helper Functions ---

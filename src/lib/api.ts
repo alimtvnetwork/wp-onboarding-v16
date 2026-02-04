@@ -112,6 +112,11 @@ async function request<T>(
     const rawTrim = raw.trim();
     const looksLikeHtml = rawTrim.startsWith("<!") || rawTrim.startsWith("<html") || /<html[\s>]/i.test(raw);
 
+    // Raw environment variable values for diagnostics
+    const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
+    const envViteWsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)";
+    const uiOrigin = typeof window !== "undefined" ? window.location.origin : "N/A";
+
     if (looksLikeHtml || !contentType.includes("application/json")) {
       return {
         success: false,
@@ -122,13 +127,18 @@ async function request<T>(
             "This usually means the UI is not talking to the Go backend (wrong base URL/port, or preview environment).\n" +
             `Requested URL: ${requestUrl}\n` +
             `Configured API base: ${apiBase}\n` +
-            `VITE_API_URL: ${apiOrigin || "(not set)"}\n` +
+            `API Base (absolute): ${toAbsoluteUrl(apiBase)}\n` +
+            `VITE_API_URL (raw): ${envViteApiUrl}\n` +
             "Fix: set VITE_API_URL to your backend origin (e.g. http://localhost:8080) and reload.\n" +
             `HTTP ${response.status} (${contentType || "no content-type"})`,
           context: {
             requestUrl,
             apiBase,
-            apiOrigin: apiOrigin || null,
+            apiBaseAbsolute: toAbsoluteUrl(apiBase),
+            "VITE_API_URL (raw)": envViteApiUrl,
+            "VITE_WS_URL (raw)": envViteWsUrl,
+            resolvedApiOrigin: apiOrigin || null,
+            uiOrigin,
             responseStatus: response.status,
             contentType: contentType || null,
             responsePreview: preview,
@@ -151,7 +161,11 @@ async function request<T>(
         context: {
           requestUrl,
           apiBase,
-          apiOrigin: apiOrigin || null,
+          apiBaseAbsolute: toAbsoluteUrl(apiBase),
+          "VITE_API_URL (raw)": envViteApiUrl,
+          "VITE_WS_URL (raw)": envViteWsUrl,
+          resolvedApiOrigin: apiOrigin || null,
+          uiOrigin,
           responseStatus: response.status,
           contentType: contentType || null,
           responsePreview: preview,
@@ -160,6 +174,10 @@ async function request<T>(
       },
     };
   } catch (error) {
+    // Raw environment variable values for diagnostics
+    const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
+    const envViteWsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)";
+    const uiOrigin = typeof window !== "undefined" ? window.location.origin : "N/A";
     return {
       success: false,
       error: {
@@ -168,7 +186,11 @@ async function request<T>(
         details: error instanceof Error ? error.message : "Unknown error",
         context: {
           apiBase: resolveApiBase(),
-          apiOrigin: resolveApiOrigin() || null,
+          apiBaseAbsolute: toAbsoluteUrl(resolveApiBase()),
+          "VITE_API_URL (raw)": envViteApiUrl,
+          "VITE_WS_URL (raw)": envViteWsUrl,
+          resolvedApiOrigin: resolveApiOrigin() || null,
+          uiOrigin,
         },
         timestamp: new Date().toISOString(),
       },
