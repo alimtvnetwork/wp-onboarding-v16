@@ -45,6 +45,14 @@ The frontend MUST:
 3. Show log count in tab badge
 4. Support copy-to-clipboard for all logs
 
+## On-disk Log Files (Troubleshooting Bundles)
+
+The backend MUST maintain persistent local log files under `backend/data/errors/`:
+- `log.txt` - all backend logs
+- `error.log.txt` - errors/fatals only
+
+These files are used as the first-line artifact when investigating publish/sync/connection failures.
+
 ## Timestamp Format Consistency
 
 All streamed operation logs (WebSocket `log` events) MUST use consistent UTC ISO8601 format:
