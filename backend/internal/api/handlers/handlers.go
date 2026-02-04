@@ -51,6 +51,7 @@ type SiteServiceInterface interface {
 	Delete(ctx context.Context, id int64) error
 	TestConnection(ctx context.Context, id int64) (interface{}, error)
 	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (interface{}, error)
+	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (interface{}, error)
 }
 
 // SyncServiceInterface defines sync service methods
@@ -343,6 +344,33 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 	result, err := Services.SiteService.TestConnectionWithCredentials(r.Context(), input.URL, input.Username, input.Password)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
+func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	// Optional: allow specifying a custom uploader path in the request body
+	var input struct {
+		UploaderPath string `json:"uploaderPath,omitempty"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&input)
+
+	result, err := Services.SiteService.BootstrapUploader(r.Context(), id, input.UploaderPath)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E2010", err.Error())
 		return
 	}
 	respondSuccess(w, result)

@@ -38,7 +38,7 @@ if (!defined('RISEUP_MIN_PHP_VERSION')) {
 // =============================================================================
 
 if (!defined('RISEUP_API_NAMESPACE')) {
-    define('RISEUP_API_NAMESPACE', 'riseup-asia');
+    define('RISEUP_API_NAMESPACE', 'riseup-asia-uploader');
 }
 if (!defined('RISEUP_API_VERSION')) {
     define('RISEUP_API_VERSION', 'v1');

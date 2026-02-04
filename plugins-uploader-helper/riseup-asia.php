@@ -33,6 +33,7 @@ require_once __DIR__ . '/includes/class-orm.php';
 require_once __DIR__ . '/includes/class-database.php';
 require_once __DIR__ . '/includes/class-logger.php';
 require_once __DIR__ . '/includes/class-post-manager.php';
+require_once __DIR__ . '/includes/class-upload-ignore.php';
 
 // =============================================================================
 // PLUGIN CLASS
@@ -147,8 +148,22 @@ class RiseUp_Asia {
         ));
 
         register_rest_route(RISEUP_API_FULL_NAMESPACE, '/plugins/(?P<slug>[a-zA-Z0-9_-]+)/files', array(
-            'methods'             => array('POST', 'DELETE'),
+            'methods'             => array('GET', 'POST', 'DELETE'),
             'callback'            => array($this, 'handle_plugin_files'),
+            'permission_callback' => array($this, 'check_plugin_permission'),
+        ));
+
+        // Delta sync endpoint.
+        register_rest_route(RISEUP_API_FULL_NAMESPACE, '/plugins/(?P<slug>[a-zA-Z0-9_-]+)/sync', array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_plugin_sync'),
+            'permission_callback' => array($this, 'check_plugin_permission'),
+        ));
+
+        // Export-self endpoint.
+        register_rest_route(RISEUP_API_FULL_NAMESPACE, '/export-self', array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_export_self'),
             'permission_callback' => array($this, 'check_plugin_permission'),
         ));
 
@@ -341,8 +356,8 @@ class RiseUp_Asia {
     public function handle_status($request) {
         return new WP_REST_Response(array(
             'success'  => true,
-            'plugin'   => RISEUP_UPLOADER_NAME,
-            'version'  => RISEUP_UPLOADER_VERSION,
+            'plugin'   => RISEUP_NAME,
+            'version'  => RISEUP_VERSION,
             'api'      => RISEUP_API_FULL_NAMESPACE,
             'wp'       => get_bloginfo('version'),
             'php'      => PHP_VERSION,
@@ -350,9 +365,11 @@ class RiseUp_Asia {
                 'plugin_upload'   => true,
                 'plugin_manage'   => true,
                 'file_operations' => true,
+                'delta_sync'      => true,
                 'post_publish'    => true,
                 'category_manage' => true,
                 'transaction_log' => true,
+                'export_self'     => true,
             ),
         ), RISEUP_HTTP_OK);
     }
@@ -1043,6 +1060,291 @@ class RiseUp_Asia {
         }
 
         return @rmdir($dir);
+    }
+
+    // =========================================================================
+    // DELTA SYNC HANDLER
+    // =========================================================================
+
+    /**
+     * Handle delta file sync (multi-file update/delete).
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_plugin_sync($request) {
+        $slug = $request->get_param('slug');
+        $data = $request->get_json_params();
+
+        // Verify plugin exists.
+        $plugin_file = $this->find_plugin_file($slug);
+        if (!$plugin_file) {
+            return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND, RISEUP_HTTP_NOT_FOUND);
+        }
+
+        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+        if (!is_dir($plugin_dir)) {
+            return $this->error_response('Plugin directory not found', RISEUP_HTTP_NOT_FOUND);
+        }
+
+        if (empty($data['files']) || !is_array($data['files'])) {
+            return $this->error_response('Files array is required', RISEUP_HTTP_BAD_REQUEST);
+        }
+
+        // Load upload ignore patterns.
+        $ignore = RiseUp_Upload_Ignore::from_directory($plugin_dir);
+
+        $results        = array();
+        $files_updated  = 0;
+        $files_deleted  = 0;
+        $files_ignored  = 0;
+        $ignored_files  = array();
+
+        foreach ($data['files'] as $file) {
+            if (empty($file['path'])) {
+                continue;
+            }
+
+            $relative_path = ltrim($file['path'], '/\\');
+            $action        = $file['action'] ?? 'replace';
+
+            // Check if file should be ignored.
+            if ($ignore->should_ignore($relative_path)) {
+                $files_ignored++;
+                $ignored_files[] = $relative_path;
+                $results[] = array(
+                    'path'   => $relative_path,
+                    'action' => 'ignored',
+                    'status' => 'skipped',
+                    'reason' => RISEUP_MSG_FILE_IGNORED,
+                );
+                continue;
+            }
+
+            $target_file = $plugin_dir . '/' . $relative_path;
+
+            // Prevent directory traversal.
+            $real_plugin_dir = realpath($plugin_dir);
+            $parent_dir      = dirname($target_file);
+            
+            if ($action === 'replace') {
+                // Create parent directories if needed.
+                if (!is_dir($parent_dir)) {
+                    wp_mkdir_p($parent_dir);
+                }
+                
+                $real_parent = realpath($parent_dir);
+                if ($real_parent === false || strpos($real_parent, $real_plugin_dir) !== 0) {
+                    $results[] = array(
+                        'path'   => $relative_path,
+                        'action' => $action,
+                        'status' => 'error',
+                        'reason' => 'Invalid path (directory traversal)',
+                    );
+                    continue;
+                }
+
+                // Decode and write content.
+                if (empty($file['content'])) {
+                    $results[] = array(
+                        'path'   => $relative_path,
+                        'action' => $action,
+                        'status' => 'error',
+                        'reason' => 'Content is required for replace action',
+                    );
+                    continue;
+                }
+
+                $content = base64_decode($file['content']);
+                if ($content === false) {
+                    $results[] = array(
+                        'path'   => $relative_path,
+                        'action' => $action,
+                        'status' => 'error',
+                        'reason' => 'Invalid base64 content',
+                    );
+                    continue;
+                }
+
+                if (file_put_contents($target_file, $content) !== false) {
+                    $files_updated++;
+                    $results[] = array(
+                        'path'   => $relative_path,
+                        'action' => 'replaced',
+                        'status' => 'success',
+                    );
+                } else {
+                    $results[] = array(
+                        'path'   => $relative_path,
+                        'action' => $action,
+                        'status' => 'error',
+                        'reason' => 'Failed to write file',
+                    );
+                }
+            } elseif ($action === 'delete') {
+                if (file_exists($target_file)) {
+                    $real_target = realpath($target_file);
+                    if ($real_target === false || strpos($real_target, $real_plugin_dir) !== 0) {
+                        $results[] = array(
+                            'path'   => $relative_path,
+                            'action' => $action,
+                            'status' => 'error',
+                            'reason' => 'Invalid path (directory traversal)',
+                        );
+                        continue;
+                    }
+
+                    if (@unlink($target_file)) {
+                        $files_deleted++;
+                        $results[] = array(
+                            'path'   => $relative_path,
+                            'action' => 'deleted',
+                            'status' => 'success',
+                        );
+                    } else {
+                        $results[] = array(
+                            'path'   => $relative_path,
+                            'action' => $action,
+                            'status' => 'error',
+                            'reason' => 'Failed to delete file',
+                        );
+                    }
+                } else {
+                    $results[] = array(
+                        'path'   => $relative_path,
+                        'action' => 'deleted',
+                        'status' => 'success',
+                        'reason' => 'File did not exist',
+                    );
+                }
+            }
+        }
+
+        // Log the sync operation.
+        $this->logger->log_plugin_action(
+            RISEUP_ACTION_SYNC,
+            $slug,
+            RISEUP_STATUS_SUCCESS,
+            array(
+                'files_updated' => $files_updated,
+                'files_deleted' => $files_deleted,
+                'files_ignored' => $files_ignored,
+            )
+        );
+
+        return new WP_REST_Response(array(
+            'success'       => true,
+            'files_updated' => $files_updated,
+            'files_deleted' => $files_deleted,
+            'files_ignored' => $files_ignored,
+            'ignored_files' => $ignored_files,
+            'results'       => $results,
+        ), RISEUP_HTTP_OK);
+    }
+
+    // =========================================================================
+    // EXPORT SELF HANDLER
+    // =========================================================================
+
+    /**
+     * Handle export-self (export this plugin as a ZIP).
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_export_self($request) {
+        $plugin_dir = dirname(__FILE__);
+        $plugin_slug = basename($plugin_dir);
+
+        // Load upload ignore patterns.
+        $ignore = RiseUp_Upload_Ignore::from_directory($plugin_dir);
+
+        // Create temp ZIP file.
+        $temp_dir  = $this->get_temp_dir();
+        $zip_file  = $temp_dir . '/' . $plugin_slug . '-' . time() . '.zip';
+
+        $zip = new ZipArchive();
+        if ($zip->open($zip_file, ZipArchive::CREATE) !== true) {
+            return $this->error_response('Failed to create ZIP archive', RISEUP_HTTP_SERVER_ERROR);
+        }
+
+        // Add files recursively.
+        $files_added = $this->add_directory_to_zip($zip, $plugin_dir, $plugin_slug, $ignore);
+        $zip->close();
+
+        if (!file_exists($zip_file)) {
+            return $this->error_response('Failed to create ZIP file', RISEUP_HTTP_SERVER_ERROR);
+        }
+
+        // Read and encode ZIP.
+        $zip_content = file_get_contents($zip_file);
+        $checksum    = md5($zip_content);
+        $base64_zip  = base64_encode($zip_content);
+
+        // Clean up temp file.
+        @unlink($zip_file);
+
+        // Log the export.
+        $this->logger->log_plugin_action(
+            RISEUP_ACTION_EXPORT_SELF,
+            $plugin_slug,
+            RISEUP_STATUS_SUCCESS,
+            array(
+                'files_included' => $files_added,
+                'zip_size'       => strlen($zip_content),
+            )
+        );
+
+        return new WP_REST_Response(array(
+            'success'     => true,
+            'plugin_name' => RISEUP_NAME,
+            'version'     => RISEUP_VERSION,
+            'plugin_slug' => $plugin_slug,
+            'plugin_zip'  => $base64_zip,
+            'checksum'    => $checksum,
+            'file_count'  => $files_added,
+        ), RISEUP_HTTP_OK);
+    }
+
+    /**
+     * Add directory to ZIP archive recursively.
+     *
+     * @param ZipArchive           $zip        ZIP archive.
+     * @param string               $dir        Directory path.
+     * @param string               $base       Base path in ZIP.
+     * @param RiseUp_Upload_Ignore $ignore     Upload ignore instance.
+     *
+     * @return int Number of files added.
+     */
+    private function add_directory_to_zip($zip, $dir, $base, $ignore) {
+        $files_added = 0;
+        $iterator    = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $file) {
+            $real_path     = $file->getRealPath();
+            $relative_path = substr($real_path, strlen($dir) + 1);
+            $relative_path = str_replace('\\', '/', $relative_path);
+            $zip_path      = $base . '/' . $relative_path;
+
+            // Check if should be ignored.
+            if ($ignore->should_ignore($relative_path)) {
+                continue;
+            }
+
+            if ($file->isDir()) {
+                $zip->addEmptyDir($zip_path);
+            } else {
+                $zip->addFile($real_path, $zip_path);
+                $files_added++;
+            }
+        }
+
+        return $files_added;
     }
 }
 

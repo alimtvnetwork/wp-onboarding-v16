@@ -407,6 +407,11 @@ export const api = {
     request<{ success: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>(`/sites/${id}/test`, { method: "POST" }),
   testCredentials: (credentials: { url: string; username: string; password: string }) =>
     request<{ success: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>("/sites/test", { method: "POST", body: JSON.stringify(credentials) }),
+  bootstrapUploader: (siteId: number, uploaderPath?: string) =>
+    request<{ success: boolean; siteId: number; siteName: string; message: string; activated: boolean }>(
+      `/sites/${siteId}/bootstrap-uploader`,
+      { method: "POST", body: JSON.stringify({ uploaderPath }) }
+    ),
 
   // Plugins
   getPlugins: () => request<Plugin[]>("/plugins"),

@@ -2,10 +2,14 @@
 package site
 
 import (
+	"archive/zip"
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -603,4 +607,175 @@ func parseTime(s string) time.Time {
 		return time.Time{}
 	}
 	return t
+}
+
+// BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
+func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*BootstrapResult, error) {
+	// Get site details
+	site, err := s.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Decrypt password
+	decrypted, err := s.decryptPassword(site.PasswordEncrypted)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDecryption, "failed to decrypt site password")
+	}
+
+	// Create WordPress client
+	client := s.createWPClient(site.Url, site.Username, decrypted, site.Id)
+
+	// If uploader path not specified, try to determine it
+	if uploaderPath == "" {
+		// Default to plugins-uploader-helper relative to project
+		uploaderPath = "plugins-uploader-helper"
+	}
+
+	// Create ZIP of the uploader plugin
+	zipPath, err := s.createUploaderZip(uploaderPath)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFilesystem, "failed to create uploader ZIP")
+	}
+	defer func() {
+		// Clean up temp ZIP file
+		_ = removeFile(zipPath)
+	}()
+
+	// Upload to site via WordPress API
+	result, err := client.UploadPluginViaUploader(zipPath, true)
+	if err != nil {
+		// If uploader not available, try standard upload
+		return nil, apperror.Wrap(err, apperror.ErrWordPressAPI, "failed to upload uploader plugin")
+	}
+
+	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", map[string]interface{}{
+		"siteId":   id,
+		"siteName": site.Name,
+		"siteUrl":  site.Url,
+		"result":   result,
+	})
+
+	return &BootstrapResult{
+		Success:   true,
+		SiteId:    id,
+		SiteName:  site.Name,
+		Message:   "Riseup Asia Uploader deployed successfully",
+		Activated: result.Activated,
+	}, nil
+}
+
+// BootstrapResult represents the result of bootstrapping the uploader to a site
+type BootstrapResult struct {
+	Success   bool   `json:"success"`
+	SiteId    int64  `json:"siteId"`
+	SiteName  string `json:"siteName"`
+	Message   string `json:"message"`
+	Activated bool   `json:"activated"`
+}
+
+// createUploaderZip creates a ZIP file of the uploader plugin
+func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
+	// Ensure path exists
+	info, err := os.Stat(uploaderPath)
+	if err != nil {
+		return "", fmt.Errorf("uploader path not found: %s", uploaderPath)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("uploader path is not a directory: %s", uploaderPath)
+	}
+
+	// Create temp file for ZIP
+	tempFile, err := os.CreateTemp("", "riseup-asia-uploader-*.zip")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tempPath := tempFile.Name()
+
+	// Create ZIP writer
+	zipWriter := zip.NewWriter(tempFile)
+
+	// Walk directory and add files
+	baseName := filepath.Base(uploaderPath)
+	err = filepath.Walk(uploaderPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Get relative path
+		relPath, _ := filepath.Rel(uploaderPath, path)
+		if relPath == "." {
+			return nil
+		}
+
+		// Skip files based on patterns
+		if shouldSkipFile(relPath) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		// Create zip entry
+		zipPath := baseName + "/" + filepath.ToSlash(relPath)
+		writer, err := zipWriter.Create(zipPath)
+		if err != nil {
+			return err
+		}
+
+		// Copy file contents
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		_, err = io.Copy(writer, file)
+		return err
+	})
+
+	// Close ZIP writer before closing file
+	zipWriter.Close()
+	tempFile.Close()
+
+	if err != nil {
+		os.Remove(tempPath)
+		return "", fmt.Errorf("failed to create zip: %w", err)
+	}
+
+	return tempPath, nil
+}
+
+// shouldSkipFile checks if a file should be skipped when creating the uploader ZIP
+func shouldSkipFile(relPath string) bool {
+	// Normalize path
+	relPath = filepath.ToSlash(relPath)
+	
+	// Skip hidden files and directories (except .uploadignore itself which we include)
+	parts := strings.Split(relPath, "/")
+	for _, part := range parts {
+		if strings.HasPrefix(part, ".") && part != ".uploadignore" {
+			return true
+		}
+	}
+	
+	// Skip common development files/directories
+	skipPatterns := []string{
+		"node_modules",
+		"vendor",
+		"tests",
+		"phpunit.xml",
+		"phpunit.xml.dist",
+		"composer.lock",
+	}
+	for _, pattern := range skipPatterns {
+		if relPath == pattern || strings.HasPrefix(relPath, pattern+"/") {
+			return true
+		}
+	}
+	return false
 }
