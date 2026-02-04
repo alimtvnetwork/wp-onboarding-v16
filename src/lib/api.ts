@@ -412,6 +412,11 @@ export const api = {
       `/sites/${siteId}/bootstrap-uploader`,
       { method: "POST", body: JSON.stringify({ uploaderPath }) }
     ),
+  bulkBootstrapUploader: (siteIds: number[], uploaderPath?: string) =>
+    request<{ results: Array<{ siteId: number; siteName: string; success: boolean; message: string; activated?: boolean; error?: string }> }>(
+      `/sites/bulk-bootstrap-uploader`,
+      { method: "POST", body: JSON.stringify({ siteIds, uploaderPath }) }
+    ),
 
   // Plugins
   getPlugins: () => request<Plugin[]>("/plugins"),

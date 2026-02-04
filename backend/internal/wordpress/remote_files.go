@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -270,6 +271,40 @@ func (c *Client) CheckOnboardPluginAvailable() (bool, error) {
 
 	// 200 means plugin is available and we're authenticated
 	return resp.StatusCode == http.StatusOK, nil
+}
+
+// CheckOnboardAvailable is an alias for CheckOnboardPluginAvailable
+func (c *Client) CheckOnboardAvailable() (bool, error) {
+	return c.CheckOnboardPluginAvailable()
+}
+
+// UploadPluginViaOnboard uploads a plugin via the Onboard plugin and returns UploaderUploadResult
+func (c *Client) UploadPluginViaOnboard(zipPath string, activate bool) (*UploaderUploadResult, error) {
+	// Get the plugin slug from the ZIP filename
+	pluginSlug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
+	
+	// Use the Onboard upload method
+	result, err := c.UploadPluginZip(zipPath, pluginSlug)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Convert to UploaderUploadResult
+	uploaderResult := &UploaderUploadResult{
+		Success:   result.Success,
+		Message:   result.Message,
+		Plugin:    result.Plugin,
+		Activated: result.Activated,
+	}
+	
+	// If activation requested and not yet activated, try to activate
+	if activate && !result.Activated && result.Plugin != "" {
+		if err := c.ActivatePlugin(result.Plugin); err == nil {
+			uploaderResult.Activated = true
+		}
+	}
+	
+	return uploaderResult, nil
 }
 
 // truncateBody truncates a string to maxLen for error messages.

@@ -1,0 +1,31 @@
+# Riseup Asia Uploader - Upload Ignore Patterns
+# =============================================
+# Files matching these patterns will be skipped during sync and export operations.
+
+# Development files
+.git/
+.gitignore
+.uploadignore
+.uploadignore.example
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts and logs
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Test files (uncomment if not needed on production)
+# tests/
+# phpunit.xml
+# phpunit.xml.dist
+
+# Composer files (keep autoload)
+# composer.json
+# composer.lock

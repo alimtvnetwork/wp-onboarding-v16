@@ -83,6 +83,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/{id}", handlers.DeleteSite).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/test", handlers.TestSiteConnection).Methods("POST")
 	api.HandleFunc("/sites/{id}/bootstrap-uploader", handlers.BootstrapUploader).Methods("POST")
+	api.HandleFunc("/sites/bulk-bootstrap-uploader", handlers.BulkBootstrapUploader).Methods("POST")
 	api.HandleFunc("/sites/{id}/mappings", handlers.GetSiteMappings).Methods("GET")
 	api.HandleFunc("/sites/{id}/mappings", handlers.UpdateSiteMappings).Methods("PUT")
 
