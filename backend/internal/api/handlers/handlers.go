@@ -376,6 +376,86 @@ func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, result)
 }
 
+// BulkBootstrapUploader deploys the Riseup Asia Uploader to multiple sites
+func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	var input struct {
+		SiteIds      []int64 `json:"siteIds"`
+		UploaderPath string  `json:"uploaderPath,omitempty"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	if len(input.SiteIds) == 0 {
+		respondError(w, http.StatusBadRequest, "E1002", "At least one site ID is required")
+		return
+	}
+
+	type siteResult struct {
+		SiteId    int64  `json:"siteId"`
+		SiteName  string `json:"siteName"`
+		Success   bool   `json:"success"`
+		Message   string `json:"message"`
+		Activated bool   `json:"activated,omitempty"`
+		Error     string `json:"error,omitempty"`
+	}
+
+	results := make([]siteResult, 0, len(input.SiteIds))
+
+	for _, siteId := range input.SiteIds {
+		result, err := Services.SiteService.BootstrapUploader(r.Context(), siteId, input.UploaderPath)
+		if err != nil {
+			// Get site name for error reporting
+			site, _ := Services.SiteService.GetByID(r.Context(), siteId)
+			siteName := ""
+			if site != nil {
+				if s, ok := site.(interface{ GetName() string }); ok {
+					siteName = s.GetName()
+				}
+			}
+			results = append(results, siteResult{
+				SiteId:   siteId,
+				SiteName: siteName,
+				Success:  false,
+				Message:  "Deployment failed",
+				Error:    err.Error(),
+			})
+		} else {
+			if r, ok := result.(*struct {
+				Success   bool   `json:"success"`
+				SiteId    int64  `json:"siteId"`
+				SiteName  string `json:"siteName"`
+				Message   string `json:"message"`
+				Activated bool   `json:"activated"`
+			}); ok {
+				results = append(results, siteResult{
+					SiteId:    r.SiteId,
+					SiteName:  r.SiteName,
+					Success:   r.Success,
+					Message:   r.Message,
+					Activated: r.Activated,
+				})
+			} else {
+				results = append(results, siteResult{
+					SiteId:  siteId,
+					Success: true,
+					Message: "Deployment completed",
+				})
+			}
+		}
+	}
+
+	respondSuccess(w, map[string]interface{}{
+		"results": results,
+	})
+}
+
 // --- Plugins Handlers ---
 
 // GetPlugins returns all registered plugins

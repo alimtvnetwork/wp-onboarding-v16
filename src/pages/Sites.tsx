@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { AddSiteDialog } from "@/components/sites/AddSiteDialog";
 import { EditSiteDialog } from "@/components/sites/EditSiteDialog";
 import { SiteCard } from "@/components/sites/SiteCard";
+import { DeployUploaderDialog } from "@/components/sites/DeployUploaderDialog";
 import { CategoryFilter } from "@/components/shared/CategoryFilter";
 import { CategoryBadge } from "@/components/shared/CategoryBadge";
 import {
@@ -14,6 +15,7 @@ import {
   Plus,
   Loader2,
   AlertCircle,
+  Upload,
 } from "lucide-react";
 import { api, Site } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,6 +31,7 @@ export default function Sites() {
   
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeployDialog, setShowDeployDialog] = useState(false);
   const [editingSite, setEditingSite] = useState<Pick<Site, "id" | "name" | "url" | "username" | "category" | "connectionStatus" | "lastTestedAt"> | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
@@ -83,6 +86,21 @@ export default function Sites() {
     if (selectedCategories.length === 0) return true;
     return site.category && selectedCategories.includes(site.category);
   });
+
+  // Connected sites for bulk deploy
+  const connectedSites = useMemo(() => {
+    return sites?.filter((s) => s.connectionStatus === "connected") || [];
+  }, [sites]);
+
+  // Handle bulk deploy
+  const handleBulkDeploy = async (siteIds: number[]) => {
+    const response = await api.bulkBootstrapUploader(siteIds);
+    if (!response.success) {
+      throw new Error(response.error?.message || "Bulk deploy failed");
+    }
+    queryClient.invalidateQueries({ queryKey: ["sites"] });
+    return response.data?.results || [];
+  };
 
   // Compute error info outside of render to avoid triggering captureError during render
   // IMPORTANT: Must be before any early returns to avoid hook ordering violations
@@ -178,10 +196,18 @@ export default function Sites() {
           <h1 className="text-2xl font-bold">Sites</h1>
           <p className="text-muted-foreground">Manage your WordPress site connections</p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Site
-        </Button>
+        <div className="flex gap-2">
+          {connectedSites.length > 0 && (
+            <Button variant="outline" onClick={() => setShowDeployDialog(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Deploy Uploader
+            </Button>
+          )}
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Site
+          </Button>
+        </div>
       </div>
 
       {/* Category Filter */}
@@ -230,6 +256,12 @@ export default function Sites() {
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
         site={editingSite}
+      />
+      <DeployUploaderDialog
+        open={showDeployDialog}
+        onOpenChange={setShowDeployDialog}
+        sites={connectedSites.map((s) => ({ id: s.id, name: s.name, url: s.url }))}
+        onDeploy={handleBulkDeploy}
       />
     </div>
   );

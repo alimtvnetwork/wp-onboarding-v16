@@ -617,14 +617,34 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		return nil, err
 	}
 
+	// Broadcast start
+	if s.wsHub != nil {
+		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", map[string]interface{}{
+			"siteId":   id,
+			"siteName": site.Name,
+			"siteUrl":  site.Url,
+		})
+	}
+
 	// Decrypt password
 	decrypted, err := s.decryptPassword(site.PasswordEncrypted)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDecryption, "failed to decrypt site password")
 	}
 
-	// Create WordPress client
-	client := s.createWPClient(site.Url, site.Username, decrypted, site.Id)
+	// Create WordPress client with progress callback
+	progressCallback := func(step, status, message string, details map[string]interface{}) {
+		if s.wsHub != nil {
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), map[string]interface{}{
+				"siteId":   id,
+				"siteName": site.Name,
+				"step":     step,
+				"status":   status,
+				"details":  details,
+			})
+		}
+	}
+	client := s.wpClientFactory(site.Url, site.Username, decrypted, progressCallback)
 
 	// If uploader path not specified, try to determine it
 	if uploaderPath == "" {
@@ -632,28 +652,76 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		uploaderPath = "plugins-uploader-helper"
 	}
 
+	if s.wsHub != nil {
+		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", map[string]interface{}{
+			"siteId": id,
+			"path":   uploaderPath,
+		})
+	}
+
 	// Create ZIP of the uploader plugin
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
+		if s.wsHub != nil {
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), map[string]interface{}{"siteId": id})
+		}
 		return nil, apperror.Wrap(err, apperror.ErrFilesystem, "failed to create uploader ZIP")
 	}
-	defer func() {
-		// Clean up temp ZIP file
-		_ = removeFile(zipPath)
-	}()
+	defer os.Remove(zipPath)
 
-	// Upload to site via WordPress API
-	result, err := client.UploadPluginViaUploader(zipPath, true)
+	// Check if Riseup Asia is already available on the site
+	available, namespace, _ := client.CheckRiseupAsiaAvailable()
+
+	var uploadResult *wordpress.UploaderUploadResult
+
+	if available && namespace != "" {
+		// Uploader is already on the site - use it to update itself
+		if s.wsHub != nil {
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), map[string]interface{}{"siteId": id})
+		}
+		uploadResult, err = client.UploadPluginViaUploader(zipPath, true)
+	} else {
+		// First-time installation - use Onboard plugin or standard upload
+		if s.wsHub != nil {
+			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", map[string]interface{}{"siteId": id})
+		}
+		
+		// Try Onboard plugin first
+		onboardAvailable := s.checkOnboardAvailable(client)
+		if onboardAvailable {
+			if s.wsHub != nil {
+				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", map[string]interface{}{"siteId": id})
+			}
+			uploadResult, err = client.UploadPluginViaOnboard(zipPath, true)
+		} else {
+			// No helper plugin available - this is a limitation
+			if s.wsHub != nil {
+				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", map[string]interface{}{"siteId": id})
+			}
+			return nil, apperror.New(apperror.ErrWordPressAPI, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
+		}
+	}
+
 	if err != nil {
-		// If uploader not available, try standard upload
+		if s.wsHub != nil {
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), map[string]interface{}{"siteId": id})
+		}
 		return nil, apperror.Wrap(err, apperror.ErrWordPressAPI, "failed to upload uploader plugin")
+	}
+
+	if s.wsHub != nil {
+		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", map[string]interface{}{
+			"siteId":    id,
+			"siteName":  site.Name,
+			"activated": uploadResult.Activated,
+		})
 	}
 
 	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", map[string]interface{}{
 		"siteId":   id,
 		"siteName": site.Name,
 		"siteUrl":  site.Url,
-		"result":   result,
+		"result":   uploadResult,
 	})
 
 	return &BootstrapResult{
@@ -661,8 +729,14 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		SiteId:    id,
 		SiteName:  site.Name,
 		Message:   "Riseup Asia Uploader deployed successfully",
-		Activated: result.Activated,
+		Activated: uploadResult.Activated,
 	}, nil
+}
+
+// checkOnboardAvailable checks if the Onboard plugin is available
+func (s *Service) checkOnboardAvailable(client *wordpress.Client) bool {
+	resp, err := client.CheckOnboardAvailable()
+	return err == nil && resp
 }
 
 // BootstrapResult represents the result of bootstrapping the uploader to a site
