@@ -228,6 +228,7 @@ export interface Plugin {
   path: string;
   category: string | null;
   watchEnabled: boolean;
+  autoPublish: boolean;
   excludePatterns: string[];
   fileCount: number;
   modifiedCount: number;

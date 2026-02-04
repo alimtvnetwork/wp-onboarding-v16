@@ -1,11 +1,27 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
-  "buildTime": "2026-02-04T19:00:00Z",
+  "buildTime": "2026-02-04T19:30:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
+    {
+      "version": "1.9.0",
+      "date": "2026-02-04",
+      "title": "Seedable Config, Bulk Deploy & Error Modal Improvements",
+      "changes": [
+        "🌱 Seedable configuration for sites and plugins in config.json",
+        "🚀 Deploy All button for bulk publishing selected plugins",
+        "📊 Improved Error Modal with separate Frontend/Backend stack trace tabs",
+        "⚡ Auto-publish option for plugins (triggers deploy on file changes)",
+        "📦 Database migration v4 adds AutoPublish column and seed version tracking",
+        "🔒 Application passwords stored as base64 in seed config for security"
+      ],
+      "knownIssues": [
+        "Hosted Lovable preview cannot connect to localhost backend - use http://localhost:8080 locally"
+      ]
+    },
     {
       "version": "1.8.0",
       "date": "2026-02-04",
@@ -145,19 +161,29 @@
       "description": "Version-based changelog notification system"
     },
     {
+      "status": "completed",
+      "title": "Bulk Plugin Operations",
+      "description": "Enable/disable/sync/deploy multiple plugins at once"
+    },
+    {
+      "status": "completed",
+      "title": "Git Integration",
+      "description": "Commit and push plugin changes directly from the UI"
+    },
+    {
+      "status": "completed",
+      "title": "Seedable Configuration",
+      "description": "Pre-configure sites and plugins for quick testing"
+    },
+    {
       "status": "planned",
       "title": "E2E Testing Suite",
       "description": "Automated end-to-end tests for all critical workflows"
     },
     {
       "status": "planned",
-      "title": "Bulk Plugin Operations",
-      "description": "Enable/disable/sync multiple plugins at once"
-    },
-    {
-      "status": "planned",
-      "title": "Git Integration",
-      "description": "Commit and push plugin changes directly from the UI"
+      "title": "Version History & Rollback",
+      "description": "Track plugin versions and enable rollback to previous states"
     }
   ]
 }

@@ -165,6 +165,20 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_plugins_category ON Plugins(Category);
 		`,
 	},
+	{
+		Version:     4,
+		Description: "Add AutoPublish and SeedVersion support",
+		SQL: `
+			-- Add AutoPublish column to Plugins table for auto-deploy on file changes
+			ALTER TABLE Plugins ADD COLUMN AutoPublish INTEGER DEFAULT 0;
+
+			-- Add SeedVersion to AppConfig for tracking seeded data version
+			INSERT OR IGNORE INTO AppConfig (Key, Value) VALUES ('seed.version', '');
+
+			-- Add DbVersion to track schema version for changelog display
+			INSERT OR IGNORE INTO AppConfig (Key, Value) VALUES ('db.version', '1.8.0');
+		`,
+	},
 }
 
 // Migrate runs all pending migrations

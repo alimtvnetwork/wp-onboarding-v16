@@ -2,8 +2,11 @@
 package config
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"os"
+	"strconv"
+	"strings"
 
 	"wp-plugin-publish/internal/database"
 )
@@ -19,6 +22,7 @@ type Config struct {
 	Logging      LoggingConfig   `json:"logging"`
 	Security     SecurityConfig  `json:"security"`
 	WordPress    WordPressConfig `json:"wordpress"`
+	Seed         SeedConfig      `json:"seed"`
 }
 
 // ServerConfig holds HTTP server settings
@@ -37,10 +41,10 @@ type WatcherConfig struct {
 
 // BackupConfig holds backup settings
 type BackupConfig struct {
-	Location             string `json:"location"`
-	AutoBackupOnPublish  bool   `json:"autoBackupOnPublish"`
-	RetentionDays        int    `json:"retentionDays"`
-	MaxBackupsPerPlugin  int    `json:"maxBackupsPerPlugin"`
+	Location            string `json:"location"`
+	AutoBackupOnPublish bool   `json:"autoBackupOnPublish"`
+	RetentionDays       int    `json:"retentionDays"`
+	MaxBackupsPerPlugin int    `json:"maxBackupsPerPlugin"`
 }
 
 // LoggingConfig holds logging settings
@@ -62,6 +66,32 @@ type SecurityConfig struct {
 type WordPressConfig struct {
 	TimeoutSeconds int `json:"timeoutSeconds"`
 	MaxRetries     int `json:"maxRetries"`
+}
+
+// SeedConfig holds seedable test data for quick setup
+type SeedConfig struct {
+	Enabled bool         `json:"enabled"`
+	Sites   []SeedSite   `json:"sites"`
+	Plugins []SeedPlugin `json:"plugins"`
+}
+
+// SeedSite represents a site to seed
+type SeedSite struct {
+	Name                string `json:"name"`
+	URL                 string `json:"url"`
+	Username            string `json:"username"`
+	ApplicationPassword string `json:"applicationPassword"` // Base64 encoded
+	Category            string `json:"category"`
+}
+
+// SeedPlugin represents a plugin to seed
+type SeedPlugin struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Category    string `json:"category"`
+	GitEnabled  bool   `json:"gitEnabled"`
+	AutoPublish bool   `json:"autoPublish"`
+	SiteNames   []string `json:"siteNames"` // Names of sites to link
 }
 
 // DefaultConfig returns the default configuration
@@ -99,6 +129,11 @@ func DefaultConfig() *Config {
 		WordPress: WordPressConfig{
 			TimeoutSeconds: 30,
 			MaxRetries:     3,
+		},
+		Seed: SeedConfig{
+			Enabled: false,
+			Sites:   []SeedSite{},
+			Plugins: []SeedPlugin{},
 		},
 	}
 }
@@ -158,18 +193,80 @@ func SeedIfNeeded(db *database.DB, cfg *Config) error {
 func seedFromConfig(db *database.DB, cfg *Config) error {
 	// Seed default settings
 	settings := map[string]interface{}{
-		"watcher.pollIntervalMs":      cfg.Watcher.PollIntervalMs,
-		"watcher.debounceMs":          cfg.Watcher.DebounceMs,
-		"backup.retentionDays":        cfg.Backup.RetentionDays,
-		"backup.maxBackupsPerPlugin":  cfg.Backup.MaxBackupsPerPlugin,
-		"backup.autoBackupOnPublish":  cfg.Backup.AutoBackupOnPublish,
-		"logging.level":               cfg.Logging.Level,
-		"logging.retentionDays":       cfg.Logging.RetentionDays,
+		"watcher.pollIntervalMs":     cfg.Watcher.PollIntervalMs,
+		"watcher.debounceMs":         cfg.Watcher.DebounceMs,
+		"backup.retentionDays":       cfg.Backup.RetentionDays,
+		"backup.maxBackupsPerPlugin": cfg.Backup.MaxBackupsPerPlugin,
+		"backup.autoBackupOnPublish": cfg.Backup.AutoBackupOnPublish,
+		"logging.level":              cfg.Logging.Level,
+		"logging.retentionDays":      cfg.Logging.RetentionDays,
 	}
 
 	for key, value := range settings {
 		if err := db.SetSettingIfNotExists(key, value); err != nil {
 			return err
+		}
+	}
+
+	// Seed sites and plugins if enabled
+	if cfg.Seed.Enabled {
+		if err := seedSitesAndPlugins(db, cfg); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// seedSitesAndPlugins seeds test sites and plugins from config
+func seedSitesAndPlugins(db *database.DB, cfg *Config) error {
+	// Build site name -> ID map for plugin mapping
+	siteNameToID := make(map[string]int64)
+
+	// Seed sites
+	for _, site := range cfg.Seed.Sites {
+		// Decode base64 password
+		passwordBytes, err := base64.StdEncoding.DecodeString(site.ApplicationPassword)
+		if err != nil {
+			// Try raw password if base64 decode fails
+			passwordBytes = []byte(site.ApplicationPassword)
+		}
+
+		// Check if site already exists by URL
+		existingID, err := db.GetSiteIDByURL(site.URL)
+		if err == nil && existingID > 0 {
+			siteNameToID[site.Name] = existingID
+			continue
+		}
+
+		// Insert site with encrypted password placeholder (encryption handled by service layer)
+		id, err := db.CreateSeedSite(site.Name, site.URL, site.Username, passwordBytes, site.Category)
+		if err != nil {
+			continue // Skip if insert fails (e.g., duplicate)
+		}
+		siteNameToID[site.Name] = id
+	}
+
+	// Seed plugins
+	for _, plugin := range cfg.Seed.Plugins {
+		// Check if plugin already exists by path
+		existingID, err := db.GetPluginIDByPath(plugin.Path)
+		if err == nil && existingID > 0 {
+			continue
+		}
+
+		// Insert plugin
+		pluginID, err := db.CreateSeedPlugin(plugin.Name, plugin.Path, plugin.Category, plugin.GitEnabled, plugin.AutoPublish)
+		if err != nil {
+			continue
+		}
+
+		// Create mappings for each linked site
+		for _, siteName := range plugin.SiteNames {
+			if siteID, ok := siteNameToID[siteName]; ok {
+				remoteSlug := strings.ToLower(strings.ReplaceAll(plugin.Name, " ", "-"))
+				_ = db.CreateSeedMapping(pluginID, siteID, remoteSlug)
+			}
 		}
 	}
 
@@ -185,6 +282,25 @@ func compareVersions(a, b string) int {
 	if b == "" {
 		return 1
 	}
-	// TODO: Implement proper semantic version comparison
+
+	partsA := strings.Split(a, ".")
+	partsB := strings.Split(b, ".")
+
+	for i := 0; i < 3; i++ {
+		var numA, numB int
+		if i < len(partsA) {
+			numA, _ = strconv.Atoi(partsA[i])
+		}
+		if i < len(partsB) {
+			numB, _ = strconv.Atoi(partsB[i])
+		}
+		if numA > numB {
+			return 1
+		}
+		if numA < numB {
+			return -1
+		}
+	}
+
 	return 0
 }

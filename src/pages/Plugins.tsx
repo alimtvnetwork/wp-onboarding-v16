@@ -90,6 +90,7 @@ export default function Plugins() {
   // Bulk selection state
   const [selectedPluginIds, setSelectedPluginIds] = useState<Set<number>>(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [isBulkDeploying, setIsBulkDeploying] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const handleAddPlugin = async (forceCreate = false) => {
@@ -459,6 +460,40 @@ export default function Plugins() {
     }
   };
 
+  const handleBulkDeploy = async () => {
+    setIsBulkDeploying(true);
+    toast.info("Deploying selected plugins to all mapped sites...");
+    try {
+      const ids = Array.from(selectedPluginIds);
+      let successCount = 0;
+      let totalPublished = 0;
+      
+      for (const id of ids) {
+        const plugin = plugins?.find((p) => p.id === id);
+        if (plugin?.mappings && plugin.mappings.length > 0) {
+          for (const mapping of plugin.mappings) {
+            const response = await api.publishPlugin(id, mapping.siteId, {
+              mode: "full",
+              createBackup: true,
+            });
+            if (response.success) {
+              totalPublished += response.data?.filesUpdated || 0;
+              successCount++;
+            }
+          }
+        }
+      }
+      
+      toast.success(`Deployed to ${successCount} sites (${totalPublished} files updated)`);
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      clearSelection();
+    } catch (error) {
+      toast.error("Failed to deploy plugins");
+    } finally {
+      setIsBulkDeploying(false);
+    }
+  };
+
   const openMappingDialog = (plugin: Plugin) => {
     setSelectedPlugin(plugin);
     setSelectedSites(plugin.mappings?.map((m) => m.siteId) || []);
@@ -568,7 +603,9 @@ export default function Plugins() {
         onSyncAll={handleBulkSync}
         onGitPullAll={handleBulkGitPull}
         onDeleteAll={() => setShowBulkDeleteConfirm(true)}
+        onDeployAll={handleBulkDeploy}
         isProcessing={isBulkProcessing}
+        isDeploying={isBulkDeploying}
       />
 
       {/* Plugin List */}

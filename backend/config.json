@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.9.0",
   "databasePath": "data/app.db",
   "tempDir": ".temp",
   "server": {
@@ -28,5 +28,43 @@
   "wordpress": {
     "timeoutSeconds": 30,
     "maxRetries": 3
+  },
+  "seed": {
+    "enabled": true,
+    "sites": [
+      {
+        "name": "Atto Property Demo",
+        "url": "https://demoat.attoproperty.com.au",
+        "username": "admin",
+        "applicationPassword": "RUtSTSBwUENNIGF1ZzkgRTRqOCBvM3JQIHNsOUE=",
+        "category": "Development"
+      }
+    ],
+    "plugins": [
+      {
+        "name": "Plugins Onboard",
+        "path": "D:\\wp-work\\riseup-asia\\wp-onboarding-v5\\plugins-onboard",
+        "category": "Development",
+        "gitEnabled": true,
+        "autoPublish": false,
+        "siteNames": ["Atto Property Demo"]
+      },
+      {
+        "name": "Category Generator",
+        "path": "D:\\wp-work\\riseup-asia\\category-forge\\wordpress-plugin\\category-generator",
+        "category": "Development",
+        "gitEnabled": true,
+        "autoPublish": false,
+        "siteNames": ["Atto Property Demo"]
+      },
+      {
+        "name": "Link Manager",
+        "path": "D:\\wp-work\\riseup-asia\\wp-link-manager\\link-manager",
+        "category": "Development",
+        "gitEnabled": true,
+        "autoPublish": false,
+        "siteNames": ["Atto Property Demo"]
+      }
+    ]
   }
 }

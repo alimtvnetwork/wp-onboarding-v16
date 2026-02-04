@@ -191,3 +191,90 @@ func (db *DB) DataDir() string {
 func (db *DB) Path() string {
 	return db.path
 }
+
+// GetSiteIDByURL returns the site ID for a given URL
+func (db *DB) GetSiteIDByURL(url string) (int64, error) {
+	var id int64
+	err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", url).Scan(&id)
+	return id, err
+}
+
+// GetPluginIDByPath returns the plugin ID for a given path
+func (db *DB) GetPluginIDByPath(path string) (int64, error) {
+	var id int64
+	err := db.QueryRow("SELECT Id FROM Plugins WHERE Path = ?", path).Scan(&id)
+	return id, err
+}
+
+// CreateSeedSite creates a site for seeding (password must be pre-encrypted by caller)
+func (db *DB) CreateSeedSite(name, url, username string, passwordEncrypted []byte, category string) (int64, error) {
+	result, err := db.Exec(`
+		INSERT INTO Sites (Name, Url, Username, PasswordEncrypted, Category, ConnectionStatus, CreatedAt, UpdatedAt)
+		VALUES (?, ?, ?, ?, ?, 'unknown', datetime('now'), datetime('now'))
+	`, name, url, username, passwordEncrypted, category)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+// CreateSeedPlugin creates a plugin for seeding
+func (db *DB) CreateSeedPlugin(name, path, category string, gitEnabled, autoPublish bool) (int64, error) {
+	gitEnabledInt := 0
+	if gitEnabled {
+		gitEnabledInt = 1
+	}
+	autoPublishInt := 0
+	if autoPublish {
+		autoPublishInt = 1
+	}
+
+	result, err := db.Exec(`
+		INSERT INTO Plugins (Name, Path, Category, WatchEnabled, AutoPublish, CreatedAt, UpdatedAt)
+		VALUES (?, ?, ?, 1, ?, datetime('now'), datetime('now'))
+	`, name, path, category, autoPublishInt)
+	if err != nil {
+		return 0, err
+	}
+
+	pluginID, _ := result.LastInsertId()
+
+	// Create git config if enabled
+	if gitEnabled {
+		_, _ = db.Exec(`
+			INSERT INTO PluginGitConfig (PluginId, GitEnabled, UpdatedAt)
+			VALUES (?, 1, datetime('now'))
+		`, pluginID)
+	}
+
+	return pluginID, nil
+}
+
+// CreateSeedMapping creates a plugin-site mapping for seeding
+func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string) error {
+	_, err := db.Exec(`
+		INSERT OR IGNORE INTO PluginMappings (PluginId, SiteId, RemoteSlug, CreatedAt, UpdatedAt)
+		VALUES (?, ?, ?, datetime('now'), datetime('now'))
+	`, pluginID, siteID, remoteSlug)
+	return err
+}
+
+// GetDbVersion returns the stored database version for changelog comparison
+func (db *DB) GetDbVersion() (string, error) {
+	var version string
+	err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = 'db.version'").Scan(&version)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return version, err
+}
+
+// SetDbVersion sets the database version
+func (db *DB) SetDbVersion(version string) error {
+	_, err := db.Exec(`
+		INSERT INTO AppConfig (Key, Value, UpdatedAt) 
+		VALUES ('db.version', ?, datetime('now'))
+		ON CONFLICT(Key) DO UPDATE SET Value = ?, UpdatedAt = datetime('now')
+	`, version, version)
+	return err
+}
