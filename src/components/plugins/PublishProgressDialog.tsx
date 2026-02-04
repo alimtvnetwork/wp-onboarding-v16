@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
-import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Settings2 } from "lucide-react";
+import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Settings2, ListChecks, Terminal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useErrorStore, BackendLogEntry } from "@/stores/errorStore";
 import { toast } from "sonner";
@@ -139,6 +141,7 @@ export function PublishProgressDialog({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filesUpdated, setFilesUpdated] = useState<number | null>(null);
   const [backendStackTrace, setBackendStackTrace] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("progress");
   
   // Live logs
   const [logs, setLogs] = useState<PublishLogEntry[]>([]);
@@ -166,6 +169,7 @@ export function PublishProgressDialog({
       setFilesUpdated(null);
       setBackendStackTrace(null);
       setLogs([]);
+      setActiveTab("progress");
     }
   }, [open]);
 
@@ -231,8 +235,8 @@ export function PublishProgressDialog({
 
     // Listen for log events specifically
     const unsubLog = wsClient.on(WS_EVENTS.LOG, (data: unknown) => {
-      const payload = data as { pluginId?: number; siteId?: number; log?: PublishLogEntry };
-      if (payload.pluginId === pluginId && payload.siteId === siteId && payload.log) {
+      const payload = data as { pluginId?: number; siteId?: number; operationType?: string; log?: PublishLogEntry };
+      if (payload.operationType === "publish" && payload.pluginId === pluginId && payload.siteId === siteId && payload.log) {
         setLogs(prev => [...prev, payload.log!]);
       }
     });
@@ -318,20 +322,20 @@ export function PublishProgressDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-primary" />
             {isComplete ? (isSuccess ? "Publish Complete" : "Publish Failed") : "Publishing..."}
           </DialogTitle>
-          <DialogDescription>
-            Deploying <strong>{pluginName}</strong> to <strong>{siteName}</strong>
+          <DialogDescription className="flex items-center gap-2 flex-wrap">
+            <span>Deploying <strong>{pluginName}</strong> to <strong>{siteName}</strong></span>
             {siteUrl && (
               <a 
                 href={siteUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="ml-2 text-primary hover:underline inline-flex items-center gap-1"
+                className="text-primary hover:underline inline-flex items-center gap-1"
               >
                 <ExternalLink className="h-3 w-3" />
                 Open Site
@@ -340,184 +344,214 @@ export function PublishProgressDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden space-y-4 py-4">
-          {/* Settings toggle - only show before completion */}
-          {!isComplete && (
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Settings2 className="h-4 w-4 text-muted-foreground" />
-                <Label htmlFor="upload-mode" className="text-sm">
-                  Upload Mode
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={cn("text-xs", !useFileByFile && "text-primary font-medium")}>ZIP</span>
-                <Switch
-                  id="upload-mode"
-                  checked={useFileByFile}
-                  onCheckedChange={(checked) => {
-                    setUseFileByFile(checked);
-                    // Save to settings
-                    const saved = localStorage.getItem("settings");
-                    const settings = saved ? JSON.parse(saved) : {};
-                    settings.uploadMode = checked ? "file-by-file" : "zip";
-                    localStorage.setItem("settings", JSON.stringify(settings));
-                    toast.success(`Upload mode: ${checked ? "File-by-file" : "ZIP"}`);
-                  }}
-                />
-                <span className={cn("text-xs", useFileByFile && "text-primary font-medium")}>File-by-file</span>
-              </div>
-            </div>
-          )}
+        {/* Tabbed content for better screen fit */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+            <TabsTrigger value="progress" className="gap-1">
+              <ListChecks className="h-3 w-3" />
+              Progress
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="gap-1">
+              <Terminal className="h-3 w-3" />
+              Logs
+              <Badge variant="secondary" className="ml-1 text-xs">{logs.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-1" disabled={isComplete}>
+              <Settings2 className="h-3 w-3" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Overall Progress */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Stage {Math.min(activeStageCount + 1, totalStages)} of {totalStages}
-              </span>
-              <span className="font-medium">{Math.round(overallProgress)}%</span>
-            </div>
-            <Progress value={overallProgress} className="h-2" />
-          </div>
-
-          {/* Stage List */}
-          <div className="space-y-2">
-            {stages.map((stage) => (
-              <div
-                key={stage.name}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                  stage.status === "running" && "border-primary bg-primary/5",
-                  stage.status === "success" && "border-primary/30 bg-primary/5",
-                  stage.status === "error" && "border-destructive bg-destructive/5",
-                  stage.status === "pending" && "border-border opacity-60"
-                )}
-              >
-                {getStageIcon(stage)}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{stage.label}</p>
-                  {stage.message && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {stage.message}
-                    </p>
-                  )}
+          {/* Progress Tab */}
+          <TabsContent value="progress" className="flex-1 overflow-hidden mt-4">
+            <ScrollArea className="h-full pr-4">
+              <div className="space-y-4">
+                {/* Overall Progress */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Stage {Math.min(activeStageCount + 1, totalStages)} of {totalStages}
+                    </span>
+                    <span className="font-medium">{Math.round(overallProgress)}%</span>
+                  </div>
+                  <Progress value={overallProgress} className="h-2" />
                 </div>
-                {stage.status === "success" && (
-                  <Badge variant="outline" className="text-xs text-primary border-primary/30">
-                    Done
-                  </Badge>
+
+                {/* Stage List */}
+                <div className="space-y-2">
+                  {stages.map((stage) => (
+                    <div
+                      key={stage.name}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                        stage.status === "running" && "border-primary bg-primary/5",
+                        stage.status === "success" && "border-primary/30 bg-primary/5",
+                        stage.status === "error" && "border-destructive bg-destructive/5",
+                        stage.status === "pending" && "border-border opacity-60"
+                      )}
+                    >
+                      {getStageIcon(stage)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{stage.label}</p>
+                        {stage.message && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {stage.message}
+                          </p>
+                        )}
+                      </div>
+                      {stage.status === "success" && (
+                        <Badge variant="outline" className="text-xs text-primary border-primary/30">
+                          Done
+                        </Badge>
+                      )}
+                      {stage.status === "error" && (
+                        <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
+                          Failed
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Success Message */}
+                {isComplete && isSuccess && filesUpdated !== null && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+                    <div className="flex items-center gap-2">
+                      <Check className="h-5 w-5 text-primary" />
+                      <span className="font-medium">
+                        Successfully published {filesUpdated} files
+                      </span>
+                    </div>
+                    {siteUrl && (
+                      <a 
+                        href={siteUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Open {siteName}
+                      </a>
+                    )}
+                  </div>
                 )}
-                {stage.status === "error" && (
-                  <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
-                    Failed
-                  </Badge>
+
+                {/* Error Message */}
+                {isComplete && !isSuccess && errorMessage && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-destructive">Publish Failed</p>
+                        <p className="text-sm text-muted-foreground mt-1 break-words">{errorMessage}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 pt-2 border-t border-destructive/20">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                        onClick={() => {
+                          const report = buildErrorReport(pluginName, siteName, pluginId, siteId, errorMessage, stages, logs);
+                          navigator.clipboard.writeText(report);
+                          toast.success("Error report copied to clipboard");
+                        }}
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copy Error
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs text-destructive hover:text-destructive"
+                        onClick={() => {
+                          const failedStage = stages.find(s => s.status === "error");
+                          const captured = captureError(
+                            {
+                              code: "E9001",
+                              message: errorMessage,
+                              details: `Failed during stage: ${failedStage?.label || "Unknown"}`,
+                              timestamp: new Date().toISOString(),
+                            },
+                            {
+                              endpoint: `/plugins/${pluginId}/sites/${siteId}/publish`,
+                              method: "POST",
+                              context: {
+                                source: "PublishProgressDialog.onComplete",
+                                triggerComponent: "PublishProgressDialog",
+                                triggerAction: "publish_failed",
+                                pluginId,
+                                pluginName,
+                                siteId,
+                                siteName,
+                                failedStage: failedStage?.name,
+                                stageStatuses: stages.map(s => ({ name: s.name, status: s.status, message: s.message })),
+                              },
+                              backendLogs,
+                              backendStackTrace: backendStackTrace || undefined,
+                              siteUrl,
+                            }
+                          );
+                          openErrorModal(captured);
+                        }}
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
-            ))}
-          </div>
+            </ScrollArea>
+          </TabsContent>
 
-          {/* Live Logs Section - using reusable LogViewer */}
-          <LogViewer
-            logs={logs}
-            title="Live Logs"
-            height="h-32"
-            emptyMessage="Waiting for logs..."
-          />
+          {/* Logs Tab */}
+          <TabsContent value="logs" className="flex-1 overflow-hidden mt-4">
+            <LogViewer
+              logs={logs}
+              title="Execution Logs"
+              height="h-[300px]"
+              showToggle={false}
+              emptyMessage="Waiting for publish to start..."
+              className="h-full"
+            />
+          </TabsContent>
 
-          {/* Success Message */}
-          {isComplete && isSuccess && filesUpdated !== null && (
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-              <div className="flex items-center gap-2">
-                <Check className="h-5 w-5 text-primary" />
-                <span className="font-medium">
-                  Successfully published {filesUpdated} files
-                </span>
-              </div>
-              {siteUrl && (
-                <a 
-                  href={siteUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                  Open {siteName}
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* Error Message with Copy and View Details */}
-          {isComplete && !isSuccess && errorMessage && (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-3">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-destructive">Publish Failed</p>
-                  <p className="text-sm text-muted-foreground mt-1 break-words">{errorMessage}</p>
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="flex-1 overflow-hidden mt-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <Label htmlFor="upload-mode" className="text-sm font-medium">
+                    Upload Mode
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ZIP uploads the entire plugin as one file. File-by-file uploads changed files individually.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={cn("text-xs", !useFileByFile && "text-primary font-medium")}>ZIP</span>
+                  <Switch
+                    id="upload-mode"
+                    checked={useFileByFile}
+                    onCheckedChange={(checked) => {
+                      setUseFileByFile(checked);
+                      const saved = localStorage.getItem("settings");
+                      const settings = saved ? JSON.parse(saved) : {};
+                      settings.uploadMode = checked ? "file-by-file" : "zip";
+                      localStorage.setItem("settings", JSON.stringify(settings));
+                      toast.success(`Upload mode: ${checked ? "File-by-file" : "ZIP"}`);
+                    }}
+                  />
+                  <span className={cn("text-xs", useFileByFile && "text-primary font-medium")}>File-by-file</span>
                 </div>
               </div>
-              
-              {/* Action buttons for error */}
-              <div className="flex gap-2 pt-2 border-t border-destructive/20">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => {
-                    const report = buildErrorReport(pluginName, siteName, pluginId, siteId, errorMessage, stages, logs);
-                    navigator.clipboard.writeText(report);
-                    toast.success("Error report copied to clipboard");
-                  }}
-                >
-                  <Copy className="h-3 w-3 mr-1" />
-                  Copy Error
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs text-destructive hover:text-destructive"
-                  onClick={() => {
-                    const failedStage = stages.find(s => s.status === "error");
-                    const captured = captureError(
-                      {
-                        code: "E9001",
-                        message: errorMessage,
-                        details: `Failed during stage: ${failedStage?.label || "Unknown"}`,
-                        timestamp: new Date().toISOString(),
-                      },
-                      {
-                        endpoint: `/plugins/${pluginId}/sites/${siteId}/publish`,
-                        method: "POST",
-                        context: {
-                          source: "PublishProgressDialog.onComplete",
-                          triggerComponent: "PublishProgressDialog",
-                          triggerAction: "publish_failed",
-                          pluginId,
-                          pluginName,
-                          siteId,
-                          siteName,
-                          failedStage: failedStage?.name,
-                          stageStatuses: stages.map(s => ({ name: s.name, status: s.status, message: s.message })),
-                        },
-                        backendLogs,
-                        backendStackTrace: backendStackTrace || undefined,
-                        siteUrl,
-                      }
-                    );
-                    openErrorModal(captured);
-                  }}
-                >
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  View Full Details
-                </Button>
-              </div>
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4 border-t">
           <Button
             variant={isComplete ? "default" : "outline"}
             onClick={() => onOpenChange(false)}
