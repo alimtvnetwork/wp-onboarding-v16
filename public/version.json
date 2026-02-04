@@ -22,6 +22,14 @@
       "date": "2026-02-04",
       "title": "Robust Site Mappings & Publish Fixes",
       "changes": [
+        "🔗 New PUT /sites/{id}/mappings endpoint for atomic site→plugin mapping updates",
+        "📦 Upload Mode setting now controls publish mode (file→selected, zip→full)",
+        "📡 Fixed WebSocket publish events to match frontend progress dialog shape",
+        "🔌 Edit Site dialog now uses robust single-call mapping update",
+        "🔄 Seeded plugins still map to ALL seeded sites on startup"
+      ]
+    },
+    {
       "version": "1.12.1",
       "date": "2026-02-04",
       "title": "Mapping & Publish Mode Fixes",
