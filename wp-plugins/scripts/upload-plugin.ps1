@@ -1,6 +1,6 @@
 # WordPress Plugin Uploader - Pure PowerShell
 # Supports both config file and direct command-line parameters
-# Uses custom Plugin Uploader Helper endpoint for reliable uploads
+# Uses Riseup Asia Uploader API endpoint for reliable uploads
 
 param(
     [Parameter(Mandatory=$false)]
@@ -148,7 +148,7 @@ if ($PluginFolderPath -eq "" -or $WordPressSiteURL -eq "" -or $Username -eq "" -
 Write-Status ""
 Write-Status "========================================" -Color Cyan
 Write-Status "  WordPress Plugin Uploader" -Color Cyan
-Write-Status "  Using Plugin Uploader Helper API" -Color Cyan
+Write-Status "  Using Riseup Asia Uploader API" -Color Cyan
 Write-Status "========================================" -Color Cyan
 Write-Status ""
 
@@ -205,24 +205,37 @@ try {
 $CleanAppPassword = $AppPassword -replace '\s', ''
 $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Username}:${CleanAppPassword}"))
 
-# Step 3: Check if Plugin Uploader Helper is installed
+# Step 3: Check if Riseup Asia Uploader is installed
 Write-Status ""
-Write-Status "[3/5] Checking Plugin Uploader Helper..." -Color Yellow
+Write-Status "[3/5] Checking Riseup Asia Uploader..." -Color Yellow
 
-$statusUrl = "$WordPressSiteURL/wp-json/plugin-uploader/v1/status"
+# Try the new API namespace first, then fall back to legacy
+$apiNamespaces = @(
+    @{ name = "riseup-asia-uploader/v1"; display = "Riseup Asia Uploader" },
+    @{ name = "riseup-uploader/v1"; display = "Riseup Uploader (Legacy)" }
+)
+
+$activeNamespace = $null
 $headers = @{
     "Authorization" = "Basic $base64Auth"
 }
 
-$helperInstalled = $false
-try {
-    $statusResponse = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
-    if ($statusResponse.status -eq "ok") {
-        Write-Status "      Plugin Uploader Helper is active! (v$($statusResponse.version))" -Color Green
-        $helperInstalled = $true
+foreach ($ns in $apiNamespaces) {
+    $statusUrl = "$WordPressSiteURL/wp-json/$($ns.name)/status"
+    try {
+        $statusResponse = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
+        if ($statusResponse.success -eq $true) {
+            Write-Status "      $($ns.display) is active! (v$($statusResponse.version))" -Color Green
+            $activeNamespace = $ns.name
+            break
+        }
+    } catch {
+        # Try next namespace
     }
-} catch {
-    Write-Status "      Plugin Uploader Helper not found." -Color Yellow
+}
+
+if (-not $activeNamespace) {
+    Write-Status "      Riseup Asia Uploader not found." -Color Yellow
     Write-Status "      Attempting fallback to standard WordPress REST API..." -Color Yellow
 }
 
@@ -234,17 +247,18 @@ Write-Status "      User: $Username" -Color Gray
 
 $fileName = Split-Path $OutputZipPath -Leaf
 
-if ($helperInstalled) {
-    # Use Plugin Uploader Helper (Base64 method - most reliable)
-    $uploadUrl = "$WordPressSiteURL/wp-json/plugin-uploader/v1/upload"
+if ($activeNamespace) {
+    # Use Riseup Asia Uploader (Base64 method - most reliable)
+    $uploadUrl = "$WordPressSiteURL/wp-json/$activeNamespace/upload"
     
     try {
         $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
         $base64Data = [Convert]::ToBase64String($fileBytes)
         
+        # Use the correct field names for the new API
         $uploadBody = @{
-            plugin_name = $fileName
-            plugin_data = $base64Data
+            plugin_zip = $base64Data
+            slug = $PluginSlug
             activate = $ActivateAfterInstall
         } | ConvertTo-Json
         
@@ -253,7 +267,7 @@ if ($helperInstalled) {
             "Content-Type" = "application/json"
         }
         
-        Write-Status "      Uploading via Plugin Uploader Helper..." -Color Gray
+        Write-Status "      Uploading via Riseup Asia Uploader..." -Color Gray
         $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
         
         Write-Status "      Success! Plugin installed." -Color Green
@@ -267,11 +281,11 @@ if ($helperInstalled) {
         Write-Status "========================================" -Color Green
         Write-Status ""
         Write-Status "Plugin Details:" -Color Cyan
-        Write-Status "  - Plugin: $($response.plugin)" -Color White
+        Write-Status "  - Plugin Slug: $($response.plugin_slug)" -Color White
+        Write-Status "  - Is Update: $($response.is_update)" -Color White
         Write-Status "  - Activated: $($response.activated)" -Color White
-        if ($response.plugin_details) {
-            Write-Status "  - Name: $($response.plugin_details.name)" -Color White
-            Write-Status "  - Version: $($response.plugin_details.version)" -Color White
+        if ($response.activation_error) {
+            Write-Status "  - Activation Error: $($response.activation_error)" -Color Yellow
         }
         Write-Status ""
         
@@ -279,9 +293,10 @@ if ($helperInstalled) {
         if ($Quiet) {
             $result = @{
                 success = $true
-                plugin = $response.plugin
+                plugin = $response.plugin_slug
                 activated = $response.activated
-                message = $response.message
+                is_update = $response.is_update
+                message = "Plugin installed successfully"
             }
             Write-Output ($result | ConvertTo-Json -Compress)
         }
@@ -415,8 +430,8 @@ if ($helperInstalled) {
         Write-Host "Status: $statusCode" -ForegroundColor Red
         Write-Host "Error: $errorMessage" -ForegroundColor Red
         Write-Host ""
-        Write-Host "Please install the Plugin Uploader Helper for reliable uploads:" -ForegroundColor Yellow
-        Write-Host "  1. Copy 'plugin-uploader-helper' folder to wp-content/plugins/" -ForegroundColor White
+        Write-Host "Please install the Riseup Asia Uploader for reliable uploads:" -ForegroundColor Yellow
+        Write-Host "  1. Copy 'riseup-asia-uploader' folder to wp-content/plugins/" -ForegroundColor White
         Write-Host "  2. Activate in WordPress Admin" -ForegroundColor White
         Write-Host "  3. Run this script again" -ForegroundColor White
         Write-Host ""
