@@ -91,9 +91,9 @@ func (c *Client) request(method, endpoint string, body interface{}) (*http.Respo
 
 	// Add Application Password authentication
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set("Authorization", "Basic "+auth)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderContentType, ContentTypeJSON)
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
 
 	return c.httpClient.Do(req)
 }

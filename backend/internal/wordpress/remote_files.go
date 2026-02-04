@@ -15,9 +15,7 @@ import (
 	"time"
 )
 
-// OnboardNamespace is the REST API namespace for the companion plugin.
-// This matches ONBOARD_API_NAMESPACE/ONBOARD_API_VERSION in plugins-onboard/includes/constants.php
-const OnboardNamespace = "onboard-plugin/v1"
+// Note: OnboardNamespace is defined in constants.go
 
 // RemoteFile represents a file in a remote WordPress plugin
 type RemoteFile struct {
@@ -177,9 +175,9 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 
 	// Auth header
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set("Authorization", "Basic "+auth)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderContentType, writer.FormDataContentType())
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
