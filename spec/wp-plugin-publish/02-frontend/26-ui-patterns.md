@@ -301,6 +301,7 @@ If an API call returns **HTML instead of JSON**, this surfaces as error code `E9
 ### Error Modal Content
 
 The modal MUST display:
+0. **App name + version** — e.g. `WP Plugin Publish v1.1.0` (from `public/version.json`)
 1. **Resolved request URL** — The actual URL the frontend called
 2. **Configured API base** — What `resolveApiBase()` returned
 3. **VITE_API_URL value** — Whether the env var was set

@@ -7,14 +7,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useVersionInfo } from "@/hooks/useWhatsNew";
 
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal } = useErrorStore();
+  const { data: versionInfo } = useVersionInfo();
+  const appName = versionInfo?.appName || "WP Plugin Publish";
+  const appVersion = versionInfo?.version || "0.0.0";
   
   if (!selectedError) return null;
 
   const copyFullError = () => {
-    const text = generateErrorReport(selectedError);
+    const text = generateErrorReport(selectedError, { appName, appVersion });
     navigator.clipboard.writeText(text);
     toast.success("Full error report copied to clipboard");
   };
@@ -56,7 +60,13 @@ export function GlobalErrorModal() {
                 </Badge>
               </DialogTitle>
               <DialogDescription>
-                {new Date(selectedError.createdAt).toLocaleString()}
+                <span>
+                  {new Date(selectedError.createdAt).toLocaleString()}
+                </span>
+                <span className="mx-2">•</span>
+                <span className="font-mono">
+                  {appName} v{appVersion}
+                </span>
               </DialogDescription>
             </div>
           </div>
@@ -282,8 +292,13 @@ export function GlobalErrorModal() {
   );
 }
 
-function generateErrorReport(error: CapturedError): string {
+function generateErrorReport(
+  error: CapturedError,
+  app?: { appName: string; appVersion: string }
+): string {
   return `## Error Report
+
+**App:** ${app?.appName || "WP Plugin Publish"} v${app?.appVersion || "0.0.0"}
 
 **ID:** ${error.id}
 **Code:** ${error.code}
