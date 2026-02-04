@@ -1,11 +1,11 @@
 <?php
 /**
- * Rise Up Uploader - Database Handler
+ * Rise Up Asia - Database Handler
  *
- * SQLite database for transaction logging with PDO.
+ * SQLite database for transaction logging using the micro-ORM.
  *
- * @package RiseUpUploader
- * @since   1.2.0
+ * @package RiseUpAsia
+ * @since   1.3.0
  */
 
 if (!defined('ABSPATH')) {
@@ -100,10 +100,13 @@ class RiseUp_Database {
             // Enable auto-vacuum.
             $this->pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');
 
+            // Configure the ORM with our PDO instance.
+            RiseUp_ORM::configure($this->pdo);
+
             // Create tables.
             $this->create_tables();
         } catch (PDOException $e) {
-            error_log('[RiseUp Uploader] Database initialization failed: ' . $e->getMessage());
+            error_log(RISEUP_LOG_PREFIX . ' Database initialization failed: ' . $e->getMessage());
         }
     }
 
@@ -147,7 +150,7 @@ class RiseUp_Database {
     }
 
     /**
-     * Log a transaction.
+     * Log a transaction using ORM.
      *
      * @param string      $action      Action type (use RISEUP_ACTION_* constants).
      * @param string|null $plugin_slug Plugin slug (for plugin operations).
@@ -177,33 +180,27 @@ class RiseUp_Database {
         }
 
         try {
-            $sql = "INSERT INTO " . RISEUP_TABLE_TRANSACTIONS . " 
-                    (action, plugin_slug, post_id, user_login, user_id, ip_address, details, status, error_msg, created_at)
-                    VALUES (:action, :plugin_slug, :post_id, :user_login, :user_id, :ip_address, :details, :status, :error_msg, :created_at)";
-
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(array(
-                ':action'      => $action,
-                ':plugin_slug' => $plugin_slug,
-                ':post_id'     => $post_id,
-                ':user_login'  => $user_login,
-                ':user_id'     => $user_id,
-                ':ip_address'  => $ip_address,
-                ':details'     => !empty($details) ? json_encode($details) : null,
-                ':status'      => $status,
-                ':error_msg'   => $error_msg,
-                ':created_at'  => gmdate('Y-m-d\TH:i:s\Z'),
-            ));
-
-            return $this->pdo->lastInsertId();
-        } catch (PDOException $e) {
-            error_log('[RiseUp Uploader] Failed to log transaction: ' . $e->getMessage());
+            return RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+                ->create()
+                ->set('action', $action)
+                ->set('plugin_slug', $plugin_slug)
+                ->set('post_id', $post_id)
+                ->set('user_login', $user_login)
+                ->set('user_id', $user_id)
+                ->set('ip_address', $ip_address)
+                ->set('details', !empty($details) ? json_encode($details) : null)
+                ->set('status', $status)
+                ->set('error_msg', $error_msg)
+                ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'))
+                ->save();
+        } catch (Exception $e) {
+            error_log(RISEUP_LOG_PREFIX . ' Failed to log transaction: ' . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Query transactions with filtering and pagination.
+     * Query transactions with filtering and pagination using ORM.
      *
      * @param array $filters Filters: plugin, action, user, status, from, to.
      * @param int   $limit   Number of records to return.
@@ -220,74 +217,24 @@ class RiseUp_Database {
         $limit = min(max(1, (int) $limit), RISEUP_MAX_LIMIT);
         $offset = max(0, (int) $offset);
 
-        $where_clauses = array();
-        $params = array();
-
-        // Filter by plugin.
-        if (!empty($filters['plugin'])) {
-            $where_clauses[] = 'plugin_slug = :plugin';
-            $params[':plugin'] = $filters['plugin'];
-        }
-
-        // Filter by action (supports comma-separated list).
-        if (!empty($filters['action'])) {
-            $actions = array_map('trim', explode(',', $filters['action']));
-            $action_placeholders = array();
-            foreach ($actions as $i => $action) {
-                $key = ':action' . $i;
-                $action_placeholders[] = $key;
-                $params[$key] = $action;
-            }
-            $where_clauses[] = 'action IN (' . implode(',', $action_placeholders) . ')';
-        }
-
-        // Filter by user.
-        if (!empty($filters['user'])) {
-            $where_clauses[] = 'user_login = :user';
-            $params[':user'] = $filters['user'];
-        }
-
-        // Filter by status.
-        if (!empty($filters['status'])) {
-            $where_clauses[] = 'status = :status';
-            $params[':status'] = $filters['status'];
-        }
-
-        // Filter by date range.
-        if (!empty($filters['from'])) {
-            $where_clauses[] = 'created_at >= :from';
-            $params[':from'] = $filters['from'] . 'T00:00:00Z';
-        }
-        if (!empty($filters['to'])) {
-            $where_clauses[] = 'created_at <= :to';
-            $params[':to'] = $filters['to'] . 'T23:59:59Z';
-        }
-
-        $where_sql = !empty($where_clauses) ? 'WHERE ' . implode(' AND ', $where_clauses) : '';
-
         try {
-            // Get total count.
-            $count_sql = "SELECT COUNT(*) as total FROM " . RISEUP_TABLE_TRANSACTIONS . " " . $where_sql;
-            $count_stmt = $this->pdo->prepare($count_sql);
-            $count_stmt->execute($params);
-            $total = (int) $count_stmt->fetch()['total'];
+            // Build count query
+            $count_query = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
+            $data_query = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
 
-            // Get paginated results.
-            $sql = "SELECT id, action, plugin_slug, post_id, user_login, user_id, ip_address, details, status, error_msg, created_at
-                    FROM " . RISEUP_TABLE_TRANSACTIONS . " 
-                    " . $where_sql . "
-                    ORDER BY created_at DESC
-                    LIMIT :limit OFFSET :offset";
+            // Apply filters to both queries
+            $this->apply_filters($count_query, $filters);
+            $this->apply_filters($data_query, $filters);
 
-            $stmt = $this->pdo->prepare($sql);
-            foreach ($params as $key => $value) {
-                $stmt->bindValue($key, $value);
-            }
-            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $stmt->execute();
+            // Get total count
+            $total = $count_query->count();
 
-            $logs = $stmt->fetchAll();
+            // Get paginated results
+            $logs = $data_query
+                ->order_by_desc('created_at')
+                ->limit($limit)
+                ->offset($offset)
+                ->find_many();
 
             // Decode JSON details.
             foreach ($logs as &$log) {
@@ -300,14 +247,57 @@ class RiseUp_Database {
                 'total' => $total,
                 'logs'  => $logs,
             );
-        } catch (PDOException $e) {
-            error_log('[RiseUp Uploader] Failed to query transactions: ' . $e->getMessage());
+        } catch (Exception $e) {
+            error_log(RISEUP_LOG_PREFIX . ' Failed to query transactions: ' . $e->getMessage());
             return array('total' => 0, 'logs' => array());
         }
     }
 
     /**
-     * Get transaction by ID.
+     * Apply filters to an ORM query.
+     *
+     * @param RiseUp_ORM $query   ORM query instance.
+     * @param array      $filters Filters to apply.
+     *
+     * @return void
+     */
+    private function apply_filters($query, $filters) {
+        // Filter by plugin.
+        if (!empty($filters['plugin'])) {
+            $query->where('plugin_slug', $filters['plugin']);
+        }
+
+        // Filter by action (supports comma-separated list).
+        if (!empty($filters['action'])) {
+            $actions = array_map('trim', explode(',', $filters['action']));
+            if (count($actions) === 1) {
+                $query->where('action', $actions[0]);
+            } else {
+                $query->where_in('action', $actions);
+            }
+        }
+
+        // Filter by user.
+        if (!empty($filters['user'])) {
+            $query->where('user_login', $filters['user']);
+        }
+
+        // Filter by status.
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        // Filter by date range.
+        if (!empty($filters['from'])) {
+            $query->where_gte('created_at', $filters['from'] . 'T00:00:00Z');
+        }
+        if (!empty($filters['to'])) {
+            $query->where_lte('created_at', $filters['to'] . 'T23:59:59Z');
+        }
+    }
+
+    /**
+     * Get transaction by ID using ORM.
      *
      * @param int $id Transaction ID.
      *
@@ -319,24 +309,22 @@ class RiseUp_Database {
         }
 
         try {
-            $sql = "SELECT * FROM " . RISEUP_TABLE_TRANSACTIONS . " WHERE id = :id";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(array(':id' => (int) $id));
-            $log = $stmt->fetch();
+            $log = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+                ->find_one((int) $id);
 
             if ($log && !empty($log['details'])) {
                 $log['details'] = json_decode($log['details'], true);
             }
 
-            return $log ?: null;
-        } catch (PDOException $e) {
-            error_log('[RiseUp Uploader] Failed to get transaction: ' . $e->getMessage());
+            return $log;
+        } catch (Exception $e) {
+            error_log(RISEUP_LOG_PREFIX . ' Failed to get transaction: ' . $e->getMessage());
             return null;
         }
     }
 
     /**
-     * Get statistics summary.
+     * Get statistics summary using ORM.
      *
      * @return array Statistics.
      */
@@ -349,38 +337,41 @@ class RiseUp_Database {
             $stats = array();
 
             // Total transactions.
-            $stmt = $this->pdo->query("SELECT COUNT(*) as total FROM " . RISEUP_TABLE_TRANSACTIONS);
-            $stats['total_transactions'] = (int) $stmt->fetch()['total'];
+            $stats['total_transactions'] = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)->count();
 
             // Transactions by action.
-            $stmt = $this->pdo->query("SELECT action, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY action");
+            $by_action = RiseUp_ORM::raw_execute(
+                "SELECT action, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY action"
+            );
             $stats['by_action'] = array();
-            while ($row = $stmt->fetch()) {
+            foreach ($by_action as $row) {
                 $stats['by_action'][$row['action']] = (int) $row['count'];
             }
 
             // Transactions by status.
-            $stmt = $this->pdo->query("SELECT status, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY status");
+            $by_status = RiseUp_ORM::raw_execute(
+                "SELECT status, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY status"
+            );
             $stats['by_status'] = array();
-            while ($row = $stmt->fetch()) {
+            foreach ($by_status as $row) {
                 $stats['by_status'][$row['status']] = (int) $row['count'];
             }
 
             // Last 24 hours.
             $yesterday = gmdate('Y-m-d\TH:i:s\Z', time() - 86400);
-            $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " WHERE created_at >= :yesterday");
-            $stmt->execute(array(':yesterday' => $yesterday));
-            $stats['last_24h'] = (int) $stmt->fetch()['count'];
+            $stats['last_24h'] = RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+                ->where_gte('created_at', $yesterday)
+                ->count();
 
             return $stats;
-        } catch (PDOException $e) {
-            error_log('[RiseUp Uploader] Failed to get stats: ' . $e->getMessage());
+        } catch (Exception $e) {
+            error_log(RISEUP_LOG_PREFIX . ' Failed to get stats: ' . $e->getMessage());
             return array();
         }
     }
 
     /**
-     * Cleanup old transactions.
+     * Cleanup old transactions using ORM.
      *
      * @param int $days_to_keep Number of days to keep.
      *
@@ -393,11 +384,12 @@ class RiseUp_Database {
 
         try {
             $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($days_to_keep * 86400));
-            $stmt = $this->pdo->prepare("DELETE FROM " . RISEUP_TABLE_TRANSACTIONS . " WHERE created_at < :cutoff");
-            $stmt->execute(array(':cutoff' => $cutoff));
-            return $stmt->rowCount();
-        } catch (PDOException $e) {
-            error_log('[RiseUp Uploader] Failed to cleanup transactions: ' . $e->getMessage());
+            
+            return RiseUp_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+                ->where_lt('created_at', $cutoff)
+                ->delete();
+        } catch (Exception $e) {
+            error_log(RISEUP_LOG_PREFIX . ' Failed to cleanup transactions: ' . $e->getMessage());
             return 0;
         }
     }

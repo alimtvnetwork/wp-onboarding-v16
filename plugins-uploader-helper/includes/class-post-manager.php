@@ -1,11 +1,11 @@
 <?php
 /**
- * Rise Up Uploader - Post Manager
+ * Rise Up Asia - Post Manager
  *
  * Handles blog post and category creation.
  *
- * @package RiseUpUploader
- * @since   1.2.0
+ * @package RiseUpAsia
+ * @since   1.3.0
  */
 
 if (!defined('ABSPATH')) {

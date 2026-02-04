@@ -5,13 +5,16 @@ package wordpress
 // =============================================================================
 
 const (
-	// RiseUpUploaderNamespace is the REST API namespace for the Rise Up Uploader plugin.
+	// RiseUpAsiaNamespace is the REST API namespace for the Rise Up Asia plugin.
+	RiseUpAsiaNamespace = "riseup-asia/v1"
+
+	// RiseUpUploaderNamespace is the legacy namespace (kept for backward compatibility).
 	RiseUpUploaderNamespace = "riseup-uploader/v1"
 
 	// OnboardNamespace is the legacy REST API namespace for the Onboard plugin.
 	OnboardNamespace = "onboard-plugin/v1"
 
-	// PluginUploaderNamespace is deprecated, use RiseUpUploaderNamespace.
+	// PluginUploaderNamespace is deprecated, use RiseUpAsiaNamespace.
 	// Kept for backward compatibility.
 	PluginUploaderNamespace = "plugin-uploader/v1"
 )
@@ -26,6 +29,9 @@ const (
 
 	// EndpointUpload handles Base64 ZIP plugin uploads.
 	EndpointUpload = "/upload"
+
+	// EndpointUploadActive uploads and activates a plugin in one call.
+	EndpointUploadActive = "/upload-active"
 
 	// EndpointPlugins lists all installed plugins.
 	EndpointPlugins = "/plugins"
@@ -45,6 +51,9 @@ const (
 	// EndpointFiles handles file operations (format: /plugins/%s/files).
 	EndpointFiles = "/plugins/%s/files"
 
+	// EndpointSync handles delta file sync (format: /plugins/%s/sync).
+	EndpointSync = "/plugins/%s/sync"
+
 	// EndpointLogs queries transaction logs.
 	EndpointLogs = "/logs"
 
@@ -59,6 +68,12 @@ const (
 
 	// EndpointCategories handles category operations.
 	EndpointCategories = "/categories"
+
+	// EndpointMedia handles media library uploads.
+	EndpointMedia = "/media"
+
+	// EndpointExportSelf exports the Rise Up Asia plugin as a ZIP.
+	EndpointExportSelf = "/export-self"
 )
 
 // =============================================================================
@@ -68,6 +83,9 @@ const (
 const (
 	// ActionUpload represents a plugin upload action.
 	ActionUpload = "upload"
+
+	// ActionUploadActive represents upload + activate action.
+	ActionUploadActive = "upload_active"
 
 	// ActionEnable represents a plugin activation action.
 	ActionEnable = "enable"
@@ -84,6 +102,9 @@ const (
 	// ActionFileDelete represents a single file deletion action.
 	ActionFileDelete = "file_delete"
 
+	// ActionSync represents a delta file sync action.
+	ActionSync = "sync"
+
 	// ActionPostCreate represents a blog post creation action.
 	ActionPostCreate = "post_create"
 
@@ -93,8 +114,14 @@ const (
 	// ActionCategoryCreate represents a category creation action.
 	ActionCategoryCreate = "category_create"
 
+	// ActionMediaUpload represents a media library upload action.
+	ActionMediaUpload = "media_upload"
+
 	// ActionAuthFailed represents an authentication failure.
 	ActionAuthFailed = "auth_failed"
+
+	// ActionExportSelf represents exporting the plugin itself.
+	ActionExportSelf = "export_self"
 )
 
 // =============================================================================
@@ -179,6 +206,9 @@ const (
 
 	// ErrMsgInvalidRequest is returned for malformed requests.
 	ErrMsgInvalidRequest = "Invalid request data"
+
+	// ErrMsgFileIgnored is returned when a file is ignored by .uploadignore.
+	ErrMsgFileIgnored = "File ignored by .uploadignore"
 )
 
 // =============================================================================
@@ -191,4 +221,13 @@ const (
 
 	// MaxLimit is the maximum pagination limit.
 	MaxLimit = 500
+)
+
+// =============================================================================
+// IGNORE FILE
+// =============================================================================
+
+const (
+	// UploadIgnoreFilename is the name of the ignore file.
+	UploadIgnoreFilename = ".uploadignore"
 )

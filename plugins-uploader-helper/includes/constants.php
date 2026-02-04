@@ -1,12 +1,12 @@
 <?php
 /**
- * Rise Up Uploader - Plugin Constants
+ * Rise Up Asia - Plugin Constants
  *
  * All string constants centralized to avoid magic strings.
  * These can be overridden by defining them before this file is loaded.
  *
- * @package RiseUpUploader
- * @since   1.2.0
+ * @package RiseUpAsia
+ * @since   1.3.0
  */
 
 if (!defined('ABSPATH')) {
@@ -17,20 +17,20 @@ if (!defined('ABSPATH')) {
 // PLUGIN IDENTITY
 // =============================================================================
 
-if (!defined('RISEUP_UPLOADER_VERSION')) {
-    define('RISEUP_UPLOADER_VERSION', '1.2.0');
+if (!defined('RISEUP_VERSION')) {
+    define('RISEUP_VERSION', '1.3.0');
 }
-if (!defined('RISEUP_UPLOADER_SLUG')) {
-    define('RISEUP_UPLOADER_SLUG', 'riseup-uploader');
+if (!defined('RISEUP_SLUG')) {
+    define('RISEUP_SLUG', 'riseup-asia');
 }
-if (!defined('RISEUP_UPLOADER_NAME')) {
-    define('RISEUP_UPLOADER_NAME', 'Rise Up Uploader');
+if (!defined('RISEUP_NAME')) {
+    define('RISEUP_NAME', 'Rise Up Asia');
 }
-if (!defined('RISEUP_UPLOADER_MIN_WP_VERSION')) {
-    define('RISEUP_UPLOADER_MIN_WP_VERSION', '5.6');
+if (!defined('RISEUP_MIN_WP_VERSION')) {
+    define('RISEUP_MIN_WP_VERSION', '5.6');
 }
-if (!defined('RISEUP_UPLOADER_MIN_PHP_VERSION')) {
-    define('RISEUP_UPLOADER_MIN_PHP_VERSION', '7.4');
+if (!defined('RISEUP_MIN_PHP_VERSION')) {
+    define('RISEUP_MIN_PHP_VERSION', '7.4');
 }
 
 // =============================================================================
@@ -38,7 +38,7 @@ if (!defined('RISEUP_UPLOADER_MIN_PHP_VERSION')) {
 // =============================================================================
 
 if (!defined('RISEUP_API_NAMESPACE')) {
-    define('RISEUP_API_NAMESPACE', 'riseup-uploader');
+    define('RISEUP_API_NAMESPACE', 'riseup-asia');
 }
 if (!defined('RISEUP_API_VERSION')) {
     define('RISEUP_API_VERSION', 'v1');
@@ -47,12 +47,17 @@ if (!defined('RISEUP_API_FULL_NAMESPACE')) {
     define('RISEUP_API_FULL_NAMESPACE', RISEUP_API_NAMESPACE . '/' . RISEUP_API_VERSION);
 }
 
+// Legacy namespace support (for backward compatibility)
+if (!defined('RISEUP_LEGACY_NAMESPACE')) {
+    define('RISEUP_LEGACY_NAMESPACE', 'riseup-uploader/v1');
+}
+
 // =============================================================================
 // DATABASE CONFIGURATION
 // =============================================================================
 
 if (!defined('RISEUP_DB_FILENAME')) {
-    define('RISEUP_DB_FILENAME', 'riseup_uploader.db');
+    define('RISEUP_DB_FILENAME', 'riseup_asia.db');
 }
 if (!defined('RISEUP_TABLE_TRANSACTIONS')) {
     define('RISEUP_TABLE_TRANSACTIONS', 'transactions');
@@ -67,6 +72,9 @@ if (!defined('RISEUP_DB_WAL_MODE')) {
 
 if (!defined('RISEUP_ACTION_UPLOAD')) {
     define('RISEUP_ACTION_UPLOAD', 'upload');
+}
+if (!defined('RISEUP_ACTION_UPLOAD_ACTIVE')) {
+    define('RISEUP_ACTION_UPLOAD_ACTIVE', 'upload_active');
 }
 if (!defined('RISEUP_ACTION_ENABLE')) {
     define('RISEUP_ACTION_ENABLE', 'enable');
@@ -83,6 +91,9 @@ if (!defined('RISEUP_ACTION_FILE_REPLACE')) {
 if (!defined('RISEUP_ACTION_FILE_DELETE')) {
     define('RISEUP_ACTION_FILE_DELETE', 'file_delete');
 }
+if (!defined('RISEUP_ACTION_SYNC')) {
+    define('RISEUP_ACTION_SYNC', 'sync');
+}
 if (!defined('RISEUP_ACTION_POST_CREATE')) {
     define('RISEUP_ACTION_POST_CREATE', 'post_create');
 }
@@ -92,8 +103,14 @@ if (!defined('RISEUP_ACTION_POST_UPDATE')) {
 if (!defined('RISEUP_ACTION_CATEGORY_CREATE')) {
     define('RISEUP_ACTION_CATEGORY_CREATE', 'category_create');
 }
+if (!defined('RISEUP_ACTION_MEDIA_UPLOAD')) {
+    define('RISEUP_ACTION_MEDIA_UPLOAD', 'media_upload');
+}
 if (!defined('RISEUP_ACTION_AUTH_FAILED')) {
     define('RISEUP_ACTION_AUTH_FAILED', 'auth_failed');
+}
+if (!defined('RISEUP_ACTION_EXPORT_SELF')) {
+    define('RISEUP_ACTION_EXPORT_SELF', 'export_self');
 }
 
 // =============================================================================
@@ -161,8 +178,14 @@ if (!defined('RISEUP_MSG_POST_UPDATE_FAILED')) {
 if (!defined('RISEUP_MSG_CATEGORY_CREATE_FAILED')) {
     define('RISEUP_MSG_CATEGORY_CREATE_FAILED', 'Category creation failed');
 }
+if (!defined('RISEUP_MSG_MEDIA_UPLOAD_FAILED')) {
+    define('RISEUP_MSG_MEDIA_UPLOAD_FAILED', 'Media upload failed');
+}
 if (!defined('RISEUP_MSG_DB_ERROR')) {
     define('RISEUP_MSG_DB_ERROR', 'Database error');
+}
+if (!defined('RISEUP_MSG_FILE_IGNORED')) {
+    define('RISEUP_MSG_FILE_IGNORED', 'File ignored by .uploadignore');
 }
 
 // =============================================================================
@@ -174,6 +197,9 @@ if (!defined('RISEUP_CAP_MANAGE_PLUGINS')) {
 }
 if (!defined('RISEUP_CAP_MANAGE_POSTS')) {
     define('RISEUP_CAP_MANAGE_POSTS', 'publish_posts');
+}
+if (!defined('RISEUP_CAP_UPLOAD_MEDIA')) {
+    define('RISEUP_CAP_UPLOAD_MEDIA', 'upload_files');
 }
 if (!defined('RISEUP_CAP_VIEW_LOGS')) {
     define('RISEUP_CAP_VIEW_LOGS', 'manage_options');
@@ -191,7 +217,7 @@ if (!defined('RISEUP_MAX_LIMIT')) {
 }
 
 // =============================================================================
-// TEMP DIRECTORY
+// DIRECTORIES
 // =============================================================================
 
 if (!defined('RISEUP_TEMP_DIR')) {
@@ -199,6 +225,14 @@ if (!defined('RISEUP_TEMP_DIR')) {
 }
 if (!defined('RISEUP_DATA_DIR')) {
     define('RISEUP_DATA_DIR', 'data');
+}
+
+// =============================================================================
+// IGNORE FILE
+// =============================================================================
+
+if (!defined('RISEUP_IGNORE_FILENAME')) {
+    define('RISEUP_IGNORE_FILENAME', '.uploadignore');
 }
 
 // =============================================================================
@@ -225,4 +259,12 @@ if (!defined('RISEUP_HTTP_NOT_FOUND')) {
 }
 if (!defined('RISEUP_HTTP_SERVER_ERROR')) {
     define('RISEUP_HTTP_SERVER_ERROR', 500);
+}
+
+// =============================================================================
+// LOGGING
+// =============================================================================
+
+if (!defined('RISEUP_LOG_PREFIX')) {
+    define('RISEUP_LOG_PREFIX', '[Rise Up Asia]');
 }
