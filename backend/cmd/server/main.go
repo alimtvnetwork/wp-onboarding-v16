@@ -219,14 +219,15 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 	})
 
 	publishService := publish.New(publish.Config{
-		DB:              db,
-		Logger:          log,
-		PluginService:   pluginService,
-		BackupService:   backupService,
-		SyncService:     syncService,
-		WPClientFactory: wpClientFactory,
-		TempDir:         cfg.TempDir,
-		WSHub:           wsHub,
+		DB:                    db,
+		Logger:                log,
+		PluginService:         pluginService,
+		BackupService:         backupService,
+		SyncService:           syncService,
+		SitePasswordDecryptor: siteService, // Site service implements SitePasswordDecryptor
+		WPClientFactory:       wpClientFactory,
+		TempDir:               cfg.TempDir,
+		WSHub:                 wsHub,
 	})
 
 	watcherService := watcher.New(watcher.Config{

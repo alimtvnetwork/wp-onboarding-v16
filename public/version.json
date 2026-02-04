@@ -1,24 +1,27 @@
 {
   "appName": "WP Plugin Publish",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "releaseDate": "2026-02-04",
   "gitCommit": "dev",
   "buildTime": "2026-02-04T23:00:00Z",
   "scriptVersion": "1.1.0",
   "changelog": [
     {
+      "version": "1.14.0",
+      "date": "2026-02-04",
+      "title": "Mapping Persistence & Publish Password Fix",
+      "changes": [
+        "🔧 Fixed site→plugin mapping persistence (JSON float64→int64 conversion)",
+        "🔐 Publish service now correctly decrypts site passwords",
+        "📡 Added SitePasswordDecryptor interface for proper credential handling",
+        "🔄 Version bump triggers re-seed to ensure all-to-all mappings"
+      ]
+    },
+    {
       "version": "1.13.0",
       "date": "2026-02-04",
       "title": "Robust Site Mappings & Publish Fixes",
       "changes": [
-        "🔗 New PUT /sites/{id}/mappings endpoint for atomic site→plugin mapping updates",
-        "📦 Upload Mode setting now controls publish mode (file→selected, zip→full)",
-        "📡 Fixed WebSocket publish events to match frontend progress dialog shape",
-        "🔌 Edit Site dialog now uses robust single-call mapping update",
-        "🔄 Seeded plugins still map to ALL seeded sites on startup"
-      ]
-    },
-    {
       "version": "1.12.1",
       "date": "2026-02-04",
       "title": "Mapping & Publish Mode Fixes",

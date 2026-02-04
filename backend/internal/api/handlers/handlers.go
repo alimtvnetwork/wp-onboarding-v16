@@ -590,15 +590,28 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input struct {
-		PluginIDs []int64 `json:"pluginIds"`
+	var raw struct {
+		PluginIDs []interface{} `json:"pluginIds"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
 		return
 	}
 
-	if err := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, input.PluginIDs); err != nil {
+	// Convert JSON numbers (float64) to int64
+	pluginIDs := make([]int64, 0, len(raw.PluginIDs))
+	for _, v := range raw.PluginIDs {
+		switch id := v.(type) {
+		case float64:
+			pluginIDs = append(pluginIDs, int64(id))
+		case int64:
+			pluginIDs = append(pluginIDs, id)
+		case int:
+			pluginIDs = append(pluginIDs, int64(id))
+		}
+	}
+
+	if err := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, pluginIDs); err != nil {
 		respondError(w, http.StatusBadRequest, "E3011", err.Error())
 		return
 	}
