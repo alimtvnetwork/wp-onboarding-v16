@@ -688,6 +688,18 @@ export const api = {
   deleteSession: (sessionId: string) =>
     request<void>(`/sessions/${sessionId}`, { method: "DELETE" }),
 
+  // File content for diff viewer
+  getFileDiff: (pluginId: number, siteId: number, filePath: string) =>
+    request<{ localContent: string; remoteContent: string; path: string }>(
+      `/plugins/${pluginId}/sites/${siteId}/file-diff`,
+      { method: "POST", body: JSON.stringify({ path: filePath }) }
+    ),
+  getLocalFileContent: (pluginId: number, filePath: string) =>
+    request<{ content: string; path: string }>(
+      `/plugins/${pluginId}/file`,
+      { method: "POST", body: JSON.stringify({ path: filePath }) }
+    ),
+
   // E2E Testing
   getE2ESuites: () => request<unknown[]>("/e2e/suites"),
   getE2ECases: (suiteId: string) => request<unknown[]>(`/e2e/suites/${suiteId}/cases`),

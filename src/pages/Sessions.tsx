@@ -1,0 +1,372 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import {
+  Activity,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Trash2,
+  FileText,
+  RefreshCw,
+  Package,
+  Globe,
+  ChevronRight,
+  Search,
+} from "lucide-react";
+import { api, SessionSummary, requireSuccess } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { LogViewer } from "@/components/shared/LogViewer";
+
+const SESSION_TYPE_ICONS: Record<string, typeof Activity> = {
+  publish: Package,
+  sync: RefreshCw,
+  connect: Globe,
+  backup: FileText,
+  bulk_publish: Package,
+};
+
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  publish: "Publish",
+  sync: "Sync",
+  connect: "Connection Test",
+  backup: "Backup",
+  bulk_publish: "Bulk Publish",
+};
+
+function getStatusBadge(status: string) {
+  switch (status) {
+    case "completed":
+      return (
+        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Completed
+        </Badge>
+      );
+    case "error":
+      return (
+        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+          <XCircle className="h-3 w-3 mr-1" />
+          Error
+        </Badge>
+      );
+    case "running":
+      return (
+        <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          Running
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="outline">
+          {status}
+        </Badge>
+      );
+  }
+}
+
+export default function Sessions() {
+  const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("all");
+
+  // Fetch sessions list
+  const { data: sessions, isLoading: sessionsLoading, refetch } = useQuery({
+    queryKey: ["sessions"],
+    queryFn: async () => {
+      const response = await api.getSessions(100);
+      return requireSuccess(response, { endpoint: "/sessions" });
+    },
+  });
+
+  // Fetch selected session logs
+  const { data: sessionLogs, isLoading: logsLoading } = useQuery({
+    queryKey: ["session-logs", selectedSessionId],
+    queryFn: async () => {
+      if (!selectedSessionId) return null;
+      const response = await api.getSessionLogs(selectedSessionId);
+      return requireSuccess(response, { endpoint: `/sessions/${selectedSessionId}/logs` });
+    },
+    enabled: !!selectedSessionId,
+  });
+
+  // Delete session mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      const response = await api.deleteSession(sessionId);
+      return requireSuccess(response, { endpoint: `/sessions/${sessionId}`, method: "DELETE" });
+    },
+    onSuccess: (_, sessionId) => {
+      toast.success("Session deleted");
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      if (selectedSessionId === sessionId) {
+        setSelectedSessionId(null);
+      }
+    },
+    onError: () => {
+      toast.error("Failed to delete session");
+    },
+  });
+
+  // Filter sessions
+  const filteredSessions = (sessions || []).filter((session: SessionSummary) => {
+    const matchesSearch =
+      session.pluginName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      session.siteName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      session.sessionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      session.type.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesTab =
+      activeTab === "all" ||
+      (activeTab === "running" && session.status === "running") ||
+      (activeTab === "completed" && session.status === "completed") ||
+      (activeTab === "error" && session.status === "error");
+
+    return matchesSearch && matchesTab;
+  });
+
+  const selectedSession = sessions?.find(
+    (s: SessionSummary) => s.sessionId === selectedSessionId
+  );
+
+  // Parse logs into entries for LogViewer
+  const logEntries = sessionLogs?.logs
+    ? sessionLogs.logs.split("\n").filter(Boolean).map((line: string) => {
+        // Try to extract timestamp from log line
+        const tsMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/);
+        const levelMatch = line.match(/\[(ERROR|WARN|INFO|DEBUG)\]/i);
+        const stepMatch = line.match(/\[([^\]]+)\]\s+/g);
+        
+        return {
+          timestamp: tsMatch ? tsMatch[1] : new Date().toISOString(),
+          level: (levelMatch 
+            ? levelMatch[1].toLowerCase() as "error" | "warn" | "info" | "debug"
+            : "info") as "error" | "warn" | "info" | "debug",
+          step: stepMatch && stepMatch.length > 1 
+            ? stepMatch[1]?.replace(/[\[\]]/g, "") || "log" 
+            : "log",
+          message: line,
+        };
+      })
+    : [];
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="p-6 pb-4">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold">Sessions</h1>
+            <p className="text-muted-foreground">
+              Browse and view historical operation logs
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex-1 px-6 pb-6 flex gap-4 overflow-hidden">
+        {/* Sessions List */}
+        <Card className="w-96 flex flex-col flex-shrink-0">
+          <CardHeader className="pb-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search sessions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden px-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+                <TabsTrigger value="running" className="text-xs">Running</TabsTrigger>
+                <TabsTrigger value="completed" className="text-xs">Done</TabsTrigger>
+                <TabsTrigger value="error" className="text-xs">Error</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value={activeTab} className="flex-1 overflow-hidden mt-2">
+                <ScrollArea className="h-full">
+                  {sessionsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : filteredSessions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Activity className="h-12 w-12 text-muted-foreground/50 mb-2" />
+                      <p className="text-muted-foreground">No sessions found</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1 pr-4 pb-4">
+                      {filteredSessions.map((session: SessionSummary) => {
+                        const TypeIcon = SESSION_TYPE_ICONS[session.type] || Activity;
+                        const isSelected = session.sessionId === selectedSessionId;
+
+                        return (
+                          <div
+                            key={session.sessionId}
+                            className={cn(
+                              "p-3 rounded-lg cursor-pointer transition-colors border",
+                              isSelected
+                                ? "bg-primary/10 border-primary/30"
+                                : "hover:bg-muted/50 border-transparent"
+                            )}
+                            onClick={() => setSelectedSessionId(session.sessionId)}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <TypeIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium text-sm truncate">
+                                  {SESSION_TYPE_LABELS[session.type] || session.type}
+                                </span>
+                              </div>
+                              {getStatusBadge(session.status)}
+                            </div>
+
+                            <div className="mt-1.5 space-y-1">
+                              {session.pluginName && (
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  <Package className="h-3 w-3" />
+                                  <span className="truncate">{session.pluginName}</span>
+                                </div>
+                              )}
+                              {session.siteName && (
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                  <Globe className="h-3 w-3" />
+                                  <span className="truncate">{session.siteName}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                <span>
+                                  {format(new Date(session.startedAt), "MMM d, HH:mm:ss")}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Session Details */}
+        <Card className="flex-1 flex flex-col overflow-hidden">
+          {selectedSession ? (
+            <>
+              <CardHeader className="pb-3 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {(() => {
+                        const TypeIcon = SESSION_TYPE_ICONS[selectedSession.type] || Activity;
+                        return <TypeIcon className="h-5 w-5" />;
+                      })()}
+                      {SESSION_TYPE_LABELS[selectedSession.type] || selectedSession.type}
+                    </CardTitle>
+                    {getStatusBadge(selectedSession.status)}
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete the session logs. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteMutation.mutate(selectedSession.sessionId)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+                <CardDescription className="flex items-center gap-4 text-xs">
+                  {selectedSession.pluginName && (
+                    <span className="flex items-center gap-1">
+                      <Package className="h-3 w-3" />
+                      {selectedSession.pluginName}
+                    </span>
+                  )}
+                  {selectedSession.siteName && (
+                    <span className="flex items-center gap-1">
+                      <Globe className="h-3 w-3" />
+                      {selectedSession.siteName}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {format(new Date(selectedSession.startedAt), "MMM d, yyyy HH:mm:ss")}
+                  </span>
+                  <span className="font-mono text-muted-foreground">
+                    {selectedSession.sessionId.slice(0, 8)}
+                  </span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-hidden p-4 pt-0">
+                {logsLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <LogViewer
+                    logs={logEntries}
+                    title="Session Logs"
+                    height="h-full"
+                    showToggle={false}
+                    autoScroll={false}
+                  />
+                )}
+              </CardContent>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <ChevronRight className="h-12 w-12 text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground">Select a session to view logs</p>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}

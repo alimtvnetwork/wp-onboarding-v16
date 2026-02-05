@@ -23,6 +23,7 @@ import Dashboard from "@/pages/Dashboard";
 import Sites from "@/pages/Sites";
 import Plugins from "@/pages/Plugins";
 import Logs from "@/pages/Logs";
+import Sessions from "@/pages/Sessions";
 import Settings from "@/pages/Settings";
 import Errors from "@/pages/Errors";
 import Tests from "@/pages/Tests";
@@ -183,6 +184,7 @@ const App = () => (
                     <Route path="plugins" element={<Plugins />} />
                     <Route path="tests" element={<Tests />} />
                     <Route path="logs" element={<Logs />} />
+                    <Route path="sessions" element={<Sessions />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="errors" element={<Errors />} />
                   </Route>

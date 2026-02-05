@@ -27,9 +27,11 @@ import {
   HardDrive,
   CheckSquare,
   Square,
+  Eye,
 } from "lucide-react";
 import { api, FilePreview, PublishPreview } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ContentDiffViewer } from "./ContentDiffViewer";
 
 interface DiffPreviewDialogProps {
   open: boolean;
@@ -100,6 +102,8 @@ export function DiffPreviewDialog({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [diffViewerOpen, setDiffViewerOpen] = useState(false);
+  const [diffViewerFile, setDiffViewerFile] = useState<FilePreview | null>(null);
 
   const { data: preview, isLoading, error } = useQuery({
     queryKey: ["publish-preview", pluginId, siteId],
@@ -383,6 +387,20 @@ export function DiffPreviewDialog({
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
+                                  {file.changeType === "modified" && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 px-2"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDiffViewerFile(file);
+                                        setDiffViewerOpen(true);
+                                      }}
+                                    >
+                                      <Eye className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                   <span className="text-xs text-muted-foreground">
                                     {formatBytes(file.size)}
                                   </span>
@@ -424,6 +442,18 @@ export function DiffPreviewDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Content Diff Viewer */}
+      {diffViewerFile && (
+        <ContentDiffViewer
+          open={diffViewerOpen}
+          onOpenChange={setDiffViewerOpen}
+          pluginId={pluginId}
+          siteId={siteId}
+          filePath={diffViewerFile.path}
+          changeType={diffViewerFile.changeType}
+        />
+      )}
     </Dialog>
   );
 }
