@@ -381,8 +381,6 @@ func GetSiteCredentials(w http.ResponseWriter, r *http.Request) {
 	}
 	respondSuccess(w, credentials)
 }
-	respondSuccess(w, result)
-}
 
 // BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
 func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
