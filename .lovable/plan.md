@@ -272,8 +272,56 @@ Include in report:
 | 6 | Phase 4 | Remote Plugin Viewer | None | 4-5 |
 | 7 | Phase 7 | Documentation | All | 1-2 |
 | 8 | Phase 8 | Publish Diff Preview | None | 2-3 |
+| 9 | Phase 9 | Remote Plugins Caching | None | 3-4 |
+| 10 | Phase 10 | Remote File Browser | Phase 9 | 4-6 |
 
-**Total Estimated: 19-28 hours**
+**Total Estimated: 26-38 hours**
+
+---
+
+## Phase 9: Remote Plugins Caching System (PENDING)
+
+**Priority: MEDIUM - Performance & UX**
+**Status: PENDING**
+
+### 9.1 Backend Caching Table
+- [ ] Create `remote_plugins_cache` table in SQLite
+- [ ] Fields: `id`, `site_id`, `plugins_json`, `cached_at`, `expires_at`
+- [ ] Cache TTL: 1 hour (configurable in config.json)
+
+### 9.2 Config.json Settings
+- [ ] Add `remotePlugins.cacheEnabled` (default: true)
+- [ ] Add `remotePlugins.cacheTTLMinutes` (default: 60)
+- [ ] Settings UI toggle for cache enable/disable
+
+### 9.3 Cache API Endpoints
+- [ ] `GET /api/v1/sites/{id}/remote-plugins` - returns cached if valid, else fetches fresh
+- [ ] `POST /api/v1/sites/{id}/remote-plugins/force-sync` - clears cache, fetches fresh
+- [ ] `DELETE /api/v1/sites/{id}/remote-plugins/cache` - clears cache only
+
+### 9.4 Frontend Integration
+- [ ] Add "Force Sync" button in RemotePluginsPanel
+- [ ] Show cache indicator (cached vs live data)
+- [ ] Settings page toggle for caching
+
+---
+
+## Phase 10: Remote Plugin File Browser (TODO - Future)
+
+**Priority: LOW - Advanced Feature**
+**Status: TODO**
+
+### 10.1 Backend
+- [ ] `GET /api/v1/sites/{id}/remote-plugins/{slug}/files` - List plugin files
+- [ ] `GET /api/v1/sites/{id}/remote-plugins/{slug}/file` - Get file content
+
+### 10.2 WordPress Plugin Endpoint
+- [ ] Uses existing `/plugins/{slug}/files` endpoint from Riseup Asia Uploader
+
+### 10.3 Frontend
+- [ ] `PluginFileBrowser` component with tree view
+- [ ] File content viewer with syntax highlighting
+- [ ] Download individual files or entire plugin as ZIP
 
 ---
 
