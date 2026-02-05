@@ -47,6 +47,17 @@ export interface BackendLogEntry {
   details?: Record<string, unknown>;
 }
 
+/**
+ * PHP stack trace frame from WordPress plugin errors
+ */
+export interface PHPStackFrame {
+  file?: string;
+  fileBase?: string;
+  line?: number;
+  function?: string;
+  class?: string;
+}
+
 export interface CapturedError {
   id: string;
   code: string;
@@ -76,6 +87,10 @@ export interface CapturedError {
   // Session-based logging
   sessionId?: string;
   sessionType?: string;
+  // PHP/WordPress error details
+  phpStackFrames?: PHPStackFrame[];
+  errorFile?: string;
+  errorLine?: number;
 }
 
 interface ErrorStore {
@@ -98,6 +113,9 @@ interface ErrorStore {
     siteUrl?: string;
     sessionId?: string;
     sessionType?: string;
+    phpStackFrames?: PHPStackFrame[];
+    errorFile?: string;
+    errorLine?: number;
   }) => CapturedError;
   captureException: (
     error: unknown,
@@ -112,6 +130,9 @@ interface ErrorStore {
       siteUrl?: string;
       sessionId?: string;
       sessionType?: string;
+      phpStackFrames?: PHPStackFrame[];
+      errorFile?: string;
+      errorLine?: number;
     }
   ) => CapturedError;
   openErrorModal: (error: CapturedError) => void;
@@ -329,6 +350,10 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       // Session-based logging
       sessionId: meta?.sessionId,
       sessionType: meta?.sessionType,
+      // PHP/WordPress error details
+      phpStackFrames: meta?.phpStackFrames,
+      errorFile: meta?.errorFile,
+      errorLine: meta?.errorLine,
     };
     
     set((state) => ({
@@ -402,6 +427,10 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       // Session-based logging
       sessionId: 'sessionId' in (context || {}) ? (context as { sessionId?: string }).sessionId : undefined,
       sessionType: 'sessionType' in (context || {}) ? (context as { sessionType?: string }).sessionType : undefined,
+      // PHP/WordPress error details
+      phpStackFrames: 'phpStackFrames' in (context || {}) ? (context as { phpStackFrames?: PHPStackFrame[] }).phpStackFrames : undefined,
+      errorFile: 'errorFile' in (context || {}) ? (context as { errorFile?: string }).errorFile : undefined,
+      errorLine: 'errorLine' in (context || {}) ? (context as { errorLine?: number }).errorLine : undefined,
     };
     
     set((state) => ({

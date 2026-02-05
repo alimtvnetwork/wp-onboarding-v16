@@ -47,7 +47,8 @@ import {
 } from "lucide-react";
 import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
 import { toast } from "sonner";
-import { useErrorStore } from "@/stores/errorStore";
+import { useErrorStore, PHPStackFrame } from "@/stores/errorStore";
+import { useRemotePluginEvents } from "@/hooks/useRemotePluginEvents";
 
 interface RemotePluginsPanelProps {
   site: Site;
@@ -66,6 +67,9 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [selectedPlugins, setSelectedPlugins] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkActionPending, setBulkActionPending] = useState(false);
+
+  // Subscribe to remote plugin WebSocket events for this site
+  useRemotePluginEvents(site.id);
 
   const queryKey = ["sites", site.id, "remote-plugins"];
 
