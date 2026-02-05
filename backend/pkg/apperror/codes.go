@@ -41,6 +41,7 @@ const (
 	ErrWPPluginActivate = "E3007" // Failed to activate plugin
 	ErrWPTimeout        = "E3008" // Request timed out
 	ErrWPUploadFailed   = "E3009" // Plugin upload to WordPress failed
+	ErrWPPluginDelete   = "E3010" // Failed to delete plugin
 )
 
 // File system errors (E4xxx)

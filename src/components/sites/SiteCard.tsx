@@ -16,11 +16,13 @@ import {
   ExternalLink,
   Package,
   Upload,
+  Eye,
 } from "lucide-react";
 import { api, Site, PluginMapping } from "@/lib/api";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useErrorStore } from "@/stores/errorStore";
+import { RemotePluginsPanel } from "./RemotePluginsPanel";
 
 interface SiteCardProps {
   site: Site;
@@ -33,6 +35,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const { captureError, captureException, openErrorModal } = useErrorStore();
   const [testingSiteId, setTestingSiteId] = useState<number | null>(null);
   const [deployingUploader, setDeployingUploader] = useState(false);
+  const [showRemotePlugins, setShowRemotePlugins] = useState(false);
 
   // Fetch linked plugins for this site
   const { data: mappings } = useQuery({
@@ -237,6 +240,17 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex-1"
+            onClick={() => setShowRemotePlugins(true)}
+            disabled={site.connectionStatus !== "connected"}
+            title={site.connectionStatus !== "connected" ? "Connect site first" : "View plugins on this site"}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Plugins
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
@@ -268,6 +282,12 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </Button>
         </div>
       </CardContent>
+
+      <RemotePluginsPanel
+        site={site}
+        open={showRemotePlugins}
+        onOpenChange={setShowRemotePlugins}
+      />
     </Card>
   );
 }

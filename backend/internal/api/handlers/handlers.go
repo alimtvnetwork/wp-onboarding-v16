@@ -55,6 +55,11 @@ type SiteServiceInterface interface {
 	TestConnection(ctx context.Context, id int64) (interface{}, error)
 	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (interface{}, error)
 	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (interface{}, error)
+	// Remote plugin management
+	GetRemotePlugins(ctx context.Context, siteID int64) (interface{}, error)
+	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 }
 
 // SyncServiceInterface defines sync service methods
@@ -457,6 +462,110 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, map[string]interface{}{
 		"results": results,
 	})
+}
+
+// --- Remote Plugin Management Handlers ---
+
+// GetRemotePlugins returns all plugins installed on a remote WordPress site
+func GetRemotePlugins(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	plugins, err := Services.SiteService.GetRemotePlugins(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3004", err.Error())
+		return
+	}
+	respondSuccess(w, plugins)
+}
+
+// EnableRemotePlugin activates a plugin on a remote WordPress site
+func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	vars := mux.Vars(r)
+	pluginSlug := vars["plugin"]
+	if pluginSlug == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		return
+	}
+
+	if err := Services.SiteService.EnableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
+		respondError(w, http.StatusInternalServerError, "E3007", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"enabled": true, "plugin": pluginSlug})
+}
+
+// DisableRemotePlugin deactivates a plugin on a remote WordPress site
+func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	vars := mux.Vars(r)
+	pluginSlug := vars["plugin"]
+	if pluginSlug == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		return
+	}
+
+	if err := Services.SiteService.DisableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
+		respondError(w, http.StatusInternalServerError, "E3007", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"disabled": true, "plugin": pluginSlug})
+}
+
+// DeleteRemotePlugin removes a plugin from a remote WordPress site
+func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	vars := mux.Vars(r)
+	pluginSlug := vars["plugin"]
+	if pluginSlug == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		return
+	}
+
+	if err := Services.SiteService.DeleteRemotePlugin(r.Context(), id, pluginSlug); err != nil {
+		respondError(w, http.StatusInternalServerError, "E3010", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"deleted": true, "plugin": pluginSlug})
 }
 
 // --- Plugins Handlers ---

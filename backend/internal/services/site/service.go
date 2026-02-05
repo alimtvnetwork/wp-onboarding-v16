@@ -864,3 +864,132 @@ func shouldSkipFile(relPath string) bool {
 	}
 	return false
 }
+
+// RemotePlugin represents a plugin installed on a remote WordPress site
+type RemotePlugin struct {
+	Plugin      string `json:"plugin"`
+	Slug        string `json:"slug"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	Status      string `json:"status"`
+	Author      string `json:"author"`
+	Description string `json:"description"`
+	PluginURI   string `json:"pluginUri"`
+	TextDomain  string `json:"textDomain"`
+}
+
+// GetRemotePlugins fetches all plugins installed on a remote WordPress site
+func (s *Service) GetRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
+	site, err := s.GetByID(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	plugins, err := client.GetPlugins()
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPPluginList, "failed to fetch remote plugins")
+	}
+
+	result := make([]RemotePlugin, 0, len(plugins))
+	for _, p := range plugins {
+		// Extract slug from plugin identifier (e.g., "akismet/akismet.php" -> "akismet")
+		slug := p.Plugin
+		if idx := strings.Index(p.Plugin, "/"); idx > 0 {
+			slug = p.Plugin[:idx]
+		}
+
+		result = append(result, RemotePlugin{
+			Plugin:      p.Plugin,
+			Slug:        slug,
+			Name:        p.Name,
+			Version:     p.Version,
+			Status:      p.Status,
+			Author:      p.Author,
+			Description: p.Description.Raw,
+			PluginURI:   p.PluginURI,
+			TextDomain:  p.TextDomain,
+		})
+	}
+
+	return result, nil
+}
+
+// EnableRemotePlugin activates a plugin on a remote WordPress site
+func (s *Service) EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
+	site, err := s.GetByID(ctx, siteID)
+	if err != nil {
+		return err
+	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	if err := client.ActivatePlugin(pluginSlug); err != nil {
+		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "failed to enable plugin").
+			WithContext("siteId", siteID).
+			WithContext("plugin", pluginSlug)
+	}
+
+	s.log.Info("Remote plugin enabled", "siteId", siteID, "plugin", pluginSlug)
+	return nil
+}
+
+// DisableRemotePlugin deactivates a plugin on a remote WordPress site
+func (s *Service) DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
+	site, err := s.GetByID(ctx, siteID)
+	if err != nil {
+		return err
+	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	if err := client.DeactivatePlugin(pluginSlug); err != nil {
+		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "failed to disable plugin").
+			WithContext("siteId", siteID).
+			WithContext("plugin", pluginSlug)
+	}
+
+	s.log.Info("Remote plugin disabled", "siteId", siteID, "plugin", pluginSlug)
+	return nil
+}
+
+// DeleteRemotePlugin removes a plugin from a remote WordPress site
+func (s *Service) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
+	site, err := s.GetByID(ctx, siteID)
+	if err != nil {
+		return err
+	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	
+	// First deactivate the plugin (WordPress requires this before deletion)
+	_ = client.DeactivatePlugin(pluginSlug)
+	
+	// Then delete it
+	if err := client.DeletePlugin(pluginSlug); err != nil {
+		return apperror.Wrap(err, apperror.ErrWPPluginDelete, "failed to delete plugin").
+			WithContext("siteId", siteID).
+			WithContext("plugin", pluginSlug)
+	}
+
+	s.log.Info("Remote plugin deleted", "siteId", siteID, "plugin", pluginSlug)
+	return nil
+}

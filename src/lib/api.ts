@@ -333,6 +333,18 @@ export interface Backup {
   createdAt: string;
 }
 
+export interface RemotePlugin {
+  plugin: string;
+  slug: string;
+  name: string;
+  version: string;
+  status: "active" | "inactive";
+  author: string;
+  description: string;
+  pluginUri: string;
+  textDomain: string;
+}
+
 export interface ErrorLog {
   id: number;
   code: string;
@@ -454,6 +466,25 @@ export const api = {
       method: "PUT", 
       body: JSON.stringify({ pluginIds }) 
     }),
+  
+  // Remote plugin management
+  getRemotePlugins: (siteId: number) =>
+    request<RemotePlugin[]>(`/sites/${siteId}/remote-plugins`),
+  enableRemotePlugin: (siteId: number, pluginSlug: string) =>
+    request<{ enabled: boolean; plugin: string }>(
+      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/enable`,
+      { method: "POST" }
+    ),
+  disableRemotePlugin: (siteId: number, pluginSlug: string) =>
+    request<{ disabled: boolean; plugin: string }>(
+      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/disable`,
+      { method: "POST" }
+    ),
+  deleteRemotePlugin: (siteId: number, pluginSlug: string) =>
+    request<{ deleted: boolean; plugin: string }>(
+      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}`,
+      { method: "DELETE" }
+    ),
 
   // Git operations
   gitPull: (pluginId: number) =>

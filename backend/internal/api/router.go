@@ -89,6 +89,11 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/bulk-bootstrap-uploader", handlers.BulkBootstrapUploader).Methods("POST")
 	api.HandleFunc("/sites/{id}/mappings", handlers.GetSiteMappings).Methods("GET")
 	api.HandleFunc("/sites/{id}/mappings", handlers.UpdateSiteMappings).Methods("PUT")
+	// Remote plugin management
+	api.HandleFunc("/sites/{id}/remote-plugins", handlers.GetRemotePlugins).Methods("GET")
+	api.HandleFunc("/sites/{id}/remote-plugins/{plugin}/enable", handlers.EnableRemotePlugin).Methods("POST")
+	api.HandleFunc("/sites/{id}/remote-plugins/{plugin}/disable", handlers.DisableRemotePlugin).Methods("POST")
+	api.HandleFunc("/sites/{id}/remote-plugins/{plugin}", handlers.DeleteRemotePlugin).Methods("DELETE")
 
 	// Plugins endpoints
 	api.HandleFunc("/plugins", handlers.GetPlugins).Methods("GET")
