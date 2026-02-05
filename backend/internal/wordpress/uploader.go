@@ -176,7 +176,7 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // This uses base64-encoded upload for reliability (like the PowerShell script).
-func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*UploaderUploadResult, error) {
+func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool) (*UploaderUploadResult, error) {
 	// CRITICAL: Always resolve to absolute path before any file operations
 	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
@@ -188,6 +188,13 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 		"zipPath":    absZipPath,
 		"zipPathRel": zipPath,
 	})
+
+	// Validate slug - must be provided and not include .zip extension
+	if slug == "" {
+		// Derive slug from ZIP filename (strip .zip extension)
+		slug = strings.TrimSuffix(filepath.Base(absZipPath), ".zip")
+	}
+	slug = strings.TrimSuffix(slug, ".zip") // Ensure no .zip extension
 
 	// Read the ZIP file
 	fileBytes, err := os.ReadFile(absZipPath)
@@ -258,12 +265,19 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 		"url":       uploadURL,
 	})
 
-	// Build request body (JSON with base64-encoded ZIP)
+	// Build request body (JSON with base64-encoded ZIP) - match PowerShell script format
+	// PowerShell sends: plugin_zip (base64), slug (folder name, no .zip), activate (bool)
 	body := map[string]interface{}{
 		"plugin_zip": base64Data,
-		"slug":       filepath.Base(absZipPath),
+		"slug":       slug,
 		"activate":   activate,
 	}
+
+	c.progress(ActionUpload, "running", fmt.Sprintf("Upload request body: slug=%s, activate=%v, zipSize=%d bytes", slug, activate, len(fileBytes)), map[string]interface{}{
+		"slug":     slug,
+		"activate": activate,
+		"zipSize":  len(fileBytes),
+	})
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
