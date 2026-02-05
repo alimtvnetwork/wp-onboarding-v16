@@ -1673,3 +1673,66 @@ func (s *Service) calculateFileHash(path string) (string, error) {
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
+
+// FileDiffResult contains local and remote content for a single file
+type FileDiffResult struct {
+	Path          string `json:"path"`
+	LocalContent  string `json:"localContent"`
+	RemoteContent string `json:"remoteContent"`
+}
+
+// GetFileDiff retrieves both local and remote content for a file to show differences
+func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (*FileDiffResult, error) {
+	// Get plugin info
+	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDBRead, "plugin not found")
+	}
+
+	// Get site credentials
+	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDBRead, "site not found")
+	}
+
+	// Get mapping to find remote slug
+	mapping, err := s.getMapping(ctx, pluginID, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDBRead, "mapping not found")
+	}
+
+	result := &FileDiffResult{
+		Path: filePath,
+	}
+
+	// Read local file content
+	localPath := pathutil.MustJoin(pluginInfo.Path, filePath)
+	localFile, err := os.Open(localPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to read local file")
+		}
+		// File doesn't exist locally (deleted case)
+		result.LocalContent = ""
+	} else {
+		defer localFile.Close()
+		content, err := io.ReadAll(localFile)
+		if err != nil {
+			return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to read local file content")
+		}
+		result.LocalContent = string(content)
+	}
+
+	// Fetch remote file content
+	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	remoteContent, err := wpClient.GetPluginFileContent(ctx, mapping.RemoteSlug, filePath)
+	if err != nil {
+		// Remote file doesn't exist (added case) or error fetching
+		s.log.Debug("Could not fetch remote file content", "path", filePath, "error", err)
+		result.RemoteContent = ""
+	} else {
+		result.RemoteContent = remoteContent
+	}
+
+	return result, nil
+}

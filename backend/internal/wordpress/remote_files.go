@@ -361,3 +361,55 @@ func truncateBody(body string, maxLen int) string {
 	}
 	return body
 }
+
+// GetPluginFileContent retrieves the content of a specific file from a remote plugin.
+// This is used for diff viewing in the UI.
+func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
+	// Try Riseup Asia Uploader first
+	endpoint := fmt.Sprintf("/%s/plugins/%s/file", RiseupAsiaNamespace, pluginSlug)
+	
+	body := map[string]string{"path": filePath}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return "", fmt.Errorf("marshal request body: %w", err)
+	}
+
+	resp, err := c.request("POST", endpoint, bytes.NewReader(jsonBody))
+	if err != nil {
+		return "", fmt.Errorf("failed to get file content: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode == 404 {
+		return "", fmt.Errorf("file not found on remote: %s", filePath)
+	}
+
+	if resp.StatusCode != 200 {
+		return "", &APIError{
+			Operation:    "get file content",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 500),
+		}
+	}
+
+	// Parse the response
+	var result struct {
+		Success bool   `json:"success"`
+		Path    string `json:"path"`
+		Content string `json:"content"`
+	}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return "", fmt.Errorf("failed to decode file content response: %w", err)
+	}
+
+	if !result.Success {
+		return "", fmt.Errorf("remote API returned failure for file content: %s", filePath)
+	}
+
+	return result.Content, nil
+}

@@ -90,6 +90,7 @@ type PublishServiceInterface interface {
 	Publish(ctx context.Context, pluginID, siteID int64, opts interface{}) (interface{}, error)
 	PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (interface{}, error)
 	PreviewPublish(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (interface{}, error)
 }
 
 // BackupServiceInterface defines backup service methods

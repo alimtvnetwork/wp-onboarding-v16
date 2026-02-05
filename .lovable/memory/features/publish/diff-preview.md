@@ -69,11 +69,13 @@ Returns:
 
 ## Components
 
-- `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php` - `handle_plugin_files()` endpoint
-- `backend/internal/wordpress/remote_files.go` - `GetPluginFilesViaRiseup()` method
-- `backend/internal/services/publish/service.go` - `PreviewPublish()` with diff logic
+- `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php` - `handle_plugin_files()` and `handle_plugin_file_content()` endpoints
+- `backend/internal/wordpress/remote_files.go` - `GetPluginFilesViaRiseup()` and `GetPluginFileContent()` methods
+- `backend/internal/services/publish/service.go` - `PreviewPublish()` and `GetFileDiff()` methods
+- `backend/internal/api/handlers/files.go` - File content handlers
 - `src/components/plugins/DiffPreviewDialog.tsx` - UI with file selection
-- `src/lib/api.ts` - `previewPublish()` and `publishPlugin()` methods
+- `src/components/plugins/ContentDiffViewer.tsx` - Content diff viewer for modified files
+- `src/lib/api.ts` - `previewPublish()`, `getFileDiff()`, and `getLocalFileContent()` methods
 
 ## Selection Features
 
@@ -82,3 +84,12 @@ Returns:
 - "Select all visible" checkbox (respects current filter)
 - Selection count and size displayed in header
 - Disabled confirm button when no files selected
+
+## Content Diff Viewer
+
+For modified files, users can click the "eye" icon to open a diff viewer that:
+- Fetches both local and remote file content
+- Displays a side-by-side unified diff with line numbers
+- Highlights added lines (green) and removed lines (red)
+- Provides tabs to view "Diff", "Local", or "Remote" content separately
+- Includes copy button for each view

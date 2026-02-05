@@ -242,6 +242,22 @@ class Riseup_Asia {
                 ),
             ));
 
+            // Plugin file content endpoint (for diff viewing).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_FILE);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILE, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_plugin_file_content'),
+                'permission_callback' => array($this, 'check_plugin_permission'),
+                'args'                => array(
+                    'slug' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) {
+                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                        },
+                    ),
+                ),
+            ));
+
             $this->file_logger->info('All REST API routes registered successfully');
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to register routes');
@@ -778,6 +794,76 @@ class Riseup_Asia {
                     'modifiedAt' => $mtime ? gmdate('c', $mtime) : null,
                 );
             }
+        }
+    }
+
+    /**
+     * Handle getting content of a single file from a plugin.
+     * Used for diff viewing in the UI.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_plugin_file_content($request) {
+        $slug = $request->get_param('slug');
+        $json = $request->get_json_params();
+        $file_path = isset($json['path']) ? $json['path'] : null;
+
+        $this->file_logger->info('Plugin file content endpoint called', array(
+            'slug' => $slug,
+            'path' => $file_path,
+        ));
+
+        try {
+            if (empty($file_path)) {
+                return $this->error_response('File path is required', RISEUP_HTTP_BAD_REQUEST);
+            }
+
+            // Sanitize path - prevent directory traversal
+            $file_path = ltrim($file_path, '/\\');
+            if (strpos($file_path, '..') !== false) {
+                return $this->error_response('Invalid file path', RISEUP_HTTP_BAD_REQUEST);
+            }
+
+            $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+            $full_path = $plugin_dir . '/' . $file_path;
+
+            if (!is_dir($plugin_dir)) {
+                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+            }
+
+            // Verify the file is within the plugin directory
+            $real_plugin_dir = realpath($plugin_dir);
+            $real_file_path = realpath($full_path);
+
+            if ($real_file_path === false || strpos($real_file_path, $real_plugin_dir) !== 0) {
+                return $this->error_response('File not found or invalid path', RISEUP_HTTP_NOT_FOUND);
+            }
+
+            if (!is_file($real_file_path)) {
+                return $this->error_response('File not found', RISEUP_HTTP_NOT_FOUND);
+            }
+
+            $content = @file_get_contents($real_file_path);
+            if ($content === false) {
+                return $this->error_response('Failed to read file', RISEUP_HTTP_SERVER_ERROR);
+            }
+
+            $this->file_logger->info('File content read', array(
+                'slug' => $slug,
+                'path' => $file_path,
+                'size' => strlen($content),
+            ));
+
+            return new WP_REST_Response(array(
+                'success' => true,
+                'path'    => $file_path,
+                'content' => $content,
+            ), RISEUP_HTTP_OK);
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Plugin file content error');
+            return $this->error_response('Failed to read file: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
         }
     }
 

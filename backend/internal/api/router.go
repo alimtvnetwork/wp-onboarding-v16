@@ -126,6 +126,8 @@ func NewServer(cfg ServerConfig) *Server {
 	// Publish endpoints
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/publish", handlers.PublishPlugin).Methods("POST")
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/preview", handlers.PreviewPublish).Methods("GET")
+	api.HandleFunc("/plugins/{id}/sites/{siteId}/file-diff", handlers.GetFileDiff).Methods("POST")
+	api.HandleFunc("/plugins/{id}/file", handlers.GetLocalFileContent).Methods("POST")
 
 	// Backup endpoints
 	api.HandleFunc("/plugins/{id}/backups", handlers.GetBackups).Methods("GET")
