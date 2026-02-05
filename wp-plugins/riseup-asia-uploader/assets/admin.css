@@ -1,0 +1,446 @@
+/**
+ * Riseup Asia Uploader - Admin Styles
+ *
+ * @package RiseupAsiaUploader
+ * @since   1.5.0
+ */
+
+/* ============================================================================
+   GENERAL LAYOUT
+   ============================================================================ */
+
+.riseup-admin {
+    max-width: 1400px;
+}
+
+.riseup-admin h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 23px;
+    font-weight: 400;
+    margin: 0 0 15px 0;
+    padding: 9px 0 4px;
+    line-height: 1.3;
+}
+
+.riseup-admin h1 .dashicons {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: #2271b1;
+}
+
+.riseup-admin .description {
+    color: #646970;
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+/* ============================================================================
+   CARDS
+   ============================================================================ */
+
+.riseup-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.riseup-card h2 {
+    margin: 0 0 15px;
+    padding: 0;
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* ============================================================================
+   FILTERS
+   ============================================================================ */
+
+.riseup-filters {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+.riseup-filters .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.riseup-filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.riseup-filters label span {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.riseup-filters input[type="text"],
+.riseup-filters input[type="date"],
+.riseup-filters select {
+    min-width: 140px;
+}
+
+/* ============================================================================
+   STATS
+   ============================================================================ */
+
+.riseup-stats {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+    padding: 10px 0;
+}
+
+.riseup-stats .stat-item {
+    color: #50575e;
+    font-size: 13px;
+}
+
+.riseup-stats .stat-item strong {
+    color: #2271b1;
+    font-size: 16px;
+}
+
+/* ============================================================================
+   LOGS TABLE
+   ============================================================================ */
+
+.riseup-logs-table {
+    font-size: 13px;
+}
+
+.riseup-logs-table .column-id {
+    width: 60px;
+}
+
+.riseup-logs-table .column-timestamp {
+    width: 150px;
+}
+
+.riseup-logs-table .column-action {
+    width: 130px;
+}
+
+.riseup-logs-table .column-plugin {
+    width: 150px;
+}
+
+.riseup-logs-table .column-user {
+    width: 120px;
+}
+
+.riseup-logs-table .column-ip {
+    width: 120px;
+}
+
+.riseup-logs-table .column-status {
+    width: 80px;
+}
+
+.riseup-logs-table .timestamp {
+    color: #50575e;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.riseup-logs-table code {
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.riseup-logs-table .na {
+    color: #a7aaad;
+}
+
+.riseup-logs-table .user-info small {
+    color: #a7aaad;
+}
+
+.riseup-logs-table .error-msg {
+    color: #b32d2e;
+    cursor: help;
+}
+
+/* Action Badges */
+.action-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.action-upload,
+.action-upload_active {
+    background: #d1e4dd;
+    color: #0a7a4d;
+}
+
+.action-enable {
+    background: #d1e4dd;
+    color: #0a7a4d;
+}
+
+.action-disable {
+    background: #ffecc7;
+    color: #996800;
+}
+
+.action-delete,
+.action-file_delete {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.action-auth_failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.action-post_create,
+.action-post_update,
+.action-category_create {
+    background: #cfe2ff;
+    color: #084298;
+}
+
+.action-sync,
+.action-file_replace {
+    background: #e2e3e5;
+    color: #41464b;
+}
+
+.action-export_self {
+    background: #e7d5f7;
+    color: #5e3d76;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-success {
+    background: #d1e4dd;
+    color: #0a7a4d;
+}
+
+.status-failed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* ============================================================================
+   ENDPOINTS TABLE
+   ============================================================================ */
+
+.riseup-endpoints-table .column-endpoint {
+    width: 200px;
+}
+
+.riseup-endpoints-table .column-enabled,
+.riseup-endpoints-table .column-auth {
+    width: 100px;
+    text-align: center;
+}
+
+.riseup-endpoints-table .endpoint-path {
+    font-size: 10px;
+    color: #646970;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccd0d4;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #2271b1;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+.toggle-switch input:focus + .toggle-slider {
+    box-shadow: 0 0 1px #2271b1;
+}
+
+/* Warning */
+.riseup-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff8e5;
+    border-left: 4px solid #dba617;
+    padding: 12px 15px;
+    margin-top: 20px;
+    border-radius: 0 4px 4px 0;
+}
+
+.riseup-warning .dashicons {
+    color: #dba617;
+}
+
+/* ============================================================================
+   MODAL
+   ============================================================================ */
+
+.riseup-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.riseup-modal-content {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.riseup-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.riseup-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.riseup-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #646970;
+    padding: 0;
+    line-height: 1;
+}
+
+.riseup-modal-close:hover {
+    color: #d63638;
+}
+
+.riseup-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.riseup-modal-body pre {
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    padding: 15px;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media screen and (max-width: 782px) {
+    .riseup-filters .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .riseup-filters label {
+        width: 100%;
+    }
+
+    .riseup-filters input,
+    .riseup-filters select {
+        width: 100%;
+    }
+
+    .riseup-logs-table .column-ip,
+    .riseup-logs-table .column-details {
+        display: none;
+    }
+
+    .riseup-stats {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
