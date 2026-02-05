@@ -12,6 +12,7 @@ import {
   ScrollText,
   FlaskConical,
   History,
+  Code2,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { to: "/tests", label: "E2E Tests", icon: FlaskConical },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/sessions", label: "Sessions", icon: History },
+  { to: "/api-explorer", label: "API Explorer", icon: Code2 },
   { to: "/errors", label: "Errors", icon: AlertCircle },
   { to: "/settings", label: "Settings", icon: Settings },
 ];

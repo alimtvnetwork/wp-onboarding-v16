@@ -27,6 +27,7 @@ import Sessions from "@/pages/Sessions";
 import Settings from "@/pages/Settings";
 import Errors from "@/pages/Errors";
 import Tests from "@/pages/Tests";
+import ApiExplorer from "@/pages/ApiExplorer";
 import NotFound from "@/pages/NotFound";
 
 function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string; triggerComponent?: string; triggerAction?: string }) {
@@ -185,6 +186,7 @@ const App = () => (
                     <Route path="tests" element={<Tests />} />
                     <Route path="logs" element={<Logs />} />
                     <Route path="sessions" element={<Sessions />} />
+                    <Route path="api-explorer" element={<ApiExplorer />} />
                     <Route path="settings" element={<Settings />} />
                     <Route path="errors" element={<Errors />} />
                   </Route>
