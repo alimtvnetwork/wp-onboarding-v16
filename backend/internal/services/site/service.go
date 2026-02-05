@@ -1126,16 +1126,16 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	// Start session if service available
 	var sessionID string
 	if s.sessionService != nil {
-		var sessionType interface{}
+		var sessionType session.SessionType
 		switch action {
 		case "enable":
-			sessionType = "remote_plugin_enable"
+			sessionType = session.SessionTypeRemotePluginEnable
 		case "disable":
-			sessionType = "remote_plugin_disable"
+			sessionType = session.SessionTypeRemotePluginDisable
 		case "delete":
-			sessionType = "remote_plugin_delete"
+			sessionType = session.SessionTypeRemotePluginDelete
 		default:
-			sessionType = "remote_plugin_action"
+			sessionType = session.SessionType("remote_plugin_action")
 		}
 		sessionID, _ = s.sessionService.StartSession(sessionType, 0, siteID, pluginSlug, site.Name)
 	}
