@@ -180,7 +180,8 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	// CRITICAL: Always resolve to absolute path before any file operations
 	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
-		return nil, fmt.Errorf("resolve zip path: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "resolve zip path").
+			WithContext("path", zipPath)
 	}
 
 	c.progress(ActionUpload, "running", fmt.Sprintf("Reading %s for upload...", absZipPath), map[string]interface{}{
@@ -191,13 +192,14 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	// Read the ZIP file
 	fileBytes, err := os.ReadFile(absZipPath)
 	if err != nil {
-		return nil, fmt.Errorf("read zip file at %s: %w", absZipPath, err)
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "read zip file").
+			WithContext("path", pathutil.ForDisplay(absZipPath))
 	}
 
 	// STEP 1: Check uploader status BEFORE attempting upload
 	_, namespace, checkErr := c.CheckRiseupAsiaAvailable()
 	if checkErr != nil {
-		return nil, fmt.Errorf("pre-upload status check failed: %w", checkErr)
+		return nil, apperror.Wrap(checkErr, apperror.ErrWPConnection, "pre-upload status check failed")
 	}
 	if namespace == "" {
 		namespace = RiseupAsiaNamespace
