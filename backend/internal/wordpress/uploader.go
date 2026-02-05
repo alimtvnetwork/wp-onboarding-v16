@@ -267,12 +267,13 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return nil, fmt.Errorf("marshal request body: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "marshal upload request body")
 	}
 
 	req, err := http.NewRequest("POST", uploadURL, bytes.NewReader(jsonBody))
 	if err != nil {
-		return nil, fmt.Errorf("create upload request: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "create upload HTTP request").
+			WithContext("url", uploadURL)
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
@@ -282,7 +283,8 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("upload request failed: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "upload request failed").
+			WithContext("url", uploadURL)
 	}
 	defer resp.Body.Close()
 
@@ -334,7 +336,8 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 	endpoint := fmt.Sprintf("/%s"+EndpointEnable, namespace, slug)
 	resp, err := c.request("POST", endpoint, nil)
 	if err != nil {
-		return fmt.Errorf("enable plugin request failed: %w", err)
+		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "enable plugin request failed").
+			WithContext("slug", slug)
 	}
 	defer resp.Body.Close()
 
@@ -366,7 +369,8 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 	endpoint := fmt.Sprintf("/%s"+EndpointDisable, namespace, slug)
 	resp, err := c.request("POST", endpoint, nil)
 	if err != nil {
-		return fmt.Errorf("disable plugin request failed: %w", err)
+		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "disable plugin request failed").
+			WithContext("slug", slug)
 	}
 	defer resp.Body.Close()
 
@@ -401,7 +405,8 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
-		return fmt.Errorf("create delete request: %w", err)
+		return apperror.Wrap(err, apperror.ErrInternal, "create delete request").
+			WithContext("url", url)
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
@@ -410,7 +415,8 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("delete plugin request failed: %w", err)
+		return apperror.Wrap(err, apperror.ErrWPConnection, "delete plugin request failed").
+			WithContext("slug", slug)
 	}
 	defer resp.Body.Close()
 
@@ -447,7 +453,8 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("list plugins failed: status %d", resp.StatusCode)
+		return nil, apperror.New(apperror.ErrWPPluginList, "list plugins failed").
+			WithContext("statusCode", resp.StatusCode)
 	}
 
 	var response struct {
@@ -456,7 +463,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 		Plugins []UploaderPluginInfo `json:"plugins"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("decode plugins: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugins response")
 	}
 
 	return response.Plugins, nil
@@ -477,7 +484,9 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("list files failed: status %d", resp.StatusCode)
+		return nil, apperror.New(apperror.ErrWPPluginGet, "list plugin files failed").
+			WithContext("statusCode", resp.StatusCode).
+			WithContext("slug", slug)
 	}
 
 	var response struct {
@@ -487,7 +496,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 		Files   []UploaderFileInfo `json:"files"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("decode files: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode files response")
 	}
 
 	return response.Files, nil
@@ -512,13 +521,14 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return fmt.Errorf("marshal body: %w", err)
+		return apperror.Wrap(err, apperror.ErrInternal, "marshal replace file body")
 	}
 
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
-		return fmt.Errorf("create request: %w", err)
+		return apperror.Wrap(err, apperror.ErrInternal, "create replace file request").
+			WithContext("url", url)
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
@@ -528,7 +538,8 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("replace file request failed: %w", err)
+		return apperror.Wrap(err, apperror.ErrWPConnection, "replace file request failed").
+			WithContext("path", relPath)
 	}
 	defer resp.Body.Close()
 
@@ -563,7 +574,8 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 	req, err := http.NewRequest("DELETE", url, bytes.NewReader(jsonBody))
 	if err != nil {
-		return fmt.Errorf("create request: %w", err)
+		return apperror.Wrap(err, apperror.ErrInternal, "create delete file request").
+			WithContext("url", url)
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
@@ -573,7 +585,8 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("delete file request failed: %w", err)
+		return apperror.Wrap(err, apperror.ErrWPConnection, "delete file request failed").
+			WithContext("path", relPath)
 	}
 	defer resp.Body.Close()
 
@@ -643,13 +656,14 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return nil, fmt.Errorf("marshal sync request: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "marshal sync request")
 	}
 
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
-		return nil, fmt.Errorf("create sync request: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "create sync request").
+			WithContext("url", url)
 	}
 
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
@@ -659,7 +673,8 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("sync request failed: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "sync request failed").
+			WithContext("slug", slug)
 	}
 	defer resp.Body.Close()
 
@@ -685,7 +700,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 
 	var result SyncResult
 	if err := json.Unmarshal(respBytes, &result); err != nil {
-		return nil, fmt.Errorf("decode sync result: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode sync result")
 	}
 
 	return &result, nil
@@ -710,7 +725,7 @@ type ExportSelfResult struct {
 func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		return nil, fmt.Errorf("Riseup Asia Uploader not available on site")
+		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
 	c.progress(ActionExportSelf, "running", "Exporting Riseup Asia Uploader plugin...", nil)
@@ -719,7 +734,7 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("export-self request failed: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "export-self request failed")
 	}
 	defer resp.Body.Close()
 
@@ -739,7 +754,7 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 
 	var result ExportSelfResult
 	if err := json.Unmarshal(respBytes, &result); err != nil {
-		return nil, fmt.Errorf("decode export-self result: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode export-self result")
 	}
 
 	c.progress(ActionExportSelf, "completed", fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
