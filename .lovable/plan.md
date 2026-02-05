@@ -1,356 +1,293 @@
-# Implementation Plan: Error Handling Verification and Bulk Scan Feature
 
-## ✅ COMPLETED - 2026-02-05
+# Comprehensive Audit Plan: Error Handling & Path Management
 
-All tasks from this plan have been implemented successfully.
+## Executive Summary
 
-### Completed Items:
-1. ✅ Fixed backend log format to `[vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]`
-2. ✅ Added missing E7xxx (Git) and E8xxx (Build) error codes
-3. ✅ Fixed ZIP naming to use slug format (`plugin-name.zip`)
-4. ✅ Fixed "Rise Up" → "RiseupAsia" naming
-5. ✅ Added bulk scan directories endpoint and UI
-6. ✅ Added stack trace capture to APIError for upload failures
-7. ✅ Added "Keep ZIP Files" setting in Settings and Publish dialog
-8. ✅ Added ZIP structure logging during package stage
-9. ✅ Standardized all WordPress API errors to use `APIError` with endpoint URL
-10. ✅ Created WordPress API Error Standard memory file
+This plan addresses two critical areas identified in the Go backend and frontend codebase:
+
+1. **Error Handling Gaps** - Many places use `fmt.Errorf()` instead of structured `apperror.Wrap()` or `apperror.New()`, which means stack traces are not captured
+2. **Path Management Issues** - Multiple services use raw `filepath.Join()` instead of the `pathutil` package, bypassing Windows long-path handling and absolute path resolution
 
 ---
 
-## Summary
+## Part 1: Path Management Audit
 
-This plan addresses two main areas:
-1. **Error Handling Gaps** - Fix missing Git/Build error codes and ensure comprehensive stack traces
-2. **New Feature** - Add "Scan All Directories" bulk action for the Plugins page
+### Current State
 
----
+The `pathutil` package provides Windows-aware path utilities:
+- `ToAbsolute()` - Converts to absolute path with Windows long-path prefix for paths >240 chars
+- `Join()` - Joins and converts to absolute
+- `ForDisplay()` - Converts to forward slashes for log consistency
 
-## Part 1: Error Handling Analysis and Fixes
+### Files Using Raw `filepath.Join` (Must Be Updated)
 
-### Current State (Verified)
+| File | Lines | Issue |
+|------|-------|-------|
+| `backend/internal/services/publish/service.go` | 722, 765, 821, 837 | ZIP creation and file walking |
+| `backend/internal/services/backup/service.go` | 74, 274, 390 | Backup paths and ZIP entries |
+| `backend/internal/services/plugin/scanner.go` | 32, 160, 229 | Detection file paths and PHP scanning |
+| `backend/internal/services/git/service.go` | 138, 217, 397, 460, 513 | Git directory checks |
+| `backend/internal/services/watcher/service.go` | 299, 337 | File cache population |
+| `backend/internal/services/sync/service.go` | 333, 348, 371 | Local file scanning |
+| `backend/internal/database/database.go` | 29, 98, 100, 104 | Database directory creation |
+| `backend/internal/database/splitdb/manager.go` | 94, 230, 236, 348, 350 | Split DB paths |
+| `backend/internal/database/splitdb/export.go` | 35, 137, 170, 235, 312 | Export paths |
+| `backend/internal/api/router.go` | 182, 188, 189, 272, 276, 282 | SPA static file serving |
+| `backend/internal/config/config.go` | (various) | Config paths |
 
-The stack trace implementation is **correctly implemented** in these locations:
-
-- **apperror.New()** and **apperror.Wrap()** - Both automatically capture full stack traces via `captureStackTrace()`
-- **Logger** - Automatically appends stack traces for ERROR and FATAL level messages
-- **Process Output** - `LogProcessOutput()` and `LogProcessError()` capture stdout/stderr from external commands
-
-### Issue Found: Missing Error Code Definitions
-
-The following error codes are **used** in the codebase but **not defined** in `codes.go`:
-
-| Code Used | Location | Status |
-|-----------|----------|--------|
-| `ErrGitNotRepo` | git/service.go:143 | Missing |
-| `ErrGitCommand` | git/service.go:560 | Missing |
-| `ErrBuildNotConfigured` | git/service.go:259 | Missing |
-| `ErrBuildFailed` | git/service.go:307 | Missing |
-
-### Fix Required
-
-Add Git and Build error code definitions to `backend/pkg/apperror/codes.go`:
+### Implementation Steps
 
 ```text
-// Git errors (E7xxx)
-const (
-    ErrGitNotRepo         = "E7001" // Directory is not a git repository
-    ErrGitCommand         = "E7002" // Git command execution failed
-    ErrGitPull            = "E7003" // Git pull failed
-    ErrGitPush            = "E7004" // Git push failed
-    ErrGitCommit          = "E7005" // Git commit failed
-    ErrGitBranch          = "E7006" // Git branch operation failed
-)
+Step 1: Update imports in all affected files
+        Add: "wp-plugin-publish/pkg/pathutil"
 
-// Build errors (E8xxx)
-const (
-    ErrBuildNotConfigured = "E8001" // Build not configured for plugin
-    ErrBuildFailed        = "E8002" // Build command failed
-    ErrBuildTimeout       = "E8003" // Build command timed out
-)
+Step 2: Replace filepath.Join with pathutil.Join or pathutil.MustJoin
+        - Use pathutil.Join() when error handling is needed
+        - Use pathutil.MustJoin() for paths guaranteed to be valid
+
+Step 3: Replace filepath.Abs with pathutil.ToAbsolute
+        - Especially critical for paths passed to external systems
+
+Step 4: Use pathutil.ForDisplay() for all log output paths
+        - Ensures consistent forward-slash format in logs
 ```
 
 ---
 
-## Part 2: Add "Scan All Directories" Bulk Action
+## Part 2: Error Handling Audit
 
-### New Backend Endpoint
+### Current State
 
-Create a new endpoint that scans multiple paths and returns results:
+The `apperror` package provides structured errors with:
+- Error codes (E1xxx - E9xxx)
+- Automatic stack trace capture
+- File/line/function context
+- Context key-value pairs
 
-**Endpoint:** `POST /api/v1/plugins/scan-directories`
+### Files Using `fmt.Errorf` (Must Be Updated)
 
-**Request Body:**
+| File | Count | Critical Areas |
+|------|-------|----------------|
+| `backend/internal/wordpress/client.go` | ~16 | Request creation, JSON marshaling, auth failures |
+| `backend/internal/wordpress/uploader.go` | ~12 | Path resolution, file reading, upload errors |
+| `backend/internal/services/site/service.go` | ~8 | Uploader ZIP creation, validation |
+| `backend/internal/database/database.go` | ~6 | Directory creation, DB opening |
+| `backend/internal/database/migrations.go` | ~8 | Migration table creation, SQL execution |
+| `backend/internal/database/splitdb/manager.go` | ~10 | Data dir creation, DB configuration |
+| `backend/internal/database/splitdb/export.go` | ~6 | Project directory, file operations |
+| `backend/internal/config/config.go` | ~4 | Config loading |
+| `backend/internal/services/e2e/service.go` | ~2 | Active run check |
+
+### Implementation Steps
+
 ```text
-{
-  "paths": ["/path/to/plugins", "/another/path"],
-  "createDetection": true
+Step 1: Define new error codes if needed
+        - E4xxx for file system errors (some already exist)
+        - E2xxx for database errors (some already exist)
+        - Verify all used codes are defined in codes.go
+
+Step 2: Replace fmt.Errorf with appropriate apperror function
+        - apperror.New(code, message) for new errors
+        - apperror.Wrap(err, code, message) for wrapping existing errors
+
+Step 3: Add context where helpful
+        - .WithContext("path", path)
+        - .WithContext("endpoint", endpoint)
+        - .WithContext("statusCode", status)
+```
+
+---
+
+## Part 3: Specific File Changes
+
+### File: backend/internal/wordpress/client.go
+
+**Before:**
+```text
+return nil, fmt.Errorf("failed to marshal request body: %w", err)
+return nil, fmt.Errorf("failed to create request: %w", err)
+return nil, fmt.Errorf("cannot reach site: %w", err)
+```
+
+**After:**
+```text
+return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body")
+return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request")
+return nil, apperror.Wrap(err, apperror.ErrWPConnection, "cannot reach WordPress site").
+    WithContext("url", c.baseURL)
+```
+
+### File: backend/internal/wordpress/uploader.go
+
+**Before:**
+```text
+return nil, fmt.Errorf("resolve zip path: %w", err)
+return nil, fmt.Errorf("read zip file at %s: %w", absZipPath, err)
+```
+
+**After:**
+```text
+return nil, apperror.Wrap(err, apperror.ErrFSRead, "resolve zip path").
+    WithContext("path", zipPath)
+return nil, apperror.Wrap(err, apperror.ErrFSRead, "read zip file").
+    WithContext("path", absZipPath)
+```
+
+### File: backend/internal/database/database.go
+
+**Before:**
+```text
+return nil, fmt.Errorf("failed to create database directory: %w", err)
+return nil, fmt.Errorf("failed to open database: %w", err)
+```
+
+**After:**
+```text
+return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "create database directory").
+    WithContext("path", dir)
+return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "open database connection").
+    WithContext("path", path)
+```
+
+### File: backend/internal/services/backup/service.go
+
+**Before:**
+```text
+backupPath := filepath.Join(s.backupDir, filename)
+```
+
+**After:**
+```text
+backupPath, err := pathutil.Join(s.backupDir, filename)
+if err != nil {
+    return nil, apperror.Wrap(err, apperror.ErrFSWrite, "resolve backup path")
 }
 ```
 
-**Response:**
+### File: backend/internal/services/git/service.go
+
+**Before:**
 ```text
-{
-  "success": true,
-  "data": {
-    "scanned": 5,
-    "detected": 3,
-    "results": [
-      { "path": "...", "isPlugin": true, "metadata": {...} },
-      ...
-    ]
-  }
-}
+gitDir := filepath.Join(p.Path, ".git")
+if !dirExists(gitDir) {
 ```
 
-### Frontend Changes
+**After:**
+```text
+gitDir := pathutil.MustJoin(p.Path, ".git")
+if !pathutil.IsDir(gitDir) {
+```
 
-1. **Update BulkActionsBar** - Add a "Scan Directories" action button
-2. **Create ScanAllDirectoriesDialog** - Dialog to select base paths to scan
-3. **Update Plugins.tsx** - Wire up the new bulk action
+---
 
-### UI Flow
+## Part 4: New Error Codes to Add
 
-1. User selects plugins in the list
-2. Clicks "Scan All" in the bulk actions bar
-3. A dialog opens showing:
-   - Option to scan parent directories of selected plugins
-   - Checkbox for "Create wp-plugin-detected.json files"
-   - Progress indicator during scan
-4. Results show newly detected plugins with option to register them
+Add these to `backend/pkg/apperror/codes.go` if not already present:
+
+```text
+// Connection errors (E3xxx range)
+const (
+    ErrWPConnection  = "E3010" // WordPress connection failed
+    ErrWPAuth        = "E3011" // WordPress authentication failed
+    ErrWPPermission  = "E3012" // WordPress permission denied
+)
+
+// File system errors (E4xxx range) - verify these exist
+const (
+    ErrFSRead       = "E4001" // File read failed
+    ErrFSWrite      = "E4002" // File write failed  
+    ErrDirCreate    = "E4003" // Directory creation failed
+    ErrDirRead      = "E4004" // Directory read failed
+    ErrPathResolve  = "E4005" // Path resolution failed
+)
+
+// Database errors (E2xxx range) - verify these exist
+const (
+    ErrDatabaseConnect = "E2001" // Database connection failed
+    ErrDatabaseMigrate = "E2002" // Database migration failed
+)
+```
+
+---
+
+## Part 5: Testing Verification
+
+After implementing changes:
+
+1. **Path Resolution Test**
+   - Create a path longer than 260 characters on Windows
+   - Verify the `\\?\` prefix is correctly added
+   - Verify logs show absolute paths with forward slashes
+
+2. **Error Stack Trace Test**
+   - Trigger an upload error (wrong credentials)
+   - Verify the error includes:
+     - Error code (E3xxx)
+     - Full stack trace with file:line
+     - Context (endpoint, URL, response body)
+
+3. **Log Format Verification**
+   - All logs should follow: `[vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]`
+   - Error logs should include stack traces
 
 ---
 
 ## Implementation Order
 
-### Step 1: Add Missing Error Codes
-- File: `backend/pkg/apperror/codes.go`
-- Add Git errors (E7xxx) and Build errors (E8xxx)
+### Phase 1: Core Infrastructure (Priority: High)
+1. Verify all error codes exist in `codes.go`
+2. Update `pathutil` package if any missing functions needed
+3. Update `wordpress/client.go` - most critical for external API calls
+4. Update `wordpress/uploader.go` - upload failures need full context
 
-### Step 2: Create Bulk Scan Endpoint
-- File: `backend/internal/api/handlers/handlers.go`
-  - Add `ScanDirectoriesPath` handler
-- File: `backend/internal/api/router.go`
-  - Register new route
-- File: `backend/internal/api/handlers/adapters.go`
-  - Add interface method if needed
+### Phase 2: Services (Priority: Medium)
+5. Update `services/publish/service.go` - ZIP creation paths
+6. Update `services/backup/service.go` - backup paths
+7. Update `services/plugin/scanner.go` - directory scanning
+8. Update `services/git/service.go` - git directory checks
+9. Update `services/watcher/service.go` - file watching
+10. Update `services/sync/service.go` - file comparison
 
-### Step 3: Add Frontend API Method
-- File: `src/lib/api.ts`
-  - Add `scanDirectories(paths: string[], createDetection: boolean)` method
+### Phase 3: Database Layer (Priority: Medium)
+11. Update `database/database.go`
+12. Update `database/migrations.go`
+13. Update `database/splitdb/manager.go`
+14. Update `database/splitdb/export.go`
 
-### Step 4: Update BulkActionsBar
-- File: `src/components/plugins/BulkActionsBar.tsx`
-  - Add "Scan All" button
-  - Add callback prop `onScanAll`
-
-### Step 5: Wire Up in Plugins Page
-- File: `src/pages/Plugins.tsx`
-  - Add handler for bulk scan action
-  - Show toast/dialog with scan results
-
----
-
-## Technical Details
-
-### Error Code Categories (Updated)
-
-| Range | Category |
-|-------|----------|
-| E1xxx | Configuration |
-| E2xxx | Database |
-| E3xxx | WordPress API |
-| E4xxx | File System |
-| E5xxx | Sync |
-| E6xxx | Backup |
-| E7xxx | Git (new) |
-| E8xxx | Build (new) |
-| E9xxx | General |
-
-### Stack Trace Flow (Verified)
-
-```text
-Error occurs
-    |
-    v
-apperror.New/Wrap called
-    |
-    +-- captureContext() -> file, line, function
-    |
-    +-- captureStackTrace() -> full call stack
-    |
-    v
-AppError returned with StackTrace field populated
-    |
-    v
-logger.Error() called (optional)
-    |
-    +-- Appends additional stack trace to log output
-    |
-    v
-Written to error.log.txt with full trace
-```
+### Phase 4: Other (Priority: Low)
+15. Update `api/router.go` - static file serving
+16. Update `config/config.go` - config paths
+17. Update `services/site/service.go` - uploader ZIP creation
+18. Update `services/e2e/service.go` - test service
 
 ---
 
-## Files to Modify
+## Memory/Documentation Updates
 
-| File | Changes |
-|------|---------|
-| `backend/pkg/apperror/codes.go` | Add E7xxx and E8xxx error codes |
-| `backend/internal/api/handlers/handlers.go` | Add ScanDirectoriesPath handler |
-| `backend/internal/api/router.go` | Register new route |
-| `src/lib/api.ts` | Add scanDirectories method |
-| `src/components/plugins/BulkActionsBar.tsx` | Add Scan All button |
-| `src/pages/Plugins.tsx` | Wire up bulk scan functionality |
+Update these memory files after implementation:
 
+1. **`.lovable/memory/architecture/backend/path-management.md`**
+   - Add: "All file paths passed to file operations, uploads, or logs MUST use pathutil functions"
+   - Add: "filepath.Join is PROHIBITED for paths that leave the local service"
 
-## Additional Strict Instructions
+2. **`.lovable/memory/architecture/backend/logging-requirements.md`**
+   - Add: "All paths in logs must use pathutil.ForDisplay() for consistency"
+   - Add: "External API errors MUST use APIError or apperror.Wrap, never fmt.Errorf"
 
-Below, you will see, uh, error log or error report from the, uh, frontend, uh, me- m-model. Uh, however, if you see the backend error, it's quite confusing. I mean, it does not tell what happened. And I'm not sure how this log is created because the format does not match, as we say it should be. And you can see, like it says, like, "Fail to upload plugin," uh, something like this. Okay? So first of all, rise up, uh, it should be together, and up should be lowercase. That's the first thing. Second, I asked you explicitly not to write this type of log, but the log needs to be meaningful. That means the exact file you try to upload. And what is the stack trace? That means when you try to upload there, what is the error that the server has given? It, it shouldn't be just 500. It should give you some stack trace from there. So that should be printed there. You are not following that. Also, the main root cause here, I think when you zipped it, um, z- zip file to upload, so when the first zip was done, it didn't also mention like what is the folder structure inside the zip. Because it could have been, uh, that either we have the root folder or don't have the root folder. Either one of these is causing the error. Um, but in this case, I do see that the error is uploading the file. Upload- uploading is the issue. Now, if the uploading is the issue, then my, my better knowledge says that you should not name the file like this. So, always name the file like a slug, um, and do not add the date or time. Just add the slug dot zip and upload. If you follow this, follow these patterns, what I'm saying, I hope you will get out of the issues. And in the future try to add more logs, uh, why things happens, how things happens. If these are there, then it's easier for you to solve the issue as well. Also, the UI on the, on the model for the, uh, for the stack section is not very good. I mean, the error location is almost hidden. So there should be, uh, let's say scroll. We could have a vertical scroll for, uh, both cases because the, uh, error model should be fixed if more things comes up, which we should be able to scroll through and see like what is the issue. So th- these are, uh, on top of my head. So fix the rise up naming and add more details. I think this, this will solve the issue. And also add line numbers. So when you are getting a, I mean, error, you are not mentioning the line number, file path, things like that. These are absolutely missing. Don't do that. Please don't do that. It has no value. Okay? You are not making something that has a value. The log needs to have this information. So based on that, please update your memory. Please update the specs that this is how the error needs to be written. Do you understand? Do you have any question, confusion?
-
-The backend error log should be like 
-
-[v1.x 2026-02-05 24:23] [package] Building package... [INFO] [exact file path : line number] 
-
-instead of 
-[2026-02-05T00:05:40.210Z] [INFO] [package] Building package...
-
-Can you please fix it and prioritize it????
-
-
-## Error Report
-
-**App:** WP Plugin Publish v1.19.4
-**Git Commit:** dev
-**Build Time:** 2026-02-04T19:30:00Z
-
-**ID:** 1770249955175-qt8nq5wa0
-**Code:** E9001
-**Level:** error
-**Timestamp:** 2026-02-05T00:05:55.174Z
-
-### Trigger Context
-**Component:** PublishProgressDialog
-**Action:** publish_failed
-**Source:** PublishProgressDialog.onComplete
-
-### Invocation Chain
-```
-PublishProgressDialog.onComplete
-  └─ onClick (index-BuUPtVUG.js:625)
-    └─ Wk (index-BuUPtVUG.js:37)
-      └─ Hk (index-BuUPtVUG.js:37)
-        └─ px (index-BuUPtVUG.js:37)
-          └─ L0 (index-BuUPtVUG.js:37)
-            └─ uh (index-BuUPtVUG.js:40)
-```
-
-
-### Message
-[E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
-
-### Details
-Failed during stage: Uploading to Site
-
-### Request
-**POST** /plugins/3/sites/1/publish
-
-
-### Backend Execution Logs
-```
-[2026-02-05T00:05:40.215Z] [INFO] [init] Starting publish for Category Generator to Atto Property Demo
-[2026-02-05T00:05:40.215Z] [INFO] [init] Starting publish for Category Generator to Atto Property Demo
-[2026-02-05T00:05:40.209Z] [INFO] [backup] Starting publish...
-[2026-02-05T00:05:40.210Z] [INFO] [connect] Connecting to WordPress: https://demoat.attoproperty.com.au
-[2026-02-05T00:05:40.210Z] [INFO] [package] Building package...
-[2026-02-05T00:05:40.210Z] [INFO] [package] Packaging plugin from: D:\wp-work\riseup-asia\category-forge\wordpress-plugin\category-generator
-[2026-02-05T00:05:40.210Z] [INFO] [package] Creating full ZIP with ~0 files
-[2026-02-05T00:05:40.209Z] [INFO] [backup] Starting publish...
-[2026-02-05T00:05:40.210Z] [INFO] [connect] Connecting to WordPress: https://demoat.attoproperty.com.au
-[2026-02-05T00:05:40.210Z] [INFO] [package] Building package...
-[2026-02-05T00:05:40.210Z] [INFO] [package] Packaging plugin from: D:\wp-work\riseup-asia\category-forge\wordpress-plugin\category-generator
-[2026-02-05T00:05:40.210Z] [INFO] [package] Creating full ZIP with ~0 files
-[2026-02-05T00:05:40.224Z] [INFO] [package] ZIP created: Category Generator-1770249940.zip (143386 bytes)
-[2026-02-05T00:05:40.224Z] [INFO] [package] ZIP created: Category Generator-1770249940.zip (143386 bytes)
-[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to WordPress...
-[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to https://demoat.attoproperty.com.au as plugin: category-generator
-[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to WordPress...
-[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to https://demoat.attoproperty.com.au as plugin: category-generator
-[2026-02-05T00:05:48.428Z] [ERROR] [upload] Upload failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
-[2026-02-05T00:05:48.428Z] [ERROR] [upload] Upload failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
-[2026-02-05T00:05:48.427Z] [ERROR] [complete] Publish failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
-[2026-02-05T00:05:48.427Z] [ERROR] [complete] Publish failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
-[2026-02-05T00:05:48.429Z] [ERROR] [failed] [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
-[2026-02-05T00:05:48.429Z] [DEBUG] [cleanup] Removing temp ZIP: .temp\Category Generator-1770249940.zip
-[2026-02-05T00:05:48.429Z] [ERROR] [failed] [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
-[2026-02-05T00:05:48.429Z] [DEBUG] [cleanup] Removing temp ZIP: .temp\Category Generator-1770249940.zip
-```
-
-
-### Parsed Stack Frames
-| # | Function | File | Line |
-|---|----------|------|------|
-| 1 | onClick | index-BuUPtVUG.js | 625 |
-| 2 | Wk | index-BuUPtVUG.js | 37 |
-| 3 | Hk | index-BuUPtVUG.js | 37 |
-| 4 | px | index-BuUPtVUG.js | 37 |
-| 5 | L0 | index-BuUPtVUG.js | 37 |
-| 6 | anonymous | index-BuUPtVUG.js | 37 |
-| 7 | uh | index-BuUPtVUG.js | 40 |
-
-### Location
-`index-BuUPtVUG.js:625` (onClick)
-
-### Context
-```json
-{
-  "source": "PublishProgressDialog.onComplete",
-  "triggerComponent": "PublishProgressDialog",
-  "triggerAction": "publish_failed",
-  "pluginId": 3,
-  "pluginName": "Category Generator",
-  "siteId": 1,
-  "siteName": "Atto Property Demo",
-  "failedStage": "upload",
-  "stageStatuses": [
-    {
-      "name": "backup",
-      "status": "success"
-    },
-    {
-      "name": "package",
-      "status": "success",
-      "message": "Building package..."
-    },
-    {
-      "name": "upload",
-      "status": "error",
-      "message": "Uploading to WordPress..."
-    },
-    {
-      "name": "activate",
-      "status": "pending"
-    }
-  ],
-  "backendLogFiles": {
-    "log": "data/errors/log.txt",
-    "errorLog": "data/errors/error.log.txt"
-  }
-}
-```
-
-### Frontend Stack Trace
-```
-    at onClick (http://localhost:8080/assets/index-BuUPtVUG.js:625:7221)
-    at Object.Bk (http://localhost:8080/assets/index-BuUPtVUG.js:37:9855)
-    at Wk (http://localhost:8080/assets/index-BuUPtVUG.js:37:10009)
-    at Hk (http://localhost:8080/assets/index-BuUPtVUG.js:37:10066)
-    at px (http://localhost:8080/assets/index-BuUPtVUG.js:37:31446)
-    at L0 (http://localhost:8080/assets/index-BuUPtVUG.js:37:31863)
-    at http://localhost:8080/assets/index-BuUPtVUG.js:37:36776
-    at uh (http://localhost:8080/assets/index-BuUPtVUG.js:40:36935)
-```
+3. **`.lovable/memory/architecture/backend/wordpress-api-error-standard.md`**
+   - Add: "Request creation errors must use apperror.Wrap with ErrInternal"
+   - Add: "All fmt.Errorf usage in wordpress package is prohibited"
 
 ---
-*Generated by WP Plugin Publish Error Reporter*
+
+## Files to Modify Summary
+
+| Category | File Count | Estimated Changes |
+|----------|------------|-------------------|
+| WordPress package | 2 | ~30 replacements |
+| Services | 7 | ~50 replacements |
+| Database | 4 | ~25 replacements |
+| API/Config | 2 | ~10 replacements |
+| Error codes | 1 | ~5 additions |
+| Memory docs | 3 | Documentation updates |
+| **Total** | **19 files** | **~120 changes** |
