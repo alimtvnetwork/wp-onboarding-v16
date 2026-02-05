@@ -42,6 +42,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -67,6 +73,7 @@ import {
   Archive,
   Zap,
   Files,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
@@ -855,7 +862,7 @@ export default function Plugins() {
                     </div>
                   </div>
 
-                  <div className="flex gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     {/* Sync button - always visible, disabled if no mappings */}
                     <Button
                       variant="ghost"
@@ -863,6 +870,7 @@ export default function Plugins() {
                       onClick={() => handleSyncPlugin(plugin)}
                       disabled={!plugin.mappings?.length || isSyncing === plugin.id}
                       title={plugin.mappings?.length ? "Check sync status with sites" : "No sites linked – click Sites to add"}
+                      className="h-8"
                     >
                       {isSyncing === plugin.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -891,7 +899,7 @@ export default function Plugins() {
                             : "No sites mapped"
                           }
                           className={cn(
-                            "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10",
+                            "h-8 text-amber-600 hover:text-amber-700 hover:bg-amber-500/10",
                             !plugin.mappings?.length && "text-muted-foreground"
                           )}
                         >
@@ -919,6 +927,7 @@ export default function Plugins() {
                       disabled={isPublishing === plugin.id}
                       title={plugin.mappings?.length ? "Publish to WordPress sites" : "Click to see how to add sites"}
                       className={cn(
+                        "h-8",
                         plugin.mappings?.length ? "text-primary hover:text-primary" : "text-muted-foreground"
                       )}
                     >
@@ -930,56 +939,67 @@ export default function Plugins() {
                       <span className="ml-1 hidden sm:inline">Publish</span>
                     </Button>
 
-                    {/* Refresh/Scan button - always visible */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRefreshScan(plugin.id)}
-                      disabled={isScanning === plugin.id}
-                      title="Scan for file changes"
-                    >
-                      {isScanning === plugin.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                      <span className="ml-1 hidden sm:inline">Scan</span>
-                    </Button>
-
-                    {/* Git Pull button - only for git-enabled plugins */}
-                    {plugin.gitEnabled && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleGitPull(plugin.id)}
-                        disabled={isPulling === plugin.id}
-                        title="Git pull and scan"
-                      >
-                        {isPulling === plugin.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <GitBranch className="h-4 w-4" />
+                    {/* Grouped secondary actions dropdown (Scan, Pull, Backup) */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2"
+                          title="More actions (Scan, Pull, Backup)"
+                        >
+                          {isScanning === plugin.id || isPulling === plugin.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <MoreHorizontal className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem
+                          onClick={() => handleRefreshScan(plugin.id)}
+                          disabled={isScanning === plugin.id}
+                          className="gap-2"
+                        >
+                          {isScanning === plugin.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                          Scan
+                        </DropdownMenuItem>
+                        {plugin.gitEnabled && (
+                          <DropdownMenuItem
+                            onClick={() => handleGitPull(plugin.id)}
+                            disabled={isPulling === plugin.id}
+                            className="gap-2"
+                          >
+                            {isPulling === plugin.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <GitBranch className="h-4 w-4" />
+                            )}
+                            Pull
+                          </DropdownMenuItem>
                         )}
-                        <span className="ml-1 hidden sm:inline">Pull</span>
-                      </Button>
-                    )}
-                    {/* Backup button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setBackupPlugin(plugin);
-                        setShowBackupProgress(true);
-                      }}
-                      title="Create backup of plugin on remote site"
-                    >
-                      <Archive className="h-4 w-4" />
-                      <span className="ml-1 hidden sm:inline">Backup</span>
-                    </Button>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setBackupPlugin(plugin);
+                            setShowBackupProgress(true);
+                          }}
+                          className="gap-2"
+                        >
+                          <Archive className="h-4 w-4" />
+                          Backup
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => openMappingDialog(plugin)}
+                      className="h-8"
                     >
                       <Link2 className="h-4 w-4" />
                       <span className="ml-1 hidden sm:inline">Sites</span>
@@ -987,7 +1007,7 @@ export default function Plugins() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="h-8 text-destructive hover:text-destructive"
                       onClick={() => handleDeletePlugin(plugin.id)}
                     >
                       <Trash2 className="h-4 w-4" />

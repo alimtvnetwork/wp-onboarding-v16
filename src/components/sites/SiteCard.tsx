@@ -237,62 +237,62 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </p>
         )}
 
-        {/* Action buttons */}
-        <div className="flex gap-1 pt-2 border-t">
+        {/* Action buttons - responsive grid layout */}
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 pt-2 border-t">
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1"
+            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
             onClick={() => navigate(`/api-explorer?siteId=${site.id}`)}
             disabled={site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "Test API endpoints"}
           >
-            <FlaskConical className="h-4 w-4 mr-1" />
-            API
+            <FlaskConical className="h-4 w-4" />
+            <span className="text-[10px] sm:text-xs">API</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1"
+            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
             onClick={() => setShowRemotePlugins(true)}
             disabled={site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "View plugins on this site"}
           >
-            <Eye className="h-4 w-4 mr-1" />
-            Plugins
+            <Eye className="h-4 w-4" />
+            <span className="text-[10px] sm:text-xs">Plugins</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1"
+            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
           >
             {deployingUploader ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Upload className="h-4 w-4 mr-1" />
+              <Upload className="h-4 w-4" />
             )}
-            Deploy
+            <span className="text-[10px] sm:text-xs">Deploy</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1"
+            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
             onClick={() => onEdit(site)}
           >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
+            <Edit className="h-4 w-4" />
+            <span className="text-[10px] sm:text-xs">Edit</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={() => onDelete(site.id)}
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
+            <Trash2 className="h-4 w-4" />
+            <span className="text-[10px] sm:text-xs">Delete</span>
           </Button>
         </div>
       </CardContent>

@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useErrorStore, CapturedError, StackFrame } from '@/stores/errorStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText, ChevronDown, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { JsonHighlighter } from "@/components/shared/JsonHighlighter";
 import { SessionLogsTab } from "@/components/errors/SessionLogsTab";
 import { formatDateTimeUtc, toClipboardText, unescapeEmbeddedNewlines } from "@/lib/logText";
+import { api } from "@/lib/api";
 
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal } = useErrorStore();
@@ -95,7 +103,7 @@ export function GlobalErrorModal() {
                 <FileText className="h-3 w-3 mr-1" />
                 Session
               </TabsTrigger>
-              <TabsTrigger value="backend" disabled={!selectedError.backendLogs?.length && !selectedError.backendStackTrace}>
+              <TabsTrigger value="backend">
                 <Server className="h-3 w-3 mr-1" />
                 Backend
               </TabsTrigger>
@@ -790,49 +798,143 @@ export function GlobalErrorModal() {
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button 
-            variant="outline" 
-            onClick={async () => {
-              try {
-                const report = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
-
-                const resp = await fetch("/api/v1/errors/bundle", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ report }),
-                });
-
-                if (!resp.ok) {
-                  throw new Error(`bundle download failed: ${resp.status}`);
+          {/* Download Bundle with dropdown for individual files */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Download
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  const report = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
+                  const resp = await fetch("/api/v1/errors/bundle", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ report }),
+                  });
+                  if (!resp.ok) throw new Error(`bundle download failed: ${resp.status}`);
+                  const blob = await resp.blob();
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = `error-bundle-${new Date().toISOString().slice(0, 10)}.zip`;
+                  link.click();
+                  window.URL.revokeObjectURL(url);
+                  toast.success("Downloading error bundle...");
+                } catch (err) {
+                  console.error(err);
+                  toast.error("Failed to download error bundle");
                 }
-
-                const blob = await resp.blob();
+              }}>
+                <FileDown className="h-4 w-4 mr-2" />
+                Full Bundle (ZIP)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  const resp = await api.getBackendErrorLog();
+                  if (resp.success && resp.data) {
+                    const blob = new Blob([resp.data.content], { type: "text/plain" });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "error.log.txt";
+                    link.click();
+                    window.URL.revokeObjectURL(url);
+                    toast.success("Downloaded error.log.txt");
+                  } else {
+                    toast.error(resp.error?.message || "No error log found");
+                  }
+                } catch (err) {
+                  toast.error("Failed to download error log");
+                }
+              }}>
+                <FileText className="h-4 w-4 mr-2" />
+                error.log.txt
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  const resp = await api.getBackendFullLog();
+                  if (resp.success && resp.data) {
+                    const blob = new Blob([resp.data.content], { type: "text/plain" });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "log.txt";
+                    link.click();
+                    window.URL.revokeObjectURL(url);
+                    toast.success("Downloaded log.txt");
+                  } else {
+                    toast.error(resp.error?.message || "No full log found");
+                  }
+                } catch (err) {
+                  toast.error("Failed to download log file");
+                }
+              }}>
+                <Terminal className="h-4 w-4 mr-2" />
+                log.txt (Full)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => {
+                const report = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
+                const blob = new Blob([report], { type: "text/markdown" });
                 const url = window.URL.createObjectURL(blob);
                 const link = document.createElement("a");
                 link.href = url;
-                link.download = `error-bundle-${new Date().toISOString().slice(0, 10)}.zip`;
+                link.download = `error-report-${new Date().toISOString().slice(0, 10)}.md`;
                 link.click();
                 window.URL.revokeObjectURL(url);
-
-                toast.success("Downloading error bundle...");
-              } catch (err) {
-                console.error(err);
-                toast.error("Failed to download error bundle");
-              }
-            }}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download Bundle
-          </Button>
+                toast.success("Downloaded report as Markdown");
+              }}>
+                <FileCode2 className="h-4 w-4 mr-2" />
+                Report (.md)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button variant="outline" onClick={closeErrorModal}>
             Close
           </Button>
-          <Button onClick={copyFullError}>
-            <Copy className="h-4 w-4 mr-2" />
-            Copy Full Report
-          </Button>
+          
+          {/* Copy Full Report with dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={copyFullError}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy Full Report
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  const resp = await api.getBackendErrorLog();
+                  if (resp.success && resp.data) {
+                    const report = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
+                    const fullReport = `${report}\n\n---\n\n## Backend Error Log (error.log.txt)\n\n\`\`\`\n${resp.data.content}\n\`\`\`\n`;
+                    navigator.clipboard.writeText(toClipboardText(fullReport));
+                    toast.success("Copied report with backend logs");
+                  } else {
+                    copyFullError();
+                    toast.info("Backend logs not available, copied standard report");
+                  }
+                } catch (err) {
+                  copyFullError();
+                }
+              }}>
+                <Server className="h-4 w-4 mr-2" />
+                Copy with Backend Logs
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </DialogContent>
     </Dialog>
