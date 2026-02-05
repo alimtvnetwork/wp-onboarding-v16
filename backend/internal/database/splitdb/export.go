@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // ExportResult contains information about an export operation
@@ -32,20 +35,23 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	startTime := time.Now()
 	m.log.Info("Starting export", "project", projectSlug, "output", outputPath)
 
-	projectDir := filepath.Join(m.dataDir, projectSlug)
+	projectDir := pathutil.MustJoin(m.dataDir, projectSlug)
 	if _, err := os.Stat(projectDir); os.IsNotExist(err) {
-		return nil, fmt.Errorf("project not found: %s", projectSlug)
+		return nil, apperror.New(apperror.ErrNotFound, "project not found").
+			WithContext("project", projectSlug)
 	}
 
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return nil, fmt.Errorf("failed to create output directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
+			WithContext("path", outputPath)
 	}
 
 	// Create zip file
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create zip file: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file").
+			WithContext("path", outputPath)
 	}
 	defer zipFile.Close()
 
@@ -79,19 +85,22 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 		}
 		writer, err := zipWriter.CreateHeader(header)
 		if err != nil {
-			return fmt.Errorf("failed to create zip entry: %w", err)
+			return apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip entry").
+				WithContext("file", relPath)
 		}
 
 		// Copy file content
 		file, err := os.Open(path)
 		if err != nil {
-			return fmt.Errorf("failed to open file: %w", err)
+			return apperror.Wrap(err, apperror.ErrFSRead, "failed to open file").
+				WithContext("path", path)
 		}
 		defer file.Close()
 
 		written, err := io.Copy(writer, file)
 		if err != nil {
-			return fmt.Errorf("failed to write to zip: %w", err)
+			return apperror.Wrap(err, apperror.ErrFSZip, "failed to write to zip").
+				WithContext("file", relPath)
 		}
 
 		filesCount++
@@ -101,7 +110,8 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("export failed: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "export failed").
+			WithContext("project", projectSlug)
 	}
 
 	duration := time.Since(startTime)
@@ -130,15 +140,17 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
 		m.log.Error("Failed to open zip", "error", err, "zip", zipPath)
-		return nil, fmt.Errorf("failed to open zip: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip").
+			WithContext("path", zipPath)
 	}
 	defer reader.Close()
 
-	projectDir := filepath.Join(m.dataDir, projectSlug)
+	projectDir := pathutil.MustJoin(m.dataDir, projectSlug)
 
 	// Check if project exists
 	if _, err := os.Stat(projectDir); err == nil && !overwrite {
-		return nil, fmt.Errorf("project exists, use overwrite=true to replace")
+		return nil, apperror.New(apperror.ErrFSWrite, "project exists, use overwrite=true to replace").
+			WithContext("project", projectSlug)
 	}
 
 	// Close any open databases for this project
@@ -155,7 +167,8 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 
 	// Create project directory
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create project directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create project directory").
+			WithContext("path", projectDir)
 	}
 
 	var filesCount int
@@ -167,19 +180,22 @@ func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite 
 			continue
 		}
 
-		destPath := filepath.Join(projectDir, file.Name)
+		destPath := pathutil.MustJoin(projectDir, file.Name)
 
 		m.log.Debug("Extracting", "file", file.Name, "size", file.UncompressedSize64)
 
 		// Create directory structure
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
-			return nil, fmt.Errorf("failed to create directory: %w", err)
+			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create directory").
+				WithContext("path", destPath)
 		}
 
 		// Extract file
 		written, err := m.extractZipFile(file, destPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to extract %s: %w", file.Name, err)
+			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to extract file").
+				WithContext("file", file.Name).
+				WithContext("destPath", destPath)
 		}
 
 		filesCount++
@@ -232,7 +248,7 @@ func (m *DBManager) registerImportedDatabases(projectSlug string) error {
 		return err
 	}
 
-	projectDir := filepath.Join(m.dataDir, projectSlug)
+	projectDir := pathutil.MustJoin(m.dataDir, projectSlug)
 
 	return filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".db") {
@@ -286,13 +302,15 @@ func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPat
 
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
-		return nil, fmt.Errorf("failed to create output directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
+			WithContext("path", outputPath)
 	}
 
 	// Create zip with only matching types
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create zip file: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file").
+			WithContext("path", outputPath)
 	}
 	defer zipFile.Close()
 
@@ -309,7 +327,7 @@ func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPat
 
 		m.log.Debug("Including", "type", db.Type, "path", db.Path)
 
-		fullPath := filepath.Join(m.dataDir, db.Path)
+		fullPath := pathutil.MustJoin(m.dataDir, db.Path)
 		relPath := strings.TrimPrefix(db.Path, projectSlug+"/")
 
 		header := &zip.FileHeader{

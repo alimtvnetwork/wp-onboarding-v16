@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // serviceImpl implements the E2E Service interface
@@ -236,7 +238,8 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	s.mu.Lock()
 	if s.activeRun != nil && s.activeRun.Status == "running" {
 		s.mu.Unlock()
-		return nil, fmt.Errorf("test run already in progress: %s", s.activeRun.ID)
+		return nil, apperror.New(apperror.ErrE2ERunning, "test run already in progress").
+			WithContext("runId", s.activeRun.ID)
 	}
 	s.mu.Unlock()
 
@@ -474,7 +477,8 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 		return nil
 	}
 	
-	return fmt.Errorf("no active run with ID: %s", runID)
+	return apperror.New(apperror.ErrNotFound, "no active run with ID").
+		WithContext("runId", runID)
 }
 
 // ListRuns returns past test runs
