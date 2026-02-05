@@ -65,6 +65,53 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 	return files, nil
 }
 
+// GetPluginFilesViaRiseup retrieves the list of files for a remote plugin via Riseup Asia Uploader.
+// Returns the files with their MD5 hashes for comparison.
+func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
+	// Use the Riseup Asia Uploader namespace
+	endpoint := fmt.Sprintf("/%s"+EndpointFiles, RiseupAsiaNamespace, slug)
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get plugin files via Riseup: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	body := string(bodyBytes)
+
+	if resp.StatusCode == 404 {
+		return nil, fmt.Errorf("plugin not found on remote: %s", slug)
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, &APIError{
+			Operation:    "get plugin files",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(body, 2000),
+		}
+	}
+
+	// Parse the response
+	var result struct {
+		Success    bool         `json:"success"`
+		Plugin     string       `json:"plugin"`
+		TotalFiles int          `json:"totalFiles"`
+		Files      []RemoteFile `json:"files"`
+	}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode plugin files: %w (body: %s)", err, truncateBody(body, 500))
+	}
+
+	if !result.Success {
+		return nil, fmt.Errorf("remote API returned failure for plugin files: %s", slug)
+	}
+
+	return result.Files, nil
+}
+
 // RequestMutationToken requests a mutation token from the companion plugin for a specific action.
 // Valid actions: upload, enable, disable, delete, restore, backup_manual, debug_enable, debug_disable
 func (c *Client) RequestMutationToken(action string) (string, error) {

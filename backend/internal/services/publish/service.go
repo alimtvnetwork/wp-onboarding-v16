@@ -1507,8 +1507,8 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	}
 	result.PluginName = pluginInfo.Name
 
-	// Get site info
-	siteInfo, err := s.getSiteInfo(ctx, siteID)
+	// Get site info and password
+	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
@@ -1529,7 +1529,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	}
 
 	excludePatterns := pluginInfo.ExcludePatterns
-	var files []FilePreview
+	localFiles := make(map[string]FilePreview)
 	var totalSize int64
 
 	err = filepath.Walk(pluginPath, func(path string, info os.FileInfo, err error) error {
@@ -1567,13 +1567,13 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 
 		// Calculate hash for the file
 		hash, _ := s.calculateFileHash(path)
+		relPathSlash := filepath.ToSlash(relPath)
 
-		files = append(files, FilePreview{
-			Path:       filepath.ToSlash(relPath),
-			ChangeType: "added", // Since we don't have remote comparison yet, all are "added"
-			Size:       info.Size(),
-			LocalHash:  hash,
-		})
+		localFiles[relPathSlash] = FilePreview{
+			Path:      relPathSlash,
+			Size:      info.Size(),
+			LocalHash: hash,
+		}
 		totalSize += info.Size()
 
 		return nil
@@ -1583,10 +1583,77 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to scan plugin files")
 	}
 
+	// Attempt to fetch remote files for true diff comparison
+	remoteFileMap := make(map[string]string) // path -> hash
+	remoteFileFetchFailed := false
+
+	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	remoteFiles, err := wpClient.GetPluginFilesViaRiseup(ctx, mapping.RemoteSlug)
+	if err != nil {
+		// Fallback: try Onboard plugin
+		remoteFiles, err = wpClient.GetPluginFiles(ctx, mapping.RemoteSlug)
+		if err != nil {
+			// Remote files not available - fall back to treating all as "added"
+			s.log.Debug("Could not fetch remote files, falling back to local-only preview", "error", err)
+			remoteFileFetchFailed = true
+		}
+	}
+
+	if !remoteFileFetchFailed {
+		for _, rf := range remoteFiles {
+			remoteFileMap[rf.Path] = rf.Hash
+		}
+	}
+
+	// Compare local and remote files
+	var files []FilePreview
+	var added, modified, deleted int
+
+	for path, localFile := range localFiles {
+		if remoteHash, exists := remoteFileMap[path]; exists {
+			// File exists on remote - check if modified
+			if localFile.LocalHash != remoteHash {
+				localFile.ChangeType = "modified"
+				modified++
+			} else {
+				// Same hash - no change, skip from preview
+				continue
+			}
+			// Remove from remote map to track what's left (deleted files)
+			delete(remoteFileMap, path)
+		} else {
+			// File doesn't exist on remote - it's new
+			localFile.ChangeType = "added"
+			added++
+		}
+		files = append(files, localFile)
+	}
+
+	// Remaining remote files are deleted (exist on remote but not locally)
+	if !remoteFileFetchFailed {
+		for path := range remoteFileMap {
+			files = append(files, FilePreview{
+				Path:       path,
+				ChangeType: "deleted",
+				Size:       0,
+			})
+			deleted++
+		}
+	} else {
+		// If we couldn't fetch remote files, treat all local files as "added"
+		for _, localFile := range localFiles {
+			localFile.ChangeType = "added"
+			files = append(files, localFile)
+			added++
+		}
+	}
+
 	result.Files = files
 	result.TotalFiles = len(files)
 	result.TotalSize = totalSize
-	result.Added = len(files) // All files treated as "added" without remote comparison
+	result.Added = added
+	result.Modified = modified
+	result.Deleted = deleted
 
 	return result, nil
 }

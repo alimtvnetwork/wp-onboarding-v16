@@ -226,6 +226,22 @@ class Riseup_Asia {
                 'permission_callback' => array($this, 'check_logs_permission'),
             ));
 
+            // Plugin files listing endpoint (for diff preview).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_FILES);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILES, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_plugin_files'),
+                'permission_callback' => array($this, 'check_plugin_permission'),
+                'args'                => array(
+                    'slug' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) {
+                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                        },
+                    ),
+                ),
+            ));
+
             $this->file_logger->info('All REST API routes registered successfully');
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to register routes');
@@ -669,6 +685,99 @@ class Riseup_Asia {
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'List plugins error');
             return $this->error_response('Failed to list plugins: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Handle plugin files listing (for diff preview).
+     * Returns all files in a plugin directory with their MD5 hashes.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_plugin_files($request) {
+        $slug = $request->get_param('slug');
+        $this->file_logger->info('Plugin files endpoint called', array('slug' => $slug));
+
+        try {
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+
+            // Find the plugin directory
+            $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+            
+            if (!is_dir($plugin_dir)) {
+                $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
+                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+            }
+
+            // Load uploadignore patterns if available
+            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+
+            $files = array();
+            $this->scan_directory_for_files($plugin_dir, $plugin_dir, $ignore, $files);
+
+            $this->file_logger->info('Plugin files scanned', array('slug' => $slug, 'count' => count($files)));
+
+            return new WP_REST_Response(array(
+                'success'    => true,
+                'plugin'     => $slug,
+                'totalFiles' => count($files),
+                'files'      => $files,
+            ), RISEUP_HTTP_OK);
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Plugin files error');
+            return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Recursively scan a directory and collect file info with hashes.
+     *
+     * @param string               $base_dir The base directory for relative paths.
+     * @param string               $dir      Current directory to scan.
+     * @param Riseup_Upload_Ignore $ignore   Ignore patterns.
+     * @param array                $files    Reference to files array to populate.
+     *
+     * @return void
+     */
+    private function scan_directory_for_files($base_dir, $dir, $ignore, &$files) {
+        $items = @scandir($dir);
+        if ($items === false) {
+            return;
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $full_path = $dir . '/' . $item;
+            $rel_path  = ltrim(str_replace($base_dir, '', $full_path), '/\\');
+
+            // Check ignore patterns
+            if ($ignore->should_ignore($rel_path)) {
+                continue;
+            }
+
+            if (is_dir($full_path)) {
+                // Recurse into subdirectory
+                $this->scan_directory_for_files($base_dir, $full_path, $ignore, $files);
+            } else {
+                // Calculate MD5 hash
+                $hash = @md5_file($full_path);
+                $size = @filesize($full_path);
+                $mtime = @filemtime($full_path);
+
+                $files[] = array(
+                    'path'       => str_replace('\\', '/', $rel_path),
+                    'hash'       => $hash ?: '',
+                    'size'       => $size ?: 0,
+                    'modifiedAt' => $mtime ? gmdate('c', $mtime) : null,
+                );
+            }
         }
     }
 

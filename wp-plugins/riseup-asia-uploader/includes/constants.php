@@ -103,6 +103,10 @@ if (!defined('RISEUP_ENDPOINT_LOGS')) {
 if (!defined('RISEUP_ENDPOINT_LOGS_STATS')) {
     define('RISEUP_ENDPOINT_LOGS_STATS', 'logs/stats');
 }
+// Plugin files listing endpoint - expects slug as path parameter
+if (!defined('RISEUP_ENDPOINT_PLUGIN_FILES')) {
+    define('RISEUP_ENDPOINT_PLUGIN_FILES', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/files');
+}
 
 // =============================================================================
 // DATABASE CONFIGURATION

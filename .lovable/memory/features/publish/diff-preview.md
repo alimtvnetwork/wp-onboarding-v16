@@ -1,7 +1,17 @@
 # Memory: features/publish/diff-preview
 Updated: 2026-02-05
 
-The publish flow includes a "Diff Preview" feature that displays all files that will be deployed before initiating the publish operation. Users can review the file list, filter by change type (added/modified/deleted), search for specific files, and **selectively choose which files to deploy** before confirming.
+The publish flow includes a **true diff comparison** feature that compares local files with remote WordPress files to accurately identify added, modified, and deleted files before deployment. Users can review the file list, filter by change type, search, and selectively choose which files to deploy.
+
+## Diff Comparison Logic
+
+1. **Local scan**: Backend scans the local plugin directory and calculates MD5 hashes
+2. **Remote fetch**: Backend calls the WordPress plugin's `/plugins/{slug}/files` endpoint to get remote file hashes
+3. **Comparison**: Files are categorized as:
+   - **Added**: Exists locally but not on remote
+   - **Modified**: Exists on both but hash differs
+   - **Deleted**: Exists on remote but not locally
+4. **Fallback**: If remote files can't be fetched (plugin not installed), all files show as "added"
 
 ## UI Flow
 
@@ -13,15 +23,25 @@ The publish flow includes a "Diff Preview" feature that displays all files that 
 6. Selection controls: "All" / "None" buttons + per-file checkboxes
 7. "Publish X Files" button shows count and proceeds with deployment
 
-## Selective Publishing
+## WordPress Plugin Endpoint
 
-When users select specific files:
-- The `onConfirm` callback receives an array of selected file paths
-- If all files are selected, `undefined` is passed (full publish)
-- Backend receives `mode: "selected"` with `files: [...]` array
-- Only selected files are included in the ZIP and deployed
+```
+GET /wp-json/riseup-asia-uploader/v1/plugins/{slug}/files
+```
 
-## API Endpoint
+Returns:
+```json
+{
+  "success": true,
+  "plugin": "my-plugin",
+  "totalFiles": 42,
+  "files": [
+    { "path": "includes/class-main.php", "hash": "abc123def456", "size": 4500, "modifiedAt": "2026-02-05T10:30:00Z" }
+  ]
+}
+```
+
+## Backend Preview Endpoint
 
 ```
 GET /api/v1/plugins/{id}/sites/{siteId}/preview
@@ -38,31 +58,22 @@ Returns:
   "remoteSlug": "my-plugin",
   "totalFiles": 42,
   "totalSize": 156789,
-  "added": 42,
-  "modified": 0,
-  "deleted": 0,
+  "added": 10,
+  "modified": 5,
+  "deleted": 2,
   "files": [
-    { "path": "includes/class-main.php", "changeType": "added", "size": 4500, "localHash": "abc123" }
+    { "path": "includes/class-main.php", "changeType": "modified", "size": 4500, "localHash": "abc123" }
   ]
-}
-```
-
-## Publish Endpoint (with selective files)
-
-```
-POST /api/v1/plugins/{id}/sites/{siteId}/publish
-{
-  "mode": "selected",
-  "files": ["includes/class-main.php", "assets/style.css"],
-  "createBackup": true
 }
 ```
 
 ## Components
 
-- `src/components/plugins/DiffPreviewDialog.tsx` - Main preview dialog with file selection
+- `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php` - `handle_plugin_files()` endpoint
+- `backend/internal/wordpress/remote_files.go` - `GetPluginFilesViaRiseup()` method
+- `backend/internal/services/publish/service.go` - `PreviewPublish()` with diff logic
+- `src/components/plugins/DiffPreviewDialog.tsx` - UI with file selection
 - `src/lib/api.ts` - `previewPublish()` and `publishPlugin()` methods
-- `backend/internal/services/publish/service.go` - `PreviewPublish()` and `createSelectiveZip()` methods
 
 ## Selection Features
 
