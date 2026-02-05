@@ -1,6 +1,5 @@
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
-import { X } from "lucide-react";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
@@ -16,16 +15,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
       closeButton
       toastOptions={{
         classNames: {
+          // Solid dark gray background like VS Code - NOT glassy
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border group-[.toaster]:border-border/60 group-[.toaster]:shadow-xl group-[.toaster]:rounded-xl",
-          description: "group-[.toast]:text-muted-foreground",
+            "group toast group-[.toaster]:bg-[hsl(220,13%,18%)] group-[.toaster]:text-[hsl(210,40%,98%)] group-[.toaster]:border group-[.toaster]:border-[hsl(220,13%,26%)] group-[.toaster]:shadow-2xl group-[.toaster]:rounded-lg",
+          description: "group-[.toast]:text-[hsl(215,20%,65%)]",
           actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground group-[.toast]:rounded-md group-[.toast]:font-medium",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground group-[.toast]:rounded-md",
-          closeButton: "group-[.toast]:bg-destructive/10 group-[.toast]:border-destructive/30 group-[.toast]:text-destructive hover:group-[.toast]:bg-destructive/20 group-[.toast]:rounded-full",
-          success: "group-[.toaster]:!bg-green-500/10 group-[.toaster]:!border-green-500/30 group-[.toaster]:!text-green-400",
-          error: "group-[.toaster]:!bg-destructive/10 group-[.toaster]:!border-destructive/30 group-[.toaster]:!text-destructive",
-          warning: "group-[.toaster]:!bg-warning/10 group-[.toaster]:!border-warning/30 group-[.toaster]:!text-warning",
-          info: "group-[.toaster]:!bg-blue-500/10 group-[.toaster]:!border-blue-500/30 group-[.toaster]:!text-blue-400",
+          cancelButton: "group-[.toast]:bg-[hsl(220,13%,26%)] group-[.toast]:text-[hsl(215,20%,65%)] group-[.toast]:rounded-md",
+          // Red close button - larger on mobile with touch-friendly sizing
+          closeButton: "group-[.toast]:!bg-[hsl(0,62%,45%)] group-[.toast]:!border-[hsl(0,62%,35%)] group-[.toast]:!text-white hover:group-[.toast]:!bg-[hsl(0,72%,50%)] group-[.toast]:!rounded-md group-[.toast]:!w-6 group-[.toast]:!h-6 sm:group-[.toast]:!w-5 sm:group-[.toast]:!h-5 group-[.toast]:!right-2 group-[.toast]:!top-2",
+          // Status-specific styling - solid backgrounds, not transparent
+          success: "group-[.toaster]:!bg-[hsl(142,40%,20%)] group-[.toaster]:!border-[hsl(142,50%,30%)] group-[.toaster]:!text-[hsl(142,70%,70%)]",
+          error: "group-[.toaster]:!bg-[hsl(0,40%,20%)] group-[.toaster]:!border-[hsl(0,50%,35%)] group-[.toaster]:!text-[hsl(0,70%,70%)]",
+          warning: "group-[.toaster]:!bg-[hsl(38,40%,20%)] group-[.toaster]:!border-[hsl(38,50%,35%)] group-[.toaster]:!text-[hsl(38,80%,65%)]",
+          info: "group-[.toaster]:!bg-[hsl(210,40%,20%)] group-[.toaster]:!border-[hsl(210,50%,35%)] group-[.toaster]:!text-[hsl(210,70%,70%)]",
         },
       }}
       {...props}

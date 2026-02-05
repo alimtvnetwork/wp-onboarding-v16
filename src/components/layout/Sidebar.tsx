@@ -36,7 +36,7 @@ export function Sidebar() {
       <div className="p-6">
         <div className="flex items-center gap-2">
           <Plug className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">WP Plugin Publish</span>
+          <span className="font-bold text-lg">WP Publish</span>
         </div>
       </div>
 
