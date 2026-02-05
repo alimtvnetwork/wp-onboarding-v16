@@ -1479,18 +1479,20 @@ type FilePreview struct {
 
 // PublishPreviewResult shows what files will be published
 type PublishPreviewResult struct {
-	PluginID    int64          `json:"pluginId"`
-	PluginName  string         `json:"pluginName"`
-	SiteID      int64          `json:"siteId"`
-	SiteName    string         `json:"siteName"`
-	SiteURL     string         `json:"siteUrl"`
-	RemoteSlug  string         `json:"remoteSlug"`
-	TotalFiles  int            `json:"totalFiles"`
-	TotalSize   int64          `json:"totalSize"`
-	Added       int            `json:"added"`
-	Modified    int            `json:"modified"`
-	Deleted     int            `json:"deleted"`
-	Files       []FilePreview  `json:"files"`
+	PluginID      int64         `json:"pluginId"`
+	PluginName    string        `json:"pluginName"`
+	LocalVersion  string        `json:"localVersion"`
+	RemoteVersion string        `json:"remoteVersion"`
+	SiteID        int64         `json:"siteId"`
+	SiteName      string        `json:"siteName"`
+	SiteURL       string        `json:"siteUrl"`
+	RemoteSlug    string        `json:"remoteSlug"`
+	TotalFiles    int           `json:"totalFiles"`
+	TotalSize     int64         `json:"totalSize"`
+	Added         int           `json:"added"`
+	Modified      int           `json:"modified"`
+	Deleted       int           `json:"deleted"`
+	Files         []FilePreview `json:"files"`
 }
 
 // PreviewPublish returns a preview of what files will change during publish
@@ -1507,6 +1509,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "plugin not found")
 	}
 	result.PluginName = pluginInfo.Name
+	result.LocalVersion = pluginInfo.Version
 
 	// Get site info and password
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
@@ -1589,6 +1592,25 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	remoteFileFetchFailed := false
 
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	
+	// Try to get remote plugin version
+	remotePlugins, err := wpClient.ListPluginsViaUploader(ctx)
+	if err == nil {
+		for _, rp := range remotePlugins {
+			if rp.Slug == mapping.RemoteSlug {
+				result.RemoteVersion = rp.Version
+				break
+			}
+		}
+	}
+	// Fallback: try WordPress core API if version not found
+	if result.RemoteVersion == "" {
+		remotePluginInfo, err := wpClient.GetPlugin(ctx, mapping.RemoteSlug)
+		if err == nil && remotePluginInfo != nil {
+			result.RemoteVersion = remotePluginInfo.Version
+		}
+	}
+	
 	remoteFiles, err := wpClient.GetPluginFilesViaRiseup(ctx, mapping.RemoteSlug)
 	if err != nil {
 		// Fallback: try Onboard plugin
