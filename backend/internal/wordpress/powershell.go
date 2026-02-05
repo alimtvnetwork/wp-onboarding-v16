@@ -4,6 +4,7 @@ package wordpress
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
