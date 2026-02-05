@@ -117,6 +117,16 @@ export function useWebSocket() {
       setLastMessage(createMessage("scan_complete", data));
     });
 
+    // Remote plugin action events
+    const unsubRemotePluginStarted = wsClient.on(WS_EVENTS.REMOTE_PLUGIN_ACTION_STARTED, (data: unknown) => {
+      setLastMessage(createMessage(WS_EVENTS.REMOTE_PLUGIN_ACTION_STARTED, data));
+    });
+    const unsubRemotePluginComplete = wsClient.on(WS_EVENTS.REMOTE_PLUGIN_ACTION_COMPLETE, (data: unknown) => {
+      const { siteId } = data as { siteId: number };
+      queryClient.invalidateQueries({ queryKey: ["sites", siteId, "remote-plugins"] });
+      setLastMessage(createMessage(WS_EVENTS.REMOTE_PLUGIN_ACTION_COMPLETE, data));
+    });
+
     // Error events
     const unsubError = wsClient.on(WS_EVENTS.ERROR, (data: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["errors"] });
@@ -149,6 +159,8 @@ export function useWebSocket() {
       unsubScanStarted();
       unsubScanProgress();
       unsubScanComplete();
+      unsubRemotePluginStarted();
+      unsubRemotePluginComplete();
       unsubError();
       unsubLog();
       wsClient.disconnect();

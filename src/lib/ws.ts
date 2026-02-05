@@ -181,6 +181,9 @@ export const WS_EVENTS = {
   CONNECTION_TEST_STARTED: "connection_test_started",
   CONNECTION_TEST_PROGRESS: "connection_test_progress",
   CONNECTION_TEST_COMPLETE: "connection_test_complete",
+  // Remote plugin actions (enable/disable/delete on WordPress sites)
+  REMOTE_PLUGIN_ACTION_STARTED: "remote_plugin_action_started",
+  REMOTE_PLUGIN_ACTION_COMPLETE: "remote_plugin_action_complete",
   ERROR: "error",
   CONNECTION: "connection",
   LOG: "log",

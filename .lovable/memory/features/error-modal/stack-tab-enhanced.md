@@ -10,16 +10,19 @@ The Stack tab in the Global Error Modal has been enhanced to display:
 
 ## PHP Stack Trace Display
 
-When an error contains `stackTraceFrames` in the context (from WordPress plugin errors), the Stack tab displays a dedicated table:
+When an error contains `stackTraceFrames` or `phpStackFrames` in the context (from WordPress plugin errors), the Stack tab displays a dedicated table:
 
 - Orange-themed styling to distinguish from JS/Go traces
 - Shows: `#`, `Class::Function()`, `File`, `Line`
-- Extracted from `error.context.stackTraceFrames` or `error.context.errorDetails.stackTraceFrames`
+- Extracted from:
+  - `error.phpStackFrames` (new field on CapturedError)
+  - `error.context.stackTraceFrames`
+  - `error.context.errorDetails.stackTraceFrames`
 
 ### Frame Structure
 
 ```typescript
-interface PHPStackFrame {
+export interface PHPStackFrame {
   file?: string;
   fileBase?: string;
   line?: number;
@@ -43,8 +46,22 @@ Features:
 - **Copy with Backend Logs** - Includes `error.log.txt` content in copied report
 - **Download error.log.txt** - Direct file download from dropdown
 
+## WebSocket Integration
+
+Remote plugin actions (enable/disable/delete) now broadcast events:
+- `remote_plugin_action_started` - When action begins
+- `remote_plugin_action_complete` - With success/error and PHP stack frames
+
+The `useRemotePluginEvents` hook automatically:
+1. Subscribes to these events for a specific site
+2. Captures errors with full PHP stack trace frames
+3. Shows toast notifications with "View Details" action
+4. Invalidates the remote plugins query cache
+
 ## Related Files
 
 - `src/components/errors/GlobalErrorModal.tsx` - Main implementation
+- `src/stores/errorStore.ts` - CapturedError with PHPStackFrame support
+- `src/hooks/useRemotePluginEvents.ts` - WebSocket event handler
 - `src/lib/api.ts` - `getBackendErrorLog()` API method
 - `backend/internal/api/handlers/handlers.go` - `/errors/log` endpoint
