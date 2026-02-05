@@ -106,6 +106,16 @@ ZIP files for plugin uploads MUST use slug-based naming:
 - Format: `plugin-name.zip` (lowercase, hyphens, no spaces or timestamps)
 - Example: `category-generator.zip` NOT `Category Generator-1770249940.zip`
 
+## ZIP Structure Logging
+
+During the package stage, the backend MUST log the internal structure of the created ZIP file:
+- List all files/folders inside the ZIP with their sizes
+- Show the first 20 entries in detailed debug logs
+- Include the full list in the structured `zipStructure` detail field
+- Format: `plugin-folder/file.php (1234 bytes)`
+
+This helps diagnose issues where the ZIP structure (root folder presence, file paths) causes upload failures.
+
 ## Keep ZIP Files Setting
 
 A user-configurable "Keep ZIP Files" setting allows preserving ZIP files in the temp folder after publish operations:

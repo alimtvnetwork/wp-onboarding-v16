@@ -211,11 +211,25 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		
 		if err == nil && zipPath != "" {
 			if info, statErr := os.Stat(zipPath); statErr == nil {
+				// Log ZIP internal structure for debugging
+				zipEntries := s.getZipStructure(zipPath)
 				s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), map[string]interface{}{
 					"zipPath":  zipPath,
 					"zipSize":  info.Size(),
 					"fileCount": fileCount,
+					"zipStructure": zipEntries,
 				})
+				// Log first 20 entries for quick visibility
+				maxShow := 20
+				if len(zipEntries) < maxShow {
+					maxShow = len(zipEntries)
+				}
+				for i := 0; i < maxShow; i++ {
+					s.broadcastDetailedLog(pluginID, siteID, "debug", "package", fmt.Sprintf("  └─ %s", zipEntries[i]), nil)
+				}
+				if len(zipEntries) > 20 {
+					s.broadcastDetailedLog(pluginID, siteID, "debug", "package", fmt.Sprintf("  ... and %d more files", len(zipEntries)-20), nil)
+				}
 			}
 		}
 		
@@ -253,9 +267,56 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		})
 		performed, uploadResult, err := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
 		if err != nil {
-			s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", err.Error()), map[string]interface{}{
-				"error": err.Error(),
-			})
+			// Build detailed error diagnostics
+			errorDetails := map[string]interface{}{
+				"error":      err.Error(),
+				"zipPath":    zipPath,
+				"remoteSlug": mapping.RemoteSlug,
+				"targetSite": siteInfo.URL,
+			}
+			
+			// Extract APIError details if available
+			if apiErr, ok := err.(*wordpress.APIError); ok {
+				errorDetails["request"] = map[string]interface{}{
+					"method":   apiErr.Method,
+					"endpoint": apiErr.Endpoint,
+					"url":      apiErr.URL,
+				}
+				errorDetails["response"] = map[string]interface{}{
+					"status": apiErr.StatusCode,
+					"body":   apiErr.ResponseBody,
+				}
+				if apiErr.StackTrace != "" {
+					errorDetails["stackTrace"] = apiErr.StackTrace
+				}
+				s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", apiErr.FullError()), errorDetails)
+			} else if appErr, ok := err.(*apperror.AppError); ok {
+				// Handle wrapped AppError
+				errorDetails["code"] = appErr.Code
+				if appErr.StackTrace != "" {
+					errorDetails["stackTrace"] = appErr.StackTrace
+				}
+				// Check if cause is an APIError
+				if cause := appErr.Unwrap(); cause != nil {
+					if apiErr, ok := cause.(*wordpress.APIError); ok {
+						errorDetails["request"] = map[string]interface{}{
+							"method":   apiErr.Method,
+							"endpoint": apiErr.Endpoint,
+							"url":      apiErr.URL,
+						}
+						errorDetails["response"] = map[string]interface{}{
+							"status": apiErr.StatusCode,
+							"body":   apiErr.ResponseBody,
+						}
+						if apiErr.StackTrace != "" {
+							errorDetails["apiStackTrace"] = apiErr.StackTrace
+						}
+					}
+				}
+				s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", err.Error()), errorDetails)
+			} else {
+				s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", err.Error()), errorDetails)
+			}
 			return err
 		}
 
@@ -809,6 +870,29 @@ func (s *Service) shouldExclude(relPath string) bool {
 	}
 
 	return false
+}
+
+// getZipStructure reads the internal structure of a ZIP file and returns a list of paths
+func (s *Service) getZipStructure(zipPath string) []string {
+	var entries []string
+	
+	reader, err := zip.OpenReader(zipPath)
+	if err != nil {
+		s.log.Warn("Failed to read ZIP structure", "zipPath", zipPath, "error", err.Error())
+		return []string{"(failed to read ZIP structure: " + err.Error() + ")"}
+	}
+	defer reader.Close()
+	
+	for _, file := range reader.File {
+		// Include folder indicator
+		suffix := ""
+		if file.FileInfo().IsDir() {
+			suffix = "/"
+		}
+		entries = append(entries, fmt.Sprintf("%s%s (%d bytes)", file.Name, suffix, file.UncompressedSize64))
+	}
+	
+	return entries
 }
 
 // uploadPlugin uploads a plugin zip to WordPress via available methods.
