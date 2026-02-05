@@ -359,6 +359,23 @@ export interface ErrorLog {
   createdAt: string;
 }
 
+export interface SessionSummary {
+  sessionId: string;
+  type: string;
+  pluginId?: number;
+  pluginName?: string;
+  siteId?: number;
+  siteName?: string;
+  status: "running" | "completed" | "error";
+  startedAt: string;
+  endedAt?: string;
+}
+
+export interface SessionInfo extends SessionSummary {
+  errorMsg?: string;
+  metadata?: Record<string, unknown>;
+}
+
 export interface Settings {
   meta?: {
     seedVersion: string;
@@ -636,6 +653,16 @@ export const api = {
       method: "PUT", 
       body: JSON.stringify({ value }) 
     }),
+
+  // Sessions
+  getSessions: (limit?: number) =>
+    request<SessionSummary[]>(`/sessions${limit ? `?limit=${limit}` : ""}`),
+  getSession: (sessionId: string) =>
+    request<SessionInfo>(`/sessions/${sessionId}`),
+  getSessionLogs: (sessionId: string) =>
+    request<{ sessionId: string; logs: string }>(`/sessions/${sessionId}/logs`),
+  deleteSession: (sessionId: string) =>
+    request<void>(`/sessions/${sessionId}`, { method: "DELETE" }),
 
   // E2E Testing
   getE2ESuites: () => request<unknown[]>("/e2e/suites"),

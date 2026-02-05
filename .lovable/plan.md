@@ -180,40 +180,39 @@ Updated `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php`:
 
 ---
 
-## Phase 6: Error Modal Integration with Session Logs
+## Phase 6: Error Modal Integration with Session Logs ✅ COMPLETE
 
 **Priority: MEDIUM - Debugging UX**
-**Estimated: 2-3 hours**
-**Depends on: Phase 1**
+**Completed: 2026-02-05**
 
-### 6.1 Session Logs Tab in Error Modal
-- [ ] Add "Session Logs" tab to GlobalErrorModal
-- [ ] Fetch full logs from session API
-- [ ] Downloadable as text file
+### 6.1 Session Logs Tab in Error Modal ✅
+- [x] Add "Session" tab to GlobalErrorModal (7-tab interface)
+- [x] Created `SessionLogsTab` component to fetch logs from backend
+- [x] Shows loading state, error handling, and retry functionality
+- [x] Downloadable as text file via Download button
+- [x] Copy to clipboard functionality
 
-### 6.2 Copy Full Report Enhancement
+### 6.2 Copy Full Report Enhancement ✅
 Include in report:
-- Session ID
-- Session type
-- Complete session logs
-- All stages with status
-- Request/response details for failures
+- [x] Session ID with link to API endpoint
+- [x] Session type (publish, sync, connect, etc.)
+- [x] Session info section in generated report
 
-### 6.3 Error Context Enrichment
-```typescript
-{
-  sessionId: "abc-123",
-  sessionType: "publish",
-  failedStage: "activate",
-  stages: [
-    { name: "backup", status: "success" },
-    { name: "package", status: "success" },
-    { name: "upload", status: "success" },
-    { name: "activate", status: "error", error: "..." }
-  ],
-  fullLogs: "..." // From session API
-}
-```
+### 6.3 API Functions Added ✅
+- [x] `api.getSessions(limit)` - List recent sessions
+- [x] `api.getSession(sessionId)` - Get session details
+- [x] `api.getSessionLogs(sessionId)` - Fetch full logs
+- [x] `api.deleteSession(sessionId)` - Remove session
+
+### 6.4 Error Store Enhancement ✅
+- [x] Added `sessionId` and `sessionType` to CapturedError interface
+- [x] Updated `captureError` and `captureException` to accept session metadata
+
+### 6.5 SessionLogsTab Features ✅
+- [x] Syntax highlighting for stage headers, errors, warnings, success lines
+- [x] Refresh, Copy, and Download buttons
+- [x] Session ID and type badges in header
+- [x] Line count and file size stats
 
 ---
 
