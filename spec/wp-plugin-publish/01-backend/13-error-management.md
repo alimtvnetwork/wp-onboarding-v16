@@ -598,6 +598,55 @@ return err  // Double logging
 
 ---
 
+## Session-Based Error Logging
+
+### Integration with Session Service
+
+All errors that occur during session-tracked operations are automatically logged to the session file:
+
+```go
+// In publish service
+sessionService.Log(sessionID, "error", "upload", "Upload failed", map[string]interface{}{
+    "url":        uploadURL,
+    "httpStatus": resp.StatusCode,
+    "response":   truncateString(string(body), 2000),
+    "error":      err.Error(),
+})
+```
+
+### Frontend Session Tab
+
+The GlobalErrorModal includes a "Session" tab when `sessionId` is present in the captured error:
+
+```typescript
+interface CapturedError {
+  // ... existing fields
+  sessionId?: string;
+  sessionType?: 'publish' | 'sync' | 'backup' | 'connect';
+}
+
+// Capture with session context
+captureError(error, {
+  sessionId: result.sessionId,
+  sessionType: 'publish',
+  pluginId: 3,
+  siteId: 1
+});
+```
+
+### Session Logs Tab Component
+
+The `SessionLogsTab` component:
+
+1. Fetches logs from `/api/v1/sessions/{id}/logs`
+2. Provides syntax highlighting for stages, errors, warnings
+3. Includes Copy, Download, and Refresh buttons
+4. Shows session metadata (ID, type, duration)
+
+See [17-session-management.md](./17-session-management.md) for full session service documentation.
+
+---
+
 ## Next Document
 
 See [14-logging-system.md](./14-logging-system.md) for detailed logging implementation.
