@@ -15,16 +15,17 @@ import (
 
 // Config represents the application configuration
 type Config struct {
-	Version      string          `json:"version"`
-	DatabasePath string          `json:"databasePath"`
-	TempDir      string          `json:"tempDir"`
-	Server       ServerConfig    `json:"server"`
-	Watcher      WatcherConfig   `json:"watcher"`
-	Backup       BackupConfig    `json:"backup"`
-	Logging      LoggingConfig   `json:"logging"`
-	Security     SecurityConfig  `json:"security"`
-	WordPress    WordPressConfig `json:"wordpress"`
-	Seed         SeedConfig      `json:"seed"`
+	Version       string              `json:"version"`
+	DatabasePath  string              `json:"databasePath"`
+	TempDir       string              `json:"tempDir"`
+	Server        ServerConfig        `json:"server"`
+	Watcher       WatcherConfig       `json:"watcher"`
+	Backup        BackupConfig        `json:"backup"`
+	Logging       LoggingConfig       `json:"logging"`
+	Security      SecurityConfig      `json:"security"`
+	WordPress     WordPressConfig     `json:"wordpress"`
+	RemotePlugins RemotePluginsConfig `json:"remotePlugins"`
+	Seed          SeedConfig          `json:"seed"`
 }
 
 // ServerConfig holds HTTP server settings
@@ -68,6 +69,12 @@ type SecurityConfig struct {
 type WordPressConfig struct {
 	TimeoutSeconds int `json:"timeoutSeconds"`
 	MaxRetries     int `json:"maxRetries"`
+}
+
+// RemotePluginsConfig holds caching settings for remote plugin lists
+type RemotePluginsConfig struct {
+	CacheEnabled   bool `json:"cacheEnabled"`
+	CacheTTLMinutes int  `json:"cacheTTLMinutes"`
 }
 
 // SeedConfig holds seedable test data for quick setup
@@ -131,6 +138,10 @@ func DefaultConfig() *Config {
 		WordPress: WordPressConfig{
 			TimeoutSeconds: 30,
 			MaxRetries:     3,
+		},
+		RemotePlugins: RemotePluginsConfig{
+			CacheEnabled:   true,
+			CacheTTLMinutes: 60,
 		},
 		Seed: SeedConfig{
 			Enabled: false,

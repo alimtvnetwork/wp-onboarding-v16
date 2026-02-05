@@ -511,6 +511,10 @@ export const api = {
   // Remote plugin management
   getRemotePlugins: (siteId: number) =>
     request<RemotePlugin[]>(`/sites/${siteId}/remote-plugins`),
+  forceSyncRemotePlugins: (siteId: number) =>
+    request<RemotePlugin[]>(`/sites/${siteId}/remote-plugins/force-sync`, { method: "POST" }),
+  clearRemotePluginsCache: (siteId: number) =>
+    request<{ cleared: boolean }>(`/sites/${siteId}/remote-plugins/cache`, { method: "DELETE" }),
   enableRemotePlugin: (siteId: number, pluginSlug: string) =>
     request<{ enabled: boolean; plugin: string }>(
       `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/enable`,

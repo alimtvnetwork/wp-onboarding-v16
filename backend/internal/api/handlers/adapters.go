@@ -97,6 +97,14 @@ func (a *SiteServiceAdapter) GetRemotePlugins(ctx context.Context, siteID int64)
 	return a.Service.GetRemotePlugins(ctx, siteID)
 }
 
+func (a *SiteServiceAdapter) ForceSyncRemotePlugins(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.ForceSyncRemotePlugins(ctx, siteID)
+}
+
+func (a *SiteServiceAdapter) InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error {
+	return a.Service.InvalidateRemotePluginsCache(ctx, siteID)
+}
+
 func (a *SiteServiceAdapter) EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
 	return a.Service.EnableRemotePlugin(ctx, siteID, pluginSlug)
 }

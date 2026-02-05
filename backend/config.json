@@ -35,6 +35,10 @@
     "timeoutSeconds": 30,
     "maxRetries": 3
   },
+  "remotePlugins": {
+    "cacheEnabled": true,
+    "cacheTTLMinutes": 60
+  },
   "seed": {
     "enabled": true,
     "sites": [
