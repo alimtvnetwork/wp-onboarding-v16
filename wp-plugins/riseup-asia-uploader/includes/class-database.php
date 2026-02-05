@@ -154,10 +154,16 @@ class Riseup_Database {
         $this->file_logger->info('Initializing PDO connection');
         
         try {
+            // Check if PDO class exists
+            if (!class_exists('PDO')) {
+                $this->file_logger->error('PDO class not found - PHP PDO extension not installed');
+                throw new Exception('PDO class not found. Please ensure the PHP PDO extension is installed and enabled.');
+            }
+            
             // Check if SQLite extension is available
             if (!extension_loaded('pdo_sqlite')) {
                 $this->file_logger->error('PDO SQLite extension not loaded');
-                throw new Exception('PDO SQLite extension is not available');
+                throw new Exception('PDO SQLite extension is not available. Please enable pdo_sqlite in php.ini.');
             }
             
             $this->file_logger->debug('Creating PDO connection', array('path' => $this->db_path));
@@ -196,6 +202,11 @@ class Riseup_Database {
             return false;
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Database initialization failed');
+            $this->pdo = null;
+            return false;
+        } catch (Error $e) {
+            // Catch PHP 7+ fatal errors (like class not found)
+            $this->file_logger->error('Fatal error during database init: ' . $e->getMessage());
             $this->pdo = null;
             return false;
         }

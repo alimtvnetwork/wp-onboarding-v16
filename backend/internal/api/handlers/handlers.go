@@ -357,6 +357,8 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
 		return
+	}
+	respondSuccess(w, result)
 }
 
 // GetSiteCredentials returns decrypted credentials for API Explorer
