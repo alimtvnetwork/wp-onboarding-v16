@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, and audit logging via REST API with Application Password authentication.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -86,6 +86,7 @@ require_once __DIR__ . '/includes/class-logger.php';
 // Load other classes.
 require_once __DIR__ . '/includes/class-post-manager.php';
 require_once __DIR__ . '/includes/class-upload-ignore.php';
+require_once __DIR__ . '/includes/class-admin.php';
 
 // =============================================================================
 // PLUGIN CLASS
@@ -204,7 +205,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_STATUS, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_status'),
-                'permission_callback' => array($this, 'check_status_permission'),
+                'permission_callback' => $this->build_permission_callback('status', array($this, 'check_status_permission')),
             ));
 
             // OpenAPI specification endpoint (authenticated).
@@ -212,7 +213,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_OPENAPI, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_openapi'),
-                'permission_callback' => array($this, 'check_status_permission'),
+                'permission_callback' => $this->build_permission_callback('openapi', array($this, 'check_status_permission')),
             ));
 
             // Plugin upload endpoint.
@@ -220,7 +221,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_UPLOAD, array(
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_upload'),
-                'permission_callback' => array($this, 'check_plugin_permission'),
+                'permission_callback' => $this->build_permission_callback('upload', array($this, 'check_plugin_permission')),
             ));
 
             // Plugin list endpoint.
@@ -228,7 +229,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGINS, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_list_plugins'),
-                'permission_callback' => array($this, 'check_plugin_permission'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
             ));
 
             // Export-self endpoint.
@@ -236,7 +237,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_EXPORT_SELF, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_export_self'),
-                'permission_callback' => array($this, 'check_plugin_permission'),
+                'permission_callback' => $this->build_permission_callback('export_self', array($this, 'check_plugin_permission')),
             ));
 
             // Blog post endpoints.
@@ -245,12 +246,12 @@ class Riseup_Asia {
                 array(
                     'methods'             => 'GET',
                     'callback'            => array($this, 'handle_list_posts'),
-                    'permission_callback' => array($this, 'check_post_permission'),
+                    'permission_callback' => $this->build_permission_callback('posts', array($this, 'check_post_permission')),
                 ),
                 array(
                     'methods'             => 'POST',
                     'callback'            => array($this, 'handle_create_post'),
-                    'permission_callback' => array($this, 'check_post_permission'),
+                    'permission_callback' => $this->build_permission_callback('posts', array($this, 'check_post_permission')),
                 ),
             ));
 
@@ -260,12 +261,12 @@ class Riseup_Asia {
                 array(
                     'methods'             => 'GET',
                     'callback'            => array($this, 'handle_list_categories'),
-                    'permission_callback' => array($this, 'check_post_permission'),
+                    'permission_callback' => $this->build_permission_callback('categories', array($this, 'check_post_permission')),
                 ),
                 array(
                     'methods'             => 'POST',
                     'callback'            => array($this, 'handle_create_category'),
-                    'permission_callback' => array($this, 'check_post_permission'),
+                    'permission_callback' => $this->build_permission_callback('categories', array($this, 'check_post_permission')),
                 ),
             ));
 
@@ -274,7 +275,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_LOGS, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_query_logs'),
-                'permission_callback' => array($this, 'check_logs_permission'),
+                'permission_callback' => $this->build_permission_callback('logs', array($this, 'check_logs_permission')),
             ));
 
             // Logs stats endpoint.
@@ -282,7 +283,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_LOGS_STATS, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_logs_stats'),
-                'permission_callback' => array($this, 'check_logs_permission'),
+                'permission_callback' => $this->build_permission_callback('logs_stats', array($this, 'check_logs_permission')),
             ));
 
             // Plugin files listing endpoint (for diff preview).
@@ -290,7 +291,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILES, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_plugin_files'),
-                'permission_callback' => array($this, 'check_plugin_permission'),
+                'permission_callback' => $this->build_permission_callback('plugin_files', array($this, 'check_plugin_permission')),
                 'args'                => array(
                     'slug' => array(
                         'required'          => true,
@@ -306,7 +307,7 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILE, array(
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_plugin_file_content'),
-                'permission_callback' => array($this, 'check_plugin_permission'),
+                'permission_callback' => $this->build_permission_callback('plugin_file', array($this, 'check_plugin_permission')),
                 'args'                => array(
                     'slug' => array(
                         'required'          => true,
@@ -326,6 +327,54 @@ class Riseup_Asia {
     // =========================================================================
     // PERMISSION CALLBACKS
     // =========================================================================
+
+    /**
+     * Check if an endpoint is enabled via settings.
+     *
+     * @param string $endpoint Endpoint key (e.g., 'status', 'upload').
+     * @return bool True if enabled.
+     */
+    private function is_endpoint_enabled($endpoint) {
+        return Riseup_Admin::is_endpoint_enabled($endpoint);
+    }
+
+    /**
+     * Check if an endpoint requires authentication via settings.
+     *
+     * @param string $endpoint Endpoint key.
+     * @return bool True if auth required.
+     */
+    private function is_auth_required($endpoint) {
+        return Riseup_Admin::is_auth_required($endpoint);
+    }
+
+    /**
+     * Build permission callback with optional auth bypass.
+     *
+     * @param string   $endpoint   Endpoint key for settings lookup.
+     * @param callable $auth_check The actual auth check function.
+     * @return callable Permission callback.
+     */
+    private function build_permission_callback($endpoint, $auth_check) {
+        return function($request) use ($endpoint, $auth_check) {
+            // Check if endpoint is enabled
+            if (!$this->is_endpoint_enabled($endpoint)) {
+                return new WP_Error(
+                    'rest_disabled',
+                    'This endpoint is disabled',
+                    array('status' => 403)
+                );
+            }
+            
+            // Check if auth is required
+            if (!$this->is_auth_required($endpoint)) {
+                return true; // Allow without auth
+            }
+            
+            // Perform normal auth check
+            return call_user_func($auth_check, $request);
+        };
+    }
 
     /**
      * Check plugin management permission.
@@ -1460,7 +1509,13 @@ class Riseup_Asia {
  * Initialize the plugin.
  */
 function riseup_asia_init() {
-    return Riseup_Asia::get_instance();
+    // Initialize main plugin class
+    Riseup_Asia::get_instance();
+    
+    // Initialize admin pages (only in admin context)
+    if (is_admin()) {
+        Riseup_Admin::get_instance();
+    }
 }
 
 // Initialize on plugins_loaded hook.
