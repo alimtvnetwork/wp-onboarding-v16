@@ -153,6 +153,48 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 
 ---
 
+## Session-Based Logging
+
+For operation-specific logs (publish, sync, backup), use the Session Service instead of the global logger. Session logs are:
+
+- Isolated to individual operation files
+- Retrievable via REST API
+- Correlated with WebSocket events via `sessionId`
+
+### Detailed Stage Context Logging
+
+The publish pipeline requires granular context for upload and activate stages:
+
+```go
+type StageContext struct {
+    What      string                 // What is being processed
+    Why       string                 // Why this operation is happening
+    Where     string                 // Target URL/path
+    Result    string                 // Outcome summary
+    InnerData map[string]interface{} // HTTP status, response bodies, etc.
+}
+```
+
+Example log entry:
+
+```
+[2026-02-05 01:24:27] [INFO] [upload] Starting upload
+    {
+      "what": "Plugin ZIP (category-generator.zip, 45.2 KB)",
+      "why": "User initiated publish",
+      "where": "https://example.com/wp-json/riseup-asia-uploader/v1/upload",
+      "result": "Pending",
+      "innerData": {
+        "zipPath": "/path/to/plugin.zip",
+        "fileCount": 23
+      }
+    }
+```
+
+See [17-session-management.md](./17-session-management.md) for full session service documentation.
+
+---
+
 ## Next Document
 
 See [02-frontend/20-frontend-overview.md](../02-frontend/20-frontend-overview.md) for React architecture.
