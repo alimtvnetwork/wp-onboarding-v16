@@ -2,8 +2,6 @@
 package database
 
 import (
-	"fmt"
-
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/pkg/apperror"
 )
