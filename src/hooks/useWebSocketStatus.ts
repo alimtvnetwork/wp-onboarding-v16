@@ -29,7 +29,7 @@ export function useWebSocketStatus() {
   const wasConnectedRef = useRef<boolean | null>(null);
   const hasShownDisconnectRef = useRef(false);
 
-  // Update state from wsClient
+  // Update state from wsClient - only if values actually changed
   const updateState = useCallback(() => {
     const reconnectState = wsClient.getReconnectState();
     const newIsConnected = reconnectState.isConnected;
@@ -54,6 +54,16 @@ export function useWebSocketStatus() {
       }
       
       wasConnectedRef.current = newIsConnected;
+      
+      // Only return new state object if values actually changed
+      if (
+        prev.isConnected === newIsConnected &&
+        prev.reconnectAttempts === reconnectState.attempts &&
+        prev.maxReconnectAttempts === reconnectState.maxAttempts &&
+        prev.isReconnectEnabled === reconnectState.isReconnectEnabled
+      ) {
+        return prev; // Return same reference to prevent re-render
+      }
       
       return {
         isConnected: newIsConnected,

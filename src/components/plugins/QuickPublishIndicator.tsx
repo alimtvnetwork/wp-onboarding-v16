@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { usePublishStore, PublishOperation } from "@/stores/publishStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,12 @@ export function QuickPublishIndicator({
   onViewLogs,
 }: QuickPublishIndicatorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const operations = usePublishStore((state) => state.getOperationsForPlugin(pluginId));
+  // Use shallow comparison to prevent re-renders when array content is the same
+  const operations = usePublishStore(
+    useShallow((state) => 
+      Array.from(state.operations.values()).filter(op => op.pluginId === pluginId)
+    )
+  );
   
   if (operations.length === 0) return null;
   
