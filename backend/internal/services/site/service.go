@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/url"
@@ -23,11 +24,13 @@ import (
 
 // Config holds service configuration
 type Config struct {
-	DB              *database.DB
-	Logger          *logger.Logger
-	EncryptionKey   string
-	WPClientFactory WPClientFactory
-	WSHub           WSHub // Optional WebSocket hub for live logging
+	DB                   *database.DB
+	Logger               *logger.Logger
+	EncryptionKey        string
+	WPClientFactory      WPClientFactory
+	WSHub                WSHub // Optional WebSocket hub for live logging
+	CacheEnabled         bool  // Enable remote plugins caching
+	CacheTTLMinutes      int   // Cache TTL in minutes (default: 60)
 }
 
 // WPClientFactory creates WordPress clients with optional progress callback
@@ -46,16 +49,24 @@ type Service struct {
 	encryptionKey   []byte
 	wpClientFactory WPClientFactory
 	wsHub           WSHub
+	cacheEnabled    bool
+	cacheTTLMinutes int
 }
 
 // New creates a new site service instance
 func New(cfg Config) *Service {
+	cacheTTL := cfg.CacheTTLMinutes
+	if cacheTTL <= 0 {
+		cacheTTL = 60 // default 1 hour
+	}
 	return &Service{
 		db:              cfg.DB,
 		log:             cfg.Logger,
 		encryptionKey:   []byte(cfg.EncryptionKey),
 		wpClientFactory: cfg.WPClientFactory,
 		wsHub:           cfg.WSHub,
+		cacheEnabled:    cfg.CacheEnabled,
+		cacheTTLMinutes: cacheTTL,
 	}
 }
 
@@ -878,8 +889,48 @@ type RemotePlugin struct {
 	TextDomain  string `json:"textDomain"`
 }
 
-// GetRemotePlugins fetches all plugins installed on a remote WordPress site
+// RemotePluginsResult wraps remote plugins with cache metadata
+type RemotePluginsResult struct {
+	Plugins  []RemotePlugin `json:"plugins"`
+	FromCache bool           `json:"fromCache"`
+	CachedAt  *time.Time     `json:"cachedAt,omitempty"`
+	ExpiresAt *time.Time     `json:"expiresAt,omitempty"`
+}
+
+// GetRemotePlugins fetches all plugins installed on a remote WordPress site (with caching)
 func (s *Service) GetRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
+	return s.GetRemotePluginsWithCache(ctx, siteID, false)
+}
+
+// GetRemotePluginsWithCache fetches remote plugins with optional cache bypass
+func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteID int64, forceRefresh bool) ([]RemotePlugin, error) {
+	// Try cache first (if enabled and not forcing refresh)
+	if s.cacheEnabled && !forceRefresh {
+		cached, err := s.getRemotePluginsFromCache(ctx, siteID)
+		if err == nil && cached != nil {
+			s.log.Debug("Remote plugins loaded from cache", "siteId", siteID, "count", len(cached))
+			return cached, nil
+		}
+	}
+
+	// Fetch from remote
+	plugins, err := s.fetchRemotePlugins(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache the result (if enabled)
+	if s.cacheEnabled {
+		if err := s.cacheRemotePlugins(ctx, siteID, plugins); err != nil {
+			s.log.Warn("Failed to cache remote plugins", "siteId", siteID, "error", err)
+		}
+	}
+
+	return plugins, nil
+}
+
+// fetchRemotePlugins fetches plugins directly from the remote WordPress site
+func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
 	site, err := s.GetByID(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -917,7 +968,99 @@ func (s *Service) GetRemotePlugins(ctx context.Context, siteID int64) ([]RemoteP
 		})
 	}
 
+	s.log.Debug("Remote plugins fetched from site", "siteId", siteID, "count", len(result))
 	return result, nil
+}
+
+// getRemotePluginsFromCache retrieves cached plugins if not expired
+func (s *Service) getRemotePluginsFromCache(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
+	query := `
+		SELECT PluginsJSON, ExpiresAt 
+		FROM RemotePluginsCache 
+		WHERE SiteId = ? AND datetime(ExpiresAt) > datetime('now')
+	`
+	
+	var pluginsJSON string
+	var expiresAt string
+	err := s.db.QueryRowContext(ctx, query, siteID).Scan(&pluginsJSON, &expiresAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No cache or expired
+		}
+		return nil, err
+	}
+
+	var plugins []RemotePlugin
+	if err := json.Unmarshal([]byte(pluginsJSON), &plugins); err != nil {
+		return nil, err
+	}
+
+	return plugins, nil
+}
+
+// cacheRemotePlugins stores plugins in the cache
+func (s *Service) cacheRemotePlugins(ctx context.Context, siteID int64, plugins []RemotePlugin) error {
+	pluginsJSON, err := json.Marshal(plugins)
+	if err != nil {
+		return err
+	}
+
+	expiresAt := time.Now().Add(time.Duration(s.cacheTTLMinutes) * time.Minute)
+	
+	// Use INSERT OR REPLACE to handle both insert and update
+	query := `
+		INSERT OR REPLACE INTO RemotePluginsCache (SiteId, PluginsJSON, CachedAt, ExpiresAt)
+		VALUES (?, ?, datetime('now'), ?)
+	`
+	
+	_, err = s.db.ExecContext(ctx, query, siteID, string(pluginsJSON), expiresAt.Format("2006-01-02 15:04:05"))
+	return err
+}
+
+// ForceSyncRemotePlugins clears cache and fetches fresh data
+func (s *Service) ForceSyncRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
+	// Invalidate cache first
+	if err := s.InvalidateRemotePluginsCache(ctx, siteID); err != nil {
+		s.log.Warn("Failed to invalidate cache before force sync", "siteId", siteID, "error", err)
+	}
+
+	// Fetch fresh data
+	return s.GetRemotePluginsWithCache(ctx, siteID, true)
+}
+
+// InvalidateRemotePluginsCache removes cached plugins for a site
+func (s *Service) InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error {
+	query := `DELETE FROM RemotePluginsCache WHERE SiteId = ?`
+	_, err := s.db.ExecContext(ctx, query, siteID)
+	if err != nil {
+		return apperror.Wrap(err, apperror.ErrDatabaseDelete, "failed to invalidate remote plugins cache")
+	}
+	s.log.Debug("Remote plugins cache invalidated", "siteId", siteID)
+	return nil
+}
+
+// GetRemotePluginsCacheStatus returns cache status for a site
+func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64) (bool, *time.Time, *time.Time, error) {
+	query := `
+		SELECT CachedAt, ExpiresAt 
+		FROM RemotePluginsCache 
+		WHERE SiteId = ?
+	`
+	
+	var cachedAtStr, expiresAtStr string
+	err := s.db.QueryRowContext(ctx, query, siteID).Scan(&cachedAtStr, &expiresAtStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil, nil, nil // No cache
+		}
+		return false, nil, nil, err
+	}
+
+	cachedAt := parseTime(cachedAtStr)
+	expiresAt := parseTime(expiresAtStr)
+	isValid := expiresAt != nil && expiresAt.After(time.Now())
+
+	return isValid, cachedAt, expiresAt, nil
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
@@ -938,6 +1081,9 @@ func (s *Service) EnableRemotePlugin(ctx context.Context, siteID int64, pluginSl
 			WithContext("siteId", siteID).
 			WithContext("plugin", pluginSlug)
 	}
+
+	// Invalidate cache since plugin status changed
+	_ = s.InvalidateRemotePluginsCache(ctx, siteID)
 
 	s.log.Info("Remote plugin enabled", "siteId", siteID, "plugin", pluginSlug)
 	return nil
@@ -961,6 +1107,9 @@ func (s *Service) DisableRemotePlugin(ctx context.Context, siteID int64, pluginS
 			WithContext("siteId", siteID).
 			WithContext("plugin", pluginSlug)
 	}
+
+	// Invalidate cache since plugin status changed
+	_ = s.InvalidateRemotePluginsCache(ctx, siteID)
 
 	s.log.Info("Remote plugin disabled", "siteId", siteID, "plugin", pluginSlug)
 	return nil
@@ -989,6 +1138,9 @@ func (s *Service) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSl
 			WithContext("siteId", siteID).
 			WithContext("plugin", pluginSlug)
 	}
+
+	// Invalidate cache since plugin was deleted
+	_ = s.InvalidateRemotePluginsCache(ctx, siteID)
 
 	s.log.Info("Remote plugin deleted", "siteId", siteID, "plugin", pluginSlug)
 	return nil

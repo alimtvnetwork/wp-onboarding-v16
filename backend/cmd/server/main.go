@@ -263,6 +263,8 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		EncryptionKey:   cfg.Security.EncryptionKey,
 		WPClientFactory: wpClientFactoryWithProgress,
 		WSHub:           wsHub,
+		CacheEnabled:    cfg.RemotePlugins.CacheEnabled,
+		CacheTTLMinutes: cfg.RemotePlugins.CacheTTLMinutes,
 	})
 
 	pluginService := plugin.New(plugin.Config{

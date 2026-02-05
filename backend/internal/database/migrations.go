@@ -207,6 +207,25 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_pluginversions_created ON PluginVersions(CreatedAt DESC);
 		`,
 	},
+	{
+		Version:     6,
+		Description: "Add RemotePluginsCache table for caching site plugin lists",
+		SQL: `
+			-- RemotePluginsCache table: Cache plugin list data fetched from remote sites
+			CREATE TABLE IF NOT EXISTS RemotePluginsCache (
+				Id INTEGER PRIMARY KEY AUTOINCREMENT,
+				SiteId INTEGER NOT NULL UNIQUE,
+				PluginsJSON TEXT NOT NULL,
+				CachedAt TEXT DEFAULT (datetime('now')),
+				ExpiresAt TEXT NOT NULL,
+				FOREIGN KEY (SiteId) REFERENCES Sites(Id) ON DELETE CASCADE
+			);
+
+			-- Create index for efficient cache lookups
+			CREATE INDEX IF NOT EXISTS idx_remotepluginscache_site ON RemotePluginsCache(SiteId);
+			CREATE INDEX IF NOT EXISTS idx_remotepluginscache_expires ON RemotePluginsCache(ExpiresAt);
+		`,
+	},
 }
 
 // Migrate runs all pending migrations

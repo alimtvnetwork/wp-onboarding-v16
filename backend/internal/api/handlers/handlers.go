@@ -57,6 +57,18 @@ type SiteServiceInterface interface {
 	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (interface{}, error)
 	// Remote plugin management
 	GetRemotePlugins(ctx context.Context, siteID int64) (interface{}, error)
+	ForceSyncRemotePlugins(ctx context.Context, siteID int64) (interface{}, error)
+	InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error
+	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	// Credentials for API Explorer
+	GetCredentials(ctx context.Context, siteID int64) (interface{}, error)
+}
+	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (interface{}, error)
+	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (interface{}, error)
+	// Remote plugin management
+	GetRemotePlugins(ctx context.Context, siteID int64) (interface{}, error)
 	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
@@ -511,6 +523,46 @@ func GetRemotePlugins(w http.ResponseWriter, r *http.Request) {
 	}
 	respondSuccess(w, plugins)
 }
+
+// ForceSyncRemotePlugins clears cache and fetches fresh plugin data
+func ForceSyncRemotePlugins(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	plugins, err := Services.SiteService.ForceSyncRemotePlugins(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3004", err.Error())
+		return
+	}
+	respondSuccess(w, plugins)
+}
+
+// ClearRemotePluginsCache invalidates the cache without fetching
+func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	if err := Services.SiteService.InvalidateRemotePluginsCache(r.Context(), id); err != nil {
+		respondError(w, http.StatusInternalServerError, "E3005", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{"cleared": true, "siteId": id})
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
