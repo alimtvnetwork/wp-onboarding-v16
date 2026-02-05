@@ -237,6 +237,29 @@ Include in report:
 
 ---
 
+## Phase 8: Publish Diff Preview ✅ COMPLETE
+
+**Priority: MEDIUM - UX Improvement**
+**Completed: 2026-02-05**
+
+### 8.1 Backend Preview Endpoint ✅
+- [x] `PreviewPublish(pluginID, siteID)` method in publish service
+- [x] Returns file list with paths, sizes, and hashes
+- [x] `GET /api/v1/plugins/{id}/sites/{siteId}/preview` endpoint
+
+### 8.2 Frontend DiffPreviewDialog ✅
+- [x] `src/components/plugins/DiffPreviewDialog.tsx`
+- [x] File list with search and filter by change type
+- [x] Summary stats (total files, size, added/modified/deleted)
+- [x] Groups files by directory for readability
+
+### 8.3 Integration ✅
+- [x] Added preview button in publish dialog for each site
+- [x] Preview flows into publish on confirmation
+- [x] Created memory file: `.lovable/memory/features/publish/diff-preview.md`
+
+---
+
 ## Implementation Order
 
 | Order | Phase | Description | Dependencies | Est. Hours |
@@ -248,17 +271,19 @@ Include in report:
 | 5 | Phase 6 | Error Modal Enhancement | Phase 1 | 2-3 |
 | 6 | Phase 4 | Remote Plugin Viewer | None | 4-5 |
 | 7 | Phase 7 | Documentation | All | 1-2 |
+| 8 | Phase 8 | Publish Diff Preview | None | 2-3 |
 
-**Total Estimated: 17-25 hours**
+**Total Estimated: 19-28 hours**
 
 ---
 
 ## Open Questions
 
-1. **Session Retention**: How long to keep session logs? (Suggested: 7 days)
-2. **Quick Publish Scope**: Publish to all mapped sites, or allow selecting subset?
+1. **Session Retention**: How long to keep session logs? (Suggested: 7 days) ✅ Implemented: 7 days
+2. **Quick Publish Scope**: Publish to all mapped sites, or allow selecting subset? ✅ All mapped sites
 3. **Remote Plugin Backups**: Store on WP site or download locally?
 4. **Bulk Quick Publish**: Add "Quick Publish Selected" for multiple plugins?
+5. **True Diff Comparison**: Compare with remote files for accurate modified/deleted counts?
 
 ---
 

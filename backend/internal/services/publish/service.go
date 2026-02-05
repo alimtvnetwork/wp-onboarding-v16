@@ -4,6 +4,7 @@ package publish
 import (
 	"archive/zip"
 	"context"
+	"crypto/md5"
 	"database/sql"
 	"fmt"
 	"io"
@@ -1465,4 +1466,143 @@ func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID
 	s.sessionLog(sessionID, logLevel, stage, message, nil)
 
 	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "sessionId", sessionID, "step", step, "stage", stage, "progress", progress, "message", message)
+}
+
+// FilePreview represents a file that will change during publish
+type FilePreview struct {
+	Path       string `json:"path"`
+	ChangeType string `json:"changeType"` // added, modified, deleted
+	Size       int64  `json:"size"`
+	LocalHash  string `json:"localHash,omitempty"`
+}
+
+// PublishPreviewResult shows what files will be published
+type PublishPreviewResult struct {
+	PluginID    int64          `json:"pluginId"`
+	PluginName  string         `json:"pluginName"`
+	SiteID      int64          `json:"siteId"`
+	SiteName    string         `json:"siteName"`
+	SiteURL     string         `json:"siteUrl"`
+	RemoteSlug  string         `json:"remoteSlug"`
+	TotalFiles  int            `json:"totalFiles"`
+	TotalSize   int64          `json:"totalSize"`
+	Added       int            `json:"added"`
+	Modified    int            `json:"modified"`
+	Deleted     int            `json:"deleted"`
+	Files       []FilePreview  `json:"files"`
+}
+
+// PreviewPublish returns a preview of what files will change during publish
+func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*PublishPreviewResult, error) {
+	result := &PublishPreviewResult{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Files:    []FilePreview{},
+	}
+
+	// Get plugin info
+	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrNotFound, "plugin not found")
+	}
+	result.PluginName = pluginInfo.Name
+
+	// Get site info
+	siteInfo, err := s.getSiteInfo(ctx, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrNotFound, "site not found")
+	}
+	result.SiteName = siteInfo.Name
+	result.SiteURL = siteInfo.URL
+
+	// Get mapping
+	mapping, err := s.getMapping(ctx, pluginID, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrNotFound, "plugin-site mapping not found")
+	}
+	result.RemoteSlug = mapping.RemoteSlug
+
+	// Scan local files
+	pluginPath, err := pathutil.ToAbsolute(pluginInfo.Path)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "invalid plugin path")
+	}
+
+	excludePatterns := pluginInfo.ExcludePatterns
+	var files []FilePreview
+	var totalSize int64
+
+	err = filepath.Walk(pluginPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Skip inaccessible files
+		}
+
+		if info.IsDir() {
+			// Check exclude patterns for directories
+			for _, pattern := range excludePatterns {
+				if strings.Contains(path, pattern) {
+					return filepath.SkipDir
+				}
+			}
+			return nil
+		}
+
+		// Get relative path
+		relPath, err := filepath.Rel(pluginPath, path)
+		if err != nil {
+			return nil
+		}
+
+		// Check exclude patterns for files
+		for _, pattern := range excludePatterns {
+			if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
+				return nil
+			}
+		}
+
+		// Skip hidden files
+		if strings.HasPrefix(filepath.Base(path), ".") {
+			return nil
+		}
+
+		// Calculate hash for the file
+		hash, _ := s.calculateFileHash(path)
+
+		files = append(files, FilePreview{
+			Path:       filepath.ToSlash(relPath),
+			ChangeType: "added", // Since we don't have remote comparison yet, all are "added"
+			Size:       info.Size(),
+			LocalHash:  hash,
+		})
+		totalSize += info.Size()
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to scan plugin files")
+	}
+
+	result.Files = files
+	result.TotalFiles = len(files)
+	result.TotalSize = totalSize
+	result.Added = len(files) // All files treated as "added" without remote comparison
+
+	return result, nil
+}
+
+// calculateFileHash computes MD5 hash of a file
+func (s *Service) calculateFileHash(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	h := md5.New()
+	if _, err := io.Copy(h, file); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }

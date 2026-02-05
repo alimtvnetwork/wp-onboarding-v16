@@ -22,6 +22,7 @@ import { GitActionsPanel } from "@/components/plugins/GitActionsPanel";
 import { VersionHistoryPanel } from "@/components/plugins/VersionHistoryPanel";
 import { ScanDirectoryPanel } from "@/components/plugins/ScanDirectoryPanel";
 import { QuickPublishIndicator } from "@/components/plugins/QuickPublishIndicator";
+import { DiffPreviewDialog } from "@/components/plugins/DiffPreviewDialog";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ import {
   Square,
   Archive,
   Zap,
+  Files,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
@@ -116,7 +118,10 @@ export default function Plugins() {
   const [isBulkDeploying, setIsBulkDeploying] = useState(false);
   const [isBulkScanning, setIsBulkScanning] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
-
+  
+  // Diff preview state
+  const [showDiffPreview, setShowDiffPreview] = useState(false);
+  const [diffPreviewSiteId, setDiffPreviewSiteId] = useState<number | null>(null);
   const handleAddPlugin = async (forceCreate = false) => {
     if (!formData.name || !formData.path) {
       toast.error("Name and path are required");
@@ -1308,22 +1313,46 @@ export default function Plugins() {
             {publishPlugin?.mappings && publishPlugin.mappings.length > 0 ? (
               <div className="space-y-2">
                 {publishPlugin.mappings.map((mapping) => (
-                  <Button
+                  <div
                     key={mapping.id}
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    onClick={() => handlePublish(publishPlugin, mapping.siteId)}
-                    disabled={isPublishing !== null}
+                    className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                   >
-                    <Globe className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <div className="text-left">
-                      <p className="font-medium">{mapping.siteName}</p>
-                      <p className="text-xs text-muted-foreground">{mapping.siteUrl}</p>
+                    <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{mapping.siteName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{mapping.siteUrl}</p>
                     </div>
-                    {isPublishing === publishPlugin.id && (
-                      <Loader2 className="h-4 w-4 ml-auto animate-spin" />
-                    )}
-                  </Button>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setDiffPreviewSiteId(mapping.siteId);
+                              setShowDiffPreview(true);
+                            }}
+                            disabled={isPublishing !== null}
+                          >
+                            <Files className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Preview files to deploy</TooltipContent>
+                      </Tooltip>
+                      <Button
+                        size="sm"
+                        onClick={() => handlePublish(publishPlugin, mapping.siteId)}
+                        disabled={isPublishing !== null}
+                      >
+                        {isPublishing === publishPlugin.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        ) : (
+                          <Upload className="h-4 w-4 mr-1" />
+                        )}
+                        Publish
+                      </Button>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -1392,6 +1421,21 @@ export default function Plugins() {
         onComplete={(success) => {
           if (success) {
             toast.success("Backup created successfully");
+          }
+        }}
+      />
+
+      {/* Diff Preview Dialog */}
+      <DiffPreviewDialog
+        open={showDiffPreview}
+        onOpenChange={setShowDiffPreview}
+        pluginId={publishPlugin?.id || 0}
+        pluginName={publishPlugin?.name || ""}
+        siteId={diffPreviewSiteId || 0}
+        siteName={publishPlugin?.mappings?.find(m => m.siteId === diffPreviewSiteId)?.siteName || ""}
+        onConfirm={() => {
+          if (publishPlugin && diffPreviewSiteId) {
+            handlePublish(publishPlugin, diffPreviewSiteId);
           }
         }}
       />
