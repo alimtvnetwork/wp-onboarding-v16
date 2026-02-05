@@ -19,6 +19,7 @@ import (
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/backup"
 	"wp-plugin-publish/internal/services/plugin"
+	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
@@ -33,7 +34,7 @@ type SitePasswordDecryptor interface {
 
 // SessionLogger interface for session-based logging
 type SessionLogger interface {
-	StartSession(sessionType string, pluginID, siteID int64, pluginName, siteName string) (string, error)
+	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
 	Log(sessionID, level, step, message string, details map[string]interface{})
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
@@ -161,7 +162,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	// Start session for this publish operation
 	var sessionID string
 	if s.sessionService != nil {
-		sessionID, err = s.sessionService.StartSession("publish", pluginID, siteID, pluginInfo.Name, siteInfo.Name)
+		sessionID, err = s.sessionService.StartSession(session.SessionTypePublish, pluginID, siteID, pluginInfo.Name, siteInfo.Name)
 		if err != nil {
 			s.log.Warn("Failed to start session", "error", err)
 		} else {
