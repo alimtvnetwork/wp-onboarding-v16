@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.6.0');
+    define('RISEUP_VERSION', '1.7.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -110,6 +110,16 @@ if (!defined('RISEUP_ENDPOINT_PLUGIN_FILES')) {
 // Plugin file content endpoint - expects slug as path parameter
 if (!defined('RISEUP_ENDPOINT_PLUGIN_FILE')) {
     define('RISEUP_ENDPOINT_PLUGIN_FILE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/file');
+}
+// Plugin enable/disable/delete endpoints - expects slug as path parameter
+if (!defined('RISEUP_ENDPOINT_PLUGIN_ENABLE')) {
+    define('RISEUP_ENDPOINT_PLUGIN_ENABLE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/enable');
+}
+if (!defined('RISEUP_ENDPOINT_PLUGIN_DISABLE')) {
+    define('RISEUP_ENDPOINT_PLUGIN_DISABLE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/disable');
+}
+if (!defined('RISEUP_ENDPOINT_PLUGIN_DELETE')) {
+    define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/delete');
 }
 // OpenAPI specification endpoint
 if (!defined('RISEUP_ENDPOINT_OPENAPI')) {
