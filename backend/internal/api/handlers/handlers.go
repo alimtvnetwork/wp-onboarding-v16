@@ -60,6 +60,8 @@ type SiteServiceInterface interface {
 	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	// Credentials for API Explorer
+	GetCredentials(ctx context.Context, siteID int64) (interface{}, error)
 }
 
 // SyncServiceInterface defines sync service methods
@@ -355,7 +357,28 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
 		return
+}
+
+// GetSiteCredentials returns decrypted credentials for API Explorer
+func GetSiteCredentials(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
 	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	credentials, err := Services.SiteService.GetCredentials(r.Context(), id)
+	if err != nil {
+		respondError(w, http.StatusNotFound, "E2002", err.Error())
+		return
+	}
+	respondSuccess(w, credentials)
+}
 	respondSuccess(w, result)
 }
 

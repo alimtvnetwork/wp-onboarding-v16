@@ -94,6 +94,8 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/{id}/remote-plugins/{plugin}/enable", handlers.EnableRemotePlugin).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/{plugin}/disable", handlers.DisableRemotePlugin).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/{plugin}", handlers.DeleteRemotePlugin).Methods("DELETE")
+	// API Explorer credentials (on-demand decryption)
+	api.HandleFunc("/sites/{id}/credentials", handlers.GetSiteCredentials).Methods("GET")
 
 	// Plugins endpoints
 	api.HandleFunc("/plugins", handlers.GetPlugins).Methods("GET")

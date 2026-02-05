@@ -468,6 +468,8 @@ export const api = {
       `/sites/bulk-bootstrap-uploader`,
       { method: "POST", body: JSON.stringify({ siteIds, uploaderPath }) }
     ),
+  getSiteCredentials: (siteId: number) =>
+    request<{ url: string; username: string; appPassword: string }>(`/sites/${siteId}/credentials`),
 
   // Plugins
   getPlugins: () => request<Plugin[]>("/plugins"),
