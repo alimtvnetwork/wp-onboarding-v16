@@ -244,18 +244,38 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		return result, nil
 	}
 
-	// Ensure cleanup
+	// Track whether publish succeeded or failed for cleanup decisions
+	publishFailed := false
+
+	// Ensure cleanup - but ALWAYS keep ZIP on failure for debugging
 	defer func() {
-		if zipPath != "" && !options.KeepZipFiles {
-			s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), map[string]interface{}{
-				"keepZipFiles": options.KeepZipFiles,
-			})
-			os.Remove(zipPath)
-		} else if zipPath != "" && options.KeepZipFiles {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging: %s", zipPath), map[string]interface{}{
-				"zipPath": zipPath,
-			})
+		if zipPath == "" {
+			return
 		}
+
+		// ALWAYS keep ZIP on failure - essential for debugging upload issues
+		if publishFailed {
+			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), map[string]interface{}{
+				"zipPath": zipPath,
+				"reason":  "publish_failed",
+			})
+			return
+		}
+
+		// On success: check user preference
+		if options.KeepZipFiles {
+			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), map[string]interface{}{
+				"zipPath":      zipPath,
+				"keepZipFiles": true,
+			})
+			return
+		}
+
+		// Success + user doesn't want to keep: remove
+		s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), map[string]interface{}{
+			"keepZipFiles": options.KeepZipFiles,
+		})
+		os.Remove(zipPath)
 	}()
 
 	// Stage 3: Upload to WordPress
@@ -345,6 +365,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	if stage.Status == "failed" {
 		result.ErrorMessage = stage.Message
 		s.broadcastProgress(pluginID, siteID, "failed", 60, stage.Message)
+		publishFailed = true
 		return result, nil
 	}
 
@@ -515,6 +536,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 	// Calculate totals
 	result.Success = result.ActivationStatus == "active" || result.ActivationStatus == "inactive"
+	publishFailed = !result.Success // Ensure cleanup knows the final status
 	result.Duration = time.Since(startTime).Milliseconds()
 	
 	if options.Mode == "selected" {
