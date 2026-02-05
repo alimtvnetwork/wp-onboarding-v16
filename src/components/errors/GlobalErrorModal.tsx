@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { JsonHighlighter } from "@/components/shared/JsonHighlighter";
+import { formatDateTimeUtc, toClipboardText, unescapeEmbeddedNewlines } from "@/lib/logText";
 
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal } = useErrorStore();
@@ -25,14 +26,16 @@ export function GlobalErrorModal() {
 
   const copyFullError = () => {
     const text = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(toClipboardText(text));
     toast.success("Full error report copied to clipboard");
   };
 
   const copySection = (label: string, content: string) => {
-    navigator.clipboard.writeText(content);
+    navigator.clipboard.writeText(toClipboardText(content));
     toast.success(`${label} copied`);
   };
+
+  const formatTs = (ts: string) => formatDateTimeUtc(ts);
 
   const levelColors = {
     error: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
@@ -72,7 +75,7 @@ export function GlobalErrorModal() {
               </DialogTitle>
               <DialogDescription>
                 <span>
-                  {new Date(selectedError.createdAt).toLocaleString()}
+                  {formatTs(selectedError.createdAt)}
                 </span>
                 <span className="mx-2">•</span>
                 <span className="font-mono">
@@ -412,8 +415,14 @@ export function GlobalErrorModal() {
                         size="sm"
                         onClick={() => {
                           const logText = selectedError.backendLogs!
-                            .map(l => `[${l.timestamp}] [${l.level.toUpperCase()}] ${l.step ? `[${l.step}] ` : ''}${l.message}`)
-                            .join('\n');
+                            .map(l => {
+                              const base = `[${formatTs(l.timestamp)}] [${l.level.toUpperCase()}]${l.step ? ` [${l.step}]` : ''} ${unescapeEmbeddedNewlines(l.message)}`;
+                              if (l.details && Object.keys(l.details).length > 0) {
+                                return `${base}\n${unescapeEmbeddedNewlines(JSON.stringify(l.details, null, 2))}`;
+                              }
+                              return base;
+                            })
+                            .join('\n\n');
                           copySection("Backend logs", logText);
                         }}
                       >
@@ -433,9 +442,70 @@ export function GlobalErrorModal() {
                               log.level === 'debug' && "bg-muted text-muted-foreground"
                             )}
                           >
-                            <span className="text-muted-foreground">[{log.timestamp}]</span>
+                            <span className="text-muted-foreground">[{formatTs(log.timestamp)}]</span>
                             {log.step && <span className="text-primary ml-1">[{log.step}]</span>}
-                            <span className="ml-1">{log.message}</span>
+                            <span className="ml-1 whitespace-pre-wrap break-words">{unescapeEmbeddedNewlines(log.message)}</span>
+
+                            {(() => {
+                              const details = log.details as Record<string, unknown> | undefined;
+                              if (!details || Object.keys(details).length === 0) return null;
+
+                              const request = (details.request && typeof details.request === "object")
+                                ? (details.request as Record<string, unknown>)
+                                : undefined;
+                              const response = (details.response && typeof details.response === "object")
+                                ? (details.response as Record<string, unknown>)
+                                : undefined;
+                              const method = request && typeof request.method === "string" ? request.method : undefined;
+                              const endpoint = request && typeof request.endpoint === "string" ? request.endpoint : undefined;
+                              const url = request && typeof request.url === "string" ? request.url : undefined;
+                              const status = response && typeof response.status === "number" ? response.status : undefined;
+                              const zipPath = typeof details.zipPath === "string" ? details.zipPath : undefined;
+                              const remoteSlug = typeof details.remoteSlug === "string" ? details.remoteSlug : undefined;
+
+                              if (!method && !endpoint && !url && !zipPath && !remoteSlug && !status) {
+                                return (
+                                  <pre className="mt-1 ml-4 text-muted-foreground whitespace-pre-wrap break-words">
+                                    {unescapeEmbeddedNewlines(JSON.stringify(details, null, 2))}
+                                  </pre>
+                                );
+                              }
+
+                              return (
+                                <div className="mt-1 ml-4 space-y-1 text-muted-foreground whitespace-pre-wrap break-words">
+                                  {(method || endpoint) && (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span>Endpoint:</span>
+                                      {method && <Badge variant="outline" className="font-mono">{method}</Badge>}
+                                      {endpoint && <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{endpoint}</code>}
+                                      {typeof status === "number" && (
+                                        <Badge variant={status >= 400 ? "destructive" : "secondary"}>
+                                          {status}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  )}
+                                  {url && (
+                                    <div>
+                                      <span>URL: </span>
+                                      <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{url}</code>
+                                    </div>
+                                  )}
+                                  {remoteSlug && (
+                                    <div>
+                                      <span>Plugin slug: </span>
+                                      <code className="text-xs bg-background/60 px-1 py-0.5 rounded">{remoteSlug}</code>
+                                    </div>
+                                  )}
+                                  {zipPath && (
+                                    <div>
+                                      <span>ZIP: </span>
+                                      <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{zipPath}</code>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
@@ -605,6 +675,53 @@ export function GlobalErrorModal() {
                     No request information available
                   </div>
                 )}
+
+                {/* Remote WordPress endpoint details (from backend log details.request) */}
+                {(() => {
+                  const logs = selectedError.backendLogs || [];
+                  for (const l of logs) {
+                    const details = l.details as Record<string, unknown> | undefined;
+                    const req = details && typeof details.request === "object" && details.request
+                      ? (details.request as Record<string, unknown>)
+                      : undefined;
+                    const url = req && typeof req.url === "string" ? req.url : undefined;
+                    if (!url) continue;
+
+                    const method = req && typeof req.method === "string" ? req.method : undefined;
+                    const endpoint = req && typeof req.endpoint === "string" ? req.endpoint : undefined;
+                    const resp = details && typeof details.response === "object" && details.response
+                      ? (details.response as Record<string, unknown>)
+                      : undefined;
+                    const status = resp && typeof resp.status === "number" ? resp.status : undefined;
+
+                    return (
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          WordPress Request (remote)
+                        </h4>
+                        <div className="bg-muted p-3 rounded-md space-y-2">
+                          {(method || endpoint) && (
+                            <div className="flex items-center gap-2">
+                              {method && <Badge variant="outline" className="font-mono">{method}</Badge>}
+                              {endpoint && <code className="text-sm break-all">{endpoint}</code>}
+                              {typeof status === "number" && (
+                                <Badge variant={status >= 400 ? "destructive" : "secondary"}>
+                                  {status}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          <p className="text-sm">
+                            <span className="text-muted-foreground">URL: </span>
+                            <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{url}</code>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </TabsContent>
 
               {/* Full Context Tab - with JSON Highlighting */}
@@ -757,9 +874,13 @@ function generateErrorReport(
   // Build backend logs section
   const backendLogsSection = error.backendLogs && error.backendLogs.length > 0
     ? `### Backend Execution Logs\n\`\`\`\n${
-        error.backendLogs.map(l => 
-          `[${l.timestamp}] [${l.level.toUpperCase()}]${l.step ? ` [${l.step}]` : ''} ${l.message}`
-        ).join('\n')
+        error.backendLogs.map(l => {
+          const base = `[${formatDateTimeUtc(l.timestamp)}] [${l.level.toUpperCase()}]${l.step ? ` [${l.step}]` : ''} ${unescapeEmbeddedNewlines(l.message)}`;
+          if (l.details && Object.keys(l.details).length > 0) {
+            return `${base}\n${unescapeEmbeddedNewlines(JSON.stringify(l.details, null, 2))}`;
+          }
+          return base;
+        }).join('\n\n')
       }\n\`\`\`\n`
     : "";
 

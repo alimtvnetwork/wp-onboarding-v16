@@ -34,7 +34,16 @@
  2. **Always capture the endpoint path** separate from the full URL
  3. **Include response body** (truncated to 8KB) for server error context
  4. **Capture stack trace** using `captureStackTrace()` for critical failures
- 5. **Log the full URL** in error messages, not just status codes
+5. **Error strings MUST include method + endpoint** (at minimum) so failures like "status 500" are actionable
+6. **Log the full URL** in error messages/details, not just status codes
+
+### Required `Error()` Output
+
+`APIError.Error()` MUST include the method + endpoint when present:
+
+```
+upload plugin via RiseupAsia Uploader (POST /riseup-asia-uploader/v1/upload): status 500
+```
  
  ## Example Usage
  

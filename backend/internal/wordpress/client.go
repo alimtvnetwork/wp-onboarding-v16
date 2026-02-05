@@ -29,10 +29,21 @@ type APIError struct {
 }
 
 func (e *APIError) Error() string {
-	if e.Operation != "" {
-		return fmt.Sprintf("%s: status %d", e.Operation, e.StatusCode)
+	op := e.Operation
+	if op == "" {
+		op = "WordPress API request failed"
 	}
-	return fmt.Sprintf("WordPress API request failed: status %d", e.StatusCode)
+
+	// Always include endpoint/method in the user-facing error string when available.
+	// This is critical for troubleshooting missing/incorrect routes.
+	req := ""
+	if e.Method != "" || e.Endpoint != "" {
+		req = fmt.Sprintf(" (%s %s)", strings.ToUpper(e.Method), e.Endpoint)
+	} else if e.URL != "" {
+		req = fmt.Sprintf(" (%s)", e.URL)
+	}
+
+	return fmt.Sprintf("%s%s: status %d", op, req, e.StatusCode)
 }
 
 // FullError returns the complete error message with response body for logging

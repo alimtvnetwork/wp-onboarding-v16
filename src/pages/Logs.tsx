@@ -34,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
+import { formatTime24h } from "@/lib/logText";
 
 interface LogEntry {
   id: string;
@@ -342,15 +343,7 @@ export default function Logs() {
     URL.revokeObjectURL(url);
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-  };
+  const formatTime = (timestamp: string) => formatTime24h(timestamp);
 
   const getSourceIcon = (source: string) => {
     switch (source) {

@@ -5,6 +5,7 @@ import { Terminal, ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { formatTime24h, toClipboardText, unescapeEmbeddedNewlines } from "@/lib/logText";
 
 export interface LogEntry {
   timestamp: string;
@@ -45,14 +46,20 @@ export function LogViewer({
     }
   }, [logs, expanded, autoScroll]);
 
+  const formatTs = (ts: string) => formatTime24h(ts);
+
   const copyLogs = () => {
     const text = logs
-      .map(
-        (l) =>
-          `[${new Date(l.timestamp).toLocaleTimeString()}] [${l.level.toUpperCase()}] [${l.step}] ${l.message}`
-      )
-      .join("\n");
-    navigator.clipboard.writeText(text);
+      .map((l) => {
+        const base = `[${formatTs(l.timestamp)}] [${l.level.toUpperCase()}] [${l.step}] ${unescapeEmbeddedNewlines(l.message)}`;
+        if (l.details && Object.keys(l.details).length > 0) {
+          const detailsText = unescapeEmbeddedNewlines(JSON.stringify(l.details, null, 2));
+          return `${base}\n${detailsText}`;
+        }
+        return base;
+      })
+      .join("\n\n");
+    navigator.clipboard.writeText(toClipboardText(text));
     toast.success("Logs copied to clipboard");
   };
 
@@ -133,14 +140,16 @@ export function LogViewer({
                   className={cn("py-0.5 px-1 rounded", getLevelColor(log.level))}
                 >
                   <span className="text-muted-foreground">
-                    [{new Date(log.timestamp).toLocaleTimeString()}]
+                    [{formatTs(log.timestamp)}]
                   </span>
                   <span className="text-primary ml-1">[{log.step}]</span>
-                  <span className="ml-1">{log.message}</span>
+                  <span className="ml-1 whitespace-pre-wrap break-words">
+                    {unescapeEmbeddedNewlines(log.message)}
+                  </span>
                   {log.details && Object.keys(log.details).length > 0 && (
-                    <span className="text-muted-foreground ml-1">
-                      {JSON.stringify(log.details)}
-                    </span>
+                    <pre className="mt-1 ml-4 text-muted-foreground whitespace-pre-wrap break-words">
+                      {unescapeEmbeddedNewlines(JSON.stringify(log.details, null, 2))}
+                    </pre>
                   )}
                 </div>
               ))

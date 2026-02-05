@@ -36,6 +36,10 @@ Use `LogViewer` component with:
 - Copy button for all logs
 - Auto-scroll to latest
 
+### Multiline Content
+- If log content includes embedded `\\n` sequences (common in stack traces/response bodies), the UI MUST render them as real line breaks (`whitespace-pre-wrap` / `<br/>`).
+- Clipboard copy MUST normalize newlines to real line breaks (CRLF) so pasted logs are readable in editors.
+
 ### Stack Trace Section
 - Must use ScrollArea with explicit max height
 - Error location visible at top, not hidden below fold
