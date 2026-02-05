@@ -256,6 +256,16 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		})
 	}
 
+	// Initialize session service for operation logging (must be before siteService)
+	sessionService, err := session.New(session.Config{
+		DataDir:       filepath.Dir(cfg.DatabasePath),
+		Logger:        log,
+		RetentionDays: 7,
+	})
+	if err != nil {
+		log.Error("Failed to initialize session service", "error", err)
+	}
+
 	// Initialize services with dependencies
 	siteService := site.New(site.Config{
 		DB:              db,
@@ -280,16 +290,6 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		RetentionDays: cfg.Backup.RetentionDays,
 		MaxPerPlugin:  cfg.Backup.MaxBackupsPerPlugin,
 	})
-
-	// Initialize session service for operation logging
-	sessionService, err := session.New(session.Config{
-		DataDir:       filepath.Dir(cfg.DatabasePath),
-		Logger:        log,
-		RetentionDays: 7,
-	})
-	if err != nil {
-		log.Error("Failed to initialize session service", "error", err)
-	}
 
 	syncService := sync.New(sync.Config{
 		DB:              db,
