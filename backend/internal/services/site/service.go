@@ -1056,11 +1056,22 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 		return false, nil, nil, err
 	}
 
-	cachedAt := parseTime(cachedAtStr)
-	expiresAt := parseTime(expiresAtStr)
-	isValid := expiresAt != nil && expiresAt.After(time.Now())
+	cachedAtVal := parseTime(cachedAtStr)
+	expiresAtVal := parseTime(expiresAtStr)
+	
+	// Check if we got valid parsed times
+	isValid := !expiresAtVal.IsZero() && expiresAtVal.After(time.Now())
+	
+	// Return pointers (nil if zero time)
+	var cachedAtPtr, expiresAtPtr *time.Time
+	if !cachedAtVal.IsZero() {
+		cachedAtPtr = &cachedAtVal
+	}
+	if !expiresAtVal.IsZero() {
+		expiresAtPtr = &expiresAtVal
+	}
 
-	return isValid, cachedAt, expiresAt, nil
+	return isValid, cachedAtPtr, expiresAtPtr, nil
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
