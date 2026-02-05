@@ -717,8 +717,12 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
-	// Create zip file with slug-based name (no timestamp, no spaces)
+	// Create slug from plugin name (lowercase, hyphens instead of spaces)
+	// This slug is used BOTH for the ZIP filename AND as the folder name inside the ZIP
+	// to match the PowerShell script behavior and WordPress expectations
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
+
+	// Create zip file with slug-based name (no timestamp, no spaces)
 	absZipPath := pathutil.MustJoin(absTempDir, fmt.Sprintf("%s.zip", slug))
 	zipFile, err := os.Create(absZipPath)
 	if err != nil {
@@ -761,8 +765,10 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 			return nil
 		}
 
-		// Create file in zip with plugin name as root folder
-		zipEntryPath := filepath.Join(pluginName, relPath)
+		// Create file in zip with SLUG as root folder (not display name)
+		// This matches the PowerShell script behavior: the folder inside the ZIP
+		// must match the expected WordPress plugin directory name (slug)
+		zipEntryPath := filepath.Join(slug, relPath)
 		zipEntryPath = filepath.ToSlash(zipEntryPath) // Normalize for zip
 
 		writer, err := zipWriter.Create(zipEntryPath)
@@ -805,8 +811,11 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
-	// Create zip file with slug-based name (no timestamp, no spaces)
+	// Create slug from plugin name (lowercase, hyphens instead of spaces)
+	// This slug is used BOTH for the ZIP filename AND as the folder name inside the ZIP
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
+
+	// Create zip file with slug-based name (no timestamp, no spaces)
 	absZipPath := pathutil.MustJoin(absTempDir, fmt.Sprintf("%s-patch.zip", slug))
 	zipFile, err := os.Create(absZipPath)
 	if err != nil {
@@ -833,8 +842,9 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 			continue
 		}
 
-		// Create file in zip with plugin name as root folder
-		zipFilePath := filepath.Join(pluginName, relPath)
+		// Create file in zip with SLUG as root folder (not display name)
+		// This matches the PowerShell script behavior
+		zipFilePath := filepath.Join(slug, relPath)
 		zipFilePath = filepath.ToSlash(zipFilePath)
 
 		writer, err := zipWriter.Create(zipFilePath)
@@ -932,7 +942,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 	if uploaderAvailable {
 		s.log.Info("Using Plugin Uploader Helper for upload", "slug", slug)
 
-		result, err := wpClient.UploadPluginViaUploader(zipPath, true) // activate=true
+		result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true) // pass slug and activate=true
 		if err != nil {
 			return true, nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
 		}
