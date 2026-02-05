@@ -1,288 +1,339 @@
 
-# Riseup Asia Plugin - Phase 2 Enhancement Plan
+# Implementation Plan: Error Handling Verification and Bulk Scan Feature
 
-## ✅ COMPLETED
+## Summary
 
-### Part 1: Namespace Renaming
-- [x] Updated `backend/internal/wordpress/constants.go` - `RiseupAsiaNamespace = "riseup-asia-uploader/v1"`
-- [x] Updated `plugins-uploader-helper/includes/constants.php` - `RISEUP_API_NAMESPACE = 'riseup-asia-uploader'`
-- [x] Updated all references in `uploader.go` to use new namespace
-
-### Part 2: Seed Configuration
-- [x] Added Riseup Asia Uploader to `backend/config.json` with category "Core"
-- [x] Plugin auto-maps to all configured sites via existing seeding logic
-
-### Part 3: Upload Ignore Parser
-- [x] Created `plugins-uploader-helper/includes/class-upload-ignore.php` (PHP)
-- [x] Created `backend/internal/services/plugin/ignore.go` (Go)
-- [x] Created `plugins-uploader-helper/.uploadignore.example` template
-
-### Part 4: Delta Sync Endpoint
-- [x] Added `POST /riseup-asia-uploader/v1/plugins/{slug}/sync` PHP endpoint
-- [x] Added `SyncPluginFilesViaUploader()` method to Go client
-- [x] Supports `.uploadignore` pattern matching
-
-### Part 5: Export-Self Endpoint
-- [x] Added `GET /riseup-asia-uploader/v1/export-self` PHP endpoint
-- [x] Added `ExportSelfFromSite()` method to Go client
-
-### Part 6: Bootstrap Uploader API
-- [x] Added `POST /api/v1/sites/{id}/bootstrap-uploader` backend endpoint
-- [x] Added `BootstrapUploader()` method to Site service
-- [x] Added "Deploy" button to SiteCard frontend component
-- [x] Added `bootstrapUploader()` API method
-
-### Part 7: Memory Updates
-- [x] Updated `.lovable/memory/architecture/backend/wordpress-integration.md`
+This plan addresses two main areas:
+1. **Error Handling Gaps** - Fix missing Git/Build error codes and ensure comprehensive stack traces
+2. **New Feature** - Add "Scan All Directories" bulk action for the Plugins page
 
 ---
 
-## File Changes Summary
+## Part 1: Error Handling Analysis and Fixes
 
-| File | Status |
-|------|--------|
-| `backend/internal/wordpress/constants.go` | ✅ Updated |
-| `backend/internal/wordpress/uploader.go` | ✅ Updated |
-| `backend/config.json` | ✅ Updated |
-| `plugins-uploader-helper/includes/constants.php` | ✅ Updated |
-| `plugins-uploader-helper/includes/class-upload-ignore.php` | ✅ Created |
-| `plugins-uploader-helper/riseup-asia.php` | ✅ Updated |
-| `plugins-uploader-helper/.uploadignore.example` | ✅ Created |
-| `backend/internal/services/plugin/ignore.go` | ✅ Created |
-| `backend/internal/api/handlers/handlers.go` | ✅ Updated |
-| `backend/internal/api/router.go` | ✅ Updated |
-| `backend/internal/services/site/service.go` | ✅ Updated |
-| `src/components/sites/SiteCard.tsx` | ✅ Updated |
-| `src/lib/api.ts` | ✅ Updated |
-| `.lovable/memory/architecture/backend/wordpress-integration.md` | ✅ Updated |
+### Current State (Verified)
 
----
+The stack trace implementation is **correctly implemented** in these locations:
 
-## Testing Checklist
+- **apperror.New()** and **apperror.Wrap()** - Both automatically capture full stack traces via `captureStackTrace()`
+- **Logger** - Automatically appends stack traces for ERROR and FATAL level messages
+- **Process Output** - `LogProcessOutput()` and `LogProcessError()` capture stdout/stderr from external commands
 
-- [ ] Namespace `riseup-asia-uploader/v1` works in PHP and Go
-- [ ] Riseup Asia appears in seeded plugins list
-- [ ] Plugin maps to all configured sites on startup
-- [ ] `.uploadignore` patterns are correctly parsed
-- [ ] Ignored files are skipped during sync
-- [ ] Delta sync updates/deletes correct files
-- [ ] Export-self returns valid base64 ZIP
-- [ ] Bootstrap uploader deploys plugin to new site
-- [ ] All transactions logged to SQLite
+### Issue Found: Missing Error Code Definitions
 
----
+The following error codes are **used** in the codebase but **not defined** in `codes.go`:
 
-## Part 4: Upload Ignore Parser
+| Code Used | Location | Status |
+|-----------|----------|--------|
+| `ErrGitNotRepo` | git/service.go:143 | Missing |
+| `ErrGitCommand` | git/service.go:560 | Missing |
+| `ErrBuildNotConfigured` | git/service.go:259 | Missing |
+| `ErrBuildFailed` | git/service.go:307 | Missing |
 
-### 4.1 Create Upload Ignore Class
-**File:** `plugins-uploader-helper/includes/class-upload-ignore.php`
+### Fix Required
 
-```php
-class RiseUp_Upload_Ignore {
-    private $patterns = [];
-    private $negations = [];
-    
-    // Load patterns from .uploadignore file
-    public function load($plugin_dir): bool
-    
-    // Check if a path should be ignored
-    public function should_ignore($relative_path): bool
-    
-    // Get all active patterns
-    public function get_patterns(): array
-}
-```
+Add Git and Build error code definitions to `backend/pkg/apperror/codes.go`:
 
-**Supported Pattern Syntax:**
-| Pattern | Description |
-|---------|-------------|
-| `*.log` | Ignore all .log files |
-| `node_modules/` | Ignore directory |
-| `/build/` | Ignore only root build/ |
-| `!important.log` | Exception (don't ignore) |
-| `# comment` | Comments |
-| `**/*.tmp` | Recursive glob |
-
-### 4.2 Go Upload Ignore Parser
-**File:** `backend/internal/services/plugin/ignore.go`
-
-Create Go equivalent for local file operations:
-```go
-type UploadIgnore struct {
-    patterns  []string
-    negations []string
-}
-
-func LoadUploadIgnore(pluginDir string) (*UploadIgnore, error)
-func (u *UploadIgnore) ShouldIgnore(relPath string) bool
-func (u *UploadIgnore) GetPatterns() []string
-```
-
-### 4.3 Example .uploadignore File
-Create `plugins-uploader-helper/.uploadignore.example`:
 ```text
-# Riseup Asia - Upload Ignore Patterns
+// Git errors (E7xxx)
+const (
+    ErrGitNotRepo         = "E7001" // Directory is not a git repository
+    ErrGitCommand         = "E7002" // Git command execution failed
+    ErrGitPull            = "E7003" // Git pull failed
+    ErrGitPush            = "E7004" // Git push failed
+    ErrGitCommit          = "E7005" // Git commit failed
+    ErrGitBranch          = "E7006" // Git branch operation failed
+)
 
-# Development files
-.git/
-.gitignore
-.uploadignore
-
-# Dependencies
-node_modules/
-vendor/
-
-# Build artifacts
-*.log
-*.tmp
-.DS_Store
-
-# IDE
-.idea/
-.vscode/
-*.swp
-
-# Keep these files (negation)
-!vendor/autoload.php
+// Build errors (E8xxx)
+const (
+    ErrBuildNotConfigured = "E8001" // Build not configured for plugin
+    ErrBuildFailed        = "E8002" // Build command failed
+    ErrBuildTimeout       = "E8003" // Build command timed out
+)
 ```
 
 ---
 
-## Part 5: Delta Sync Endpoint
+## Part 2: Add "Scan All Directories" Bulk Action
 
-### 5.1 PHP Sync Endpoint
-**File:** `plugins-uploader-helper/riseup-asia.php`
+### New Backend Endpoint
 
-Add REST route:
-```
-POST /riseup-asia-uploader/v1/plugins/{slug}/sync
-```
+Create a new endpoint that scans multiple paths and returns results:
 
-Request:
-```json
+**Endpoint:** `POST /api/v1/plugins/scan-directories`
+
+**Request Body:**
+```text
 {
-  "files": [
-    {
-      "path": "includes/class-helper.php",
-      "content": "<base64>",
-      "action": "replace"
-    },
-    {
-      "path": "old-file.php",
-      "action": "delete"
-    }
-  ]
+  "paths": ["/path/to/plugins", "/another/path"],
+  "createDetection": true
 }
 ```
 
-Response:
-```json
+**Response:**
+```text
 {
   "success": true,
-  "files_updated": 3,
-  "files_deleted": 1,
-  "files_ignored": 2,
-  "ignored_files": ["debug.log", "node_modules/package.json"],
-  "results": [
-    {"path": "includes/class-helper.php", "action": "replaced", "status": "success"},
-    {"path": "old-file.php", "action": "deleted", "status": "success"}
-  ]
+  "data": {
+    "scanned": 5,
+    "detected": 3,
+    "results": [
+      { "path": "...", "isPlugin": true, "metadata": {...} },
+      ...
+    ]
+  }
 }
 ```
 
-### 5.2 Sync Handler Logic
-1. Load `.uploadignore` from target plugin directory
-2. For each file in request:
-   - Check if path matches ignore patterns → skip with reason
-   - If `action: "replace"`: decode base64, write file, create parent dirs
-   - If `action: "delete"`: remove file if exists
-3. Log transaction to SQLite with user context
-4. Return summary with ignored files list
+### Frontend Changes
 
-### 5.3 Go Delta Sync Method
-**File:** `backend/internal/wordpress/uploader.go`
+1. **Update BulkActionsBar** - Add a "Scan Directories" action button
+2. **Create ScanAllDirectoriesDialog** - Dialog to select base paths to scan
+3. **Update Plugins.tsx** - Wire up the new bulk action
 
-```go
-type SyncFile struct {
-    Path    string `json:"path"`
-    Content string `json:"content,omitempty"` // base64
-    Action  string `json:"action"`            // "replace" or "delete"
-}
+### UI Flow
 
-type SyncResult struct {
-    Success       bool           `json:"success"`
-    FilesUpdated  int            `json:"files_updated"`
-    FilesDeleted  int            `json:"files_deleted"`
-    FilesIgnored  int            `json:"files_ignored"`
-    IgnoredFiles  []string       `json:"ignored_files"`
-    Results       []SyncFileResult `json:"results"`
-}
-
-func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error)
-```
+1. User selects plugins in the list
+2. Clicks "Scan All" in the bulk actions bar
+3. A dialog opens showing:
+   - Option to scan parent directories of selected plugins
+   - Checkbox for "Create wp-plugin-detected.json files"
+   - Progress indicator during scan
+4. Results show newly detected plugins with option to register them
 
 ---
 
 ## Implementation Order
 
-1. **Namespace Update** (Go + PHP)
-   - Update `constants.go` 
-   - Update `constants.php`
-   - Update all references in `uploader.go`
+### Step 1: Add Missing Error Codes
+- File: `backend/pkg/apperror/codes.go`
+- Add Git errors (E7xxx) and Build errors (E8xxx)
 
-2. **Seed Configuration**
-   - Add Riseup Asia to `config.json`
+### Step 2: Create Bulk Scan Endpoint
+- File: `backend/internal/api/handlers/handlers.go`
+  - Add `ScanDirectoriesPath` handler
+- File: `backend/internal/api/router.go`
+  - Register new route
+- File: `backend/internal/api/handlers/adapters.go`
+  - Add interface method if needed
 
-3. **Upload Ignore Parser**
-   - Create `class-upload-ignore.php`
-   - Create `ignore.go`
-   - Add `.uploadignore.example`
+### Step 3: Add Frontend API Method
+- File: `src/lib/api.ts`
+  - Add `scanDirectories(paths: string[], createDetection: boolean)` method
 
-4. **Delta Sync Endpoint**
-   - Register `/sync` route in PHP
-   - Implement sync handler with ignore support
-   - Add `SyncPluginFilesViaUploader()` to Go client
+### Step 4: Update BulkActionsBar
+- File: `src/components/plugins/BulkActionsBar.tsx`
+  - Add "Scan All" button
+  - Add callback prop `onScanAll`
 
-5. **Export-Self Endpoint**
-   - Add `/export-self` route in PHP
-   - Implement ZIP generation
-
-6. **Bootstrap Uploader API**
-   - Add `/api/v1/sites/{id}/bootstrap-uploader` endpoint
-   - Implement ZIP creation from local folder
-   - Add frontend button
-
-7. **Memory Updates**
-   - Update documentation files
+### Step 5: Wire Up in Plugins Page
+- File: `src/pages/Plugins.tsx`
+  - Add handler for bulk scan action
+  - Show toast/dialog with scan results
 
 ---
 
-## File Changes Summary
+## Technical Details
 
-| File | Action |
-|------|--------|
-| `backend/internal/wordpress/constants.go` | Update namespace |
-| `backend/internal/wordpress/uploader.go` | Update references, add methods |
-| `backend/config.json` | Add Riseup Asia to seed plugins |
-| `plugins-uploader-helper/includes/constants.php` | Update namespace |
-| `plugins-uploader-helper/includes/class-upload-ignore.php` | **NEW** |
-| `plugins-uploader-helper/riseup-asia.php` | Add `/sync` and `/export-self` routes |
-| `plugins-uploader-helper/.uploadignore.example` | **NEW** |
-| `backend/internal/services/plugin/ignore.go` | **NEW** |
-| `backend/internal/api/handlers/handlers.go` | Add bootstrap endpoint |
-| `src/components/sites/SiteCard.tsx` | Add deploy button |
-| `.lovable/memory/architecture/backend/wordpress-integration.md` | Update docs |
+### Error Code Categories (Updated)
+
+| Range | Category |
+|-------|----------|
+| E1xxx | Configuration |
+| E2xxx | Database |
+| E3xxx | WordPress API |
+| E4xxx | File System |
+| E5xxx | Sync |
+| E6xxx | Backup |
+| E7xxx | Git (new) |
+| E8xxx | Build (new) |
+| E9xxx | General |
+
+### Stack Trace Flow (Verified)
+
+```text
+Error occurs
+    |
+    v
+apperror.New/Wrap called
+    |
+    +-- captureContext() -> file, line, function
+    |
+    +-- captureStackTrace() -> full call stack
+    |
+    v
+AppError returned with StackTrace field populated
+    |
+    v
+logger.Error() called (optional)
+    |
+    +-- Appends additional stack trace to log output
+    |
+    v
+Written to error.log.txt with full trace
+```
 
 ---
 
-## Testing Checklist
+## Files to Modify
 
-- [ ] Namespace `riseup-asia-uploader/v1` works in PHP and Go
-- [ ] Riseup Asia appears in seeded plugins list
-- [ ] Plugin maps to all configured sites on startup
-- [ ] `.uploadignore` patterns are correctly parsed
-- [ ] Ignored files are skipped during sync
-- [ ] Delta sync updates/deletes correct files
-- [ ] Export-self returns valid base64 ZIP
-- [ ] Bootstrap uploader deploys plugin to new site
-- [ ] All transactions logged to SQLite
+| File | Changes |
+|------|---------|
+| `backend/pkg/apperror/codes.go` | Add E7xxx and E8xxx error codes |
+| `backend/internal/api/handlers/handlers.go` | Add ScanDirectoriesPath handler |
+| `backend/internal/api/router.go` | Register new route |
+| `src/lib/api.ts` | Add scanDirectories method |
+| `src/components/plugins/BulkActionsBar.tsx` | Add Scan All button |
+| `src/pages/Plugins.tsx` | Wire up bulk scan functionality |
+
+
+## Additional Strict Instructions
+
+Below, you will see, uh, error log or error report from the, uh, frontend, uh, me- m-model. Uh, however, if you see the backend error, it's quite confusing. I mean, it does not tell what happened. And I'm not sure how this log is created because the format does not match, as we say it should be. And you can see, like it says, like, "Fail to upload plugin," uh, something like this. Okay? So first of all, rise up, uh, it should be together, and up should be lowercase. That's the first thing. Second, I asked you explicitly not to write this type of log, but the log needs to be meaningful. That means the exact file you try to upload. And what is the stack trace? That means when you try to upload there, what is the error that the server has given? It, it shouldn't be just 500. It should give you some stack trace from there. So that should be printed there. You are not following that. Also, the main root cause here, I think when you zipped it, um, z- zip file to upload, so when the first zip was done, it didn't also mention like what is the folder structure inside the zip. Because it could have been, uh, that either we have the root folder or don't have the root folder. Either one of these is causing the error. Um, but in this case, I do see that the error is uploading the file. Upload- uploading is the issue. Now, if the uploading is the issue, then my, my better knowledge says that you should not name the file like this. So, always name the file like a slug, um, and do not add the date or time. Just add the slug dot zip and upload. If you follow this, follow these patterns, what I'm saying, I hope you will get out of the issues. And in the future try to add more logs, uh, why things happens, how things happens. If these are there, then it's easier for you to solve the issue as well. Also, the UI on the, on the model for the, uh, for the stack section is not very good. I mean, the error location is almost hidden. So there should be, uh, let's say scroll. We could have a vertical scroll for, uh, both cases because the, uh, error model should be fixed if more things comes up, which we should be able to scroll through and see like what is the issue. So th- these are, uh, on top of my head. So fix the rise up naming and add more details. I think this, this will solve the issue. And also add line numbers. So when you are getting a, I mean, error, you are not mentioning the line number, file path, things like that. These are absolutely missing. Don't do that. Please don't do that. It has no value. Okay? You are not making something that has a value. The log needs to have this information. So based on that, please update your memory. Please update the specs that this is how the error needs to be written. Do you understand? Do you have any question, confusion?
+
+The backend error log should be like 
+
+[v1.x 2026-02-05 24:23] [package] Building package... [INFO] [exact file path : line number] 
+
+instead of 
+[2026-02-05T00:05:40.210Z] [INFO] [package] Building package...
+
+Can you please fix it and prioritize it????
+
+
+## Error Report
+
+**App:** WP Plugin Publish v1.19.4
+**Git Commit:** dev
+**Build Time:** 2026-02-04T19:30:00Z
+
+**ID:** 1770249955175-qt8nq5wa0
+**Code:** E9001
+**Level:** error
+**Timestamp:** 2026-02-05T00:05:55.174Z
+
+### Trigger Context
+**Component:** PublishProgressDialog
+**Action:** publish_failed
+**Source:** PublishProgressDialog.onComplete
+
+### Invocation Chain
+```
+PublishProgressDialog.onComplete
+  └─ onClick (index-BuUPtVUG.js:625)
+    └─ Wk (index-BuUPtVUG.js:37)
+      └─ Hk (index-BuUPtVUG.js:37)
+        └─ px (index-BuUPtVUG.js:37)
+          └─ L0 (index-BuUPtVUG.js:37)
+            └─ uh (index-BuUPtVUG.js:40)
+```
+
+
+### Message
+[E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
+
+### Details
+Failed during stage: Uploading to Site
+
+### Request
+**POST** /plugins/3/sites/1/publish
+
+
+### Backend Execution Logs
+```
+[2026-02-05T00:05:40.215Z] [INFO] [init] Starting publish for Category Generator to Atto Property Demo
+[2026-02-05T00:05:40.215Z] [INFO] [init] Starting publish for Category Generator to Atto Property Demo
+[2026-02-05T00:05:40.209Z] [INFO] [backup] Starting publish...
+[2026-02-05T00:05:40.210Z] [INFO] [connect] Connecting to WordPress: https://demoat.attoproperty.com.au
+[2026-02-05T00:05:40.210Z] [INFO] [package] Building package...
+[2026-02-05T00:05:40.210Z] [INFO] [package] Packaging plugin from: D:\wp-work\riseup-asia\category-forge\wordpress-plugin\category-generator
+[2026-02-05T00:05:40.210Z] [INFO] [package] Creating full ZIP with ~0 files
+[2026-02-05T00:05:40.209Z] [INFO] [backup] Starting publish...
+[2026-02-05T00:05:40.210Z] [INFO] [connect] Connecting to WordPress: https://demoat.attoproperty.com.au
+[2026-02-05T00:05:40.210Z] [INFO] [package] Building package...
+[2026-02-05T00:05:40.210Z] [INFO] [package] Packaging plugin from: D:\wp-work\riseup-asia\category-forge\wordpress-plugin\category-generator
+[2026-02-05T00:05:40.210Z] [INFO] [package] Creating full ZIP with ~0 files
+[2026-02-05T00:05:40.224Z] [INFO] [package] ZIP created: Category Generator-1770249940.zip (143386 bytes)
+[2026-02-05T00:05:40.224Z] [INFO] [package] ZIP created: Category Generator-1770249940.zip (143386 bytes)
+[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to WordPress...
+[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to https://demoat.attoproperty.com.au as plugin: category-generator
+[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to WordPress...
+[2026-02-05T00:05:40.224Z] [INFO] [upload] Uploading to https://demoat.attoproperty.com.au as plugin: category-generator
+[2026-02-05T00:05:48.428Z] [ERROR] [upload] Upload failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
+[2026-02-05T00:05:48.428Z] [ERROR] [upload] Upload failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
+[2026-02-05T00:05:48.427Z] [ERROR] [complete] Publish failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
+[2026-02-05T00:05:48.427Z] [ERROR] [complete] Publish failed: [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
+[2026-02-05T00:05:48.429Z] [ERROR] [failed] [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
+[2026-02-05T00:05:48.429Z] [DEBUG] [cleanup] Removing temp ZIP: .temp\Category Generator-1770249940.zip
+[2026-02-05T00:05:48.429Z] [ERROR] [failed] [E3009] failed to upload plugin via uploader helper: upload plugin via Rise Up Uploader: status 500
+[2026-02-05T00:05:48.429Z] [DEBUG] [cleanup] Removing temp ZIP: .temp\Category Generator-1770249940.zip
+```
+
+
+### Parsed Stack Frames
+| # | Function | File | Line |
+|---|----------|------|------|
+| 1 | onClick | index-BuUPtVUG.js | 625 |
+| 2 | Wk | index-BuUPtVUG.js | 37 |
+| 3 | Hk | index-BuUPtVUG.js | 37 |
+| 4 | px | index-BuUPtVUG.js | 37 |
+| 5 | L0 | index-BuUPtVUG.js | 37 |
+| 6 | anonymous | index-BuUPtVUG.js | 37 |
+| 7 | uh | index-BuUPtVUG.js | 40 |
+
+### Location
+`index-BuUPtVUG.js:625` (onClick)
+
+### Context
+```json
+{
+  "source": "PublishProgressDialog.onComplete",
+  "triggerComponent": "PublishProgressDialog",
+  "triggerAction": "publish_failed",
+  "pluginId": 3,
+  "pluginName": "Category Generator",
+  "siteId": 1,
+  "siteName": "Atto Property Demo",
+  "failedStage": "upload",
+  "stageStatuses": [
+    {
+      "name": "backup",
+      "status": "success"
+    },
+    {
+      "name": "package",
+      "status": "success",
+      "message": "Building package..."
+    },
+    {
+      "name": "upload",
+      "status": "error",
+      "message": "Uploading to WordPress..."
+    },
+    {
+      "name": "activate",
+      "status": "pending"
+    }
+  ],
+  "backendLogFiles": {
+    "log": "data/errors/log.txt",
+    "errorLog": "data/errors/error.log.txt"
+  }
+}
+```
+
+### Frontend Stack Trace
+```
+    at onClick (http://localhost:8080/assets/index-BuUPtVUG.js:625:7221)
+    at Object.Bk (http://localhost:8080/assets/index-BuUPtVUG.js:37:9855)
+    at Wk (http://localhost:8080/assets/index-BuUPtVUG.js:37:10009)
+    at Hk (http://localhost:8080/assets/index-BuUPtVUG.js:37:10066)
+    at px (http://localhost:8080/assets/index-BuUPtVUG.js:37:31446)
+    at L0 (http://localhost:8080/assets/index-BuUPtVUG.js:37:31863)
+    at http://localhost:8080/assets/index-BuUPtVUG.js:37:36776
+    at uh (http://localhost:8080/assets/index-BuUPtVUG.js:40:36935)
+```
+
+---
+*Generated by WP Plugin Publish Error Reporter*
