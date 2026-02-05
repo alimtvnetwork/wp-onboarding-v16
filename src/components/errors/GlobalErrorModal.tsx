@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText, ChevronDown, FileDown } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText, ChevronDown, FileDown, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -20,6 +20,15 @@ import { JsonHighlighter } from "@/components/shared/JsonHighlighter";
 import { SessionLogsTab } from "@/components/errors/SessionLogsTab";
 import { formatDateTimeUtc, toClipboardText, unescapeEmbeddedNewlines } from "@/lib/logText";
 import { api } from "@/lib/api";
+
+// Type for PHP stack trace frame
+interface PHPStackFrame {
+  file?: string;
+  fileBase?: string;
+  line?: number;
+  function?: string;
+  class?: string;
+}
 
 export function GlobalErrorModal() {
   const { selectedError, isModalOpen, closeErrorModal } = useErrorStore();
@@ -30,6 +39,57 @@ export function GlobalErrorModal() {
   const buildTime = versionInfo?.buildTime;
   const [showRawStack, setShowRawStack] = useState(false);
   const [showInternalFrames, setShowInternalFrames] = useState(false);
+  
+  // Backend error log state
+  const [errorLogContent, setErrorLogContent] = useState<string | null>(null);
+  const [errorLogLoading, setErrorLogLoading] = useState(false);
+  const [errorLogError, setErrorLogError] = useState<string | null>(null);
+  const [errorLogFetched, setErrorLogFetched] = useState(false);
+  
+  // Extract PHP stack trace frames from error context if available
+  const phpStackFrames: PHPStackFrame[] = (() => {
+    const ctx = selectedError?.context as Record<string, unknown> | undefined;
+    if (!ctx) return [];
+    // Check for stackTraceFrames in context
+    if (Array.isArray(ctx.stackTraceFrames)) {
+      return ctx.stackTraceFrames as PHPStackFrame[];
+    }
+    // Check for nested errorDetails.stackTraceFrames
+    const errorDetails = ctx.errorDetails as Record<string, unknown> | undefined;
+    if (errorDetails && Array.isArray(errorDetails.stackTraceFrames)) {
+      return errorDetails.stackTraceFrames as PHPStackFrame[];
+    }
+    return [];
+  })();
+  
+  // Fetch error log when Stack tab is viewed
+  const fetchErrorLog = async () => {
+    if (errorLogFetched) return;
+    setErrorLogLoading(true);
+    setErrorLogError(null);
+    try {
+      const resp = await api.getBackendErrorLog();
+      if (resp.success && resp.data) {
+        setErrorLogContent(resp.data.content);
+      } else {
+        setErrorLogError(resp.error?.message || "No error log available");
+      }
+    } catch (err) {
+      setErrorLogError(err instanceof Error ? err.message : "Failed to fetch error log");
+    } finally {
+      setErrorLogLoading(false);
+      setErrorLogFetched(true);
+    }
+  };
+  
+  // Reset state when modal closes or error changes
+  useEffect(() => {
+    if (!isModalOpen) {
+      setErrorLogContent(null);
+      setErrorLogFetched(false);
+      setErrorLogError(null);
+    }
+  }, [isModalOpen, selectedError?.id]);
   
   if (!selectedError) return null;
 
@@ -205,8 +265,8 @@ export function GlobalErrorModal() {
                 />
               </TabsContent>
 
-              {/* Stack Trace Tab - Enhanced with Parsed Table */}
-              <TabsContent value="stack" className="m-0 space-y-4">
+              {/* Stack Trace Tab - Enhanced with PHP frames and Backend Error Log */}
+              <TabsContent value="stack" className="m-0 space-y-4" onFocus={fetchErrorLog} onMouseEnter={fetchErrorLog}>
                 {/* View Toggle */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -237,6 +297,65 @@ export function GlobalErrorModal() {
                     </label>
                   )}
                 </div>
+
+                {/* PHP Stack Trace Frames (from WordPress plugin errors) */}
+                {phpStackFrames.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-orange-500" />
+                        PHP Stack Trace ({phpStackFrames.length} frames)
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const text = phpStackFrames.map((f, i) => {
+                            const fn = f.class ? `${f.class}::${f.function}` : f.function || 'unknown';
+                            return `#${i} ${fn}() at ${f.file || f.fileBase || 'unknown'}:${f.line || '?'}`;
+                          }).join('\n');
+                          copySection("PHP stack trace", text);
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="border rounded-md overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead className="bg-orange-500/10">
+                          <tr>
+                            <th className="text-left p-2 font-medium text-muted-foreground">#</th>
+                            <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
+                            <th className="text-left p-2 font-medium text-muted-foreground">File</th>
+                            <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {phpStackFrames.map((frame, index) => (
+                            <tr 
+                              key={index} 
+                              className={cn(
+                                "border-t border-border/50",
+                                index === 0 && "bg-orange-500/5"
+                              )}
+                            >
+                              <td className="p-2 font-mono text-muted-foreground">{index}</td>
+                              <td className="p-2 font-mono">
+                                <span className={cn(index === 0 && "text-orange-600 dark:text-orange-400 font-semibold")}>
+                                  {frame.class ? `${frame.class}::${frame.function}` : frame.function || 'unknown'}()
+                                </span>
+                              </td>
+                              <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.file}>
+                                {frame.fileBase || frame.file || 'unknown'}
+                              </td>
+                              <td className="p-2 font-mono text-right">{frame.line || '?'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
                 {showRawStack ? (
                   // Raw Stack Trace View
@@ -308,7 +427,7 @@ export function GlobalErrorModal() {
                     )}
                   </>
                 ) : (
-                  // Parsed Stack Frames Table View
+                  // Parsed Stack Frames Table View (JS/TS)
                   <>
                     {displayFrames && displayFrames.length > 0 ? (
                       <div className="border rounded-md overflow-hidden">
@@ -361,7 +480,7 @@ export function GlobalErrorModal() {
                           </Button>
                         </div>
                       </div>
-                    ) : (
+                    ) : phpStackFrames.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <FileCode2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p className="text-sm">No parsed stack frames available</p>
@@ -374,7 +493,7 @@ export function GlobalErrorModal() {
                           View raw stack trace
                         </Button>
                       </div>
-                    )}
+                    ) : null}
                   </>
                 )}
 
@@ -402,6 +521,101 @@ export function GlobalErrorModal() {
                     </div>
                   </div>
                 )}
+
+                {/* Backend Error Log (error.log.txt) */}
+                <div className="pt-3 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Terminal className="h-4 w-4" />
+                      Backend Error Log (error.log.txt)
+                    </h4>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setErrorLogFetched(false);
+                          fetchErrorLog();
+                        }}
+                        disabled={errorLogLoading}
+                      >
+                        {errorLogLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                      {errorLogContent && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copySection("Backend error log", errorLogContent)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              const blob = new Blob([errorLogContent], { type: "text/plain" });
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = "error.log.txt";
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                              toast.success("Downloaded error.log.txt");
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {errorLogLoading && !errorLogContent && (
+                    <div className="flex items-center justify-center py-6 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span className="text-sm">Loading error log...</span>
+                    </div>
+                  )}
+
+                  {errorLogError && !errorLogContent && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <AlertCircle className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">{errorLogError}</p>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => {
+                          setErrorLogFetched(false);
+                          setErrorLogError(null);
+                          fetchErrorLog();
+                        }}
+                        className="mt-1"
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  )}
+
+                  {errorLogContent && (
+                    <ScrollArea className="h-48 rounded-md border bg-muted">
+                      <pre className="text-xs p-3 font-mono whitespace-pre-wrap">
+                        {errorLogContent}
+                      </pre>
+                    </ScrollArea>
+                  )}
+
+                  {!errorLogLoading && !errorLogError && !errorLogContent && !errorLogFetched && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Terminal className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Click refresh to load backend error log</p>
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               {/* Backend Logs & Stack Tab */}
