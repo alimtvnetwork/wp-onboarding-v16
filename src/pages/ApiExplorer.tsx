@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ interface RequestHistoryItem {
 }
 
 export default function ApiExplorer() {
+  const [searchParams] = useSearchParams();
   const { data: sites, isLoading: sitesLoading } = useSites();
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [credentials, setCredentials] = useState<{ url: string; username: string; appPassword: string } | null>(null);
@@ -37,7 +39,19 @@ export default function ApiExplorer() {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const historyIdRef = useRef(0);
+  const initializedFromUrl = useRef(false);
   const selectedSite = sites?.find((s) => s.id.toString() === selectedSiteId);
+
+  // Auto-select site from URL query param
+  useEffect(() => {
+    if (!initializedFromUrl.current && sites && sites.length > 0) {
+      const siteIdParam = searchParams.get("siteId");
+      if (siteIdParam && sites.some(s => s.id.toString() === siteIdParam)) {
+        setSelectedSiteId(siteIdParam);
+      }
+      initializedFromUrl.current = true;
+    }
+  }, [sites, searchParams]);
 
   // Fetch credentials when site changes
   useEffect(() => {

@@ -17,7 +17,9 @@ import {
   Package,
   Upload,
   Eye,
+  FlaskConical,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping } from "@/lib/api";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -31,6 +33,7 @@ interface SiteCardProps {
 }
 
 export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
   const [testingSiteId, setTestingSiteId] = useState<number | null>(null);
@@ -236,6 +239,17 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
 
         {/* Action buttons */}
         <div className="flex gap-1 pt-2 border-t">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1"
+            onClick={() => navigate(`/api-explorer?siteId=${site.id}`)}
+            disabled={site.connectionStatus !== "connected"}
+            title={site.connectionStatus !== "connected" ? "Connect site first" : "Test API endpoints"}
+          >
+            <FlaskConical className="h-4 w-4 mr-1" />
+            API
+          </Button>
           <Button
             variant="ghost"
             size="sm"
