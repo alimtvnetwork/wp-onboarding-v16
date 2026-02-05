@@ -33,7 +33,7 @@ type SitePasswordDecryptor interface {
 
 // SessionLogger interface for session-based logging
 type SessionLogger interface {
-	StartSession(sessionType interface{}, pluginID, siteID int64, pluginName, siteName string) (string, error)
+	StartSession(sessionType string, pluginID, siteID int64, pluginName, siteName string) (string, error)
 	Log(sessionID, level, step, message string, details map[string]interface{})
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
