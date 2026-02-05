@@ -20,6 +20,51 @@ if (!defined('ABSPATH')) {
 }
 
 // =============================================================================
+// GLOBAL ERROR HANDLER FOR JSON RESPONSES
+// =============================================================================
+
+/**
+ * Custom error handler to catch fatal errors and return JSON response.
+ * This ensures API consumers get proper error responses instead of HTML stack traces.
+ */
+function riseup_fatal_error_handler() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR))) {
+        // Only handle if this is a REST API request to our namespace
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        if (strpos($request_uri, 'riseup-asia-uploader') !== false || strpos($request_uri, 'wp-json') !== false) {
+            // Clean any output
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Set proper headers
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=utf-8');
+                header('HTTP/1.1 500 Internal Server Error');
+            }
+            
+            // Return JSON error response
+            echo json_encode(array(
+                'success' => false,
+                'error' => array(
+                    'code' => 'FATAL_ERROR',
+                    'message' => 'A fatal error occurred in the plugin',
+                    'details' => array(
+                        'type' => $error['type'],
+                        'message' => $error['message'],
+                        'file' => basename($error['file']),
+                        'line' => $error['line'],
+                    ),
+                ),
+            ));
+            exit;
+        }
+    }
+}
+register_shutdown_function('riseup_fatal_error_handler');
+
+// =============================================================================
 // LOAD DEPENDENCIES IN ORDER
 // =============================================================================
 
@@ -135,6 +180,12 @@ class Riseup_Asia {
             $this->file_logger->info('Plugin constructor complete');
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Plugin initialization failed');
+        } catch (Error $e) {
+            // Catch PHP 7+ fatal errors (like class not found)
+            $this->file_logger->error('Fatal error during plugin init: ' . $e->getMessage(), array(
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ));
         }
     }
 
