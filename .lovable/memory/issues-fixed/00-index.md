@@ -16,6 +16,7 @@
 | Global error modal not capturing API failures | Frontend/UX | [04-global-error-reporting.md](./04-global-error-reporting.md) |
 | SQLite datetime scanning issues | Backend/Database | [06-sqlite-datetime-scanning.md](./06-sqlite-datetime-scanning.md) |
 | Health endpoint format mismatch | Frontend/Backend | [See spec/error-resolution/01-health-endpoint-mismatch.md](../../../spec/error-resolution/01-health-endpoint-mismatch.md) |
+| ZIP finalization race condition | Backend/Publish | [10-zip-finalization-race.md](./10-zip-finalization-race.md) |
 
 ---
 
