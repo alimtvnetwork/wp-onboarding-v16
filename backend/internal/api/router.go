@@ -16,6 +16,7 @@ import (
 	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // ServerConfig holds server configuration
@@ -179,14 +180,14 @@ func NewServer(cfg ServerConfig) *Server {
 
 func resolveSpaStaticDir(dir string) string {
 	// Normal case: index.html exists at the configured static dir.
-	if fileExists(filepath.Join(dir, "index.html")) {
+	if fileExists(pathutil.MustJoin(dir, "index.html")) {
 		return dir
 	}
 
 	// Common packaging/copy mistake: copying the entire dist folder into the target
 	// directory, resulting in "<dir>/dist/index.html".
-	if fileExists(filepath.Join(dir, "dist", "index.html")) {
-		return filepath.Join(dir, "dist")
+	if fileExists(pathutil.MustJoin(dir, "dist", "index.html")) {
+		return pathutil.MustJoin(dir, "dist")
 	}
 
 	return dir
@@ -269,17 +270,17 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Root or directory routes should render the SPA entrypoint.
 	if requestedPath == "" || requestedPath == "." {
-		http.ServeFile(w, r, filepath.Join(h.staticDir, h.indexPath))
+		http.ServeFile(w, r, pathutil.MustJoin(h.staticDir, h.indexPath))
 		return
 	}
 
-	path := filepath.Join(h.staticDir, requestedPath)
+	path := pathutil.MustJoin(h.staticDir, requestedPath)
 
 	fi, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			// Missing file (including client-side routes) -> SPA fallback
-			http.ServeFile(w, r, filepath.Join(h.staticDir, h.indexPath))
+			http.ServeFile(w, r, pathutil.MustJoin(h.staticDir, h.indexPath))
 			return
 		}
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -287,7 +288,7 @@ func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if fi.IsDir() {
-		http.ServeFile(w, r, filepath.Join(h.staticDir, h.indexPath))
+		http.ServeFile(w, r, pathutil.MustJoin(h.staticDir, h.indexPath))
 		return
 	}
 
