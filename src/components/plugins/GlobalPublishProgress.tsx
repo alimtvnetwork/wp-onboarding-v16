@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { usePublishStore, initializePublishWebSocketListeners } from "@/stores/publishStore";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +30,10 @@ import { formatDistanceToNow } from "date-fns";
  * Displays count of active operations and allows viewing all operations.
  */
 export function GlobalPublishProgress() {
-  const operations = usePublishStore((state) => Array.from(state.operations.values()));
+  // Use shallow comparison to prevent re-renders when array content is the same
+  const operations = usePublishStore(
+    useShallow((state) => Array.from(state.operations.values()))
+  );
   const showGlobalProgress = usePublishStore((state) => state.showGlobalProgress);
   const toggleGlobalProgress = usePublishStore((state) => state.toggleGlobalProgress);
   const clearCompletedOperations = usePublishStore((state) => state.clearCompletedOperations);
