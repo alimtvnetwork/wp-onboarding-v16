@@ -993,3 +993,31 @@ func (s *Service) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSl
 	s.log.Info("Remote plugin deleted", "siteId", siteID, "plugin", pluginSlug)
 	return nil
 }
+
+// SiteCredentials holds decrypted credentials for API access
+type SiteCredentials struct {
+	URL         string `json:"url"`
+	Username    string `json:"username"`
+	AppPassword string `json:"appPassword"`
+}
+
+// GetCredentials returns the decrypted credentials for a site (for API Explorer)
+func (s *Service) GetCredentials(ctx context.Context, siteID int64) (*SiteCredentials, error) {
+	site, err := s.GetByID(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	s.log.Debug("Credentials retrieved for site", "siteId", siteID, "siteName", site.Name)
+	
+	return &SiteCredentials{
+		URL:         site.URL,
+		Username:    site.Username,
+		AppPassword: string(password),
+	}, nil
+}
