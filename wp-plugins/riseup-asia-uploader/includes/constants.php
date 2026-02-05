@@ -111,6 +111,10 @@ if (!defined('RISEUP_ENDPOINT_PLUGIN_FILES')) {
 if (!defined('RISEUP_ENDPOINT_PLUGIN_FILE')) {
     define('RISEUP_ENDPOINT_PLUGIN_FILE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/file');
 }
+// OpenAPI specification endpoint
+if (!defined('RISEUP_ENDPOINT_OPENAPI')) {
+    define('RISEUP_ENDPOINT_OPENAPI', 'openapi');
+}
 
 // =============================================================================
 // DATABASE CONFIGURATION

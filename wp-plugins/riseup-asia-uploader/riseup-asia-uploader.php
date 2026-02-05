@@ -148,12 +148,20 @@ class Riseup_Asia {
         $this->file_logger->info('Registering REST API routes', array('namespace' => RISEUP_API_FULL_NAMESPACE));
 
         try {
-            // Status endpoint (public).
+            // Status endpoint (authenticated - requires valid credentials).
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_STATUS);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_STATUS, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_status'),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array($this, 'check_status_permission'),
+            ));
+
+            // OpenAPI specification endpoint (authenticated).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_OPENAPI);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_OPENAPI, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_openapi'),
+                'permission_callback' => array($this, 'check_status_permission'),
             ));
 
             // Plugin upload endpoint.
@@ -305,6 +313,100 @@ class Riseup_Asia {
     }
 
     /**
+     * Check status/openapi permission (requires any authenticated user).
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return bool|WP_Error True if authorized, WP_Error otherwise.
+     */
+    public function check_status_permission($request) {
+        $this->file_logger->debug('Checking status permission');
+        return $this->check_authenticated_only($request);
+    }
+
+    /**
+     * Verify authentication only (no capability check).
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return bool|WP_Error True if authorized, WP_Error otherwise.
+     */
+    private function check_authenticated_only($request) {
+        $this->file_logger->debug('Authenticating request (any user)');
+
+        try {
+            // Get Authorization header.
+            $auth_header = $request->get_header('Authorization');
+
+            if (empty($auth_header)) {
+                $this->file_logger->warn('Missing Authorization header');
+                $this->logger->log_auth_failure('Missing Authorization header');
+                return new WP_Error(
+                    'rest_forbidden',
+                    RISEUP_MSG_UNAUTHORIZED,
+                    array(
+                        'status' => RISEUP_HTTP_UNAUTHORIZED,
+                        'headers' => array('WWW-Authenticate' => 'Basic realm="WordPress Application Password"'),
+                    )
+                );
+            }
+
+            // Parse Basic auth.
+            if (strpos($auth_header, 'Basic ') !== 0) {
+                $this->file_logger->warn('Invalid Authorization header format');
+                $this->logger->log_auth_failure('Invalid Authorization header format');
+                return new WP_Error(
+                    'rest_forbidden',
+                    RISEUP_MSG_UNAUTHORIZED,
+                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                );
+            }
+
+            $credentials = base64_decode(substr($auth_header, 6));
+            if (!$credentials || strpos($credentials, ':') === false) {
+                $this->file_logger->warn('Invalid credentials format');
+                $this->logger->log_auth_failure('Invalid credentials format');
+                return new WP_Error(
+                    'rest_forbidden',
+                    RISEUP_MSG_UNAUTHORIZED,
+                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                );
+            }
+
+            list($username, $password) = explode(':', $credentials, 2);
+            $this->file_logger->debug('Authenticating user', array('username' => $username));
+
+            // Authenticate using application password.
+            $user = wp_authenticate_application_password(null, $username, $password);
+
+            if (is_wp_error($user) || !$user) {
+                $this->file_logger->warn('Invalid credentials', array('username' => $username));
+                $this->logger->log_auth_failure(
+                    'Invalid credentials',
+                    array('username' => $username)
+                );
+                return new WP_Error(
+                    'rest_forbidden',
+                    RISEUP_MSG_UNAUTHORIZED,
+                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                );
+            }
+
+            // Set current user.
+            wp_set_current_user($user->ID);
+            $this->file_logger->info('Request authorized (status)', array('username' => $username));
+            return true;
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Authentication error');
+            return new WP_Error(
+                'rest_forbidden',
+                RISEUP_MSG_UNAUTHORIZED,
+                array('status' => RISEUP_HTTP_UNAUTHORIZED)
+            );
+        }
+    }
+
+    /**
      * Verify authentication and capability.
      *
      * @param WP_REST_Request $request    Request object.
@@ -435,6 +537,51 @@ class Riseup_Asia {
                 'export_self'     => true,
             ),
         ), RISEUP_HTTP_OK);
+    }
+
+    /**
+     * Handle OpenAPI specification request.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_openapi($request) {
+        $this->file_logger->info('OpenAPI endpoint called');
+
+        // Read the OpenAPI spec from the data directory.
+        $spec_file = plugin_dir_path(__FILE__) . 'data/openapi.json';
+        
+        if (!file_exists($spec_file)) {
+            $this->file_logger->error('OpenAPI spec file not found', array('path' => $spec_file));
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error'   => 'OpenAPI specification file not found',
+            ), RISEUP_HTTP_NOT_FOUND);
+        }
+
+        $spec_content = file_get_contents($spec_file);
+        if ($spec_content === false) {
+            $this->file_logger->error('Failed to read OpenAPI spec file');
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error'   => 'Failed to read OpenAPI specification',
+            ), RISEUP_HTTP_SERVER_ERROR);
+        }
+
+        $spec = json_decode($spec_content, true);
+        if ($spec === null) {
+            $this->file_logger->error('Invalid JSON in OpenAPI spec file');
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error'   => 'Invalid OpenAPI specification format',
+            ), RISEUP_HTTP_SERVER_ERROR);
+        }
+
+        // Update the server URL dynamically.
+        $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
+
+        return new WP_REST_Response($spec, RISEUP_HTTP_OK);
     }
 
     // =========================================================================

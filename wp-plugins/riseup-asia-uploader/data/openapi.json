@@ -1,0 +1,784 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Riseup Asia Uploader API",
+    "description": "WordPress companion plugin REST API for remote plugin management, blog post publishing, delta file sync, and audit logging.",
+    "version": "1.4.0",
+    "contact": {
+      "name": "MD ALIM UL KARIM",
+      "url": "https://rasia.pro/alim-r-profile-v1"
+    },
+    "license": {
+      "name": "GPL v2 or later",
+      "url": "https://www.gnu.org/licenses/gpl-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "{baseUrl}/wp-json/riseup-asia-uploader/v1",
+      "description": "WordPress REST API",
+      "variables": {
+        "baseUrl": {
+          "default": "https://example.com",
+          "description": "WordPress site URL"
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "basicAuth": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "WordPress Application Password authentication. Use your WordPress username and an application password generated in Users > Profile > Application Passwords."
+      }
+    },
+    "schemas": {
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "rest_forbidden"
+          },
+          "message": {
+            "type": "string",
+            "example": "Authentication required"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "integer",
+                "example": 401
+              }
+            }
+          }
+        }
+      },
+      "StatusResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "plugin": {
+            "type": "string",
+            "example": "Riseup Asia Uploader"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.4.0"
+          },
+          "api": {
+            "type": "string",
+            "example": "riseup-asia-uploader/v1"
+          },
+          "wp": {
+            "type": "string",
+            "example": "6.4.2"
+          },
+          "php": {
+            "type": "string",
+            "example": "8.2.0"
+          },
+          "features": {
+            "type": "object",
+            "properties": {
+              "plugin_upload": { "type": "boolean" },
+              "plugin_manage": { "type": "boolean" },
+              "file_operations": { "type": "boolean" },
+              "delta_sync": { "type": "boolean" },
+              "post_publish": { "type": "boolean" },
+              "category_manage": { "type": "boolean" },
+              "transaction_log": { "type": "boolean" },
+              "export_self": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "Plugin": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "example": "akismet"
+          },
+          "name": {
+            "type": "string",
+            "example": "Akismet Anti-spam"
+          },
+          "version": {
+            "type": "string",
+            "example": "5.3"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive", "network-active"],
+            "example": "active"
+          },
+          "author": {
+            "type": "string",
+            "example": "Automattic"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "PluginFile": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "example": "includes/class-logger.php"
+          },
+          "hash": {
+            "type": "string",
+            "example": "d41d8cd98f00b204e9800998ecf8427e"
+          },
+          "size": {
+            "type": "integer",
+            "example": 4096
+          },
+          "modified": {
+            "type": "integer",
+            "example": 1704067200
+          }
+        }
+      },
+      "UploadRequest": {
+        "type": "object",
+        "required": ["slug", "zip"],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "description": "Plugin directory name",
+            "example": "my-plugin"
+          },
+          "zip": {
+            "type": "string",
+            "format": "byte",
+            "description": "Base64-encoded ZIP file"
+          },
+          "activate": {
+            "type": "boolean",
+            "description": "Activate plugin after upload",
+            "default": false
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Overwrite existing plugin",
+            "default": true
+          }
+        }
+      },
+      "UploadResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "plugin": { "type": "string" },
+          "action": { "type": "string" },
+          "activated": { "type": "boolean" },
+          "files_written": { "type": "integer" },
+          "files_deleted": { "type": "integer" }
+        }
+      },
+      "Post": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "slug": { "type": "string" },
+          "status": { "type": "string" },
+          "date": { "type": "string", "format": "date-time" },
+          "categories": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "excerpt": { "type": "string" },
+          "link": { "type": "string" }
+        }
+      },
+      "CreatePostRequest": {
+        "type": "object",
+        "required": ["title", "content"],
+        "properties": {
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["publish", "draft", "pending"],
+            "default": "draft"
+          },
+          "categories": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "featured_image": {
+            "type": "string",
+            "format": "byte",
+            "description": "Base64-encoded featured image"
+          },
+          "featured_image_filename": { "type": "string" }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "parent": { "type": "integer" },
+          "count": { "type": "integer" }
+        }
+      },
+      "CreateCategoryRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "parent": { "type": "integer" },
+          "description": { "type": "string" }
+        }
+      },
+      "TransactionLog": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "action": { "type": "string" },
+          "target": { "type": "string" },
+          "status": { "type": "string" },
+          "user": { "type": "string" },
+          "details": { "type": "object" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LogsStatsResponse": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "by_action": { "type": "object" },
+          "by_status": { "type": "object" },
+          "recent_errors": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TransactionLog" }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/status": {
+      "get": {
+        "summary": "Get plugin status",
+        "description": "Returns the plugin status, version, and available features. Requires authentication.",
+        "operationId": "getStatus",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "Plugin status",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StatusResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi": {
+      "get": {
+        "summary": "Get OpenAPI specification",
+        "description": "Returns the full OpenAPI 3.0 specification for this API. Requires authentication.",
+        "operationId": "getOpenAPI",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "OpenAPI specification",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins": {
+      "get": {
+        "summary": "List all plugins",
+        "description": "Returns a list of all installed WordPress plugins with their status.",
+        "operationId": "listPlugins",
+        "tags": ["Plugins"],
+        "responses": {
+          "200": {
+            "description": "List of plugins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "count": { "type": "integer" },
+                    "plugins": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Plugin" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "summary": "Upload plugin",
+        "description": "Upload a plugin as a Base64-encoded ZIP file. Supports delta sync with overwrite mode.",
+        "operationId": "uploadPlugin",
+        "tags": ["Plugins"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UploadRequest" },
+              "example": {
+                "slug": "my-plugin",
+                "zip": "UEsDBBQAAAAIAA...",
+                "activate": true,
+                "overwrite": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plugin uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UploadResponse" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/{slug}/files": {
+      "get": {
+        "summary": "List plugin files",
+        "description": "Returns a list of all files in a plugin directory with their MD5 hashes. Used for diff preview.",
+        "operationId": "listPluginFiles",
+        "tags": ["Plugins"],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Plugin directory name",
+            "example": "akismet"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of plugin files",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "plugin": { "type": "string" },
+                    "totalFiles": { "type": "integer" },
+                    "files": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/PluginFile" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Plugin not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/{slug}/file": {
+      "post": {
+        "summary": "Get file content",
+        "description": "Returns the content of a specific file in the plugin directory. Used for diff viewing.",
+        "operationId": "getPluginFileContent",
+        "tags": ["Plugins"],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Plugin directory name",
+            "example": "akismet"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Relative path to the file",
+                    "example": "includes/class-logger.php"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "path": { "type": "string" },
+                    "content": { "type": "string" },
+                    "size": { "type": "integer" },
+                    "hash": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/export-self": {
+      "get": {
+        "summary": "Export this plugin",
+        "description": "Returns a Base64-encoded ZIP of the Riseup Asia Uploader plugin itself for backup or transfer.",
+        "operationId": "exportSelf",
+        "tags": ["Plugins"],
+        "responses": {
+          "200": {
+            "description": "Plugin export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "plugin": { "type": "string" },
+                    "version": { "type": "string" },
+                    "filename": { "type": "string" },
+                    "size": { "type": "integer" },
+                    "zip": { "type": "string", "format": "byte" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts": {
+      "get": {
+        "summary": "List posts",
+        "description": "Returns a paginated list of blog posts.",
+        "operationId": "listPosts",
+        "tags": ["Posts"],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": { "type": "integer", "default": 10 }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["publish", "draft", "pending", "any"] }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "total": { "type": "integer" },
+                    "posts": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Post" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create post",
+        "description": "Creates a new blog post with optional featured image.",
+        "operationId": "createPost",
+        "tags": ["Posts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreatePostRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Post created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "post": { "$ref": "#/components/schemas/Post" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "List categories",
+        "description": "Returns a list of all post categories.",
+        "operationId": "listCategories",
+        "tags": ["Posts"],
+        "responses": {
+          "200": {
+            "description": "List of categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "categories": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Category" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create category",
+        "description": "Creates a new post category.",
+        "operationId": "createCategory",
+        "tags": ["Posts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCategoryRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "category": { "$ref": "#/components/schemas/Category" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs": {
+      "get": {
+        "summary": "Query transaction logs",
+        "description": "Returns filtered and paginated transaction logs.",
+        "operationId": "queryLogs",
+        "tags": ["Logs"],
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by action type"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["success", "failed"] }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": { "type": "integer", "default": 50, "maximum": 500 }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": { "type": "integer", "default": 0 }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "logs": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/TransactionLog" }
+                    },
+                    "total": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "offset": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs/stats": {
+      "get": {
+        "summary": "Get log statistics",
+        "description": "Returns aggregated statistics about transaction logs.",
+        "operationId": "getLogsStats",
+        "tags": ["Logs"],
+        "responses": {
+          "200": {
+            "description": "Log statistics",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LogsStatsResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System",
+      "description": "System status and API documentation"
+    },
+    {
+      "name": "Plugins",
+      "description": "WordPress plugin management operations"
+    },
+    {
+      "name": "Posts",
+      "description": "Blog post and category management"
+    },
+    {
+      "name": "Logs",
+      "description": "Transaction logging and audit trail"
+    }
+  ]
+}
