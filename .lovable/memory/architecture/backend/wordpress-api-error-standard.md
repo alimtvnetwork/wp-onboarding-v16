@@ -85,3 +85,21 @@ This prevents cryptic errors and ensures all paths in logs are actionable.
  - Stack trace (in dedicated tab)
  
  This enables users to immediately understand what API call failed and why.
+
+## Prohibited Patterns
+
+The following patterns are **PROHIBITED** in the wordpress package:
+
+| Pattern | Replacement |
+|---------|-------------|
+| `fmt.Errorf()` | `apperror.Wrap()` or `apperror.New()` |
+| `filepath.Join()` | `pathutil.MustJoin()` or `pathutil.Join()` |
+| `filepath.Abs()` | `pathutil.ToAbsolute()` or `pathutil.MustAbsolute()` |
+
+## PowerShell Integration
+
+The `powershell.go` file uses structured errors for platform validation:
+- `ErrPublishPlatform` (E11001) for Windows-only operations
+- `ErrPublishConfig` (E11002) for configuration marshaling failures
+
+All script paths are resolved via `pathutil.MustJoin` and `pathutil.MustAbsolute`.

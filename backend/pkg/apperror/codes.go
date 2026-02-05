@@ -103,3 +103,20 @@ const (
 	ErrBuildFailed        = "E8002" // Build command failed
 	ErrBuildTimeout       = "E8003" // Build command timed out
 )
+
+// E2E Test errors (E10xxx)
+const (
+	ErrE2ERunning = "E10001" // E2E test already running
+)
+
+// Publish errors (E11xxx)
+const (
+	ErrPublishPlatform = "E11001" // Platform not supported
+	ErrPublishConfig   = "E11002" // Configuration marshaling failed
+)
+
+// Version errors (E12xxx)
+const (
+	ErrVersionNotFound = "E12001" // Version not found
+	ErrVersionNoBackup = "E12002" // No backup available for version
+)
