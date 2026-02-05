@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { JsonHighlighter } from "@/components/shared/JsonHighlighter";
+import { SessionLogsTab } from "@/components/errors/SessionLogsTab";
 import { formatDateTimeUtc, toClipboardText, unescapeEmbeddedNewlines } from "@/lib/logText";
 
 export function GlobalErrorModal() {
@@ -88,8 +89,12 @@ export function GlobalErrorModal() {
 
         <div className="flex-1 overflow-hidden">
           <Tabs defaultValue="overview" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="session" disabled={!selectedError.sessionId}>
+                <FileText className="h-3 w-3 mr-1" />
+                Session
+              </TabsTrigger>
               <TabsTrigger value="backend" disabled={!selectedError.backendLogs?.length && !selectedError.backendStackTrace}>
                 <Server className="h-3 w-3 mr-1" />
                 Backend
@@ -182,6 +187,14 @@ export function GlobalErrorModal() {
                     )}
                   </div>
                 )}
+              </TabsContent>
+
+              {/* Session Logs Tab - Fetch from backend */}
+              <TabsContent value="session" className="m-0">
+                <SessionLogsTab 
+                  sessionId={selectedError.sessionId}
+                  sessionType={selectedError.sessionType}
+                />
               </TabsContent>
 
               {/* Stack Trace Tab - Enhanced with Parsed Table */}
@@ -894,6 +907,11 @@ function generateErrorReport(
     ? `### Target Site\n${error.siteUrl}\n`
     : "";
 
+  // Build session info section
+  const sessionSection = error.sessionId
+    ? `### Session Info\n**Session ID:** ${error.sessionId}\n${error.sessionType ? `**Type:** ${error.sessionType}\n` : ""}*Fetch full logs via: GET /api/v1/sessions/${error.sessionId}/logs*\n`
+    : "";
+
   return `## Error Report
 
 ${appInfo.join("\n")}
@@ -906,6 +924,7 @@ ${appInfo.join("\n")}
 ${triggerSection}
 ${chainSection}
 ${siteUrlSection}
+${sessionSection}
 ### Message
 ${error.message}
 

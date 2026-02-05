@@ -73,6 +73,9 @@ export interface CapturedError {
   backendLogs?: BackendLogEntry[];
   backendStackTrace?: string;
   siteUrl?: string;
+  // Session-based logging
+  sessionId?: string;
+  sessionType?: string;
 }
 
 interface ErrorStore {
@@ -93,6 +96,8 @@ interface ErrorStore {
     backendLogs?: BackendLogEntry[];
     backendStackTrace?: string;
     siteUrl?: string;
+    sessionId?: string;
+    sessionType?: string;
   }) => CapturedError;
   captureException: (
     error: unknown,
@@ -105,6 +110,8 @@ interface ErrorStore {
       backendLogs?: BackendLogEntry[];
       backendStackTrace?: string;
       siteUrl?: string;
+      sessionId?: string;
+      sessionType?: string;
     }
   ) => CapturedError;
   openErrorModal: (error: CapturedError) => void;
@@ -319,6 +326,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       backendLogs: meta?.backendLogs,
       backendStackTrace: meta?.backendStackTrace,
       siteUrl: meta?.siteUrl,
+      // Session-based logging
+      sessionId: meta?.sessionId,
+      sessionType: meta?.sessionType,
     };
     
     set((state) => ({
@@ -389,6 +399,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       backendLogs: 'backendLogs' in (context || {}) ? (context as { backendLogs?: BackendLogEntry[] }).backendLogs : undefined,
       backendStackTrace: 'backendStackTrace' in (context || {}) ? (context as { backendStackTrace?: string }).backendStackTrace : undefined,
       siteUrl: 'siteUrl' in (context || {}) ? (context as { siteUrl?: string }).siteUrl : undefined,
+      // Session-based logging
+      sessionId: 'sessionId' in (context || {}) ? (context as { sessionId?: string }).sessionId : undefined,
+      sessionType: 'sessionType' in (context || {}) ? (context as { sessionType?: string }).sessionType : undefined,
     };
     
     set((state) => ({
