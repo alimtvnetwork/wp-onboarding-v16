@@ -28,6 +28,8 @@ import {
   CheckSquare,
   Square,
   Eye,
+  ArrowRight,
+  Tag,
 } from "lucide-react";
 import { api, FilePreview, PublishPreview } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -257,6 +259,41 @@ export function DiffPreviewDialog({
 
         {preview && (
           <>
+            {/* Version Comparison Banner */}
+            {(preview.localVersion || preview.remoteVersion) && (
+              <div className="flex items-center justify-center gap-3 py-3 px-4 rounded-lg bg-muted/50 border">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Version:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {preview.remoteVersion ? (
+                    <Badge variant="outline" className="text-xs font-mono">
+                      {preview.remoteVersion}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-xs text-muted-foreground italic">
+                      Not installed
+                    </Badge>
+                  )}
+                  <ArrowRight className="h-4 w-4 text-primary" />
+                  <Badge variant="default" className="text-xs font-mono bg-primary">
+                    {preview.localVersion || "Unknown"}
+                  </Badge>
+                </div>
+                {preview.localVersion && preview.remoteVersion && preview.localVersion !== preview.remoteVersion && (
+                  <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                    Upgrade
+                  </Badge>
+                )}
+                {!preview.remoteVersion && (
+                  <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
+                    New Install
+                  </Badge>
+                )}
+              </div>
+            )}
+
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-3 py-3 border-b">
               <div className="flex items-center gap-2 text-sm">

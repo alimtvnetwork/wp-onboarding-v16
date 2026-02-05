@@ -386,6 +386,8 @@ export interface FilePreview {
 export interface PublishPreview {
   pluginId: number;
   pluginName: string;
+  localVersion: string;
+  remoteVersion: string;
   siteId: number;
   siteName: string;
   siteUrl: string;
