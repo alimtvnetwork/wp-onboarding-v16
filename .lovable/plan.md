@@ -1,329 +1,354 @@
+# WP Plugin Publish - Enhancement Plan v2
 
-# Comprehensive Audit Plan: Error Handling & Path Management
-
-## Status: ✅ COMPLETE (2026-02-05)
-
-All phases have been implemented. This plan addressed two critical areas:
-
-1. **Error Handling Gaps** - Many places use `fmt.Errorf()` instead of structured `apperror.Wrap()` or `apperror.New()`, which means stack traces are not captured
-2. **Path Management Issues** - Multiple services use raw `filepath.Join()` instead of the `pathutil` package
+**Updated: 2026-02-05**
 
 ---
 
-## Implementation Summary
+## Previous Plan: Error Handling & Path Management ✅ COMPLETE
 
-### Phase 1: Core Infrastructure ✅
-- `wordpress/client.go` - 15+ fmt.Errorf → apperror.Wrap
-- `wordpress/uploader.go` - 20+ fmt.Errorf → apperror.Wrap
-
-### Phase 2: Services ✅
-- `services/backup/service.go` - Added pathutil + apperror
-- `services/plugin/scanner.go` - filepath.Join → pathutil.MustJoin
-- `services/git/service.go` - Replaced dirExists() with pathutil.IsDir()
-- `services/watcher/service.go` - Added absolute path resolution
-- `services/sync/service.go` - Added absolute path resolution
-
-### Phase 3: Database Layer ✅
-- `database/database.go` - Added pathutil + apperror
-- `database/migrations.go` - fmt.Errorf → apperror.Wrap
-- `database/splitdb/manager.go` - filepath.Join → pathutil.MustJoin
-- `database/splitdb/export.go` - Added pathutil + apperror
-
-### Phase 4: Other ✅
-- `api/router.go` - filepath.Join → pathutil.MustJoin for SPA serving
-- `services/site/service.go` - Added pathutil import
-- `services/e2e/service.go` - fmt.Errorf → apperror.New
-- `services/version/service.go` - fmt.Errorf → apperror.Wrap/New
-- `wordpress/powershell.go` - fmt.Errorf → apperror.Wrap/New + pathutil
-- `version/version.go` - filepath.Join → pathutil.MustJoin
-- `pkg/apperror/codes.go` - Added E10xxx-E12xxx error codes
-
-### Documentation ✅
-- Updated `path-management.md` with prohibited patterns
-- Updated `logging-requirements.md` with structured error requirements
-
-**Total: 20 files modified, ~95 error handling changes, ~50 path management changes**
+See [archive of previous plan](./memory/issues-fixed/00-index.md) for details on the completed audit.
 
 ---
 
-## Part 1: Path Management Audit
+## Current Plan: Major Feature Enhancements
 
-### Current State
+This plan addresses multiple feature requests and improvements organized into phases.
 
-The `pathutil` package provides Windows-aware path utilities:
-- `ToAbsolute()` - Converts to absolute path with Windows long-path prefix for paths >240 chars
-- `Join()` - Joins and converts to absolute
-- `ForDisplay()` - Converts to forward slashes for log consistency
+---
 
-### Files Using Raw `filepath.Join` (Must Be Updated)
+## Phase 1: Session-Based Logging System (Backend Foundation)
 
-| File | Lines | Issue |
-|------|-------|-------|
-| `backend/internal/services/publish/service.go` | 722, 765, 821, 837 | ZIP creation and file walking |
-| `backend/internal/services/backup/service.go` | 74, 274, 390 | Backup paths and ZIP entries |
-| `backend/internal/services/plugin/scanner.go` | 32, 160, 229 | Detection file paths and PHP scanning |
-| `backend/internal/services/git/service.go` | 138, 217, 397, 460, 513 | Git directory checks |
-| `backend/internal/services/watcher/service.go` | 299, 337 | File cache population |
-| `backend/internal/services/sync/service.go` | 333, 348, 371 | Local file scanning |
-| `backend/internal/database/database.go` | 29, 98, 100, 104 | Database directory creation |
-| `backend/internal/database/splitdb/manager.go` | 94, 230, 236, 348, 350 | Split DB paths |
-| `backend/internal/database/splitdb/export.go` | 35, 137, 170, 235, 312 | Export paths |
-| `backend/internal/api/router.go` | 182, 188, 189, 272, 276, 282 | SPA static file serving |
-| `backend/internal/config/config.go` | (various) | Config paths |
+**Priority: HIGH - Foundation for all other improvements**
+**Estimated: 4-6 hours**
 
-### Implementation Steps
+### 1.1 Backend Session Manager
+- [ ] Create `backend/internal/services/session/service.go`
+- [ ] Generate unique session IDs (UUID v4) for each operation
+- [ ] Session types: `connect`, `publish`, `sync`, `backup`, `bulk_publish`
+- [ ] Store session logs in `backend/data/sessions/{session_id}.log`
+- [ ] Auto-cleanup sessions older than 7 days
 
-```text
-Step 1: Update imports in all affected files
-        Add: "wp-plugin-publish/pkg/pathutil"
+### 1.2 Session API Endpoints
+- [ ] `GET /api/sessions` - List recent sessions (last 100)
+- [ ] `GET /api/sessions/{id}` - Get session details and logs
+- [ ] `GET /api/sessions/{id}/logs` - Stream session logs (tail mode)
+- [ ] `DELETE /api/sessions/{id}` - Clear specific session logs
 
-Step 2: Replace filepath.Join with pathutil.Join or pathutil.MustJoin
-        - Use pathutil.Join() when error handling is needed
-        - Use pathutil.MustJoin() for paths guaranteed to be valid
+### 1.3 WebSocket Session Integration
+- [ ] Include `sessionId` in all WebSocket broadcast messages
+- [ ] Frontend can subscribe to specific session updates
+- [ ] Session logs persist even after WebSocket disconnection
 
-Step 3: Replace filepath.Abs with pathutil.ToAbsolute
-        - Especially critical for paths passed to external systems
+### 1.4 Detailed Logging Enhancement
+All logs must include:
+- Timestamp (UTC ISO8601)
+- Level (DEBUG, INFO, WARN, ERROR)
+- Stage (connect, package, upload, activate, etc.)
+- Message
+- Context object with:
+  - `what`: What is being done
+  - `why`: Why it's being done  
+  - `where`: Target URL/path
+  - `result`: Outcome details
+  - `innerStatus`: HTTP status, response snippet for API calls
 
-Step 4: Use pathutil.ForDisplay() for all log output paths
-        - Ensures consistent forward-slash format in logs
+---
+
+## Phase 2: Quick Publish Feature (No Modal)
+
+**Priority: HIGH - Core UX improvement**
+**Estimated: 3-4 hours**
+**Depends on: Phase 1**
+
+### 2.1 Quick Publish Button
+- [ ] Add "Quick Publish All" button on plugin cards
+- [ ] Publishes to ALL mapped sites without modal
+- [ ] Shows inline spinner on the card during publish
+- [ ] Logs icon appears after completion (click to view session)
+
+### 2.2 Global Publish State Store (Zustand)
+- [ ] Create `src/stores/publishStore.ts`
+- [ ] Track active operations: `{ pluginId, siteId, sessionId, status, progress, logs }`
+- [ ] State persists across route navigation
+- [ ] Auto-cleanup completed operations after 30 minutes
+
+### 2.3 Publish Status Indicator
+- [ ] Show active publishes in header/sidebar badge
+- [ ] Click to see all active operations with progress
+- [ ] Floating indicator when navigating away from Plugins page
+
+### 2.4 Quick Publish Flow
 ```
-
----
-
-## Part 2: Error Handling Audit
-
-### Current State
-
-The `apperror` package provides structured errors with:
-- Error codes (E1xxx - E9xxx)
-- Automatic stack trace capture
-- File/line/function context
-- Context key-value pairs
-
-### Files Using `fmt.Errorf` (Must Be Updated)
-
-| File | Count | Critical Areas |
-|------|-------|----------------|
-| `backend/internal/wordpress/client.go` | ~16 | Request creation, JSON marshaling, auth failures |
-| `backend/internal/wordpress/uploader.go` | ~12 | Path resolution, file reading, upload errors |
-| `backend/internal/services/site/service.go` | ~8 | Uploader ZIP creation, validation |
-| `backend/internal/database/database.go` | ~6 | Directory creation, DB opening |
-| `backend/internal/database/migrations.go` | ~8 | Migration table creation, SQL execution |
-| `backend/internal/database/splitdb/manager.go` | ~10 | Data dir creation, DB configuration |
-| `backend/internal/database/splitdb/export.go` | ~6 | Project directory, file operations |
-| `backend/internal/config/config.go` | ~4 | Config loading |
-| `backend/internal/services/e2e/service.go` | ~2 | Active run check |
-
-### Implementation Steps
-
-```text
-Step 1: Define new error codes if needed
-        - E4xxx for file system errors (some already exist)
-        - E2xxx for database errors (some already exist)
-        - Verify all used codes are defined in codes.go
-
-Step 2: Replace fmt.Errorf with appropriate apperror function
-        - apperror.New(code, message) for new errors
-        - apperror.Wrap(err, code, message) for wrapping existing errors
-
-Step 3: Add context where helpful
-        - .WithContext("path", path)
-        - .WithContext("endpoint", endpoint)
-        - .WithContext("statusCode", status)
+1. Click "Quick Publish" on plugin card
+2. Spinner appears on card
+3. Backend returns sessionId immediately
+4. Progress tracked via WebSocket using sessionId
+5. On complete: Show success toast + logs icon
+6. On error: Show error toast + click for full session logs
 ```
 
 ---
 
-## Part 3: Specific File Changes
+## Phase 3: Fix Duplicate Plugin Issue (WordPress Side)
 
-### File: backend/internal/wordpress/client.go
+**Priority: HIGH - Critical Bug Fix**
+**Estimated: 1-2 hours**
 
-**Before:**
-```text
-return nil, fmt.Errorf("failed to marshal request body: %w", err)
-return nil, fmt.Errorf("failed to create request: %w", err)
-return nil, fmt.Errorf("cannot reach site: %w", err)
+### 3.1 Root Cause
+The duplicate plugin issue occurs when:
+1. ZIP extraction creates a new folder with the ZIP's internal folder name
+2. This name may differ from the expected plugin slug
+3. WordPress sees two separate plugin directories
+
+**Example**: ZIP contains `Category Generator/` but target is `category-generator/`
+
+### 3.2 Fix in WordPress Plugin
+Update `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php`:
+
+```php
+// Current problematic flow:
+$zip->extractTo($plugins_dir);  // Extracts ZIP's folder name directly
+
+// Fixed flow:
+1. Extract to temp directory
+2. Find the extracted folder (whatever name it has)
+3. Remove target folder if exists
+4. Rename/move extracted folder to correct slug path
 ```
 
-**After:**
-```text
-return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to marshal request body")
-return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request")
-return nil, apperror.Wrap(err, apperror.ErrWPConnection, "cannot reach WordPress site").
-    WithContext("url", c.baseURL)
+- [ ] Modify `handle_upload()` to extract to temp location first
+- [ ] Normalize folder name to match slug
+- [ ] Ensure only one plugin folder exists
+
+### 3.3 Backend Verification
+- [ ] After upload, verify only one plugin instance via `/plugins` endpoint
+- [ ] Log warning if duplicates detected
+- [ ] Add optional cleanup flag to remove duplicates
+
+---
+
+## Phase 4: Remote Plugin Viewer (See Plugins on Site)
+
+**Priority: MEDIUM - New Feature**
+**Estimated: 4-5 hours**
+
+### 4.1 Site Card Enhancement
+- [ ] Add "See Plugins" button to SiteCard component
+- [ ] Opens modal/panel showing all plugins on that WordPress site
+
+### 4.2 Remote Plugins Panel Component
+- [ ] Create `src/components/sites/RemotePluginsPanel.tsx`
+- [ ] Table view: Plugin Name, Slug, Version, Status, Author
+- [ ] Actions per plugin:
+  - Enable/Disable toggle
+  - Delete (with confirmation)
+  - Backup (download ZIP)
+  - Restore (from backup)
+
+### 4.3 WordPress Plugin Endpoints (New)
+Add to `riseup-asia-uploader.php`:
+- [ ] `POST /plugins/{slug}/enable` - Activate a plugin
+- [ ] `POST /plugins/{slug}/disable` - Deactivate a plugin
+- [ ] `DELETE /plugins/{slug}` - Delete a plugin
+- [ ] `GET /plugins/{slug}/export` - Download plugin as ZIP
+
+### 4.4 Backend Proxy Endpoints
+- [ ] `GET /api/sites/{id}/remote-plugins` - Fetch plugins from site
+- [ ] `POST /api/sites/{id}/remote-plugins/{slug}/enable`
+- [ ] `POST /api/sites/{id}/remote-plugins/{slug}/disable`
+- [ ] `DELETE /api/sites/{id}/remote-plugins/{slug}`
+
+---
+
+## Phase 5: Separated Upload/Activate Stage Reporting
+
+**Priority: MEDIUM - Better Error Visibility**
+**Estimated: 2-3 hours**
+**Depends on: Phase 1**
+
+### 5.1 Enhanced Stage Logging
+Each stage logs with clear separation:
+```
+═══════════════════════════════════════════════════
+ STAGE: UPLOAD
+═══════════════════════════════════════════════════
+[INFO] Starting upload to https://example.com
+[INFO] Sending ZIP (143KB) to /riseup-asia-uploader/v1/upload
+[DEBUG] Request: { method: POST, contentType: multipart/form-data }
+[DEBUG] Payload: { slug: category-generator, activate: true }
+[INFO] Response received in 4.2s
+[DEBUG] Response: { success: true, is_update: true, activated: true }
+[SUCCESS] ✓ Upload completed (plugin activated during upload)
+
+═══════════════════════════════════════════════════
+ STAGE: ACTIVATE (skipped - already activated)
+═══════════════════════════════════════════════════
 ```
 
-### File: backend/internal/wordpress/uploader.go
-
-**Before:**
-```text
-return nil, fmt.Errorf("resolve zip path: %w", err)
-return nil, fmt.Errorf("read zip file at %s: %w", absZipPath, err)
-```
-
-**After:**
-```text
-return nil, apperror.Wrap(err, apperror.ErrFSRead, "resolve zip path").
-    WithContext("path", zipPath)
-return nil, apperror.Wrap(err, apperror.ErrFSRead, "read zip file").
-    WithContext("path", absZipPath)
-```
-
-### File: backend/internal/database/database.go
-
-**Before:**
-```text
-return nil, fmt.Errorf("failed to create database directory: %w", err)
-return nil, fmt.Errorf("failed to open database: %w", err)
-```
-
-**After:**
-```text
-return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "create database directory").
-    WithContext("path", dir)
-return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "open database connection").
-    WithContext("path", path)
-```
-
-### File: backend/internal/services/backup/service.go
-
-**Before:**
-```text
-backupPath := filepath.Join(s.backupDir, filename)
-```
-
-**After:**
-```text
-backupPath, err := pathutil.Join(s.backupDir, filename)
-if err != nil {
-    return nil, apperror.Wrap(err, apperror.ErrFSWrite, "resolve backup path")
+### 5.2 Stage Status Broadcasting
+```json
+{
+  "type": "stage_complete",
+  "sessionId": "abc-123",
+  "stage": "upload",
+  "status": "success",
+  "duration": 4200,
+  "details": { 
+    "zipSize": 143386, 
+    "overwritten": true,
+    "activated": true 
+  }
 }
 ```
 
-### File: backend/internal/services/git/service.go
+### 5.3 Clear Error Attribution
+- [ ] Errors clearly show which stage failed
+- [ ] Include full request/response for failed API calls
+- [ ] Session logs contain complete diagnostic info
 
-**Before:**
-```text
-gitDir := filepath.Join(p.Path, ".git")
-if !dirExists(gitDir) {
-```
+---
 
-**After:**
-```text
-gitDir := pathutil.MustJoin(p.Path, ".git")
-if !pathutil.IsDir(gitDir) {
+## Phase 6: Error Modal Integration with Session Logs
+
+**Priority: MEDIUM - Debugging UX**
+**Estimated: 2-3 hours**
+**Depends on: Phase 1**
+
+### 6.1 Session Logs Tab in Error Modal
+- [ ] Add "Session Logs" tab to GlobalErrorModal
+- [ ] Fetch full logs from session API
+- [ ] Downloadable as text file
+
+### 6.2 Copy Full Report Enhancement
+Include in report:
+- Session ID
+- Session type
+- Complete session logs
+- All stages with status
+- Request/response details for failures
+
+### 6.3 Error Context Enrichment
+```typescript
+{
+  sessionId: "abc-123",
+  sessionType: "publish",
+  failedStage: "activate",
+  stages: [
+    { name: "backup", status: "success" },
+    { name: "package", status: "success" },
+    { name: "upload", status: "success" },
+    { name: "activate", status: "error", error: "..." }
+  ],
+  fullLogs: "..." // From session API
+}
 ```
 
 ---
 
-## Part 4: New Error Codes to Add
+## Phase 7: Specification & Memory Updates
 
-Add these to `backend/pkg/apperror/codes.go` if not already present:
+**Priority: LOW - Documentation**
+**Estimated: 1-2 hours**
+**Do after implementation**
 
-```text
-// Connection errors (E3xxx range)
-const (
-    ErrWPConnection  = "E3010" // WordPress connection failed
-    ErrWPAuth        = "E3011" // WordPress authentication failed
-    ErrWPPermission  = "E3012" // WordPress permission denied
-)
+### 7.1 New Spec Files
+- [ ] `spec/wp-plugin-publish/01-backend/17-session-management.md`
+- [ ] `spec/wp-plugin-publish/02-frontend/27-quick-publish.md`
+- [ ] `spec/wp-plugin-publish/02-frontend/28-remote-plugins.md`
 
-// File system errors (E4xxx range) - verify these exist
-const (
-    ErrFSRead       = "E4001" // File read failed
-    ErrFSWrite      = "E4002" // File write failed  
-    ErrDirCreate    = "E4003" // Directory creation failed
-    ErrDirRead      = "E4004" // Directory read failed
-    ErrPathResolve  = "E4005" // Path resolution failed
-)
+### 7.2 Updated Spec Files
+- [ ] `spec/wp-plugin-publish/01-backend/13-error-management.md` - Add session logging
+- [ ] `spec/wp-plugin-publish/01-backend/14-logging-system.md` - Add detailed log format
 
-// Database errors (E2xxx range) - verify these exist
-const (
-    ErrDatabaseConnect = "E2001" // Database connection failed
-    ErrDatabaseMigrate = "E2002" // Database migration failed
-)
-```
-
----
-
-## Part 5: Testing Verification
-
-After implementing changes:
-
-1. **Path Resolution Test**
-   - Create a path longer than 260 characters on Windows
-   - Verify the `\\?\` prefix is correctly added
-   - Verify logs show absolute paths with forward slashes
-
-2. **Error Stack Trace Test**
-   - Trigger an upload error (wrong credentials)
-   - Verify the error includes:
-     - Error code (E3xxx)
-     - Full stack trace with file:line
-     - Context (endpoint, URL, response body)
-
-3. **Log Format Verification**
-   - All logs should follow: `[vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]`
-   - Error logs should include stack traces
+### 7.3 New Memory Files
+- [ ] `.lovable/memory/architecture/backend/session-logging.md`
+- [ ] `.lovable/memory/architecture/frontend/publish-state-management.md`
+- [ ] `.lovable/memory/features/remote-plugin-management.md`
 
 ---
 
 ## Implementation Order
 
-### Phase 1: Core Infrastructure (Priority: High)
-1. Verify all error codes exist in `codes.go`
-2. Update `pathutil` package if any missing functions needed
-3. Update `wordpress/client.go` - most critical for external API calls
-4. Update `wordpress/uploader.go` - upload failures need full context
+| Order | Phase | Description | Dependencies | Est. Hours |
+|-------|-------|-------------|--------------|------------|
+| 1 | Phase 1 | Session-Based Logging | None | 4-6 |
+| 2 | Phase 3 | Duplicate Plugin Fix | None | 1-2 |
+| 3 | Phase 2 | Quick Publish | Phase 1 | 3-4 |
+| 4 | Phase 5 | Stage Reporting | Phase 1 | 2-3 |
+| 5 | Phase 6 | Error Modal Enhancement | Phase 1 | 2-3 |
+| 6 | Phase 4 | Remote Plugin Viewer | None | 4-5 |
+| 7 | Phase 7 | Documentation | All | 1-2 |
 
-### Phase 2: Services (Priority: Medium)
-5. Update `services/publish/service.go` - ZIP creation paths
-6. Update `services/backup/service.go` - backup paths
-7. Update `services/plugin/scanner.go` - directory scanning
-8. Update `services/git/service.go` - git directory checks
-9. Update `services/watcher/service.go` - file watching
-10. Update `services/sync/service.go` - file comparison
-
-### Phase 3: Database Layer (Priority: Medium)
-11. Update `database/database.go`
-12. Update `database/migrations.go`
-13. Update `database/splitdb/manager.go`
-14. Update `database/splitdb/export.go`
-
-### Phase 4: Other (Priority: Low)
-15. Update `api/router.go` - static file serving
-16. Update `config/config.go` - config paths
-17. Update `services/site/service.go` - uploader ZIP creation
-18. Update `services/e2e/service.go` - test service
+**Total Estimated: 17-25 hours**
 
 ---
 
-## Memory/Documentation Updates
+## Open Questions
 
-Update these memory files after implementation:
-
-1. **`.lovable/memory/architecture/backend/path-management.md`**
-   - Add: "All file paths passed to file operations, uploads, or logs MUST use pathutil functions"
-   - Add: "filepath.Join is PROHIBITED for paths that leave the local service"
-
-2. **`.lovable/memory/architecture/backend/logging-requirements.md`**
-   - Add: "All paths in logs must use pathutil.ForDisplay() for consistency"
-   - Add: "External API errors MUST use APIError or apperror.Wrap, never fmt.Errorf"
-
-3. **`.lovable/memory/architecture/backend/wordpress-api-error-standard.md`**
-   - Add: "Request creation errors must use apperror.Wrap with ErrInternal"
-   - Add: "All fmt.Errorf usage in wordpress package is prohibited"
+1. **Session Retention**: How long to keep session logs? (Suggested: 7 days)
+2. **Quick Publish Scope**: Publish to all mapped sites, or allow selecting subset?
+3. **Remote Plugin Backups**: Store on WP site or download locally?
+4. **Bulk Quick Publish**: Add "Quick Publish Selected" for multiple plugins?
 
 ---
 
-## Files to Modify Summary
+## Technical Notes
 
-| Category | File Count | Estimated Changes |
-|----------|------------|-------------------|
-| WordPress package | 2 | ~30 replacements |
-| Services | 7 | ~50 replacements |
-| Database | 4 | ~25 replacements |
-| API/Config | 2 | ~10 replacements |
-| Error codes | 1 | ~5 additions |
-| Memory docs | 3 | Documentation updates |
-| **Total** | **19 files** | **~120 changes** |
+### Duplicate Plugin Root Cause (Detailed)
+
+Looking at `riseup-asia-uploader.php` lines 481-509:
+
+```php
+$target_dir = $plugins_dir . '/' . $slug;  // wp-content/plugins/category-generator
+$is_update = is_dir($target_dir);
+
+if ($is_update) {
+    $this->delete_directory($target_dir);  // Removes old version
+}
+
+$zip->extractTo($plugins_dir);  // ← PROBLEM: Extracts ZIP's folder name
+```
+
+The `extractTo()` uses whatever folder name is in the ZIP archive. If the ZIP has `Category Generator/` but we expect `category-generator/`, both folders exist after extraction.
+
+**Solution**: 
+```php
+// 1. Extract to temp
+$temp_extract = $temp_dir . '/extract_' . uniqid();
+$zip->extractTo($temp_extract);
+
+// 2. Find extracted folder (whatever it's named)
+$extracted_dirs = glob($temp_extract . '/*', GLOB_ONLYDIR);
+if (empty($extracted_dirs)) {
+    return $this->error_response('No folder in ZIP', 400);
+}
+$extracted_folder = $extracted_dirs[0];
+
+// 3. Move to correct slug path
+$target_dir = $plugins_dir . '/' . $slug;
+if (is_dir($target_dir)) {
+    $this->delete_directory($target_dir);
+}
+rename($extracted_folder, $target_dir);
+
+// 4. Cleanup temp
+$this->delete_directory($temp_extract);
+```
+
+---
+
+## Suggestions for Improvement
+
+Based on analyzing the codebase, here are additional improvements to consider:
+
+1. **Retry Mechanism**: Add automatic retry for transient network failures during publish
+2. **Batch Publishing**: Publish same plugin to multiple sites in parallel (currently sequential)
+3. **Progress Persistence**: Save publish progress to localStorage so refresh doesn't lose state
+4. **Publish Queue**: Queue publish operations instead of parallel to prevent WordPress overload
+5. **Rollback on Failure**: If activation fails, offer to restore from backup automatically
+6. **Diff View**: Before publishing, show diff of what files will change
+7. **Scheduled Publishing**: Schedule publish for off-peak hours
+
+---
+
+*Last Updated: 2026-02-05*
