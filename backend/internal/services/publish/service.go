@@ -750,10 +750,8 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
 	}
-	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
 
 	// Walk the plugin directory (using absolute path)
 	err = filepath.Walk(absPluginPath, func(path string, info os.FileInfo, err error) error {
@@ -809,8 +807,30 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 	})
 
 	if err != nil {
+		zipWriter.Close()
+		zipFile.Close()
 		os.Remove(absZipPath)
 		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip archive")
+	}
+
+	// CRITICAL: Close the ZIP writer FIRST to finalize the archive (write central directory)
+	// Then close the file. This must happen BEFORE returning the path.
+	if err := zipWriter.Close(); err != nil {
+		zipFile.Close()
+		os.Remove(absZipPath)
+		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to finalize zip archive")
+	}
+	if err := zipFile.Close(); err != nil {
+		os.Remove(absZipPath)
+		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to close zip file")
+	}
+
+	// Verify the file exists and has content
+	if info, statErr := os.Stat(absZipPath); statErr != nil {
+		return "", apperror.Wrap(statErr, apperror.ErrFSRead, "zip file not found after creation")
+	} else if info.Size() == 0 {
+		os.Remove(absZipPath)
+		return "", apperror.New(apperror.ErrFSZip, "zip file is empty after creation")
 	}
 
 	return absZipPath, nil
@@ -843,10 +863,8 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
 	}
-	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
 
 	for _, relPath := range files {
 		fullPath := pathutil.MustJoin(absPluginPath, relPath)
@@ -871,12 +889,16 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 
 		writer, err := zipWriter.Create(zipFilePath)
 		if err != nil {
+			zipWriter.Close()
+			zipFile.Close()
 			os.Remove(absZipPath)
 			return "", err
 		}
 
 		file, err := os.Open(fullPath)
 		if err != nil {
+			zipWriter.Close()
+			zipFile.Close()
 			os.Remove(absZipPath)
 			return "", err
 		}
@@ -884,9 +906,31 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 		_, err = io.Copy(writer, file)
 		file.Close()
 		if err != nil {
+			zipWriter.Close()
+			zipFile.Close()
 			os.Remove(absZipPath)
 			return "", err
 		}
+	}
+
+	// CRITICAL: Close the ZIP writer FIRST to finalize the archive (write central directory)
+	// Then close the file. This must happen BEFORE returning the path.
+	if err := zipWriter.Close(); err != nil {
+		zipFile.Close()
+		os.Remove(absZipPath)
+		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to finalize zip archive")
+	}
+	if err := zipFile.Close(); err != nil {
+		os.Remove(absZipPath)
+		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to close zip file")
+	}
+
+	// Verify the file exists and has content
+	if info, statErr := os.Stat(absZipPath); statErr != nil {
+		return "", apperror.Wrap(statErr, apperror.ErrFSRead, "zip file not found after creation")
+	} else if info.Size() == 0 {
+		os.Remove(absZipPath)
+		return "", apperror.New(apperror.ErrFSZip, "zip file is empty after creation")
 	}
 
 	return absZipPath, nil
