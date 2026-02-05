@@ -58,6 +58,7 @@ type Message struct {
 	Type      string      `json:"type"`
 	Data      interface{} `json:"data"`
 	Timestamp string      `json:"timestamp"`
+	SessionID string      `json:"sessionId,omitempty"`
 }
 
 // Event types for WebSocket messages
@@ -168,10 +169,16 @@ func (h *Hub) Run() {
 
 // Broadcast sends a message to all connected clients
 func (h *Hub) Broadcast(eventType string, data interface{}) {
+	h.BroadcastWithSession(eventType, data, "")
+}
+
+// BroadcastWithSession sends a message to all connected clients with a session ID
+func (h *Hub) BroadcastWithSession(eventType string, data interface{}, sessionID string) {
 	h.broadcast <- &Message{
 		Type:      eventType,
 		Data:      data,
 		Timestamp: utcTimestamp(),
+		SessionID: sessionID,
 	}
 }
 
@@ -261,20 +268,31 @@ type OperationLogEntry struct {
 
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
 func (h *Hub) BroadcastOperationLog(operationType string, pluginID, siteID int64, entry OperationLogEntry) {
+	h.BroadcastOperationLogWithSession(operationType, pluginID, siteID, "", entry)
+}
+
+// BroadcastOperationLogWithSession sends a detailed operation log entry with session ID
+func (h *Hub) BroadcastOperationLogWithSession(operationType string, pluginID, siteID int64, sessionID string, entry OperationLogEntry) {
 	if entry.Timestamp == "" {
 		entry.Timestamp = formatLogTimestamp()
 	}
-	h.Broadcast(EventLog, map[string]interface{}{
+	h.BroadcastWithSession(EventLog, map[string]interface{}{
 		"operationType": operationType,
 		"pluginId":      pluginID,
 		"siteId":        siteID,
+		"sessionId":     sessionID,
 		"log":           entry,
-	})
+	}, sessionID)
 }
 
 // BroadcastPublishLog is a convenience method for publish operation logs
 func (h *Hub) BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
-	h.BroadcastOperationLog("publish", pluginID, siteID, OperationLogEntry{
+	h.BroadcastPublishLogWithSession(pluginID, siteID, "", level, step, message, details)
+}
+
+// BroadcastPublishLogWithSession is a convenience method for publish operation logs with session
+func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]interface{}) {
+	h.BroadcastOperationLogWithSession("publish", pluginID, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
@@ -292,9 +310,29 @@ func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message stri
 	})
 }
 
+// BroadcastSyncLogWithSession is a convenience method for sync operation logs with session
+func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]interface{}) {
+	h.BroadcastOperationLogWithSession("sync", pluginID, siteID, sessionID, OperationLogEntry{
+		Level:   level,
+		Step:    step,
+		Message: message,
+		Details: details,
+	})
+}
+
 // BroadcastBackupLog is a convenience method for backup operation logs
 func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, details map[string]interface{}) {
 	h.BroadcastOperationLog("backup", pluginID, 0, OperationLogEntry{
+		Level:   level,
+		Step:    step,
+		Message: message,
+		Details: details,
+	})
+}
+
+// BroadcastBackupLogWithSession is a convenience method for backup operation logs with session
+func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, step, message string, details map[string]interface{}) {
+	h.BroadcastOperationLogWithSession("backup", pluginID, 0, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,

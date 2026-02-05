@@ -22,6 +22,7 @@ import (
 	"wp-plugin-publish/internal/services/backup"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
+	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
@@ -60,6 +61,7 @@ type Services struct {
 	Sync    sync.Service
 	Publish *publish.Service
 	Backup  *backup.Service
+	Session *session.Service
 }
 
 func main() {
@@ -165,6 +167,7 @@ func main() {
 		services.Watcher,
 		services.Publish,
 		services.Backup,
+		services.Session,
 	)
 	server := api.NewServer(api.ServerConfig{
 		Port:      cfg.Server.Port,
@@ -177,6 +180,7 @@ func main() {
 			Watcher: serviceRegistry.WatcherService,
 			Publish: serviceRegistry.PublishService,
 			Backup:  serviceRegistry.BackupService,
+			Session: serviceRegistry.SessionService,
 		},
 		WSHub:  wsHub,
 		Logger: log,
@@ -274,6 +278,16 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		MaxPerPlugin:  cfg.Backup.MaxBackupsPerPlugin,
 	})
 
+	// Initialize session service for operation logging
+	sessionService, err := session.New(session.Config{
+		DataDir:       filepath.Dir(cfg.DatabasePath),
+		Logger:        log,
+		RetentionDays: 7,
+	})
+	if err != nil {
+		log.Error("Failed to initialize session service", "error", err)
+	}
+
 	syncService := sync.New(sync.Config{
 		DB:              db,
 		Logger:          log,
@@ -292,6 +306,7 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		WPClientFactory:       wpClientFactory,
 		TempDir:               cfg.TempDir,
 		WSHub:                 wsHub,
+		SessionService:        sessionService,
 	})
 
 	watcherService := watcher.New(watcher.Config{
@@ -308,5 +323,6 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		Sync:    syncService,
 		Publish: publishService,
 		Backup:  backupService,
+		Session: sessionService,
 	}
 }
