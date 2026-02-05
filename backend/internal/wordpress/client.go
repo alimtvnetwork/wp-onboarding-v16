@@ -326,14 +326,23 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 
 // GetPlugins returns a list of installed plugins
 func (c *Client) GetPlugins() ([]PluginInfo, error) {
-	resp, err := c.request("GET", "/wp/v2/plugins", nil)
+	endpoint := "/wp/v2/plugins"
+	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get plugins: status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, &APIError{
+			Operation:    "get plugins list",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
 	}
 
 	var plugins []PluginInfo
@@ -354,11 +363,28 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode == 404 {
-		return nil, fmt.Errorf("plugin not found: %s", slug)
+		return nil, &APIError{
+			Operation:    "get plugin (not found)",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: "",
+			PluginSlugIn: slug,
+		}
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get plugin: status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, &APIError{
+			Operation:    "get plugin",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+			PluginSlugIn: slug,
+		}
 	}
 
 	var plugin PluginInfo

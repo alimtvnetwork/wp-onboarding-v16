@@ -17,8 +17,21 @@ When an external API call fails (especially WordPress REST API calls), logs MUST
 2. The HTTP method used  
 3. The response status code
 4. The full response body (truncated to 8KB if larger)
+5. The endpoint path (e.g., `/wp/v2/plugins`, `/riseup-asia-uploader/v1/upload`)
+6. Stack trace for debugging (when available)
 
 This requirement applies to all WordPress client methods including activation, upload, and mutation token requests.
+
+**CRITICAL**: Every WordPress API error MUST use the `APIError` struct which includes:
+- `Operation`: What action was being performed
+- `Method`: HTTP method (GET, POST, PUT, DELETE)
+- `Endpoint`: The REST API endpoint path
+- `URL`: The fully resolved URL
+- `StatusCode`: HTTP response status
+- `ResponseBody`: Server response (truncated to 8KB)
+- `StackTrace`: Call stack at error time (when captured)
+
+**Never** return a plain `fmt.Errorf()` for WordPress API failures—always use `APIError` so the frontend can display full diagnostic context.
 
 ## Real Plugin Upload
 

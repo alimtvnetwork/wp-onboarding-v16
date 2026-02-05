@@ -12,6 +12,9 @@ All tasks from this plan have been implemented successfully.
 5. ✅ Added bulk scan directories endpoint and UI
 6. ✅ Added stack trace capture to APIError for upload failures
 7. ✅ Added "Keep ZIP Files" setting in Settings and Publish dialog
+8. ✅ Added ZIP structure logging during package stage
+9. ✅ Standardized all WordPress API errors to use `APIError` with endpoint URL
+10. ✅ Created WordPress API Error Standard memory file
 
 ---
 
