@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   FilePlus,
   FileEdit,
@@ -24,6 +25,8 @@ import {
   Upload,
   FolderOpen,
   HardDrive,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { api, FilePreview, PublishPreview } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -35,7 +38,7 @@ interface DiffPreviewDialogProps {
   pluginName: string;
   siteId: number;
   siteName: string;
-  onConfirm: () => void;
+  onConfirm: (selectedFiles?: string[]) => void;
 }
 
 function formatBytes(bytes: number): string {
@@ -96,6 +99,7 @@ export function DiffPreviewDialog({
 }: DiffPreviewDialogProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
   const { data: preview, isLoading, error } = useQuery({
     queryKey: ["publish-preview", pluginId, siteId],
@@ -110,25 +114,111 @@ export function DiffPreviewDialog({
     staleTime: 30000, // Cache for 30 seconds
   });
 
+  // Initialize all files as selected when preview loads
+  useEffect(() => {
+    if (preview?.files) {
+      setSelectedFiles(new Set(preview.files.map(f => f.path)));
+    }
+  }, [preview]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSearchQuery("");
+      setActiveTab("all");
+    }
+  }, [open]);
+
   // Filter files based on search and tab
-  const filteredFiles = preview?.files.filter((file) => {
-    const matchesSearch = file.path.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTab =
-      activeTab === "all" ||
-      (activeTab === "added" && file.changeType === "added") ||
-      (activeTab === "modified" && file.changeType === "modified") ||
-      (activeTab === "deleted" && file.changeType === "deleted");
-    return matchesSearch && matchesTab;
-  }) || [];
+  const filteredFiles = useMemo(() => {
+    return preview?.files.filter((file) => {
+      const matchesSearch = file.path.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesTab =
+        activeTab === "all" ||
+        (activeTab === "added" && file.changeType === "added") ||
+        (activeTab === "modified" && file.changeType === "modified") ||
+        (activeTab === "deleted" && file.changeType === "deleted");
+      return matchesSearch && matchesTab;
+    }) || [];
+  }, [preview, searchQuery, activeTab]);
 
   // Group files by directory for display
-  const filesByDir = filteredFiles.reduce<Record<string, FilePreview[]>>((acc, file) => {
-    const parts = file.path.split("/");
-    const dir = parts.length > 1 ? parts.slice(0, -1).join("/") : ".";
-    if (!acc[dir]) acc[dir] = [];
-    acc[dir].push(file);
-    return acc;
-  }, {});
+  const filesByDir = useMemo(() => {
+    return filteredFiles.reduce<Record<string, FilePreview[]>>((acc, file) => {
+      const parts = file.path.split("/");
+      const dir = parts.length > 1 ? parts.slice(0, -1).join("/") : ".";
+      if (!acc[dir]) acc[dir] = [];
+      acc[dir].push(file);
+      return acc;
+    }, {});
+  }, [filteredFiles]);
+
+  // Calculate selection stats
+  const selectionStats = useMemo(() => {
+    if (!preview?.files) return { selected: 0, total: 0, selectedSize: 0 };
+    const selected = preview.files.filter(f => selectedFiles.has(f.path));
+    return {
+      selected: selected.length,
+      total: preview.files.length,
+      selectedSize: selected.reduce((sum, f) => sum + f.size, 0),
+    };
+  }, [preview, selectedFiles]);
+
+  // Check if all visible files are selected
+  const allVisibleSelected = filteredFiles.length > 0 && 
+    filteredFiles.every(f => selectedFiles.has(f.path));
+  const someVisibleSelected = filteredFiles.some(f => selectedFiles.has(f.path));
+
+  const handleToggleFile = (path: string) => {
+    setSelectedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (allVisibleSelected) {
+      // Deselect all visible files
+      setSelectedFiles(prev => {
+        const next = new Set(prev);
+        filteredFiles.forEach(f => next.delete(f.path));
+        return next;
+      });
+    } else {
+      // Select all visible files
+      setSelectedFiles(prev => {
+        const next = new Set(prev);
+        filteredFiles.forEach(f => next.add(f.path));
+        return next;
+      });
+    }
+  };
+
+  const handleSelectNone = () => {
+    setSelectedFiles(new Set());
+  };
+
+  const handleSelectAllFiles = () => {
+    if (preview?.files) {
+      setSelectedFiles(new Set(preview.files.map(f => f.path)));
+    }
+  };
+
+  const handleConfirm = () => {
+    const selected = Array.from(selectedFiles);
+    onOpenChange(false);
+    // If all files are selected, pass undefined to indicate full publish
+    if (preview && selected.length === preview.files.length) {
+      onConfirm();
+    } else {
+      onConfirm(selected);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,7 +229,7 @@ export function DiffPreviewDialog({
             Publish Preview
           </DialogTitle>
           <DialogDescription>
-            Review files that will be deployed from <strong>{pluginName}</strong> to{" "}
+            Select files to deploy from <strong>{pluginName}</strong> to{" "}
             <strong>{siteName}</strong>
           </DialogDescription>
         </DialogHeader>
@@ -166,9 +256,9 @@ export function DiffPreviewDialog({
             {/* Summary Stats */}
             <div className="grid grid-cols-4 gap-3 py-3 border-b">
               <div className="flex items-center gap-2 text-sm">
-                <Files className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Total:</span>
-                <span className="font-medium">{preview.totalFiles}</span>
+                <CheckSquare className="h-4 w-4 text-primary" />
+                <span className="text-muted-foreground">Selected:</span>
+                <span className="font-medium">{selectionStats.selected}/{selectionStats.total}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <FilePlus className="h-4 w-4 text-green-500" />
@@ -183,12 +273,12 @@ export function DiffPreviewDialog({
               <div className="flex items-center gap-2 text-sm">
                 <HardDrive className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">Size:</span>
-                <span className="font-medium">{formatBytes(preview.totalSize)}</span>
+                <span className="font-medium">{formatBytes(selectionStats.selectedSize)}</span>
               </div>
             </div>
 
-            {/* Search and Filter */}
-            <div className="flex gap-2 py-2">
+            {/* Selection Controls */}
+            <div className="flex gap-2 py-2 items-center justify-between">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -197,6 +287,26 @@ export function DiffPreviewDialog({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAllFiles}
+                  className="text-xs"
+                >
+                  <CheckSquare className="h-3 w-3 mr-1" />
+                  All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectNone}
+                  className="text-xs"
+                >
+                  <Square className="h-3 w-3 mr-1" />
+                  None
+                </Button>
               </div>
             </div>
 
@@ -218,7 +328,25 @@ export function DiffPreviewDialog({
               </TabsList>
 
               <TabsContent value={activeTab} className="flex-1 overflow-hidden mt-2">
-                <ScrollArea className="h-[300px] rounded-md border">
+                {/* Select all visible toggle */}
+                {filteredFiles.length > 0 && (
+                  <div className="flex items-center gap-2 px-2 py-1.5 border-b mb-2">
+                    <Checkbox
+                      id="select-visible"
+                      checked={allVisibleSelected}
+                      onCheckedChange={handleSelectAll}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                    <label 
+                      htmlFor="select-visible" 
+                      className="text-xs text-muted-foreground cursor-pointer"
+                    >
+                      {allVisibleSelected ? "Deselect" : "Select"} all visible ({filteredFiles.length} files)
+                    </label>
+                  </div>
+                )}
+                
+                <ScrollArea className="h-[280px] rounded-md border">
                   {filteredFiles.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                       <FolderOpen className="h-12 w-12 mb-2 opacity-50" />
@@ -237,10 +365,18 @@ export function DiffPreviewDialog({
                                 key={file.path}
                                 className={cn(
                                   "flex items-center justify-between px-2 py-1.5 rounded-md",
-                                  "hover:bg-muted/50 transition-colors"
+                                  "hover:bg-muted/50 transition-colors cursor-pointer",
+                                  selectedFiles.has(file.path) && "bg-primary/5"
                                 )}
+                                onClick={() => handleToggleFile(file.path)}
                               >
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <Checkbox
+                                    checked={selectedFiles.has(file.path)}
+                                    onCheckedChange={() => handleToggleFile(file.path)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="data-[state=checked]:bg-primary"
+                                  />
                                   {getFileIcon(file.changeType)}
                                   <span className="text-sm font-mono truncate">
                                     {file.path.split("/").pop()}
@@ -280,14 +416,11 @@ export function DiffPreviewDialog({
             Cancel
           </Button>
           <Button
-            onClick={() => {
-              onOpenChange(false);
-              onConfirm();
-            }}
-            disabled={isLoading || !!error}
+            onClick={handleConfirm}
+            disabled={isLoading || !!error || selectionStats.selected === 0}
           >
             <Upload className="h-4 w-4 mr-2" />
-            Confirm Publish
+            Publish {selectionStats.selected} File{selectionStats.selected !== 1 ? "s" : ""}
           </Button>
         </DialogFooter>
       </DialogContent>

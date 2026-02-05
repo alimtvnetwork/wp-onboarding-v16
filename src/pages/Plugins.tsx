@@ -122,6 +122,7 @@ export default function Plugins() {
   // Diff preview state
   const [showDiffPreview, setShowDiffPreview] = useState(false);
   const [diffPreviewSiteId, setDiffPreviewSiteId] = useState<number | null>(null);
+  const [selectedFilesForPublish, setSelectedFilesForPublish] = useState<string[] | undefined>(undefined);
   const handleAddPlugin = async (forceCreate = false) => {
     if (!formData.name || !formData.path) {
       toast.error("Name and path are required");
@@ -326,7 +327,7 @@ export default function Plugins() {
     setShowPublishDialog(true);
   };
 
-  const handlePublish = async (plugin: Plugin, siteId: number) => {
+  const handlePublish = async (plugin: Plugin, siteId: number, files?: string[]) => {
     // Open progress dialog instead of inline publishing
     setPublishPlugin(plugin);
     setPublishSiteId(siteId);
@@ -334,13 +335,21 @@ export default function Plugins() {
     setShowPublishProgress(true);
     setIsPublishing(plugin.id);
 
-    // Get upload mode from localStorage (file → "selected", zip → "full")
-    let uploadMode: "file" | "zip" = "file";
-    try {
-      const saved = localStorage.getItem("wppp_upload_mode");
-      if (saved === "zip") uploadMode = "zip";
-    } catch {
-      // Default to file mode
+    // Determine publish mode based on whether specific files were selected
+    let publishMode: "selected" | "full";
+    if (files && files.length > 0) {
+      // Selective publish - user picked specific files
+      publishMode = "selected";
+    } else {
+      // Full publish or no file selection - use localStorage preference
+      let uploadMode: "file" | "zip" = "file";
+      try {
+        const saved = localStorage.getItem("wppp_upload_mode");
+        if (saved === "zip") uploadMode = "zip";
+      } catch {
+        // Default to file mode
+      }
+      publishMode = uploadMode === "zip" ? "full" : "selected";
     }
 
     // Get keep ZIP files setting
@@ -352,12 +361,10 @@ export default function Plugins() {
       // Default to false
     }
 
-    // Map upload mode to API mode: file → selected (patch-style), zip → full (full package)
-    const publishMode = uploadMode === "zip" ? "full" : "selected";
-
     try {
       const response = await api.publishPlugin(plugin.id, siteId, {
         mode: publishMode,
+        files: files, // Pass selected files to backend
         createBackup: true,
         keepZipFiles,
       });
@@ -1433,9 +1440,9 @@ export default function Plugins() {
         pluginName={publishPlugin?.name || ""}
         siteId={diffPreviewSiteId || 0}
         siteName={publishPlugin?.mappings?.find(m => m.siteId === diffPreviewSiteId)?.siteName || ""}
-        onConfirm={() => {
+        onConfirm={(selectedFiles) => {
           if (publishPlugin && diffPreviewSiteId) {
-            handlePublish(publishPlugin, diffPreviewSiteId);
+            handlePublish(publishPlugin, diffPreviewSiteId, selectedFiles);
           }
         }}
       />
