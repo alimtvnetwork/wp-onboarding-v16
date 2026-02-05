@@ -25,6 +25,7 @@ type APIError struct {
 	ResponseBody  string
 	PluginSlugIn  string
 	PluginIDUsed  string
+	StackTrace    string // Captured stack trace at error time
 }
 
 func (e *APIError) Error() string {
@@ -32,6 +33,18 @@ func (e *APIError) Error() string {
 		return fmt.Sprintf("%s: status %d", e.Operation, e.StatusCode)
 	}
 	return fmt.Sprintf("WordPress API request failed: status %d", e.StatusCode)
+}
+
+// FullError returns the complete error message with response body for logging
+func (e *APIError) FullError() string {
+	msg := e.Error()
+	if e.ResponseBody != "" {
+		msg += fmt.Sprintf("\nResponse Body: %s", e.ResponseBody)
+	}
+	if e.StackTrace != "" {
+		msg += fmt.Sprintf("\n--- Stack Trace ---\n%s--- End Stack Trace ---", e.StackTrace)
+	}
+	return msg
 }
 
 // ClientConfig holds WordPress client configuration

@@ -329,6 +329,15 @@ export default function Plugins() {
       // Default to file mode
     }
 
+    // Get keep ZIP files setting
+    let keepZipFiles = false;
+    try {
+      const saved = localStorage.getItem("wppp_keep_zip_files");
+      keepZipFiles = saved === "true";
+    } catch {
+      // Default to false
+    }
+
     // Map upload mode to API mode: file → selected (patch-style), zip → full (full package)
     const publishMode = uploadMode === "zip" ? "full" : "selected";
 
@@ -336,6 +345,7 @@ export default function Plugins() {
       const response = await api.publishPlugin(plugin.id, siteId, {
         mode: publishMode,
         createBackup: true,
+        keepZipFiles,
       });
       if (response.success) {
         toast.success(`Published ${response.data?.filesUpdated || 0} files`);

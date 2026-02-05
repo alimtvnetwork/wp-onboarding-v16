@@ -106,6 +106,14 @@ ZIP files for plugin uploads MUST use slug-based naming:
 - Format: `plugin-name.zip` (lowercase, hyphens, no spaces or timestamps)
 - Example: `category-generator.zip` NOT `Category Generator-1770249940.zip`
 
+## Keep ZIP Files Setting
+
+A user-configurable "Keep ZIP Files" setting allows preserving ZIP files in the temp folder after publish operations:
+- Default: false (ZIP files are deleted after upload)
+- When enabled: ZIP files remain in `.temp/` for debugging
+- Setting is stored in localStorage (`wppp_keep_zip_files`)
+- Overridable per-publish in the Publish Progress Dialog settings tab
+
 ## Naming Conventions
 
 Use "RiseupAsia" (one word, lowercase "up") consistently throughout the codebase:

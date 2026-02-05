@@ -1093,6 +1093,7 @@ type PublishInput struct {
 	Mode         string   `json:"mode"`         // "full" or "selected"
 	Files        []string `json:"files"`        // files to publish (for "selected" mode)
 	CreateBackup bool     `json:"createBackup"` // create backup before publish
+	KeepZipFiles bool     `json:"keepZipFiles"` // keep ZIP files after publish (for debugging)
 }
 
 // PublishPlugin publishes plugin changes to a site
