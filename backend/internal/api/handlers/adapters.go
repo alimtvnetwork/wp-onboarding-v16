@@ -93,6 +93,26 @@ func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, up
 	return a.Service.BootstrapUploader(ctx, id, uploaderPath)
 }
 
+func (a *SiteServiceAdapter) GetRemotePlugins(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.GetRemotePlugins(ctx, siteID)
+}
+
+func (a *SiteServiceAdapter) EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
+	return a.Service.EnableRemotePlugin(ctx, siteID, pluginSlug)
+}
+
+func (a *SiteServiceAdapter) DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
+	return a.Service.DisableRemotePlugin(ctx, siteID, pluginSlug)
+}
+
+func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
+	return a.Service.DeleteRemotePlugin(ctx, siteID, pluginSlug)
+}
+
+func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.GetCredentials(ctx, siteID)
+}
+
 // PluginServiceAdapter wraps *plugin.Service to implement PluginServiceInterface
 type PluginServiceAdapter struct {
 	*plugin.Service
@@ -245,6 +265,14 @@ func (a *PublishServiceAdapter) Publish(ctx context.Context, pluginID, siteID in
 
 func (a *PublishServiceAdapter) PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (interface{}, error) {
 	return a.Service.PublishFiles(ctx, pluginID, siteID, files)
+}
+
+func (a *PublishServiceAdapter) PreviewPublish(ctx context.Context, pluginID, siteID int64) (interface{}, error) {
+	return a.Service.PreviewPublish(ctx, pluginID, siteID)
+}
+
+func (a *PublishServiceAdapter) GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (interface{}, error) {
+	return a.Service.GetFileDiff(ctx, pluginID, siteID, filePath)
 }
 
 // BackupServiceAdapter wraps *backup.Service to implement BackupServiceInterface
