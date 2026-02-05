@@ -86,3 +86,20 @@ const (
 	ErrInternal      = "E9003" // Internal server error
 	ErrNotImplemented = "E9004" // Feature not implemented
 )
+
+// Git errors (E7xxx)
+const (
+	ErrGitNotRepo         = "E7001" // Directory is not a git repository
+	ErrGitCommand         = "E7002" // Git command execution failed
+	ErrGitPull            = "E7003" // Git pull failed
+	ErrGitPush            = "E7004" // Git push failed
+	ErrGitCommit          = "E7005" // Git commit failed
+	ErrGitBranch          = "E7006" // Git branch operation failed
+)
+
+// Build errors (E8xxx)
+const (
+	ErrBuildNotConfigured = "E8001" // Build not configured for plugin
+	ErrBuildFailed        = "E8002" // Build command failed
+	ErrBuildTimeout       = "E8003" // Build command timed out
+)

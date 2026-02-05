@@ -209,7 +209,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		return nil, &APIError{
-			Operation:    "upload plugin via Rise Up Uploader",
+			Operation:    "upload plugin via RiseupAsia Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          url,
@@ -228,7 +228,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	return &result, nil
 }
 
-// EnablePluginViaUploader enables (activates) a plugin via the Rise Up Uploader.
+// EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
 func (c *Client) EnablePluginViaUploader(slug string) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
@@ -247,7 +247,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
-			Operation:    "enable plugin via Rise Up Uploader",
+			Operation:    "enable plugin via RiseupAsia Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
@@ -260,7 +260,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 	return nil
 }
 
-// DisablePluginViaUploader disables (deactivates) a plugin via the Rise Up Uploader.
+// DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
 func (c *Client) DisablePluginViaUploader(slug string) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
@@ -279,7 +279,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
-			Operation:    "disable plugin via Rise Up Uploader",
+			Operation:    "disable plugin via RiseupAsia Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
@@ -292,7 +292,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 	return nil
 }
 
-// DeletePluginViaUploader deletes a plugin via the Rise Up Uploader.
+// DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
 func (c *Client) DeletePluginViaUploader(slug string) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
@@ -323,7 +323,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
-			Operation:    "delete plugin via Rise Up Uploader",
+			Operation:    "delete plugin via RiseupAsia Uploader",
 			Method:       "DELETE",
 			Endpoint:     endpoint,
 			URL:          url,
@@ -336,7 +336,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 	return nil
 }
 
-// ListPluginsViaUploader lists all plugins via the Rise Up Uploader.
+// ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.
 func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
@@ -366,7 +366,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	return response.Plugins, nil
 }
 
-// ListPluginFilesViaUploader lists files in a plugin via the Rise Up Uploader.
+// ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
@@ -397,7 +397,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 	return response.Files, nil
 }
 
-// ReplaceFileViaUploader replaces a single file in a plugin via the Rise Up Uploader.
+// ReplaceFileViaUploader replaces a single file in a plugin via the RiseupAsia Uploader.
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
@@ -406,7 +406,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 
 	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
 
-	// Always use base64 encoding for Rise Up Uploader
+	// Always use base64 encoding for RiseupAsia Uploader
 	contentStr := base64.StdEncoding.EncodeToString(content)
 
 	body := map[string]string{
@@ -439,7 +439,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 	if resp.StatusCode != http.StatusOK {
 		respBytes, _ := io.ReadAll(resp.Body)
 		return &APIError{
-			Operation:    "replace file via Rise Up Uploader",
+			Operation:    "replace file via RiseupAsia Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          url,

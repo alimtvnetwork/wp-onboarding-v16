@@ -637,8 +637,9 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
 	}
 
-	// Create zip file
-	zipPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-%d.zip", pluginName, time.Now().Unix()))
+	// Create zip file with slug-based name (no timestamp, no spaces)
+	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
+	zipPath := filepath.Join(s.tempDir, fmt.Sprintf("%s.zip", slug))
 	zipFile, err := os.Create(zipPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
@@ -714,8 +715,9 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
 	}
 
-	// Create zip file
-	zipPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-patch-%d.zip", pluginName, time.Now().Unix()))
+	// Create zip file with slug-based name (no timestamp, no spaces)
+	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
+	zipPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-patch.zip", slug))
 	zipFile, err := os.Create(zipPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")

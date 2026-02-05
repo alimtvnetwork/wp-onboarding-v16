@@ -14,8 +14,9 @@ The Global Error Modal uses a **6-tab interface**:
 
 ### Visibility
 - All sections MUST be visible without requiring user to zoom out
-- Use `ScrollArea` for any content that might overflow
+- Use `ScrollArea` with `max-h-[XYZpx]` for any content that might overflow
 - Error location section must NEVER be hidden
+- All modals must support vertical scrolling with `max-h-[90vh]` and `overflow-y-auto`
 
 ### Tabs for Complex Dialogs
 Any dialog with more than 3 sections MUST use tabs:
@@ -35,6 +36,11 @@ Use `LogViewer` component with:
 - Copy button for all logs
 - Auto-scroll to latest
 
+### Stack Trace Section
+- Must use ScrollArea with explicit max height
+- Error location visible at top, not hidden below fold
+- File paths should include full relative paths from `internal/` or `pkg/`
+
 ---
 
-*Last Updated: 2026-02-04*
+*Last Updated: 2026-02-05*

@@ -524,6 +524,32 @@ export const api = {
        body: JSON.stringify({ path, createDetection }),
      }),
 
+   // Scan multiple directories for WordPress plugins
+   scanDirectories: (paths: string[], createDetection?: boolean) =>
+     request<{
+       scanned: number;
+       detected: number;
+       results: Array<{
+         path: string;
+         isPlugin: boolean;
+         metadata?: {
+           pluginName?: string;
+           version?: string;
+           mainFile?: string;
+           description?: string;
+           author?: string;
+           textDomain?: string;
+           fileCount: number;
+           totalSize: number;
+         };
+         error?: string;
+         detectionCreated?: boolean;
+       }>;
+     }>("/plugins/scan-directories", {
+       method: "POST",
+       body: JSON.stringify({ paths, createDetection }),
+     }),
+
   // Sync
   getFileChanges: (pluginId: number, siteId: number) =>
     request<FileChange[]>(`/plugins/${pluginId}/changes?siteId=${siteId}`),

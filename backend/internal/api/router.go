@@ -102,6 +102,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/plugins/{id}/scan", handlers.ScanPlugin).Methods("POST")
 	api.HandleFunc("/plugins/scan", handlers.ScanAllPlugins).Methods("POST")
 	api.HandleFunc("/plugins/scan-directory", handlers.ScanDirectoryPath).Methods("POST")
+	api.HandleFunc("/plugins/scan-directories", handlers.ScanDirectoriesPath).Methods("POST")
 
 	// Git endpoints
 	api.HandleFunc("/plugins/{id}/git/pull", handlers.GitPull).Methods("POST")

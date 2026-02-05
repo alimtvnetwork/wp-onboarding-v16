@@ -84,17 +84,34 @@ These files are used as the first-line artifact when investigating publish/sync/
 
 ## Timestamp Format Consistency
 
-All streamed operation logs (WebSocket `log` events) MUST use consistent UTC ISO8601 format:
+All backend logs MUST use a consistent, human-readable UTC format:
 ```
-2026-02-04T19:21:17.339Z
+[vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message key=value [LEVEL] [file/path:line]
 ```
 
-NOT mixed formats like:
-- `2026-02-05T03:21:17+08:00` (local timezone)
-- `2026-02-04T19:21:17.339Z` (UTC)
+Example:
+```
+[v1.19.4 2026-02-05 00:05:40] [publish] Building package... mode=full [INFO] [internal/services/publish/service.go:186]
+```
 
-Pick ONE format and use it everywhere.
+### Log Format Requirements
+- Version prefix from app version info
+- Package name extracted from Go function path
+- Full relative file paths (from `internal/` or `pkg/`) with line numbers
+- For ERROR and FATAL levels: automatic stack trace appended
+
+## ZIP File Naming
+
+ZIP files for plugin uploads MUST use slug-based naming:
+- Format: `plugin-name.zip` (lowercase, hyphens, no spaces or timestamps)
+- Example: `category-generator.zip` NOT `Category Generator-1770249940.zip`
+
+## Naming Conventions
+
+Use "RiseupAsia" (one word, lowercase "up") consistently throughout the codebase:
+- ✅ `RiseupAsia Uploader`
+- ❌ `Rise Up Uploader`
 
 ---
 
-*Last Updated: 2026-02-04*
+*Last Updated: 2026-02-05*

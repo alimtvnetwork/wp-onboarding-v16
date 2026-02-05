@@ -105,6 +105,7 @@ export default function Plugins() {
   const [selectedPluginIds, setSelectedPluginIds] = useState<Set<number>>(new Set());
   const [isBulkProcessing, setIsBulkProcessing] = useState(false);
   const [isBulkDeploying, setIsBulkDeploying] = useState(false);
+  const [isBulkScanning, setIsBulkScanning] = useState(false);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   const handleAddPlugin = async (forceCreate = false) => {
@@ -554,6 +555,56 @@ export default function Plugins() {
     }
   };
 
+  const handleBulkScanDirectories = async () => {
+    setIsBulkScanning(true);
+    toast.info("Scanning directories for selected plugins...");
+    try {
+      const ids = Array.from(selectedPluginIds);
+      const paths: string[] = [];
+      
+      // Get parent directories of selected plugins to scan for more plugins
+      for (const id of ids) {
+        const plugin = plugins?.find((p) => p.id === id);
+        if (plugin?.path) {
+          // Get parent directory of the plugin
+          const parentPath = plugin.path.replace(/[/\\][^/\\]+$/, '');
+          if (parentPath && !paths.includes(parentPath)) {
+            paths.push(parentPath);
+          }
+        }
+      }
+      
+      if (paths.length === 0) {
+        toast.warning("No valid paths found for selected plugins");
+        return;
+      }
+      
+      const response = await api.scanDirectories(paths, false);
+      if (response.success && response.data) {
+        const { scanned, detected, results } = response.data;
+        const newPlugins = results.filter(r => r.isPlugin && !plugins?.find(p => 
+          p.path.toLowerCase() === r.path.toLowerCase()
+        ));
+        
+        toast.success(
+          `Scanned ${scanned} directories: ${detected} plugins found (${newPlugins.length} new)`,
+          { duration: 5000 }
+        );
+        
+        // Refresh plugin list in case any were auto-registered
+        queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      } else if (response.error) {
+        toast.error(response.error.message || "Scan failed");
+      }
+      
+      clearSelection();
+    } catch (error) {
+      toast.error("Failed to scan directories");
+    } finally {
+      setIsBulkScanning(false);
+    }
+  };
+
   const openMappingDialog = async (plugin: Plugin) => {
     setSelectedPlugin(plugin);
     setShowMappingDialog(true);
@@ -697,8 +748,10 @@ export default function Plugins() {
         onGitPullAll={handleBulkGitPull}
         onDeleteAll={() => setShowBulkDeleteConfirm(true)}
         onDeployAll={handleBulkDeploy}
+        onScanDirectories={handleBulkScanDirectories}
         isProcessing={isBulkProcessing}
         isDeploying={isBulkDeploying}
+        isScanning={isBulkScanning}
       />
 
       {/* Plugin List */}
