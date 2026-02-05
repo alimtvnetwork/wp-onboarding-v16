@@ -17,6 +17,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
@@ -47,7 +48,7 @@ type WSHub interface {
 
 // SessionService interface for session-based logging
 type SessionService interface {
-	StartSession(sessionType interface{}, pluginID, siteID int64, pluginName, siteName string) (string, error)
+	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
 	Log(sessionID, level, step, message string, details map[string]interface{})
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
