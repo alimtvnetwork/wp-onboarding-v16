@@ -232,12 +232,17 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 
 	c.progress(ActionUpload, "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), map[string]interface{}{
 		"status": resp.StatusCode,
-		"body":   truncateBody(respBody, 500),
+		"body":   truncateBody(respBody, 2000),
 	})
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		// Capture stack trace for debugging
 		stackTrace := captureStackTrace(2)
+		
+		// Log detailed error for on-disk logs
+		fmt.Printf("[UPLOAD ERROR] POST %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n", 
+			url, resp.StatusCode, truncateBody(respBody, 4000), stackTrace)
+		
 		return nil, &APIError{
 			Operation:    "upload plugin via RiseupAsia Uploader",
 			Method:       "POST",
