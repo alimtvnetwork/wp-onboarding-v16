@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 
+	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
