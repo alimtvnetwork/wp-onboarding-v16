@@ -122,6 +122,26 @@ ZIP files for plugin uploads MUST use slug-based naming:
 - Format: `plugin-name.zip` (lowercase, hyphens, no spaces or timestamps)
 - Example: `category-generator.zip` NOT `Category Generator-1770249940.zip`
 
+## Absolute Path Requirements
+
+**All paths in logs and API calls MUST be absolute.**
+
+- Never log relative paths like `.temp\plugin.zip`
+- Use `pathutil.ToAbsolute()` to resolve paths before logging
+- Windows paths exceeding 260 characters automatically get `\\?\` prefix
+- See: `.lovable/memory/architecture/backend/path-management.md`
+
+## Pre-Upload Status Check
+
+Before uploading files to WordPress:
+
+1. Call the status endpoint (`/riseup-asia-uploader/v1/status`)
+2. Verify response is 200 OK
+3. Log the status check result
+4. Only then proceed with upload
+
+This prevents upload failures due to unreachable/misconfigured endpoints.
+
 ## ZIP Structure Logging
 
 During the package stage, the backend MUST log the internal structure of the created ZIP file:

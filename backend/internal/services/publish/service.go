@@ -22,6 +22,7 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // SitePasswordDecryptor interface for getting decrypted site passwords
@@ -701,15 +702,25 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 
 // createFullZip creates a zip file of the entire plugin directory
 func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns []string) (string, error) {
-	// Ensure temp directory exists
-	if err := os.MkdirAll(s.tempDir, 0755); err != nil {
+	// Resolve temp directory to absolute path
+	absTempDir, err := pathutil.ToAbsolute(s.tempDir)
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
+	}
+	if err := os.MkdirAll(absTempDir, 0755); err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
+	}
+
+	// Resolve plugin path to absolute
+	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
 	// Create zip file with slug-based name (no timestamp, no spaces)
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
-	zipPath := filepath.Join(s.tempDir, fmt.Sprintf("%s.zip", slug))
-	zipFile, err := os.Create(zipPath)
+	absZipPath := filepath.Join(absTempDir, fmt.Sprintf("%s.zip", slug))
+	zipFile, err := os.Create(absZipPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
 	}
@@ -718,8 +729,8 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 	zipWriter := zip.NewWriter(zipFile)
 	defer zipWriter.Close()
 
-	// Walk the plugin directory
-	err = filepath.Walk(pluginPath, func(path string, info os.FileInfo, err error) error {
+	// Walk the plugin directory (using absolute path)
+	err = filepath.Walk(absPluginPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -730,7 +741,7 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 		}
 
 		// Get relative path
-		relPath, err := filepath.Rel(pluginPath, path)
+		relPath, err := filepath.Rel(absPluginPath, path)
 		if err != nil {
 			return err
 		}
@@ -751,10 +762,10 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 		}
 
 		// Create file in zip with plugin name as root folder
-		zipPath := filepath.Join(pluginName, relPath)
-		zipPath = filepath.ToSlash(zipPath) // Normalize for zip
+		zipEntryPath := filepath.Join(pluginName, relPath)
+		zipEntryPath = filepath.ToSlash(zipEntryPath) // Normalize for zip
 
-		writer, err := zipWriter.Create(zipPath)
+		writer, err := zipWriter.Create(zipEntryPath)
 		if err != nil {
 			return err
 		}
@@ -770,24 +781,34 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 	})
 
 	if err != nil {
-		os.Remove(zipPath)
+		os.Remove(absZipPath)
 		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip archive")
 	}
 
-	return zipPath, nil
+	return absZipPath, nil
 }
 
 // createSelectiveZip creates a zip file with only selected files
 func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []string) (string, error) {
-	// Ensure temp directory exists
-	if err := os.MkdirAll(s.tempDir, 0755); err != nil {
+	// Resolve temp directory to absolute path
+	absTempDir, err := pathutil.ToAbsolute(s.tempDir)
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to resolve temp directory path")
+	}
+	if err := os.MkdirAll(absTempDir, 0755); err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp directory")
+	}
+
+	// Resolve plugin path to absolute
+	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
 	}
 
 	// Create zip file with slug-based name (no timestamp, no spaces)
 	slug := strings.ToLower(strings.ReplaceAll(pluginName, " ", "-"))
-	zipPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-patch.zip", slug))
-	zipFile, err := os.Create(zipPath)
+	absZipPath := filepath.Join(absTempDir, fmt.Sprintf("%s-patch.zip", slug))
+	zipFile, err := os.Create(absZipPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create zip file")
 	}
@@ -797,7 +818,7 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 	defer zipWriter.Close()
 
 	for _, relPath := range files {
-		fullPath := filepath.Join(pluginPath, relPath)
+		fullPath := filepath.Join(absPluginPath, relPath)
 		
 		// Check if file exists
 		info, err := os.Stat(fullPath)
@@ -818,25 +839,25 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 
 		writer, err := zipWriter.Create(zipFilePath)
 		if err != nil {
-			os.Remove(zipPath)
+			os.Remove(absZipPath)
 			return "", err
 		}
 
 		file, err := os.Open(fullPath)
 		if err != nil {
-			os.Remove(zipPath)
+			os.Remove(absZipPath)
 			return "", err
 		}
 
 		_, err = io.Copy(writer, file)
 		file.Close()
 		if err != nil {
-			os.Remove(zipPath)
+			os.Remove(absZipPath)
 			return "", err
 		}
 	}
 
-	return zipPath, nil
+	return absZipPath, nil
 }
 
 // shouldExclude checks if a file should be excluded from the zip
@@ -875,10 +896,17 @@ func (s *Service) shouldExclude(relPath string) bool {
 // getZipStructure reads the internal structure of a ZIP file and returns a list of paths
 func (s *Service) getZipStructure(zipPath string) []string {
 	var entries []string
-	
-	reader, err := zip.OpenReader(zipPath)
+
+	// Resolve to absolute path
+	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
-		s.log.Warn("Failed to read ZIP structure", "zipPath", zipPath, "error", err.Error())
+		s.log.Warn("Failed to resolve ZIP path", "zipPath", zipPath, "error", err.Error())
+		absZipPath = zipPath
+	}
+	
+	reader, err := zip.OpenReader(absZipPath)
+	if err != nil {
+		s.log.Warn("Failed to read ZIP structure", "zipPath", absZipPath, "error", err.Error())
 		return []string{"(failed to read ZIP structure: " + err.Error() + ")"}
 	}
 	defer reader.Close()
