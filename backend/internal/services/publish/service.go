@@ -1686,19 +1686,19 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 	// Get plugin info
 	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDBRead, "plugin not found")
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "plugin not found")
 	}
 
 	// Get site credentials
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDBRead, "site not found")
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "site not found")
 	}
 
 	// Get mapping to find remote slug
 	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrDBRead, "mapping not found")
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "mapping not found")
 	}
 
 	result := &FileDiffResult{
