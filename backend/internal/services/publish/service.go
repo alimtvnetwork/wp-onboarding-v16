@@ -75,6 +75,7 @@ type PublishOptions struct {
 	Mode         string   `json:"mode"`         // "selected" or "full"
 	Files        []string `json:"files"`        // files to publish (for "selected" mode)
 	CreateBackup bool     `json:"createBackup"` // create backup before publishing
+	KeepZipFiles bool     `json:"keepZipFiles"` // keep ZIP files after publish (for debugging)
 }
 
 // PublishResult represents the result of a publish operation
@@ -108,6 +109,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			options = PublishOptions{
 				Mode:         getString(m, "mode", "full"),
 				CreateBackup: getBool(m, "createBackup", true),
+				KeepZipFiles: getBool(m, "keepZipFiles", false),
 			}
 			if files, ok := m["files"].([]interface{}); ok {
 				for _, f := range files {
@@ -229,9 +231,15 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 	// Ensure cleanup
 	defer func() {
-		if zipPath != "" {
-			s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), nil)
+		if zipPath != "" && !options.KeepZipFiles {
+			s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), map[string]interface{}{
+				"keepZipFiles": options.KeepZipFiles,
+			})
 			os.Remove(zipPath)
+		} else if zipPath != "" && options.KeepZipFiles {
+			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging: %s", zipPath), map[string]interface{}{
+				"zipPath": zipPath,
+			})
 		}
 	}()
 

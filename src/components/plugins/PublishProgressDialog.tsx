@@ -169,6 +169,16 @@ export function PublishProgressDialog({
     return true; // default to file-by-file
   });
 
+  // Keep ZIP files setting
+  const [keepZipFiles, setKeepZipFiles] = useState(() => {
+    try {
+      const saved = localStorage.getItem("wppp_keep_zip_files");
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
@@ -562,6 +572,26 @@ export function PublishProgressDialog({
                   />
                   <span className={cn("text-xs", useFileByFile && "text-primary font-medium")}>File-by-file</span>
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <Label htmlFor="keep-zip" className="text-sm font-medium">
+                    Keep ZIP Files
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Preserve ZIP files in temp folder after publish (for debugging).
+                  </p>
+                </div>
+                <Switch
+                  id="keep-zip"
+                  checked={keepZipFiles}
+                  onCheckedChange={(checked) => {
+                    setKeepZipFiles(checked);
+                    localStorage.setItem("wppp_keep_zip_files", String(checked));
+                    toast.success(`Keep ZIP files: ${checked ? "enabled" : "disabled"}`);
+                  }}
+                />
               </div>
             </div>
           </TabsContent>

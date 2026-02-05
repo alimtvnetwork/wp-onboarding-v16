@@ -562,7 +562,7 @@ export const api = {
   publishPlugin: (
     pluginId: number,
     siteId: number,
-    options: { mode: "selected" | "full"; files?: string[]; createBackup: boolean }
+    options: { mode: "selected" | "full"; files?: string[]; createBackup: boolean; keepZipFiles?: boolean }
   ) =>
     request<{ filesUpdated: number; backupId?: number }>(`/plugins/${pluginId}/sites/${siteId}/publish`, {
       method: "POST",

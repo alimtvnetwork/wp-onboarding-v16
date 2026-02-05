@@ -141,6 +141,9 @@ func main() {
 	wsHub := ws.NewHub()
 	go wsHub.Run()
 
+	// Set app version for WebSocket log formatting
+	ws.SetAppVersion(versionInfo.Version)
+
 	// Initialize services
 	services := initServices(db, cfg, wsHub, log)
 

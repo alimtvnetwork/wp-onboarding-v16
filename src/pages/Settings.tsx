@@ -61,6 +61,16 @@ export default function Settings() {
     }
   });
   
+  // Keep ZIP files after publish (for debugging)
+  const [keepZipFiles, setKeepZipFiles] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("wppp_keep_zip_files");
+      return saved === "true";
+    } catch {
+      return false;
+    }
+  });
+  
   // Auto-backup state (default: disabled)
   const [autoBackup, setAutoBackup] = useState<boolean>(() => {
     try {
@@ -167,6 +177,11 @@ export default function Settings() {
     const mode = value as "file" | "zip";
     setUploadMode(mode);
     saveWithToast("wppp_upload_mode", mode, "Upload mode");
+  };
+  
+  const handleKeepZipFilesChange = (enabled: boolean) => {
+    setKeepZipFiles(enabled);
+    saveWithToast("wppp_keep_zip_files", enabled, "Keep ZIP files");
   };
   
   const handleAutoBackupChange = (enabled: boolean) => {
@@ -405,6 +420,20 @@ export default function Settings() {
                   </div>
                 </div>
               </RadioGroup>
+            </div>
+
+            {/* Keep ZIP files toggle */}
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div>
+                <Label>Keep ZIP Files</Label>
+                <p className="text-xs text-muted-foreground">
+                  Preserve ZIP files in temp folder after publish (for debugging)
+                </p>
+              </div>
+              <Switch 
+                checked={keepZipFiles}
+                onCheckedChange={handleKeepZipFilesChange}
+              />
             </div>
           </div>
         );

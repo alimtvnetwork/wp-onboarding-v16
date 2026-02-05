@@ -10,7 +10,35 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 )
+
+// captureStackTrace captures the call stack for debugging
+func captureStackTrace(skip int) string {
+	var builder strings.Builder
+	pcs := make([]uintptr, 32)
+	n := runtime.Callers(skip+1, pcs)
+	frames := runtime.CallersFrames(pcs[:n])
+	
+	frameNum := 0
+	for {
+		frame, more := frames.Next()
+		// Skip runtime internals
+		if strings.Contains(frame.Function, "runtime.") {
+			if !more {
+				break
+			}
+			continue
+		}
+		builder.WriteString(fmt.Sprintf("  #%d %s\n      %s:%d\n", frameNum, frame.Function, frame.File, frame.Line))
+		frameNum++
+		if !more || frameNum >= 10 { // Limit depth
+			break
+		}
+	}
+	return builder.String()
+}
 
 // Note: RiseUpUploaderNamespace is defined in constants.go
 
@@ -208,6 +236,8 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	})
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		// Capture stack trace for debugging
+		stackTrace := captureStackTrace(2)
 		return nil, &APIError{
 			Operation:    "upload plugin via RiseupAsia Uploader",
 			Method:       "POST",
@@ -215,6 +245,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 			URL:          url,
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(respBody, 8192),
+			StackTrace:   stackTrace,
 		}
 	}
 

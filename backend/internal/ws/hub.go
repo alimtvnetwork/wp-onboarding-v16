@@ -11,8 +11,21 @@ import (
 )
 
 func utcTimestamp() string {
-	// Fixed UTC ISO8601 format with milliseconds for consistency across backend + frontend
-	return time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
+	// Human-readable UTC format: YYYY-MM-DD HH:MM:SS
+	return time.Now().UTC().Format("2006-01-02 15:04:05")
+}
+
+// appVersion is set during hub initialization
+var appVersion string = "0.0.0"
+
+// SetAppVersion sets the app version for log formatting
+func SetAppVersion(version string) {
+	appVersion = version
+}
+
+// formatLogTimestamp creates the standardized log timestamp prefix
+func formatLogTimestamp() string {
+	return "[v" + appVersion + " " + time.Now().UTC().Format("2006-01-02 15:04:05") + "]"
 }
 
 var upgrader = websocket.Upgrader{
@@ -237,17 +250,19 @@ func (h *Hub) BroadcastLog(level string, message string, context map[string]inte
 
 // OperationLogEntry represents a single log entry for an operation
 type OperationLogEntry struct {
-	Timestamp string                 `json:"timestamp"`
+	Timestamp string                 `json:"timestamp"` // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
 	Level     string                 `json:"level"`  // debug, info, warn, error
 	Step      string                 `json:"step"`   // backup, package, upload, activate, etc.
 	Message   string                 `json:"message"`
 	Details   map[string]interface{} `json:"details,omitempty"`
+	File      string                 `json:"file,omitempty"`  // Source file path
+	Line      int                    `json:"line,omitempty"`  // Source line number
 }
 
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
 func (h *Hub) BroadcastOperationLog(operationType string, pluginID, siteID int64, entry OperationLogEntry) {
 	if entry.Timestamp == "" {
-		entry.Timestamp = utcTimestamp()
+		entry.Timestamp = formatLogTimestamp()
 	}
 	h.Broadcast(EventLog, map[string]interface{}{
 		"operationType": operationType,
