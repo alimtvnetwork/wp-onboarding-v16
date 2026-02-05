@@ -15,6 +15,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // DBManager manages a hierarchical split database structure
@@ -88,18 +90,21 @@ func NewDBManager(cfg Config) (*DBManager, error) {
 	}
 
 	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create data dir: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create data dir").
+			WithContext("path", cfg.DataDir)
 	}
 
-	rootPath := filepath.Join(cfg.DataDir, "root.db")
+	rootPath := pathutil.MustJoin(cfg.DataDir, "root.db")
 	rootDB, err := sql.Open("sqlite3", rootPath+"?_foreign_keys=on&_journal_mode=WAL")
 	if err != nil {
-		return nil, fmt.Errorf("failed to open root db: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open root db").
+			WithContext("path", rootPath)
 	}
 
 	// Configure root DB
 	if err := configureDB(rootDB); err != nil {
-		return nil, fmt.Errorf("failed to configure root db: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to configure root db").
+			WithContext("path", rootPath)
 	}
 
 	manager := &DBManager{
@@ -130,7 +135,8 @@ func configureDB(db *sql.DB) error {
 
 	for _, pragma := range pragmas {
 		if _, err := db.Exec(pragma); err != nil {
-			return fmt.Errorf("failed to execute %s: %w", pragma, err)
+			return apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to execute pragma").
+				WithContext("pragma", pragma)
 		}
 	}
 
@@ -227,17 +233,19 @@ func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB
 	}
 
 	// Ensure directory exists
-	dir := filepath.Dir(filepath.Join(m.dataDir, dbRecord.Path))
+	dir := filepath.Dir(pathutil.MustJoin(m.dataDir, dbRecord.Path))
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create db dir: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create db dir").
+			WithContext("path", dir)
 	}
 
 	// Open the database
-	fullPath := filepath.Join(m.dataDir, dbRecord.Path)
+	fullPath := pathutil.MustJoin(m.dataDir, dbRecord.Path)
 	db, err := sql.Open("sqlite3", fullPath+"?_foreign_keys=on&_journal_mode=WAL")
 	if err != nil {
 		m.log.Error("Failed to open database", "error", err, "path", fullPath)
-		return nil, fmt.Errorf("failed to open db: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open db").
+			WithContext("path", fullPath)
 	}
 
 	if err := configureDB(db); err != nil {
@@ -291,7 +299,8 @@ func (m *DBManager) getOrCreateProject(slug string) (*Project, error) {
 			project.Status, project.CreatedAt, project.UpdatedAt)
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to create project: %w", err)
+			return nil, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create project").
+				WithContext("slug", slug)
 		}
 
 		m.log.Info("Created project", "slug", slug, "id", project.ID)
@@ -333,7 +342,9 @@ func (m *DBManager) getOrCreateDatabase(projectID, dbType, entityID, path string
 		`, db.ID, db.ProjectID, db.Type, db.EntityID, db.Path, db.Status, db.CreatedAt, db.UpdatedAt)
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to create database record: %w", err)
+			return nil, apperror.Wrap(err, apperror.ErrDatabaseInsert, "failed to create database record").
+				WithContext("type", dbType).
+				WithContext("entityId", entityID)
 		}
 	} else if err != nil {
 		return nil, err
@@ -455,9 +466,9 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 	for rows.Next() {
 		var path string
 		rows.Scan(&path)
-		fullPath := filepath.Join(m.dataDir, path)
+		fullPath := pathutil.MustJoin(m.dataDir, path)
 		if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
-			m.log.Warn("Failed to delete archived database file", "path", fullPath, "error", err)
+			m.log.Warn("Failed to delete archived database file", "path", pathutil.ForDisplay(fullPath), "error", err)
 		} else {
 			deleted++
 		}

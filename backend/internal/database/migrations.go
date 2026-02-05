@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // Migration represents a database migration
@@ -224,7 +225,7 @@ func Migrate(db *DB, log *logger.Logger) error {
 	`)
 	if err != nil {
 		log.Error("Failed to create migrations table", "error", err)
-		return fmt.Errorf("failed to create migrations table: %w", err)
+		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to create migrations table")
 	}
 
 	// Get current version
@@ -232,7 +233,7 @@ func Migrate(db *DB, log *logger.Logger) error {
 	err = db.QueryRow("SELECT COALESCE(MAX(Version), 0) FROM _migrations").Scan(&currentVersion)
 	if err != nil {
 		log.Error("Failed to get current migration version", "error", err)
-		return fmt.Errorf("failed to get current migration version: %w", err)
+		return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to get current migration version")
 	}
 
 	log.Debug("Current migration version", "version", currentVersion)
@@ -250,13 +251,16 @@ func Migrate(db *DB, log *logger.Logger) error {
 		tx, err := db.Begin()
 		if err != nil {
 			log.Error("Failed to begin transaction", "version", m.Version, "error", err)
-			return fmt.Errorf("failed to begin transaction for migration %d: %w", m.Version, err)
+			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to begin transaction").
+				WithContext("version", m.Version)
 		}
 
 		if _, err := tx.Exec(m.SQL); err != nil {
 			tx.Rollback()
 			log.Error("Migration SQL failed", "version", m.Version, "description", m.Description, "error", err)
-			return fmt.Errorf("failed to apply migration %d (%s): %w", m.Version, m.Description, err)
+			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to apply migration SQL").
+				WithContext("version", m.Version).
+				WithContext("description", m.Description)
 		}
 
 		if _, err := tx.Exec(
@@ -265,12 +269,14 @@ func Migrate(db *DB, log *logger.Logger) error {
 		); err != nil {
 			tx.Rollback()
 			log.Error("Failed to record migration", "version", m.Version, "error", err)
-			return fmt.Errorf("failed to record migration %d: %w", m.Version, err)
+			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to record migration").
+				WithContext("version", m.Version)
 		}
 
 		if err := tx.Commit(); err != nil {
 			log.Error("Failed to commit migration", "version", m.Version, "error", err)
-			return fmt.Errorf("failed to commit migration %d: %w", m.Version, err)
+			return apperror.Wrap(err, apperror.ErrDatabaseMigrate, "failed to commit migration").
+				WithContext("version", m.Version)
 		}
 
 		log.Info("Migration completed", "version", m.Version)

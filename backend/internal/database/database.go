@@ -10,6 +10,8 @@ import (
 
 	"wp-plugin-publish/internal/database/dbops"
 	"wp-plugin-publish/internal/logger"
+	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 
 	_ "modernc.org/sqlite"
 )
@@ -28,13 +30,22 @@ func New(path string) (*DB, error) {
 	// Ensure directory exists
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create database directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create database directory").
+			WithContext("path", dir)
+	}
+
+	// Resolve absolute path for database file
+	absPath, err := pathutil.ToAbsolute(path)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to resolve database path").
+			WithContext("path", path)
 	}
 
 	// Open database connection with WAL mode (modernc/sqlite uses different driver name)
-	sqlDB, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
+	sqlDB, err := sql.Open("sqlite", absPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open database").
+			WithContext("path", absPath)
 	}
 
 	// Configure for concurrent access
@@ -45,12 +56,13 @@ func New(path string) (*DB, error) {
 
 	// Test connection
 	if err := sqlDB.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to ping database").
+			WithContext("path", absPath)
 	}
 
 	return &DB{
 		DB:       sqlDB,
-		path:     path,
+		path:     absPath,
 		dataDir:  dir,
 		childDBs: make(map[string]*sql.DB),
 	}, nil
@@ -66,7 +78,8 @@ func configureConnection(db *sql.DB) error {
 
 	for _, pragma := range pragmas {
 		if _, err := db.Exec(pragma); err != nil {
-			return fmt.Errorf("failed to execute %s: %w", pragma, err)
+			return apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to execute pragma").
+				WithContext("pragma", pragma)
 		}
 	}
 
@@ -95,19 +108,21 @@ func (db *DB) GetChildDB(dbType, entityID string) (*sql.DB, error) {
 	// Build path for child database
 	var childPath string
 	if entityID == "" {
-		childPath = filepath.Join(db.dataDir, dbType+".db")
+		childPath = pathutil.MustJoin(db.dataDir, dbType+".db")
 	} else {
-		childDir := filepath.Join(db.dataDir, dbType)
+		childDir := pathutil.MustJoin(db.dataDir, dbType)
 		if err := os.MkdirAll(childDir, 0755); err != nil {
-			return nil, fmt.Errorf("failed to create child db directory: %w", err)
+			return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to create child db directory").
+				WithContext("path", childDir)
 		}
-		childPath = filepath.Join(childDir, entityID+".db")
+		childPath = pathutil.MustJoin(childDir, entityID+".db")
 	}
 
 	// Open child database
 	child, err := sql.Open("sqlite", childPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)")
 	if err != nil {
-		return nil, fmt.Errorf("failed to open child database: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseConnect, "failed to open child database").
+			WithContext("path", childPath)
 	}
 
 	if err := configureConnection(child); err != nil {
