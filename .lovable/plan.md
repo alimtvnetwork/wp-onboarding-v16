@@ -153,51 +153,30 @@ Updated `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php`:
 
 ---
 
-## Phase 5: Separated Upload/Activate Stage Reporting
+## Phase 5: Separated Upload/Activate Stage Reporting ✅ COMPLETE
 
 **Priority: MEDIUM - Better Error Visibility**
-**Estimated: 2-3 hours**
-**Depends on: Phase 1**
+**Completed: 2026-02-05**
 
-### 5.1 Enhanced Stage Logging
-Each stage logs with clear separation:
-```
-═══════════════════════════════════════════════════
- STAGE: UPLOAD
-═══════════════════════════════════════════════════
-[INFO] Starting upload to https://example.com
-[INFO] Sending ZIP (143KB) to /riseup-asia-uploader/v1/upload
-[DEBUG] Request: { method: POST, contentType: multipart/form-data }
-[DEBUG] Payload: { slug: category-generator, activate: true }
-[INFO] Response received in 4.2s
-[DEBUG] Response: { success: true, is_update: true, activated: true }
-[SUCCESS] ✓ Upload completed (plugin activated during upload)
+### 5.1 Enhanced Stage Logging ✅
+- [x] Created `StageContext` struct with what/why/where/result fields
+- [x] Implemented `broadcastStageLog()` for structured context logging
+- [x] Added `runStageWithSession()` to integrate with session LogStageStart/End
+- [x] Each stage logs clear request/response context
 
-═══════════════════════════════════════════════════
- STAGE: ACTIVATE (skipped - already activated)
-═══════════════════════════════════════════════════
-```
+### 5.2 Stage Status Broadcasting ✅
+- [x] Implemented `broadcastStageComplete()` for stage_complete events
+- [x] Includes sessionId, stage name, status, duration, and details
+- [x] Frontend can track individual stage completion
 
-### 5.2 Stage Status Broadcasting
-```json
-{
-  "type": "stage_complete",
-  "sessionId": "abc-123",
-  "stage": "upload",
-  "status": "success",
-  "duration": 4200,
-  "details": { 
-    "zipSize": 143386, 
-    "overwritten": true,
-    "activated": true 
-  }
-}
-```
+### 5.3 Helper Utilities ✅
+- [x] `formatBytes()` - Human-readable file sizes in logs
+- [x] `truncateString()` - Limit response body length (2000 chars max)
 
-### 5.3 Clear Error Attribution
-- [ ] Errors clearly show which stage failed
-- [ ] Include full request/response for failed API calls
-- [ ] Session logs contain complete diagnostic info
+### 5.4 Clear Error Attribution ✅
+- [x] Errors include which stage failed
+- [x] Full request/response for failed API calls
+- [x] Session logs contain complete diagnostic info with inner HTTP details
 
 ---
 

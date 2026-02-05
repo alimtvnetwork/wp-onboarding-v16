@@ -309,95 +309,136 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 	// Stage 3: Upload to WordPress
 	var alreadyActivated bool
-	stage = s.runStage("upload", func() error {
-		s.broadcastProgress(pluginID, siteID, "uploading", 60, "Uploading to WordPress...")
-		s.broadcastDetailedLog(pluginID, siteID, "info", "upload", fmt.Sprintf("Uploading to %s as plugin: %s", siteInfo.URL, mapping.RemoteSlug), map[string]interface{}{
-			"targetSite":  siteInfo.URL,
-			"remoteSlug":  mapping.RemoteSlug,
-			"zipPath":     zipPath,
-		})
-		performed, uploadResult, activated, err := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
-		alreadyActivated = activated
-		if err != nil {
-			// Build detailed error diagnostics
-			errorDetails := map[string]interface{}{
-				"error":      err.Error(),
+	var uploadStartTime = time.Now()
+	stage = s.runStageWithSession(sessionID, "upload", func() error {
+		// Get ZIP file info for context
+		var zipSize int64
+		if info, err := os.Stat(zipPath); err == nil {
+			zipSize = info.Size()
+		}
+
+		// Log stage start with structured context
+		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
+			What:  fmt.Sprintf("Uploading ZIP (%s) to WordPress", formatBytes(zipSize)),
+			Why:   fmt.Sprintf("Deploy %s plugin update to production", pluginInfo.Name),
+			Where: fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/upload", siteInfo.URL),
+			InnerData: map[string]interface{}{
 				"zipPath":    zipPath,
+				"zipSize":    zipSize,
 				"remoteSlug": mapping.RemoteSlug,
 				"targetSite": siteInfo.URL,
+				"method":     "POST",
+				"contentType": "multipart/form-data",
+			},
+		})
+
+		s.broadcastProgress(pluginID, siteID, "uploading", 60, "Uploading to WordPress...")
+		performed, uploadResult, activated, err := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
+		alreadyActivated = activated
+
+		if err != nil {
+			// Build detailed error diagnostics with what/why/where/result
+			errorCtx := StageContext{
+				What:   fmt.Sprintf("Upload ZIP to %s", siteInfo.URL),
+				Why:    "Deploy plugin update",
+				Where:  siteInfo.URL,
+				Result: fmt.Sprintf("FAILED: %s", err.Error()),
+				InnerData: map[string]interface{}{
+					"zipPath":    zipPath,
+					"remoteSlug": mapping.RemoteSlug,
+				},
 			}
 			
 			// Extract APIError details if available
 			if apiErr, ok := err.(*wordpress.APIError); ok {
-				errorDetails["request"] = map[string]interface{}{
+				errorCtx.InnerData["request"] = map[string]interface{}{
 					"method":   apiErr.Method,
 					"endpoint": apiErr.Endpoint,
 					"url":      apiErr.URL,
 				}
-				errorDetails["response"] = map[string]interface{}{
+				errorCtx.InnerData["response"] = map[string]interface{}{
 					"status": apiErr.StatusCode,
-					"body":   apiErr.ResponseBody,
+					"body":   truncateString(apiErr.ResponseBody, 2000),
 				}
 				if apiErr.StackTrace != "" {
-					errorDetails["stackTrace"] = apiErr.StackTrace
+					errorCtx.InnerData["stackTrace"] = apiErr.StackTrace
 				}
-				s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", apiErr.FullError()), errorDetails)
 			} else if appErr, ok := err.(*apperror.AppError); ok {
-				// Handle wrapped AppError
-				errorDetails["code"] = appErr.Code
+				errorCtx.InnerData["code"] = appErr.Code
 				if appErr.StackTrace != "" {
-					errorDetails["stackTrace"] = appErr.StackTrace
+					errorCtx.InnerData["stackTrace"] = appErr.StackTrace
 				}
-				// Check if cause is an APIError
 				if cause := appErr.Unwrap(); cause != nil {
 					if apiErr, ok := cause.(*wordpress.APIError); ok {
-						errorDetails["request"] = map[string]interface{}{
+						errorCtx.InnerData["request"] = map[string]interface{}{
 							"method":   apiErr.Method,
 							"endpoint": apiErr.Endpoint,
 							"url":      apiErr.URL,
 						}
-						errorDetails["response"] = map[string]interface{}{
+						errorCtx.InnerData["response"] = map[string]interface{}{
 							"status": apiErr.StatusCode,
-							"body":   apiErr.ResponseBody,
-						}
-						if apiErr.StackTrace != "" {
-							errorDetails["apiStackTrace"] = apiErr.StackTrace
+							"body":   truncateString(apiErr.ResponseBody, 2000),
 						}
 					}
 				}
-				s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", err.Error()), errorDetails)
-			} else {
-				s.broadcastDetailedLog(pluginID, siteID, "error", "upload", fmt.Sprintf("Upload failed: %s", err.Error()), errorDetails)
 			}
+			s.broadcastStageLog(pluginID, siteID, sessionID, "error", "upload", errorCtx)
 			return err
 		}
 
+		// Success logging with detailed result
 		if performed {
-			details := map[string]interface{}{
-				"zipPath":    zipPath,
-				"remoteSlug": mapping.RemoteSlug,
-				"activated":  alreadyActivated,
+			resultMsg := "Plugin uploaded successfully"
+			if alreadyActivated {
+				resultMsg = "Plugin uploaded and activated"
+			}
+			
+			successCtx := StageContext{
+				What:   fmt.Sprintf("Upload ZIP (%s)", formatBytes(zipSize)),
+				Why:    "Deploy plugin update",
+				Where:  siteInfo.URL,
+				Result: resultMsg,
+				InnerData: map[string]interface{}{
+					"remoteSlug":   mapping.RemoteSlug,
+					"activated":    alreadyActivated,
+					"durationMs":   time.Since(uploadStartTime).Milliseconds(),
+				},
 			}
 			if uploadResult != nil {
-				details["uploadResult"] = uploadResult
+				successCtx.InnerData["uploadResponse"] = map[string]interface{}{
+					"success":     uploadResult.Success,
+					"message":     uploadResult.Message,
+					"pluginName":  uploadResult.PluginName,
+					"version":     uploadResult.Version,
+					"overwritten": uploadResult.Overwritten,
+				}
 			}
-			msg := "Upload completed successfully"
-			if alreadyActivated {
-				msg = "Upload completed successfully (plugin activated during upload)"
-			}
-			s.broadcastDetailedLog(pluginID, siteID, "info", "upload", msg, details)
+			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", successCtx)
 			return nil
 		}
 
-		// Companion plugin not installed on the remote site (upload simulated).
-		s.broadcastDetailedLog(pluginID, siteID, "warn", "upload", "Upload simulated (companion endpoint not available on remote)", map[string]interface{}{
-			"zipPath":    zipPath,
-			"remoteSlug": mapping.RemoteSlug,
-			"hint":       "Install the companion plugin on the target WordPress site to enable real ZIP uploads.",
+		// Companion plugin not installed - simulated upload
+		s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "upload", StageContext{
+			What:   "Upload ZIP to WordPress",
+			Why:    "Deploy plugin update",
+			Where:  siteInfo.URL,
+			Result: "SIMULATED - no companion plugin available",
+			InnerData: map[string]interface{}{
+				"zipPath":    zipPath,
+				"remoteSlug": mapping.RemoteSlug,
+				"hint":       "Install the Riseup Asia Uploader plugin on the target WordPress site to enable real uploads",
+			},
 		})
-		return err
+		return nil
 	})
 	result.Stages = append(result.Stages, stage)
+	
+	// Broadcast stage complete event for frontend tracking
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status, stage.Duration, map[string]interface{}{
+		"remoteSlug": mapping.RemoteSlug,
+		"activated":  alreadyActivated,
+	})
+	
 	if stage.Status == "failed" {
 		result.ErrorMessage = stage.Message
 		s.broadcastProgress(pluginID, siteID, "failed", 60, stage.Message)
@@ -406,119 +447,155 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	}
 
 	// Stage 4: Activate plugin
-	stage = s.runStage("activate", func() error {
+	var activateStartTime = time.Now()
+	stage = s.runStageWithSession(sessionID, "activate", func() error {
 		s.broadcastProgress(pluginID, siteID, "activating", 80, "Activating plugin...")
 
 		// If plugin was already activated during upload, skip activation
 		if alreadyActivated {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin already activated during upload - skipping", map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
-				"siteUrl":    siteInfo.URL,
-			})
-			s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated during upload", map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
+			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
+				What:   "Activate plugin on WordPress",
+				Why:    "Enable plugin functionality after upload",
+				Where:  siteInfo.URL,
+				Result: "SKIPPED - plugin activated during upload",
+				InnerData: map[string]interface{}{
+					"remoteSlug": mapping.RemoteSlug,
+					"reason":     "already_activated_during_upload",
+				},
 			})
 			return nil
 		}
 
 		// Try Plugin Uploader Helper first (simpler endpoint)
-		// NOTE: The Riseup Asia Uploader does NOT have separate /enable endpoint - activation happens during upload
-		// So if we get here, we need to use WordPress Core API or Onboard Plugin
 		if available, _ := wpClient.CheckOnboardPluginAvailable(); available {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Activating plugin via Plugin Uploader Helper", map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
-				"siteUrl":    siteInfo.URL,
+			endpointURL := fmt.Sprintf("%s/wp-json/onboard-plugin/v1/plugins/%s/enable", siteInfo.URL, mapping.RemoteSlug)
+			
+			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
+				What:  "Activate plugin via Onboard Plugin API",
+				Why:   "Enable plugin after successful upload",
+				Where: endpointURL,
+				InnerData: map[string]interface{}{
+					"method":     "POST",
+					"remoteSlug": mapping.RemoteSlug,
+				},
 			})
 
 			err := wpClient.EnablePlugin(mapping.RemoteSlug)
 			if err != nil {
-				details := map[string]interface{}{
-					"remoteSlug": mapping.RemoteSlug,
-					"siteUrl":    siteInfo.URL,
-					"method":     "onboard-plugin/v1",
+				errorCtx := StageContext{
+					What:   "Activate plugin via Onboard Plugin",
+					Why:    "Enable plugin after upload",
+					Where:  endpointURL,
+					Result: fmt.Sprintf("FAILED: %s", err.Error()),
+					InnerData: map[string]interface{}{
+						"remoteSlug": mapping.RemoteSlug,
+						"durationMs": time.Since(activateStartTime).Milliseconds(),
+					},
 				}
 				if apiErr, ok := err.(*wordpress.APIError); ok {
-					details["request"] = map[string]interface{}{
+					errorCtx.InnerData["request"] = map[string]interface{}{
 						"method":   apiErr.Method,
 						"endpoint": apiErr.Endpoint,
 						"url":      apiErr.URL,
 					}
-					details["response"] = map[string]interface{}{
+					errorCtx.InnerData["response"] = map[string]interface{}{
 						"status": apiErr.StatusCode,
-						"body":   apiErr.ResponseBody,
+						"body":   truncateString(apiErr.ResponseBody, 2000),
 					}
 				}
-
-				s.broadcastDetailedLog(pluginID, siteID, "error", "activate", fmt.Sprintf("Activation failed: %s", err.Error()), details)
-				s.broadcastStageStatus(pluginID, siteID, "activate", "error", 85, err.Error(), details)
+				s.broadcastStageLog(pluginID, siteID, sessionID, "error", "activate", errorCtx)
 				return err
 			}
 
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully via Onboard Plugin", map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
-				"siteUrl":    siteInfo.URL,
-			})
-			s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated successfully", map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
+			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
+				What:   "Activate plugin via Onboard Plugin",
+				Why:    "Enable plugin after upload",
+				Where:  endpointURL,
+				Result: "SUCCESS - plugin is now active",
+				InnerData: map[string]interface{}{
+					"remoteSlug": mapping.RemoteSlug,
+					"durationMs": time.Since(activateStartTime).Milliseconds(),
+				},
 			})
 			return nil
 		}
 
 		// Fallback to WordPress Core REST API
-		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Activating plugin via WordPress Core API", map[string]interface{}{
-			"remoteSlug": mapping.RemoteSlug,
-			"siteUrl":    siteInfo.URL,
-		})
-
-		// Resolve plugin identifier and activate via Core API
 		resolvedIdentifier := mapping.RemoteSlug
 		if id, resolveErr := wpClient.ResolvePluginIdentifier(mapping.RemoteSlug); resolveErr == nil {
 			resolvedIdentifier = id
 			if resolvedIdentifier != mapping.RemoteSlug {
-				s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Resolved plugin identifier for activation", map[string]interface{}{
-					"remoteSlug":          mapping.RemoteSlug,
-					"resolvedIdentifier":  resolvedIdentifier,
-					"siteUrl":             siteInfo.URL,
+				s.broadcastStageLog(pluginID, siteID, sessionID, "debug", "activate", StageContext{
+					What:   "Resolve plugin identifier",
+					Why:    "WordPress API requires full plugin path",
+					Where:  siteInfo.URL,
+					Result: fmt.Sprintf("Resolved %s → %s", mapping.RemoteSlug, resolvedIdentifier),
 				})
 			}
 		}
 
+		endpointURL := fmt.Sprintf("%s/wp-json/wp/v2/plugins/%s", siteInfo.URL, resolvedIdentifier)
+		
+		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
+			What:  "Activate plugin via WordPress Core API",
+			Why:   "Enable plugin after successful upload (fallback method)",
+			Where: endpointURL,
+			InnerData: map[string]interface{}{
+				"method":             "PUT",
+				"remoteSlug":         mapping.RemoteSlug,
+				"resolvedIdentifier": resolvedIdentifier,
+				"payload":            map[string]string{"status": "active"},
+			},
+		})
+
 		err := wpClient.ActivatePlugin(resolvedIdentifier)
 		if err != nil {
-			details := map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
-				"siteUrl":    siteInfo.URL,
-				"method":     "wp/v2/plugins",
+			errorCtx := StageContext{
+				What:   "Activate plugin via WordPress Core API",
+				Why:    "Enable plugin after upload",
+				Where:  endpointURL,
+				Result: fmt.Sprintf("FAILED: %s", err.Error()),
+				InnerData: map[string]interface{}{
+					"remoteSlug":         mapping.RemoteSlug,
+					"resolvedIdentifier": resolvedIdentifier,
+					"durationMs":         time.Since(activateStartTime).Milliseconds(),
+				},
 			}
 			if apiErr, ok := err.(*wordpress.APIError); ok {
-				details["request"] = map[string]interface{}{
+				errorCtx.InnerData["request"] = map[string]interface{}{
 					"method":   apiErr.Method,
 					"endpoint": apiErr.Endpoint,
 					"url":      apiErr.URL,
 				}
-				details["response"] = map[string]interface{}{
+				errorCtx.InnerData["response"] = map[string]interface{}{
 					"status": apiErr.StatusCode,
-					"body":   apiErr.ResponseBody,
+					"body":   truncateString(apiErr.ResponseBody, 2000),
 				}
 			}
-
-			s.broadcastDetailedLog(pluginID, siteID, "error", "activate", fmt.Sprintf("Activation failed: %s", err.Error()), details)
-			s.broadcastStageStatus(pluginID, siteID, "activate", "error", 85, err.Error(), details)
+			s.broadcastStageLog(pluginID, siteID, sessionID, "error", "activate", errorCtx)
 			return err
 		}
 
-		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully via WordPress Core API", map[string]interface{}{
-			"remoteSlug":         mapping.RemoteSlug,
-			"resolvedIdentifier": resolvedIdentifier,
-			"siteUrl":            siteInfo.URL,
-		})
-		s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated successfully", map[string]interface{}{
-			"remoteSlug":         mapping.RemoteSlug,
-			"resolvedIdentifier": resolvedIdentifier,
+		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
+			What:   "Activate plugin via WordPress Core API",
+			Why:    "Enable plugin after upload",
+			Where:  endpointURL,
+			Result: "SUCCESS - plugin is now active",
+			InnerData: map[string]interface{}{
+				"remoteSlug":         mapping.RemoteSlug,
+				"resolvedIdentifier": resolvedIdentifier,
+				"durationMs":         time.Since(activateStartTime).Milliseconds(),
+			},
 		})
 		return nil
 	})
 	result.Stages = append(result.Stages, stage)
+	
+	// Broadcast stage complete event
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status, stage.Duration, map[string]interface{}{
+		"remoteSlug": mapping.RemoteSlug,
+		"skipped":    alreadyActivated,
+	})
 	if stage.Status == "failed" {
 		result.ActivationStatus = "error"
 		result.ErrorMessage = stage.Message
@@ -706,6 +783,48 @@ func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, sta
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, stage, message, details)
 }
 
+// StageContext provides structured what/why/where/result context for logging
+type StageContext struct {
+	What       string                 // What is being done
+	Why        string                 // Why it's being done
+	Where      string                 // Target URL/path
+	Result     string                 // Outcome description
+	InnerData  map[string]interface{} // HTTP status, response snippets, etc.
+}
+
+// broadcastStageLog sends a detailed log entry with structured what/why/where/result context
+func (s *Service) broadcastStageLog(pluginID, siteID int64, sessionID, level, stage string, ctx StageContext) {
+	details := map[string]interface{}{
+		"what": ctx.What,
+	}
+	if ctx.Why != "" {
+		details["why"] = ctx.Why
+	}
+	if ctx.Where != "" {
+		details["where"] = ctx.Where
+	}
+	if ctx.Result != "" {
+		details["result"] = ctx.Result
+	}
+	if ctx.InnerData != nil {
+		for k, v := range ctx.InnerData {
+			details[k] = v
+		}
+	}
+
+	// Build display message
+	message := ctx.What
+	if ctx.Result != "" {
+		message = fmt.Sprintf("%s → %s", ctx.What, ctx.Result)
+	}
+
+	// Broadcast to WebSocket
+	s.broadcastDetailedLog(pluginID, siteID, level, stage, message, details)
+	
+	// Also log to session
+	s.sessionLog(sessionID, level, stage, message, details)
+}
+
 // broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility
 func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
 	if s.wsHub == nil {
@@ -724,6 +843,81 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	default:
 		s.log.Info(message, "pluginId", pluginID, "siteId", siteID, "step", step)
 	}
+}
+
+// runStageWithSession executes a stage with session logging and captures timing/result
+func (s *Service) runStageWithSession(sessionID, name string, fn func() error) Stage {
+	start := time.Now()
+	stage := Stage{
+		Name:   name,
+		Status: "running",
+	}
+
+	// Log stage start to session
+	if s.sessionService != nil && sessionID != "" {
+		s.sessionService.LogStageStart(sessionID, strings.ToUpper(name))
+	}
+
+	err := fn()
+	stage.Duration = time.Since(start).Milliseconds()
+
+	if err != nil {
+		stage.Status = "failed"
+		stage.Message = err.Error()
+	} else {
+		stage.Status = "completed"
+	}
+
+	// Log stage end to session
+	if s.sessionService != nil && sessionID != "" {
+		s.sessionService.LogStageEnd(sessionID, strings.ToUpper(name), stage.Status, stage.Duration)
+	}
+
+	return stage
+}
+
+// broadcastStageComplete sends a stage_complete event for frontend tracking
+func (s *Service) broadcastStageComplete(pluginID, siteID int64, sessionID, stageName, status string, durationMs int64, details map[string]interface{}) {
+	if s.wsHub == nil {
+		return
+	}
+
+	payload := map[string]interface{}{
+		"type":      "stage_complete",
+		"sessionId": sessionID,
+		"stage":     stageName,
+		"status":    status,
+		"duration":  durationMs,
+		"pluginId":  pluginID,
+		"siteId":    siteID,
+	}
+	if details != nil {
+		payload["details"] = details
+	}
+
+	s.wsHub.Broadcast(ws.EventPublishProgress, payload)
+}
+
+// formatBytes formats byte count as human-readable string
+func formatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+// truncateString truncates a string to maxLen with ellipsis
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }
 
 // createFullZip creates a zip file of the entire plugin directory
