@@ -19,6 +19,7 @@ import { BackupProgressDialog } from "@/components/backup/BackupProgressDialog";
 import { BulkActionsBar } from "@/components/plugins/BulkActionsBar";
 import { GitActionsPanel } from "@/components/plugins/GitActionsPanel";
 import { VersionHistoryPanel } from "@/components/plugins/VersionHistoryPanel";
+ import { ScanDirectoryPanel } from "@/components/plugins/ScanDirectoryPanel";
 import {
   Dialog,
   DialogContent,
@@ -669,6 +670,12 @@ export default function Plugins() {
         </div>
       </div>
 
+       {/* Scan Directory Panel */}
+       <ScanDirectoryPanel
+         existingPlugins={plugins || []}
+         onPluginAdded={() => queryClient.invalidateQueries({ queryKey: ["plugins"] })}
+       />
+ 
       {/* Category Filter */}
       {plugins && plugins.length > 0 && (
         <CategoryFilter

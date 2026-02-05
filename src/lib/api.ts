@@ -503,6 +503,26 @@ export const api = {
     request<{ results: Array<{ pluginId: number; changes: number }> }>(
       `/plugins/scan`, { method: "POST" }
     ),
+ 
+   // Scan directory for WordPress plugin info
+   scanDirectory: (path: string, createDetection?: boolean) =>
+     request<{
+       path: string;
+       isValid: boolean;
+       pluginName?: string;
+       version?: string;
+       mainFile?: string;
+       description?: string;
+       author?: string;
+       textDomain?: string;
+       fileCount: number;
+       totalSize: number;
+       error?: string;
+       detectionCreated?: boolean;
+     }>("/plugins/scan-directory", {
+       method: "POST",
+       body: JSON.stringify({ path, createDetection }),
+     }),
 
   // Sync
   getFileChanges: (pluginId: number, siteId: number) =>
