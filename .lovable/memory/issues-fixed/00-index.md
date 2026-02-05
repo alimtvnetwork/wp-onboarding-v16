@@ -17,6 +17,7 @@
 | SQLite datetime scanning issues | Backend/Database | [06-sqlite-datetime-scanning.md](./06-sqlite-datetime-scanning.md) |
 | Health endpoint format mismatch | Frontend/Backend | [See spec/error-resolution/01-health-endpoint-mismatch.md](../../../spec/error-resolution/01-health-endpoint-mismatch.md) |
 | ZIP finalization race condition | Backend/Publish | [10-zip-finalization-race.md](./10-zip-finalization-race.md) |
+| Activation endpoint 404 mismatch | Backend/Publish | [11-activation-endpoint-mismatch.md](./11-activation-endpoint-mismatch.md) |
 
 ---
 

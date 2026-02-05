@@ -279,6 +279,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	}()
 
 	// Stage 3: Upload to WordPress
+	var alreadyActivated bool
 	stage = s.runStage("upload", func() error {
 		s.broadcastProgress(pluginID, siteID, "uploading", 60, "Uploading to WordPress...")
 		s.broadcastDetailedLog(pluginID, siteID, "info", "upload", fmt.Sprintf("Uploading to %s as plugin: %s", siteInfo.URL, mapping.RemoteSlug), map[string]interface{}{
@@ -286,7 +287,8 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			"remoteSlug":  mapping.RemoteSlug,
 			"zipPath":     zipPath,
 		})
-		performed, uploadResult, err := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
+		performed, uploadResult, activated, err := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
+		alreadyActivated = activated
 		if err != nil {
 			// Build detailed error diagnostics
 			errorDetails := map[string]interface{}{
@@ -345,11 +347,16 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			details := map[string]interface{}{
 				"zipPath":    zipPath,
 				"remoteSlug": mapping.RemoteSlug,
+				"activated":  alreadyActivated,
 			}
 			if uploadResult != nil {
 				details["uploadResult"] = uploadResult
 			}
-			s.broadcastDetailedLog(pluginID, siteID, "info", "upload", "Upload completed successfully", details)
+			msg := "Upload completed successfully"
+			if alreadyActivated {
+				msg = "Upload completed successfully (plugin activated during upload)"
+			}
+			s.broadcastDetailedLog(pluginID, siteID, "info", "upload", msg, details)
 			return nil
 		}
 
@@ -373,50 +380,23 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	stage = s.runStage("activate", func() error {
 		s.broadcastProgress(pluginID, siteID, "activating", 80, "Activating plugin...")
 
-		// Try Plugin Uploader Helper first (simpler endpoint)
-		if available, _ := wpClient.CheckUploaderHelperAvailable(); available {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Activating plugin via Plugin Uploader Helper", map[string]interface{}{
+		// If plugin was already activated during upload, skip activation
+		if alreadyActivated {
+			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin already activated during upload - skipping", map[string]interface{}{
 				"remoteSlug": mapping.RemoteSlug,
 				"siteUrl":    siteInfo.URL,
 			})
-
-			err := wpClient.EnablePluginViaUploader(mapping.RemoteSlug)
-			if err != nil {
-				details := map[string]interface{}{
-					"remoteSlug": mapping.RemoteSlug,
-					"siteUrl":    siteInfo.URL,
-					"method":     "plugin-uploader/v1",
-				}
-				if apiErr, ok := err.(*wordpress.APIError); ok {
-					details["request"] = map[string]interface{}{
-						"method":   apiErr.Method,
-						"endpoint": apiErr.Endpoint,
-						"url":      apiErr.URL,
-					}
-					details["response"] = map[string]interface{}{
-						"status": apiErr.StatusCode,
-						"body":   apiErr.ResponseBody,
-					}
-				}
-
-				s.broadcastDetailedLog(pluginID, siteID, "error", "activate", fmt.Sprintf("Activation failed: %s", err.Error()), details)
-				s.broadcastStageStatus(pluginID, siteID, "activate", "error", 85, err.Error(), details)
-				return err
-			}
-
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully via Plugin Uploader Helper", map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
-				"siteUrl":    siteInfo.URL,
-			})
-			s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated successfully", map[string]interface{}{
+			s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated during upload", map[string]interface{}{
 				"remoteSlug": mapping.RemoteSlug,
 			})
 			return nil
 		}
 
-		// Try Onboard Plugin companion endpoint
+		// Try Plugin Uploader Helper first (simpler endpoint)
+		// NOTE: The Riseup Asia Uploader does NOT have separate /enable endpoint - activation happens during upload
+		// So if we get here, we need to use WordPress Core API or Onboard Plugin
 		if available, _ := wpClient.CheckOnboardPluginAvailable(); available {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Activating plugin via Onboard Plugin companion", map[string]interface{}{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Activating plugin via Plugin Uploader Helper", map[string]interface{}{
 				"remoteSlug": mapping.RemoteSlug,
 				"siteUrl":    siteInfo.URL,
 			})
@@ -455,6 +435,13 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			return nil
 		}
 
+		// Fallback to WordPress Core REST API
+		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Activating plugin via WordPress Core API", map[string]interface{}{
+			"remoteSlug": mapping.RemoteSlug,
+			"siteUrl":    siteInfo.URL,
+		})
+
+		// Resolve plugin identifier and activate via Core API
 		resolvedIdentifier := mapping.RemoteSlug
 		if id, resolveErr := wpClient.ResolvePluginIdentifier(mapping.RemoteSlug); resolveErr == nil {
 			resolvedIdentifier = id
@@ -465,26 +452,14 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 					"siteUrl":             siteInfo.URL,
 				})
 			}
-		} else {
-			s.broadcastDetailedLog(pluginID, siteID, "warn", "activate", "Could not resolve plugin identifier; attempting activation with mapping slug", map[string]interface{}{
-				"remoteSlug": mapping.RemoteSlug,
-				"siteUrl":    siteInfo.URL,
-				"error":      resolveErr.Error(),
-			})
 		}
-
-		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", fmt.Sprintf("Activating plugin: %s", resolvedIdentifier), map[string]interface{}{
-			"remoteSlug":         mapping.RemoteSlug,
-			"resolvedIdentifier": resolvedIdentifier,
-			"siteUrl":            siteInfo.URL,
-		})
 
 		err := wpClient.ActivatePlugin(resolvedIdentifier)
 		if err != nil {
 			details := map[string]interface{}{
-				"remoteSlug":         mapping.RemoteSlug,
-				"resolvedIdentifier": resolvedIdentifier,
-				"siteUrl":            siteInfo.URL,
+				"remoteSlug": mapping.RemoteSlug,
+				"siteUrl":    siteInfo.URL,
+				"method":     "wp/v2/plugins",
 			}
 			if apiErr, ok := err.(*wordpress.APIError); ok {
 				details["request"] = map[string]interface{}{
@@ -499,20 +474,20 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			}
 
 			s.broadcastDetailedLog(pluginID, siteID, "error", "activate", fmt.Sprintf("Activation failed: %s", err.Error()), details)
-			// Critical: ensure the frontend sees the activation stage as failed (so it doesn't get overwritten by cleanup).
 			s.broadcastStageStatus(pluginID, siteID, "activate", "error", 85, err.Error(), details)
-		} else {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully", map[string]interface{}{
-				"remoteSlug":         mapping.RemoteSlug,
-				"resolvedIdentifier": resolvedIdentifier,
-				"siteUrl":            siteInfo.URL,
-			})
-			s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated successfully", map[string]interface{}{
-				"remoteSlug":         mapping.RemoteSlug,
-				"resolvedIdentifier": resolvedIdentifier,
-			})
+			return err
 		}
-		return err
+
+		s.broadcastDetailedLog(pluginID, siteID, "info", "activate", "Plugin activated successfully via WordPress Core API", map[string]interface{}{
+			"remoteSlug":         mapping.RemoteSlug,
+			"resolvedIdentifier": resolvedIdentifier,
+			"siteUrl":            siteInfo.URL,
+		})
+		s.broadcastStageStatus(pluginID, siteID, "activate", "success", 85, "Plugin activated successfully", map[string]interface{}{
+			"remoteSlug":         mapping.RemoteSlug,
+			"resolvedIdentifier": resolvedIdentifier,
+		})
+		return nil
 	})
 	result.Stages = append(result.Stages, stage)
 	if stage.Status == "failed" {
@@ -1001,8 +976,8 @@ func (s *Service) getZipStructure(zipPath string) []string {
 
 // uploadPlugin uploads a plugin zip to WordPress via available methods.
 // Priority: 1) Plugin Uploader Helper (plugin-uploader/v1), 2) Onboard Plugin (onboard-plugin/v1), 3) Simulated
-// Returns (performed, result, error).
-func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, error) {
+// Returns (performed, result, alreadyActivated, error).
+func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, error) {
 	// Check if Plugin Uploader Helper is available (preferred - simpler API)
 	uploaderAvailable, _ := wpClient.CheckUploaderHelperAvailable()
 	if uploaderAvailable {
@@ -1010,7 +985,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 
 		result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true) // pass slug and activate=true
 		if err != nil {
-			return true, nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
+			return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
 		}
 
 		// Convert to OnboardUploadResult for compatibility
@@ -1025,6 +1000,9 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 			onboardResult.Version = result.PluginDetails.Version
 		}
 
+		// Track if activation happened during upload
+		alreadyActivated := result.Activated
+
 		s.log.Info("Plugin uploaded via Plugin Uploader Helper",
 			"slug", slug,
 			"success", result.Success,
@@ -1032,7 +1010,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 			"activated", result.Activated,
 		)
 
-		return true, onboardResult, nil
+		return true, onboardResult, alreadyActivated, nil
 	}
 
 	// Check if Onboard Plugin is available (legacy companion)
@@ -1046,7 +1024,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 
 		result, err := wpClient.UploadPluginZip(zipPath, slug)
 		if err != nil {
-			return true, nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via onboard plugin")
+			return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via onboard plugin")
 		}
 
 		s.log.Info("Plugin uploaded via Onboard Plugin",
@@ -1057,7 +1035,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 			"overwritten", result.Overwritten,
 		)
 
-		return true, result, nil
+		return true, result, false, nil // Onboard plugin doesn't auto-activate
 	}
 
 	// No companion plugin available - log simulated upload
@@ -1065,7 +1043,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 	if info, err := os.Stat(zipPath); err == nil {
 		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", info.Size())
 	}
-	return false, nil, nil
+	return false, nil, false, nil
 }
 
 // getMapping retrieves the plugin-site mapping
