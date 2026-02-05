@@ -94,41 +94,33 @@ All logs must include:
 
 ---
 
-## Phase 3: Fix Duplicate Plugin Issue (WordPress Side)
+## Phase 3: Fix Duplicate Plugin Issue (WordPress Side) ✅ COMPLETE
 
 **Priority: HIGH - Critical Bug Fix**
-**Estimated: 1-2 hours**
+**Status: COMPLETE**
 
 ### 3.1 Root Cause
-The duplicate plugin issue occurs when:
-1. ZIP extraction creates a new folder with the ZIP's internal folder name
-2. This name may differ from the expected plugin slug
-3. WordPress sees two separate plugin directories
+The duplicate plugin issue occurred when:
+1. ZIP extraction created a new folder with the ZIP's internal folder name
+2. This name differed from the expected plugin slug
+3. WordPress saw two separate plugin directories
 
 **Example**: ZIP contains `Category Generator/` but target is `category-generator/`
 
-### 3.2 Fix in WordPress Plugin
-Update `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php`:
+### 3.2 Fix Applied
+Updated `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php`:
 
-```php
-// Current problematic flow:
-$zip->extractTo($plugins_dir);  // Extracts ZIP's folder name directly
+- [x] Modified `handle_upload()` to extract to temp location first
+- [x] Normalize folder name to match slug via rename
+- [x] Added `copy_directory()` fallback for cross-device moves
+- [x] Cleanup temp directory after extraction
 
-// Fixed flow:
-1. Extract to temp directory
-2. Find the extracted folder (whatever name it has)
-3. Remove target folder if exists
-4. Rename/move extracted folder to correct slug path
-```
-
-- [ ] Modify `handle_upload()` to extract to temp location first
-- [ ] Normalize folder name to match slug
-- [ ] Ensure only one plugin folder exists
-
-### 3.3 Backend Verification
-- [ ] After upload, verify only one plugin instance via `/plugins` endpoint
-- [ ] Log warning if duplicates detected
-- [ ] Add optional cleanup flag to remove duplicates
+**Technical Changes**:
+1. Extract ZIP to `temp/extract_{uniqid}/`
+2. Find extracted folder with `glob()`
+3. Delete existing target folder if updating
+4. Rename extracted folder to `WP_PLUGIN_DIR/$slug`
+5. Cleanup temp extraction directory
 
 ---
 
