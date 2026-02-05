@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Globe, Key, RefreshCw, ExternalLink, AlertCircle, CheckCircle2, Lock, History, Trash2, Clock, ArrowRight } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Loader2, Globe, Key, RefreshCw, ExternalLink, AlertCircle, CheckCircle2, Lock, History, Trash2, Clock, ChevronDown, Copy, Check } from "lucide-react";
 import { useSites } from "@/hooks/useSites";
 import { api, requireSuccess } from "@/lib/api";
 import SwaggerUI from "swagger-ui-react";
@@ -34,8 +34,9 @@ export default function ApiExplorer() {
   const [error, setError] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [requestHistory, setRequestHistory] = useState<RequestHistoryItem[]>([]);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const historyIdRef = useRef(0);
-
   const selectedSite = sites?.find((s) => s.id.toString() === selectedSiteId);
 
   // Fetch credentials when site changes
@@ -187,8 +188,26 @@ export default function ApiExplorer() {
 
   const clearHistory = () => {
     setRequestHistory([]);
+    setExpandedItems(new Set());
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const copyToClipboard = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
   const getStatusColor = (status: number) => {
     if (status === 0) return "text-muted-foreground";
     if (status >= 200 && status < 300) return "text-emerald-600 dark:text-emerald-400";
@@ -396,28 +415,99 @@ export default function ApiExplorer() {
                     </div>
                   ) : (
                     <div className="divide-y">
-                      {requestHistory.map((item) => (
-                        <div key={item.id} className="p-3 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className={`text-xs font-mono ${getMethodColor(item.method)}`}>
-                              {item.method}
-                            </Badge>
-                            <span className={`text-sm font-medium ${getStatusColor(item.status)}`}>
-                              {item.status === 0 ? "..." : item.status}
-                            </span>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {item.duration}ms
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate font-mono" title={item.url}>
-                            {item.url.replace(/^https?:\/\/[^/]+/, "")}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {item.timestamp.toLocaleTimeString()}
-                          </p>
-                        </div>
-                      ))}
+                      {requestHistory.map((item) => {
+                        const isExpanded = expandedItems.has(item.id);
+                        const hasDetails = item.requestBody || item.responseBody;
+                        
+                        return (
+                          <Collapsible
+                            key={item.id}
+                            open={isExpanded}
+                            onOpenChange={() => hasDetails && toggleExpand(item.id)}
+                          >
+                            <CollapsibleTrigger asChild disabled={!hasDetails}>
+                              <div className={`p-3 transition-colors ${hasDetails ? 'cursor-pointer hover:bg-muted/50' : ''}`}>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge variant="outline" className={`text-xs font-mono ${getMethodColor(item.method)}`}>
+                                    {item.method}
+                                  </Badge>
+                                  <span className={`text-sm font-medium ${getStatusColor(item.status)}`}>
+                                    {item.status === 0 ? "..." : item.status}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {item.duration}ms
+                                  </span>
+                                  {hasDetails && (
+                                    <ChevronDown className={`h-3 w-3 ml-auto text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate font-mono" title={item.url}>
+                                  {item.url.replace(/^https?:\/\/[^/]+/, "")}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {item.timestamp.toLocaleTimeString()}
+                                </p>
+                              </div>
+                            </CollapsibleTrigger>
+                            
+                            <CollapsibleContent>
+                              <div className="px-3 pb-3 space-y-2">
+                                {item.requestBody && (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-medium text-muted-foreground">Request Body</span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyToClipboard(item.requestBody!, `req-${item.id}`);
+                                        }}
+                                      >
+                                        {copiedId === `req-${item.id}` ? (
+                                          <Check className="h-3 w-3" />
+                                        ) : (
+                                          <Copy className="h-3 w-3" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                    <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto max-h-32 whitespace-pre-wrap break-all">
+                                      {item.requestBody}
+                                    </pre>
+                                  </div>
+                                )}
+                                {item.responseBody && (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-medium text-muted-foreground">Response Body</span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 px-2"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyToClipboard(item.responseBody!, `res-${item.id}`);
+                                        }}
+                                      >
+                                        {copiedId === `res-${item.id}` ? (
+                                          <Check className="h-3 w-3" />
+                                        ) : (
+                                          <Copy className="h-3 w-3" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                    <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto max-h-48 whitespace-pre-wrap break-all">
+                                      {item.responseBody}
+                                    </pre>
+                                  </div>
+                                )}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        );
+                      })}
                     </div>
                   )}
                 </ScrollArea>
