@@ -120,36 +120,36 @@ Updated `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php`:
 
 ---
 
-## Phase 4: Remote Plugin Viewer (See Plugins on Site)
+## Phase 4: Remote Plugin Viewer (See Plugins on Site) ✅ COMPLETE
 
 **Priority: MEDIUM - New Feature**
-**Estimated: 4-5 hours**
+**Completed: 2026-02-05**
 
-### 4.1 Site Card Enhancement
-- [ ] Add "See Plugins" button to SiteCard component
-- [ ] Opens modal/panel showing all plugins on that WordPress site
+### 4.1 Site Card Enhancement ✅
+- [x] Add "Plugins" button to SiteCard component
+- [x] Opens modal/panel showing all plugins on that WordPress site
 
-### 4.2 Remote Plugins Panel Component
-- [ ] Create `src/components/sites/RemotePluginsPanel.tsx`
-- [ ] Table view: Plugin Name, Slug, Version, Status, Author
-- [ ] Actions per plugin:
+### 4.2 Remote Plugins Panel Component ✅
+- [x] Create `src/components/sites/RemotePluginsPanel.tsx`
+- [x] Table view: Plugin Name, Slug, Version, Status, Author
+- [x] Actions per plugin:
   - Enable/Disable toggle
   - Delete (with confirmation)
-  - Backup (download ZIP)
-  - Restore (from backup)
 
-### 4.3 WordPress Plugin Endpoints (New)
-Add to `riseup-asia-uploader.php`:
-- [ ] `POST /plugins/{slug}/enable` - Activate a plugin
-- [ ] `POST /plugins/{slug}/disable` - Deactivate a plugin
-- [ ] `DELETE /plugins/{slug}` - Delete a plugin
-- [ ] `GET /plugins/{slug}/export` - Download plugin as ZIP
+### 4.3 Backend Implementation ✅
+- [x] Added `DeletePlugin` method to WordPress client
+- [x] Added remote plugin methods to site service:
+  - `GetRemotePlugins(siteID)` - List all plugins
+  - `EnableRemotePlugin(siteID, slug)` - Activate
+  - `DisableRemotePlugin(siteID, slug)` - Deactivate
+  - `DeleteRemotePlugin(siteID, slug)` - Remove
+- [x] Added `ErrWPPluginDelete` error code
 
-### 4.4 Backend Proxy Endpoints
-- [ ] `GET /api/sites/{id}/remote-plugins` - Fetch plugins from site
-- [ ] `POST /api/sites/{id}/remote-plugins/{slug}/enable`
-- [ ] `POST /api/sites/{id}/remote-plugins/{slug}/disable`
-- [ ] `DELETE /api/sites/{id}/remote-plugins/{slug}`
+### 4.4 Backend API Endpoints ✅
+- [x] `GET /api/v1/sites/{id}/remote-plugins` - Fetch plugins from site
+- [x] `POST /api/v1/sites/{id}/remote-plugins/{plugin}/enable`
+- [x] `POST /api/v1/sites/{id}/remote-plugins/{plugin}/disable`
+- [x] `DELETE /api/v1/sites/{id}/remote-plugins/{plugin}`
 
 ---
 

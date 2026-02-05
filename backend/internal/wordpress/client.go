@@ -498,6 +498,42 @@ func (c *Client) DeactivatePlugin(slug string) error {
 	return nil
 }
 
+// DeletePlugin deletes a plugin from WordPress
+func (c *Client) DeletePlugin(slug string) error {
+	resolvedID, resolveErr := c.ResolvePluginIdentifier(slug)
+	if resolveErr != nil {
+		resolvedID = slug
+	}
+
+	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(resolvedID)
+	resp, err := c.request("DELETE", endpoint, nil)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// 200 OK or 204 No Content are both success
+	if resp.StatusCode != 200 && resp.StatusCode != 204 {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		body := string(bodyBytes)
+		if len(body) > 8192 {
+			body = body[:8192] + "..."
+		}
+		return &APIError{
+			Operation:    "failed to delete plugin",
+			Method:       "DELETE",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: body,
+			PluginSlugIn: slug,
+			PluginIDUsed: resolvedID,
+		}
+	}
+
+	return nil
+}
+
 // ConnectionInfo represents WordPress connection details
 type ConnectionInfo struct {
 	Connected        bool     `json:"connected"`
