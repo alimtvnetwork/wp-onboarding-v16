@@ -24,6 +24,7 @@ type ServiceRegistry struct {
 	WatcherService  WatcherServiceInterface
 	PublishService  PublishServiceInterface
 	BackupService   BackupServiceInterface
+	SessionService  SessionServiceInterface
 }
 
 // PluginServiceInterface defines plugin service methods needed by handlers

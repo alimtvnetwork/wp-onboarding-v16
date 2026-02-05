@@ -37,6 +37,7 @@ type ServiceRegistry struct {
 	Watcher handlers.WatcherServiceInterface
 	Publish handlers.PublishServiceInterface
 	Backup  handlers.BackupServiceInterface
+	Session handlers.SessionServiceInterface
 }
 
 // Server represents the HTTP server
@@ -57,6 +58,7 @@ func NewServer(cfg ServerConfig) *Server {
 			WatcherService: cfg.Services.Watcher,
 			PublishService: cfg.Services.Publish,
 			BackupService:  cfg.Services.Backup,
+			SessionService: cfg.Services.Session,
 		}
 	}
 
@@ -143,6 +145,12 @@ func NewServer(cfg ServerConfig) *Server {
 
 	// Mappings endpoints
 	api.HandleFunc("/mappings/{id}", handlers.DeletePluginMapping).Methods("DELETE")
+
+	// Session endpoints
+	api.HandleFunc("/sessions", handlers.GetSessions).Methods("GET")
+	api.HandleFunc("/sessions/{id}", handlers.GetSession).Methods("GET")
+	api.HandleFunc("/sessions/{id}/logs", handlers.GetSessionLogs).Methods("GET")
+	api.HandleFunc("/sessions/{id}", handlers.DeleteSession).Methods("DELETE")
 
 	// E2E Testing endpoints
 	api.HandleFunc("/e2e/suites", handlers.GetE2ESuites).Methods("GET")

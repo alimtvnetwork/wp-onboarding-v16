@@ -30,6 +30,15 @@ type SitePasswordDecryptor interface {
 	GetDecryptedPassword(ctx context.Context, siteID int64) (string, error)
 }
 
+// SessionLogger interface for session-based logging
+type SessionLogger interface {
+	StartSession(sessionType interface{}, pluginID, siteID int64, pluginName, siteName string) (string, error)
+	Log(sessionID, level, step, message string, details map[string]interface{})
+	LogStageStart(sessionID, stageName string)
+	LogStageEnd(sessionID, stageName, status string, durationMs int64)
+	EndSession(sessionID, status, errorMsg string)
+}
+
 // Config holds publish service configuration
 type Config struct {
 	DB                    *database.DB
@@ -41,6 +50,7 @@ type Config struct {
 	WPClientFactory       func(url, user, pass string) *wordpress.Client
 	TempDir               string
 	WSHub                 *ws.Hub
+	SessionService        SessionLogger
 }
 
 // Service provides plugin publishing operations
@@ -54,6 +64,7 @@ type Service struct {
 	wpClientFactory       func(url, user, pass string) *wordpress.Client
 	tempDir               string
 	wsHub                 *ws.Hub
+	sessionService        SessionLogger
 }
 
 // New creates a new publish service
@@ -68,6 +79,7 @@ func New(cfg Config) *Service {
 		wpClientFactory:       cfg.WPClientFactory,
 		tempDir:               cfg.TempDir,
 		wsHub:                 cfg.WSHub,
+		sessionService:        cfg.SessionService,
 	}
 }
 
@@ -82,6 +94,7 @@ type PublishOptions struct {
 // PublishResult represents the result of a publish operation
 type PublishResult struct {
 	Success          bool     `json:"success"`
+	SessionID        string   `json:"sessionId,omitempty"`
 	FilesUpdated     int      `json:"filesUpdated"`
 	BackupID         *int64   `json:"backupId,omitempty"`
 	ActivationStatus string   `json:"activationStatus"` // active, inactive, error
@@ -128,10 +141,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		Stages:           []Stage{},
 	}
 
-	// Broadcast start event
-	s.broadcastProgress(pluginID, siteID, "started", 0, "Starting publish...")
-
-	// Get plugin info
+	// Get plugin info early to have name for session
 	pluginInfo, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
@@ -139,19 +149,38 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		return result, nil
 	}
 
-	// Get mapping to find remote slug and site info
-	mapping, err := s.getMapping(ctx, pluginID, siteID)
+	// Get site info early to have name for session
+	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
 		s.broadcastProgress(pluginID, siteID, "failed", 0, err.Error())
 		return result, nil
 	}
 
-	// Get site credentials
-	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
+	// Start session for this publish operation
+	var sessionID string
+	if s.sessionService != nil {
+		sessionID, err = s.sessionService.StartSession("publish", pluginID, siteID, pluginInfo.Name, siteInfo.Name)
+		if err != nil {
+			s.log.Warn("Failed to start session", "error", err)
+		} else {
+			result.SessionID = sessionID
+		}
+	}
+
+	// Broadcast start event with session ID
+	s.broadcastProgressWithSession(pluginID, siteID, sessionID, "started", 0, "Starting publish...")
+
+	// Log session start
+	s.sessionLog(sessionID, "info", "init", fmt.Sprintf("Starting publish for %s to %s", pluginInfo.Name, siteInfo.Name), nil)
+
+	// Get mapping to find remote slug and site info
+	mapping, err := s.getMapping(ctx, pluginID, siteID)
 	if err != nil {
 		result.ErrorMessage = err.Error()
-		s.broadcastProgress(pluginID, siteID, "failed", 0, err.Error())
+		s.sessionLog(sessionID, "error", "init", fmt.Sprintf("Failed to get mapping: %s", err.Error()), nil)
+		s.endSession(sessionID, "error", err.Error())
+		s.broadcastProgressWithSession(pluginID, siteID, sessionID, "failed", 0, err.Error())
 		return result, nil
 	}
 
@@ -1145,4 +1174,101 @@ func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
 		return v
 	}
 	return defaultVal
+}
+
+// Session logging helper methods
+
+// sessionLog writes a log entry to the session file
+func (s *Service) sessionLog(sessionID, level, step, message string, details map[string]interface{}) {
+	if s.sessionService == nil || sessionID == "" {
+		return
+	}
+	s.sessionService.Log(sessionID, level, step, message, details)
+}
+
+// sessionLogStageStart writes a stage header to the session log
+func (s *Service) sessionLogStageStart(sessionID, stageName string) {
+	if s.sessionService == nil || sessionID == "" {
+		return
+	}
+	s.sessionService.LogStageStart(sessionID, stageName)
+}
+
+// sessionLogStageEnd writes a stage completion marker
+func (s *Service) sessionLogStageEnd(sessionID, stageName, status string, durationMs int64) {
+	if s.sessionService == nil || sessionID == "" {
+		return
+	}
+	s.sessionService.LogStageEnd(sessionID, stageName, status, durationMs)
+}
+
+// endSession marks a session as complete
+func (s *Service) endSession(sessionID, status, errorMsg string) {
+	if s.sessionService == nil || sessionID == "" {
+		return
+	}
+	s.sessionService.EndSession(sessionID, status, errorMsg)
+}
+
+// broadcastProgressWithSession sends a WebSocket progress event with session ID
+func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID, step string, progress int, message string) {
+	if s.wsHub == nil {
+		return
+	}
+
+	// Determine event type based on step
+	eventType := ws.EventPublishProgress
+	if step == "started" {
+		eventType = ws.EventPublishStarted
+	} else if step == "completed" || step == "failed" {
+		eventType = ws.EventPublishComplete
+	}
+
+	// Map step names to stage names for frontend compatibility
+	stage := step
+	switch step {
+	case "started":
+		stage = "backup"
+	case "packaging":
+		stage = "package"
+	case "uploading":
+		stage = "upload"
+	case "activating":
+		stage = "activate"
+	case "cleanup":
+		stage = "cleanup"
+	}
+
+	// Determine status for the current stage
+	status := "running"
+	if step == "completed" {
+		status = "success"
+	} else if step == "failed" {
+		status = "error"
+	}
+
+	// Broadcast progress event with session ID
+	s.wsHub.BroadcastWithSession(eventType, map[string]interface{}{
+		"pluginId":  pluginID,
+		"siteId":    siteID,
+		"sessionId": sessionID,
+		"stage":     stage,
+		"step":      step,
+		"status":    status,
+		"progress":  progress,
+		"total":     100,
+		"message":   message,
+	}, sessionID)
+
+	// Also broadcast detailed log entry for frontend live log display
+	logLevel := "info"
+	if step == "failed" {
+		logLevel = "error"
+	}
+	s.wsHub.BroadcastPublishLogWithSession(pluginID, siteID, sessionID, logLevel, stage, message, nil)
+
+	// Also log to session file
+	s.sessionLog(sessionID, logLevel, stage, message, nil)
+
+	s.log.Debug("Publish progress", "pluginId", pluginID, "siteId", siteID, "sessionId", sessionID, "step", step, "stage", stage, "progress", progress, "message", message)
 }

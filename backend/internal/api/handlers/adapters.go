@@ -8,6 +8,7 @@ import (
 	"wp-plugin-publish/internal/services/backup"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
+	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
@@ -270,6 +271,27 @@ func (a *BackupServiceAdapter) Delete(ctx context.Context, backupID int64) error
 	return a.Service.Delete(ctx, backupID)
 }
 
+// SessionServiceAdapter wraps *session.Service to implement SessionServiceInterface
+type SessionServiceAdapter struct {
+	*session.Service
+}
+
+func (a *SessionServiceAdapter) ListSessions(limit int) (interface{}, error) {
+	return a.Service.ListSessions(limit)
+}
+
+func (a *SessionServiceAdapter) GetSession(sessionID string) (interface{}, error) {
+	return a.Service.GetSession(sessionID)
+}
+
+func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, error) {
+	return a.Service.GetSessionLogs(sessionID)
+}
+
+func (a *SessionServiceAdapter) DeleteSession(sessionID string) error {
+	return a.Service.DeleteSession(sessionID)
+}
+
 // NewServiceRegistry creates a ServiceRegistry from concrete service implementations
 func NewServiceRegistry(
 	siteService *site.Service,
@@ -279,7 +301,13 @@ func NewServiceRegistry(
 	watcherService *watcher.Service,
 	publishService *publish.Service,
 	backupService *backup.Service,
+	sessionService *session.Service,
 ) *ServiceRegistry {
+	var sessionAdapter SessionServiceInterface
+	if sessionService != nil {
+		sessionAdapter = &SessionServiceAdapter{sessionService}
+	}
+	
 	return &ServiceRegistry{
 		SiteService:    &SiteServiceAdapter{siteService},
 		PluginService:  &PluginServiceAdapter{pluginService},
@@ -288,6 +316,7 @@ func NewServiceRegistry(
 		WatcherService: &WatcherServiceAdapter{watcherService},
 		PublishService: &PublishServiceAdapter{publishService},
 		BackupService:  &BackupServiceAdapter{backupService},
+		SessionService: sessionAdapter,
 	}
 }
 
@@ -390,6 +419,7 @@ var _ SyncServiceInterface = (*SyncServiceAdapter)(nil)
 var _ WatcherServiceInterface = (*WatcherServiceAdapter)(nil)
 var _ PublishServiceInterface = (*PublishServiceAdapter)(nil)
 var _ BackupServiceInterface = (*BackupServiceAdapter)(nil)
+var _ SessionServiceInterface = (*SessionServiceAdapter)(nil)
 
 // Placeholder types to satisfy imports (actual types come from models package)
 var _ = models.Site{}
