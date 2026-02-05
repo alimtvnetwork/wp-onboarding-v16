@@ -65,16 +65,6 @@ type SiteServiceInterface interface {
 	// Credentials for API Explorer
 	GetCredentials(ctx context.Context, siteID int64) (interface{}, error)
 }
-	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (interface{}, error)
-	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (interface{}, error)
-	// Remote plugin management
-	GetRemotePlugins(ctx context.Context, siteID int64) (interface{}, error)
-	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
-	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
-	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
-	// Credentials for API Explorer
-	GetCredentials(ctx context.Context, siteID int64) (interface{}, error)
-}
 
 // SyncServiceInterface defines sync service methods
 type SyncServiceInterface interface {
@@ -563,6 +553,7 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondSuccess(w, map[string]interface{}{"cleared": true, "siteId": id})
+}
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
