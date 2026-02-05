@@ -17,6 +17,7 @@ import (
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // FileChange represents a detected file modification
@@ -297,7 +298,8 @@ func (s *Service) populateCache(cache *pluginScanCache) {
 		}
 
 		relPath, _ := filepath.Rel(cache.path, path)
-		hash, _ := s.calculateHash(path)
+		absPath, _ := pathutil.ToAbsolute(path)
+		hash, _ := s.calculateHash(absPath)
 
 		cache.lastScan[relPath] = fileInfo{
 			ModTime: info.ModTime().Unix(),
@@ -335,7 +337,8 @@ func (s *Service) scanAndCompare(cache *pluginScanCache) []FileChange {
 		}
 
 		relPath, _ := filepath.Rel(cache.path, path)
-		hash, _ := s.calculateHash(path)
+		absPath, _ := pathutil.ToAbsolute(path)
+		hash, _ := s.calculateHash(absPath)
 
 		fi := fileInfo{
 			ModTime: info.ModTime().Unix(),

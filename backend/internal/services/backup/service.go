@@ -15,6 +15,8 @@ import (
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // Config holds backup service configuration
@@ -71,7 +73,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	// Generate backup filename with timestamp
 	timestamp := time.Now().Format("20060102-150405")
 	filename := fmt.Sprintf("backup-%d-%s.zip", mappingID, timestamp)
-	backupPath := filepath.Join(s.backupDir, filename)
+	backupPath := pathutil.MustJoin(s.backupDir, filename)
 
 	s.broadcastLog(mappingID, "info", "prepare", fmt.Sprintf("Preparing backup file: %s", filename), nil)
 
@@ -80,7 +82,8 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	file, err := os.Create(backupPath)
 	if err != nil {
 		s.broadcastLog(mappingID, "error", "create", fmt.Sprintf("Failed to create backup file: %v", err), nil)
-		return nil, fmt.Errorf("failed to create backup file: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrBackupCreate, "failed to create backup file").
+			WithContext("path", backupPath)
 	}
 	file.Close()
 
@@ -204,7 +207,8 @@ func (s *Service) Cleanup(ctx context.Context) error {
 
 	if err != nil {
 		s.broadcastLog(0, "error", "cleanup", fmt.Sprintf("Cleanup failed: %v", err), nil)
-		return fmt.Errorf("cleanup failed: %w", err)
+		return apperror.Wrap(err, apperror.ErrFSRead, "cleanup failed").
+			WithContext("backupDir", s.backupDir)
 	}
 
 	s.log.Info("Backup cleanup complete")
@@ -233,14 +237,16 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	// Ensure output directory exists
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create output directory: %v", err), nil)
-		return nil, fmt.Errorf("failed to create output directory: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
+			WithContext("path", outputPath)
 	}
 
 	// Create zip file
 	zipFile, err := os.Create(outputPath)
 	if err != nil {
 		s.broadcastLog(0, "error", "create", fmt.Sprintf("Failed to create zip file: %v", err), nil)
-		return nil, fmt.Errorf("failed to create zip file: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file").
+			WithContext("path", outputPath)
 	}
 	defer zipFile.Close()
 
@@ -271,7 +277,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 				}
 
 				relPath, _ := filepath.Rel(sourcePath, path)
-				zipPath := filepath.Join(baseDir, relPath)
+				zipPath := filepath.ToSlash(filepath.Join(baseDir, relPath))
 
 				written, err := s.addFileToZip(zipWriter, path, zipPath)
 				if err != nil {
@@ -359,20 +365,23 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 	reader, err := zip.OpenReader(zipPath)
 	if err != nil {
 		s.broadcastLog(0, "error", "open", fmt.Sprintf("Failed to open zip: %v", err), nil)
-		return nil, fmt.Errorf("failed to open zip: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip").
+			WithContext("path", zipPath)
 	}
 	defer reader.Close()
 
 	// Check if destination exists
 	if _, err := os.Stat(destDir); err == nil && !overwrite {
 		s.broadcastLog(0, "error", "check", "Destination exists, overwrite not enabled", nil)
-		return nil, fmt.Errorf("destination exists, use overwrite=true to replace")
+		return nil, apperror.New(apperror.ErrFSWrite, "destination exists, use overwrite=true to replace").
+			WithContext("path", destDir)
 	}
 
 	// Create destination directory
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create destination: %v", err), nil)
-		return nil, fmt.Errorf("failed to create destination: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create destination").
+			WithContext("path", destDir)
 	}
 
 	var filesCount int
@@ -387,7 +396,7 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		}
 
 		// Security: prevent zip slip attacks
-		destPath := filepath.Join(destDir, file.Name)
+		destPath := pathutil.MustJoin(destDir, file.Name)
 		if !strings.HasPrefix(destPath, filepath.Clean(destDir)+string(os.PathSeparator)) {
 			s.log.Warn("Skipping potentially dangerous file path", "path", file.Name)
 			s.broadcastLog(0, "warn", "security", fmt.Sprintf("Skipping dangerous path: %s", file.Name), nil)
@@ -399,14 +408,17 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		// Create directory structure
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			s.broadcastLog(0, "error", "mkdir", fmt.Sprintf("Failed to create directory: %v", err), nil)
-			return nil, fmt.Errorf("failed to create directory: %w", err)
+			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create directory").
+				WithContext("path", destPath)
 		}
 
 		// Extract file
 		written, err := s.extractFile(file, destPath)
 		if err != nil {
 			s.broadcastLog(0, "error", "extract", fmt.Sprintf("Failed to extract %s: %v", file.Name, err), nil)
-			return nil, fmt.Errorf("failed to extract %s: %w", file.Name, err)
+			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to extract file").
+				WithContext("file", file.Name).
+				WithContext("destPath", destPath)
 		}
 
 		filesCount++

@@ -82,3 +82,28 @@ s.broadcastDetailedLog(pluginID, siteID, "info", "upload",
 ---
 
 *Last Updated: 2026-02-05*
+
+## Prohibited Patterns
+
+The following patterns are **PROHIBITED** in Go backend code:
+
+| Pattern | Replacement |
+|---------|-------------|
+| `filepath.Join()` for external paths | `pathutil.Join()` or `pathutil.MustJoin()` |
+| `filepath.Abs()` | `pathutil.ToAbsolute()` |
+| Raw paths in logs | `pathutil.ForDisplay()` |
+
+**Exception:** `filepath.Join()` may be used for relative path calculations within a function (e.g., inside `filepath.Walk`) but the final result MUST be converted to absolute before passing to external systems.
+
+## Files Updated (Phase 1-3)
+
+All files in these packages have been refactored to use `pathutil`:
+- `backend/internal/wordpress/` - client.go, uploader.go
+- `backend/internal/services/publish/` - service.go
+- `backend/internal/services/backup/` - service.go
+- `backend/internal/services/plugin/` - scanner.go
+- `backend/internal/services/git/` - service.go
+- `backend/internal/services/watcher/` - service.go
+- `backend/internal/services/sync/` - service.go
+- `backend/internal/database/` - database.go, migrations.go
+- `backend/internal/database/splitdb/` - manager.go

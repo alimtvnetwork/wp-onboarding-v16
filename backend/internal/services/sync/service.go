@@ -18,6 +18,7 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // Service interface for sync operations
@@ -330,7 +331,13 @@ func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
 func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string) (map[string]string, error) {
 	files := make(map[string]string)
 
-	err := filepath.Walk(pluginPath, func(path string, info os.FileInfo, err error) error {
+	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path").
+			WithContext("path", pluginPath)
+	}
+
+	err = filepath.Walk(absPluginPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil // Skip files we can't access
 		}
@@ -345,7 +352,7 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 			return nil
 		}
 
-		relPath, err := filepath.Rel(pluginPath, path)
+		relPath, err := filepath.Rel(absPluginPath, path)
 		if err != nil {
 			return nil
 		}

@@ -160,12 +160,14 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status request failed: status %d", resp.StatusCode)
+		return nil, apperror.New(apperror.ErrWPConnection, "status request failed").
+			WithContext("statusCode", resp.StatusCode).
+			WithContext("endpoint", endpoint)
 	}
 
 	var status UploaderStatus
 	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
-		return nil, fmt.Errorf("decode status: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode status response")
 	}
 
 	return &status, nil

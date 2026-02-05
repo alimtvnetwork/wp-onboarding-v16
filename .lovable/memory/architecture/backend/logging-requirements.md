@@ -169,3 +169,38 @@ Use "RiseupAsia" (one word, lowercase "up") consistently throughout the codebase
 ---
 
 *Last Updated: 2026-02-05*
+
+## Structured Error Requirements
+
+The following patterns are **PROHIBITED** in Go backend code:
+
+| Pattern | Replacement |
+|---------|-------------|
+| `fmt.Errorf()` for wrapped errors | `apperror.Wrap(err, code, message)` |
+| `errors.New()` for new errors | `apperror.New(code, message)` |
+| Plain error strings in WordPress | `APIError{}` struct |
+
+### Error Code Categories
+
+- `E1xxx` - Configuration errors
+- `E2xxx` - Database errors
+- `E3xxx` - WordPress API errors
+- `E4xxx` - File system errors
+- `E5xxx` - Sync errors
+- `E6xxx` - Backup errors
+- `E7xxx` - Git errors
+- `E8xxx` - Build errors
+- `E9xxx` - General errors
+
+### Files Updated (Phase 1-3)
+
+All files in these packages have been refactored to use `apperror`:
+- `backend/internal/wordpress/` - client.go, uploader.go
+- `backend/internal/services/backup/` - service.go
+- `backend/internal/database/` - database.go, migrations.go
+- `backend/internal/database/splitdb/` - manager.go
+
+The `apperror.Wrap()` function automatically captures:
+- Stack trace
+- File/line/function location
+- Context key-value pairs

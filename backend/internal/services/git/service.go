@@ -20,6 +20,7 @@ import (
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // PullResult represents the outcome of a git pull operation
@@ -135,8 +136,8 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	})
 
 	// Check if directory is a git repo
-	gitDir := filepath.Join(p.Path, ".git")
-	if !dirExists(gitDir) {
+	gitDir := pathutil.MustJoin(p.Path, ".git")
+	if !pathutil.IsDir(gitDir) {
 		result.Success = false
 		result.Error = "not a git repository"
 		result.Duration = time.Since(startTime).Milliseconds()
@@ -214,8 +215,8 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 
 	for _, p := range plugins {
 		// Check if git directory exists
-		gitDir := filepath.Join(p.Path, ".git")
-		if !dirExists(gitDir) {
+		gitDir := pathutil.MustJoin(p.Path, ".git")
+		if !pathutil.IsDir(gitDir) {
 			continue
 		}
 
@@ -394,8 +395,8 @@ func (s *Service) Status(ctx context.Context, pluginID int64) (*StatusResult, er
 	result := &StatusResult{PluginID: pluginID}
 
 	// Check if git repo
-	gitDir := filepath.Join(p.Path, ".git")
-	if !dirExists(gitDir) {
+	gitDir := pathutil.MustJoin(p.Path, ".git")
+	if !pathutil.IsDir(gitDir) {
 		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
@@ -457,8 +458,8 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*
 	result := &CommitResult{PluginID: pluginID}
 
 	// Check if git repo
-	gitDir := filepath.Join(p.Path, ".git")
-	if !dirExists(gitDir) {
+	gitDir := pathutil.MustJoin(p.Path, ".git")
+	if !pathutil.IsDir(gitDir) {
 		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
@@ -510,8 +511,8 @@ func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error)
 	result := &PushResult{PluginID: pluginID}
 
 	// Check if git repo
-	gitDir := filepath.Join(p.Path, ".git")
-	if !dirExists(gitDir) {
+	gitDir := pathutil.MustJoin(p.Path, ".git")
+	if !pathutil.IsDir(gitDir) {
 		return nil, apperror.New(apperror.ErrGitNotRepo, "directory is not a git repository")
 	}
 
@@ -578,7 +579,3 @@ func (s *Service) parseGitOutput(output string, result *PullResult) {
 	}
 }
 
-func dirExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
-}

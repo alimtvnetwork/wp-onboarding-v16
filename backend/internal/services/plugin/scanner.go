@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 const pluginDetectedFile = "wp-plugin-detected.json"
@@ -29,7 +30,7 @@ func (s *Service) ScanDirectory(ctx context.Context, path string) (*ScanResult, 
 	}
 
 	// Check if .plugin-detected.json exists first
-	detectedPath := filepath.Join(path, pluginDetectedFile)
+	detectedPath := pathutil.MustJoin(path, pluginDetectedFile)
 	if _, err := os.Stat(detectedPath); err == nil {
 		detected, err := s.readPluginDetected(detectedPath)
 		if err == nil {
@@ -157,7 +158,7 @@ func (s *Service) WritePluginDetected(ctx context.Context, path string) error {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to marshal plugin detected")
 	}
 
-	detectedPath := filepath.Join(path, pluginDetectedFile)
+	detectedPath := pathutil.MustJoin(path, pluginDetectedFile)
 	if err := os.WriteFile(detectedPath, data, 0644); err != nil {
 		return apperror.Wrap(err, apperror.ErrFSWrite, "failed to write plugin detected file")
 	}
@@ -226,7 +227,7 @@ func (s *Service) findMainPluginFile(path string) (*pluginHeaderInfo, error) {
 			continue
 		}
 
-		filePath := filepath.Join(path, entry.Name())
+		filePath := pathutil.MustJoin(path, entry.Name())
 		file, err := os.Open(filePath)
 		if err != nil {
 			continue
