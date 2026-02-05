@@ -1509,7 +1509,9 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 		return nil, apperror.Wrap(err, apperror.ErrNotFound, "plugin not found")
 	}
 	result.PluginName = pluginInfo.Name
-	result.LocalVersion = pluginInfo.Version
+	
+	// Get local version from plugin header file
+	result.LocalVersion = s.getLocalPluginVersion(pluginInfo.Path)
 
 	// Get site info and password
 	siteInfo, password, err := s.getSiteCredentials(ctx, siteID)
@@ -1594,7 +1596,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 	
 	// Try to get remote plugin version
-	remotePlugins, err := wpClient.ListPluginsViaUploader(ctx)
+	remotePlugins, err := wpClient.ListPluginsViaUploader()
 	if err == nil {
 		for _, rp := range remotePlugins {
 			if rp.Slug == mapping.RemoteSlug {
@@ -1605,7 +1607,7 @@ func (s *Service) PreviewPublish(ctx context.Context, pluginID, siteID int64) (*
 	}
 	// Fallback: try WordPress core API if version not found
 	if result.RemoteVersion == "" {
-		remotePluginInfo, err := wpClient.GetPlugin(ctx, mapping.RemoteSlug)
+		remotePluginInfo, err := wpClient.GetPlugin(mapping.RemoteSlug)
 		if err == nil && remotePluginInfo != nil {
 			result.RemoteVersion = remotePluginInfo.Version
 		}
@@ -1758,4 +1760,61 @@ func (s *Service) GetFileDiff(ctx context.Context, pluginID, siteID int64, fileP
 	}
 
 	return result, nil
+}
+
+// getLocalPluginVersion extracts the version from a WordPress plugin's main PHP file header
+func (s *Service) getLocalPluginVersion(pluginPath string) string {
+	absPath, err := pathutil.ToAbsolute(pluginPath)
+	if err != nil {
+		return ""
+	}
+
+	// Look for main plugin file (usually matching folder name or contains "Plugin Name:" header)
+	entries, err := os.ReadDir(absPath)
+	if err != nil {
+		return ""
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
+			continue
+		}
+
+		filePath := pathutil.MustJoin(absPath, entry.Name())
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			continue
+		}
+
+		contentStr := string(content)
+		
+		// Check if this is a main plugin file (has Plugin Name header)
+		if !strings.Contains(contentStr, "Plugin Name:") {
+			continue
+		}
+
+		// Extract version from "Version: X.Y.Z" header
+		lines := strings.Split(contentStr, "\n")
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if strings.HasPrefix(trimmed, "* Version:") || strings.HasPrefix(trimmed, "*Version:") {
+				version := strings.TrimPrefix(trimmed, "* Version:")
+				version = strings.TrimPrefix(version, "*Version:")
+				version = strings.TrimSpace(version)
+				if version != "" {
+					return version
+				}
+			}
+			// Also check for "Version:" without leading asterisk (edge case)
+			if strings.HasPrefix(trimmed, "Version:") {
+				version := strings.TrimPrefix(trimmed, "Version:")
+				version = strings.TrimSpace(version)
+				if version != "" {
+					return version
+				}
+			}
+		}
+	}
+
+	return ""
 }

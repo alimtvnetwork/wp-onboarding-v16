@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, and audit logging via REST API with Application Password authentication.
- * Version: 1.5.0
+ * Version: 1.6.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -44,23 +44,57 @@ function riseup_fatal_error_handler() {
                 header('HTTP/1.1 500 Internal Server Error');
             }
             
-            // Return JSON error response
+            // Generate a pseudo stack trace from the error location
+            $stack_trace = "#0 " . $error['file'] . "(" . $error['line'] . "): Fatal error occurred\n";
+            $stack_trace .= "#1 [internal function]: PHP shutdown handler";
+            
+            // Return JSON error response with full details
             echo json_encode(array(
                 'success' => false,
                 'error' => array(
                     'code' => 'FATAL_ERROR',
                     'message' => 'A fatal error occurred in the plugin',
                     'details' => array(
-                        'type' => $error['type'],
-                        'message' => $error['message'],
-                        'file' => basename($error['file']),
-                        'line' => $error['line'],
+                        'type'        => $error['type'],
+                        'typeName'    => riseup_error_type_to_string($error['type']),
+                        'message'     => $error['message'],
+                        'file'        => basename($error['file']),
+                        'fileFull'    => $error['file'],
+                        'line'        => $error['line'],
+                        'stackTrace'  => $stack_trace,
+                        'phpVersion'  => phpversion(),
+                        'wpVersion'   => defined('WP_VERSION') ? WP_VERSION : 'unknown',
                     ),
                 ),
             ));
             exit;
         }
     }
+}
+
+/**
+ * Convert PHP error type to human-readable string.
+ *
+ * @param int $type Error type constant.
+ * @return string
+ */
+function riseup_error_type_to_string($type) {
+    $types = array(
+        E_ERROR             => 'E_ERROR',
+        E_PARSE             => 'E_PARSE',
+        E_CORE_ERROR        => 'E_CORE_ERROR',
+        E_COMPILE_ERROR     => 'E_COMPILE_ERROR',
+        E_WARNING           => 'E_WARNING',
+        E_NOTICE            => 'E_NOTICE',
+        E_STRICT            => 'E_STRICT',
+        E_DEPRECATED        => 'E_DEPRECATED',
+        E_USER_ERROR        => 'E_USER_ERROR',
+        E_USER_WARNING      => 'E_USER_WARNING',
+        E_USER_NOTICE       => 'E_USER_NOTICE',
+        E_USER_DEPRECATED   => 'E_USER_DEPRECATED',
+        E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
+    );
+    return isset($types[$type]) ? $types[$type] : 'UNKNOWN_ERROR_TYPE';
 }
 register_shutdown_function('riseup_fatal_error_handler');
 
@@ -899,7 +933,7 @@ class Riseup_Asia {
             ), RISEUP_HTTP_OK);
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Upload error');
-            return $this->error_response('Upload failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+            return $this->error_response('Upload failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -1110,7 +1144,7 @@ class Riseup_Asia {
             ), RISEUP_HTTP_OK);
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Plugin file content error');
-            return $this->error_response('Failed to read file: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+            return $this->error_response('Failed to read file: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -1170,7 +1204,7 @@ class Riseup_Asia {
             ), RISEUP_HTTP_OK);
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Export-self error');
-            return $this->error_response('Export failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+            return $this->error_response('Export failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -1325,19 +1359,81 @@ class Riseup_Asia {
     // =========================================================================
 
     /**
-     * Create an error response.
+     * Create an error response with optional exception details.
      *
-     * @param string $message Error message.
-     * @param int    $status  HTTP status code.
+     * @param string         $message   Error message.
+     * @param int            $status    HTTP status code.
+     * @param Throwable|null $exception Optional exception for stack trace.
      *
      * @return WP_REST_Response
      */
-    private function error_response($message, $status) {
-        $this->file_logger->error('Error response', array('message' => $message, 'status' => $status));
-        return new WP_REST_Response(array(
+    private function error_response($message, $status, $exception = null) {
+        $error_data = array(
             'success' => false,
-            'error'   => $message,
-        ), $status);
+            'error'   => array(
+                'code'    => 'ERROR_' . $status,
+                'message' => $message,
+            ),
+        );
+
+        // Add detailed exception info if available
+        if ($exception instanceof Throwable) {
+            $error_data['error']['code'] = $this->get_exception_code($exception);
+            $error_data['error']['details'] = array(
+                'exceptionClass' => get_class($exception),
+                'file'           => basename($exception->getFile()),
+                'fileFull'       => $exception->getFile(),
+                'line'           => $exception->getLine(),
+                'stackTrace'     => $exception->getTraceAsString(),
+            );
+            
+            // Log full exception to file logger
+            $this->file_logger->log_exception($exception, $message);
+        } else {
+            // Generate a stack trace even without an exception
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+            $trace_lines = array();
+            foreach ($backtrace as $i => $frame) {
+                $file = isset($frame['file']) ? basename($frame['file']) : '[internal]';
+                $line = isset($frame['line']) ? $frame['line'] : '?';
+                $func = isset($frame['function']) ? $frame['function'] : '';
+                $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
+                $trace_lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
+            }
+            $error_data['error']['details'] = array(
+                'stackTrace' => implode("\n", $trace_lines),
+            );
+            
+            $this->file_logger->error('Error response', array(
+                'message'    => $message,
+                'status'     => $status,
+                'stackTrace' => implode("\n", $trace_lines),
+            ));
+        }
+
+        return new WP_REST_Response($error_data, $status);
+    }
+
+    /**
+     * Get a meaningful error code from an exception.
+     *
+     * @param Throwable $exception The exception.
+     *
+     * @return string
+     */
+    private function get_exception_code($exception) {
+        $code = $exception->getCode();
+        if (is_int($code) && $code > 0) {
+            return 'E' . $code;
+        }
+        
+        // Generate code from class name
+        $class = get_class($exception);
+        $short = str_replace(array('Exception', 'Error'), '', $class);
+        if (empty($short)) {
+            return 'EXCEPTION';
+        }
+        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '_', $short));
     }
 
     /**
