@@ -151,6 +151,8 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/errors/{id}", handlers.GetError).Methods("GET")
 	api.HandleFunc("/errors/bundle", handlers.DownloadErrorBundle).Methods("GET", "POST")
 	api.HandleFunc("/errors/stream", handlers.StreamErrorLogs).Methods("GET")
+	api.HandleFunc("/errors/log", handlers.GetBackendErrorLog).Methods("GET")    // error.log.txt content
+	api.HandleFunc("/logs/full", handlers.GetBackendFullLog).Methods("GET")      // full log.txt content
 
 	// Settings endpoints
 	api.HandleFunc("/settings", handlers.GetSettings).Methods("GET")

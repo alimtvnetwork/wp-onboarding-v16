@@ -92,8 +92,8 @@ export function GlobalPublishProgress() {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[400px] sm:w-[540px] p-0">
-        <SheetHeader className="p-4 border-b">
+      <SheetContent className="w-full max-w-[540px] sm:w-[540px] p-0 flex flex-col h-full">
+        <SheetHeader className="p-4 border-b shrink-0">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
@@ -123,7 +123,7 @@ export function GlobalPublishProgress() {
           )}
         </SheetHeader>
         
-        <ScrollArea className="h-[calc(100vh-140px)]">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="p-4 space-y-3">
             {operations.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

@@ -661,6 +661,12 @@ export const api = {
     request<ErrorLog[]>(`/errors${limit ? `?limit=${limit}` : ""}`),
   getError: (id: number) => request<ErrorLog>(`/errors/${id}`),
   clearErrors: () => request<void>("/errors", { method: "DELETE" }),
+  // Get backend error.log.txt file content
+  getBackendErrorLog: () =>
+    request<{ content: string; filename: string; size: number; lastModified: string }>("/errors/log"),
+  // Get backend full log.txt file content
+  getBackendFullLog: () =>
+    request<{ content: string; filename: string; size: number; lastModified: string }>("/logs/full"),
 
   // Plugin Version History
   getPluginVersions: (pluginId: number, siteId?: number, limit?: number) =>

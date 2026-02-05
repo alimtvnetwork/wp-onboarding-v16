@@ -1952,3 +1952,39 @@ func addFileToZip(zipWriter *zip.Writer, srcPath, destName string) error {
 	_, err = io.Copy(writer, file)
 	return err
 }
+
+// GetBackendErrorLog returns the content of error.log.txt
+func GetBackendErrorLog(w http.ResponseWriter, r *http.Request) {
+	readLogFile(w, "data/errors/error.log.txt", "error.log.txt")
+}
+
+// GetBackendFullLog returns the content of the full log.txt
+func GetBackendFullLog(w http.ResponseWriter, r *http.Request) {
+	readLogFile(w, "data/errors/log.txt", "log.txt")
+}
+
+// readLogFile is a helper to read and return log file contents
+func readLogFile(w http.ResponseWriter, path string, filename string) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			respondError(w, http.StatusNotFound, "E9001", "Log file not found: "+filename)
+			return
+		}
+		respondError(w, http.StatusInternalServerError, "E9002", "Failed to read log file: "+err.Error())
+		return
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E9002", "Failed to read log file: "+err.Error())
+		return
+	}
+
+	respondSuccess(w, map[string]interface{}{
+		"content":      string(content),
+		"filename":     filename,
+		"size":         info.Size(),
+		"lastModified": info.ModTime().Format(time.RFC3339),
+	})
+}
