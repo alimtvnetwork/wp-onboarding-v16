@@ -263,6 +263,7 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		EncryptionKey:   cfg.Security.EncryptionKey,
 		WPClientFactory: wpClientFactoryWithProgress,
 		WSHub:           wsHub,
+		SessionService:  sessionService,
 		CacheEnabled:    cfg.RemotePlugins.CacheEnabled,
 		CacheTTLMinutes: cfg.RemotePlugins.CacheTTLMinutes,
 	})

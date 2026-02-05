@@ -19,11 +19,14 @@ import (
 type SessionType string
 
 const (
-	SessionTypePublish     SessionType = "publish"
-	SessionTypeSync        SessionType = "sync"
-	SessionTypeBackup      SessionType = "backup"
-	SessionTypeConnect     SessionType = "connect"
-	SessionTypeBulkPublish SessionType = "bulk_publish"
+	SessionTypePublish           SessionType = "publish"
+	SessionTypeSync              SessionType = "sync"
+	SessionTypeBackup            SessionType = "backup"
+	SessionTypeConnect           SessionType = "connect"
+	SessionTypeBulkPublish       SessionType = "bulk_publish"
+	SessionTypeRemotePluginEnable  SessionType = "remote_plugin_enable"
+	SessionTypeRemotePluginDisable SessionType = "remote_plugin_disable"
+	SessionTypeRemotePluginDelete  SessionType = "remote_plugin_delete"
 )
 
 // Session represents an active or completed operation session

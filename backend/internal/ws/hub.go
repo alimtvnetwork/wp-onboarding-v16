@@ -102,6 +102,11 @@ const (
 	EventConnectionTestProgress = "connection_test_progress"
 	EventConnectionTestComplete = "connection_test_complete"
 	
+	// Remote plugin action events
+	EventRemotePluginActionStarted  = "remote_plugin_action_started"
+	EventRemotePluginActionProgress = "remote_plugin_action_progress"
+	EventRemotePluginActionComplete = "remote_plugin_action_complete"
+	
 	// Version history events
 	EventVersionCreated   = "version_created"
 	EventRollbackStarted  = "rollback_started"
@@ -333,6 +338,21 @@ func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, de
 // BroadcastBackupLogWithSession is a convenience method for backup operation logs with session
 func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, step, message string, details map[string]interface{}) {
 	h.BroadcastOperationLogWithSession("backup", pluginID, 0, sessionID, OperationLogEntry{
+		Level:   level,
+		Step:    step,
+		Message: message,
+		Details: details,
+	})
+}
+
+// BroadcastRemotePluginLog is a convenience method for remote plugin action logs
+func (h *Hub) BroadcastRemotePluginLog(siteID int64, action, level, step, message string, details map[string]interface{}) {
+	h.BroadcastRemotePluginLogWithSession(siteID, action, "", level, step, message, details)
+}
+
+// BroadcastRemotePluginLogWithSession is a convenience method for remote plugin action logs with session
+func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details map[string]interface{}) {
+	h.BroadcastOperationLogWithSession("remote_plugin_"+action, 0, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
 		Message: message,
