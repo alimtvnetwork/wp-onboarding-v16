@@ -36,6 +36,8 @@
  4. **Capture stack trace** using `captureStackTrace()` for critical failures
 5. **Error strings MUST include method + endpoint** (at minimum) so failures like "status 500" are actionable
 6. **Log the full URL** in error messages/details, not just status codes
+7. **Always resolve file paths to absolute** before passing to upload functions
+8. **Check endpoint status** before attempting uploads (call `/status` first)
 
 ### Required `Error()` Output
 
@@ -44,6 +46,17 @@
 ```
 upload plugin via RiseupAsia Uploader (POST /riseup-asia-uploader/v1/upload): status 500
 ```
+
+## Pre-Upload Validation
+
+Before any upload operation:
+
+1. Resolve ZIP path to absolute using `pathutil.ToAbsolute()`
+2. Call the `/status` endpoint to verify the uploader is available
+3. Log the full absolute URL being called
+4. Only then proceed with the upload
+
+This prevents cryptic errors and ensures all paths in logs are actionable.
  
  ## Example Usage
  

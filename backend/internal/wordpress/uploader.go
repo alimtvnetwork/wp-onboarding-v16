@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // captureStackTrace captures the call stack for debugging
@@ -172,33 +174,89 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // This uses base64-encoded upload for reliability (like the PowerShell script).
 func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*UploaderUploadResult, error) {
-	c.progress(ActionUpload, "running", fmt.Sprintf("Reading %s for upload...", filepath.Base(zipPath)), nil)
+	// CRITICAL: Always resolve to absolute path before any file operations
+	absZipPath, err := pathutil.ToAbsolute(zipPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve zip path: %w", err)
+	}
+
+	c.progress(ActionUpload, "running", fmt.Sprintf("Reading %s for upload...", absZipPath), map[string]interface{}{
+		"zipPath":    absZipPath,
+		"zipPathRel": zipPath,
+	})
 
 	// Read the ZIP file
-	fileBytes, err := os.ReadFile(zipPath)
+	fileBytes, err := os.ReadFile(absZipPath)
 	if err != nil {
-		return nil, fmt.Errorf("read zip file: %w", err)
+		return nil, fmt.Errorf("read zip file at %s: %w", absZipPath, err)
 	}
+
+	// STEP 1: Check uploader status BEFORE attempting upload
+	_, namespace, checkErr := c.CheckRiseupAsiaAvailable()
+	if checkErr != nil {
+		return nil, fmt.Errorf("pre-upload status check failed: %w", checkErr)
+	}
+	if namespace == "" {
+		namespace = RiseupAsiaNamespace
+	}
+
+	// Get detailed status to verify endpoint is working
+	statusEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointStatus)
+	statusURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, statusEndpoint)
+	c.progress(ActionUpload, "running", fmt.Sprintf("Pre-upload status check: GET %s", statusURL), map[string]interface{}{
+		"endpoint": statusEndpoint,
+		"url":      statusURL,
+	})
+
+	statusResp, statusErr := c.request("GET", statusEndpoint, nil)
+	if statusErr != nil {
+		return nil, &APIError{
+			Operation:    "pre-upload status check",
+			Method:       "GET",
+			Endpoint:     statusEndpoint,
+			URL:          statusURL,
+			StatusCode:   0,
+			ResponseBody: statusErr.Error(),
+		}
+	}
+	defer statusResp.Body.Close()
+
+	if statusResp.StatusCode != http.StatusOK {
+		statusBody, _ := io.ReadAll(statusResp.Body)
+		return nil, &APIError{
+			Operation:    "pre-upload status check",
+			Method:       "GET",
+			Endpoint:     statusEndpoint,
+			URL:          statusURL,
+			StatusCode:   statusResp.StatusCode,
+			ResponseBody: truncateBody(string(statusBody), 2000),
+		}
+	}
+	c.progress(ActionUpload, "success", "Pre-upload status check passed", map[string]interface{}{
+		"endpoint": statusEndpoint,
+		"url":      statusURL,
+		"status":   statusResp.StatusCode,
+	})
 
 	// Encode to base64
 	base64Data := base64.StdEncoding.EncodeToString(fileBytes)
 
-	// Detect which namespace is available
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace // default to new namespace
-	}
+	// STEP 2: Build and send upload request
+	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointUpload)
+	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %d bytes (base64) to %s...", len(fileBytes), namespace), map[string]interface{}{
+	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %d bytes (base64) to %s", len(fileBytes), uploadURL), map[string]interface{}{
 		"zipSize":   len(fileBytes),
-		"zipFile":   filepath.Base(zipPath),
+		"zipPath":   absZipPath,
 		"namespace": namespace,
+		"endpoint":  uploadEndpoint,
+		"url":       uploadURL,
 	})
 
-	// Build request body - use plugin_zip for Rise Up Uploader, plugin_data for legacy
+	// Build request body (JSON with base64-encoded ZIP)
 	body := map[string]interface{}{
-		"plugin_zip": base64Data, // Rise Up Uploader format
-		"slug":       filepath.Base(zipPath),
+		"plugin_zip": base64Data,
+		"slug":       filepath.Base(absZipPath),
 		"activate":   activate,
 	}
 
@@ -207,11 +265,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 		return nil, fmt.Errorf("marshal request body: %w", err)
 	}
 
-	// Build request
-	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointUpload)
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("POST", uploadURL, bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("create upload request: %w", err)
 	}
@@ -230,9 +284,10 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), map[string]interface{}{
+	c.progress(ActionUpload, "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), map[string]interface{}{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 2000),
+		"url":    uploadURL,
 	})
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
@@ -240,14 +295,14 @@ func (c *Client) UploadPluginViaUploader(zipPath string, activate bool) (*Upload
 		stackTrace := captureStackTrace(2)
 		
 		// Log detailed error for on-disk logs
-		fmt.Printf("[UPLOAD ERROR] POST %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n", 
-			url, resp.StatusCode, truncateBody(respBody, 4000), stackTrace)
+		fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n", 
+			uploadURL, absZipPath, resp.StatusCode, truncateBody(respBody, 4000), stackTrace)
 		
 		return nil, &APIError{
 			Operation:    "upload plugin via RiseupAsia Uploader",
 			Method:       "POST",
-			Endpoint:     endpoint,
-			URL:          url,
+			Endpoint:     uploadEndpoint,
+			URL:          uploadURL,
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(respBody, 8192),
 			StackTrace:   stackTrace,
