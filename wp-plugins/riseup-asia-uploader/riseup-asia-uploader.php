@@ -483,7 +483,10 @@ class Riseup_Asia {
             $target_dir   = $plugins_dir . '/' . $slug;
             $is_update    = is_dir($target_dir);
 
-            $this->file_logger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array('slug' => $slug));
+            $this->file_logger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array(
+                'slug'       => $slug,
+                'target_dir' => $target_dir,
+            ));
 
             // If updating, check if currently active.
             $was_active = false;
@@ -492,27 +495,82 @@ class Riseup_Asia {
                 if ($plugin_file) {
                     $was_active = is_plugin_active($plugin_file);
                     if ($was_active) {
-                        $this->file_logger->debug('Deactivating plugin before update');
+                        $this->file_logger->debug('Deactivating plugin before update', array('plugin_file' => $plugin_file));
                         deactivate_plugins($plugin_file);
                     }
                 }
                 // Remove old version.
-                $this->file_logger->debug('Removing old plugin version');
+                $this->file_logger->debug('Removing old plugin version', array('target_dir' => $target_dir));
                 $this->delete_directory($target_dir);
             }
 
-            // Extract ZIP.
-            $this->file_logger->debug('Extracting ZIP to plugins directory');
+            // =================================================================
+            // EXTRACT TO TEMP FIRST TO AVOID FOLDER NAME MISMATCHES
+            // This prevents duplicate plugins when ZIP folder name differs from slug
+            // =================================================================
+            $temp_extract_dir = $this->get_temp_dir() . '/extract_' . uniqid();
+            wp_mkdir_p($temp_extract_dir);
+
+            $this->file_logger->debug('Extracting ZIP to temp directory', array(
+                'temp_dir'   => $temp_extract_dir,
+                'temp_file'  => $temp_file,
+            ));
+
             $zip = new ZipArchive();
-            $zip->open($temp_file);
-            $zip->extractTo($plugins_dir);
+            if ($zip->open($temp_file) !== true) {
+                @unlink($temp_file);
+                $this->delete_directory($temp_extract_dir);
+                $this->file_logger->error('Failed to open ZIP for extraction');
+                return $this->error_response('Failed to open ZIP for extraction', RISEUP_HTTP_SERVER_ERROR);
+            }
+            $zip->extractTo($temp_extract_dir);
             $zip->close();
             @unlink($temp_file);
+
+            // Find the extracted folder (should be exactly one directory).
+            $extracted_folders = glob($temp_extract_dir . '/*', GLOB_ONLYDIR);
+            if (empty($extracted_folders)) {
+                $this->delete_directory($temp_extract_dir);
+                $this->file_logger->error('No folder found in extracted ZIP');
+                $this->logger->log_upload_failed($slug, 'No folder found in extracted ZIP');
+                return $this->error_response('No folder found in extracted ZIP', RISEUP_HTTP_SERVER_ERROR);
+            }
+
+            $extracted_folder = $extracted_folders[0];
+            $extracted_name   = basename($extracted_folder);
+            $this->file_logger->debug('Found extracted folder', array(
+                'extracted_name' => $extracted_name,
+                'target_slug'    => $slug,
+                'needs_rename'   => $extracted_name !== $slug,
+            ));
+
+            // Move the extracted folder to the plugins directory with the correct slug name.
+            // This ensures the folder name always matches the slug, preventing duplicates.
+            if (rename($extracted_folder, $target_dir)) {
+                $this->file_logger->info('Plugin installed to correct location', array(
+                    'from' => $extracted_folder,
+                    'to'   => $target_dir,
+                ));
+            } else {
+                // Fallback: copy files if rename fails (cross-device move).
+                $this->file_logger->warn('Rename failed, attempting copy', array(
+                    'from' => $extracted_folder,
+                    'to'   => $target_dir,
+                ));
+                $this->copy_directory($extracted_folder, $target_dir);
+                $this->delete_directory($extracted_folder);
+            }
+
+            // Cleanup temp extraction directory.
+            $this->delete_directory($temp_extract_dir);
 
             // Find the main plugin file.
             $plugin_file = $this->find_plugin_file($slug);
             if (!$plugin_file) {
-                $this->file_logger->error('Could not find plugin file after extraction');
+                $this->file_logger->error('Could not find plugin file after extraction', array(
+                    'slug'       => $slug,
+                    'target_dir' => $target_dir,
+                ));
                 $this->logger->log_upload_failed($slug, 'Could not find plugin file after extraction');
                 return $this->error_response('Could not find plugin file after extraction', RISEUP_HTTP_SERVER_ERROR);
             }
@@ -924,6 +982,38 @@ class Riseup_Asia {
         }
 
         return @rmdir($dir);
+    }
+
+    /**
+     * Copy a directory recursively.
+     * Used as fallback when rename fails (cross-device move).
+     *
+     * @param string $src Source directory path.
+     * @param string $dst Destination directory path.
+     *
+     * @return bool Success.
+     */
+    private function copy_directory($src, $dst) {
+        if (!is_dir($src)) {
+            return false;
+        }
+
+        if (!is_dir($dst)) {
+            wp_mkdir_p($dst);
+        }
+
+        $files = array_diff(scandir($src), array('.', '..'));
+        foreach ($files as $file) {
+            $src_path = $src . '/' . $file;
+            $dst_path = $dst . '/' . $file;
+            if (is_dir($src_path)) {
+                $this->copy_directory($src_path, $dst_path);
+            } else {
+                copy($src_path, $dst_path);
+            }
+        }
+
+        return true;
     }
 
     /**
