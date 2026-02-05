@@ -20,6 +20,9 @@ When an external API call fails (especially WordPress REST API calls), logs MUST
 5. The endpoint path (e.g., `/wp/v2/plugins`, `/riseup-asia-uploader/v1/upload`)
 6. Stack trace for debugging (when available)
 
+**CRITICAL**: The human-readable error string MUST include at least `METHOD + endpoint` (not only in structured details), e.g.
+`upload plugin via RiseupAsia Uploader (POST /riseup-asia-uploader/v1/upload): status 500`.
+
 This requirement applies to all WordPress client methods including activation, upload, and mutation token requests.
 
 **CRITICAL**: Every WordPress API error MUST use the `APIError` struct which includes:
