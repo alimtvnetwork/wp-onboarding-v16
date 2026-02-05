@@ -376,6 +376,28 @@ export interface SessionInfo extends SessionSummary {
   metadata?: Record<string, unknown>;
 }
 
+export interface FilePreview {
+  path: string;
+  changeType: "added" | "modified" | "deleted";
+  size: number;
+  localHash?: string;
+}
+
+export interface PublishPreview {
+  pluginId: number;
+  pluginName: string;
+  siteId: number;
+  siteName: string;
+  siteUrl: string;
+  remoteSlug: string;
+  totalFiles: number;
+  totalSize: number;
+  added: number;
+  modified: number;
+  deleted: number;
+  files: FilePreview[];
+}
+
 export interface Settings {
   meta?: {
     seedVersion: string;
@@ -616,6 +638,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify(options),
     }),
+  previewPublish: (pluginId: number, siteId: number) =>
+    request<PublishPreview>(`/plugins/${pluginId}/sites/${siteId}/preview`),
 
   // Backups
   getBackups: (pluginId: number) => request<Backup[]>(`/plugins/${pluginId}/backups`),

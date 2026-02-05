@@ -89,6 +89,7 @@ type WatcherServiceInterface interface {
 type PublishServiceInterface interface {
 	Publish(ctx context.Context, pluginID, siteID int64, opts interface{}) (interface{}, error)
 	PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (interface{}, error)
+	PreviewPublish(ctx context.Context, pluginID, siteID int64) (interface{}, error)
 }
 
 // BackupServiceInterface defines backup service methods
@@ -1239,6 +1240,33 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, input)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E5006", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// PreviewPublish returns a preview of files that will be published
+func PreviewPublish(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.PublishService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Publish service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	siteID, err := getIDParam(r, "siteId")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	result, err := Services.PublishService.PreviewPublish(r.Context(), pluginID, siteID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E5007", err.Error())
 		return
 	}
 	respondSuccess(w, result)
