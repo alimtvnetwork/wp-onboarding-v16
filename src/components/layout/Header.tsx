@@ -4,6 +4,7 @@ import { useTheme } from "@/components/theme-provider";
 import { useLocation } from "react-router-dom";
 import { VersionBadge } from "@/components/settings/VersionBadge";
 import { WebSocketIndicator } from "@/components/shared/WebSocketIndicator";
+import { GlobalPublishProgress } from "@/components/plugins/GlobalPublishProgress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,9 @@ export function Header() {
       </h1>
 
       <div className="flex items-center gap-3">
+        {/* Global publish progress indicator */}
+        <GlobalPublishProgress />
+        
         {/* WebSocket connection indicator */}
         <WebSocketIndicator showLabel />
         

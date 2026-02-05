@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePlugins } from "@/hooks/usePlugins";
 import { useSites } from "@/hooks/useSites";
 import { usePluginFormPersistence } from "@/hooks/usePluginFormPersistence";
+import { useQuickPublish } from "@/hooks/useQuickPublish";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,8 @@ import { BackupProgressDialog } from "@/components/backup/BackupProgressDialog";
 import { BulkActionsBar } from "@/components/plugins/BulkActionsBar";
 import { GitActionsPanel } from "@/components/plugins/GitActionsPanel";
 import { VersionHistoryPanel } from "@/components/plugins/VersionHistoryPanel";
- import { ScanDirectoryPanel } from "@/components/plugins/ScanDirectoryPanel";
+import { ScanDirectoryPanel } from "@/components/plugins/ScanDirectoryPanel";
+import { QuickPublishIndicator } from "@/components/plugins/QuickPublishIndicator";
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Package,
   Plus,
   Loader2,
@@ -57,6 +64,7 @@ import {
   CheckSquare,
   Square,
   Archive,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
@@ -69,6 +77,7 @@ export default function Plugins() {
   const { data: sites } = useSites();
   const queryClient = useQueryClient();
   const { captureError, openErrorModal } = useErrorStore();
+  const { quickPublishAll, hasActiveOperation } = useQuickPublish();
   
   // Use persistent form hook
   const { formData, handleInputChange, clearForm } = usePluginFormPersistence();
@@ -851,7 +860,46 @@ export default function Plugins() {
                       <span className="ml-1 hidden sm:inline">Sync</span>
                     </Button>
 
-                    {/* Publish button - always enabled, shows guidance if no mappings */}
+                    {/* Quick Publish Indicator - shows when publish is in progress */}
+                    <QuickPublishIndicator
+                      pluginId={plugin.id}
+                      pluginName={plugin.name}
+                    />
+
+                    {/* Quick Publish All button - publishes to all mapped sites */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => quickPublishAll(plugin)}
+                          disabled={!plugin.mappings?.length || hasActiveOperation(plugin.id)}
+                          title={plugin.mappings?.length 
+                            ? `Quick publish to ${plugin.mappings.length} site(s)` 
+                            : "No sites mapped"
+                          }
+                          className={cn(
+                            "text-amber-600 hover:text-amber-700 hover:bg-amber-500/10",
+                            !plugin.mappings?.length && "text-muted-foreground"
+                          )}
+                        >
+                          {hasActiveOperation(plugin.id) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Zap className="h-4 w-4" />
+                          )}
+                          <span className="ml-1 hidden sm:inline">Quick</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {plugin.mappings?.length 
+                          ? `Publish to all ${plugin.mappings.length} mapped sites at once`
+                          : "Add sites first to enable quick publish"
+                        }
+                      </TooltipContent>
+                    </Tooltip>
+
+                    {/* Publish button - opens dialog for site selection */}
                     <Button
                       variant="ghost"
                       size="sm"

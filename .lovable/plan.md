@@ -59,38 +59,34 @@ All logs must include:
 
 ---
 
-## Phase 2: Quick Publish Feature (No Modal)
+## Phase 2: Quick Publish Feature (No Modal) ✅ COMPLETE
 
 **Priority: HIGH - Core UX improvement**
-**Estimated: 3-4 hours**
-**Depends on: Phase 1**
+**Status: COMPLETE**
 
-### 2.1 Quick Publish Button
-- [ ] Add "Quick Publish All" button on plugin cards
-- [ ] Publishes to ALL mapped sites without modal
-- [ ] Shows inline spinner on the card during publish
-- [ ] Logs icon appears after completion (click to view session)
+### 2.1 Quick Publish Button ✅
+- [x] Add "Quick Publish All" button on plugin cards (⚡ icon)
+- [x] Publishes to ALL mapped sites without modal
+- [x] Shows inline progress via QuickPublishIndicator
+- [x] Status indicator appears on card during/after publish
 
-### 2.2 Global Publish State Store (Zustand)
-- [ ] Create `src/stores/publishStore.ts`
-- [ ] Track active operations: `{ pluginId, siteId, sessionId, status, progress, logs }`
-- [ ] State persists across route navigation
-- [ ] Auto-cleanup completed operations after 30 minutes
+### 2.2 Global Publish State Store (Zustand) ✅
+- [x] Created `src/stores/publishStore.ts`
+- [x] Track active operations: `{ pluginId, siteId, sessionId, status, progress, logs }`
+- [x] State persists across route navigation
+- [x] Auto-cleanup completed operations after 30 minutes
 
-### 2.3 Publish Status Indicator
-- [ ] Show active publishes in header/sidebar badge
-- [ ] Click to see all active operations with progress
-- [ ] Floating indicator when navigating away from Plugins page
+### 2.3 Publish Status Indicator ✅
+- [x] Created `GlobalPublishProgress` component in header
+- [x] Shows active publish count with progress percentage
+- [x] Click to see sheet with all operations and details
+- [x] Created `QuickPublishIndicator` for inline card display
 
-### 2.4 Quick Publish Flow
-```
-1. Click "Quick Publish" on plugin card
-2. Spinner appears on card
-3. Backend returns sessionId immediately
-4. Progress tracked via WebSocket using sessionId
-5. On complete: Show success toast + logs icon
-6. On error: Show error toast + click for full session logs
-```
+### 2.4 Quick Publish Hook ✅
+- [x] Created `src/hooks/useQuickPublish.ts`
+- [x] `quickPublishAll(plugin)` - publish to all mapped sites
+- [x] `quickPublishToSite(plugin, siteId, siteName, siteUrl)` - single site
+- [x] WebSocket listener integration for real-time updates
 
 ---
 
