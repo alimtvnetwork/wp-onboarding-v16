@@ -3,74 +3,63 @@ Updated: 2026-02-05
 
 ## Critical Requirement
 
-ALL WordPress plugin error responses MUST include full PHP stack traces to enable debugging from the Go backend. This is a non-negotiable requirement for large-scale development.
+ALL WordPress plugin error responses MUST include full PHP stack traces as a **frames array** (`stackTraceFrames`) to enable structured parsing by the Go backend. This is a non-negotiable requirement for large-scale development.
 
-## Implementation Standards
+## Implementation Standards (v1.7.0+)
 
-### 1. error_response() Method
-The `error_response()` method accepts an optional third parameter for exceptions:
+### 1. Helper Functions (Global)
+Two helper functions convert exceptions/backtraces to structured frames:
 
 ```php
-private function error_response($message, $status, $exception = null) {
-    // If exception provided, include full stack trace
-    // If not, generate a stack trace via debug_backtrace()
-}
+function riseup_exception_to_frames($exception) { ... }
+function riseup_backtrace_to_frames($backtrace) { ... }
 ```
 
-### 2. Response Structure
-Error responses MUST follow this structure:
+### 2. error_response() Method
+Returns both string and frames array:
 
+```php
+$error_data['error']['details'] = array(
+    'stackTrace'       => $exception->getTraceAsString(),
+    'stackTraceFrames' => riseup_exception_to_frames($exception),
+);
+```
+
+### 3. Frame Structure
+Each frame contains:
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable message",
-    "details": {
-      "exceptionClass": "Exception",
-      "file": "filename.php",
-      "fileFull": "/full/path/to/filename.php",
-      "line": 123,
-      "stackTrace": "#0 file.php(123): function()\n#1 ..."
-    }
-  }
+  "file": "/full/path/to/file.php",
+  "fileBase": "file.php",
+  "line": 123,
+  "function": "methodName",
+  "class": "ClassName"
 }
 ```
 
-### 3. Catch Block Pattern
-All catch blocks MUST pass the exception to error_response:
+### 4. Granular Try-Catch Pattern
+All plugin lifecycle operations (enable/disable/delete) use step-by-step try-catch:
 
 ```php
-} catch (Exception $e) {
-    $this->file_logger->log_exception($e, 'Context message');
-    return $this->error_response('Error message: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
-}
+// Step 1: Load plugin functions
+try { ... } catch (Exception $e) { return $this->error_response(..., $e); }
+
+// Step 2: Find plugin file
+try { ... } catch (Exception $e) { return $this->error_response(..., $e); }
+
+// Step 3-N: Each operation wrapped individually
 ```
 
-### 4. Fatal Error Handler
-The global shutdown handler captures fatal errors (E_ERROR, E_PARSE, etc.) and returns:
-- Error type (e.g., E_ERROR)
-- Error type name (human-readable)
-- Error message
-- File location (basename and full path)
-- Line number
-- Pseudo stack trace
-- PHP version
-- WordPress version
+### 5. Fatal Error Handler
+The global shutdown handler also returns `stackTraceFrames` array for fatal errors.
 
-## Version Requirements
+## New Endpoints (v1.7.0)
 
-This requirement was implemented in Riseup Asia Uploader v1.6.0. All future versions MUST maintain this behavior.
+- `POST /plugins/{slug}/enable` - Activate plugin
+- `POST /plugins/{slug}/disable` - Deactivate plugin  
+- `DELETE /plugins/{slug}/delete` - Remove plugin
 
-## Backend Logging
+## Version History
 
-The Go backend (`backend/internal/wordpress/client.go`) captures these stack traces in `APIError.StackTrace` and includes them in:
-- Session logs
-- Error modal details
-- Debug bundles
-
-## Files Involved
-
-- `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php` - Main plugin with error_response()
-- `backend/internal/wordpress/uploader.go` - Client that parses error responses
-- `backend/internal/wordpress/client.go` - APIError struct with StackTrace field
+- v1.7.0: Added stackTraceFrames array, granular try-catch, enable/disable/delete endpoints
+- v1.6.0: Initial stack trace implementation with string-only format

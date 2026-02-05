@@ -20,6 +20,62 @@ if (!defined('ABSPATH')) {
 }
 
 // =============================================================================
+// HELPER: CONVERT EXCEPTION/BACKTRACE TO FRAMES ARRAY
+// =============================================================================
+
+/**
+ * Convert a Throwable trace to a structured frames array.
+ *
+ * @param Throwable $exception The exception/error.
+ * @return array Array of frame objects with file, line, function, class.
+ */
+function riseup_exception_to_frames($exception) {
+    $frames = array();
+    
+    // First frame: the exception location itself
+    $frames[] = array(
+        'file'     => $exception->getFile(),
+        'fileBase' => basename($exception->getFile()),
+        'line'     => $exception->getLine(),
+        'function' => '',
+        'class'    => '',
+    );
+    
+    // Remaining frames from trace
+    foreach ($exception->getTrace() as $frame) {
+        $frames[] = array(
+            'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
+            'fileBase' => isset($frame['file']) ? basename($frame['file']) : '[internal]',
+            'line'     => isset($frame['line']) ? $frame['line'] : 0,
+            'function' => isset($frame['function']) ? $frame['function'] : '',
+            'class'    => isset($frame['class']) ? $frame['class'] : '',
+        );
+    }
+    
+    return $frames;
+}
+
+/**
+ * Convert a debug_backtrace array to a structured frames array.
+ *
+ * @param array $backtrace The backtrace from debug_backtrace().
+ * @return array Array of frame objects.
+ */
+function riseup_backtrace_to_frames($backtrace) {
+    $frames = array();
+    foreach ($backtrace as $frame) {
+        $frames[] = array(
+            'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
+            'fileBase' => isset($frame['file']) ? basename($frame['file']) : '[internal]',
+            'line'     => isset($frame['line']) ? $frame['line'] : 0,
+            'function' => isset($frame['function']) ? $frame['function'] : '',
+            'class'    => isset($frame['class']) ? $frame['class'] : '',
+        );
+    }
+    return $frames;
+}
+
+// =============================================================================
 // GLOBAL ERROR HANDLER FOR JSON RESPONSES
 // =============================================================================
 
@@ -48,22 +104,41 @@ function riseup_fatal_error_handler() {
             $stack_trace = "#0 " . $error['file'] . "(" . $error['line'] . "): Fatal error occurred\n";
             $stack_trace .= "#1 [internal function]: PHP shutdown handler";
             
-            // Return JSON error response with full details
+            // Generate frames array for structured parsing
+            $frames = array(
+                array(
+                    'file'     => $error['file'],
+                    'fileBase' => basename($error['file']),
+                    'line'     => $error['line'],
+                    'function' => 'fatal_error',
+                    'class'    => '',
+                ),
+                array(
+                    'file'     => '[internal]',
+                    'fileBase' => '[internal]',
+                    'line'     => 0,
+                    'function' => 'shutdown_handler',
+                    'class'    => 'PHP',
+                ),
+            );
+            
+            // Return JSON error response with full details including frames array
             echo json_encode(array(
                 'success' => false,
                 'error' => array(
                     'code' => 'FATAL_ERROR',
                     'message' => 'A fatal error occurred in the plugin',
                     'details' => array(
-                        'type'        => $error['type'],
-                        'typeName'    => riseup_error_type_to_string($error['type']),
-                        'message'     => $error['message'],
-                        'file'        => basename($error['file']),
-                        'fileFull'    => $error['file'],
-                        'line'        => $error['line'],
-                        'stackTrace'  => $stack_trace,
-                        'phpVersion'  => phpversion(),
-                        'wpVersion'   => defined('WP_VERSION') ? WP_VERSION : 'unknown',
+                        'type'             => $error['type'],
+                        'typeName'         => riseup_error_type_to_string($error['type']),
+                        'message'          => $error['message'],
+                        'file'             => basename($error['file']),
+                        'fileFull'         => $error['file'],
+                        'line'             => $error['line'],
+                        'stackTrace'       => $stack_trace,
+                        'stackTraceFrames' => $frames,
+                        'phpVersion'       => phpversion(),
+                        'wpVersion'        => defined('WP_VERSION') ? WP_VERSION : 'unknown',
                     ),
                 ),
             ));
@@ -342,6 +417,54 @@ class Riseup_Asia {
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_plugin_file_content'),
                 'permission_callback' => $this->build_permission_callback('plugin_file', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'slug' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) {
+                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                        },
+                    ),
+                ),
+            ));
+
+            // Plugin enable endpoint (activate plugin).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_ENABLE);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_ENABLE, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_enable_plugin'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'slug' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) {
+                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                        },
+                    ),
+                ),
+            ));
+
+            // Plugin disable endpoint (deactivate plugin).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_DISABLE);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_DISABLE, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_disable_plugin'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'slug' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) {
+                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                        },
+                    ),
+                ),
+            ));
+
+            // Plugin delete endpoint (remove plugin).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_DELETE);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_DELETE, array(
+                'methods'             => 'DELETE',
+                'callback'            => array($this, 'handle_delete_plugin'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
                 'args'                => array(
                     'slug' => array(
                         'required'          => true,
@@ -1355,6 +1478,372 @@ class Riseup_Asia {
     }
 
     // =========================================================================
+    // PLUGIN LIFECYCLE HANDLERS (Enable/Disable/Delete)
+    // =========================================================================
+
+    /**
+     * Handle enable (activate) plugin request.
+     * Granular try-catch for detailed error reporting.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_enable_plugin($request) {
+        $slug = $request->get_param('slug');
+        $this->file_logger->info('Enable plugin endpoint called', array('slug' => $slug));
+
+        // Step 1: Load plugin functions
+        try {
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to load plugin functions');
+            return $this->error_response(
+                'Failed to load WordPress plugin functions: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 2: Find the plugin file
+        $plugin_file = null;
+        try {
+            $plugin_file = $this->find_plugin_file($slug);
+            if (!$plugin_file) {
+                $this->file_logger->warn('Plugin not found', array('slug' => $slug));
+                return $this->error_response(
+                    RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
+                    RISEUP_HTTP_NOT_FOUND
+                );
+            }
+            $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to find plugin file');
+            return $this->error_response(
+                'Failed to locate plugin: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 3: Check if already active
+        try {
+            if (is_plugin_active($plugin_file)) {
+                $this->file_logger->info('Plugin already active', array('slug' => $slug));
+                return new WP_REST_Response(array(
+                    'success'     => true,
+                    'plugin_slug' => $slug,
+                    'activated'   => true,
+                    'message'     => 'Plugin was already active',
+                ), RISEUP_HTTP_OK);
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to check plugin status');
+            return $this->error_response(
+                'Failed to check plugin status: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 4: Activate the plugin
+        try {
+            $result = activate_plugin($plugin_file);
+            if (is_wp_error($result)) {
+                $error_msg = $result->get_error_message();
+                $this->file_logger->warn('Plugin activation failed', array(
+                    'slug'        => $slug,
+                    'plugin_file' => $plugin_file,
+                    'error'       => $error_msg,
+                ));
+                
+                // Log the failure
+                $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_FAILED, array(
+                    'error' => $error_msg,
+                ));
+
+                return $this->error_response(
+                    RISEUP_MSG_ACTIVATION_FAILED . ': ' . $error_msg,
+                    RISEUP_HTTP_SERVER_ERROR
+                );
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Exception during plugin activation');
+            $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_FAILED, array(
+                'exception' => $e->getMessage(),
+            ));
+            return $this->error_response(
+                'Exception during activation: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 5: Log success
+        try {
+            $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_SUCCESS);
+        } catch (Exception $e) {
+            $this->file_logger->warn('Failed to log activation success', array('error' => $e->getMessage()));
+        }
+
+        $this->file_logger->info('Plugin activated successfully', array('slug' => $slug));
+
+        return new WP_REST_Response(array(
+            'success'     => true,
+            'plugin_slug' => $slug,
+            'activated'   => true,
+        ), RISEUP_HTTP_OK);
+    }
+
+    /**
+     * Handle disable (deactivate) plugin request.
+     * Granular try-catch for detailed error reporting.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_disable_plugin($request) {
+        $slug = $request->get_param('slug');
+        $this->file_logger->info('Disable plugin endpoint called', array('slug' => $slug));
+
+        // Step 1: Load plugin functions
+        try {
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to load plugin functions');
+            return $this->error_response(
+                'Failed to load WordPress plugin functions: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 2: Find the plugin file
+        $plugin_file = null;
+        try {
+            $plugin_file = $this->find_plugin_file($slug);
+            if (!$plugin_file) {
+                $this->file_logger->warn('Plugin not found', array('slug' => $slug));
+                return $this->error_response(
+                    RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
+                    RISEUP_HTTP_NOT_FOUND
+                );
+            }
+            $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to find plugin file');
+            return $this->error_response(
+                'Failed to locate plugin: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 3: Check if already inactive
+        try {
+            if (!is_plugin_active($plugin_file)) {
+                $this->file_logger->info('Plugin already inactive', array('slug' => $slug));
+                return new WP_REST_Response(array(
+                    'success'     => true,
+                    'plugin_slug' => $slug,
+                    'deactivated' => true,
+                    'message'     => 'Plugin was already inactive',
+                ), RISEUP_HTTP_OK);
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to check plugin status');
+            return $this->error_response(
+                'Failed to check plugin status: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 4: Deactivate the plugin
+        try {
+            deactivate_plugins($plugin_file);
+            $this->file_logger->debug('deactivate_plugins called', array('plugin_file' => $plugin_file));
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Exception during plugin deactivation');
+            $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_FAILED, array(
+                'exception' => $e->getMessage(),
+            ));
+            return $this->error_response(
+                'Exception during deactivation: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 5: Verify deactivation
+        try {
+            if (is_plugin_active($plugin_file)) {
+                $this->file_logger->warn('Plugin still active after deactivation attempt', array('slug' => $slug));
+                $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_FAILED, array(
+                    'error' => 'Plugin remained active after deactivation',
+                ));
+                return $this->error_response(
+                    RISEUP_MSG_DEACTIVATION_FAILED . ': Plugin remained active',
+                    RISEUP_HTTP_SERVER_ERROR
+                );
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to verify deactivation');
+            return $this->error_response(
+                'Failed to verify deactivation: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 6: Log success
+        try {
+            $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_SUCCESS);
+        } catch (Exception $e) {
+            $this->file_logger->warn('Failed to log deactivation success', array('error' => $e->getMessage()));
+        }
+
+        $this->file_logger->info('Plugin deactivated successfully', array('slug' => $slug));
+
+        return new WP_REST_Response(array(
+            'success'     => true,
+            'plugin_slug' => $slug,
+            'deactivated' => true,
+        ), RISEUP_HTTP_OK);
+    }
+
+    /**
+     * Handle delete plugin request.
+     * Granular try-catch for detailed error reporting.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_delete_plugin($request) {
+        $slug = $request->get_param('slug');
+        $this->file_logger->info('Delete plugin endpoint called', array('slug' => $slug));
+
+        // Step 1: Load plugin functions
+        try {
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+            if (!function_exists('delete_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to load plugin functions');
+            return $this->error_response(
+                'Failed to load WordPress plugin functions: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 2: Find the plugin file
+        $plugin_file = null;
+        try {
+            $plugin_file = $this->find_plugin_file($slug);
+            if (!$plugin_file) {
+                $this->file_logger->warn('Plugin not found', array('slug' => $slug));
+                return $this->error_response(
+                    RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
+                    RISEUP_HTTP_NOT_FOUND
+                );
+            }
+            $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to find plugin file');
+            return $this->error_response(
+                'Failed to locate plugin: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 3: Deactivate if active
+        try {
+            if (is_plugin_active($plugin_file)) {
+                $this->file_logger->debug('Deactivating plugin before deletion', array('plugin_file' => $plugin_file));
+                deactivate_plugins($plugin_file);
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Failed to deactivate plugin before deletion');
+            return $this->error_response(
+                'Failed to deactivate plugin before deletion: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 4: Delete the plugin
+        try {
+            $result = delete_plugins(array($plugin_file));
+            
+            if (is_wp_error($result)) {
+                $error_msg = $result->get_error_message();
+                $this->file_logger->warn('Plugin deletion failed', array(
+                    'slug'        => $slug,
+                    'plugin_file' => $plugin_file,
+                    'error'       => $error_msg,
+                ));
+                
+                $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_FAILED, array(
+                    'error' => $error_msg,
+                ));
+
+                return $this->error_response(
+                    RISEUP_MSG_DELETE_FAILED . ': ' . $error_msg,
+                    RISEUP_HTTP_SERVER_ERROR
+                );
+            }
+
+            if ($result === false) {
+                $this->file_logger->warn('Plugin deletion returned false', array('slug' => $slug));
+                $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_FAILED, array(
+                    'error' => 'delete_plugins returned false',
+                ));
+
+                return $this->error_response(
+                    RISEUP_MSG_DELETE_FAILED . ': Unknown error',
+                    RISEUP_HTTP_SERVER_ERROR
+                );
+            }
+        } catch (Exception $e) {
+            $this->file_logger->log_exception($e, 'Exception during plugin deletion');
+            $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_FAILED, array(
+                'exception' => $e->getMessage(),
+            ));
+            return $this->error_response(
+                'Exception during deletion: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+
+        // Step 5: Log success
+        try {
+            $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_SUCCESS);
+        } catch (Exception $e) {
+            $this->file_logger->warn('Failed to log deletion success', array('error' => $e->getMessage()));
+        }
+
+        $this->file_logger->info('Plugin deleted successfully', array('slug' => $slug));
+
+        return new WP_REST_Response(array(
+            'success'     => true,
+            'plugin_slug' => $slug,
+            'deleted'     => true,
+        ), RISEUP_HTTP_OK);
+    }
+
+    // =========================================================================
     // HELPER METHODS
     // =========================================================================
 
@@ -1379,12 +1868,17 @@ class Riseup_Asia {
         // Add detailed exception info if available
         if ($exception instanceof Throwable) {
             $error_data['error']['code'] = $this->get_exception_code($exception);
+            
+            // Generate frames array using helper function
+            $frames = riseup_exception_to_frames($exception);
+            
             $error_data['error']['details'] = array(
-                'exceptionClass' => get_class($exception),
-                'file'           => basename($exception->getFile()),
-                'fileFull'       => $exception->getFile(),
-                'line'           => $exception->getLine(),
-                'stackTrace'     => $exception->getTraceAsString(),
+                'exceptionClass'   => get_class($exception),
+                'file'             => basename($exception->getFile()),
+                'fileFull'         => $exception->getFile(),
+                'line'             => $exception->getLine(),
+                'stackTrace'       => $exception->getTraceAsString(),
+                'stackTraceFrames' => $frames,
             );
             
             // Log full exception to file logger
@@ -1400,8 +1894,13 @@ class Riseup_Asia {
                 $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
                 $trace_lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
             }
+            
+            // Generate frames array using helper function
+            $frames = riseup_backtrace_to_frames($backtrace);
+            
             $error_data['error']['details'] = array(
-                'stackTrace' => implode("\n", $trace_lines),
+                'stackTrace'       => implode("\n", $trace_lines),
+                'stackTraceFrames' => $frames,
             );
             
             $this->file_logger->error('Error response', array(
