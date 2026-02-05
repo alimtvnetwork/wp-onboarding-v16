@@ -751,19 +751,28 @@ type BootstrapResult struct {
 
 // createUploaderZip creates a ZIP file of the uploader plugin
 func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
-	// Ensure path exists
-	info, err := os.Stat(uploaderPath)
+	// Resolve to absolute path first
+	absUploaderPath, err := pathutil.ToAbsolute(uploaderPath)
 	if err != nil {
-		return "", fmt.Errorf("uploader path not found: %s", uploaderPath)
+		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve uploader path").
+			WithContext("path", uploaderPath)
+	}
+
+	// Ensure path exists
+	info, err := os.Stat(absUploaderPath)
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrFSNotFound, "uploader path not found").
+			WithContext("path", pathutil.ForDisplay(absUploaderPath))
 	}
 	if !info.IsDir() {
-		return "", fmt.Errorf("uploader path is not a directory: %s", uploaderPath)
+		return "", apperror.New(apperror.ErrFSInvalid, "uploader path is not a directory").
+			WithContext("path", pathutil.ForDisplay(absUploaderPath))
 	}
 
 	// Create temp file for ZIP
 	tempFile, err := os.CreateTemp("", "riseup-asia-uploader-*.zip")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp file: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrFSWrite, "failed to create temp file for uploader ZIP")
 	}
 	tempPath := tempFile.Name()
 
@@ -771,14 +780,14 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
 	zipWriter := zip.NewWriter(tempFile)
 
 	// Walk directory and add files
-	baseName := filepath.Base(uploaderPath)
-	err = filepath.Walk(uploaderPath, func(path string, info os.FileInfo, err error) error {
+	baseName := filepath.Base(absUploaderPath)
+	err = filepath.Walk(absUploaderPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Get relative path
-		relPath, _ := filepath.Rel(uploaderPath, path)
+		relPath, _ := filepath.Rel(absUploaderPath, path)
 		if relPath == "." {
 			return nil
 		}
@@ -819,7 +828,8 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
 
 	if err != nil {
 		os.Remove(tempPath)
-		return "", fmt.Errorf("failed to create zip: %w", err)
+		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP").
+			WithContext("path", pathutil.ForDisplay(absUploaderPath))
 	}
 
 	return tempPath, nil

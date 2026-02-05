@@ -33,12 +33,16 @@ All phases have been implemented. This plan addressed two critical areas:
 - `api/router.go` - filepath.Join → pathutil.MustJoin for SPA serving
 - `services/site/service.go` - Added pathutil import
 - `services/e2e/service.go` - fmt.Errorf → apperror.New
+- `services/version/service.go` - fmt.Errorf → apperror.Wrap/New
+- `wordpress/powershell.go` - fmt.Errorf → apperror.Wrap/New + pathutil
+- `version/version.go` - filepath.Join → pathutil.MustJoin
+- `pkg/apperror/codes.go` - Added E10xxx-E12xxx error codes
 
 ### Documentation ✅
 - Updated `path-management.md` with prohibited patterns
 - Updated `logging-requirements.md` with structured error requirements
 
-**Total: 17 files modified, ~80 error handling changes, ~40 path management changes**
+**Total: 20 files modified, ~95 error handling changes, ~50 path management changes**
 
 ---
 

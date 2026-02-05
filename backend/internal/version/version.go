@@ -4,7 +4,8 @@ package version
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
+
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // Info holds version information from version.json
@@ -27,7 +28,7 @@ func Default() *Info {
 
 // Load reads version info from the specified version.json file
 func Load(frontendDistDir string) (*Info, error) {
-	versionFile := filepath.Join(frontendDistDir, "version.json")
+	versionFile := pathutil.MustJoin(frontendDistDir, "version.json")
 
 	// Try frontend/dist first, then fall back to public/
 	if _, err := os.Stat(versionFile); os.IsNotExist(err) {

@@ -4,12 +4,13 @@ package wordpress
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
+
+	"wp-plugin-publish/pkg/apperror"
+	"wp-plugin-publish/pkg/pathutil"
 )
 
 // PowerShellConfig holds configuration for the PowerShell uploader script.
@@ -40,7 +41,7 @@ type PowerShellResult struct {
 func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(line string)) (*PowerShellResult, error) {
 	// Only available on Windows
 	if runtime.GOOS != "windows" {
-		return nil, fmt.Errorf("PowerShell upload only available on Windows")
+		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
 
 	result := &PowerShellResult{
@@ -51,7 +52,7 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 	// Serialize config to JSON
 	configBytes, err := json.Marshal(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("marshal config: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrPublishConfig, "failed to marshal PowerShell config")
 	}
 
 	// Build PowerShell command with inline JSON config
@@ -131,7 +132,7 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 // This is simpler than JSON config and works well for programmatic invocation.
 func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, password, slug string, activate bool, onOutput func(line string)) (*PowerShellResult, error) {
 	if runtime.GOOS != "windows" {
-		return nil, fmt.Errorf("PowerShell upload only available on Windows")
+		return nil, apperror.New(apperror.ErrPublishPlatform, "PowerShell upload only available on Windows")
 	}
 
 	result := &PowerShellResult{
@@ -212,15 +213,15 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 // FindUploadScript looks for upload-plugin.ps1 in common locations.
 func FindUploadScript(backendDir string) string {
 	candidates := []string{
-		filepath.Join(backendDir, "scripts", "upload-plugin.ps1"),
-		filepath.Join(backendDir, "upload-plugin.ps1"),
+		pathutil.MustJoin(backendDir, "scripts", "upload-plugin.ps1"),
+		pathutil.MustJoin(backendDir, "upload-plugin.ps1"),
 		"scripts/upload-plugin.ps1",
 		"upload-plugin.ps1",
 	}
 
 	for _, path := range candidates {
 		if _, err := os.Stat(path); err == nil {
-			absPath, _ := filepath.Abs(path)
+			absPath := pathutil.MustAbsolute(path)
 			return absPath
 		}
 	}

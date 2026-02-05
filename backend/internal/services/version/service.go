@@ -3,12 +3,12 @@ package version
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // Config holds version service configuration
@@ -83,12 +83,14 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (interface{}, e
 	// Get version info
 	version, err := s.db.GetPluginVersionByID(versionID)
 	if err != nil {
-		return nil, fmt.Errorf("version not found: %w", err)
+		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
+			WithContext("versionId", versionID)
 	}
 
 	backupPath, _ := version["backupPath"].(string)
 	if backupPath == "" {
-		return nil, fmt.Errorf("no backup available for this version")
+		return nil, apperror.New(apperror.ErrVersionNoBackup, "no backup available for this version").
+			WithContext("versionId", versionID)
 	}
 
 	pluginID, _ := version["pluginId"].(int64)
