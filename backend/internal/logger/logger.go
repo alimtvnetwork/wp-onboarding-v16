@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -73,25 +74,49 @@ func New(cfg Config) *Logger {
 	return &Logger{config: cfg, prefix: prefix}
 }
 
-// log is the internal logging method
+// log is the internal logging method with new format:
+// [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
 func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 	if level < l.config.Level {
 		return
 	}
 
 	// Get caller info
-	_, file, line, ok := runtime.Caller(2)
+	pc, file, line, ok := runtime.Caller(2)
+	funcName := "unknown"
 	if ok {
-		// Extract just the filename
-		parts := strings.Split(file, "/")
-		file = parts[len(parts)-1]
+		// Extract package name from function
+		fn := runtime.FuncForPC(pc)
+		if fn != nil {
+			fullName := fn.Name()
+			// Extract package name (e.g., "wp-plugin-publish/internal/services/publish" -> "publish")
+			parts := strings.Split(fullName, "/")
+			if len(parts) > 0 {
+				lastPart := parts[len(parts)-1]
+				// Split by "." to get package.function
+				funcParts := strings.Split(lastPart, ".")
+				if len(funcParts) > 0 {
+					funcName = funcParts[0]
+				}
+			}
+		}
+		// Keep full relative file path for better debugging
+		// Try to make it relative from "internal/" or "pkg/"
+		if idx := strings.Index(file, "internal/"); idx != -1 {
+			file = file[idx:]
+		} else if idx := strings.Index(file, "pkg/"); idx != -1 {
+			file = file[idx:]
+		} else {
+			file = filepath.Base(file)
+		}
 	} else {
 		file = "unknown"
 		line = 0
 	}
 
-	// Build log message
-	timestamp := time.Now().Format(l.config.TimeFormat)
+	// Build log message with new format
+	// Format: [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
+	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	levelStr := levelNames[level]
 
 	var builder strings.Builder
@@ -101,11 +126,11 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 		builder.WriteString(levelColors[level])
 	}
 
-	// Format: [vX.X.X - TIME] message key=value... (LEVEL file:line)
+	// Format: [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
 	if l.prefix != "" {
-		builder.WriteString(fmt.Sprintf("%s - %s] %s", l.prefix, timestamp, msg))
+		builder.WriteString(fmt.Sprintf("%s %s] [%s] %s", l.prefix, timestamp, funcName, msg))
 	} else {
-		builder.WriteString(fmt.Sprintf("[%s] %s", timestamp, msg))
+		builder.WriteString(fmt.Sprintf("[%s] [%s] %s", timestamp, funcName, msg))
 	}
 
 	// Add key-value pairs
@@ -115,8 +140,8 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 		}
 	}
 
-	// Add level and location at the end
-	builder.WriteString(fmt.Sprintf(" (%s %s:%d)", levelStr, file, line))
+	// Add level and location at the end in brackets
+	builder.WriteString(fmt.Sprintf(" [%s] [%s:%d]", levelStr, file, line))
 
 	// For ERROR and FATAL levels, append full stack trace
 	if level >= LevelError {

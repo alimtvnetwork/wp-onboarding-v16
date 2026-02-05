@@ -1011,6 +1011,81 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, result)
 }
 
+// ScanDirectoriesPath scans multiple directories for WordPress plugin info
+func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.PluginService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Plugin service not available")
+		return
+	}
+
+	var input struct {
+		Paths           []string `json:"paths"`
+		CreateDetection bool     `json:"createDetection"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+
+	if len(input.Paths) == 0 {
+		respondError(w, http.StatusBadRequest, "E1002", "At least one path is required")
+		return
+	}
+
+	type scanResult struct {
+		Path             string      `json:"path"`
+		IsPlugin         bool        `json:"isPlugin"`
+		Metadata         interface{} `json:"metadata,omitempty"`
+		Error            string      `json:"error,omitempty"`
+		DetectionCreated bool        `json:"detectionCreated,omitempty"`
+	}
+
+	results := make([]scanResult, 0, len(input.Paths))
+	detected := 0
+
+	for _, path := range input.Paths {
+		result, err := Services.PluginService.ScanDirectory(r.Context(), path)
+		if err != nil {
+			results = append(results, scanResult{
+				Path:     path,
+				IsPlugin: false,
+				Error:    err.Error(),
+			})
+			continue
+		}
+
+		// Check if it's a valid plugin from the result
+		isPlugin := false
+		if scanMap, ok := result.(map[string]interface{}); ok {
+			if valid, ok := scanMap["isValid"].(bool); ok && valid {
+				isPlugin = true
+				detected++
+			}
+		}
+
+		sr := scanResult{
+			Path:     path,
+			IsPlugin: isPlugin,
+			Metadata: result,
+		}
+
+		// Optionally create wp-plugin-detected.json
+		if input.CreateDetection && isPlugin {
+			if err := Services.PluginService.WritePluginDetected(r.Context(), path); err == nil {
+				sr.DetectionCreated = true
+			}
+		}
+
+		results = append(results, sr)
+	}
+
+	respondSuccess(w, map[string]interface{}{
+		"scanned":  len(input.Paths),
+		"detected": detected,
+		"results":  results,
+	})
+}
+
 // --- Publish Handlers ---
 
 // PublishInput represents the request body for publishing

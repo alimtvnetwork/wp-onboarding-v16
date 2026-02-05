@@ -9,7 +9,8 @@ import {
   GitPullRequest,
   CheckSquare,
   Upload,
-  Loader2
+  Loader2,
+  FolderSearch
 } from "lucide-react";
 
 interface BulkActionsBarProps {
@@ -23,8 +24,10 @@ interface BulkActionsBarProps {
   onGitPullAll: () => void;
   onDeleteAll: () => void;
   onDeployAll?: () => void;
+  onScanDirectories?: () => void;
   isProcessing: boolean;
   isDeploying?: boolean;
+  isScanning?: boolean;
 }
 
 export function BulkActionsBar({
@@ -38,8 +41,10 @@ export function BulkActionsBar({
   onGitPullAll,
   onDeleteAll,
   onDeployAll,
+  onScanDirectories,
   isProcessing,
   isDeploying = false,
+  isScanning = false,
 }: BulkActionsBarProps) {
   if (selectedCount === 0) return null;
 
@@ -70,6 +75,23 @@ export function BulkActionsBar({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Scan Directories */}
+        {onScanDirectories && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onScanDirectories}
+            disabled={isProcessing || isScanning}
+            className="h-8"
+          >
+            {isScanning ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <FolderSearch className="h-4 w-4 mr-1" />
+            )}
+            Scan All
+          </Button>
+        )}
         {/* Deploy All - Primary action */}
         {onDeployAll && (
           <Button
