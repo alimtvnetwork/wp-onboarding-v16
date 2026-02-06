@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo } from "@/lib/api";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
+import { useMemo } from "react";
+
+const POLL_INTERVAL = 5000; // 5s when snapshots are running
 
 export function useRemoteSnapshots(siteId: number) {
   const queryClient = useQueryClient();
@@ -14,6 +17,12 @@ export function useRemoteSnapshots(siteId: number) {
       const res = await api.getRemoteSnapshots(siteId);
       if (!res.success) throw new Error(res.error?.message || "Failed to fetch snapshots");
       return (res.data || []) as SnapshotRecord[];
+    },
+    refetchInterval: (query) => {
+      const data = query.state.data as SnapshotRecord[] | undefined;
+      if (!data) return false;
+      const hasRunning = data.some((s) => s.status === "running" || s.status === "in_progress");
+      return hasRunning ? POLL_INTERVAL : false;
     },
   });
 
@@ -95,14 +104,21 @@ export function useRemoteSnapshots(siteId: number) {
     },
   });
 
+  const hasRunningSnapshots = useMemo(() => {
+    return (snapshotsQuery.data || []).some((s) => s.status === "running" || s.status === "in_progress");
+  }, [snapshotsQuery.data]);
+
   return {
     snapshots: snapshotsQuery.data || [],
     isLoading: snapshotsQuery.isLoading,
     isError: snapshotsQuery.isError,
     error: snapshotsQuery.error,
     refetch: snapshotsQuery.refetch,
+    hasRunningSnapshots,
     settings: settingsQuery.data,
+    isLoadingSettings: settingsQuery.isLoading,
     providers: providersQuery.data || [],
+    isLoadingProviders: providersQuery.isLoading,
     createSnapshot: createMutation.mutate,
     isCreating: createMutation.isPending,
     deleteSnapshot: deleteMutation.mutate,
