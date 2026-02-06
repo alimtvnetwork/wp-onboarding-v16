@@ -52,12 +52,18 @@ type BackupConfig struct {
 
 // LoggingConfig holds logging settings
 type LoggingConfig struct {
-	Level         string `json:"level"`
-	RetentionDays int    `json:"retentionDays"`
-	DebugMode     bool   `json:"debugMode"`
+	Level                  string `json:"level"`
+	RetentionDays          int    `json:"retentionDays"`
+	DebugMode              bool   `json:"debugMode"`
 	// TimeFormat uses Go time layout (e.g. "2006-01-02 03:04:05 PM" for 12-hour clock).
 	// This is the SINGLE SOURCE OF TRUTH for all backend log timestamps.
-	TimeFormat string `json:"timeFormat"`
+	TimeFormat             string `json:"timeFormat"`
+	// ClearLogsOnStartup clears log.txt and error.log.txt on app startup
+	ClearLogsOnStartup     bool   `json:"clearLogsOnStartup"`
+	// ClearSessionsOnStartup clears all session folders on app startup
+	ClearSessionsOnStartup bool   `json:"clearSessionsOnStartup"`
+	// SessionLoggingEnabled enables per-request session logging for all API calls
+	SessionLoggingEnabled  bool   `json:"sessionLoggingEnabled"`
 }
 
 // SecurityConfig holds security settings
@@ -126,11 +132,13 @@ func DefaultConfig() *Config {
 			MaxBackupsPerPlugin: 10,
 		},
 		Logging: LoggingConfig{
-			Level:         "info",
-			RetentionDays: 7,
-			DebugMode:     false,
-			// Default: [YYYY-MM-DD hh:mm:ss AM/PM] (12-hour clock)
-			TimeFormat: "2006-01-02 03:04:05 PM",
+			Level:                  "info",
+			RetentionDays:          7,
+			DebugMode:              false,
+			TimeFormat:             "2006-01-02 03:04:05 PM",
+			ClearLogsOnStartup:     false,
+			ClearSessionsOnStartup: false,
+			SessionLoggingEnabled:  true, // Enable per-request session logging by default
 		},
 		Security: SecurityConfig{
 			EncryptionKey: "", // Must be set via environment or config

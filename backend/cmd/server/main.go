@@ -23,6 +23,7 @@ import (
 	"wp-plugin-publish/internal/services/errorhistory"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
+	"wp-plugin-publish/internal/services/requestsession"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/services/sync"
@@ -79,38 +80,60 @@ func main() {
 	// Load version info from version.json (frontend/dist or public/)
 	versionInfo, _ := version.Load(cfg.Server.StaticDir)
 
-	// Ensure on-disk log files exist for troubleshooting bundles.
-	// Paths:
-	//   data/errors/log.txt       (all backend logs)
-	//   data/errors/error.log.txt (errors + fatals only)
-	logOutput := io.Writer(os.Stdout)
+	// Ensure errors directory exists and set up paths
 	errorsDir := filepath.Join(filepath.Dir(cfg.DatabasePath), "errors")
 	if err := os.MkdirAll(errorsDir, 0755); err != nil {
 		bootstrapLog.Error("Failed to create errors dir", "path", errorsDir, "error", err)
-	} else {
-		allLogPath := filepath.Join(errorsDir, "log.txt")
-		errLogPath := filepath.Join(errorsDir, "error.log.txt")
+	}
 
-		allFile, err1 := os.OpenFile(allLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		errFile, err2 := os.OpenFile(errLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-		if err1 != nil || err2 != nil {
-			bootstrapLog.Error("Failed to open on-disk log files", "allLog", allLogPath, "errorLog", errLogPath, "err1", err1, "err2", err2)
-			if allFile != nil {
-				allFile.Close()
-			}
-			if errFile != nil {
-				errFile.Close()
-			}
-		} else {
-			defer allFile.Close()
-			defer errFile.Close()
-			logOutput = io.MultiWriter(
-				os.Stdout,
-				stripAnsiWriter{w: allFile},
-				errorOnlyWriter{w: stripAnsiWriter{w: errFile}},
-			)
-			bootstrapLog.Info("On-disk logs enabled", "log", allLogPath, "errorLog", errLogPath)
+	allLogPath := filepath.Join(errorsDir, "log.txt")
+	errLogPath := filepath.Join(errorsDir, "error.log.txt")
+
+	// Clear logs on startup if configured
+	if cfg.Logging.ClearLogsOnStartup {
+		bootstrapLog.Info("Clearing logs on startup (clearLogsOnStartup=true)")
+		if err := os.Remove(allLogPath); err != nil && !os.IsNotExist(err) {
+			bootstrapLog.Error("Failed to clear log.txt", "error", err)
 		}
+		if err := os.Remove(errLogPath); err != nil && !os.IsNotExist(err) {
+			bootstrapLog.Error("Failed to clear error.log.txt", "error", err)
+		}
+	}
+
+	// Clear sessions on startup if configured
+	if cfg.Logging.ClearSessionsOnStartup {
+		sessionsDir := filepath.Join(filepath.Dir(cfg.DatabasePath), "sessions")
+		bootstrapLog.Info("Clearing sessions on startup (clearSessionsOnStartup=true)", "path", sessionsDir)
+		if err := os.RemoveAll(sessionsDir); err != nil && !os.IsNotExist(err) {
+			bootstrapLog.Error("Failed to clear sessions directory", "error", err)
+		}
+		// Recreate the empty directory
+		if err := os.MkdirAll(sessionsDir, 0755); err != nil {
+			bootstrapLog.Error("Failed to recreate sessions directory", "error", err)
+		}
+	}
+
+	// Set up on-disk log files
+	logOutput := io.Writer(os.Stdout)
+	allFile, err1 := os.OpenFile(allLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	errFile, err2 := os.OpenFile(errLogPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err1 != nil || err2 != nil {
+		bootstrapLog.Error("Failed to open on-disk log files", "allLog", allLogPath, "errorLog", errLogPath, "err1", err1, "err2", err2)
+		if allFile != nil {
+			allFile.Close()
+		}
+		if errFile != nil {
+			errFile.Close()
+		}
+	} else {
+		defer allFile.Close()
+		defer errFile.Close()
+		logOutput = io.MultiWriter(
+			os.Stdout,
+			stripAnsiWriter{w: allFile},
+			errorOnlyWriter{w: stripAnsiWriter{w: errFile}},
+		)
+		bootstrapLog.Info("On-disk logs enabled", "log", allLogPath, "errorLog", errLogPath)
 	}
 
 	// Initialize the real logger with configured timeFormat (single source of truth)
@@ -160,6 +183,22 @@ func main() {
 		}
 	}
 
+	// Initialize request session store for per-request logging
+	var reqSessionStore *requestsession.Store
+	if cfg.Logging.SessionLoggingEnabled {
+		var err error
+		reqSessionStore, err = requestsession.New(requestsession.Config{
+			DataDir:       filepath.Dir(cfg.DatabasePath),
+			Logger:        log,
+			RetentionDays: 1, // Keep request sessions for 1 day (high volume)
+		})
+		if err != nil {
+			log.Error("Failed to initialize request session store", "error", err)
+		} else {
+			log.Info("Request session logging enabled")
+		}
+	}
+
 	// Start HTTP server - use handlers.NewServiceRegistry to wrap services with adapters
 	serviceRegistry := handlers.NewServiceRegistry(
 		services.Site,
@@ -186,8 +225,10 @@ func main() {
 			Session:      serviceRegistry.SessionService,
 			ErrorHistory: serviceRegistry.ErrorHistoryService,
 		},
-		WSHub:  wsHub,
-		Logger: log,
+		WSHub:                  wsHub,
+		Logger:                 log,
+		RequestSessionStore:    reqSessionStore,
+		SessionLoggingEnabled:  cfg.Logging.SessionLoggingEnabled,
 	})
 	go func() {
 		if err := server.Start(); err != nil {

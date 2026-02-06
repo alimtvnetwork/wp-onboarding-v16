@@ -21,11 +21,13 @@ import (
 
 // ServerConfig holds server configuration
 type ServerConfig struct {
-	Port      int
-	StaticDir string
-	Services  *ServiceRegistry // Typed service registry
-	WSHub     *ws.Hub
-	Logger    *logger.Logger
+	Port                   int
+	StaticDir              string
+	Services               *ServiceRegistry // Typed service registry
+	WSHub                  *ws.Hub
+	Logger                 *logger.Logger
+	RequestSessionStore    middleware.SessionStore
+	SessionLoggingEnabled  bool
 }
 
 // ServiceRegistry holds all services for handlers
@@ -64,12 +66,16 @@ func NewServer(cfg ServerConfig) *Server {
 		}
 	}
 
+	// Wire up request session store for handlers
+	handlers.RequestSessionStore = cfg.RequestSessionStore
+
 	router := mux.NewRouter()
 
 	// Apply global middleware
 	router.Use(middleware.CORS)
 	router.Use(middleware.Logging(cfg.Logger))
 	router.Use(middleware.Recovery(cfg.Logger))
+	router.Use(middleware.SessionLogging(cfg.Logger, cfg.RequestSessionStore, cfg.SessionLoggingEnabled))
 
 	// API v1 routes
 	api := router.PathPrefix("/api/v1").Subrouter()
@@ -172,11 +178,19 @@ func NewServer(cfg ServerConfig) *Server {
 	// Mappings endpoints
 	api.HandleFunc("/mappings/{id}", handlers.DeletePluginMapping).Methods("DELETE")
 
-	// Session endpoints
+	// Session endpoints (operation sessions - publish, sync, etc.)
 	api.HandleFunc("/sessions", handlers.GetSessions).Methods("GET")
 	api.HandleFunc("/sessions/{id}", handlers.GetSession).Methods("GET")
 	api.HandleFunc("/sessions/{id}/logs", handlers.GetSessionLogs).Methods("GET")
 	api.HandleFunc("/sessions/{id}", handlers.DeleteSession).Methods("DELETE")
+
+	// Request session endpoints (per-API-call logging)
+	api.HandleFunc("/request-sessions", handlers.GetRequestSessions).Methods("GET")
+	api.HandleFunc("/request-sessions", handlers.ClearRequestSessions).Methods("DELETE")
+	api.HandleFunc("/request-sessions/errors", handlers.GetRequestSessionsByError).Methods("GET")
+	api.HandleFunc("/request-sessions/{id}", handlers.GetRequestSession).Methods("GET")
+	api.HandleFunc("/request-sessions/{id}", handlers.DeleteRequestSession).Methods("DELETE")
+	api.HandleFunc("/request-sessions/{id}/export", handlers.ExportRequestSession).Methods("GET")
 
 	// E2E Testing endpoints
 	api.HandleFunc("/e2e/suites", handlers.GetE2ESuites).Methods("GET")
