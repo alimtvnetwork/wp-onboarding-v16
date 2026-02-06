@@ -3,6 +3,7 @@ import { usePlugins } from "@/hooks/usePlugins";
 import { useSites } from "@/hooks/useSites";
 import { usePluginFormPersistence } from "@/hooks/usePluginFormPersistence";
 import { useQuickPublish } from "@/hooks/useQuickPublish";
+import { useBulkQuickPublish } from "@/hooks/useBulkQuickPublish";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,7 @@ export default function Plugins() {
   const queryClient = useQueryClient();
   const { captureError, openErrorModal } = useErrorStore();
   const { quickPublishAll, hasActiveOperation } = useQuickPublish();
+  const { bulkQuickPublish } = useBulkQuickPublish();
   
   // Use persistent form hook
   const { formData, handleInputChange, clearForm } = usePluginFormPersistence();
@@ -562,30 +564,10 @@ export default function Plugins() {
 
   const handleBulkDeploy = async () => {
     setIsBulkDeploying(true);
-    toast.info("Deploying selected plugins to all mapped sites...");
     try {
       const ids = Array.from(selectedPluginIds);
-      let successCount = 0;
-      let totalPublished = 0;
-      
-      for (const id of ids) {
-        const plugin = plugins?.find((p) => p.id === id);
-        if (plugin?.mappings && plugin.mappings.length > 0) {
-          for (const mapping of plugin.mappings) {
-            const response = await api.publishPlugin(id, mapping.siteId, {
-              mode: "full",
-              createBackup: true,
-            });
-            if (response.success) {
-              totalPublished += response.data?.filesUpdated || 0;
-              successCount++;
-            }
-          }
-        }
-      }
-      
-      toast.success(`Deployed to ${successCount} sites (${totalPublished} files updated)`);
-      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      const selectedPlugins = plugins?.filter((p) => ids.includes(p.id)) || [];
+      await bulkQuickPublish(selectedPlugins, { concurrency: 2 });
       clearSelection();
     } catch (error) {
       toast.error("Failed to deploy plugins");

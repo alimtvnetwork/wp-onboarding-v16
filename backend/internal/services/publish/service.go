@@ -335,8 +335,43 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		})
 
 		s.broadcastProgress(pluginID, siteID, "uploading", 60, "Uploading to WordPress...")
-		performed, uploadResult, activated, err := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
-		alreadyActivated = activated
+
+		// Use retry with exponential backoff for transient network failures
+		retryCfg := DefaultRetryConfig()
+		type uploadOut struct {
+			performed    bool
+			uploadResult *wordpress.UploadResult
+			activated    bool
+		}
+		uploadVal, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (uploadOut, error) {
+			if attempt > 1 {
+				s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "upload", StageContext{
+					What:   fmt.Sprintf("Retrying upload (attempt %d/%d)", attempt, retryCfg.MaxAttempts),
+					Why:    "Previous attempt failed with transient error",
+					Where:  siteInfo.URL,
+				})
+			}
+			p, ur, a, e := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
+			return uploadOut{p, ur, a}, e
+		})
+
+		if retryResult.Attempts > 1 {
+			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
+				What:   "Upload retry summary",
+				Result: retryDescription(retryResult),
+				InnerData: map[string]interface{}{
+					"attempts":   retryResult.Attempts,
+					"totalDelay": retryResult.TotalDelay.Milliseconds(),
+					"succeeded":  retryResult.Succeeded,
+				},
+			})
+		}
+
+		performed := uploadVal.performed
+		uploadResult := uploadVal.uploadResult
+		alreadyActivated = uploadVal.activated
+		err = retryResult.LastError
+		
 
 		if err != nil {
 			// Build detailed error diagnostics with what/why/where/result
