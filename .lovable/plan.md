@@ -1,130 +1,105 @@
 
 
-# Enhanced Sync System - Phased Implementation Plan
+# Fix Plan: Complete Error Report + API Endpoint Redesign
 
-## Overview
+## Problem Summary
 
-The current sync system has a placeholder for remote file comparison -- it scans local files but never actually fetches remote hashes. This plan implements a full bidirectional sync check with SQLite-backed file caching on both the WordPress side (PHP) and the Go backend, plus a tree view UI showing mismatches with conflict resolution based on "highest modification date" priority.
+Two major issues need to be fixed:
 
----
+1. **Copy Full Report is incomplete**: The `generateErrorReport()` function in the error modal is missing several data sections that are already captured in the `CapturedError` object (UI click path, React execution chain, PHP stack frames, error.log.txt content).
 
-## Current State
-
-- **WordPress Plugin**: The `/plugins/{slug}/files` endpoint already scans files and returns MD5 hashes + `modifiedAt` (UTC ISO 8601), but recalculates on every request -- no caching.
-- **Go Backend**: `CheckSync()` scans local files for MD5 hashes but uses a hardcoded empty map for remote files (`remoteFiles := make(map[string]string)`). No modification timestamps are tracked.
-- **Frontend**: `SyncProgressDialog` shows progress stages. `RemotePluginFileBrowser` already has a working `buildTree()` function for hierarchical file display.
+2. **Remote plugin API uses bad URL design**: Plugin slugs are embedded in URL paths (e.g., `/remote-plugins/broken-link-checker/broken-link-checker/disable`), which breaks with slashes in identifiers. The user wants JSON-body-based endpoints instead.
 
 ---
 
-## Phase 41: WordPress Plugin - File Hash Cache (SQLite)
+## Part 1: Complete the Copy Full Report
 
-**Goal**: Cache file hashes and modification times in the SQLite database so repeated sync requests return instantly for unchanged files.
+**File:** `src/components/errors/GlobalErrorModal.tsx` (function `generateErrorReport`, lines 1392-1487)
 
-### What gets built:
-- New SQLite migration (v7) adding a `file_cache` table with columns: `plugin_slug`, `relative_path`, `md5_hash`, `modified_at` (UTC), `file_size`, `cached_at`
-- New constant definitions in `constants.php` for the table name and endpoint
-- A new `RiseupFileCache` class (`includes/class-file-cache.php`) that:
-  - Scans a plugin directory, comparing each file's `filemtime()` against the cached `modified_at`
-  - If unchanged: returns cached hash (skip `md5_file()`)
-  - If changed or new: recalculates `md5_file()`, updates cache
-  - Removes cache entries for deleted files
-  - Returns a flat array of `{path, hash, modifiedAt, size}`
-- Update the existing `/plugins/{slug}/files` endpoint to use the cache class instead of raw scanning
-- New endpoint `/plugins/{slug}/sync-manifest` that returns the cached data in a standardized format optimized for sync comparison
+The `CapturedError` object already captures `uiClickPathString`, `executionLogsFormatted`, `phpStackFrames`, but `generateErrorReport()` never includes them in the output. The following sections will be added to the generated markdown report:
 
-### Response format (from sync-manifest endpoint):
-```json
-{
-  "success": true,
-  "data": {
-    "plugin": "my-plugin",
-    "fileCount": 42,
-    "generatedAt": "2026-02-06T12:00:00Z",
-    "cached": true,
-    "files": [
-      {
-        "path": "includes/class-main.php",
-        "hash": "a1b2c3d4e5f6...",
-        "modifiedAt": "2026-02-06T10:30:00Z",
-        "size": 4096
-      }
-    ]
-  }
-}
+- **User Interactions** (from `error.uiClickPathString`) -- the click path the user took before the error
+- **Frontend Execution Chain** (from `error.executionLogsFormatted`) -- React method call chain with original names
+- **PHP Stack Trace** (from `error.phpStackFrames`) -- WordPress/PHP call stack formatted as a table
+- **error.log.txt content** -- fetched async from the backend via `api.getBackendErrorLog()` and appended
+
+The `copyFullError` function will be made async so it can fetch the backend error log before copying, combining all sections into one comprehensive report.
+
+---
+
+## Part 2: Redesign Remote Plugin API Endpoints
+
+Change from URL-parameter-based to JSON-body-based endpoints.
+
+### Before (current):
+```text
+POST /sites/{id}/remote-plugins/{plugin:.+}/enable
+POST /sites/{id}/remote-plugins/{plugin:.+}/disable
+DELETE /sites/{id}/remote-plugins/{plugin:.+}
+GET  /sites/{id}/remote-plugins/{plugin:.+}/files
+POST /sites/{id}/remote-plugins/{plugin:.+}/file
 ```
 
----
+### After (new):
+```text
+POST /sites/{id}/remote-plugins/enable      { "plugin": "slug" }
+POST /sites/{id}/remote-plugins/disable     { "plugin": "slug" }
+POST /sites/{id}/remote-plugins/delete      { "plugin": "slug" }
+POST /sites/{id}/remote-plugins/files       { "plugin": "slug" }
+POST /sites/{id}/remote-plugins/file        { "plugin": "slug", "path": "file.php" }
+```
 
-## Phase 42: Go Backend - Local File Scanning with Timestamps
+All plugin identifiers move to the JSON request body. DELETE becomes POST (since DELETE with body is non-standard).
 
-**Goal**: Extend the local file scanner to track modification timestamps alongside MD5 hashes, and implement the comparison engine with conflict resolution.
+### Files Changed:
 
-### What gets built:
-- New `FileEntry` struct in `sync/service.go` replacing the simple `map[string]string`:
-  ```text
-  FileEntry {
-    Path       string
-    Hash       string
-    ModifiedAt time.Time
-    Size       int64
-  }
-  ```
-- Update `scanLocalFiles()` to return `map[string]FileEntry` (path to hash+modifiedAt+size)
-- Update `compareFiles()` to accept `map[string]FileEntry` for both local and remote, implementing:
-  - If hashes match: file is in sync (skip)
-  - If hashes differ: compare `modifiedAt` -- the newer timestamp wins priority
-  - Files only in local: marked as "added" (local only)
-  - Files only in remote: marked as "deleted" (remote only)
-- Enhance `SyncResult` and `FileChange` models to include `modifiedAt`, `size`, and `direction` (local_newer / remote_newer)
+| File | Change |
+|------|--------|
+| `backend/internal/api/router.go` | Replace 5 routes with new JSON-body endpoints |
+| `backend/internal/api/handlers/handlers.go` | Update 5 handlers to read `plugin` from JSON body instead of `mux.Vars` |
+| `src/lib/api.ts` | Update 5 frontend API functions to send plugin in body |
+| `src/components/errors/GlobalErrorModal.tsx` | Add missing sections to `generateErrorReport()`, make copy async |
 
 ---
 
-## Phase 43: Go Backend - Remote Integration via WordPress API
+## Technical Details
 
-**Goal**: Wire the Go backend to actually call the WordPress plugin's sync-manifest endpoint and perform the real comparison.
+### Router changes (router.go)
+Remove the `{plugin:.+}` pattern routes and register new clean routes:
+```go
+api.HandleFunc("/sites/{id}/remote-plugins/enable", handlers.EnableRemotePlugin).Methods("POST")
+api.HandleFunc("/sites/{id}/remote-plugins/disable", handlers.DisableRemotePlugin).Methods("POST")
+api.HandleFunc("/sites/{id}/remote-plugins/delete", handlers.DeleteRemotePlugin).Methods("POST")
+api.HandleFunc("/sites/{id}/remote-plugins/files", handlers.GetRemotePluginFiles).Methods("POST")
+api.HandleFunc("/sites/{id}/remote-plugins/file", handlers.GetRemotePluginFileContent).Methods("POST")
+```
 
-### What gets built:
-- New method in `wordpress/remote_files.go`: `GetPluginSyncManifest(slug string)` that calls the `/sync-manifest` endpoint
-- Update `CheckSync()` to:
-  1. Call `GetPluginSyncManifest()` to get remote file entries (with hash + modifiedAt)
-  2. Call `scanLocalFiles()` to get local file entries (with hash + modifiedAt)
-  3. Run the enhanced `compareFiles()` with both datasets
-  4. Broadcast detailed progress via WebSocket at each stage
-- Update the `SyncServiceAdapter` if the interface changes
-- Ensure site credentials are properly decrypted and passed to the WP client
+These must be registered BEFORE the catch-all GET `/sites/{id}/remote-plugins` to avoid conflicts.
 
----
+### Handler changes (handlers.go)
+Each handler will parse a JSON body struct:
+```go
+var input struct {
+    Plugin string `json:"plugin"`
+}
+json.NewDecoder(r.Body).Decode(&input)
+pluginSlug := input.Plugin
+```
 
-## Phase 44: React Frontend - Sync Tree View UI
+### Frontend API changes (api.ts)
+```typescript
+enableRemotePlugin: (siteId: number, pluginSlug: string) =>
+  request(`/sites/${siteId}/remote-plugins/enable`, {
+    method: "POST",
+    body: JSON.stringify({ plugin: pluginSlug })
+  }),
+```
 
-**Goal**: Display the sync comparison results in a hierarchical tree view showing file status, modification dates, and which side has priority.
+### Report generation additions (GlobalErrorModal.tsx)
+Add these sections between the existing backend logs and parsed frames sections:
+- PHP stack frames table (from `error.phpStackFrames`)
+- User interaction path (from `error.uiClickPathString`)  
+- Frontend execution chain (from `error.executionLogsFormatted`)
+- Backend error.log.txt (fetched async)
 
-### What gets built:
-- New `SyncTreeView` component (reusing `buildTree()` pattern from `RemotePluginFileBrowser`) showing:
-  - Folder/file hierarchy with expand/collapse
-  - Status icons per file: green checkmark (in sync), orange arrow (modified), blue plus (local only), red minus (remote only)
-  - For modified files: show both local and remote timestamps, highlight which is newer
-  - File size display
-- Update `SyncProgressDialog` to embed `SyncTreeView` after sync check completes
-- Add summary stats at the top: total files, in-sync count, modified count, added/deleted counts
-
----
-
-## Remaining Phases After This Plan
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-| **41** | WP Plugin - File Hash Cache (SQLite) | ✅ Complete |
-| **42** | Go Backend - Local Scanning with Timestamps | ✅ Complete |
-| **43** | Go Backend - Remote Integration | ✅ Complete |
-| **44** | React Frontend - Sync Tree View UI | ✅ Complete |
-
----
-
-## Technical Notes
-
-- **No true parallelism in PHP**: PHP is single-threaded. The "parallel" optimization means batching `md5_file()` calls efficiently and using the cache to skip unchanged files, not actual multi-threading.
-- **UTC 0 timestamps**: Both sides use UTC. PHP uses `gmdate('c', filemtime())`, Go uses `file.ModTime().UTC()`.
-- **Cache invalidation**: The WP plugin cache is invalidated per-file when `filemtime()` changes. The Go backend always scans fresh (local files are fast to read from disk).
-- **Conflict resolution priority**: When hashes differ, the file with the newer `modifiedAt` timestamp is flagged as the authoritative version. The UI shows direction arrows indicating which side should be pushed/pulled.
-
+ADD LOGS OF User Interaction Path, STEPS IN THE COPY REPORT AND MAKE SURE ALL BUTTONS ARE FUNCTIONAL IN ERROR MODAL
