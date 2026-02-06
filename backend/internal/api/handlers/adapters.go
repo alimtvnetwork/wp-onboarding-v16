@@ -130,6 +130,38 @@ func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteID int64) (
 	return a.Service.GetCredentials(ctx, siteID)
 }
 
+func (a *SiteServiceAdapter) GetRemoteSnapshots(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.GetRemoteSnapshots(ctx, siteID)
+}
+
+func (a *SiteServiceAdapter) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (interface{}, error) {
+	return a.Service.GetRemoteSnapshot(ctx, siteID, snapshotID)
+}
+
+func (a *SiteServiceAdapter) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+	return a.Service.CreateRemoteSnapshot(ctx, siteID, opts)
+}
+
+func (a *SiteServiceAdapter) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) error {
+	return a.Service.DeleteRemoteSnapshot(ctx, siteID, snapshotID)
+}
+
+func (a *SiteServiceAdapter) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]interface{}) (interface{}, error) {
+	return a.Service.RestoreRemoteSnapshot(ctx, siteID, snapshotID, opts)
+}
+
+func (a *SiteServiceAdapter) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.GetRemoteSnapshotSettings(ctx, siteID)
+}
+
+func (a *SiteServiceAdapter) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]interface{}) (interface{}, error) {
+	return a.Service.UpdateRemoteSnapshotSettings(ctx, siteID, settings)
+}
+
+func (a *SiteServiceAdapter) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.GetRemoteSnapshotProviders(ctx, siteID)
+}
+
 // PluginServiceAdapter wraps *plugin.Service to implement PluginServiceInterface
 type PluginServiceAdapter struct {
 	*plugin.Service

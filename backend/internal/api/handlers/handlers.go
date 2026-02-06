@@ -68,6 +68,15 @@ type SiteServiceInterface interface {
 	GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error)
 	// Credentials for API Explorer
 	GetCredentials(ctx context.Context, siteID int64) (interface{}, error)
+	// Remote snapshot management (Phase 28)
+	GetRemoteSnapshots(ctx context.Context, siteID int64) (interface{}, error)
+	GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (interface{}, error)
+	CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
+	DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) error
+	RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]interface{}) (interface{}, error)
+	GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (interface{}, error)
+	UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]interface{}) (interface{}, error)
+	GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (interface{}, error)
 }
 
 // SyncServiceInterface defines sync service methods
