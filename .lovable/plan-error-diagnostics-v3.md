@@ -192,30 +192,33 @@ Updated `GlobalErrorModal.tsx` Overview tab:
 
 ---
 
-## Phase 6: Multi-Error Queue UI
+## Phase 6: Multi-Error Queue UI ✅ COMPLETE
 
 **Priority: MEDIUM**
+**Completed: 2026-02-06**
 
-### 6.1 Error Queue State
+### 6.1 Error Queue State ✅
+
+Added to errorStore.ts:
 
 ```typescript
 interface ErrorQueueState {
-  errors: CapturedError[];
-  currentIndex: number;
-  selectedIds: Set<string>;
+  errorQueue: CapturedError[];
+  currentQueueIndex: number;
 }
 ```
 
-### 6.2 Modal Navigation
+### 6.2 Modal Navigation ✅
 
-- Show "1 of 3" indicator when multiple errors
-- Previous/Next buttons to navigate
-- "View All" to open drawer
+- Shows "1 / 3" indicator when multiple errors in queue
+- Previous/Next buttons to navigate (with wrap-around)
+- "Copy All" button for bulk markdown export
 
-### 6.3 Bulk Copy
+### 6.3 Bulk Copy ✅
 
-- "Copy All Errors" button in modal footer
-- Generates combined markdown report
+- `getQueuedErrorsMarkdown()` generates combined report
+- "View Selected" button in ErrorHistoryDrawer opens queue
+- ErrorHistoryDrawer integrates with queue via `openErrorQueue()`
 
 ---
 

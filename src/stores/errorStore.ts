@@ -111,6 +111,10 @@ interface ErrorStore {
   // Recent errors list (for history)
   recentErrors: CapturedError[];
   
+  // Error queue navigation (Phase 6)
+  errorQueue: CapturedError[];
+  currentQueueIndex: number;
+  
   // Error history sync state
   pendingSync: Set<string>; // Error IDs pending backend sync
   
@@ -149,10 +153,13 @@ interface ErrorStore {
     }
   ) => CapturedError;
   openErrorModal: (error: CapturedError) => void;
+  openErrorQueue: (errors: CapturedError[], startIndex?: number) => void;
+  navigateQueue: (direction: 'prev' | 'next') => void;
   closeErrorModal: () => void;
   clearRecentErrors: () => void;
   markErrorSynced: (errorId: string) => void;
   getPendingSyncErrors: () => CapturedError[];
+  getQueuedErrorsMarkdown: () => string;
 }
 
 /**
@@ -317,6 +324,8 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
   selectedError: null,
   isModalOpen: false,
   recentErrors: [],
+  errorQueue: [],
+  currentQueueIndex: 0,
   pendingSync: new Set<string>(),
   
   captureError: (error, meta) => {
@@ -495,15 +504,43 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
   },
   
   openErrorModal: (error) => {
-    set({ selectedError: error, isModalOpen: true });
+    set({ selectedError: error, isModalOpen: true, errorQueue: [error], currentQueueIndex: 0 });
+  },
+  
+  openErrorQueue: (errors, startIndex = 0) => {
+    if (errors.length === 0) return;
+    const idx = Math.max(0, Math.min(startIndex, errors.length - 1));
+    set({ 
+      selectedError: errors[idx], 
+      isModalOpen: true, 
+      errorQueue: errors, 
+      currentQueueIndex: idx 
+    });
+  },
+  
+  navigateQueue: (direction) => {
+    const { errorQueue, currentQueueIndex } = get();
+    if (errorQueue.length <= 1) return;
+    
+    let newIndex = currentQueueIndex;
+    if (direction === 'prev') {
+      newIndex = currentQueueIndex > 0 ? currentQueueIndex - 1 : errorQueue.length - 1;
+    } else {
+      newIndex = currentQueueIndex < errorQueue.length - 1 ? currentQueueIndex + 1 : 0;
+    }
+    
+    set({ 
+      currentQueueIndex: newIndex, 
+      selectedError: errorQueue[newIndex] 
+    });
   },
   
   closeErrorModal: () => {
-    set({ isModalOpen: false });
+    set({ isModalOpen: false, errorQueue: [], currentQueueIndex: 0 });
   },
   
   clearRecentErrors: () => {
-    set({ recentErrors: [], pendingSync: new Set() });
+    set({ recentErrors: [], pendingSync: new Set(), errorQueue: [], currentQueueIndex: 0 });
   },
   
   markErrorSynced: (errorId: string) => {
@@ -517,5 +554,32 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
   getPendingSyncErrors: () => {
     const state = get();
     return state.recentErrors.filter(e => state.pendingSync.has(e.id));
+  },
+  
+  getQueuedErrorsMarkdown: () => {
+    const { errorQueue } = get();
+    if (errorQueue.length === 0) return '';
+    
+    const reports = errorQueue.map((error, index) => {
+      return `# Error ${index + 1} of ${errorQueue.length}
+
+**Code:** ${error.code}
+**Message:** ${error.message}
+${error.details ? `**Details:** ${error.details}` : ''}
+${error.endpoint ? `**Endpoint:** ${error.method || 'GET'} ${error.endpoint}` : ''}
+${error.responseStatus ? `**Status:** ${error.responseStatus}` : ''}
+**Time:** ${error.createdAt}
+
+${error.stackTrace ? `## Stack Trace\n\`\`\`\n${error.stackTrace}\n\`\`\`` : ''}
+`;
+    });
+    
+    return `# Multi-Error Report (${errorQueue.length} errors)
+
+Generated: ${new Date().toISOString()}
+
+---
+
+${reports.join('\n---\n\n')}`;
   },
 }));
