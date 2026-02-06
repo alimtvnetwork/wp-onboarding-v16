@@ -30,14 +30,15 @@ type ServerConfig struct {
 
 // ServiceRegistry holds all services for handlers
 type ServiceRegistry struct {
-	Site    handlers.SiteServiceInterface
-	Plugin  handlers.PluginServiceInterface
-	Sync    handlers.SyncServiceInterface
-	Git     handlers.GitServiceInterface
-	Watcher handlers.WatcherServiceInterface
-	Publish handlers.PublishServiceInterface
-	Backup  handlers.BackupServiceInterface
-	Session handlers.SessionServiceInterface
+	Site         handlers.SiteServiceInterface
+	Plugin       handlers.PluginServiceInterface
+	Sync         handlers.SyncServiceInterface
+	Git          handlers.GitServiceInterface
+	Watcher      handlers.WatcherServiceInterface
+	Publish      handlers.PublishServiceInterface
+	Backup       handlers.BackupServiceInterface
+	Session      handlers.SessionServiceInterface
+	ErrorHistory handlers.ErrorHistoryServiceInterface
 }
 
 // Server represents the HTTP server
@@ -51,14 +52,15 @@ func NewServer(cfg ServerConfig) *Server {
 	// Wire up the handlers service registry from the config
 	if cfg.Services != nil {
 		handlers.Services = &handlers.ServiceRegistry{
-			PluginService:  cfg.Services.Plugin,
-			SiteService:    cfg.Services.Site,
-			SyncService:    cfg.Services.Sync,
-			GitService:     cfg.Services.Git,
-			WatcherService: cfg.Services.Watcher,
-			PublishService: cfg.Services.Publish,
-			BackupService:  cfg.Services.Backup,
-			SessionService: cfg.Services.Session,
+			PluginService:       cfg.Services.Plugin,
+			SiteService:         cfg.Services.Site,
+			SyncService:         cfg.Services.Sync,
+			GitService:          cfg.Services.Git,
+			WatcherService:      cfg.Services.Watcher,
+			PublishService:      cfg.Services.Publish,
+			BackupService:       cfg.Services.Backup,
+			SessionService:      cfg.Services.Session,
+			ErrorHistoryService: cfg.Services.ErrorHistory,
 		}
 	}
 
@@ -145,7 +147,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/plugins/{id}/versions/{versionId}/rollback", handlers.RollbackPluginVersion).Methods("POST")
 	api.HandleFunc("/plugins/{id}/versions/{versionId}", handlers.DeletePluginVersion).Methods("DELETE")
 
-	// Error logs endpoints
+	// Error logs endpoints (legacy - existing error log functionality)
 	api.HandleFunc("/errors", handlers.GetErrors).Methods("GET")
 	api.HandleFunc("/errors", handlers.ClearErrors).Methods("DELETE")
 	api.HandleFunc("/errors/{id}", handlers.GetError).Methods("GET")
@@ -153,6 +155,15 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/errors/stream", handlers.StreamErrorLogs).Methods("GET")
 	api.HandleFunc("/errors/log", handlers.GetBackendErrorLog).Methods("GET")    // error.log.txt content
 	api.HandleFunc("/logs/full", handlers.GetBackendFullLog).Methods("GET")      // full log.txt content
+
+	// Error history endpoints (new - persistent error/notification storage)
+	api.HandleFunc("/error-history", handlers.ListErrorHistory).Methods("GET")
+	api.HandleFunc("/error-history", handlers.SaveErrorHistory).Methods("POST")
+	api.HandleFunc("/error-history", handlers.ClearErrorHistory).Methods("DELETE")
+	api.HandleFunc("/error-history/stats", handlers.GetErrorHistoryStats).Methods("GET")
+	api.HandleFunc("/error-history/bulk-export", handlers.BulkExportErrorHistory).Methods("POST")
+	api.HandleFunc("/error-history/{id}", handlers.GetErrorHistoryByID).Methods("GET")
+	api.HandleFunc("/error-history/{id}", handlers.DeleteErrorHistory).Methods("DELETE")
 
 	// Settings endpoints
 	api.HandleFunc("/settings", handlers.GetSettings).Methods("GET")

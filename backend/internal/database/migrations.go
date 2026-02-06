@@ -226,6 +226,45 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_remotepluginscache_expires ON RemotePluginsCache(ExpiresAt);
 		`,
 	},
+	{
+		Version:     7,
+		Description: "Add ErrorHistory table for persistent error/notification storage",
+		SQL: `
+			-- ErrorHistory table: Persistent storage for all captured errors and notifications
+			CREATE TABLE IF NOT EXISTS ErrorHistory (
+				Id INTEGER PRIMARY KEY AUTOINCREMENT,
+				ErrorId TEXT NOT NULL UNIQUE,
+				Code TEXT NOT NULL,
+				Level TEXT NOT NULL DEFAULT 'error',
+				Message TEXT NOT NULL,
+				Details TEXT,
+				ContextJson TEXT,
+				StackTrace TEXT,
+				Endpoint TEXT,
+				Method TEXT,
+				RequestBodyJson TEXT,
+				ResponseStatus INTEGER,
+				SessionId TEXT,
+				SessionType TEXT,
+				PhpStackFramesJson TEXT,
+				BackendLogsJson TEXT,
+				BackendStackTrace TEXT,
+				SiteUrl TEXT,
+				TriggerComponent TEXT,
+				TriggerAction TEXT,
+				InvocationChainJson TEXT,
+				UiClickPath TEXT,
+				MarkdownReport TEXT,
+				CreatedAt TEXT DEFAULT (datetime('now'))
+			);
+
+			-- Create indexes for efficient queries
+			CREATE INDEX IF NOT EXISTS idx_errorhistory_errorid ON ErrorHistory(ErrorId);
+			CREATE INDEX IF NOT EXISTS idx_errorhistory_code ON ErrorHistory(Code);
+			CREATE INDEX IF NOT EXISTS idx_errorhistory_level ON ErrorHistory(Level);
+			CREATE INDEX IF NOT EXISTS idx_errorhistory_created ON ErrorHistory(CreatedAt DESC);
+		`,
+	},
 }
 
 // Migrate runs all pending migrations

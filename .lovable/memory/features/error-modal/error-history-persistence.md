@@ -5,39 +5,75 @@ Updated: 2026-02-06
 
 Error history persistence ensures all captured errors are saved to SQLite database for later retrieval, multi-selection, and bulk export.
 
-## Requirements (Pending Implementation)
+## Status: Phase 2 COMPLETE
 
-### 1. SQLite ErrorHistory Table
-- Store all CapturedError fields in database
-- Unique error ID
-- Full context JSON
-- Stack traces (frontend, backend, PHP)
-- UI click path leading to error
-- Timestamps and filters
+### 1. SQLite ErrorHistory Table ✅
 
-### 2. Backend Endpoints
-- `POST /api/v1/errors` - Save error
-- `GET /api/v1/errors` - List with pagination/filters
-- `DELETE /api/v1/errors` - Clear history
-- `POST /api/v1/errors/bulk-copy` - Export multiple as markdown
+Migration version 7 creates the table:
 
-### 3. Frontend Integration
-- Auto-save on captureError/captureException
-- Load history on app mount
-- ErrorHistoryDrawer for multi-select
-- Error queue badge in header
+```sql
+CREATE TABLE IF NOT EXISTS ErrorHistory (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ErrorId TEXT NOT NULL UNIQUE,
+    Code TEXT NOT NULL,
+    Level TEXT NOT NULL DEFAULT 'error',
+    Message TEXT NOT NULL,
+    Details TEXT,
+    ContextJson TEXT,
+    StackTrace TEXT,
+    Endpoint TEXT,
+    Method TEXT,
+    RequestBodyJson TEXT,
+    ResponseStatus INTEGER,
+    SessionId TEXT,
+    SessionType TEXT,
+    PhpStackFramesJson TEXT,
+    BackendLogsJson TEXT,
+    BackendStackTrace TEXT,
+    SiteUrl TEXT,
+    TriggerComponent TEXT,
+    TriggerAction TEXT,
+    InvocationChainJson TEXT,
+    UiClickPath TEXT,
+    MarkdownReport TEXT,
+    CreatedAt TEXT DEFAULT (datetime('now'))
+);
+```
 
-### 4. Multi-Error UI
-- Navigate between queued errors (1 of 3)
-- Select multiple for bulk copy
-- "Copy All" button for combined report
+### 2. Backend Endpoints ✅
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/error-history` | Save error to history |
+| GET | `/api/v1/error-history` | List with pagination/filters |
+| GET | `/api/v1/error-history/{id}` | Get single error |
+| DELETE | `/api/v1/error-history/{id}` | Delete single error |
+| DELETE | `/api/v1/error-history` | Clear all history |
+| POST | `/api/v1/error-history/bulk-export` | Export multiple as markdown |
+| GET | `/api/v1/error-history/stats` | Get error statistics |
+
+### 3. ErrorHistory Service ✅
+
+Located at `backend/internal/services/errorhistory/service.go`:
+- `Save(input)` - Persist error with all context
+- `List(limit, offset, filters)` - Paginated query with filters
+- `GetByID(id)` - Fetch by database ID
+- `GetByErrorID(errorID)` - Fetch by frontend-generated ID
+- `Delete(id)` - Remove single error
+- `Clear()` - Remove all errors
+- `BulkExport(ids)` - Generate combined markdown report
+- `GetStats()` - Error statistics by level/code
 
 ## Related Files
-- Plan: `.lovable/plan-error-diagnostics-v3.md`
-- Error Store: `src/stores/errorStore.ts`
-- Error Modal: `src/components/errors/GlobalErrorModal.tsx`
 
-## Status
-- Plan created: 2026-02-06
-- Phase 1 (DeactivatePlugin fix): ✅ COMPLETE
-- Phase 2-6: PENDING
+- Model: `backend/internal/models/error_history.go`
+- Service: `backend/internal/services/errorhistory/service.go`
+- Handlers: `backend/internal/api/handlers/error_history_handlers.go`
+- Migration: `backend/internal/database/migrations.go` (version 7)
+
+## Next Steps (Phase 3-6)
+
+- Phase 3: Frontend integration - auto-save on captureError, load history on mount
+- Phase 4: Backend tab auto-fetch of error.log.txt
+- Phase 5: UI click path tracking
+- Phase 6: Multi-error queue UI with navigation and bulk copy

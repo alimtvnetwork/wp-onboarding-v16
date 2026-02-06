@@ -20,6 +20,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/services/backup"
+	"wp-plugin-publish/internal/services/errorhistory"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
 	"wp-plugin-publish/internal/services/session"
@@ -55,13 +56,14 @@ func (e errorOnlyWriter) Write(p []byte) (int, error) {
 
 // Services holds all application services
 type Services struct {
-	Site    *site.Service
-	Plugin  *plugin.Service
-	Watcher *watcher.Service
-	Sync    sync.Service
-	Publish *publish.Service
-	Backup  *backup.Service
-	Session *session.Service
+	Site         *site.Service
+	Plugin       *plugin.Service
+	Watcher      *watcher.Service
+	Sync         sync.Service
+	Publish      *publish.Service
+	Backup       *backup.Service
+	Session      *session.Service
+	ErrorHistory *errorhistory.Service
 }
 
 func main() {
@@ -168,19 +170,21 @@ func main() {
 		services.Publish,
 		services.Backup,
 		services.Session,
+		services.ErrorHistory,
 	)
 	server := api.NewServer(api.ServerConfig{
 		Port:      cfg.Server.Port,
 		StaticDir: cfg.Server.StaticDir,
 		Services: &api.ServiceRegistry{
-			Site:    serviceRegistry.SiteService,
-			Plugin:  serviceRegistry.PluginService,
-			Sync:    serviceRegistry.SyncService,
-			Git:     serviceRegistry.GitService,
-			Watcher: serviceRegistry.WatcherService,
-			Publish: serviceRegistry.PublishService,
-			Backup:  serviceRegistry.BackupService,
-			Session: serviceRegistry.SessionService,
+			Site:         serviceRegistry.SiteService,
+			Plugin:       serviceRegistry.PluginService,
+			Sync:         serviceRegistry.SyncService,
+			Git:          serviceRegistry.GitService,
+			Watcher:      serviceRegistry.WatcherService,
+			Publish:      serviceRegistry.PublishService,
+			Backup:       serviceRegistry.BackupService,
+			Session:      serviceRegistry.SessionService,
+			ErrorHistory: serviceRegistry.ErrorHistoryService,
 		},
 		WSHub:  wsHub,
 		Logger: log,
@@ -319,13 +323,20 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		WSHub:         wsHub,
 	})
 
+	// Initialize error history service for persistent error storage
+	errorHistoryService := errorhistory.New(errorhistory.Config{
+		DB:     db,
+		Logger: log,
+	})
+
 	return &Services{
-		Site:    siteService,
-		Plugin:  pluginService,
-		Watcher: watcherService,
-		Sync:    syncService,
-		Publish: publishService,
-		Backup:  backupService,
-		Session: sessionService,
+		Site:         siteService,
+		Plugin:       pluginService,
+		Watcher:      watcherService,
+		Sync:         syncService,
+		Publish:      publishService,
+		Backup:       backupService,
+		Session:      sessionService,
+		ErrorHistory: errorHistoryService,
 	}
 }
