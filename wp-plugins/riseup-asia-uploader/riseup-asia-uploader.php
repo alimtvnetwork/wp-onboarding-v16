@@ -289,6 +289,9 @@ require_once __DIR__ . '/includes/class-snapshot-scheduler.php';
 require_once __DIR__ . '/includes/class-snapshot-cleaner.php';
 require_once __DIR__ . '/includes/class-snapshot-manager.php';
 
+// Load file cache (Phase 41 - Sync System).
+require_once __DIR__ . '/includes/class-file-cache.php';
+
 // Load other classes.
 require_once __DIR__ . '/includes/class-post-manager.php';
 require_once __DIR__ . '/includes/class-upload-ignore.php';
@@ -707,6 +710,22 @@ class Riseup_Asia {
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_plugin_files'),
                 'permission_callback' => $this->build_permission_callback('plugin_files', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'slug' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) {
+                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                        },
+                    ),
+                ),
+            ));
+
+            // Sync manifest endpoint (Phase 41 - cached file hashes for sync).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SYNC_MANIFEST);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SYNC_MANIFEST, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_sync_manifest'),
+                'permission_callback' => $this->build_permission_callback('sync_manifest', array($this, 'check_plugin_permission')),
                 'args'                => array(
                     'slug' => array(
                         'required'          => true,
@@ -1638,20 +1657,75 @@ class Riseup_Asia {
             // Load uploadignore patterns if available
             $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
 
-            $files = array();
-            $this->scan_directory_for_files($plugin_dir, $plugin_dir, $ignore, $files);
+            // Use file cache for efficient hash computation
+            $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
+            $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
 
-            $this->file_logger->info('Plugin files scanned', array('slug' => $slug, 'count' => count($files)));
+            $this->file_logger->info('Plugin files scanned', array(
+                'slug'     => $slug,
+                'count'    => count($result['files']),
+                'cached'   => $result['cached'],
+                'computed' => $result['computed'],
+            ));
 
             return new WP_REST_Response(array(
                 'success'    => true,
                 'plugin'     => $slug,
-                'totalFiles' => count($files),
-                'files'      => $files,
+                'totalFiles' => count($result['files']),
+                'files'      => $result['files'],
             ), RISEUP_HTTP_OK);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Plugin files error');
             return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+        }
+    }
+
+    /**
+     * Handle sync manifest endpoint.
+     * Returns cached file hashes optimized for sync comparison.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function handle_sync_manifest($request) {
+        $slug = $request->get_param('slug');
+        $this->file_logger->info('Sync manifest endpoint called', array('slug' => $slug));
+
+        try {
+            if (!function_exists('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+
+            $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+            
+            if (!is_dir($plugin_dir)) {
+                $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
+                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+            }
+
+            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+
+            $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
+            $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
+
+            return new WP_REST_Response(array(
+                'success' => true,
+                'data'    => array(
+                    'plugin'      => $slug,
+                    'fileCount'   => count($result['files']),
+                    'generatedAt' => gmdate('c'),
+                    'cached'      => $result['cached'] > 0,
+                    'cacheStats'  => array(
+                        'fromCache' => $result['cached'],
+                        'computed'  => $result['computed'],
+                        'removed'   => $result['removed'],
+                    ),
+                    'files'       => $result['files'],
+                ),
+            ), RISEUP_HTTP_OK);
+        } catch (Throwable $e) {
+            $this->file_logger->log_exception($e, 'Sync manifest error');
+            return $this->error_response('Failed to generate sync manifest: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
