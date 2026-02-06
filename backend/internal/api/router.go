@@ -187,12 +187,13 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/plugins/{id}/versions/{versionId}", handlers.DeletePluginVersion).Methods("DELETE")
 
 	// Error logs endpoints (legacy - existing error log functionality)
-	api.HandleFunc("/errors", handlers.GetErrors).Methods("GET")
-	api.HandleFunc("/errors", handlers.ClearErrors).Methods("DELETE")
-	api.HandleFunc("/errors/{id}", handlers.GetError).Methods("GET")
+	// IMPORTANT: Specific routes MUST be registered before parameterized routes ({id})
 	api.HandleFunc("/errors/bundle", handlers.DownloadErrorBundle).Methods("GET", "POST")
 	api.HandleFunc("/errors/stream", handlers.StreamErrorLogs).Methods("GET")
 	api.HandleFunc("/errors/log", handlers.GetBackendErrorLog).Methods("GET")    // error.log.txt content
+	api.HandleFunc("/errors", handlers.GetErrors).Methods("GET")
+	api.HandleFunc("/errors", handlers.ClearErrors).Methods("DELETE")
+	api.HandleFunc("/errors/{id}", handlers.GetError).Methods("GET")
 	api.HandleFunc("/logs/full", handlers.GetBackendFullLog).Methods("GET")      // full log.txt content
 
 	// Error history endpoints (new - persistent error/notification storage)
