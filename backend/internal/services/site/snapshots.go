@@ -148,6 +148,23 @@ func (s *Service) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) 
 	return providers, nil
 }
 
+// GetRemoteAvailableTables returns the list of database tables available for snapshotting.
+func (s *Service) GetRemoteAvailableTables(ctx context.Context, siteID int64) ([]wordpress.AvailableTable, error) {
+	client, err := s.createWPClient(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	tables, err := client.GetAvailableTables()
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch available tables").
+			WithContext("siteId", siteID)
+	}
+
+	s.log.Debug("Remote available tables fetched", "siteId", siteID, "count", len(tables))
+	return tables, nil
+}
+
 // ExportRemoteSnapshot streams a snapshot ZIP from a remote site.
 // Returns the raw HTTP response; caller must close the body.
 func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, error) {

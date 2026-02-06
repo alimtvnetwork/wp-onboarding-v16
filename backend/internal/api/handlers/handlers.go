@@ -78,6 +78,7 @@ type SiteServiceInterface interface {
 	GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (interface{}, error)
 	UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]interface{}) (interface{}, error)
 	GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (interface{}, error)
+	GetRemoteAvailableTables(ctx context.Context, siteID int64) (interface{}, error)
 }
 
 // SyncServiceInterface defines sync service methods

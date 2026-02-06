@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo } from "@/lib/api";
+import { api, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo, AvailableTable } from "@/lib/api";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
 import { useMemo } from "react";
@@ -44,6 +44,15 @@ export function useRemoteSnapshots(siteId: number) {
     },
   });
 
+  const tablesQuery = useQuery({
+    queryKey: [...queryKey, "tables"],
+    queryFn: async () => {
+      const res = await api.getRemoteAvailableTables(siteId);
+      if (!res.success) throw new Error(res.error?.message || "Failed to fetch tables");
+      return (res.data || []) as AvailableTable[];
+    },
+    enabled: false, // Only fetch on demand
+  });
   const createMutation = useMutation({
     mutationFn: async (opts?: Record<string, unknown>) => {
       const res = await api.createRemoteSnapshot(siteId, opts);
@@ -119,6 +128,9 @@ export function useRemoteSnapshots(siteId: number) {
     isLoadingSettings: settingsQuery.isLoading,
     providers: providersQuery.data || [],
     isLoadingProviders: providersQuery.isLoading,
+    availableTables: tablesQuery.data || [],
+    isLoadingTables: tablesQuery.isLoading || tablesQuery.isFetching,
+    fetchTables: tablesQuery.refetch,
     createSnapshot: createMutation.mutate,
     isCreating: createMutation.isPending,
     deleteSnapshot: deleteMutation.mutate,

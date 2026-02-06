@@ -167,6 +167,10 @@ func (a *SiteServiceAdapter) GetRemoteSnapshotProviders(ctx context.Context, sit
 	return a.Service.GetRemoteSnapshotProviders(ctx, siteID)
 }
 
+func (a *SiteServiceAdapter) GetRemoteAvailableTables(ctx context.Context, siteID int64) (interface{}, error) {
+	return a.Service.GetRemoteAvailableTables(ctx, siteID)
+}
+
 // PluginServiceAdapter wraps *plugin.Service to implement PluginServiceInterface
 type PluginServiceAdapter struct {
 	*plugin.Service
