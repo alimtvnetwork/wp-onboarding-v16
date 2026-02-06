@@ -46,8 +46,10 @@ import {
   Settings,
   CheckCircle,
   Zap,
+  Download,
+  Eye,
 } from "lucide-react";
-import { Site, SnapshotRecord } from "@/lib/api";
+import { Site, SnapshotRecord, api } from "@/lib/api";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
 
 interface RemoteSnapshotsPanelProps {
@@ -83,14 +85,18 @@ function relativeTime(dateStr: string): string {
 
 function SnapshotRow({
   snapshot,
+  siteId,
   onRestore,
   onDelete,
+  onViewDetail,
   isRestoring,
   isDeleting,
 }: {
   snapshot: SnapshotRecord;
+  siteId: number;
   onRestore: (s: SnapshotRecord) => void;
   onDelete: (s: SnapshotRecord) => void;
+  onViewDetail: (s: SnapshotRecord) => void;
   isRestoring: boolean;
   isDeleting: boolean;
 }) {
@@ -142,19 +148,41 @@ function SnapshotRow({
             #{snapshot.sequence} — {snapshot.filename}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {statusBadge}
           {snapshot.status === "complete" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-primary hover:text-primary hover:bg-primary/10"
-              onClick={() => onRestore(snapshot)}
-              disabled={isRestoring}
-              title="Restore this snapshot"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => onViewDetail(snapshot)}
+                title="View details"
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                asChild
+                title="Download snapshot"
+              >
+                <a href={api.getRemoteSnapshotExportUrl(siteId, snapshot.id)} download>
+                  <Download className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 text-primary hover:text-primary hover:bg-primary/10"
+                onClick={() => onRestore(snapshot)}
+                disabled={isRestoring}
+                title="Restore this snapshot"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </Button>
+            </>
           )}
           <Button
             variant="ghost"
@@ -415,6 +443,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
 
   const [deleteTarget, setDeleteTarget] = useState<SnapshotRecord | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<SnapshotRecord | null>(null);
+  const [detailTarget, setDetailTarget] = useState<SnapshotRecord | null>(null);
   const [createScope, setCreateScope] = useState<string>("wordpress");
 
   const handleCreate = () => {
@@ -536,8 +565,10 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                       <SnapshotRow
                         key={snapshot.id}
                         snapshot={snapshot}
+                        siteId={site.id}
                         onRestore={setRestoreTarget}
                         onDelete={setDeleteTarget}
+                        onViewDetail={setDetailTarget}
                         isRestoring={isRestoring}
                         isDeleting={isDeleting}
                       />
@@ -591,6 +622,82 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Snapshot Detail Dialog */}
+      <Dialog open={!!detailTarget} onOpenChange={(o) => !o && setDetailTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Snapshot #{detailTarget?.sequence}
+            </DialogTitle>
+            <DialogDescription>{detailTarget?.filename}</DialogDescription>
+          </DialogHeader>
+          {detailTarget && (
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-muted-foreground">Status</div>
+                <div className="font-medium capitalize">{detailTarget.status}</div>
+                <div className="text-muted-foreground">Scope</div>
+                <div className="font-medium capitalize">{detailTarget.scope}</div>
+                <div className="text-muted-foreground">Provider</div>
+                <div className="font-medium">{detailTarget.provider}</div>
+                {detailTarget.file_size > 0 && (
+                  <>
+                    <div className="text-muted-foreground">File Size</div>
+                    <div className="font-medium">{formatBytes(detailTarget.file_size)}</div>
+                  </>
+                )}
+                {detailTarget.total_rows > 0 && (
+                  <>
+                    <div className="text-muted-foreground">Total Rows</div>
+                    <div className="font-medium">{detailTarget.total_rows.toLocaleString()}</div>
+                  </>
+                )}
+                <div className="text-muted-foreground">Created</div>
+                <div className="font-medium">{relativeTime(detailTarget.created_at)}</div>
+              </div>
+
+              {/* Tables list */}
+              {detailTarget.tables && (
+                <div className="space-y-1.5">
+                  <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Table className="h-3 w-3" />
+                    Tables Included
+                  </div>
+                  <div className="bg-muted/50 rounded-md p-2 max-h-40 overflow-y-auto">
+                    <div className="flex flex-wrap gap-1">
+                      {(typeof detailTarget.tables === "string"
+                        ? detailTarget.tables.split(",").map((t) => t.trim()).filter(Boolean)
+                        : Array.isArray(detailTarget.tables) ? detailTarget.tables : []
+                      ).map((table, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px] h-5 font-mono">
+                          {table}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {detailTarget.error && (
+                <div className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1.5">
+                  {detailTarget.error}
+                </div>
+              )}
+
+              {detailTarget.status === "complete" && (
+                <Button size="sm" className="w-full" asChild>
+                  <a href={api.getRemoteSnapshotExportUrl(site.id, detailTarget.id)} download>
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    Download ZIP
+                  </a>
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

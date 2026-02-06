@@ -781,6 +781,10 @@ export const api = {
     }),
   getRemoteSnapshotProviders: (siteId: number) =>
     request<SnapshotProviderInfo[]>(`/sites/${siteId}/snapshots/providers`),
+  getRemoteSnapshotExportUrl: (siteId: number, snapshotId: number): string => {
+    const base = resolveApiBase();
+    return `${base}/sites/${siteId}/snapshots/${snapshotId}/export`;
+  },
 
   // Error History (persistent error/notification storage)
   saveErrorHistory: (input: ErrorHistoryInput) =>
