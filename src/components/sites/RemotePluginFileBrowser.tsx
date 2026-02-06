@@ -31,6 +31,7 @@ import {
 import { api, RemotePluginFile, requireSuccess } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { SyntaxHighlighter } from "@/components/shared/SyntaxHighlighter";
 
 interface RemotePluginFileBrowserProps {
   siteId: number;
@@ -104,18 +105,18 @@ function getFileIcon(fileName: string) {
   const ext = fileName.split(".").pop()?.toLowerCase();
   switch (ext) {
     case "php":
-      return <FileCode className="h-4 w-4 text-purple-500" />;
+      return <FileCode className="h-4 w-4 text-purple-500 dark:text-purple-400" />;
     case "js":
     case "ts":
     case "jsx":
     case "tsx":
-      return <FileCode className="h-4 w-4 text-yellow-500" />;
+      return <FileCode className="h-4 w-4 text-amber-500 dark:text-amber-400" />;
     case "css":
     case "scss":
     case "less":
-      return <FileCode className="h-4 w-4 text-blue-500" />;
+      return <FileCode className="h-4 w-4 text-sky-500 dark:text-sky-400" />;
     case "json":
-      return <FileJson className="h-4 w-4 text-green-500" />;
+      return <FileJson className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />;
     case "md":
     case "txt":
     case "readme":
@@ -123,7 +124,7 @@ function getFileIcon(fileName: string) {
     case "yml":
     case "yaml":
     case "xml":
-      return <FileCog className="h-4 w-4 text-orange-500" />;
+      return <FileCog className="h-4 w-4 text-orange-500 dark:text-orange-400" />;
     default:
       return <File className="h-4 w-4 text-muted-foreground" />;
   }
@@ -197,9 +198,9 @@ function TreeNodeItem({
               <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
             )}
             {isExpanded ? (
-              <FolderOpen className="h-4 w-4 text-yellow-500 shrink-0" />
+              <FolderOpen className="h-4 w-4 text-amber-500 dark:text-amber-400 shrink-0" />
             ) : (
-              <Folder className="h-4 w-4 text-yellow-500 shrink-0" />
+              <Folder className="h-4 w-4 text-amber-500 dark:text-amber-400 shrink-0" />
             )}
           </>
         ) : (
@@ -341,7 +342,7 @@ export function RemotePluginFileBrowser({
       <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Folder className="h-5 w-5 text-yellow-500" />
+            <Folder className="h-5 w-5 text-amber-500 dark:text-amber-400" />
             {pluginName} Files
           </DialogTitle>
           <DialogDescription>
@@ -444,16 +445,18 @@ export function RemotePluginFileBrowser({
                     </Button>
                   </div>
                 </div>
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 h-[400px]">
                   {loadingContent ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground py-8">
                       <Loader2 className="h-5 w-5 animate-spin mr-2" />
                       Loading content...
                     </div>
                   ) : fileContent !== null ? (
-                    <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">
-                      {fileContent}
-                    </pre>
+                    <SyntaxHighlighter
+                      code={fileContent}
+                      fileName={selectedFile.name}
+                      showLineNumbers={true}
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground py-8">
                       Failed to load content

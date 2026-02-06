@@ -124,3 +124,118 @@ All colors MUST be HSL.
     font-family: 'Poppins', system-ui, sans-serif;
   }
 }
+
+/* Highlight.js Dark Theme - Adapted for design system */
+@layer components {
+  .hljs {
+    @apply bg-transparent text-foreground;
+  }
+
+  /* Keywords and built-ins */
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-built_in,
+  .hljs-name,
+  .hljs-tag {
+    color: hsl(280 80% 65%); /* Purple */
+  }
+
+  /* Strings and literals */
+  .hljs-string,
+  .hljs-title,
+  .hljs-section,
+  .hljs-attribute,
+  .hljs-literal,
+  .hljs-template-tag,
+  .hljs-template-variable,
+  .hljs-type {
+    color: hsl(120 60% 55%); /* Green */
+  }
+
+  /* Comments */
+  .hljs-comment,
+  .hljs-quote,
+  .hljs-deletion {
+    color: hsl(var(--muted-foreground));
+    font-style: italic;
+  }
+
+  /* Numbers */
+  .hljs-number,
+  .hljs-regexp,
+  .hljs-symbol,
+  .hljs-variable,
+  .hljs-bullet,
+  .hljs-link {
+    color: hsl(30 90% 60%); /* Orange */
+  }
+
+  /* Function names */
+  .hljs-title.function_,
+  .hljs-title.class_ {
+    color: hsl(200 90% 60%); /* Blue */
+  }
+
+  /* Meta/preprocessor */
+  .hljs-meta {
+    color: hsl(180 60% 55%); /* Cyan */
+  }
+
+  /* Strong/emphasis */
+  .hljs-strong {
+    font-weight: bold;
+  }
+
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  /* Addition (diff) */
+  .hljs-addition {
+    color: hsl(120 60% 55%);
+    background-color: hsl(120 60% 20% / 0.2);
+  }
+
+  /* Deletion (diff) */
+  .hljs-deletion {
+    color: hsl(0 60% 55%);
+    background-color: hsl(0 60% 20% / 0.2);
+  }
+
+  /* PHP specific */
+  .hljs-variable.language_ {
+    color: hsl(340 80% 65%); /* Pink for $this, etc */
+  }
+
+  /* Selector (CSS) */
+  .hljs-selector-class,
+  .hljs-selector-id {
+    color: hsl(45 90% 55%); /* Yellow */
+  }
+
+  /* Attr values */
+  .hljs-attr {
+    color: hsl(180 60% 55%); /* Cyan */
+  }
+
+  /* Syntax highlighter container */
+  .syntax-highlighter {
+    @apply bg-muted/30 rounded-md overflow-hidden;
+  }
+
+  .syntax-highlighter pre {
+    @apply p-0 m-0;
+  }
+
+  .syntax-highlighter table {
+    @apply border-collapse w-full;
+  }
+
+  .syntax-highlighter tbody tr:first-child td {
+    @apply pt-3;
+  }
+
+  .syntax-highlighter tbody tr:last-child td {
+    @apply pb-3;
+  }
+}
