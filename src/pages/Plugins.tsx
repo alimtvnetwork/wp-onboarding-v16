@@ -503,8 +503,8 @@ export default function Plugins() {
         if (plugin?.mappings) {
           for (const mapping of plugin.mappings) {
             const response = await api.checkSync(id, mapping.siteId);
-            if (response.success) {
-              totalChanges += response.data?.changedFiles || 0;
+            if (response.success && response.data) {
+              totalChanges += (response.data.added || 0) + (response.data.modified || 0) + (response.data.deleted || 0);
             }
           }
         }

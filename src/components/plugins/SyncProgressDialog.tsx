@@ -15,6 +15,8 @@ import { Check, X, RefreshCw, AlertCircle, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import { toast } from "sonner";
+import { SyncTreeView } from "@/components/plugins/SyncTreeView";
+import type { FileChange } from "@/lib/api";
 
 export interface SyncStage {
   name: string;
@@ -46,6 +48,13 @@ interface SyncCompletePayload {
   error?: string;
   filesChecked?: number;
   filesModified?: number;
+  localFiles?: number;
+  remoteFiles?: number;
+  added?: number;
+  modified?: number;
+  deleted?: number;
+  changes?: FileChange[];
+  inSync?: boolean;
 }
 
 interface SyncProgressDialogProps {
@@ -119,7 +128,17 @@ export function SyncProgressDialog({
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [syncResult, setSyncResult] = useState<{ filesChecked?: number; filesModified?: number } | null>(null);
+  const [syncResult, setSyncResult] = useState<{
+    filesChecked?: number;
+    filesModified?: number;
+    localFiles?: number;
+    remoteFiles?: number;
+    added?: number;
+    modified?: number;
+    deleted?: number;
+    changes?: FileChange[];
+    inSync?: boolean;
+  } | null>(null);
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -207,6 +226,13 @@ export function SyncProgressDialog({
         setSyncResult({
           filesChecked: payload.filesChecked,
           filesModified: payload.filesModified,
+          localFiles: payload.localFiles,
+          remoteFiles: payload.remoteFiles,
+          added: payload.added,
+          modified: payload.modified,
+          deleted: payload.deleted,
+          changes: payload.changes,
+          inSync: payload.inSync,
         });
         
         if (payload.error) {
@@ -257,7 +283,7 @@ export function SyncProgressDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RefreshCw className="h-5 w-5 text-primary" />
@@ -324,21 +350,30 @@ export function SyncProgressDialog({
             emptyMessage="Waiting for sync to start..."
           />
 
-          {/* Success Message */}
-          {isComplete && isSuccess && syncResult && (
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-              <div className="flex items-center gap-2">
-                <Check className="h-5 w-5 text-primary" />
-                <span className="font-medium">
-                  Sync complete: {syncResult.filesChecked || 0} files checked
-                </span>
-              </div>
-              {(syncResult.filesModified || 0) > 0 && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {syncResult.filesModified} files have local modifications
-                </p>
-              )}
-            </div>
+          {/* Sync Tree View */}
+          {isComplete && isSuccess && syncResult && syncResult.changes && syncResult.changes.length > 0 && (
+            <SyncTreeView
+              changes={syncResult.changes}
+              localFiles={syncResult.localFiles || 0}
+              remoteFiles={syncResult.remoteFiles || 0}
+              added={syncResult.added || 0}
+              modified={syncResult.modified || 0}
+              deleted={syncResult.deleted || 0}
+              inSync={syncResult.inSync || false}
+            />
+          )}
+
+          {/* In Sync Message */}
+          {isComplete && isSuccess && syncResult && (!syncResult.changes || syncResult.changes.length === 0) && (
+            <SyncTreeView
+              changes={[]}
+              localFiles={syncResult.localFiles || syncResult.filesChecked || 0}
+              remoteFiles={syncResult.remoteFiles || 0}
+              added={0}
+              modified={0}
+              deleted={0}
+              inSync={true}
+            />
           )}
 
           {/* Error Message */}
