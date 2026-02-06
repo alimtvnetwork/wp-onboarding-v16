@@ -1,5 +1,5 @@
 # Memory: architecture/wordpress-plugin/stack-trace-requirements
-Updated: 2026-02-05
+Updated: 2026-02-06
 
 ## Critical Requirement
 
@@ -7,7 +7,22 @@ ALL WordPress plugin error responses MUST include full PHP stack traces as a **f
 
 ## Implementation Standards (v1.7.0+)
 
-### 1. Helper Functions (Global)
+### 1. Throwable Catching (MANDATORY)
+
+All try-catch blocks MUST catch `Throwable` instead of `Exception` to capture both:
+- `Exception` - Standard PHP exceptions
+- `Error` - PHP 7+ fatal errors (class not found, type errors, etc.)
+
+```php
+try {
+    // code
+} catch (Throwable $e) {
+    return $this->error_response($message, 500, $e);
+}
+```
+
+### 2. Helper Functions (Global)
+
 Two helper functions convert exceptions/backtraces to structured frames:
 
 ```php
@@ -15,7 +30,8 @@ function riseup_exception_to_frames($exception) { ... }
 function riseup_backtrace_to_frames($backtrace) { ... }
 ```
 
-### 2. error_response() Method
+### 3. error_response() Method
+
 Returns both string and frames array:
 
 ```php
@@ -25,7 +41,8 @@ $error_data['error']['details'] = array(
 );
 ```
 
-### 3. Frame Structure
+### 4. Frame Structure
+
 Each frame contains:
 ```json
 {
@@ -37,29 +54,36 @@ Each frame contains:
 }
 ```
 
-### 4. Granular Try-Catch Pattern
-All plugin lifecycle operations (enable/disable/delete) use step-by-step try-catch:
+### 5. safe_execute() Wrapper
+
+New helper method for wrapping callbacks with comprehensive error handling:
 
 ```php
-// Step 1: Load plugin functions
-try { ... } catch (Exception $e) { return $this->error_response(..., $e); }
-
-// Step 2: Find plugin file
-try { ... } catch (Exception $e) { return $this->error_response(..., $e); }
-
-// Step 3-N: Each operation wrapped individually
+private function safe_execute($callback, $context, $log_context = array()) {
+    try {
+        return call_user_func($callback);
+    } catch (Throwable $e) {
+        return $this->error_response("Error in {$context}: " . $e->getMessage(), 500, $e);
+    }
+}
 ```
 
-### 5. Fatal Error Handler
-The global shutdown handler also returns `stackTraceFrames` array for fatal errors.
+### 6. Enhanced Shutdown Handler
 
-## New Endpoints (v1.7.0)
+The global shutdown handler (`riseup_fatal_error_handler`) now:
+- Logs to a dedicated `fatal-errors.log` before JSON output
+- Includes memory usage statistics for OOM detection
+- Handles JSON encoding failures gracefully
+- Captures backtrace in shutdown context when available
 
-- `POST /plugins/{slug}/enable` - Activate plugin
-- `POST /plugins/{slug}/disable` - Deactivate plugin  
-- `DELETE /plugins/{slug}/delete` - Remove plugin
+### 7. Go Backend Empty Response Handling
+
+When WordPress returns an empty response body with status 500, the Go backend now:
+- Adds diagnostic message explaining possible causes
+- Points to relevant WordPress log files
+- Parses PHP stack trace frames from error responses when available
 
 ## Version History
 
-- v1.7.0: Added stackTraceFrames array, granular try-catch, enable/disable/delete endpoints
+- v1.7.0: Added Throwable catching, safe_execute(), enhanced shutdown handler, empty response diagnostics
 - v1.6.0: Initial stack trace implementation with string-only format

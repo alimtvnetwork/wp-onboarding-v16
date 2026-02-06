@@ -315,9 +315,54 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		// Capture stack trace for debugging
 		stackTrace := captureStackTrace(2)
 		
+		// Enhanced diagnostic for empty response body
+		diagnosticBody := truncateBody(respBody, 8192)
+		if diagnosticBody == "" {
+			diagnosticBody = "[EMPTY RESPONSE BODY - The WordPress server returned no content. " +
+				"This typically indicates a fatal PHP error that crashed before the error handler could respond. " +
+				"Check the WordPress debug.log, PHP error log, or wp-content/uploads/riseup-asia-uploader/fatal-errors.log for details.]"
+		}
+		
 		// Log detailed error for on-disk logs
 		fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n", 
 			uploadURL, absZipPath, resp.StatusCode, truncateBody(respBody, 4000), stackTrace)
+		
+		// Try to parse WordPress error response for PHP stack trace frames
+		var parsedError struct {
+			Success bool `json:"success"`
+			Error   struct {
+				Code    string `json:"code"`
+				Message string `json:"message"`
+				Details struct {
+					StackTrace       string `json:"stackTrace"`
+					StackTraceFrames []struct {
+						File     string `json:"file"`
+						FileBase string `json:"fileBase"`
+						Line     int    `json:"line"`
+						Function string `json:"function"`
+						Class    string `json:"class"`
+					} `json:"stackTraceFrames"`
+					ExceptionClass string `json:"exceptionClass"`
+					PHPVersion     string `json:"phpVersion"`
+				} `json:"details"`
+			} `json:"error"`
+		}
+		
+		// Attempt to parse the error response for additional PHP context
+		phpStackInfo := ""
+		if respBody != "" {
+			if err := json.Unmarshal(respBytes, &parsedError); err == nil && len(parsedError.Error.Details.StackTraceFrames) > 0 {
+				phpStackInfo = "\n--- PHP Stack Trace (from WordPress) ---\n"
+				for i, frame := range parsedError.Error.Details.StackTraceFrames {
+					funcName := frame.Function
+					if frame.Class != "" {
+						funcName = frame.Class + "::" + frame.Function
+					}
+					phpStackInfo += fmt.Sprintf("  #%d %s() at %s:%d\n", i, funcName, frame.FileBase, frame.Line)
+				}
+				phpStackInfo += "--- End PHP Stack Trace ---"
+			}
+		}
 		
 		return nil, &APIError{
 			Operation:    "upload plugin via RiseupAsia Uploader",
@@ -325,7 +370,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 			Endpoint:     uploadEndpoint,
 			URL:          uploadURL,
 			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(respBody, 8192),
+			ResponseBody: diagnosticBody + phpStackInfo,
 			StackTrace:   stackTrace,
 		}
 	}
