@@ -572,6 +572,25 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, map[string]interface{}{"cleared": true, "siteId": id})
 }
 
+// remotePluginInput is the JSON body struct for remote plugin actions
+type remotePluginInput struct {
+	Plugin string `json:"plugin"`
+	Path   string `json:"path,omitempty"`
+}
+
+// parseRemotePluginInput reads and validates the plugin slug from JSON body
+func parseRemotePluginInput(r *http.Request) (int64, string, error) {
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		return 0, "", err
+	}
+	var input remotePluginInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		return id, "", err
+	}
+	return id, input.Plugin, nil
+}
+
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
@@ -579,16 +598,13 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := getIDParam(r, "id")
+	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid request: "+err.Error())
 		return
 	}
-
-	vars := mux.Vars(r)
-	pluginSlug := vars["plugin"]
 	if pluginSlug == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required in JSON body")
 		return
 	}
 
@@ -606,16 +622,13 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := getIDParam(r, "id")
+	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid request: "+err.Error())
 		return
 	}
-
-	vars := mux.Vars(r)
-	pluginSlug := vars["plugin"]
 	if pluginSlug == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required in JSON body")
 		return
 	}
 
@@ -626,23 +639,20 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, map[string]interface{}{"disabled": true, "plugin": pluginSlug})
 }
 
-// DeleteRemotePlugin removes a plugin from a remote WordPress site
+// DeleteRemotePlugin removes a plugin from a remote WordPress site (POST with JSON body)
 func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
 		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
-	id, err := getIDParam(r, "id")
+	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid request: "+err.Error())
 		return
 	}
-
-	vars := mux.Vars(r)
-	pluginSlug := vars["plugin"]
 	if pluginSlug == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required in JSON body")
 		return
 	}
 
@@ -660,16 +670,13 @@ func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := getIDParam(r, "id")
+	id, pluginSlug, err := parseRemotePluginInput(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid request: "+err.Error())
 		return
 	}
-
-	vars := mux.Vars(r)
-	pluginSlug := vars["plugin"]
 	if pluginSlug == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required in JSON body")
 		return
 	}
 
@@ -694,19 +701,17 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars := mux.Vars(r)
-	pluginSlug := vars["plugin"]
-	if pluginSlug == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
-		return
-	}
-
-	// Parse request body for file path
+	// Parse request body for plugin slug AND file path
 	var input struct {
-		Path string `json:"path"`
+		Plugin string `json:"plugin"`
+		Path   string `json:"path"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+	if input.Plugin == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required in JSON body")
 		return
 	}
 	if input.Path == "" {
@@ -714,7 +719,7 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	content, err := Services.SiteService.GetRemotePluginFileContent(r.Context(), id, pluginSlug, input.Path)
+	content, err := Services.SiteService.GetRemotePluginFileContent(r.Context(), id, input.Plugin, input.Path)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E3012", err.Error())
 		return

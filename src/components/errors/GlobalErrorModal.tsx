@@ -107,8 +107,20 @@ export function GlobalErrorModal() {
   
   if (!selectedError) return null;
 
-  const copyFullError = () => {
-    const text = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
+  const copyFullError = async () => {
+    // Build base report
+    let text = generateErrorReport(selectedError, { appName, appVersion, gitCommit, buildTime });
+    
+    // Fetch error.log.txt async and append
+    try {
+      const resp = await api.getBackendErrorLog();
+      if (resp.success && resp.data?.content) {
+        text += `\n### Backend error.log.txt\n\`\`\`\n${resp.data.content}\n\`\`\`\n`;
+      }
+    } catch {
+      // Silently skip if unavailable
+    }
+    
     navigator.clipboard.writeText(toClipboardText(text));
     toast.success("Full error report copied to clipboard");
   };
@@ -1447,6 +1459,26 @@ function generateErrorReport(
     ? `### Backend Stack Trace (Go)\n\`\`\`\n${error.backendStackTrace}\n\`\`\`\n`
     : "";
 
+  // PHP stack frames from WordPress/PHP call stack
+  const phpStackFramesSection = error.phpStackFrames && error.phpStackFrames.length > 0
+    ? `### PHP Stack Trace\n| # | Function | File | Line |\n|---|----------|------|------|\n${
+        error.phpStackFrames.map((f: { class?: string; function?: string; file?: string; fileBase?: string; line?: number }, i: number) => {
+          const fn = f.class ? `${f.class}::${f.function}` : f.function || 'unknown';
+          return `| ${i} | ${fn}() | ${f.fileBase || f.file || 'unknown'} | ${f.line || '?'} |`;
+        }).join('\n')
+      }\n`
+    : "";
+
+  // User interaction click path
+  const uiClickPathSection = error.uiClickPathString
+    ? `### User Interaction Path\n\`\`\`\n${error.uiClickPathString}\n\`\`\`\n`
+    : "";
+
+  // Frontend React execution chain
+  const executionChainSection = error.executionLogsFormatted
+    ? `### Frontend Execution Chain\n\`\`\`\n${error.executionLogsFormatted}\n\`\`\`\n`
+    : "";
+
   const siteUrlSection = error.siteUrl
     ? `### Target Site\n${error.siteUrl}\n`
     : "";
@@ -1476,6 +1508,9 @@ ${error.endpoint ? `### Request\n**${error.method || "GET"}** ${error.endpoint}\
 ${error.requestBody ? `### Request Body\n\`\`\`json\n${JSON.stringify(error.requestBody, null, 2)}\n\`\`\`\n` : ""}
 ${backendLogsSection}
 ${backendStackSection}
+${phpStackFramesSection}
+${uiClickPathSection}
+${executionChainSection}
 ${framesSection}
 ${error.file ? `### Location\n\`${error.file}:${error.line}\` (${error.function})\n` : ""}
 ${error.context && Object.keys(error.context).length > 0 ? `### Context\n\`\`\`json\n${JSON.stringify(error.context, null, 2)}\n\`\`\`\n` : ""}
