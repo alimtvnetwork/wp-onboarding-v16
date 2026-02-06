@@ -32,6 +32,7 @@ import Tests from "@/pages/Tests";
 import ApiExplorer from "@/pages/ApiExplorer";
 import NotFound from "@/pages/NotFound";
 import PublishHistory from "@/pages/PublishHistory";
+import SiteHealth from "@/pages/SiteHealth";
 
 function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string; triggerComponent?: string; triggerAction?: string }) {
   const { captureError, captureException, openErrorModal } = useErrorStore.getState();
@@ -201,6 +202,7 @@ const App = () => (
                         <Route path="sites" element={<Sites />} />
                         <Route path="plugins" element={<Plugins />} />
                         <Route path="publish-history" element={<PublishHistory />} />
+                        <Route path="site-health" element={<SiteHealth />} />
                         <Route path="tests" element={<Tests />} />
                         <Route path="logs" element={<Logs />} />
                         <Route path="sessions" element={<Sessions />} />

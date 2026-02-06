@@ -688,6 +688,18 @@ export const api = {
   deletePublishHistoryEntry: (id: number) => request<void>(`/publish-history/${id}`, { method: "DELETE" }),
   clearPublishHistory: () => request<void>("/publish-history", { method: "DELETE", body: JSON.stringify({ confirm: true }) }),
 
+  // Site Health
+  checkSiteHealth: (siteId: number) => request<unknown>(`/site-health/sites/${siteId}/check`, { method: "POST" }),
+  checkAllSitesHealth: () => request<unknown>("/site-health/check-all", { method: "POST" }),
+  getSiteHealthSummaries: () => request<unknown>("/site-health/summaries"),
+  getSiteHealthStats: () => request<unknown>("/site-health/stats"),
+  getSiteHealthHistory: (params?: { siteId?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.siteId) q.set("siteId", String(params.siteId));
+    if (params?.limit) q.set("limit", String(params.limit));
+    return request<unknown>(`/site-health/history?${q.toString()}`);
+  },
+
   // Backups
   getBackups: (pluginId: number) => request<Backup[]>(`/plugins/${pluginId}/backups`),
   restoreBackup: (backupId: number) =>

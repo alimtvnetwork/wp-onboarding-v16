@@ -27,6 +27,7 @@ type ServiceRegistry struct {
 	SessionService         SessionServiceInterface
 	ErrorHistoryService    ErrorHistoryServiceInterface
 	PublishHistoryService  PublishHistoryServiceInterface
+	SiteHealthService     SiteHealthServiceInterface
 }
 
 // PluginServiceInterface defines plugin service methods needed by handlers
