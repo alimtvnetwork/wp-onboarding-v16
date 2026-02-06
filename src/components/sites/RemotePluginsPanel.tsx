@@ -52,6 +52,8 @@ import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
 import { toast } from "sonner";
 import { useErrorStore, PHPStackFrame } from "@/stores/errorStore";
 import { useRemotePluginEvents } from "@/hooks/useRemotePluginEvents";
+import { RemotePluginFileBrowser } from "./RemotePluginFileBrowser";
+import { FolderOpen } from "lucide-react";
 
 interface RemotePluginsPanelProps {
   site: Site;
@@ -85,6 +87,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [selectedPlugins, setSelectedPlugins] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkActionPending, setBulkActionPending] = useState(false);
+  const [fileBrowserPlugin, setFileBrowserPlugin] = useState<RemotePlugin | null>(null);
 
   // Subscribe to remote plugin WebSocket events for this site
   useRemotePluginEvents(site.id);
@@ -592,6 +595,12 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                                 </>
                               )}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setFileBrowserPlugin(plugin)}
+                            >
+                              <FolderOpen className="h-4 w-4 mr-2" />
+                              Browse Files
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => setPluginToDelete(plugin)}
@@ -713,6 +722,18 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* File Browser */}
+      {fileBrowserPlugin && (
+        <RemotePluginFileBrowser
+          siteId={site.id}
+          siteName={site.name}
+          pluginSlug={fileBrowserPlugin.slug}
+          pluginName={fileBrowserPlugin.name}
+          open={!!fileBrowserPlugin}
+          onOpenChange={(open) => !open && setFileBrowserPlugin(null)}
+        />
+      )}
     </>
   );
 }
