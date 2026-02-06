@@ -4,11 +4,30 @@
  *
  * @package RiseupAsiaUploader
  * @since   1.5.0
+ * @updated 1.9.0 - Added source machine and triggered_by columns
  */
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Trigger source labels for display
+$trigger_labels = array(
+    'api'        => __('API', 'riseup-asia-uploader'),
+    'dashboard'  => __('Dashboard', 'riseup-asia-uploader'),
+    'agent_push' => __('Agent Push', 'riseup-asia-uploader'),
+    'cron'       => __('Cron', 'riseup-asia-uploader'),
+    'cli'        => __('WP-CLI', 'riseup-asia-uploader'),
+);
+
+// Trigger source CSS classes for color coding
+$trigger_classes = array(
+    'api'        => 'trigger-api',
+    'dashboard'  => 'trigger-dashboard',
+    'agent_push' => 'trigger-agent',
+    'cron'       => 'trigger-cron',
+    'cli'        => 'trigger-cli',
+);
 ?>
 <div class="wrap riseup-admin">
     <h1>
@@ -48,6 +67,18 @@ if (!defined('ABSPATH')) {
                 </label>
 
                 <label>
+                    <span><?php esc_html_e('Trigger:', 'riseup-asia-uploader'); ?></span>
+                    <select name="filter_triggered_by">
+                        <option value=""><?php esc_html_e('All Sources', 'riseup-asia-uploader'); ?></option>
+                        <?php foreach ($trigger_labels as $key => $label): ?>
+                            <option value="<?php echo esc_attr($key); ?>" <?php selected(isset($filters['triggered_by']) ? $filters['triggered_by'] : '', $key); ?>>
+                                <?php echo esc_html($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label>
                     <span><?php esc_html_e('User:', 'riseup-asia-uploader'); ?></span>
                     <input type="text" name="filter_user" value="<?php echo esc_attr($filters['user']); ?>" placeholder="<?php esc_attr_e('Username', 'riseup-asia-uploader'); ?>">
                 </label>
@@ -57,6 +88,13 @@ if (!defined('ABSPATH')) {
                     <input type="text" name="filter_plugin" value="<?php echo esc_attr($filters['plugin']); ?>" placeholder="<?php esc_attr_e('Plugin slug', 'riseup-asia-uploader'); ?>">
                 </label>
 
+                <label>
+                    <span><?php esc_html_e('Source Machine:', 'riseup-asia-uploader'); ?></span>
+                    <input type="text" name="filter_source_machine" value="<?php echo esc_attr(isset($filters['source_machine']) ? $filters['source_machine'] : ''); ?>" placeholder="<?php esc_attr_e('Hostname', 'riseup-asia-uploader'); ?>">
+                </label>
+            </div>
+            
+            <div class="filter-row filter-row-secondary">
                 <label>
                     <span><?php esc_html_e('From:', 'riseup-asia-uploader'); ?></span>
                     <input type="date" name="filter_from" value="<?php echo esc_attr($filters['from']); ?>">
@@ -95,8 +133,9 @@ if (!defined('ABSPATH')) {
                 <th class="column-timestamp"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></th>
                 <th class="column-action"><?php esc_html_e('Action', 'riseup-asia-uploader'); ?></th>
                 <th class="column-plugin"><?php esc_html_e('Plugin/Target', 'riseup-asia-uploader'); ?></th>
+                <th class="column-trigger"><?php esc_html_e('Trigger', 'riseup-asia-uploader'); ?></th>
+                <th class="column-source"><?php esc_html_e('Source', 'riseup-asia-uploader'); ?></th>
                 <th class="column-user"><?php esc_html_e('User', 'riseup-asia-uploader'); ?></th>
-                <th class="column-ip"><?php esc_html_e('IP Address', 'riseup-asia-uploader'); ?></th>
                 <th class="column-status"><?php esc_html_e('Status', 'riseup-asia-uploader'); ?></th>
                 <th class="column-details"><?php esc_html_e('Details', 'riseup-asia-uploader'); ?></th>
             </tr>
@@ -104,10 +143,16 @@ if (!defined('ABSPATH')) {
         <tbody>
             <?php if (empty($logs)): ?>
                 <tr>
-                    <td colspan="8" class="no-items"><?php esc_html_e('No activity logs found.', 'riseup-asia-uploader'); ?></td>
+                    <td colspan="9" class="no-items"><?php esc_html_e('No activity logs found.', 'riseup-asia-uploader'); ?></td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($logs as $log): ?>
+                    <?php 
+                    $triggered_by = isset($log['triggered_by']) ? $log['triggered_by'] : '';
+                    $source_machine = isset($log['source_machine']) ? $log['source_machine'] : '';
+                    $trigger_class = isset($trigger_classes[$triggered_by]) ? $trigger_classes[$triggered_by] : 'trigger-unknown';
+                    $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
+                    ?>
                     <tr>
                         <td class="column-id"><?php echo esc_html($log['id']); ?></td>
                         <td class="column-timestamp">
@@ -123,10 +168,34 @@ if (!defined('ABSPATH')) {
                         <td class="column-plugin">
                             <?php if (!empty($log['plugin_slug'])): ?>
                                 <code><?php echo esc_html($log['plugin_slug']); ?></code>
+                                <?php if (!empty($log['plugin_file']) && $log['plugin_file'] !== $log['plugin_slug']): ?>
+                                    <br><small class="plugin-file" title="<?php echo esc_attr($log['plugin_file']); ?>"><?php echo esc_html($log['plugin_file']); ?></small>
+                                <?php endif; ?>
                             <?php elseif (!empty($log['post_id'])): ?>
                                 <?php esc_html_e('Post:', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log['post_id']); ?>
                             <?php else: ?>
                                 <span class="na">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="column-trigger">
+                            <?php if (!empty($triggered_by)): ?>
+                                <span class="trigger-badge <?php echo esc_attr($trigger_class); ?>" title="<?php echo esc_attr($triggered_by); ?>">
+                                    <?php echo esc_html($trigger_label); ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="na">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="column-source">
+                            <?php if (!empty($source_machine)): ?>
+                                <code class="source-machine" title="<?php esc_attr_e('Management Server Hostname', 'riseup-asia-uploader'); ?>">
+                                    <?php echo esc_html($source_machine); ?>
+                                </code>
+                            <?php else: ?>
+                                <span class="na">—</span>
+                            <?php endif; ?>
+                            <?php if (!empty($log['ip_address']) && $log['ip_address'] !== '0.0.0.0'): ?>
+                                <br><small class="ip-address"><?php echo esc_html($log['ip_address']); ?></small>
                             <?php endif; ?>
                         </td>
                         <td class="column-user">
@@ -136,9 +205,6 @@ if (!defined('ABSPATH')) {
                                     <small>(#<?php echo esc_html($log['user_id']); ?>)</small>
                                 <?php endif; ?>
                             </span>
-                        </td>
-                        <td class="column-ip">
-                            <code><?php echo esc_html($log['ip_address']); ?></code>
                         </td>
                         <td class="column-status">
                             <span class="status-badge status-<?php echo esc_attr($log['status']); ?>">
@@ -195,6 +261,90 @@ if (!defined('ABSPATH')) {
             </div>
         </div>
     </div>
+
+    <style>
+    /* Trigger badge colors */
+    .trigger-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    .trigger-api {
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+    .trigger-dashboard {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+    .trigger-agent {
+        background: #fff3e0;
+        color: #e65100;
+    }
+    .trigger-cron {
+        background: #f3e5f5;
+        color: #7b1fa2;
+    }
+    .trigger-cli {
+        background: #eceff1;
+        color: #455a64;
+    }
+    .trigger-unknown {
+        background: #fafafa;
+        color: #9e9e9e;
+    }
+
+    /* Source machine styling */
+    .source-machine {
+        background: #263238;
+        color: #80cbc4;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+    }
+    .ip-address {
+        color: #757575;
+        font-family: monospace;
+    }
+    .plugin-file {
+        color: #757575;
+        font-family: monospace;
+        font-size: 10px;
+        word-break: break-all;
+    }
+
+    /* Filter row improvements */
+    .filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+        margin-bottom: 10px;
+    }
+    .filter-row-secondary {
+        margin-top: 5px;
+    }
+    .riseup-filters label span {
+        display: block;
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 3px;
+    }
+
+    /* Column widths */
+    .column-id { width: 50px; }
+    .column-timestamp { width: 140px; }
+    .column-action { width: 100px; }
+    .column-plugin { width: 150px; }
+    .column-trigger { width: 90px; }
+    .column-source { width: 140px; }
+    .column-user { width: 100px; }
+    .column-status { width: 70px; }
+    .column-details { width: 80px; }
+    </style>
 
     <script>
     jQuery(document).ready(function($) {

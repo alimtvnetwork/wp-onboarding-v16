@@ -621,6 +621,16 @@ class Riseup_Database {
         if (!empty($filters['to'])) {
             $query->where_lte('created_at', $filters['to'] . 'T23:59:59Z');
         }
+
+        // Filter by triggered_by (source type)
+        if (!empty($filters['triggered_by'])) {
+            $query->where('triggered_by', $filters['triggered_by']);
+        }
+
+        // Filter by source_machine (hostname)
+        if (!empty($filters['source_machine'])) {
+            $query->where_like('source_machine', '%' . $filters['source_machine'] . '%');
+        }
     }
 
     /**
