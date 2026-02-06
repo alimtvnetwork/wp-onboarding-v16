@@ -142,38 +142,49 @@ export function GlobalErrorModal() {
 
   return (
     <Dialog open={isModalOpen} onOpenChange={closeErrorModal}>
-      <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
-        {/* Header - Fixed at top */}
-        <DialogHeader className="px-6 py-4 border-b shrink-0">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+      <DialogContent className={cn(
+        "flex flex-col p-0 gap-0 overflow-hidden",
+        // Mobile: full screen
+        "w-full h-full max-w-full max-h-full rounded-none",
+        // Tablet and up: 95% viewport with rounded corners
+        "sm:max-w-[95vw] sm:w-[95vw] sm:max-h-[95vh] sm:h-[95vh] sm:rounded-lg",
+        // Large screens: cap at reasonable max width
+        "lg:max-w-6xl"
+      )}>
+        {/* Header - Fixed at top, responsive padding */}
+        <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b shrink-0">
+          <div className="flex items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
               <AlertCircle className={cn(
-                "h-6 w-6 shrink-0",
+                "h-5 w-5 sm:h-6 sm:w-6 shrink-0",
                 selectedError.level === "error"
                   ? "text-destructive"
                   : selectedError.level === "warn"
                     ? "text-warning"
                     : "text-muted-foreground"
               )} />
-              <div className="min-w-0">
-                <DialogTitle className="flex items-center gap-2 flex-wrap">
-                  Error Details
+              <div className="min-w-0 flex-1">
+                <DialogTitle className="flex items-center gap-2 flex-wrap text-base sm:text-lg">
+                  <span className="hidden sm:inline">Error Details</span>
+                  <span className="sm:hidden">Error</span>
                   <Badge 
                     variant="secondary" 
-                    className={levelColors[selectedError.level] || ""}
+                    className={cn("text-xs", levelColors[selectedError.level] || "")}
                   >
                     {selectedError.code}
                   </Badge>
                 </DialogTitle>
-                <DialogDescription className="truncate">
+                <DialogDescription className="truncate text-xs sm:text-sm">
                   <span>{formatTs(selectedError.createdAt)}</span>
-                  <span className="mx-2">•</span>
-                  <span className="font-mono">{appName} v{appVersion}</span>
+                  <span className="hidden sm:inline">
+                    <span className="mx-2">•</span>
+                    <span className="font-mono">{appName} v{appVersion}</span>
+                  </span>
                 </DialogDescription>
               </div>
             </div>
             
-            {/* Queue Navigation */}
+            {/* Queue Navigation - Compact on mobile */}
             {hasMultipleErrors && (
               <div className="flex items-center gap-1 shrink-0">
                 <Button
@@ -186,7 +197,7 @@ export function GlobalErrorModal() {
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Badge variant="secondary" className="px-2 py-1 font-mono text-xs">
-                  {currentQueueIndex + 1} / {errorQueue.length}
+                  {currentQueueIndex + 1}/{errorQueue.length}
                 </Badge>
                 <Button
                   variant="outline"
@@ -199,8 +210,17 @@ export function GlobalErrorModal() {
                 </Button>
                 <Button
                   variant="outline"
+                  size="icon"
+                  className="h-7 w-7 sm:hidden"
+                  onClick={copyAllErrors}
+                  title="Copy all errors"
+                >
+                  <CopyPlus className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline"
                   size="sm"
-                  className="h-7 ml-1"
+                  className="h-7 ml-1 hidden sm:flex"
                   onClick={copyAllErrors}
                   title="Copy all errors"
                 >
@@ -214,33 +234,33 @@ export function GlobalErrorModal() {
 
         {/* Main Content - Two-level tab structure */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {/* Top-level section tabs: Backend | Frontend */}
-          <div className="px-6 pt-4 pb-2 border-b bg-muted/30 shrink-0">
+          {/* Top-level section tabs: Backend | Frontend - Responsive */}
+          <div className="px-4 pt-3 pb-2 sm:px-6 sm:pt-4 border-b bg-muted/30 shrink-0">
             <div className="flex items-center gap-2">
               <Button
                 variant={activeSection === "backend" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveSection("backend")}
-                className="gap-2"
+                className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none"
               >
-                <Server className="h-4 w-4" />
+                <Server className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Backend
               </Button>
               <Button
                 variant={activeSection === "frontend" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveSection("frontend")}
-                className="gap-2"
+                className="gap-1.5 sm:gap-2 text-xs sm:text-sm flex-1 sm:flex-none"
               >
-                <Monitor className="h-4 w-4" />
+                <Monitor className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Frontend
               </Button>
             </div>
           </div>
 
-          {/* Scrollable content area */}
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="p-6">
+          {/* Scrollable content area - Touch-friendly */}
+          <ScrollArea className="flex-1 min-h-0 touch-pan-y">
+            <div className="p-4 sm:p-6">
               {activeSection === "backend" ? (
                 <BackendSection 
                   error={selectedError}
@@ -274,26 +294,29 @@ export function GlobalErrorModal() {
           </ScrollArea>
         </div>
 
-        {/* Footer - Fixed at bottom */}
-        <div className="flex justify-end gap-2 px-6 py-4 border-t shrink-0 bg-background">
-          <DownloadDropdown 
-            error={selectedError} 
-            appName={appName} 
-            appVersion={appVersion}
-            gitCommit={gitCommit}
-            buildTime={buildTime}
-          />
-          <Button variant="outline" onClick={closeErrorModal}>
-            Close
-          </Button>
-          <CopyDropdown 
-            error={selectedError}
-            appName={appName}
-            appVersion={appVersion}
-            gitCommit={gitCommit}
-            buildTime={buildTime}
-            copyFullError={copyFullError}
-          />
+        {/* Footer - Fixed at bottom, responsive */}
+        <div className="flex flex-wrap justify-end gap-2 px-4 py-3 sm:px-6 sm:py-4 border-t shrink-0 bg-background">
+          {/* On mobile: stack buttons, hide labels */}
+          <div className="flex gap-2 w-full sm:w-auto justify-end">
+            <DownloadDropdown 
+              error={selectedError} 
+              appName={appName} 
+              appVersion={appVersion}
+              gitCommit={gitCommit}
+              buildTime={buildTime}
+            />
+            <Button variant="outline" onClick={closeErrorModal} className="text-xs sm:text-sm">
+              Close
+            </Button>
+            <CopyDropdown 
+              error={selectedError}
+              appName={appName}
+              appVersion={appVersion}
+              gitCommit={gitCommit}
+              buildTime={buildTime}
+              copyFullError={copyFullError}
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -328,30 +351,34 @@ function BackendSection({
 }: BackendSectionProps) {
   return (
     <Tabs defaultValue="logs" className="w-full">
-      <TabsList className="mb-4 flex flex-wrap h-auto gap-1">
-        <TabsTrigger value="logs" className="gap-1">
-          <Terminal className="h-3 w-3" />
-          Error Log
-        </TabsTrigger>
-        <TabsTrigger value="execution" className="gap-1">
-          <Activity className="h-3 w-3" />
-          Execution
-        </TabsTrigger>
-        <TabsTrigger value="stack" className="gap-1">
-          <Code2 className="h-3 w-3" />
-          Stack Traces
-        </TabsTrigger>
-        {error.sessionId && (
-          <TabsTrigger value="session" className="gap-1">
-            <FileText className="h-3 w-3" />
-            Session
+      {/* Horizontally scrollable tabs on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+        <TabsList className="mb-4 inline-flex h-auto gap-1 min-w-max sm:flex sm:flex-wrap">
+          <TabsTrigger value="logs" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <Terminal className="h-3 w-3" />
+            <span className="hidden xs:inline">Error</span> Log
           </TabsTrigger>
-        )}
-        <TabsTrigger value="request" className="gap-1">
-          <Network className="h-3 w-3" />
-          Request
-        </TabsTrigger>
-      </TabsList>
+          <TabsTrigger value="execution" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <Activity className="h-3 w-3" />
+            <span className="hidden sm:inline">Execution</span>
+            <span className="sm:hidden">Exec</span>
+          </TabsTrigger>
+          <TabsTrigger value="stack" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <Code2 className="h-3 w-3" />
+            Stack
+          </TabsTrigger>
+          {error.sessionId && (
+            <TabsTrigger value="session" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+              <FileText className="h-3 w-3" />
+              Session
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="request" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <Network className="h-3 w-3" />
+            Request
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       {/* Error Log Tab */}
       <TabsContent value="logs" className="space-y-4 m-0">
@@ -609,24 +636,27 @@ function FrontendSection({
 }: FrontendSectionProps) {
   return (
     <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="mb-4 flex flex-wrap h-auto gap-1">
-        <TabsTrigger value="overview" className="gap-1">
-          <AlertCircle className="h-3 w-3" />
-          Overview
-        </TabsTrigger>
-        <TabsTrigger value="stack" className="gap-1">
-          <FileCode2 className="h-3 w-3" />
-          Stack Trace
-        </TabsTrigger>
-        <TabsTrigger value="context" className="gap-1">
-          <Layers className="h-3 w-3" />
-          Context
-        </TabsTrigger>
-        <TabsTrigger value="fixes" className="gap-1">
-          <Lightbulb className="h-3 w-3" />
-          Fixes
-        </TabsTrigger>
-      </TabsList>
+      {/* Horizontally scrollable tabs on mobile */}
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+        <TabsList className="mb-4 inline-flex h-auto gap-1 min-w-max sm:flex sm:flex-wrap">
+          <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <AlertCircle className="h-3 w-3" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="stack" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <FileCode2 className="h-3 w-3" />
+            Stack
+          </TabsTrigger>
+          <TabsTrigger value="context" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <Layers className="h-3 w-3" />
+            Context
+          </TabsTrigger>
+          <TabsTrigger value="fixes" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <Lightbulb className="h-3 w-3" />
+            Fixes
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
       {/* Overview Tab */}
       <TabsContent value="overview" className="space-y-4 m-0">
