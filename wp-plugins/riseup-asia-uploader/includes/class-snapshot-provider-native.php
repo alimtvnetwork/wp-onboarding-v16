@@ -123,7 +123,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
         // Get next sequence number
         $sequence = $this->get_next_sequence();
         $filename = $this->generate_snapshot_filename($sequence);
-        $filepath = $this->get_snapshots_dir() . '/' . $filename . '.sqlite';
+        $filepath = Riseup_Path_Utils::join($this->get_snapshots_dir(), $filename . '.sqlite');
 
         // Create snapshot record
         $trigger = isset($options['trigger']) ? $options['trigger'] : 'api';
@@ -296,7 +296,28 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * @return PDO|null PDO instance or null on failure.
      */
     private function create_sqlite_database($filepath) {
+        // Validate path is within snapshots directory
+        $snapshots_dir = $this->get_snapshots_dir();
+        if (!Riseup_Path_Utils::is_safe_path($filepath, $snapshots_dir)) {
+            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Unsafe path detected for SQLite database', array(
+                'filepath' => $filepath,
+                'base' => $snapshots_dir,
+            ));
+            return null;
+        }
+
+        // Ensure parent directory exists
+        $parent_dir = dirname($filepath);
+        if (!Riseup_Path_Utils::ensure_dir($parent_dir, true)) {
+            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to ensure parent directory for SQLite', array(
+                'parent' => $parent_dir,
+            ));
+            return null;
+        }
+
         try {
+            $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Creating SQLite database', array('filepath' => $filepath));
+
             $pdo = new PDO('sqlite:' . $filepath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -664,18 +685,29 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
     public function delete_snapshot($snapshot_id) {
         $snapshot = $this->get_snapshot($snapshot_id);
         if (!$snapshot) {
+            $this->log(RISEUP_LOG_LEVEL_WARN, 'Snapshot not found for deletion', array('id' => $snapshot_id));
             return array('success' => false, 'error' => 'Snapshot not found');
         }
 
-        // Delete file
-        if (file_exists($snapshot['filepath'])) {
-            unlink($snapshot['filepath']);
+        $this->log(RISEUP_LOG_LEVEL_INFO, 'Deleting snapshot', array(
+            'id' => $snapshot_id,
+            'filepath' => $snapshot['filepath'],
+        ));
+
+        // Delete SQLite file using path utility
+        if (Riseup_Path_Utils::file_exists($snapshot['filepath'])) {
+            if (!Riseup_Path_Utils::delete_file($snapshot['filepath'])) {
+                $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to delete snapshot file', array(
+                    'filepath' => $snapshot['filepath'],
+                ));
+                // Continue to delete record anyway
+            }
         }
 
         // Delete ZIP if exists
         $zip_path = str_replace('.sqlite', '.zip', $snapshot['filepath']);
-        if (file_exists($zip_path)) {
-            unlink($zip_path);
+        if (Riseup_Path_Utils::file_exists($zip_path)) {
+            Riseup_Path_Utils::delete_file($zip_path);
         }
 
         // Delete database record
@@ -684,7 +716,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
             array($snapshot_id)
         );
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot deleted', array('id' => $snapshot_id));
+        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot deleted successfully', array('id' => $snapshot_id));
 
         return array('success' => true);
     }

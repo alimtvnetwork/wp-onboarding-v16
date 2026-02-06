@@ -260,43 +260,37 @@ abstract class Riseup_Snapshot_Provider_Interface {
     /**
      * Get the snapshots directory path.
      *
+     * Uses Riseup_Path_Utils for consistent path handling.
+     *
      * @return string Full path to snapshots directory.
      */
     protected function get_snapshots_dir() {
-        $upload_dir = wp_upload_dir();
-        $base_dir = $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR;
-        return $base_dir . '/' . RISEUP_SNAPSHOTS_SUBDIR;
+        return Riseup_Path_Utils::join(
+            Riseup_Path_Utils::get_base_dir(),
+            RISEUP_SNAPSHOTS_SUBDIR
+        );
     }
 
     /**
      * Ensure snapshots directory exists with proper security.
      *
+     * Uses Riseup_Path_Utils for directory creation and security.
+     *
      * @return bool True if directory exists or was created.
      */
     protected function ensure_snapshots_dir() {
-        $dir = $this->get_snapshots_dir();
+        $dir = Riseup_Path_Utils::ensure_path(
+            true, // secure with .htaccess
+            Riseup_Path_Utils::get_base_dir(),
+            RISEUP_SNAPSHOTS_SUBDIR
+        );
 
-        if (!is_dir($dir)) {
-            if (!wp_mkdir_p($dir)) {
-                $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to create snapshots directory', array('path' => $dir));
-                return false;
-            }
-
-            // Add .htaccess for security
-            $htaccess = $dir . '/.htaccess';
-            if (!file_exists($htaccess)) {
-                file_put_contents($htaccess, "Order Deny,Allow\nDeny from all\n");
-            }
-
-            // Add index.php for extra security
-            $index = $dir . '/index.php';
-            if (!file_exists($index)) {
-                file_put_contents($index, "<?php\n// Silence is golden.\n");
-            }
-
-            $this->log(RISEUP_LOG_LEVEL_INFO, 'Created snapshots directory', array('path' => $dir));
+        if ($dir === false) {
+            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to ensure snapshots directory');
+            return false;
         }
 
+        $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Snapshots directory ensured', array('path' => $dir));
         return true;
     }
 
@@ -330,15 +324,16 @@ abstract class Riseup_Snapshot_Provider_Interface {
      * @return bool True if locked.
      */
     protected function is_locked() {
-        $lock_file = $this->get_snapshots_dir() . '/.lock';
-        if (!file_exists($lock_file)) {
+        $lock_file = Riseup_Path_Utils::join($this->get_snapshots_dir(), '.lock');
+        
+        if (!Riseup_Path_Utils::file_exists($lock_file)) {
             return false;
         }
 
         // Check if lock is stale (older than 30 minutes)
         $lock_time = filemtime($lock_file);
         if (time() - $lock_time > 1800) {
-            unlink($lock_file);
+            Riseup_Path_Utils::delete_file($lock_file);
             $this->log(RISEUP_LOG_LEVEL_WARN, 'Removed stale lock file', array('age_minutes' => round((time() - $lock_time) / 60)));
             return false;
         }
@@ -356,36 +351,56 @@ abstract class Riseup_Snapshot_Provider_Interface {
             return false;
         }
 
-        $lock_file = $this->get_snapshots_dir() . '/.lock';
-        $result = file_put_contents($lock_file, json_encode(array(
+        // Ensure directory exists first
+        if (!$this->ensure_snapshots_dir()) {
+            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Cannot acquire lock - directory creation failed');
+            return false;
+        }
+
+        $lock_file = Riseup_Path_Utils::join($this->get_snapshots_dir(), '.lock');
+        $lock_data = json_encode(array(
             'locked_at' => date('c'),
             'locked_by' => $this->provider_id,
             'pid' => getmypid()
-        )));
+        ));
 
-        return $result !== false;
+        $result = @file_put_contents($lock_file, $lock_data);
+
+        if ($result === false) {
+            $error = error_get_last();
+            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to acquire lock', array(
+                'path' => $lock_file,
+                'error' => $error ? $error['message'] : 'Unknown error',
+            ));
+            return false;
+        }
+
+        $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Lock acquired', array('path' => $lock_file));
+        return true;
     }
 
     /**
      * Release the snapshot lock.
      */
     protected function release_lock() {
-        $lock_file = $this->get_snapshots_dir() . '/.lock';
-        if (file_exists($lock_file)) {
-            unlink($lock_file);
+        $lock_file = Riseup_Path_Utils::join($this->get_snapshots_dir(), '.lock');
+        
+        if (Riseup_Path_Utils::file_exists($lock_file)) {
+            Riseup_Path_Utils::delete_file($lock_file);
+            $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Lock released');
         }
     }
 
     /**
      * Format bytes to human-readable string.
      *
+     * Delegates to Riseup_Path_Utils for consistency.
+     *
      * @param int $bytes    Bytes value.
      * @param int $decimals Number of decimal places.
      * @return string Formatted string (e.g., "15.7 MB").
      */
     protected function format_bytes($bytes, $decimals = 1) {
-        $units = array('B', 'KB', 'MB', 'GB', 'TB');
-        $factor = floor((strlen($bytes) - 1) / 3);
-        return sprintf("%.{$decimals}f %s", $bytes / pow(1024, $factor), $units[$factor]);
+        return Riseup_Path_Utils::format_bytes($bytes, $decimals);
     }
 }
