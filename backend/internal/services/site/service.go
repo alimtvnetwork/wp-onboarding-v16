@@ -1194,7 +1194,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		}
 
 		// Write to error.log.txt
-		s.logToErrorFile(action, siteID, pluginSlug, site.URL, errDetails)
+		s.logToErrorFile(action, siteID, pluginSlug, site.Name, site.URL, errDetails)
 
 		s.endRemoteSession(sessionID, "error", err.Error())
 
@@ -1328,7 +1328,7 @@ func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 }
 
 // logToErrorFile writes error details to data/errors/error.log.txt
-func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteURL string, details map[string]interface{}) {
+func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details map[string]interface{}) {
 	errorsDir := pathutil.MustJoin(filepath.Dir(s.db.Path()), "errors")
 	errorLogPath := pathutil.MustJoin(errorsDir, "error.log.txt")
 
@@ -1348,7 +1348,7 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteUR
 
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
-	logEntry += fmt.Sprintf("  Site ID: %d\n", siteID)
+	logEntry += fmt.Sprintf("  Site: %s (ID: %d)\n", siteName, siteID)
 	logEntry += fmt.Sprintf("  Site URL: %s\n", siteURL)
 	logEntry += fmt.Sprintf("  Plugin: %s\n", pluginSlug)
 

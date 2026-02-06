@@ -239,7 +239,7 @@ func main() {
 		SessionLoggingEnabled:  cfg.Logging.SessionLoggingEnabled,
 	})
 	go func() {
-		if err := server.Start(); err != nil {
+		if err := server.Start(); err != nil && err.Error() != "http: Server closed" {
 			log.Fatal("Server failed", "error", err)
 		}
 	}()

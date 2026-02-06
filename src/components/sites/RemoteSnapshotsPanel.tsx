@@ -443,7 +443,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
     availableTables,
     isLoadingTables,
     fetchTables,
-  } = useRemoteSnapshots(site.id);
+  } = useRemoteSnapshots(site.id, open);
 
   const [deleteTarget, setDeleteTarget] = useState<SnapshotRecord | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<SnapshotRecord | null>(null);
