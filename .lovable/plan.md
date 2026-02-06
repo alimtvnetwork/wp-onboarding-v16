@@ -676,4 +676,35 @@ Created `templates/admin-agents.php`:
 
 ---
 
+## Phase 39: Publish History Dashboard ✅ COMPLETE
+
+**Priority: MEDIUM**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
+
+### 39.1 Backend - Database & Service ✅
+- [x] Migration v8: `PublishHistory` table with indexes on PluginID, SiteID, Status, CreatedAt
+- [x] Created `backend/internal/models/publish_history.go` - model + filters + stats structs
+- [x] Created `backend/internal/services/publishhistory/service.go` - Record, List, GetByID, GetStats, Delete, Clear
+- [x] Created `backend/internal/api/handlers/publish_history_handlers.go` - REST handlers
+
+### 39.2 Backend - API Endpoints ✅
+- [x] `GET /api/v1/publish-history` - List with pagination, filters (status, pluginId, siteId, search)
+- [x] `GET /api/v1/publish-history/stats` - Aggregate statistics
+- [x] `GET /api/v1/publish-history/{id}` - Single entry
+- [x] `DELETE /api/v1/publish-history/{id}` - Delete entry
+- [x] `DELETE /api/v1/publish-history` - Clear all (requires confirm)
+
+### 39.3 Frontend - Dashboard Page ✅
+- [x] Created `src/pages/PublishHistory.tsx` with stats cards, search, status filter, paginated table
+- [x] Added route `/publish-history` in App.tsx
+- [x] Added "Publish History" nav item in Sidebar with BarChart3 icon
+- [x] API client methods in `src/lib/api.ts`
+
+### 39.4 Service Registry ✅
+- [x] Added `PublishHistoryServiceInterface` and `PublishHistoryServiceAdapter`
+- [x] Updated `ServiceRegistry` and `NewServiceRegistry` to include publish history service
+
+---
+
 *Last Updated: 2026-02-06*

@@ -156,6 +156,13 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/file-diff", handlers.GetFileDiff).Methods("POST")
 	api.HandleFunc("/plugins/{id}/file", handlers.GetLocalFileContent).Methods("POST")
 
+	// Publish history endpoints
+	api.HandleFunc("/publish-history", handlers.ListPublishHistory).Methods("GET")
+	api.HandleFunc("/publish-history", handlers.ClearPublishHistory).Methods("DELETE")
+	api.HandleFunc("/publish-history/stats", handlers.GetPublishHistoryStats).Methods("GET")
+	api.HandleFunc("/publish-history/{id}", handlers.GetPublishHistoryByID).Methods("GET")
+	api.HandleFunc("/publish-history/{id}", handlers.DeletePublishHistoryEntry).Methods("DELETE")
+
 	// Backup endpoints
 	api.HandleFunc("/plugins/{id}/backups", handlers.GetBackups).Methods("GET")
 	api.HandleFunc("/backups/{id}/restore", handlers.RestoreBackup).Methods("POST")

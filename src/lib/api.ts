@@ -673,6 +673,21 @@ export const api = {
   previewPublish: (pluginId: number, siteId: number) =>
     request<PublishPreview>(`/plugins/${pluginId}/sites/${siteId}/preview`),
 
+  // Publish History
+  getPublishHistory: (params?: { limit?: number; offset?: number; status?: string; pluginId?: number; siteId?: number; search?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.limit) q.set("limit", String(params.limit));
+    if (params?.offset) q.set("offset", String(params.offset));
+    if (params?.status) q.set("status", params.status);
+    if (params?.pluginId) q.set("pluginId", String(params.pluginId));
+    if (params?.siteId) q.set("siteId", String(params.siteId));
+    if (params?.search) q.set("search", params.search);
+    return request<{ entries: PublishHistoryEntry[]; total: number }>(`/publish-history?${q.toString()}`);
+  },
+  getPublishHistoryStats: () => request<PublishHistoryStats>("/publish-history/stats"),
+  deletePublishHistoryEntry: (id: number) => request<void>(`/publish-history/${id}`, { method: "DELETE" }),
+  clearPublishHistory: () => request<void>("/publish-history", { method: "DELETE", body: JSON.stringify({ confirm: true }) }),
+
   // Backups
   getBackups: (pluginId: number) => request<Backup[]>(`/plugins/${pluginId}/backups`),
   restoreBackup: (backupId: number) =>
@@ -925,4 +940,34 @@ export interface AvailableTable {
   rows: number;
   size: number;
   is_core: boolean;
+}
+
+// Publish History types
+export interface PublishHistoryEntry {
+  id: number;
+  pluginId: number;
+  pluginName: string;
+  siteId: number;
+  siteName: string;
+  siteUrl: string;
+  sessionId?: string;
+  status: "success" | "failed" | "partial";
+  mode: string;
+  filesUpdated: number;
+  activationStatus: string;
+  rollbackStatus?: string;
+  rollbackMessage?: string;
+  errorMessage?: string;
+  durationMs: number;
+  createdAt: string;
+}
+
+export interface PublishHistoryStats {
+  totalPublishes: number;
+  successCount: number;
+  failureCount: number;
+  partialCount: number;
+  avgDurationMs: number;
+  totalFilesUpdated: number;
+  lastPublishAt?: string;
 }

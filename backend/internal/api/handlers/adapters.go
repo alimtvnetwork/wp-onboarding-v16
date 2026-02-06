@@ -10,6 +10,7 @@ import (
 	"wp-plugin-publish/internal/services/errorhistory"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
+	"wp-plugin-publish/internal/services/publishhistory"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/site"
 	"wp-plugin-publish/internal/services/sync"
@@ -389,6 +390,7 @@ func NewServiceRegistry(
 	backupService *backup.Service,
 	sessionService *session.Service,
 	errorHistoryService *errorhistory.Service,
+	publishHistoryService *publishhistory.Service,
 ) *ServiceRegistry {
 	var sessionAdapter SessionServiceInterface
 	if sessionService != nil {
@@ -399,18 +401,53 @@ func NewServiceRegistry(
 	if errorHistoryService != nil {
 		errorHistoryAdapter = &ErrorHistoryServiceAdapter{errorHistoryService}
 	}
+
+	var publishHistoryAdapter PublishHistoryServiceInterface
+	if publishHistoryService != nil {
+		publishHistoryAdapter = &PublishHistoryServiceAdapter{publishHistoryService}
+	}
 	
 	return &ServiceRegistry{
-		SiteService:         &SiteServiceAdapter{siteService},
-		PluginService:       &PluginServiceAdapter{pluginService},
-		SyncService:         &SyncServiceAdapter{syncService},
-		GitService:          gitService,
-		WatcherService:      &WatcherServiceAdapter{watcherService},
-		PublishService:      &PublishServiceAdapter{publishService},
-		BackupService:       &BackupServiceAdapter{backupService},
-		SessionService:      sessionAdapter,
-		ErrorHistoryService: errorHistoryAdapter,
+		SiteService:           &SiteServiceAdapter{siteService},
+		PluginService:         &PluginServiceAdapter{pluginService},
+		SyncService:           &SyncServiceAdapter{syncService},
+		GitService:            gitService,
+		WatcherService:        &WatcherServiceAdapter{watcherService},
+		PublishService:        &PublishServiceAdapter{publishService},
+		BackupService:         &BackupServiceAdapter{backupService},
+		SessionService:        sessionAdapter,
+		ErrorHistoryService:   errorHistoryAdapter,
+		PublishHistoryService: publishHistoryAdapter,
 	}
+}
+
+// PublishHistoryServiceAdapter wraps *publishhistory.Service
+type PublishHistoryServiceAdapter struct {
+	*publishhistory.Service
+}
+
+func (a *PublishHistoryServiceAdapter) Record(entry models.PublishHistory) (*models.PublishHistory, error) {
+	return a.Service.Record(entry)
+}
+
+func (a *PublishHistoryServiceAdapter) List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error) {
+	return a.Service.List(limit, offset, filters)
+}
+
+func (a *PublishHistoryServiceAdapter) GetByID(id int64) (*models.PublishHistory, error) {
+	return a.Service.GetByID(id)
+}
+
+func (a *PublishHistoryServiceAdapter) GetStats() (*models.PublishHistoryStats, error) {
+	return a.Service.GetStats()
+}
+
+func (a *PublishHistoryServiceAdapter) Delete(id int64) error {
+	return a.Service.Delete(id)
+}
+
+func (a *PublishHistoryServiceAdapter) Clear() (int64, error) {
+	return a.Service.Clear()
 }
 
 // ErrorHistoryServiceAdapter wraps *errorhistory.Service to implement ErrorHistoryServiceInterface
@@ -551,6 +588,7 @@ var _ PublishServiceInterface = (*PublishServiceAdapter)(nil)
 var _ BackupServiceInterface = (*BackupServiceAdapter)(nil)
 var _ SessionServiceInterface = (*SessionServiceAdapter)(nil)
 var _ ErrorHistoryServiceInterface = (*ErrorHistoryServiceAdapter)(nil)
+var _ PublishHistoryServiceInterface = (*PublishHistoryServiceAdapter)(nil)
 
 // Placeholder types to satisfy imports (actual types come from models package)
 var _ = models.Site{}
