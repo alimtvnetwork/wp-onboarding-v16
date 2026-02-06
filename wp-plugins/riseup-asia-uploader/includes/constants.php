@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.7.0');
+    define('RISEUP_VERSION', '1.8.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -344,4 +344,32 @@ if (!defined('RISEUP_LOG_LEVEL_ERROR')) {
 
 if (!defined('RISEUP_LOG_PREFIX')) {
     define('RISEUP_LOG_PREFIX', '[Riseup Asia]');
+}
+
+// =============================================================================
+// AUTO-UPDATE CONFIGURATION
+// =============================================================================
+
+if (!defined('RISEUP_UPDATE_CACHE_DAYS_DEFAULT')) {
+    define('RISEUP_UPDATE_CACHE_DAYS_DEFAULT', 7);
+}
+if (!defined('RISEUP_UPDATE_MAX_REDIRECTS')) {
+    define('RISEUP_UPDATE_MAX_REDIRECTS', 5);
+}
+
+// =============================================================================
+// AUTO-UPDATE ACTIONS (for transaction logging)
+// =============================================================================
+
+if (!defined('RISEUP_ACTION_UPDATE_CHECK')) {
+    define('RISEUP_ACTION_UPDATE_CHECK', 'update_check');
+}
+if (!defined('RISEUP_ACTION_UPDATE_RESOLVE')) {
+    define('RISEUP_ACTION_UPDATE_RESOLVE', 'update_resolve');
+}
+if (!defined('RISEUP_ACTION_UPDATE_DOWNLOAD')) {
+    define('RISEUP_ACTION_UPDATE_DOWNLOAD', 'update_download');
+}
+if (!defined('RISEUP_ACTION_UPDATE_INSTALL')) {
+    define('RISEUP_ACTION_UPDATE_INSTALL', 'update_install');
 }

@@ -1,10 +1,9 @@
 <?php
-<?php
 /**
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
- * Description: Remote plugin management, blog post publishing, delta file sync, and audit logging via REST API with Application Password authentication.
- * Version: 1.7.0
+ * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
+ * Version: 1.8.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -285,6 +284,7 @@ require_once __DIR__ . '/includes/class-logger.php';
 require_once __DIR__ . '/includes/class-post-manager.php';
 require_once __DIR__ . '/includes/class-upload-ignore.php';
 require_once __DIR__ . '/includes/class-admin.php';
+require_once __DIR__ . '/includes/class-update-resolver.php';
 
 // =============================================================================
 // PLUGIN CLASS
@@ -371,6 +371,10 @@ class Riseup_Asia {
             // Initialize post manager (depends on logger).
             $this->post_manager = Riseup_Post_Manager::get_instance();
             $this->file_logger->info('Post manager initialized');
+
+            // Initialize update resolver (handles auto-update with 301 redirect).
+            $update_resolver = Riseup_Update_Resolver::get_instance();
+            $this->file_logger->info('Update resolver initialized');
 
             // Register REST API routes.
             $this->file_logger->info('Registering REST API init hook');
