@@ -280,6 +280,9 @@ require_once __DIR__ . '/includes/class-database.php';
 // Load transaction logger (depends on database and file logger).
 require_once __DIR__ . '/includes/class-logger.php';
 
+// Load path utilities (used by snapshot system and other file operations).
+require_once __DIR__ . '/includes/class-path-utils.php';
+
 // Load other classes.
 require_once __DIR__ . '/includes/class-post-manager.php';
 require_once __DIR__ . '/includes/class-upload-ignore.php';
