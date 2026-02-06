@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.8.0');
+    define('RISEUP_VERSION', '1.9.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -457,4 +457,179 @@ if (!defined('RISEUP_TRIGGERED_BY_CRON')) {
 }
 if (!defined('RISEUP_TRIGGERED_BY_CLI')) {
     define('RISEUP_TRIGGERED_BY_CLI', 'cli');
+}
+
+// =============================================================================
+// SNAPSHOT SYSTEM CONSTANTS
+// =============================================================================
+
+// Snapshot providers
+if (!defined('RISEUP_SNAPSHOT_PROVIDER_WP_RESET')) {
+    define('RISEUP_SNAPSHOT_PROVIDER_WP_RESET', 'wp_reset');
+}
+if (!defined('RISEUP_SNAPSHOT_PROVIDER_UPDRAFT')) {
+    define('RISEUP_SNAPSHOT_PROVIDER_UPDRAFT', 'updraft');
+}
+if (!defined('RISEUP_SNAPSHOT_PROVIDER_NATIVE')) {
+    define('RISEUP_SNAPSHOT_PROVIDER_NATIVE', 'native');
+}
+if (!defined('RISEUP_SNAPSHOT_PROVIDER_AUTO')) {
+    define('RISEUP_SNAPSHOT_PROVIDER_AUTO', 'auto');
+}
+
+// Snapshot status values
+if (!defined('RISEUP_SNAPSHOT_STATUS_PENDING')) {
+    define('RISEUP_SNAPSHOT_STATUS_PENDING', 'pending');
+}
+if (!defined('RISEUP_SNAPSHOT_STATUS_SCHEDULED')) {
+    define('RISEUP_SNAPSHOT_STATUS_SCHEDULED', 'scheduled');
+}
+if (!defined('RISEUP_SNAPSHOT_STATUS_RUNNING')) {
+    define('RISEUP_SNAPSHOT_STATUS_RUNNING', 'running');
+}
+if (!defined('RISEUP_SNAPSHOT_STATUS_COMPLETE')) {
+    define('RISEUP_SNAPSHOT_STATUS_COMPLETE', 'complete');
+}
+if (!defined('RISEUP_SNAPSHOT_STATUS_FAILED')) {
+    define('RISEUP_SNAPSHOT_STATUS_FAILED', 'failed');
+}
+
+// Snapshot scope values
+if (!defined('RISEUP_SNAPSHOT_SCOPE_ALL')) {
+    define('RISEUP_SNAPSHOT_SCOPE_ALL', 'all');
+}
+if (!defined('RISEUP_SNAPSHOT_SCOPE_WORDPRESS')) {
+    define('RISEUP_SNAPSHOT_SCOPE_WORDPRESS', 'wordpress');
+}
+if (!defined('RISEUP_SNAPSHOT_SCOPE_CONTENT')) {
+    define('RISEUP_SNAPSHOT_SCOPE_CONTENT', 'content');
+}
+if (!defined('RISEUP_SNAPSHOT_SCOPE_CUSTOM')) {
+    define('RISEUP_SNAPSHOT_SCOPE_CUSTOM', 'custom');
+}
+
+// Snapshot schedule frequencies
+if (!defined('RISEUP_SNAPSHOT_FREQ_MANUAL')) {
+    define('RISEUP_SNAPSHOT_FREQ_MANUAL', 'manual');
+}
+if (!defined('RISEUP_SNAPSHOT_FREQ_DAILY')) {
+    define('RISEUP_SNAPSHOT_FREQ_DAILY', 'daily');
+}
+if (!defined('RISEUP_SNAPSHOT_FREQ_WEEKLY')) {
+    define('RISEUP_SNAPSHOT_FREQ_WEEKLY', 'weekly');
+}
+if (!defined('RISEUP_SNAPSHOT_FREQ_MONTHLY')) {
+    define('RISEUP_SNAPSHOT_FREQ_MONTHLY', 'monthly');
+}
+
+// Snapshot actions (for transaction logging)
+if (!defined('RISEUP_ACTION_SNAPSHOT_CREATE')) {
+    define('RISEUP_ACTION_SNAPSHOT_CREATE', 'snapshot_create');
+}
+if (!defined('RISEUP_ACTION_SNAPSHOT_RESTORE')) {
+    define('RISEUP_ACTION_SNAPSHOT_RESTORE', 'snapshot_restore');
+}
+if (!defined('RISEUP_ACTION_SNAPSHOT_DELETE')) {
+    define('RISEUP_ACTION_SNAPSHOT_DELETE', 'snapshot_delete');
+}
+if (!defined('RISEUP_ACTION_SNAPSHOT_EXPORT')) {
+    define('RISEUP_ACTION_SNAPSHOT_EXPORT', 'snapshot_export');
+}
+if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT')) {
+    define('RISEUP_ACTION_SNAPSHOT_IMPORT', 'snapshot_import');
+}
+
+// Snapshot REST endpoints
+if (!defined('RISEUP_ENDPOINT_SNAPSHOTS')) {
+    define('RISEUP_ENDPOINT_SNAPSHOTS', 'snapshots');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE', 'snapshots/schedule');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_BY_ID')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_BY_ID', 'snapshots/(?P<id>\\d+)');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_RESTORE')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_RESTORE', 'snapshots/(?P<id>\\d+)/restore');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_EXPORT')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_EXPORT', 'snapshots/(?P<id>\\d+)/export');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_IMPORT')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_IMPORT', 'snapshots/import');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_SETTINGS')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_SETTINGS', 'snapshots/settings');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS', 'snapshots/providers');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_TABLES')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_TABLES', 'snapshots/tables');
+}
+
+// Snapshot table names
+if (!defined('RISEUP_TABLE_SNAPSHOTS')) {
+    define('RISEUP_TABLE_SNAPSHOTS', 'snapshots');
+}
+if (!defined('RISEUP_TABLE_SNAPSHOT_PROGRESS')) {
+    define('RISEUP_TABLE_SNAPSHOT_PROGRESS', 'snapshot_progress');
+}
+
+// Snapshot folders
+if (!defined('RISEUP_SNAPSHOTS_SUBDIR')) {
+    define('RISEUP_SNAPSHOTS_SUBDIR', 'snapshots');
+}
+
+// Snapshot defaults
+if (!defined('RISEUP_SNAPSHOT_BATCH_SIZE')) {
+    define('RISEUP_SNAPSHOT_BATCH_SIZE', 1000);
+}
+if (!defined('RISEUP_SNAPSHOT_MAX_SIZE_MB')) {
+    define('RISEUP_SNAPSHOT_MAX_SIZE_MB', 500);
+}
+if (!defined('RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT')) {
+    define('RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT', 30);
+}
+if (!defined('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT')) {
+    define('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT', 10);
+}
+
+// Snapshot cron hooks
+if (!defined('RISEUP_CRON_SNAPSHOT_SCHEDULED')) {
+    define('RISEUP_CRON_SNAPSHOT_SCHEDULED', 'riseup_snapshot_scheduled');
+}
+if (!defined('RISEUP_CRON_SNAPSHOT_IMMEDIATE')) {
+    define('RISEUP_CRON_SNAPSHOT_IMMEDIATE', 'riseup_snapshot_immediate');
+}
+if (!defined('RISEUP_CRON_SNAPSHOT_CLEANUP')) {
+    define('RISEUP_CRON_SNAPSHOT_CLEANUP', 'riseup_snapshot_cleanup');
+}
+if (!defined('RISEUP_CRON_SNAPSHOT_TABLE')) {
+    define('RISEUP_CRON_SNAPSHOT_TABLE', 'riseup_snapshot_table');
+}
+
+// Snapshot error codes
+if (!defined('RISEUP_ERR_SNAPSHOT_LOCK_EXISTS')) {
+    define('RISEUP_ERR_SNAPSHOT_LOCK_EXISTS', 'SNAPSHOT_LOCK_EXISTS');
+}
+if (!defined('RISEUP_ERR_SNAPSHOT_NOT_FOUND')) {
+    define('RISEUP_ERR_SNAPSHOT_NOT_FOUND', 'SNAPSHOT_NOT_FOUND');
+}
+if (!defined('RISEUP_ERR_SNAPSHOT_CORRUPT')) {
+    define('RISEUP_ERR_SNAPSHOT_CORRUPT', 'SNAPSHOT_CORRUPT');
+}
+if (!defined('RISEUP_ERR_SNAPSHOT_TOO_LARGE')) {
+    define('RISEUP_ERR_SNAPSHOT_TOO_LARGE', 'SNAPSHOT_TOO_LARGE');
+}
+if (!defined('RISEUP_ERR_RESTORE_FAILED')) {
+    define('RISEUP_ERR_RESTORE_FAILED', 'RESTORE_FAILED');
+}
+if (!defined('RISEUP_ERR_PROVIDER_NOT_AVAILABLE')) {
+    define('RISEUP_ERR_PROVIDER_NOT_AVAILABLE', 'PROVIDER_NOT_AVAILABLE');
+}
+
+// WordPress options key for snapshot settings
+if (!defined('RISEUP_OPTION_SNAPSHOT_SETTINGS')) {
+    define('RISEUP_OPTION_SNAPSHOT_SETTINGS', 'riseup_snapshot_settings');
 }
