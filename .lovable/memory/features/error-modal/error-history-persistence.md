@@ -131,7 +131,24 @@ Tab content order:
 - Execution Logs (from CapturedError.backendLogs)
 - Go Stack Trace (from CapturedError.backendStackTrace)
 
-## Next Steps (Phase 5-6)
+## Phase 5: UI Click Path Tracking ✅ COMPLETE
 
-- Phase 5: UI click path tracking
+Implemented in `src/hooks/useClickTracker.ts`:
+- Global event listeners for click, submit, change
+- Captures element type, text, CSS path, route, action
+- Zustand store with last 20 interactions
+- `getClickPathForError()` for error capture integration
+
+CapturedError now includes:
+- `uiClickPath: ClickEvent[]` - Structured click events
+- `uiClickPathString: string` - Formatted for copying
+
+Overview tab shows "User Interaction Path" with:
+- Step numbers and element descriptions
+- Action badges for non-click events
+- Route context for each interaction
+- Copy button for debugging
+
+## Next Steps (Phase 6)
+
 - Phase 6: Multi-error queue UI with navigation and bulk copy
