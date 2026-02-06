@@ -18,6 +18,7 @@ import {
   Upload,
   Eye,
   FlaskConical,
+  Database,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping } from "@/lib/api";
@@ -25,6 +26,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useErrorStore } from "@/stores/errorStore";
 import { RemotePluginsPanel } from "./RemotePluginsPanel";
+import { RemoteSnapshotsPanel } from "./RemoteSnapshotsPanel";
 
 interface SiteCardProps {
   site: Site;
@@ -39,6 +41,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [testingSiteId, setTestingSiteId] = useState<number | null>(null);
   const [deployingUploader, setDeployingUploader] = useState(false);
   const [showRemotePlugins, setShowRemotePlugins] = useState(false);
+  const [showSnapshots, setShowSnapshots] = useState(false);
 
   // Fetch linked plugins for this site
   const { data: mappings } = useQuery({
@@ -238,7 +241,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Action buttons - responsive grid layout */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 pt-2 border-t">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-2 border-t">
           <Button
             variant="ghost"
             size="sm"
@@ -260,6 +263,17 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           >
             <Eye className="h-4 w-4" />
             <span className="text-[10px] sm:text-xs">Plugins</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
+            onClick={() => setShowSnapshots(true)}
+            disabled={site.connectionStatus !== "connected"}
+            title={site.connectionStatus !== "connected" ? "Connect site first" : "Manage database snapshots"}
+          >
+            <Database className="h-4 w-4" />
+            <span className="text-[10px] sm:text-xs">Snapshots</span>
           </Button>
           <Button
             variant="ghost"
@@ -301,6 +315,11 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         site={site}
         open={showRemotePlugins}
         onOpenChange={setShowRemotePlugins}
+      />
+      <RemoteSnapshotsPanel
+        site={site}
+        open={showSnapshots}
+        onOpenChange={setShowSnapshots}
       />
     </Card>
   );
