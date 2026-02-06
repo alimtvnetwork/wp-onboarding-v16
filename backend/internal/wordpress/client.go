@@ -166,6 +166,10 @@ func (c *Client) ResolvePluginIdentifier(slug string) (string, error) {
 		return "", apperror.New(apperror.ErrValidation, "empty plugin slug")
 	}
 	if strings.Contains(slug, "/") {
+		// Ensure the identifier ends with .php as required by WP REST API
+		if !strings.HasSuffix(slug, ".php") {
+			slug = slug + ".php"
+		}
 		return slug, nil
 	}
 
