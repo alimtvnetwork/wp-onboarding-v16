@@ -4,6 +4,7 @@ package publish
 import (
 	"archive/zip"
 	"context"
+	"encoding/base64"
 	"crypto/md5"
 	"database/sql"
 	"fmt"
@@ -87,10 +88,11 @@ func New(cfg Config) *Service {
 
 // PublishOptions configures the publish operation
 type PublishOptions struct {
-	Mode         string   `json:"mode"`         // "selected" or "full"
-	Files        []string `json:"files"`        // files to publish (for "selected" mode)
-	CreateBackup bool     `json:"createBackup"` // create backup before publishing
-	KeepZipFiles bool     `json:"keepZipFiles"` // keep ZIP files after publish (for debugging)
+	Mode              string   `json:"mode"`              // "selected" or "full"
+	Files             []string `json:"files"`             // files to publish (for "selected" mode)
+	CreateBackup      bool     `json:"createBackup"`      // create backup before publishing
+	KeepZipFiles      bool     `json:"keepZipFiles"`      // keep ZIP files after publish (for debugging)
+	RollbackOnFailure bool     `json:"rollbackOnFailure"` // auto-rollback if activation fails (default: true)
 }
 
 // PublishResult represents the result of a publish operation
@@ -99,8 +101,10 @@ type PublishResult struct {
 	SessionID        string   `json:"sessionId,omitempty"`
 	FilesUpdated     int      `json:"filesUpdated"`
 	BackupID         *int64   `json:"backupId,omitempty"`
-	ActivationStatus string   `json:"activationStatus"` // active, inactive, error
-	Duration         int64    `json:"duration"`         // milliseconds
+	ActivationStatus string   `json:"activationStatus"`          // active, inactive, error
+	RollbackStatus   string   `json:"rollbackStatus,omitempty"`  // "", "success", "failed", "skipped"
+	RollbackMessage  string   `json:"rollbackMessage,omitempty"` // details about rollback
+	Duration         int64    `json:"duration"`                  // milliseconds
 	ErrorMessage     string   `json:"errorMessage,omitempty"`
 	Stages           []Stage  `json:"stages"`
 }
@@ -123,9 +127,10 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		// Try to convert from map
 		if m, ok := opts.(map[string]interface{}); ok {
 			options = PublishOptions{
-				Mode:         getString(m, "mode", "full"),
-				CreateBackup: getBool(m, "createBackup", true),
-				KeepZipFiles: getBool(m, "keepZipFiles", false),
+				Mode:              getString(m, "mode", "full"),
+				CreateBackup:      getBool(m, "createBackup", true),
+				KeepZipFiles:      getBool(m, "keepZipFiles", false),
+				RollbackOnFailure: getBool(m, "rollbackOnFailure", true),
 			}
 			if files, ok := m["files"].([]interface{}); ok {
 				for _, f := range files {
@@ -133,6 +138,13 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 						options.Files = append(options.Files, s)
 					}
 				}
+			}
+		} else {
+			// Default options
+			options = PublishOptions{
+				Mode:              "full",
+				CreateBackup:      true,
+				RollbackOnFailure: true,
 			}
 		}
 	}
@@ -277,6 +289,38 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 	// Track whether publish succeeded or failed for cleanup decisions
 	publishFailed := false
+
+	// Pre-upload backup: export remote plugin for rollback capability
+	var preUploadBackupZip string
+	if options.RollbackOnFailure {
+		s.broadcastProgress(pluginID, siteID, "pre-backup", 45, "Creating pre-upload backup for rollback...")
+		exportResult, exportErr := wpClient.ExportPlugin(mapping.RemoteSlug)
+		if exportErr != nil {
+			s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "pre-backup", StageContext{
+				What:   "Pre-upload backup for rollback",
+				Result: fmt.Sprintf("Skipped: %s (rollback won't be available)", exportErr.Error()),
+			})
+		} else if exportResult != nil && exportResult.PluginZip != "" {
+			// Decode and save to temp file
+			zipData, decErr := base64.StdEncoding.DecodeString(exportResult.PluginZip)
+			if decErr == nil {
+				backupPath := filepath.Join(s.tempDir, fmt.Sprintf("%s-rollback-%d.zip", mapping.RemoteSlug, time.Now().Unix()))
+				if writeErr := os.WriteFile(backupPath, zipData, 0644); writeErr == nil {
+					preUploadBackupZip = backupPath
+					s.broadcastStageLog(pluginID, siteID, sessionID, "info", "pre-backup", StageContext{
+						What:   "Pre-upload backup created",
+						Result: fmt.Sprintf("Saved %s (%d files)", formatBytes(int64(len(zipData))), exportResult.FileCount),
+					})
+					// Clean up backup on exit
+					defer func() {
+						if preUploadBackupZip != "" {
+							os.Remove(preUploadBackupZip)
+						}
+					}()
+				}
+			}
+		}
+	}
 
 	// Ensure cleanup - but ALWAYS keep ZIP on failure for debugging
 	defer func() {
@@ -636,7 +680,71 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	if stage.Status == "failed" {
 		result.ActivationStatus = "error"
 		result.ErrorMessage = stage.Message
-		// Continue - upload succeeded, just activation failed
+
+		// Stage 4b: Rollback on activation failure
+		if options.RollbackOnFailure {
+			rollbackStage := s.runStageWithSession(sessionID, "rollback", func() error {
+				s.broadcastProgress(pluginID, siteID, "rollback", 85, "Activation failed — rolling back...")
+				s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
+					What:  "Rolling back plugin after activation failure",
+					Why:   fmt.Sprintf("Activation failed: %s", stage.Message),
+					Where: siteInfo.URL,
+				})
+
+				// Step 1: Deactivate the broken plugin to prevent site errors
+				s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+					What: "Deactivating broken plugin to stabilize site",
+				})
+				if disableErr := wpClient.DisablePlugin(mapping.RemoteSlug); disableErr != nil {
+					s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
+						What:   "Deactivation during rollback",
+						Result: fmt.Sprintf("Could not deactivate: %s (site may already be safe)", disableErr.Error()),
+					})
+					// Non-fatal — continue rollback attempt
+				}
+
+				// Step 2: If we have a pre-upload backup ZIP, re-upload it
+				if preUploadBackupZip != "" {
+					s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+						What: "Re-uploading pre-publish backup to restore previous version",
+					})
+					_, _, _, uploadErr := s.uploadPlugin(ctx, wpClient, preUploadBackupZip, mapping.RemoteSlug)
+					if uploadErr != nil {
+						return fmt.Errorf("rollback upload failed: %w", uploadErr)
+					}
+					s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+						What:   "Rollback upload complete",
+						Result: "Previous plugin version restored successfully",
+					})
+				} else {
+					s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
+						What:   "No pre-upload backup available",
+						Result: "Plugin deactivated but files not restored. Manual intervention may be needed.",
+					})
+				}
+				return nil
+			})
+			result.Stages = append(result.Stages, rollbackStage)
+			if rollbackStage.Status == "failed" {
+				result.RollbackStatus = "failed"
+				result.RollbackMessage = rollbackStage.Message
+				s.broadcastStageLog(pluginID, siteID, sessionID, "error", "rollback", StageContext{
+					What:   "Rollback failed",
+					Result: rollbackStage.Message,
+				})
+			} else {
+				result.RollbackStatus = "success"
+				result.RollbackMessage = "Previous version restored"
+				s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
+					What:   "Rollback completed successfully",
+					Result: "Site should be stable with previous plugin version",
+				})
+			}
+		} else {
+			result.RollbackStatus = "skipped"
+			result.RollbackMessage = "Rollback disabled by user"
+		}
+		// Continue to cleanup
 	} else {
 		result.ActivationStatus = "active"
 	}
