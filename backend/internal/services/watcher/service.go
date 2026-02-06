@@ -118,7 +118,7 @@ func (s *Service) InitializeCache(ctx context.Context, pluginID int64) error {
 	s.populateCache(cache)
 	s.cache[pluginID] = cache
 
-	s.log.Info("Initialized file cache", "pluginId", pluginID, "files", len(cache.lastScan))
+	s.log.Info("Initialized file cache", "plugin", p.Name, "pluginId", pluginID, "files", len(cache.lastScan))
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (s *Service) ClearCache(pluginID int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.cache, pluginID)
-	s.log.Info("Cleared file cache", "pluginId", pluginID)
+	s.log.Info("Cleared file cache", "pluginId", pluginID) // pluginID only — name not available at this call site
 }
 
 // GetCachedPlugins returns list of plugins with active cache
@@ -175,7 +175,7 @@ func (s *Service) GetCachedPlugins() []int64 {
 func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType string) (*ScanResult, error) {
 	startTime := time.Now()
 
-	s.log.Info("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
+	s.log.Debug("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
 
 	// Get or create cache
 	s.mu.Lock()
@@ -220,7 +220,7 @@ func (s *Service) performScan(ctx context.Context, pluginID int64, triggerType s
 		go s.triggerAutoPublish(ctx, pluginID, changes)
 	}
 
-	s.log.Info("Scan complete", "pluginId", pluginID, "changes", len(changes), "duration", result.DurationMs)
+	s.log.Info("Scan complete", "pluginId", pluginID, "changes", len(changes), "duration", result.DurationMs) // name available via cache but not critical for INFO
 	return result, nil
 }
 
@@ -237,12 +237,17 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	}
 
 	if len(p.Mappings) == 0 {
-		s.log.Debug("Auto-publish skipped: no site mappings", "pluginId", pluginID)
+		s.log.Debug("Auto-publish skipped: no site mappings", "plugin", p.Name, "pluginId", pluginID)
 		return
 	}
 
-	s.log.Info("Auto-publish triggered", "pluginId", pluginID, "changes", len(changes), "sites", len(p.Mappings))
-	
+	s.log.Info("Auto-publish triggered",
+		"plugin", p.Name,
+		"pluginId", pluginID,
+		"changes", len(changes),
+		"sites", len(p.Mappings),
+	)
+
 	// Notify clients that auto-publish is starting
 	s.wsHub.Broadcast(ws.EventAutoPublishTriggered, map[string]interface{}{
 		"pluginId":   pluginID,
@@ -252,7 +257,7 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	})
 
 	if s.publishService == nil {
-		s.log.Warn("Auto-publish: publish service not configured", "pluginId", pluginID)
+		s.log.Warn("Auto-publish: publish service not configured", "plugin", p.Name, "pluginId", pluginID)
 		return
 	}
 
@@ -261,7 +266,13 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	for _, mapping := range p.Mappings {
 		filesUpdated, err := s.publishService.PublishPlugin(ctx, pluginID, mapping.SiteID, "full", true)
 		if err != nil {
-			s.log.Error("Auto-publish failed", "pluginId", pluginID, "siteId", mapping.SiteID, "error", err)
+			s.log.Error("Auto-publish failed",
+				"plugin", p.Name,
+				"site", mapping.SiteName,
+				"pluginId", pluginID,
+				"siteId", mapping.SiteID,
+				"error", err,
+			)
 			s.wsHub.Broadcast(ws.EventAutoPublishFailed, map[string]interface{}{
 				"pluginId": pluginID,
 				"siteId":   mapping.SiteID,
@@ -279,7 +290,7 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 		})
 	}
 
-	s.log.Info("Auto-publish complete", "pluginId", pluginID, "successfulSites", successCount)
+	s.log.Info("Auto-publish complete", "plugin", p.Name, "pluginId", pluginID, "successfulSites", successCount)
 }
 
 // populateCache performs initial scan without change detection

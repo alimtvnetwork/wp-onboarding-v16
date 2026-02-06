@@ -3,6 +3,7 @@ package version
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"wp-plugin-publish/internal/database"
@@ -57,11 +58,20 @@ func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, fil
 
 	versionID, err := s.db.CreatePluginVersion(pluginID, siteID, version, backupPath, filesUpdated, gitCommitHash, publishType, notes)
 	if err != nil {
-		s.log.Error("Failed to record version", "error", err, "pluginId", pluginID, "siteId", siteID)
+		s.log.Error("Failed to record version",
+			"pluginId", pluginID,
+			"siteId", siteID,
+			"error", err,
+		)
 		return 0, err
 	}
 
-	s.log.Info("Version recorded", "versionId", versionID, "version", version, "pluginId", pluginID, "siteId", siteID)
+	s.log.Info("Version recorded",
+		"versionId", versionID,
+		"version", version,
+		"pluginId", pluginID,
+		"siteId", siteID,
+	)
 
 	// Broadcast version created event
 	if s.wsHub != nil {
@@ -97,7 +107,12 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (interface{}, e
 	siteID, _ := version["siteId"].(int64)
 	versionStr, _ := version["version"].(string)
 
-	s.log.Info("Starting rollback", "versionId", versionID, "version", versionStr, "pluginId", pluginID, "siteId", siteID)
+	s.log.Info("Starting rollback",
+		"versionId", versionID,
+		"version", versionStr,
+		"pluginId", pluginID,
+		"siteId", siteID,
+	)
 
 	// Broadcast rollback started
 	if s.wsHub != nil {

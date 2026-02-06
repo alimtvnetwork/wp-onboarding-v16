@@ -1300,7 +1300,8 @@ func (s *Service) extractErrorDetails(err error) map[string]interface{} {
 	return details
 }
 
-// logRemoteAction logs a remote plugin action to session and WebSocket
+// logRemoteAction logs a remote plugin action to session and WebSocket.
+// It extracts human-readable names from the details map for structured logging.
 func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level, step, message string, details map[string]interface{}) {
 	// Log to session file
 	if s.sessionService != nil && sessionID != "" {
@@ -1312,11 +1313,52 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 		s.wsHub.BroadcastRemotePluginLogWithSession(siteID, action, sessionID, level, step, message, details)
 	}
 
-	// Also log to main logger
+	// Resolve names from details or DB for structured logging
+	siteName := ""
+	siteURL := ""
+	pluginSlug := ""
+	if details != nil {
+		if v, ok := details["siteName"].(string); ok {
+			siteName = v
+		}
+		if v, ok := details["siteUrl"].(string); ok {
+			siteURL = v
+		}
+		if v, ok := details["pluginSlug"].(string); ok {
+			pluginSlug = v
+		}
+	}
+	// DB fallback for site info
+	if (siteName == "" || siteURL == "") && siteID > 0 {
+		if site, err := s.GetByID(context.Background(), siteID); err == nil {
+			if siteName == "" {
+				siteName = site.Name
+			}
+			if siteURL == "" {
+				siteURL = site.URL
+			}
+		}
+	}
+	if siteName == "" {
+		siteName = fmt.Sprintf("site#%d", siteID)
+	}
+
+	// Log with names first, IDs second, then technical details
+	logFields := []interface{}{
+		"site", siteName,
+	}
+	if siteURL != "" {
+		logFields = append(logFields, "siteUrl", siteURL)
+	}
+	logFields = append(logFields, "siteId", siteID, "action", action, "step", step)
+	if pluginSlug != "" {
+		logFields = append(logFields, "pluginSlug", pluginSlug)
+	}
+
 	if level == "error" {
-		s.log.Error(message, "siteId", siteID, "action", action, "step", step)
+		s.log.Error(message, logFields...)
 	} else {
-		s.log.Debug(message, "siteId", siteID, "action", action, "step", step)
+		s.log.Debug(message, logFields...)
 	}
 }
 

@@ -65,7 +65,7 @@ func (s *Service) broadcastLog(pluginID int64, level, step, message string, deta
 
 // Create downloads the current remote plugin and saves as a backup
 func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, error) {
-	s.log.Info("Creating backup", "mapping_id", mappingID)
+	s.log.Info("Creating backup", "mappingId", mappingID)
 	s.broadcastLog(mappingID, "info", "init", "Starting backup creation", map[string]interface{}{
 		"mappingId": mappingID,
 	})
@@ -117,7 +117,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 		s.broadcastLog(mappingID, "warn", "retention", fmt.Sprintf("Retention enforcement warning: %v", err), nil)
 	}
 
-	s.log.Info("Backup created", "mapping_id", mappingID, "path", backupPath)
+	s.log.Info("Backup created", "mappingId", mappingID, "path", backupPath)
 	s.broadcastLog(mappingID, "info", "complete", "Backup created successfully", map[string]interface{}{
 		"path":     backupPath,
 		"fileSize": size,
@@ -140,7 +140,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Backup, error)
 
 // Restore uploads a backup to WordPress
 func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, error) {
-	s.log.Info("Restoring backup", "backup_id", backupID)
+	s.log.Info("Restoring backup", "backupId", backupID)
 	s.broadcastLog(backupID, "info", "init", "Starting backup restore", map[string]interface{}{
 		"backupId": backupID,
 	})
