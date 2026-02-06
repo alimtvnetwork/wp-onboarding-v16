@@ -327,6 +327,40 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v2 applied successfully');
             }
             
+            // Migration v3: Enhanced transaction logging fields
+            if ($current_version < 3) {
+                $this->file_logger->info('Applying migration v3: enhanced transaction fields');
+                
+                // Add new columns to transactions table for richer logging
+                // plugin_file: Full plugin file path (e.g., "akismet/akismet.php")
+                // was_active: Previous active state before enable/disable
+                // triggered_by: Source of the action (api, dashboard, agent_push, cron)
+                // agent_site_id: If action was pushed from a master site
+                $columns = array(
+                    'plugin_file'    => 'TEXT',
+                    'was_active'     => 'INTEGER', // 0/1 for boolean
+                    'triggered_by'   => 'TEXT',    // api, dashboard, agent_push, cron
+                    'agent_site_id'  => 'INTEGER', // FK to agent_sites if agent triggered
+                );
+                
+                foreach ($columns as $column => $type) {
+                    try {
+                        $this->pdo->exec("ALTER TABLE " . RISEUP_TABLE_TRANSACTIONS . " ADD COLUMN {$column} {$type}");
+                        $this->file_logger->debug("Column added: {$column}");
+                    } catch (PDOException $e) {
+                        // Column might already exist
+                        $this->file_logger->debug("Column might exist: {$column}", array('error' => $e->getMessage()));
+                    }
+                }
+                
+                // Create index for triggered_by queries
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_triggered_by ON " . RISEUP_TABLE_TRANSACTIONS . "(triggered_by)");
+                
+                // Record migration
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (3, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v3 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {
@@ -362,15 +396,16 @@ class Riseup_Database {
     /**
      * Log a transaction using ORM.
      *
-     * @param string      $action      Action type (use RISEUP_ACTION_* constants).
-     * @param string|null $plugin_slug Plugin slug (for plugin operations).
-     * @param int|null    $post_id     Post ID (for post operations).
-     * @param string      $user_login  WordPress username.
-     * @param int|null    $user_id     WordPress user ID.
-     * @param string      $ip_address  Client IP address.
-     * @param array       $details     Additional details (will be JSON encoded).
-     * @param string      $status      Status (use RISEUP_STATUS_* constants).
-     * @param string|null $error_msg   Error message if failed.
+     * @param string      $action         Action type (use RISEUP_ACTION_* constants).
+     * @param string|null $plugin_slug    Plugin slug (for plugin operations).
+     * @param int|null    $post_id        Post ID (for post operations).
+     * @param string      $user_login     WordPress username.
+     * @param int|null    $user_id        WordPress user ID.
+     * @param string      $ip_address     Client IP address.
+     * @param array       $details        Additional details (will be JSON encoded).
+     * @param string      $status         Status (use RISEUP_STATUS_* constants).
+     * @param string|null $error_msg      Error message if failed.
+     * @param array       $enhanced       Enhanced fields: plugin_file, was_active, triggered_by, agent_site_id.
      *
      * @return int|false Insert ID on success, false on failure.
      */
@@ -383,7 +418,8 @@ class Riseup_Database {
         $ip_address = '',
         $details = array(),
         $status = RISEUP_STATUS_SUCCESS,
-        $error_msg = null
+        $error_msg = null,
+        $enhanced = array()
     ) {
         if (!$this->is_ready()) {
             $this->file_logger->warn('Database not ready, cannot log transaction');
@@ -394,9 +430,10 @@ class Riseup_Database {
             $this->file_logger->debug('Logging transaction', array(
                 'action' => $action,
                 'status' => $status,
+                'enhanced' => $enhanced,
             ));
             
-            $result = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $record = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
                 ->create()
                 ->set('action', $action)
                 ->set('plugin_slug', $plugin_slug)
@@ -407,8 +444,23 @@ class Riseup_Database {
                 ->set('details', !empty($details) ? json_encode($details) : null)
                 ->set('status', $status)
                 ->set('error_msg', $error_msg)
-                ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'))
-                ->save();
+                ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'));
+            
+            // Apply enhanced fields if provided
+            if (!empty($enhanced['plugin_file'])) {
+                $record->set('plugin_file', $enhanced['plugin_file']);
+            }
+            if (isset($enhanced['was_active'])) {
+                $record->set('was_active', $enhanced['was_active'] ? 1 : 0);
+            }
+            if (!empty($enhanced['triggered_by'])) {
+                $record->set('triggered_by', $enhanced['triggered_by']);
+            }
+            if (!empty($enhanced['agent_site_id'])) {
+                $record->set('agent_site_id', (int) $enhanced['agent_site_id']);
+            }
+            
+            $result = $record->save();
                 
             $this->file_logger->info('Transaction logged', array('id' => $result));
             return $result;
@@ -417,6 +469,32 @@ class Riseup_Database {
             $this->file_logger->log_exception($e, 'Failed to log transaction');
             return false;
         }
+    }
+
+    /**
+     * Log a transaction with enhanced context (convenience wrapper).
+     *
+     * @param array $params All parameters as associative array.
+     * @return int|false Insert ID on success, false on failure.
+     */
+    public function log_enhanced_transaction($params) {
+        return $this->log_transaction(
+            $params['action'] ?? '',
+            $params['plugin_slug'] ?? null,
+            $params['post_id'] ?? null,
+            $params['user_login'] ?? '',
+            $params['user_id'] ?? null,
+            $params['ip_address'] ?? '',
+            $params['details'] ?? array(),
+            $params['status'] ?? RISEUP_STATUS_SUCCESS,
+            $params['error_msg'] ?? null,
+            array(
+                'plugin_file'   => $params['plugin_file'] ?? null,
+                'was_active'    => $params['was_active'] ?? null,
+                'triggered_by'  => $params['triggered_by'] ?? null,
+                'agent_site_id' => $params['agent_site_id'] ?? null,
+            )
+        );
     }
 
     /**
