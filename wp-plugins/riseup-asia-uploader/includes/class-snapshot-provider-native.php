@@ -5,6 +5,8 @@
  * Implements database snapshots using MySQL to SQLite export.
  * This is the fallback provider when WP Reset or Updraft is not available.
  *
+ * PHP class naming follows PascalCase convention without underscores.
+ *
  * @package RiseupAsiaUploader
  * @since   1.9.0
  */
@@ -20,8 +22,10 @@ require_once dirname(__FILE__) . '/class-snapshot-provider-interface.php';
  * 
  * Exports MySQL tables to SQLite format for portable database backups.
  * All operations are scheduled via WP-Cron to prevent request timeouts.
+ *
+ * PHP class naming follows PascalCase convention without underscores.
  */
-class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface {
+class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
 
     /**
      * Provider ID.
@@ -47,8 +51,8 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger $logger Logger instance.
-     * @param Riseup_Database    $db     Database instance.
+     * @param RiseupFileLogger $logger Logger instance.
+     * @param RiseupDatabase   $db     Database instance.
      */
     public function __construct($logger, $db) {
         parent::__construct($logger, $db);
@@ -61,7 +65,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      *
      * @return bool True if SQLite extension is loaded.
      */
-    public function is_available() {
+    public function isAvailable() {
         return extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
     }
 
@@ -70,7 +74,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      *
      * @return array Capabilities array.
      */
-    public function get_capabilities() {
+    public function getCapabilities() {
         return array(
             'full_site' => false,
             'database_only' => true,
@@ -88,11 +92,11 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * @param array $options Snapshot options.
      * @return array Snapshot result.
      */
-    public function create_snapshot($options) {
+    public function createSnapshot($options) {
         $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot creation requested', $options);
 
         // Ensure directory exists
-        if (!$this->ensure_snapshots_dir()) {
+        if (!$this->ensureSnapshotsDir()) {
             return array(
                 'success' => false,
                 'error' => 'Failed to create snapshots directory',
@@ -100,7 +104,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
         }
 
         // Check for existing lock
-        if ($this->is_locked()) {
+        if ($this->isLocked()) {
             $this->log(RISEUP_LOG_LEVEL_WARN, 'Snapshot already in progress (locked)');
             return array(
                 'success' => false,
@@ -111,7 +115,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
 
         // Determine tables to export
         $scope = isset($options['scope']) ? $options['scope'] : RISEUP_SNAPSHOT_SCOPE_WORDPRESS;
-        $tables = $this->get_tables_for_scope($scope, isset($options['tables']) ? $options['tables'] : array());
+        $tables = $this->getTablesForScope($scope, isset($options['tables']) ? $options['tables'] : array());
 
         if (empty($tables)) {
             return array(
@@ -121,13 +125,13 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
         }
 
         // Get next sequence number
-        $sequence = $this->get_next_sequence();
-        $filename = $this->generate_snapshot_filename($sequence);
-        $filepath = Riseup_Path_Utils::join($this->get_snapshots_dir(), $filename . '.sqlite');
+        $sequence = $this->getNextSequence();
+        $filename = $this->generateSnapshotFilename($sequence);
+        $filepath = RiseupPathUtils::join($this->getSnapshotsDir(), $filename . '.sqlite');
 
         // Create snapshot record
         $trigger = isset($options['trigger']) ? $options['trigger'] : 'api';
-        $snapshot_id = $this->create_snapshot_record($sequence, $filename, $filepath, $scope, $tables, $trigger);
+        $snapshot_id = $this->createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger);
 
         if (!$snapshot_id) {
             return array(
@@ -149,7 +153,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
         if ($scheduled === false) {
             // Direct execution as fallback (not recommended)
             $this->log(RISEUP_LOG_LEVEL_WARN, 'Cron scheduling failed, executing directly');
-            $result = $this->execute_snapshot($snapshot_id, $tables);
+            $result = $this->executeSnapshot($snapshot_id, $tables);
             return $result;
         }
 
@@ -176,11 +180,11 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * @param array $tables      Tables to export.
      * @return array Result.
      */
-    public function execute_snapshot($snapshot_id, $tables) {
+    public function executeSnapshot($snapshot_id, $tables) {
         $start_time = microtime(true);
 
         // Get snapshot record
-        $snapshot = $this->get_snapshot($snapshot_id);
+        $snapshot = $this->getSnapshot($snapshot_id);
         if (!$snapshot) {
             return array('success' => false, 'error' => 'Snapshot record not found');
         }
@@ -188,14 +192,14 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
         $filepath = $snapshot['filepath'];
 
         // Acquire lock
-        if (!$this->acquire_lock()) {
-            $this->update_snapshot_status($snapshot_id, RISEUP_SNAPSHOT_STATUS_FAILED, 'Failed to acquire lock');
+        if (!$this->acquireLock()) {
+            $this->updateSnapshotStatus($snapshot_id, RISEUP_SNAPSHOT_STATUS_FAILED, 'Failed to acquire lock');
             return array('success' => false, 'error' => 'Failed to acquire lock');
         }
 
         try {
             // Update status to running
-            $this->update_snapshot_status($snapshot_id, RISEUP_SNAPSHOT_STATUS_RUNNING);
+            $this->updateSnapshotStatus($snapshot_id, RISEUP_SNAPSHOT_STATUS_RUNNING);
 
             $this->log(RISEUP_LOG_LEVEL_INFO, 'Starting snapshot export', array(
                 'snapshot_id' => $snapshot_id,
@@ -204,7 +208,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
             ));
 
             // Create SQLite database
-            $sqlite = $this->create_sqlite_database($filepath);
+            $sqlite = $this->createSqliteDatabase($filepath);
             if (!$sqlite) {
                 throw new Exception('Failed to create SQLite database');
             }
@@ -216,7 +220,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
             foreach ($tables as $table) {
                 $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Exporting table: ' . $table);
 
-                $result = $this->export_table($sqlite, $table, $snapshot_id);
+                $result = $this->exportTable($sqlite, $table, $snapshot_id);
 
                 if ($result['success']) {
                     $total_rows += $result['rows'];
@@ -225,7 +229,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
                         'Table %s complete (%d rows, %s)',
                         $table,
                         $result['rows'],
-                        $this->format_bytes($result['bytes'])
+                        $this->formatBytes($result['bytes'])
                     ));
                 } else {
                     $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to export table: ' . $table, array(
@@ -243,7 +247,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
             $duration = microtime(true) - $start_time;
 
             // Update snapshot record
-            $this->finalize_snapshot($snapshot_id, array(
+            $this->finalizeSnapshot($snapshot_id, array(
                 'status' => RISEUP_SNAPSHOT_STATUS_COMPLETE,
                 'file_size' => $file_size,
                 'total_rows' => $total_rows,
@@ -254,7 +258,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
             $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot complete', array(
                 'snapshot_id' => $snapshot_id,
                 'filepath' => $filepath,
-                'size' => $this->format_bytes($file_size),
+                'size' => $this->formatBytes($file_size),
                 'tables' => count($tables),
                 'rows' => $total_rows,
                 'duration' => round($duration, 2) . 's',
@@ -277,7 +281,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
                 'trace' => $e->getTraceAsString(),
             ));
 
-            $this->update_snapshot_status($snapshot_id, RISEUP_SNAPSHOT_STATUS_FAILED, $e->getMessage());
+            $this->updateSnapshotStatus($snapshot_id, RISEUP_SNAPSHOT_STATUS_FAILED, $e->getMessage());
 
             return array(
                 'success' => false,
@@ -285,7 +289,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
             );
 
         } finally {
-            $this->release_lock();
+            $this->releaseLock();
         }
     }
 
@@ -295,10 +299,10 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * @param string $filepath Path to create database.
      * @return PDO|null PDO instance or null on failure.
      */
-    private function create_sqlite_database($filepath) {
+    private function createSqliteDatabase($filepath) {
         // Validate path is within snapshots directory
-        $snapshots_dir = $this->get_snapshots_dir();
-        if (!Riseup_Path_Utils::is_safe_path($filepath, $snapshots_dir)) {
+        $snapshots_dir = $this->getSnapshotsDir();
+        if (!RiseupPathUtils::isSafePath($filepath, $snapshots_dir)) {
             $this->log(RISEUP_LOG_LEVEL_ERROR, 'Unsafe path detected for SQLite database', array(
                 'filepath' => $filepath,
                 'base' => $snapshots_dir,
@@ -308,7 +312,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
 
         // Ensure parent directory exists
         $parent_dir = dirname($filepath);
-        if (!Riseup_Path_Utils::ensure_dir($parent_dir, true)) {
+        if (!RiseupPathUtils::ensureDir($parent_dir, true)) {
             $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to ensure parent directory for SQLite', array(
                 'parent' => $parent_dir,
             ));
@@ -365,16 +369,16 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * @param int    $snapshot_id Snapshot ID for progress tracking.
      * @return array Export result.
      */
-    private function export_table($sqlite, $table, $snapshot_id) {
+    private function exportTable($sqlite, $table, $snapshot_id) {
         try {
             // Get table structure
-            $create_sql = $this->get_create_table_sql($table);
+            $create_sql = $this->getCreateTableSql($table);
             if (!$create_sql) {
                 throw new Exception('Failed to get table structure');
             }
 
             // Convert MySQL CREATE to SQLite
-            $sqlite_create = $this->convert_create_statement($create_sql, $table);
+            $sqlite_create = $this->convertCreateStatement($create_sql, $table);
 
             // Create table in SQLite
             $sqlite->exec($sqlite_create);
@@ -452,7 +456,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * @param string $table Table name.
      * @return string|null CREATE statement or null.
      */
-    private function get_create_table_sql($table) {
+    private function getCreateTableSql($table) {
         $result = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
         return $result ? $result[1] : null;
     }
@@ -464,7 +468,7 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * @param string $table        Table name.
      * @return string SQLite CREATE statement.
      */
-    private function convert_create_statement($mysql_create, $table) {
+    private function convertCreateStatement($mysql_create, $table) {
         $sql = $mysql_create;
 
         // Remove MySQL-specific clauses
@@ -501,30 +505,35 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
             '/\bTINYBLOB\b/i' => 'BLOB',
             '/\bENUM\s*\([^)]+\)/i' => 'TEXT',
             '/\bSET\s*\([^)]+\)/i' => 'TEXT',
+            '/\bBIT\s*\(\d+\)/i' => 'INTEGER',
+            '/\bYEAR\s*\(\d+\)/i' => 'INTEGER',
+            '/\bBOOLEAN\b/i' => 'INTEGER',
+            '/\bBOOL\b/i' => 'INTEGER',
         );
 
         foreach ($type_map as $pattern => $replacement) {
             $sql = preg_replace($pattern, $replacement, $sql);
         }
 
-        // Remove unsigned
-        $sql = preg_replace('/\bUNSIGNED\b/i', '', $sql);
+        // Remove inline COLLATE specifications
+        $sql = preg_replace('/\s+COLLATE\s+\w+/i', '', $sql);
 
-        // Remove character set specifications on columns
+        // Remove CHARACTER SET specifications
         $sql = preg_replace('/\s+CHARACTER\s+SET\s+\w+/i', '', $sql);
 
-        // Remove ON UPDATE CURRENT_TIMESTAMP
-        $sql = preg_replace('/\s+ON\s+UPDATE\s+CURRENT_TIMESTAMP/i', '', $sql);
+        // Remove UNSIGNED
+        $sql = preg_replace('/\s+UNSIGNED\b/i', '', $sql);
 
-        // Convert CURRENT_TIMESTAMP to SQLite equivalent
-        $sql = preg_replace('/\bCURRENT_TIMESTAMP\b/i', "datetime('now')", $sql);
+        // Remove ZEROFILL
+        $sql = preg_replace('/\s+ZEROFILL\b/i', '', $sql);
 
-        // Remove KEY definitions (SQLite handles these differently)
-        $sql = preg_replace('/,\s*KEY\s+`[^`]+`\s*\([^)]+\)/i', '', $sql);
-        $sql = preg_replace('/,\s*UNIQUE\s+KEY\s+`[^`]+`\s*\([^)]+\)/i', '', $sql);
-        $sql = preg_replace('/,\s*FULLTEXT\s+KEY\s+`[^`]+`\s*\([^)]+\)/i', '', $sql);
+        // Handle KEY/INDEX definitions - SQLite doesn't support these inline
+        $sql = preg_replace('/,\s*KEY\s+[^,]+(?=,|\))/i', '', $sql);
+        $sql = preg_replace('/,\s*UNIQUE\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
+        $sql = preg_replace('/,\s*FULLTEXT\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
+        $sql = preg_replace('/,\s*SPATIAL\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
 
-        // Clean up extra commas before closing paren
+        // Remove extra commas before closing paren
         $sql = preg_replace('/,\s*\)/', ')', $sql);
 
         return $sql;
@@ -534,85 +543,80 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      * Get tables for a given scope.
      *
      * @param string $scope  Scope type.
-     * @param array  $custom Custom tables (for 'custom' scope).
-     * @return array Table names.
+     * @param array  $custom Custom table list for 'custom' scope.
+     * @return array List of table names.
      */
-    private function get_tables_for_scope($scope, $custom = array()) {
+    private function getTablesForScope($scope, $custom = array()) {
+        $all_tables = $this->wpdb->get_col("SHOW TABLES");
         $prefix = $this->wpdb->prefix;
 
         switch ($scope) {
             case RISEUP_SNAPSHOT_SCOPE_ALL:
-                // All tables in database
-                $tables = $this->wpdb->get_col("SHOW TABLES");
-                break;
+                return $all_tables;
 
             case RISEUP_SNAPSHOT_SCOPE_WORDPRESS:
-                // Core WordPress tables
-                $core = array(
-                    'posts', 'postmeta', 'comments', 'commentmeta',
-                    'terms', 'termmeta', 'term_relationships', 'term_taxonomy',
-                    'users', 'usermeta', 'options', 'links'
-                );
-                $tables = array_map(function($t) use ($prefix) {
-                    return $prefix . $t;
-                }, $core);
-                break;
+                // Only tables with WP prefix
+                return array_filter($all_tables, function($table) use ($prefix) {
+                    return strpos($table, $prefix) === 0;
+                });
 
             case RISEUP_SNAPSHOT_SCOPE_CONTENT:
-                // Content tables only
-                $content = array(
-                    'posts', 'postmeta', 'comments', 'commentmeta',
-                    'terms', 'termmeta', 'term_relationships', 'term_taxonomy'
+                // Posts, comments, terms, and related
+                $content_tables = array(
+                    $prefix . 'posts',
+                    $prefix . 'postmeta',
+                    $prefix . 'comments',
+                    $prefix . 'commentmeta',
+                    $prefix . 'terms',
+                    $prefix . 'termmeta',
+                    $prefix . 'term_taxonomy',
+                    $prefix . 'term_relationships',
                 );
-                $tables = array_map(function($t) use ($prefix) {
-                    return $prefix . $t;
-                }, $content);
-                break;
+                return array_filter($all_tables, function($table) use ($content_tables) {
+                    return in_array($table, $content_tables);
+                });
 
             case RISEUP_SNAPSHOT_SCOPE_CUSTOM:
-                $tables = $custom;
-                break;
+                // User-specified tables
+                return array_filter($all_tables, function($table) use ($custom) {
+                    return in_array($table, $custom);
+                });
 
             default:
-                $tables = array();
+                return array();
         }
-
-        // Filter to only existing tables
-        $all_tables = $this->wpdb->get_col("SHOW TABLES");
-        return array_intersect($tables, $all_tables);
     }
 
     /**
-     * Create snapshot database record.
+     * Create a snapshot record in the database.
      *
      * @param int    $sequence Sequence number.
      * @param string $filename Filename without extension.
-     * @param string $filepath Full file path.
-     * @param string $scope    Scope type.
-     * @param array  $tables   Table names.
+     * @param string $filepath Full path to file.
+     * @param string $scope    Snapshot scope.
+     * @param array  $tables   Tables included.
      * @param string $trigger  Trigger source.
-     * @return int|false Snapshot ID or false on failure.
+     * @return int|false Snapshot ID or false.
      */
-    private function create_snapshot_record($sequence, $filename, $filepath, $scope, $tables, $trigger) {
-        $result = $this->db->execute(
-            'INSERT INTO ' . RISEUP_TABLE_SNAPSHOTS . ' 
-            (sequence, filename, filepath, created_at, status, provider, scope, tables_json, triggered_by) 
-            VALUES (?, ?, ?, datetime("now"), ?, ?, ?, ?, ?)',
-            array(
-                $sequence,
-                $filename . '.sqlite',
-                $filepath,
-                RISEUP_SNAPSHOT_STATUS_PENDING,
-                $this->provider_id,
-                $scope,
-                json_encode($tables),
-                $trigger
-            )
+    private function createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger) {
+        $data = array(
+            'sequence' => $sequence,
+            'filename' => $filename . '.sqlite',
+            'filepath' => $filepath,
+            'provider' => $this->provider_id,
+            'scope' => $scope,
+            'tables_json' => json_encode($tables),
+            'trigger_source' => $trigger,
+            'status' => RISEUP_SNAPSHOT_STATUS_PENDING,
+            'created_at' => date('c'),
         );
 
+        $result = $this->db->insert(RISEUP_TABLE_SNAPSHOTS, $data);
+
         if ($result) {
-            return $this->db->last_insert_id();
+            return $this->db->lastInsertId();
         }
+
         return false;
     }
 
@@ -621,137 +625,223 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
      *
      * @param int    $snapshot_id Snapshot ID.
      * @param string $status      New status.
-     * @param string $error       Error message (if failed).
+     * @param string $error       Error message (optional).
      */
-    private function update_snapshot_status($snapshot_id, $status, $error = null) {
-        $sql = 'UPDATE ' . RISEUP_TABLE_SNAPSHOTS . ' SET status = ?';
-        $params = array($status);
+    private function updateSnapshotStatus($snapshot_id, $status, $error = null) {
+        $data = array(
+            'status' => $status,
+            'updated_at' => date('c'),
+        );
 
-        if ($error !== null) {
-            $sql .= ', error_message = ?';
-            $params[] = $error;
+        if ($error) {
+            $data['error_message'] = $error;
         }
 
-        if ($status === RISEUP_SNAPSHOT_STATUS_COMPLETE || $status === RISEUP_SNAPSHOT_STATUS_FAILED) {
-            $sql .= ', completed_at = datetime("now")';
+        if ($status === RISEUP_SNAPSHOT_STATUS_RUNNING) {
+            $data['started_at'] = date('c');
         }
 
-        $sql .= ' WHERE id = ?';
-        $params[] = $snapshot_id;
-
-        $this->db->execute($sql, $params);
+        $this->db->update(RISEUP_TABLE_SNAPSHOTS, $data, array('id' => $snapshot_id));
     }
 
     /**
-     * Finalize snapshot with results.
+     * Finalize a snapshot with completion details.
      *
      * @param int   $snapshot_id Snapshot ID.
-     * @param array $data        Finalization data.
+     * @param array $details     Completion details.
      */
-    private function finalize_snapshot($snapshot_id, $data) {
-        $this->db->execute(
-            'UPDATE ' . RISEUP_TABLE_SNAPSHOTS . ' SET 
-                status = ?,
-                file_size = ?,
-                total_rows = ?,
-                table_counts_json = ?,
-                duration_ms = ?,
-                completed_at = datetime("now")
-            WHERE id = ?',
-            array(
-                $data['status'],
-                $data['file_size'],
-                $data['total_rows'],
-                json_encode($data['table_counts']),
-                $data['duration_ms'],
-                $snapshot_id
-            )
+    private function finalizeSnapshot($snapshot_id, $details) {
+        $data = array(
+            'status' => $details['status'],
+            'file_size' => $details['file_size'],
+            'total_rows' => $details['total_rows'],
+            'table_counts_json' => json_encode($details['table_counts']),
+            'duration_ms' => $details['duration_ms'],
+            'completed_at' => date('c'),
+            'updated_at' => date('c'),
         );
+
+        $this->db->update(RISEUP_TABLE_SNAPSHOTS, $data, array('id' => $snapshot_id));
     }
 
-    // =========================================================================
-    // Placeholder implementations for remaining interface methods
-    // These will be fully implemented in Phase 23 (Import/Export/Restore)
-    // =========================================================================
+    /**
+     * Restore from a snapshot.
+     *
+     * @param int   $snapshot_id Snapshot ID.
+     * @param array $options     Restore options.
+     * @return array Restore result.
+     */
+    public function restoreSnapshot($snapshot_id, $options) {
+        // Verify confirmation flag
+        if (empty($options['confirm'])) {
+            return array(
+                'success' => false,
+                'error' => 'Restore requires confirmation flag',
+                'code' => RISEUP_ERR_RESTORE_NO_CONFIRM,
+            );
+        }
 
-    public function restore_snapshot($snapshot_id, $options) {
-        // TODO: Implement in Phase 23
+        $snapshot = $this->getSnapshot($snapshot_id);
+        if (!$snapshot) {
+            return array(
+                'success' => false,
+                'error' => 'Snapshot not found',
+            );
+        }
+
+        // TODO: Implement full restore logic
+        // 1. Create pre-restore backup if enabled
+        // 2. Open SQLite database
+        // 3. For each table:
+        //    a. Drop/truncate existing table
+        //    b. Create table from SQLite schema
+        //    c. Import rows in batches
+        // 4. Update restore log
+
         return array(
             'success' => false,
             'error' => 'Restore not yet implemented',
         );
     }
 
-    public function delete_snapshot($snapshot_id) {
-        $snapshot = $this->get_snapshot($snapshot_id);
+    /**
+     * Delete a snapshot.
+     *
+     * @param int $snapshot_id Snapshot ID.
+     * @return array Delete result.
+     */
+    public function deleteSnapshot($snapshot_id) {
+        $snapshot = $this->getSnapshot($snapshot_id);
         if (!$snapshot) {
-            $this->log(RISEUP_LOG_LEVEL_WARN, 'Snapshot not found for deletion', array('id' => $snapshot_id));
             return array('success' => false, 'error' => 'Snapshot not found');
         }
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Deleting snapshot', array(
-            'id' => $snapshot_id,
-            'filepath' => $snapshot['filepath'],
-        ));
-
-        // Delete SQLite file using path utility
-        if (Riseup_Path_Utils::file_exists($snapshot['filepath'])) {
-            if (!Riseup_Path_Utils::delete_file($snapshot['filepath'])) {
+        // Delete the file
+        $filepath = $snapshot['filepath'];
+        if (RiseupPathUtils::fileExists($filepath)) {
+            if (!RiseupPathUtils::deleteFile($filepath)) {
                 $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to delete snapshot file', array(
-                    'filepath' => $snapshot['filepath'],
+                    'filepath' => $filepath,
                 ));
-                // Continue to delete record anyway
+                return array('success' => false, 'error' => 'Failed to delete snapshot file');
             }
         }
 
         // Delete ZIP if exists
-        $zip_path = str_replace('.sqlite', '.zip', $snapshot['filepath']);
-        if (Riseup_Path_Utils::file_exists($zip_path)) {
-            Riseup_Path_Utils::delete_file($zip_path);
+        $zip_path = str_replace('.sqlite', '.zip', $filepath);
+        if (RiseupPathUtils::fileExists($zip_path)) {
+            RiseupPathUtils::deleteFile($zip_path);
         }
 
         // Delete database record
-        $this->db->execute(
-            'DELETE FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE id = ?',
-            array($snapshot_id)
-        );
+        $this->db->delete(RISEUP_TABLE_SNAPSHOTS, array('id' => $snapshot_id));
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot deleted successfully', array('id' => $snapshot_id));
+        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot deleted', array(
+            'snapshot_id' => $snapshot_id,
+            'filename' => $snapshot['filename'],
+        ));
 
         return array('success' => true);
     }
 
-    public function export_snapshot($snapshot_id) {
-        // TODO: Implement in Phase 23
+    /**
+     * Export snapshot to ZIP file.
+     *
+     * @param int $snapshot_id Snapshot ID.
+     * @return array Export result.
+     */
+    public function exportSnapshot($snapshot_id) {
+        $snapshot = $this->getSnapshot($snapshot_id);
+        if (!$snapshot) {
+            return array('success' => false, 'error' => 'Snapshot not found');
+        }
+
+        $filepath = $snapshot['filepath'];
+        if (!RiseupPathUtils::fileExists($filepath)) {
+            return array('success' => false, 'error' => 'Snapshot file not found');
+        }
+
+        // Create ZIP
+        $zip_path = str_replace('.sqlite', '.zip', $filepath);
+        $zip = new ZipArchive();
+
+        if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return array('success' => false, 'error' => 'Failed to create ZIP file');
+        }
+
+        $zip->addFile($filepath, basename($filepath));
+
+        // Add manifest
+        $manifest = array(
+            'version' => RISEUP_VERSION,
+            'created_at' => date('c'),
+            'snapshot_id' => $snapshot_id,
+            'filename' => $snapshot['filename'],
+            'scope' => $snapshot['scope'],
+            'tables' => json_decode($snapshot['tables_json'], true),
+            'total_rows' => $snapshot['total_rows'],
+            'file_size' => $snapshot['file_size'],
+        );
+        $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
+
+        $zip->close();
+
         return array(
-            'success' => false,
-            'error' => 'Export not yet implemented',
+            'success' => true,
+            'filepath' => $zip_path,
+            'filename' => basename($zip_path),
+            'size' => filesize($zip_path),
         );
     }
 
-    public function import_snapshot($filepath) {
-        // TODO: Implement in Phase 23
+    /**
+     * Import snapshot from uploaded file.
+     *
+     * @param string $filepath Path to uploaded file.
+     * @return array Import result.
+     */
+    public function importSnapshot($filepath) {
+        // TODO: Implement import logic
+        // 1. Extract ZIP
+        // 2. Validate manifest
+        // 3. Copy SQLite file to snapshots directory
+        // 4. Create database record
+
         return array(
             'success' => false,
             'error' => 'Import not yet implemented',
         );
     }
 
-    public function get_snapshot($snapshot_id) {
+    /**
+     * Get snapshot details.
+     *
+     * @param int $snapshot_id Snapshot ID.
+     * @return array|null Snapshot or null.
+     */
+    public function getSnapshot($snapshot_id) {
         return $this->db->query_single(
             'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE id = ?',
             array($snapshot_id)
         );
     }
 
-    public function list_snapshots($limit = 50, $offset = 0) {
+    /**
+     * List snapshots.
+     *
+     * @param int $limit  Limit.
+     * @param int $offset Offset.
+     * @return array List result.
+     */
+    public function listSnapshots($limit = 50, $offset = 0) {
         $snapshots = $this->db->query_all(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
-            array($limit, $offset)
+            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            array($this->provider_id, $limit, $offset)
         );
 
         $total = $this->db->query_single(
-            'SELECT COUNT(*) as count FROM ' . RISEUP_TABLE_SNAPSHOTS
+            'SELECT COUNT(*) as count FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE provider = ?',
+            array($this->provider_id)
         );
 
         return array(
@@ -760,33 +850,21 @@ class Riseup_Snapshot_Provider_Native extends Riseup_Snapshot_Provider_Interface
         );
     }
 
-    public function get_available_tables() {
+    /**
+     * Get available tables.
+     *
+     * @return array Tables list.
+     */
+    public function getAvailableTables() {
         $tables = array();
-        $prefix = $this->wpdb->prefix;
-        $core_tables = array(
-            'posts', 'postmeta', 'comments', 'commentmeta',
-            'terms', 'termmeta', 'term_relationships', 'term_taxonomy',
-            'users', 'usermeta', 'options', 'links'
-        );
-
         $all_tables = $this->wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
 
         foreach ($all_tables as $table_info) {
-            $name = $table_info['Name'];
-            $is_core = false;
-
-            foreach ($core_tables as $core) {
-                if ($name === $prefix . $core) {
-                    $is_core = true;
-                    break;
-                }
-            }
-
             $tables[] = array(
-                'name' => $name,
+                'name' => $table_info['Name'],
                 'rows' => (int)$table_info['Rows'],
                 'size' => (int)$table_info['Data_length'] + (int)$table_info['Index_length'],
-                'is_core' => $is_core,
+                'is_core' => strpos($table_info['Name'], $this->wpdb->prefix) === 0,
             );
         }
 

@@ -283,6 +283,10 @@ require_once __DIR__ . '/includes/class-logger.php';
 // Load path utilities (used by snapshot system and other file operations).
 require_once __DIR__ . '/includes/class-path-utils.php';
 
+// Load snapshot system classes.
+require_once __DIR__ . '/includes/class-snapshot-detector.php';
+require_once __DIR__ . '/includes/class-snapshot-scheduler.php';
+
 // Load other classes.
 require_once __DIR__ . '/includes/class-post-manager.php';
 require_once __DIR__ . '/includes/class-upload-ignore.php';
@@ -379,6 +383,11 @@ class Riseup_Asia {
             // Initialize update resolver (handles auto-update with 301 redirect).
             $update_resolver = Riseup_Update_Resolver::get_instance();
             $this->file_logger->info('Update resolver initialized');
+
+            // Initialize snapshot scheduler (handles WP-Cron for database snapshots).
+            $snapshot_scheduler = RiseupSnapshotScheduler::getInstance($this->file_logger, $this->db);
+            $snapshot_scheduler->init();
+            $this->file_logger->info('Snapshot scheduler initialized');
 
             // Register REST API routes.
             $this->file_logger->info('Registering REST API init hook');

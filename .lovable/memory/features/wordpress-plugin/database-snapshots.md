@@ -31,6 +31,24 @@ All snapshot operations run via WP-Cron, even "Snapshot Now":
 - Enables parallel table processing
 - Provides resumability for large databases
 
+### PHP Class Naming
+
+All new snapshot classes use PascalCase (no underscores):
+- `RiseupSnapshotScheduler` - WP-Cron management
+- `RiseupSnapshotDetector` - Provider detection
+- `RiseupSnapshotProviderInterface` - Abstract base class
+- `RiseupSnapshotProviderNative` - Native SQLite export
+- `RiseupSnapshotProviderWPReset` - WP Reset integration
+- `RiseupSnapshotProviderUpdraft` - UpdraftPlus integration
+
+## WP-Cron Hooks
+
+| Hook | Description |
+|------|-------------|
+| `riseup_snapshot_scheduled` | Runs scheduled snapshots (daily/weekly/monthly) |
+| `riseup_snapshot_immediate` | Runs "Snapshot Now" operations |
+| `riseup_snapshot_cleanup` | Daily cleanup of old snapshots |
+
 ## Table Scope Options
 
 | Scope | Description |
@@ -64,6 +82,9 @@ All snapshot operations run via WP-Cron, even "Snapshot Now":
 | POST | `/snapshots/{id}/restore` | Restore DB |
 | GET | `/snapshots/{id}/export` | Download ZIP |
 | POST | `/snapshots/import` | Upload ZIP |
+| GET | `/snapshots/settings` | Get settings |
+| PUT | `/snapshots/settings` | Update settings |
+| GET | `/snapshots/providers` | List providers |
 
 ## Safety Features
 
@@ -75,4 +96,7 @@ All snapshot operations run via WP-Cron, even "Snapshot Now":
 ## Related Files
 
 - Spec: `spec/wordpress-plugin/database-snapshots.md`
-- Implementation: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-*.php`
+- Scheduler: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-scheduler.php`
+- Detector: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-detector.php`
+- Interface: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-provider-interface.php`
+- Native: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-provider-native.php`

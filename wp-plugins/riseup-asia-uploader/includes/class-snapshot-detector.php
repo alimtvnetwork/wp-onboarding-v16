@@ -5,6 +5,8 @@
  * Detects available snapshot providers (WP Reset, Updraft, Native)
  * and manages provider selection based on user preferences.
  *
+ * PHP class naming follows PascalCase convention without underscores.
+ *
  * @package RiseupAsiaUploader
  * @since   1.9.0
  */
@@ -18,20 +20,22 @@ if (!defined('ABSPATH')) {
  * 
  * Responsible for detecting installed backup plugins and
  * instantiating the appropriate snapshot provider.
+ *
+ * PHP class naming follows PascalCase convention without underscores.
  */
-class Riseup_Snapshot_Detector {
+class RiseupSnapshotDetector {
 
     /**
      * Logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     private $db;
 
@@ -45,8 +49,8 @@ class Riseup_Snapshot_Detector {
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger $logger Logger instance.
-     * @param Riseup_Database    $db     Database instance.
+     * @param RiseupFileLogger $logger Logger instance.
+     * @param RiseupDatabase   $db     Database instance.
      */
     public function __construct($logger, $db) {
         $this->logger = $logger;
@@ -64,19 +68,19 @@ class Riseup_Snapshot_Detector {
      *     @type string $version      Plugin version (if applicable).
      * }[]
      */
-    public function detect_available_providers() {
+    public function detectAvailableProviders() {
         $providers = array();
 
         // Check WP Reset
-        $providers[] = $this->detect_wp_reset();
+        $providers[] = $this->detectWPReset();
 
         // Check Updraft Plus
-        $providers[] = $this->detect_updraft();
+        $providers[] = $this->detectUpdraft();
 
         // Native is always available
-        $providers[] = $this->detect_native();
+        $providers[] = $this->detectNative();
 
-        $this->log_detection_results($providers);
+        $this->logDetectionResults($providers);
 
         return $providers;
     }
@@ -86,7 +90,7 @@ class Riseup_Snapshot_Detector {
      *
      * @return array Provider detection result.
      */
-    private function detect_wp_reset() {
+    private function detectWPReset() {
         $result = array(
             'id' => RISEUP_SNAPSHOT_PROVIDER_WP_RESET,
             'name' => 'WP Reset',
@@ -143,7 +147,7 @@ class Riseup_Snapshot_Detector {
      *
      * @return array Provider detection result.
      */
-    private function detect_updraft() {
+    private function detectUpdraft() {
         $result = array(
             'id' => RISEUP_SNAPSHOT_PROVIDER_UPDRAFT,
             'name' => 'UpdraftPlus',
@@ -210,7 +214,7 @@ class Riseup_Snapshot_Detector {
      *
      * @return array Provider detection result.
      */
-    private function detect_native() {
+    private function detectNative() {
         // Check SQLite extension
         $has_sqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
 
@@ -229,7 +233,7 @@ class Riseup_Snapshot_Detector {
             ),
             'version' => RISEUP_VERSION,
             'detection_method' => $has_sqlite ? 'extension_loaded' : 'extension_missing',
-            'sqlite_version' => $has_sqlite ? $this->get_sqlite_version() : null,
+            'sqlite_version' => $has_sqlite ? $this->getSqliteVersion() : null,
         );
     }
 
@@ -238,7 +242,7 @@ class Riseup_Snapshot_Detector {
      *
      * @return string|null SQLite library version.
      */
-    private function get_sqlite_version() {
+    private function getSqliteVersion() {
         if (class_exists('SQLite3')) {
             $version = SQLite3::version();
             return $version['versionString'];
@@ -259,17 +263,17 @@ class Riseup_Snapshot_Detector {
      *
      * @return string Provider ID.
      */
-    public function get_preferred_provider() {
+    public function getPreferredProvider() {
         $settings = get_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, array());
         $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : RISEUP_SNAPSHOT_PROVIDER_AUTO;
 
         // If auto, determine best available
         if ($preferred === RISEUP_SNAPSHOT_PROVIDER_AUTO) {
-            return $this->get_best_available_provider();
+            return $this->getBestAvailableProvider();
         }
 
         // Check if preferred is available
-        $providers = $this->detect_available_providers();
+        $providers = $this->detectAvailableProviders();
         foreach ($providers as $provider) {
             if ($provider['id'] === $preferred && $provider['available']) {
                 return $preferred;
@@ -281,7 +285,7 @@ class Riseup_Snapshot_Detector {
             'preferred' => $preferred
         ));
 
-        return $this->get_best_available_provider();
+        return $this->getBestAvailableProvider();
     }
 
     /**
@@ -289,8 +293,8 @@ class Riseup_Snapshot_Detector {
      *
      * @return string Provider ID.
      */
-    public function get_best_available_provider() {
-        $providers = $this->detect_available_providers();
+    public function getBestAvailableProvider() {
+        $providers = $this->detectAvailableProviders();
         
         $priority = array(
             RISEUP_SNAPSHOT_PROVIDER_WP_RESET,
@@ -314,12 +318,12 @@ class Riseup_Snapshot_Detector {
      * Get a provider instance.
      *
      * @param string|null $provider_id Provider ID, or null for preferred.
-     * @return Riseup_Snapshot_Provider_Interface Provider instance.
+     * @return RiseupSnapshotProviderInterface Provider instance.
      * @throws Exception If provider not available.
      */
-    public function get_provider_instance($provider_id = null) {
+    public function getProviderInstance($provider_id = null) {
         if ($provider_id === null) {
-            $provider_id = $this->get_preferred_provider();
+            $provider_id = $this->getPreferredProvider();
         }
 
         // Return cached instance if available
@@ -328,7 +332,7 @@ class Riseup_Snapshot_Detector {
         }
 
         // Check availability
-        $providers = $this->detect_available_providers();
+        $providers = $this->detectAvailableProviders();
         $available = false;
         foreach ($providers as $provider) {
             if ($provider['id'] === $provider_id && $provider['available']) {
@@ -349,18 +353,18 @@ class Riseup_Snapshot_Detector {
         switch ($provider_id) {
             case RISEUP_SNAPSHOT_PROVIDER_WP_RESET:
                 require_once dirname(__FILE__) . '/class-snapshot-provider-wp-reset.php';
-                $instance = new Riseup_Snapshot_Provider_WP_Reset($this->logger, $this->db);
+                $instance = new RiseupSnapshotProviderWPReset($this->logger, $this->db);
                 break;
 
             case RISEUP_SNAPSHOT_PROVIDER_UPDRAFT:
                 require_once dirname(__FILE__) . '/class-snapshot-provider-updraft.php';
-                $instance = new Riseup_Snapshot_Provider_Updraft($this->logger, $this->db);
+                $instance = new RiseupSnapshotProviderUpdraft($this->logger, $this->db);
                 break;
 
             case RISEUP_SNAPSHOT_PROVIDER_NATIVE:
             default:
                 require_once dirname(__FILE__) . '/class-snapshot-provider-native.php';
-                $instance = new Riseup_Snapshot_Provider_Native($this->logger, $this->db);
+                $instance = new RiseupSnapshotProviderNative($this->logger, $this->db);
                 break;
         }
 
@@ -375,7 +379,7 @@ class Riseup_Snapshot_Detector {
      *
      * @return array Snapshot settings.
      */
-    public function get_settings() {
+    public function getSettings() {
         $defaults = array(
             // Provider
             'preferred_provider' => RISEUP_SNAPSHOT_PROVIDER_AUTO,
@@ -414,12 +418,12 @@ class Riseup_Snapshot_Detector {
      * @param array $settings Settings to update.
      * @return bool True if settings were updated.
      */
-    public function update_settings($settings) {
-        $current = $this->get_settings();
+    public function updateSettings($settings) {
+        $current = $this->getSettings();
         $updated = array_merge($current, $settings);
 
         // Validate settings
-        $updated = $this->validate_settings($updated);
+        $updated = $this->validateSettings($updated);
 
         $result = update_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, $updated);
 
@@ -438,7 +442,7 @@ class Riseup_Snapshot_Detector {
      * @param array $settings Settings to validate.
      * @return array Validated settings.
      */
-    private function validate_settings($settings) {
+    private function validateSettings($settings) {
         // Validate provider
         $valid_providers = array(
             RISEUP_SNAPSHOT_PROVIDER_AUTO,
@@ -506,15 +510,13 @@ class Riseup_Snapshot_Detector {
     /**
      * Log detection results.
      *
-     * @param array $providers Detection results.
+     * @param array $providers Detected providers.
      */
-    private function log_detection_results($providers) {
-        $available = array_filter($providers, function($p) {
-            return $p['available'];
-        });
-
-        $this->logger->debug('[SNAPSHOT] Provider detection complete', array(
-            'total_checked' => count($providers),
+    private function logDetectionResults($providers) {
+        $available = array_filter($providers, function($p) { return $p['available']; });
+        
+        $this->logger->info('[SNAPSHOT] Provider detection complete', array(
+            'total' => count($providers),
             'available' => count($available),
             'providers' => array_map(function($p) {
                 return array(
