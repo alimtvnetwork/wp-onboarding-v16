@@ -286,17 +286,17 @@ export default function Settings() {
     switch (activeTab) {
       case "watching":
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h2 className="text-lg font-semibold mb-1">File Watching</h2>
-              <p className="text-sm text-muted-foreground">Configure how files are monitored for changes</p>
+              <h2 className="text-base sm:text-lg font-semibold mb-1">File Watching</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">Configure how files are monitored for changes</p>
             </div>
             
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Poll Interval</Label>
+                <Label className="text-sm">Poll Interval</Label>
                 <Select value={pollInterval} onValueChange={handlePollIntervalChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -312,9 +312,9 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label>Debounce Delay</Label>
+                <Label className="text-sm">Debounce Delay</Label>
                 <Select value={debounceDelay} onValueChange={handleDebounceDelayChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -334,16 +334,16 @@ export default function Settings() {
         
       case "backups":
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h2 className="text-lg font-semibold mb-1">Backups</h2>
-              <p className="text-sm text-muted-foreground">Configure backup behavior and retention</p>
+              <h2 className="text-base sm:text-lg font-semibold mb-1">Backups</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">Configure backup behavior and retention</p>
             </div>
             
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Auto-backup before publish</Label>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-sm">Auto-backup before publish</Label>
                   <p className="text-xs text-muted-foreground">
                     Always create a backup before publishing
                   </p>
@@ -351,13 +351,14 @@ export default function Settings() {
                 <Switch 
                   checked={autoBackup}
                   onCheckedChange={handleAutoBackupChange}
+                  className="shrink-0"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Retention Days</Label>
+                <Label className="text-sm">Retention Days</Label>
                 <Select value={retentionDays} onValueChange={handleRetentionDaysChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -370,9 +371,9 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label>Max Backups per Plugin</Label>
+                <Label className="text-sm">Max Backups per Plugin</Label>
                 <Select value={maxBackups} onValueChange={handleMaxBackupsChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -388,34 +389,34 @@ export default function Settings() {
         
       case "publish":
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h2 className="text-lg font-semibold mb-1">Publish Settings</h2>
-              <p className="text-sm text-muted-foreground">Configure how plugins are uploaded to sites</p>
+              <h2 className="text-base sm:text-lg font-semibold mb-1">Publish Settings</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">Configure how plugins are uploaded to sites</p>
             </div>
             
             <div className="space-y-3">
-              <Label>Upload Mode</Label>
+              <Label className="text-sm">Upload Mode</Label>
               <RadioGroup value={uploadMode} onValueChange={handleUploadModeChange} className="space-y-3">
                 <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
                   <RadioGroupItem value="file" id="upload-file" className="mt-0.5" />
-                  <div className="grid gap-0.5 leading-none">
-                    <Label htmlFor="upload-file" className="cursor-pointer font-medium">
+                  <div className="grid gap-0.5 leading-none min-w-0">
+                    <Label htmlFor="upload-file" className="cursor-pointer font-medium text-sm">
                       File-by-file (default)
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Upload changed files individually. Better for small updates and debugging.
+                      Upload changed files individually. Better for small updates.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer">
                   <RadioGroupItem value="zip" id="upload-zip" className="mt-0.5" />
-                  <div className="grid gap-0.5 leading-none">
-                    <Label htmlFor="upload-zip" className="cursor-pointer font-medium">
+                  <div className="grid gap-0.5 leading-none min-w-0">
+                    <Label htmlFor="upload-zip" className="cursor-pointer font-medium text-sm">
                       ZIP package
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Bundle all files into a ZIP and upload as one package. Faster for large plugins.
+                      Bundle all files into a ZIP. Faster for large plugins.
                     </p>
                   </div>
                 </div>
@@ -423,16 +424,17 @@ export default function Settings() {
             </div>
 
             {/* Keep ZIP files toggle */}
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div>
-                <Label>Keep ZIP Files</Label>
+            <div className="flex items-center justify-between gap-3 pt-4 border-t">
+              <div className="min-w-0">
+                <Label className="text-sm">Keep ZIP Files</Label>
                 <p className="text-xs text-muted-foreground">
-                  Preserve ZIP files in temp folder after publish (for debugging)
+                  Preserve ZIP files after publish (debugging)
                 </p>
               </div>
               <Switch 
                 checked={keepZipFiles}
                 onCheckedChange={handleKeepZipFilesChange}
+                className="shrink-0"
               />
             </div>
           </div>
@@ -440,17 +442,17 @@ export default function Settings() {
         
       case "appearance":
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h2 className="text-lg font-semibold mb-1">Appearance</h2>
-              <p className="text-sm text-muted-foreground">Customize the look and feel</p>
+              <h2 className="text-base sm:text-lg font-semibold mb-1">Appearance</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">Customize the look and feel</p>
             </div>
             
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Theme</Label>
+                <Label className="text-sm">Theme</Label>
                 <Select value={theme} onValueChange={handleThemeChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -461,9 +463,9 @@ export default function Settings() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>Compact Mode</Label>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-sm">Compact Mode</Label>
                   <p className="text-xs text-muted-foreground">
                     Reduce spacing for more content density
                   </p>
@@ -471,6 +473,7 @@ export default function Settings() {
                 <Switch 
                   checked={compactMode}
                   onCheckedChange={handleCompactModeChange}
+                  className="shrink-0"
                 />
               </div>
             </div>
@@ -479,23 +482,24 @@ export default function Settings() {
         
       case "developer":
         return (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h2 className="text-lg font-semibold mb-1">Developer & Debugging</h2>
-              <p className="text-sm text-muted-foreground">Advanced debugging and resilience settings</p>
+              <h2 className="text-base sm:text-lg font-semibold mb-1">Developer & Debugging</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">Advanced debugging and resilience settings</p>
             </div>
             
             {/* Frontend Debug Mode */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Label>Frontend Debug Mode</Label>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <Label className="text-sm">Frontend Debug Mode</Label>
                 <p className="text-xs text-muted-foreground">
-                  Log all function calls with file paths and line numbers
+                  Log all function calls with file paths
                 </p>
               </div>
               <Switch 
                 checked={frontendDebugMode}
                 onCheckedChange={handleFrontendDebugModeChange}
+                className="shrink-0"
               />
             </div>
 
@@ -505,7 +509,7 @@ export default function Settings() {
                 <RotateCcw className="h-4 w-4" />
                 Retry Logic
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="retry-attempts" className="text-xs">Max Attempts</Label>
                   <Input
@@ -535,13 +539,13 @@ export default function Settings() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Failed API calls retry with exponential backoff: delay × 2^attempt
+                Failed API calls retry with exponential backoff
               </p>
             </div>
 
             {/* Circuit Breaker Settings */}
             <div className="space-y-3 pt-4 border-t">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Zap className="h-4 w-4" />
                   Circuit Breaker
@@ -550,11 +554,12 @@ export default function Settings() {
                   variant="outline" 
                   size="sm"
                   onClick={handleResetCircuits}
+                  className="w-full sm:w-auto text-xs"
                 >
                   Reset All Circuits
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="cb-threshold" className="text-xs">Failure Threshold</Label>
                   <Input
@@ -584,7 +589,7 @@ export default function Settings() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Stops calling failing functions after threshold failures, retries after cooldown
+                Stops calling failing functions after threshold failures
               </p>
             </div>
           </div>
@@ -599,35 +604,36 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold">Settings</h1>
+        <p className="text-sm text-muted-foreground">
           Configure application preferences
         </p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Left sidebar - Tab menu */}
-        <Card className="w-56 shrink-0 h-fit">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Tab menu - horizontal scroll on mobile, sidebar on desktop */}
+        <Card className="lg:w-56 shrink-0 h-fit">
           <CardContent className="p-2">
-            <nav className="space-y-1">
+            {/* Mobile: horizontal scroll tabs */}
+            <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible touch-pan-x -mx-2 px-2 lg:mx-0 lg:px-0 pb-2 lg:pb-0">
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200",
-                    "hover:bg-accent hover:text-accent-foreground hover:translate-x-0.5",
+                    "flex items-center gap-2 lg:gap-3 px-3 py-2 lg:py-2.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap shrink-0 lg:shrink lg:w-full",
+                    "hover:bg-accent hover:text-accent-foreground lg:hover:translate-x-0.5",
                     activeTab === tab.id
                       ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground"
                   )}
                 >
                   {tab.icon}
-                  <span className="flex-1 text-left">{tab.label}</span>
+                  <span className="lg:flex-1 lg:text-left">{tab.label}</span>
                   {activeTab === tab.id && (
-                    <ChevronRight className="h-4 w-4 opacity-70" />
+                    <ChevronRight className="h-4 w-4 opacity-70 hidden lg:block" />
                   )}
                 </button>
               ))}
@@ -635,9 +641,9 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Right content area */}
-        <Card className="flex-1">
-          <CardContent className="p-6">
+        {/* Content area */}
+        <Card className="flex-1 min-w-0">
+          <CardContent className="p-4 sm:p-6">
             {renderTabContent()}
           </CardContent>
         </Card>

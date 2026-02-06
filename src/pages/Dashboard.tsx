@@ -110,30 +110,30 @@ export default function Dashboard() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Overview of your WordPress plugin development workflow
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Grid - responsive columns */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Link to={stat.href} key={stat.title}>
-            <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+            <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
+              <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-4">
+                <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate pr-2">
                   {stat.title}
                 </CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <stat.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${stat.color} shrink-0`} />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+              <CardContent className="p-3 sm:p-4 pt-0">
+                <div className="text-xl sm:text-2xl font-bold">
                   {stat.value}
                   {stat.total !== undefined && (
-                    <span className="text-sm font-normal text-muted-foreground">
+                    <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                       /{stat.total}
                     </span>
                   )}
@@ -144,44 +144,44 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         {/* Quick Actions */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Quick Actions
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2">
+          <CardContent className="grid gap-2 p-4 sm:p-6 pt-0">
             {quickActions.map((action) => (
               action.href ? (
                 <Link to={action.href} key={action.title}>
                   <Button 
                     variant="outline" 
-                    className="w-full justify-start h-auto py-3 hover:bg-accent"
+                    className="w-full justify-start h-auto py-2.5 sm:py-3 hover:bg-accent"
                   >
-                    <action.icon className="h-4 w-4 mr-3 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">{action.title}</p>
-                      <p className="text-xs text-muted-foreground">{action.description}</p>
+                    <action.icon className="h-4 w-4 mr-2 sm:mr-3 text-primary shrink-0" />
+                    <div className="text-left min-w-0 flex-1">
+                      <p className="font-medium text-sm">{action.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{action.description}</p>
                     </div>
-                    <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                    <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground shrink-0 hidden sm:block" />
                   </Button>
                 </Link>
               ) : (
                 <Button 
                   key={action.title}
                   variant="outline" 
-                  className="w-full justify-start h-auto py-3 hover:bg-accent"
+                  className="w-full justify-start h-auto py-2.5 sm:py-3 hover:bg-accent"
                   onClick={action.action}
                 >
-                  <action.icon className="h-4 w-4 mr-3 text-primary" />
-                  <div className="text-left">
-                    <p className="font-medium">{action.title}</p>
-                    <p className="text-xs text-muted-foreground">{action.description}</p>
+                  <action.icon className="h-4 w-4 mr-2 sm:mr-3 text-primary shrink-0" />
+                  <div className="text-left min-w-0 flex-1">
+                    <p className="font-medium text-sm">{action.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{action.description}</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                  <ArrowRight className="h-4 w-4 ml-auto text-muted-foreground shrink-0 hidden sm:block" />
                 </Button>
               )
             ))}
@@ -190,24 +190,24 @@ export default function Dashboard() {
 
         {/* Recent Activity */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
+          <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Recent Activity
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             {recentActivity.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {recentActivity.map((activity, idx) => (
                   <div 
                     key={`${activity.type}-${activity.name}-${idx}`}
-                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50"
+                    className="flex items-center gap-2 sm:gap-3 p-2 rounded-lg hover:bg-accent/50"
                   >
                     {activity.type === "site" ? (
-                      <Globe className="h-4 w-4 text-primary" />
+                      <Globe className="h-4 w-4 text-primary shrink-0" />
                     ) : (
-                      <Package className="h-4 w-4 text-accent-foreground" />
+                      <Package className="h-4 w-4 text-accent-foreground shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{activity.name}</p>
@@ -216,7 +216,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     {activity.time && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground shrink-0">
                         {new Date(activity.time).toLocaleDateString()}
                       </span>
                     )}
@@ -224,8 +224,8 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                No recent activity. Start by adding a WordPress site and registering a plugin.
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                No recent activity. Start by adding a WordPress site.
               </p>
             )}
           </CardContent>
