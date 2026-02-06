@@ -17,15 +17,16 @@ import (
 
 // ServiceRegistry holds references to all services
 type ServiceRegistry struct {
-	PluginService        PluginServiceInterface
-	SiteService          SiteServiceInterface
-	SyncService          SyncServiceInterface
-	GitService           GitServiceInterface
-	WatcherService       WatcherServiceInterface
-	PublishService       PublishServiceInterface
-	BackupService        BackupServiceInterface
-	SessionService       SessionServiceInterface
-	ErrorHistoryService  ErrorHistoryServiceInterface
+	PluginService          PluginServiceInterface
+	SiteService            SiteServiceInterface
+	SyncService            SyncServiceInterface
+	GitService             GitServiceInterface
+	WatcherService         WatcherServiceInterface
+	PublishService         PublishServiceInterface
+	BackupService          BackupServiceInterface
+	SessionService         SessionServiceInterface
+	ErrorHistoryService    ErrorHistoryServiceInterface
+	PublishHistoryService  PublishHistoryServiceInterface
 }
 
 // PluginServiceInterface defines plugin service methods needed by handlers

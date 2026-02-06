@@ -265,6 +265,35 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_errorhistory_created ON ErrorHistory(CreatedAt DESC);
 		`,
 	},
+	{
+		Version:     8,
+		Description: "PublishHistory table for publish operation audit trail",
+		SQL: `
+			CREATE TABLE IF NOT EXISTS PublishHistory (
+				ID INTEGER PRIMARY KEY AUTOINCREMENT,
+				PluginID INTEGER NOT NULL,
+				PluginName TEXT NOT NULL DEFAULT '',
+				SiteID INTEGER NOT NULL,
+				SiteName TEXT NOT NULL DEFAULT '',
+				SiteURL TEXT NOT NULL DEFAULT '',
+				SessionID TEXT DEFAULT '',
+				Status TEXT NOT NULL DEFAULT 'unknown',
+				Mode TEXT NOT NULL DEFAULT 'full',
+				FilesUpdated INTEGER DEFAULT 0,
+				ActivationStatus TEXT DEFAULT 'unknown',
+				RollbackStatus TEXT DEFAULT '',
+				RollbackMessage TEXT DEFAULT '',
+				ErrorMessage TEXT DEFAULT '',
+				DurationMs INTEGER DEFAULT 0,
+				CreatedAt TEXT DEFAULT (datetime('now'))
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_publishhistory_plugin ON PublishHistory(PluginID);
+			CREATE INDEX IF NOT EXISTS idx_publishhistory_site ON PublishHistory(SiteID);
+			CREATE INDEX IF NOT EXISTS idx_publishhistory_status ON PublishHistory(Status);
+			CREATE INDEX IF NOT EXISTS idx_publishhistory_created ON PublishHistory(CreatedAt DESC);
+		`,
+	},
 }
 
 // Migrate runs all pending migrations
