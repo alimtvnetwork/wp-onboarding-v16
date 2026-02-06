@@ -116,6 +116,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/{id}/snapshots/settings", handlers.GetRemoteSnapshotSettings).Methods("GET")
 	api.HandleFunc("/sites/{id}/snapshots/settings", handlers.UpdateRemoteSnapshotSettings).Methods("PUT")
 	api.HandleFunc("/sites/{id}/snapshots/providers", handlers.GetRemoteSnapshotProviders).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots/tables", handlers.GetRemoteAvailableTables).Methods("GET")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.GetRemoteSnapshot).Methods("GET")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.DeleteRemoteSnapshot).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}/restore", handlers.RestoreRemoteSnapshot).Methods("POST")

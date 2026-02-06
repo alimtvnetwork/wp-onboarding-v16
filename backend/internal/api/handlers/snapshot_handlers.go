@@ -270,6 +270,27 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
+// GetRemoteAvailableTables returns the list of database tables available for snapshotting
+func GetRemoteAvailableTables(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	tables, err := Services.SiteService.GetRemoteAvailableTables(r.Context(), siteID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3029", err.Error())
+		return
+	}
+	respondSuccess(w, tables)
+}
+
 // getSnapshotIDParam extracts the snapshot ID from URL parameters
 func getSnapshotIDParam(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)

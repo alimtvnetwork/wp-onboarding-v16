@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Loader2,
   RefreshCw,
@@ -439,15 +440,38 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
     isDeleting,
     restoreSnapshot,
     isRestoring,
+    availableTables,
+    isLoadingTables,
+    fetchTables,
   } = useRemoteSnapshots(site.id);
 
   const [deleteTarget, setDeleteTarget] = useState<SnapshotRecord | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<SnapshotRecord | null>(null);
   const [detailTarget, setDetailTarget] = useState<SnapshotRecord | null>(null);
   const [createScope, setCreateScope] = useState<string>("wordpress");
+  const [customTables, setCustomTables] = useState<string[]>([]);
+  const [showTablePicker, setShowTablePicker] = useState(false);
+  const [restoreMode, setRestoreMode] = useState<"full" | "selective">("full");
+  const [restoreTables, setRestoreTables] = useState<string[]>([]);
+
+  const handleScopeChange = useCallback((scope: string) => {
+    setCreateScope(scope);
+    if (scope === "custom" && availableTables.length === 0) {
+      fetchTables();
+    }
+    if (scope === "custom") {
+      setShowTablePicker(true);
+    } else {
+      setShowTablePicker(false);
+    }
+  }, [availableTables.length, fetchTables]);
 
   const handleCreate = () => {
-    createSnapshot({ scope: createScope });
+    if (createScope === "custom" && customTables.length > 0) {
+      createSnapshot({ scope: "custom", tables: customTables });
+    } else {
+      createSnapshot({ scope: createScope });
+    }
   };
 
   const handleDelete = () => {
@@ -459,10 +483,26 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
 
   const handleRestore = () => {
     if (restoreTarget) {
-      restoreSnapshot({ snapshotId: restoreTarget.id });
+      const opts: Record<string, unknown> = { snapshotId: restoreTarget.id };
+      if (restoreMode === "selective" && restoreTables.length > 0) {
+        opts.opts = { mode: "selective", tables: restoreTables };
+      }
+      restoreSnapshot(opts as { snapshotId: number; opts?: Record<string, unknown> });
       setRestoreTarget(null);
+      setRestoreMode("full");
+      setRestoreTables([]);
     }
   };
+
+  const handleOpenRestore = useCallback((s: SnapshotRecord) => {
+    setRestoreTarget(s);
+    setRestoreMode("full");
+    // Parse tables from snapshot for selective restore
+    const snapshotTables = typeof s.tables === "string"
+      ? s.tables.split(",").map((t) => t.trim()).filter(Boolean)
+      : Array.isArray(s.tables) ? s.tables : [];
+    setRestoreTables(snapshotTables);
+  }, []);
 
   return (
     <>
@@ -501,40 +541,91 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
 
             <TabsContent value="snapshots" className="flex-1 flex flex-col min-h-0 mt-2">
               {/* Create Snapshot Controls */}
-              <div className="flex items-center gap-2 pb-2 border-b mb-2">
-                <Select value={createScope} onValueChange={setCreateScope}>
-                  <SelectTrigger className="w-[140px] h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tables</SelectItem>
-                    <SelectItem value="wordpress">WordPress Core</SelectItem>
-                    <SelectItem value="content">Content Only</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  onClick={handleCreate}
-                  disabled={isCreating}
-                  className="h-8"
-                >
-                  {isCreating ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                  ) : (
-                    <Plus className="h-3.5 w-3.5 mr-1" />
-                  )}
-                  Create
-                </Button>
-                <div className="flex-1" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => refetch()}
-                  disabled={isLoading}
-                  className="h-8"
-                >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-                </Button>
+              <div className="space-y-2 pb-2 border-b mb-2">
+                <div className="flex items-center gap-2">
+                  <Select value={createScope} onValueChange={handleScopeChange}>
+                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Tables</SelectItem>
+                      <SelectItem value="wordpress">WordPress Core</SelectItem>
+                      <SelectItem value="content">Content Only</SelectItem>
+                      <SelectItem value="custom">Custom Tables</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={handleCreate}
+                    disabled={isCreating || (createScope === "custom" && customTables.length === 0)}
+                    className="h-8"
+                  >
+                    {isCreating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    Create
+                    {createScope === "custom" && customTables.length > 0 && (
+                      <Badge variant="secondary" className="h-4 text-[10px] px-1 ml-1">{customTables.length}</Badge>
+                    )}
+                  </Button>
+                  <div className="flex-1" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => refetch()}
+                    disabled={isLoading}
+                    className="h-8"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
+
+                {/* Custom Table Picker */}
+                {showTablePicker && (
+                  <div className="border rounded-md p-2 space-y-1.5 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-medium text-muted-foreground">Select tables to include</Label>
+                      {customTables.length > 0 && (
+                        <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1" onClick={() => setCustomTables([])}>
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                    {isLoadingTables ? (
+                      <div className="flex items-center justify-center py-3">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : availableTables.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">No tables found</p>
+                    ) : (
+                      <ScrollArea className="max-h-32">
+                        <div className="space-y-1">
+                          {availableTables.map((table) => (
+                            <label key={table.name} className="flex items-center gap-2 text-xs hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                              <Checkbox
+                                checked={customTables.includes(table.name)}
+                                onCheckedChange={(checked) => {
+                                  setCustomTables((prev) =>
+                                    checked ? [...prev, table.name] : prev.filter((t) => t !== table.name)
+                                  );
+                                }}
+                              />
+                              <span className="font-mono text-[11px] flex-1">{table.name}</span>
+                              <span className="text-muted-foreground text-[10px]">
+                                {table.rows.toLocaleString()} rows
+                              </span>
+                              {table.is_core && (
+                                <Badge variant="outline" className="text-[9px] h-3.5 px-1">core</Badge>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Snapshot List */}
@@ -566,7 +657,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                         key={snapshot.id}
                         snapshot={snapshot}
                         siteId={site.id}
-                        onRestore={setRestoreTarget}
+                        onRestore={handleOpenRestore}
                         onDelete={setDeleteTarget}
                         onViewDetail={setDetailTarget}
                         isRestoring={isRestoring}
@@ -606,18 +697,82 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
       </AlertDialog>
 
       {/* Restore Confirmation */}
-      <AlertDialog open={!!restoreTarget} onOpenChange={(o) => !o && setRestoreTarget(null)}>
-        <AlertDialogContent>
+      <AlertDialog open={!!restoreTarget} onOpenChange={(o) => { if (!o) { setRestoreTarget(null); setRestoreMode("full"); } }}>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore Snapshot</AlertDialogTitle>
+            <AlertDialogTitle>Restore Snapshot #{restoreTarget?.sequence}</AlertDialogTitle>
             <AlertDialogDescription>
-              Restore database from snapshot #{restoreTarget?.sequence}? A pre-restore backup will be created automatically. This will overwrite current database tables.
+              A pre-restore backup will be created automatically. This will overwrite database tables.
             </AlertDialogDescription>
           </AlertDialogHeader>
+
+          <div className="space-y-3 py-2">
+            {/* Restore Mode */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Restore Mode</Label>
+              <Select value={restoreMode} onValueChange={(v) => setRestoreMode(v as "full" | "selective")}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Full Restore (all tables)</SelectItem>
+                  <SelectItem value="selective">Selective (choose tables)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Selective Table Picker */}
+            {restoreMode === "selective" && restoreTarget && (
+              <div className="border rounded-md p-2 space-y-1.5 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Tables to restore ({restoreTables.length})
+                  </Label>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1" onClick={() => {
+                      const allTables = typeof restoreTarget.tables === "string"
+                        ? restoreTarget.tables.split(",").map((t) => t.trim()).filter(Boolean)
+                        : Array.isArray(restoreTarget.tables) ? restoreTarget.tables : [];
+                      setRestoreTables(allTables);
+                    }}>
+                      All
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-5 text-[10px] px-1" onClick={() => setRestoreTables([])}>
+                      None
+                    </Button>
+                  </div>
+                </div>
+                <ScrollArea className="max-h-40">
+                  <div className="space-y-1">
+                    {(typeof restoreTarget.tables === "string"
+                      ? restoreTarget.tables.split(",").map((t) => t.trim()).filter(Boolean)
+                      : Array.isArray(restoreTarget.tables) ? restoreTarget.tables : []
+                    ).map((table) => (
+                      <label key={table} className="flex items-center gap-2 text-xs hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                        <Checkbox
+                          checked={restoreTables.includes(table)}
+                          onCheckedChange={(checked) => {
+                            setRestoreTables((prev) =>
+                              checked ? [...prev, table] : prev.filter((t) => t !== table)
+                            );
+                          }}
+                        />
+                        <span className="font-mono text-[11px]">{table}</span>
+                      </label>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRestore}>
-              Restore
+            <AlertDialogAction
+              onClick={handleRestore}
+              disabled={restoreMode === "selective" && restoreTables.length === 0}
+            >
+              {restoreMode === "selective" ? `Restore ${restoreTables.length} tables` : "Restore All"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

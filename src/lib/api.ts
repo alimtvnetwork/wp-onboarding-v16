@@ -785,6 +785,8 @@ export const api = {
     const base = resolveApiBase();
     return `${base}/sites/${siteId}/snapshots/${snapshotId}/export`;
   },
+  getRemoteAvailableTables: (siteId: number) =>
+    request<AvailableTable[]>(`/sites/${siteId}/snapshots/tables`),
 
   // Error History (persistent error/notification storage)
   saveErrorHistory: (input: ErrorHistoryInput) =>
@@ -916,4 +918,11 @@ export interface SnapshotProviderInfo {
   name: string;
   available: boolean;
   priority: number;
+}
+
+export interface AvailableTable {
+  name: string;
+  rows: number;
+  size: number;
+  is_core: boolean;
 }

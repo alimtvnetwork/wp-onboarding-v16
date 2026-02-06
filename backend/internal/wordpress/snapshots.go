@@ -56,6 +56,14 @@ type SnapshotStorageStats struct {
 	NewestAt       string `json:"newest_at,omitempty"`
 }
 
+// AvailableTable represents a database table available for snapshotting.
+type AvailableTable struct {
+	Name   string `json:"name"`
+	Rows   int    `json:"rows"`
+	Size   int64  `json:"size"`
+	IsCore bool   `json:"is_core"`
+}
+
 // riseupSnapshotEndpoint builds the full endpoint path for snapshot operations.
 func riseupSnapshotEndpoint(path string) string {
 	return fmt.Sprintf("/%s/snapshots%s", RiseupAsiaNamespace, path)
@@ -325,4 +333,43 @@ func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 	}
 
 	return providers, nil
+}
+
+// GetAvailableTables returns the list of database tables available for snapshotting.
+func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
+	endpoint := riseupSnapshotEndpoint("/tables")
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch available tables")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, &APIError{
+			Operation:    "get available tables",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	// Try {success: true, tables: [...]} wrapper
+	var wrapper struct {
+		Tables []AvailableTable `json:"tables"`
+	}
+	if err := json.Unmarshal(bodyBytes, &wrapper); err == nil && len(wrapper.Tables) > 0 {
+		return wrapper.Tables, nil
+	}
+
+	// Try plain array
+	var tables []AvailableTable
+	if err := json.Unmarshal(bodyBytes, &tables); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode tables response")
+	}
+	return tables, nil
 }
