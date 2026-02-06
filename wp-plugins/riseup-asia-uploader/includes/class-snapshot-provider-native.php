@@ -667,41 +667,16 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
     /**
      * Restore from a snapshot.
      *
+     * Delegates to RiseupSnapshotManager for full restore functionality.
+     *
      * @param int   $snapshot_id Snapshot ID.
      * @param array $options     Restore options.
      * @return array Restore result.
      */
     public function restoreSnapshot($snapshot_id, $options) {
-        // Verify confirmation flag
-        if (empty($options['confirm'])) {
-            return array(
-                'success' => false,
-                'error' => 'Restore requires confirmation flag',
-                'code' => RISEUP_ERR_RESTORE_NO_CONFIRM,
-            );
-        }
-
-        $snapshot = $this->getSnapshot($snapshot_id);
-        if (!$snapshot) {
-            return array(
-                'success' => false,
-                'error' => 'Snapshot not found',
-            );
-        }
-
-        // TODO: Implement full restore logic
-        // 1. Create pre-restore backup if enabled
-        // 2. Open SQLite database
-        // 3. For each table:
-        //    a. Drop/truncate existing table
-        //    b. Create table from SQLite schema
-        //    c. Import rows in batches
-        // 4. Update restore log
-
-        return array(
-            'success' => false,
-            'error' => 'Restore not yet implemented',
-        );
+        // Delegate to manager for centralized restore logic
+        $manager = RiseupSnapshotManager::getInstance($this->logger, $this->db);
+        return $manager->restoreSnapshot($snapshot_id, $options);
     }
 
     /**
@@ -797,20 +772,15 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
     /**
      * Import snapshot from uploaded file.
      *
+     * Delegates to RiseupSnapshotManager for full import functionality.
+     *
      * @param string $filepath Path to uploaded file.
      * @return array Import result.
      */
     public function importSnapshot($filepath) {
-        // TODO: Implement import logic
-        // 1. Extract ZIP
-        // 2. Validate manifest
-        // 3. Copy SQLite file to snapshots directory
-        // 4. Create database record
-
-        return array(
-            'success' => false,
-            'error' => 'Import not yet implemented',
-        );
+        // Delegate to manager for centralized import logic
+        $manager = RiseupSnapshotManager::getInstance($this->logger, $this->db);
+        return $manager->importSnapshot($filepath);
     }
 
     /**

@@ -286,6 +286,8 @@ require_once __DIR__ . '/includes/class-path-utils.php';
 // Load snapshot system classes.
 require_once __DIR__ . '/includes/class-snapshot-detector.php';
 require_once __DIR__ . '/includes/class-snapshot-scheduler.php';
+require_once __DIR__ . '/includes/class-snapshot-cleaner.php';
+require_once __DIR__ . '/includes/class-snapshot-manager.php';
 
 // Load other classes.
 require_once __DIR__ . '/includes/class-post-manager.php';
