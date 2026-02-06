@@ -115,7 +115,6 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 	}
 
 	// Build log message with new format
-	// Format: [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	levelStr := levelNames[level]
 
@@ -126,22 +125,45 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 		builder.WriteString(levelColors[level])
 	}
 
-	// Format: [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
+	// Header line: [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
 	if l.prefix != "" {
 		builder.WriteString(fmt.Sprintf("%s %s] [%s] %s", l.prefix, timestamp, funcName, msg))
 	} else {
 		builder.WriteString(fmt.Sprintf("[%s] [%s] %s", timestamp, funcName, msg))
 	}
 
-	// Add key-value pairs
-	for i := 0; i < len(keyvals); i += 2 {
-		if i+1 < len(keyvals) {
-			builder.WriteString(fmt.Sprintf(" %v=%v", keyvals[i], keyvals[i+1]))
-		}
-	}
-
 	// Add level and location at the end in brackets
 	builder.WriteString(fmt.Sprintf(" [%s] [%s:%d]", levelStr, file, line))
+
+	// For ERROR/WARN: render key-value pairs on separate indented lines for readability
+	// For INFO/DEBUG: keep compact single-line format
+	if (level >= LevelWarn) && len(keyvals) >= 2 {
+		// Multi-line structured output
+		// Find max key length for alignment
+		maxKeyLen := 0
+		for i := 0; i < len(keyvals); i += 2 {
+			if i+1 < len(keyvals) {
+				keyStr := fmt.Sprintf("%v", keyvals[i])
+				if len(keyStr) > maxKeyLen {
+					maxKeyLen = len(keyStr)
+				}
+			}
+		}
+		for i := 0; i < len(keyvals); i += 2 {
+			if i+1 < len(keyvals) {
+				keyStr := fmt.Sprintf("%v", keyvals[i])
+				padding := strings.Repeat(" ", maxKeyLen-len(keyStr))
+				builder.WriteString(fmt.Sprintf("\n  %s%s = %v", keyStr, padding, keyvals[i+1]))
+			}
+		}
+	} else {
+		// Compact single-line for INFO/DEBUG
+		for i := 0; i < len(keyvals); i += 2 {
+			if i+1 < len(keyvals) {
+				builder.WriteString(fmt.Sprintf(" %v=%v", keyvals[i], keyvals[i+1]))
+			}
+		}
+	}
 
 	// For ERROR and FATAL levels, append full stack trace
 	if level >= LevelError {

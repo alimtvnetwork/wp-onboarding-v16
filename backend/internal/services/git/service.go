@@ -115,7 +115,7 @@ func New(cfg Config) *Service {
 func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error) {
 	startTime := time.Now()
 
-	s.log.Info("Starting git pull", "pluginId", pluginID)
+	s.log.Info("Starting git pull", "pluginId", pluginID) // name resolved after GetByID below
 
 	// Get plugin details
 	p, err := s.pluginService.GetByID(ctx, pluginID)
@@ -190,6 +190,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	})
 
 	s.log.Info("Git pull complete",
+		"plugin", p.Name,
 		"pluginId", pluginID,
 		"filesChanged", result.FilesChanged,
 		"duration", result.Duration,
@@ -246,7 +247,7 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, error) {
 	startTime := time.Now()
 
-	s.log.Info("Starting build", "pluginId", pluginID)
+	s.log.Info("Starting build", "pluginId", pluginID) // name resolved after GetByID below
 
 	// Get plugin
 	p, err := s.pluginService.GetByID(ctx, pluginID)
@@ -317,13 +318,13 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 		"duration": result.Duration,
 	})
 
-	s.log.Info("Build complete", "pluginId", pluginID, "duration", result.Duration)
+	s.log.Info("Build complete", "plugin", p.Name, "pluginId", pluginID, "duration", result.Duration)
 	return result, nil
 }
 
 // PullAndBuild performs git pull followed by build
 func (s *Service) PullAndBuild(ctx context.Context, pluginID int64) (*PullResult, *BuildResult, error) {
-	s.log.Info("Starting pull and build", "pluginId", pluginID)
+	s.log.Info("Starting pull and build", "pluginId", pluginID) // name resolved in sub-calls
 
 	// First pull
 	pullResult, err := s.Pull(ctx, pluginID)
@@ -489,7 +490,7 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*
 		"commitHash": result.CommitHash,
 	})
 
-	s.log.Info("Git commit complete", "pluginId", pluginID, "hash", result.CommitHash)
+	s.log.Info("Git commit complete", "plugin", p.Name, "pluginId", pluginID, "hash", result.CommitHash)
 	return result, nil
 }
 
@@ -540,7 +541,7 @@ func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error)
 		"pushed":   result.Pushed,
 	})
 
-	s.log.Info("Git push complete", "pluginId", pluginID, "pushed", result.Pushed)
+	s.log.Info("Git push complete", "plugin", p.Name, "pluginId", pluginID, "pushed", result.Pushed)
 	return result, nil
 }
 

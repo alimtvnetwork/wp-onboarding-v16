@@ -1005,16 +1005,17 @@ func (s *Service) broadcastStageLog(pluginID, siteID int64, sessionID, level, st
 	s.sessionLog(sessionID, level, stage, message, details)
 }
 
-// broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility
+// broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility.
+// It resolves plugin/site names by looking up from the database if not provided in the details map.
 func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
 	if s.wsHub == nil {
 		return
 	}
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, step, message, details)
-	
-	// Resolve human-readable names for better error log readability
-	pluginName := fmt.Sprintf("plugin#%d", pluginID)
-	siteName := fmt.Sprintf("site#%d", siteID)
+
+	// Resolve human-readable names — try details map first, then DB lookup
+	pluginName := ""
+	siteName := ""
 	siteURL := ""
 	if details != nil {
 		if v, ok := details["pluginName"].(string); ok && v != "" {
@@ -1028,17 +1029,44 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 		}
 	}
 
-	// Also log to server logger for backend trace (with names for readability)
+	// DB lookup fallback for plugin name
+	if pluginName == "" && pluginID > 0 {
+		if p, err := s.pluginService.GetByID(context.Background(), pluginID); err == nil {
+			pluginName = p.Name
+		}
+	}
+	if pluginName == "" {
+		pluginName = fmt.Sprintf("plugin#%d", pluginID)
+	}
+
+	// DB lookup fallback for site name/URL
+	if (siteName == "" || siteURL == "") && siteID > 0 {
+		if siteInfo, _, err := s.getSiteCredentials(context.Background(), siteID); err == nil {
+			if siteName == "" {
+				siteName = siteInfo.Name
+			}
+			if siteURL == "" {
+				siteURL = siteInfo.URL
+			}
+		}
+	}
+	if siteName == "" {
+		siteName = fmt.Sprintf("site#%d", siteID)
+	}
+
+	// Log with names first, IDs second, technical details last
 	logFields := []interface{}{
 		"plugin", pluginName,
 		"site", siteName,
-		"pluginId", pluginID,
-		"siteId", siteID,
-		"step", step,
 	}
 	if siteURL != "" {
 		logFields = append(logFields, "siteUrl", siteURL)
 	}
+	logFields = append(logFields,
+		"pluginId", pluginID,
+		"siteId", siteID,
+		"step", step,
+	)
 	switch level {
 	case "error":
 		s.log.Error(message, logFields...)
