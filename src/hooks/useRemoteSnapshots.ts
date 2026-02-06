@@ -6,7 +6,7 @@ import { useMemo } from "react";
 
 const POLL_INTERVAL = 5000; // 5s when snapshots are running
 
-export function useRemoteSnapshots(siteId: number) {
+export function useRemoteSnapshots(siteId: number, enabled = true) {
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
   const queryKey = ["sites", siteId, "snapshots"];
@@ -18,6 +18,7 @@ export function useRemoteSnapshots(siteId: number) {
       if (!res.success) throw new Error(res.error?.message || "Failed to fetch snapshots");
       return (res.data || []) as SnapshotRecord[];
     },
+    enabled,
     refetchInterval: (query) => {
       const data = query.state.data as SnapshotRecord[] | undefined;
       if (!data) return false;
@@ -33,6 +34,7 @@ export function useRemoteSnapshots(siteId: number) {
       if (!res.success) throw new Error(res.error?.message || "Failed to fetch settings");
       return res.data as SnapshotSettings;
     },
+    enabled,
   });
 
   const providersQuery = useQuery({
@@ -42,6 +44,7 @@ export function useRemoteSnapshots(siteId: number) {
       if (!res.success) throw new Error(res.error?.message || "Failed to fetch providers");
       return (res.data || []) as SnapshotProviderInfo[];
     },
+    enabled,
   });
 
   const tablesQuery = useQuery({

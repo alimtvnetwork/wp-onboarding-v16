@@ -1012,16 +1012,42 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	}
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, step, message, details)
 	
-	// Also log to server logger for backend trace
+	// Resolve human-readable names for better error log readability
+	pluginName := fmt.Sprintf("plugin#%d", pluginID)
+	siteName := fmt.Sprintf("site#%d", siteID)
+	siteURL := ""
+	if details != nil {
+		if v, ok := details["pluginName"].(string); ok && v != "" {
+			pluginName = v
+		}
+		if v, ok := details["siteName"].(string); ok && v != "" {
+			siteName = v
+		}
+		if v, ok := details["siteUrl"].(string); ok && v != "" {
+			siteURL = v
+		}
+	}
+
+	// Also log to server logger for backend trace (with names for readability)
+	logFields := []interface{}{
+		"plugin", pluginName,
+		"site", siteName,
+		"pluginId", pluginID,
+		"siteId", siteID,
+		"step", step,
+	}
+	if siteURL != "" {
+		logFields = append(logFields, "siteUrl", siteURL)
+	}
 	switch level {
 	case "error":
-		s.log.Error(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+		s.log.Error(message, logFields...)
 	case "warn":
-		s.log.Warn(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+		s.log.Warn(message, logFields...)
 	case "debug":
-		s.log.Debug(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+		s.log.Debug(message, logFields...)
 	default:
-		s.log.Info(message, "pluginId", pluginID, "siteId", siteID, "step", step)
+		s.log.Info(message, logFields...)
 	}
 }
 
