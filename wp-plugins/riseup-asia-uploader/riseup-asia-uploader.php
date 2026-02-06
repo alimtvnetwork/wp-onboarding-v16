@@ -1,9 +1,10 @@
 <?php
+<?php
 /**
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, and audit logging via REST API with Application Password authentication.
- * Version: 1.6.0
+ * Version: 1.7.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -82,69 +83,157 @@ function riseup_backtrace_to_frames($backtrace) {
 /**
  * Custom error handler to catch fatal errors and return JSON response.
  * This ensures API consumers get proper error responses instead of HTML stack traces.
+ * 
+ * Enhanced in v1.7.0:
+ * - Better output buffer handling
+ * - Enhanced stack trace generation
+ * - Memory tracking for OOM detection
+ * - JSON encoding error handling
  */
 function riseup_fatal_error_handler() {
     $error = error_get_last();
-    if ($error !== null && in_array($error['type'], array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR))) {
-        // Only handle if this is a REST API request to our namespace
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-        if (strpos($request_uri, 'riseup-asia-uploader') !== false || strpos($request_uri, 'wp-json') !== false) {
-            // Clean any output
-            while (ob_get_level()) {
-                ob_end_clean();
+    if ($error === null) {
+        return;
+    }
+    
+    // Only handle fatal errors
+    $fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
+    if (!in_array($error['type'], $fatal_types)) {
+        return;
+    }
+    
+    // Only handle if this is a REST API request to our namespace
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+    if (strpos($request_uri, 'riseup-asia-uploader') === false && strpos($request_uri, 'wp-json') === false) {
+        return;
+    }
+    
+    // Try to log to file before any output (helps with complete crashes)
+    $log_entry = sprintf(
+        "[%s] FATAL ERROR in %s:%d - %s (type: %s)\n",
+        date('Y-m-d H:i:s'),
+        $error['file'],
+        $error['line'],
+        $error['message'],
+        riseup_error_type_to_string($error['type'])
+    );
+    
+    // Attempt to write to a simple log file (even if plugin logger isn't available)
+    $uploads = wp_upload_dir();
+    $log_file = $uploads['basedir'] . '/riseup-asia-uploader/fatal-errors.log';
+    @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+    
+    // Clean any existing output to ensure pure JSON response
+    while (ob_get_level()) {
+        @ob_end_clean();
+    }
+    
+    // Set proper headers before any output
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+    }
+    
+    // Generate detailed stack trace from error location
+    $trace_lines = array();
+    $trace_lines[] = sprintf("#0 %s(%d): Fatal error occurred", $error['file'], $error['line']);
+    
+    // Try to get any available backtrace (may be limited in shutdown)
+    if (function_exists('debug_backtrace')) {
+        $backtrace = @debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
+        if (is_array($backtrace)) {
+            foreach ($backtrace as $i => $frame) {
+                $file = isset($frame['file']) ? $frame['file'] : '[internal]';
+                $line = isset($frame['line']) ? $frame['line'] : 0;
+                $func = isset($frame['function']) ? $frame['function'] : '';
+                $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
+                $trace_lines[] = sprintf("#%d %s(%d): %s%s()", $i + 1, $file, $line, $class, $func);
             }
-            
-            // Set proper headers
-            if (!headers_sent()) {
-                header('Content-Type: application/json; charset=utf-8');
-                header('HTTP/1.1 500 Internal Server Error');
-            }
-            
-            // Generate a pseudo stack trace from the error location
-            $stack_trace = "#0 " . $error['file'] . "(" . $error['line'] . "): Fatal error occurred\n";
-            $stack_trace .= "#1 [internal function]: PHP shutdown handler";
-            
-            // Generate frames array for structured parsing
-            $frames = array(
-                array(
-                    'file'     => $error['file'],
-                    'fileBase' => basename($error['file']),
-                    'line'     => $error['line'],
-                    'function' => 'fatal_error',
-                    'class'    => '',
-                ),
-                array(
-                    'file'     => '[internal]',
-                    'fileBase' => '[internal]',
-                    'line'     => 0,
-                    'function' => 'shutdown_handler',
-                    'class'    => 'PHP',
-                ),
-            );
-            
-            // Return JSON error response with full details including frames array
-            echo json_encode(array(
-                'success' => false,
-                'error' => array(
-                    'code' => 'FATAL_ERROR',
-                    'message' => 'A fatal error occurred in the plugin',
-                    'details' => array(
-                        'type'             => $error['type'],
-                        'typeName'         => riseup_error_type_to_string($error['type']),
-                        'message'          => $error['message'],
-                        'file'             => basename($error['file']),
-                        'fileFull'         => $error['file'],
-                        'line'             => $error['line'],
-                        'stackTrace'       => $stack_trace,
-                        'stackTraceFrames' => $frames,
-                        'phpVersion'       => phpversion(),
-                        'wpVersion'        => defined('WP_VERSION') ? WP_VERSION : 'unknown',
-                    ),
-                ),
-            ));
-            exit;
         }
     }
+    $trace_lines[] = sprintf("#%d [internal function]: PHP shutdown handler", count($trace_lines));
+    
+    // Generate frames array for structured parsing
+    $frames = array(
+        array(
+            'file'     => $error['file'],
+            'fileBase' => basename($error['file']),
+            'line'     => $error['line'],
+            'function' => 'fatal_error',
+            'class'    => '',
+        ),
+    );
+    
+    // Add backtrace frames if available
+    if (isset($backtrace) && is_array($backtrace)) {
+        foreach ($backtrace as $frame) {
+            $frames[] = array(
+                'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
+                'fileBase' => isset($frame['file']) ? basename($frame['file']) : '[internal]',
+                'line'     => isset($frame['line']) ? (int) $frame['line'] : 0,
+                'function' => isset($frame['function']) ? $frame['function'] : '',
+                'class'    => isset($frame['class']) ? $frame['class'] : '',
+            );
+        }
+    }
+    
+    $frames[] = array(
+        'file'     => '[internal]',
+        'fileBase' => '[internal]',
+        'line'     => 0,
+        'function' => 'shutdown_handler',
+        'class'    => 'PHP',
+    );
+    
+    // Build the error response
+    $response = array(
+        'success' => false,
+        'error' => array(
+            'code' => 'FATAL_ERROR',
+            'message' => 'A fatal error occurred in the plugin: ' . $error['message'],
+            'details' => array(
+                'type'             => $error['type'],
+                'typeName'         => riseup_error_type_to_string($error['type']),
+                'message'          => $error['message'],
+                'file'             => basename($error['file']),
+                'fileFull'         => $error['file'],
+                'line'             => $error['line'],
+                'stackTrace'       => implode("\n", $trace_lines),
+                'stackTraceFrames' => $frames,
+                'phpVersion'       => phpversion(),
+                'wpVersion'        => defined('WP_VERSION') ? WP_VERSION : 'unknown',
+                'memoryUsage'      => memory_get_usage(true),
+                'memoryPeak'       => memory_get_peak_usage(true),
+                'memoryLimit'      => ini_get('memory_limit'),
+                'requestUri'       => $request_uri,
+                'requestMethod'    => isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN',
+            ),
+        ),
+    );
+    
+    // Attempt JSON encoding with error handling
+    $json = @json_encode($response, JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        // JSON encoding failed - return minimal response
+        $minimal = array(
+            'success' => false,
+            'error' => array(
+                'code' => 'FATAL_ERROR_ENCODING_FAILED',
+                'message' => 'Fatal error occurred and JSON encoding also failed',
+                'details' => array(
+                    'originalMessage' => substr($error['message'], 0, 500),
+                    'file' => basename($error['file']),
+                    'line' => $error['line'],
+                    'jsonError' => json_last_error_msg(),
+                ),
+            ),
+        );
+        echo json_encode($minimal);
+    } else {
+        echo $json;
+    }
+    
+    exit;
 }
 
 /**
@@ -288,13 +377,12 @@ class Riseup_Asia {
             add_action('rest_api_init', array($this, 'register_routes'));
 
             $this->file_logger->info('Plugin constructor complete');
-        } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Plugin initialization failed');
-        } catch (Error $e) {
-            // Catch PHP 7+ fatal errors (like class not found)
+        } catch (Throwable $e) {
+            // Catch both Exception and Error (PHP 7+)
             $this->file_logger->error('Fatal error during plugin init: ' . $e->getMessage(), array(
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
+                'exceptionClass' => get_class($e),
+                'file'           => $e->getFile(),
+                'line'           => $e->getLine(),
             ));
         }
     }
@@ -476,7 +564,7 @@ class Riseup_Asia {
             ));
 
             $this->file_logger->info('All REST API routes registered successfully');
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to register routes');
         }
     }
@@ -653,7 +741,7 @@ class Riseup_Asia {
             wp_set_current_user($user->ID);
             $this->file_logger->info('Request authorized (status)', array('username' => $username));
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Authentication error');
             return new WP_Error(
                 'rest_forbidden',
@@ -752,7 +840,7 @@ class Riseup_Asia {
 
             $this->file_logger->info('Request authorized', array('username' => $username));
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Authentication error');
             return new WP_Error(
                 'rest_forbidden',
@@ -1054,7 +1142,8 @@ class Riseup_Asia {
                 'is_update'   => $is_update,
                 'activated'   => $activated,
             ), RISEUP_HTTP_OK);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            // Catch both Exception and Error (PHP 7+) for complete coverage
             $this->file_logger->log_exception($e, 'Upload error');
             return $this->error_response('Upload failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
@@ -1102,9 +1191,9 @@ class Riseup_Asia {
                 'success' => true,
                 'plugins' => $plugins,
             ), RISEUP_HTTP_OK);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'List plugins error');
-            return $this->error_response('Failed to list plugins: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+            return $this->error_response('Failed to list plugins: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -1147,9 +1236,9 @@ class Riseup_Asia {
                 'totalFiles' => count($files),
                 'files'      => $files,
             ), RISEUP_HTTP_OK);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Plugin files error');
-            return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+            return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -1265,7 +1354,7 @@ class Riseup_Asia {
                 'path'    => $file_path,
                 'content' => $content,
             ), RISEUP_HTTP_OK);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Plugin file content error');
             return $this->error_response('Failed to read file: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
@@ -1325,7 +1414,7 @@ class Riseup_Asia {
                 'slug'       => RISEUP_SLUG,
                 'version'    => RISEUP_VERSION,
             ), RISEUP_HTTP_OK);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Export-self error');
             return $this->error_response('Export failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
@@ -1445,9 +1534,9 @@ class Riseup_Asia {
                 'offset'  => (int) $offset,
                 'logs'    => $result['logs'],
             ), RISEUP_HTTP_OK);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Query logs error');
-            return $this->error_response('Failed to query logs: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+            return $this->error_response('Failed to query logs: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -1471,9 +1560,9 @@ class Riseup_Asia {
                 'success' => true,
                 'stats'   => $stats,
             ), RISEUP_HTTP_OK);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Logs stats error');
-            return $this->error_response('Failed to get stats: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR);
+            return $this->error_response('Failed to get stats: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -1498,7 +1587,7 @@ class Riseup_Asia {
             if (!function_exists('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to load plugin functions');
             return $this->error_response(
                 'Failed to load WordPress plugin functions: ' . $e->getMessage(),
@@ -1519,7 +1608,7 @@ class Riseup_Asia {
                 );
             }
             $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to find plugin file');
             return $this->error_response(
                 'Failed to locate plugin: ' . $e->getMessage(),
@@ -1539,7 +1628,7 @@ class Riseup_Asia {
                     'message'     => 'Plugin was already active',
                 ), RISEUP_HTTP_OK);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to check plugin status');
             return $this->error_response(
                 'Failed to check plugin status: ' . $e->getMessage(),
@@ -1569,7 +1658,7 @@ class Riseup_Asia {
                     RISEUP_HTTP_SERVER_ERROR
                 );
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Exception during plugin activation');
             $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_FAILED, array(
                 'exception' => $e->getMessage(),
@@ -1584,7 +1673,7 @@ class Riseup_Asia {
         // Step 5: Log success
         try {
             $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_SUCCESS);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->warn('Failed to log activation success', array('error' => $e->getMessage()));
         }
 
@@ -1614,7 +1703,7 @@ class Riseup_Asia {
             if (!function_exists('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to load plugin functions');
             return $this->error_response(
                 'Failed to load WordPress plugin functions: ' . $e->getMessage(),
@@ -1635,7 +1724,7 @@ class Riseup_Asia {
                 );
             }
             $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to find plugin file');
             return $this->error_response(
                 'Failed to locate plugin: ' . $e->getMessage(),
@@ -1655,7 +1744,7 @@ class Riseup_Asia {
                     'message'     => 'Plugin was already inactive',
                 ), RISEUP_HTTP_OK);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to check plugin status');
             return $this->error_response(
                 'Failed to check plugin status: ' . $e->getMessage(),
@@ -1668,7 +1757,7 @@ class Riseup_Asia {
         try {
             deactivate_plugins($plugin_file);
             $this->file_logger->debug('deactivate_plugins called', array('plugin_file' => $plugin_file));
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Exception during plugin deactivation');
             $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_FAILED, array(
                 'exception' => $e->getMessage(),
@@ -1692,7 +1781,7 @@ class Riseup_Asia {
                     RISEUP_HTTP_SERVER_ERROR
                 );
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to verify deactivation');
             return $this->error_response(
                 'Failed to verify deactivation: ' . $e->getMessage(),
@@ -1704,7 +1793,7 @@ class Riseup_Asia {
         // Step 6: Log success
         try {
             $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_SUCCESS);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->warn('Failed to log deactivation success', array('error' => $e->getMessage()));
         }
 
@@ -1737,7 +1826,7 @@ class Riseup_Asia {
             if (!function_exists('delete_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/file.php';
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to load plugin functions');
             return $this->error_response(
                 'Failed to load WordPress plugin functions: ' . $e->getMessage(),
@@ -1758,7 +1847,7 @@ class Riseup_Asia {
                 );
             }
             $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to find plugin file');
             return $this->error_response(
                 'Failed to locate plugin: ' . $e->getMessage(),
@@ -1773,7 +1862,7 @@ class Riseup_Asia {
                 $this->file_logger->debug('Deactivating plugin before deletion', array('plugin_file' => $plugin_file));
                 deactivate_plugins($plugin_file);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to deactivate plugin before deletion');
             return $this->error_response(
                 'Failed to deactivate plugin before deletion: ' . $e->getMessage(),
@@ -1815,7 +1904,7 @@ class Riseup_Asia {
                     RISEUP_HTTP_SERVER_ERROR
                 );
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Exception during plugin deletion');
             $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_FAILED, array(
                 'exception' => $e->getMessage(),
@@ -1830,7 +1919,7 @@ class Riseup_Asia {
         // Step 5: Log success
         try {
             $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_SUCCESS);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->file_logger->warn('Failed to log deletion success', array('error' => $e->getMessage()));
         }
 
@@ -1846,6 +1935,41 @@ class Riseup_Asia {
     // =========================================================================
     // HELPER METHODS
     // =========================================================================
+
+    /**
+     * Safely execute a callable with comprehensive error handling.
+     * Catches both Exception and Error (Throwable) for complete coverage.
+     * 
+     * @param callable $callback    The function to execute.
+     * @param string   $context     Description of the operation for error messages.
+     * @param array    $log_context Additional context for logging.
+     * 
+     * @return WP_REST_Response|mixed The result of the callback or an error response.
+     */
+    private function safe_execute($callback, $context = 'operation', $log_context = array()) {
+        try {
+            return call_user_func($callback);
+        } catch (Throwable $e) {
+            // Catch both Exception and Error (PHP 7+)
+            $this->file_logger->log_exception($e, "Throwable in {$context}");
+            
+            // Log additional context
+            $this->file_logger->error("safe_execute caught Throwable", array_merge($log_context, array(
+                'context'   => $context,
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+            )));
+            
+            return $this->error_response(
+                "Error in {$context}: " . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+    }
+
 
     /**
      * Create an error response with optional exception details.
