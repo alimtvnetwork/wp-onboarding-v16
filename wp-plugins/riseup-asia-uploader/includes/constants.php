@@ -373,3 +373,68 @@ if (!defined('RISEUP_ACTION_UPDATE_DOWNLOAD')) {
 if (!defined('RISEUP_ACTION_UPDATE_INSTALL')) {
     define('RISEUP_ACTION_UPDATE_INSTALL', 'update_install');
 }
+
+// =============================================================================
+// AGENT MANAGEMENT CONSTANTS
+// =============================================================================
+
+if (!defined('RISEUP_TABLE_AGENT_SITES')) {
+    define('RISEUP_TABLE_AGENT_SITES', 'agent_sites');
+}
+if (!defined('RISEUP_TABLE_AGENT_ACTIONS')) {
+    define('RISEUP_TABLE_AGENT_ACTIONS', 'agent_actions');
+}
+
+// Agent action types
+if (!defined('RISEUP_ACTION_AGENT_ADD')) {
+    define('RISEUP_ACTION_AGENT_ADD', 'agent_add');
+}
+if (!defined('RISEUP_ACTION_AGENT_REMOVE')) {
+    define('RISEUP_ACTION_AGENT_REMOVE', 'agent_remove');
+}
+if (!defined('RISEUP_ACTION_AGENT_TEST')) {
+    define('RISEUP_ACTION_AGENT_TEST', 'agent_test');
+}
+if (!defined('RISEUP_ACTION_AGENT_SYNC')) {
+    define('RISEUP_ACTION_AGENT_SYNC', 'agent_sync');
+}
+if (!defined('RISEUP_ACTION_AGENT_PLUGIN_ENABLE')) {
+    define('RISEUP_ACTION_AGENT_PLUGIN_ENABLE', 'agent_plugin_enable');
+}
+if (!defined('RISEUP_ACTION_AGENT_PLUGIN_DISABLE')) {
+    define('RISEUP_ACTION_AGENT_PLUGIN_DISABLE', 'agent_plugin_disable');
+}
+if (!defined('RISEUP_ACTION_AGENT_PLUGIN_DELETE')) {
+    define('RISEUP_ACTION_AGENT_PLUGIN_DELETE', 'agent_plugin_delete');
+}
+if (!defined('RISEUP_ACTION_AGENT_PLUGIN_UPDATE')) {
+    define('RISEUP_ACTION_AGENT_PLUGIN_UPDATE', 'agent_plugin_update');
+}
+
+// Agent status values
+if (!defined('RISEUP_AGENT_STATUS_PENDING')) {
+    define('RISEUP_AGENT_STATUS_PENDING', 'pending');
+}
+if (!defined('RISEUP_AGENT_STATUS_CONNECTED')) {
+    define('RISEUP_AGENT_STATUS_CONNECTED', 'connected');
+}
+if (!defined('RISEUP_AGENT_STATUS_ERROR')) {
+    define('RISEUP_AGENT_STATUS_ERROR', 'error');
+}
+
+// Agent REST endpoints
+if (!defined('RISEUP_ENDPOINT_AGENTS')) {
+    define('RISEUP_ENDPOINT_AGENTS', 'agents');
+}
+if (!defined('RISEUP_ENDPOINT_AGENT_TEST')) {
+    define('RISEUP_ENDPOINT_AGENT_TEST', 'agents/(?P<id>\\d+)/test');
+}
+if (!defined('RISEUP_ENDPOINT_AGENT_SYNC')) {
+    define('RISEUP_ENDPOINT_AGENT_SYNC', 'agents/(?P<id>\\d+)/sync');
+}
+if (!defined('RISEUP_ENDPOINT_AGENT_ACTION')) {
+    define('RISEUP_ENDPOINT_AGENT_ACTION', 'agents/(?P<id>\\d+)/action');
+}
+if (!defined('RISEUP_ENDPOINT_AGENT_HISTORY')) {
+    define('RISEUP_ENDPOINT_AGENT_HISTORY', 'agents/(?P<id>\\d+)/history');
+}

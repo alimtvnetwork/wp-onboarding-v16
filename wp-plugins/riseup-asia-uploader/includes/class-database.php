@@ -280,8 +280,52 @@ class Riseup_Database {
             
             $this->file_logger->info('All indexes created');
             
-            // Future migrations can be added here:
-            // if ($current_version < 2) { ... }
+            // Migration v2: Agent sites and actions tables
+            if ($current_version < 2) {
+                $this->file_logger->info('Applying migration v2: agent sites tables');
+                
+                // Agent sites table
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS agent_sites (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    username TEXT NOT NULL,
+                    app_password_encrypted TEXT NOT NULL,
+                    redirect_url TEXT,
+                    redirect_resolved TEXT,
+                    redirect_resolved_at TEXT,
+                    status TEXT DEFAULT 'pending',
+                    last_sync TEXT,
+                    last_error TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT
+                )");
+                $this->file_logger->debug('Table created: agent_sites');
+                
+                // Agent actions log table
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS agent_actions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    agent_site_id INTEGER NOT NULL,
+                    action TEXT NOT NULL,
+                    target_plugin TEXT,
+                    status TEXT NOT NULL,
+                    details TEXT,
+                    error_msg TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (agent_site_id) REFERENCES agent_sites(id) ON DELETE CASCADE
+                )");
+                $this->file_logger->debug('Table created: agent_actions');
+                
+                // Indexes for agent tables
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_sites_status ON agent_sites(status)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_site_id ON agent_actions(agent_site_id)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_action ON agent_actions(action)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_created ON agent_actions(created_at)");
+                
+                // Record migration
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (2, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v2 applied successfully');
+            }
             
             $this->file_logger->info('Database migration complete');
             

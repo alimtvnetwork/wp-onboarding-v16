@@ -476,70 +476,56 @@ Updated plugin version to 1.8.0
 
 ---
 
-## Phase 13: Multi-Site Orchestration (Master-Agent)
+## Phase 13: Multi-Site Orchestration (Master-Agent) ✅ COMPLETE
 
 **Priority: MEDIUM**
-**Status: PENDING**
-**Estimated: 6 hours**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
 
-### 13.1 Database Schema - Agent Sites Table
+### 13.1 Database Schema - Agent Sites Tables ✅
 
-```sql
-CREATE TABLE IF NOT EXISTS agent_sites (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    url TEXT NOT NULL,
-    username TEXT NOT NULL,
-    app_password_encrypted TEXT NOT NULL,
-    redirect_url TEXT,                  -- Optional 301 redirect URL
-    redirect_resolved TEXT,             -- Cached resolved URL
-    status TEXT DEFAULT 'pending',      -- pending, connected, error
-    last_sync TEXT,
-    created_at TEXT NOT NULL
-);
+Added migration v2 to `class-database.php`:
+- `agent_sites` table: id, name, url, username, app_password_encrypted, redirect_url, redirect_resolved, status, last_sync, last_error, created_at
+- `agent_actions` table: id, agent_site_id, action, target_plugin, status, details, error_msg, created_at
 
-CREATE TABLE IF NOT EXISTS agent_actions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    agent_site_id INTEGER NOT NULL,
-    action TEXT NOT NULL,               -- enable, disable, update, sync
-    target_plugin TEXT,
-    status TEXT NOT NULL,               -- pending, success, failed
-    details TEXT,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (agent_site_id) REFERENCES agent_sites(id)
-);
-```
+### 13.2 Agent Manager Class ✅
 
-### 13.2 WordPress Plugin - Agent Manager Class
+Created `wp-plugins/riseup-asia-uploader/includes/class-agent-manager.php`:
+- AES-256-GCM encryption for application passwords
+- `add_agent()`, `update_agent()`, `remove_agent()`, `get_agent()`, `list_agents()`
+- `api_request()` - Make authenticated requests to agent sites
+- `test_connection()` - Verify agent connectivity
+- `sync_plugins()` - Fetch plugin list from agent
+- `execute_plugin_action()` - Enable/disable/delete plugins remotely
+- `log_action()`, `get_action_history()` - Audit trail
 
-- [ ] Create `class-agent-manager.php`
-- [ ] `add_agent($url, $username, $password, $redirect_url)` - Onboard agent
-- [ ] `remove_agent($id)` - Remove agent
-- [ ] `list_agents()` - List all agents with status
-- [ ] `test_connection($id)` - Test connection to agent
-- [ ] `execute_action($agent_id, $action, $plugin_slug)` - Execute action on agent
-- [ ] `sync_agent($id)` - Sync status from agent
-- [ ] `push_update($agent_id, $plugin_slug, $zip_data)` - Push update to agent
-
-### 13.3 WordPress Plugin - Agent REST Endpoints
+### 13.3 REST Endpoints ✅
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/agents` | List all agent sites |
 | POST | `/agents` | Add new agent site |
+| GET | `/agents/{id}` | Get single agent |
 | DELETE | `/agents/{id}` | Remove agent site |
-| POST | `/agents/{id}/test` | Test agent connection |
-| POST | `/agents/{id}/sync` | Sync agent status |
-| POST | `/agents/{id}/action` | Execute action on agent |
+| POST | `/agents/{id}/test` | Test connection |
+| POST | `/agents/{id}/sync` | Sync plugins |
+| POST | `/agents/{id}/action` | Execute plugin action |
+| GET | `/agents/{id}/history` | Get action history |
 
-### 13.4 WordPress Admin - Agent Management Page
+### 13.4 Admin Dashboard ✅
 
-- [ ] Add new admin submenu "Agent Sites"
-- [ ] Table listing all agents (name, URL, status, last sync)
-- [ ] Add Agent form (URL, username, app password, redirect URL)
-- [ ] Action buttons (Test, Sync, Remove)
-- [ ] Remote plugin list per agent
-- [ ] Bulk actions (Update All, Enable/Disable)
+Created `templates/admin-agents.php`:
+- Add Agent form with name, URL, username, app password, redirect URL
+- Agent sites table with status indicators
+- Action buttons: Test, Sync, View Plugins, History, Remove
+- Plugins modal for remote plugin management
+- Action history modal
+
+### 13.5 Constants Added ✅
+
+- `RISEUP_TABLE_AGENT_SITES`, `RISEUP_TABLE_AGENT_ACTIONS`
+- Agent action types and status values
+- Agent REST endpoint constants
 
 ---
 
