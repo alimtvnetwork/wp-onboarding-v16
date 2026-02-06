@@ -1,105 +1,143 @@
 
 
-# Fix Plan: Complete Error Report + API Endpoint Redesign
+# Logging Quality, URL Consistency, and Spec Update Plan
 
 ## Problem Summary
 
-Two major issues need to be fixed:
+The backend logging across all services is inconsistent and unhelpful:
 
-1. **Copy Full Report is incomplete**: The `generateErrorReport()` function in the error modal is missing several data sections that are already captured in the `CapturedError` object (UI click path, React execution chain, PHP stack frames, error.log.txt content).
-
-2. **Remote plugin API uses bad URL design**: Plugin slugs are embedded in URL paths (e.g., `/remote-plugins/broken-link-checker/broken-link-checker/disable`), which breaks with slashes in identifiers. The user wants JSON-body-based endpoints instead.
-
----
-
-## Part 1: Complete the Copy Full Report
-
-**File:** `src/components/errors/GlobalErrorModal.tsx` (function `generateErrorReport`, lines 1392-1487)
-
-The `CapturedError` object already captures `uiClickPathString`, `executionLogsFormatted`, `phpStackFrames`, but `generateErrorReport()` never includes them in the output. The following sections will be added to the generated markdown report:
-
-- **User Interactions** (from `error.uiClickPathString`) -- the click path the user took before the error
-- **Frontend Execution Chain** (from `error.executionLogsFormatted`) -- React method call chain with original names
-- **PHP Stack Trace** (from `error.phpStackFrames`) -- WordPress/PHP call stack formatted as a table
-- **error.log.txt content** -- fetched async from the backend via `api.getBackendErrorLog()` and appended
-
-The `copyFullError` function will be made async so it can fetch the backend error log before copying, combining all sections into one comprehensive report.
+1. **Numeric IDs without names**: Logs say `pluginId=2 siteId=1` instead of including the plugin name, site name, and site URL.
+2. **Flat single-line key=value format**: Hard to scan. The user wants multi-line structured output for error logs.
+3. **Missing context in error.log.txt**: The `logToErrorFile` and `broadcastDetailedLog` functions often fall back to `plugin#2` or `site#1` because names are not passed through.
+4. **"Server failed" false alarm**: Already fixed in the last edit (`http: Server closed` is now ignored).
+5. **Remaining URL slug-in-path issues**: The remote plugin endpoints were fixed, but the pattern should be documented as a spec rule.
+6. **No spec documenting these logging standards**: Learnings keep getting lost.
 
 ---
 
-## Part 2: Redesign Remote Plugin API Endpoints
+## Phase 1: Logging Spec Document
 
-Change from URL-parameter-based to JSON-body-based endpoints.
+Create `.lovable/specs/logging-standards.md` to codify rules so they are never forgotten.
 
-### Before (current):
-```text
-POST /sites/{id}/remote-plugins/{plugin:.+}/enable
-POST /sites/{id}/remote-plugins/{plugin:.+}/disable
-DELETE /sites/{id}/remote-plugins/{plugin:.+}
-GET  /sites/{id}/remote-plugins/{plugin:.+}/files
-POST /sites/{id}/remote-plugins/{plugin:.+}/file
+**Rules to document:**
+- Every log line at ERROR or WARN level MUST include human-readable names (pluginName, siteName, siteURL), not just numeric IDs
+- Numeric IDs should still appear but as secondary context
+- The `logToErrorFile` format uses multi-line blocks with indented key-values (already established pattern)
+- All `broadcastDetailedLog` callers must pass `pluginName`, `siteName`, `siteUrl` in the details map
+- URL design: never embed user-provided identifiers in URL paths; use JSON request bodies
+- The logger's key=value pairs should follow a consistent order: name fields first, then IDs, then technical details
+
+---
+
+## Phase 2: Fix `logRemoteAction` in site/service.go
+
+**File:** `backend/internal/services/site/service.go` (line 1303-1321)
+
+Current problem: `logRemoteAction` logs errors with only `siteId` and `action`:
+```go
+s.log.Error(message, "siteId", siteId, "action", action, "step", step)
 ```
 
-### After (new):
-```text
-POST /sites/{id}/remote-plugins/enable      { "plugin": "slug" }
-POST /sites/{id}/remote-plugins/disable     { "plugin": "slug" }
-POST /sites/{id}/remote-plugins/delete      { "plugin": "slug" }
-POST /sites/{id}/remote-plugins/files       { "plugin": "slug" }
-POST /sites/{id}/remote-plugins/file        { "plugin": "slug", "path": "file.php" }
+It should log as { siteId: val, ....} in the log text do you get it???
+
+Fix: Include `siteName`, `siteUrl`, and `pluginSlug` from the details map or pass them explicitly.
+
+---
+
+## Phase 3: Fix `broadcastDetailedLog` in publish/service.go
+
+**File:** `backend/internal/services/publish/service.go` (line 1008-1052)
+
+Current problem: Falls back to `plugin#2` / `site#1` when details map does not contain names. Most callers do NOT pass `pluginName`/`siteName` in the details map.
+
+Fix: Change `broadcastDetailedLog` to accept `pluginName` and `siteName` as explicit parameters (or store them on the Service struct context for the current operation). Then all the existing call sites that pass `nil` for details will still get names.
+
+Approach: Store `pluginInfo.Name` and `siteInfo.Name` as fields on a publish context that is set at the start of `Publish()` and used by all helper methods. This avoids changing 30+ call signatures.
+
+---
+
+## Phase 4: Fix watcher/service.go logging
+
+**File:** `backend/internal/services/watcher/service.go`
+
+Lines 240, 244, 255, 264, 282 all log with `pluginId` only.
+
+Fix: The plugin object `p` is already available in scope (line 234). Use `p.Name` in all log calls:
+```go
+s.log.Info("Auto-publish triggered",
+    "plugin", p.Name,
+    "pluginId", pluginID,
+    "changes", len(changes),
+    "sites", len(p.Mappings),
+)
 ```
 
-All plugin identifiers move to the JSON request body. DELETE becomes POST (since DELETE with body is non-standard).
+Similarly for auto-publish failures (line 264), add `mapping.SiteName`.
 
-### Files Changed:
+---
+
+## Phase 5: Fix version/service.go and git/service.go logging
+
+**Files:**
+- `backend/internal/services/version/service.go` - lines 60, 64, 100
+- `backend/internal/services/git/service.go` - lines 118, 192, 249, 320, 492, 543
+
+These services have access to plugin objects after initial lookup. Add plugin name to all log calls.
+
+---
+
+## Phase 6: Fix backup/service.go logging
+
+**File:** `backend/internal/services/backup/service.go` - lines 68, 120, 143
+
+Currently logs `mapping_id` and `backup_id` without any human-readable context. Add plugin name and site name where available.
+
+---
+
+## Phase 7: Improve logger multi-line format for error logs
+
+**File:** `backend/internal/logger/logger.go`
+
+The current format puts all key-value pairs on a single line:
+```
+[v1.19.4 2026-02-05 04:00:13] [publish] Activation failed pluginId=2 siteId=1 step=activate [ERROR] [service.go:526]
+```
+
+Improve: For ERROR and WARN levels, render key-value pairs on separate indented lines for readability:
+```
+[v1.19.4 2026-02-05 04:00:13] [publish] Activation failed [ERROR] [service.go:526]
+  plugin  = Category Generator
+  site    = Demo AT
+  siteUrl = https://demoat.attoproperty.com.au
+  step    = activate
+--- Stack Trace ---
+  ...
+```
+
+This change is isolated to the `log()` method in logger.go and affects only ERROR/WARN levels to keep INFO/DEBUG compact.
+
+---
+
+## Files Changed Summary
 
 | File | Change |
 |------|--------|
-| `backend/internal/api/router.go` | Replace 5 routes with new JSON-body endpoints |
-| `backend/internal/api/handlers/handlers.go` | Update 5 handlers to read `plugin` from JSON body instead of `mux.Vars` |
-| `src/lib/api.ts` | Update 5 frontend API functions to send plugin in body |
-| `src/components/errors/GlobalErrorModal.tsx` | Add missing sections to `generateErrorReport()`, make copy async |
+| `.lovable/specs/logging-standards.md` | NEW: Logging rules spec |
+| `backend/internal/logger/logger.go` | Multi-line key-value for ERROR/WARN |
+| `backend/internal/services/publish/service.go` | Pass names through broadcastDetailedLog |
+| `backend/internal/services/site/service.go` | Fix logRemoteAction to include names |
+| `backend/internal/services/watcher/service.go` | Add plugin/site names to all logs |
+| `backend/internal/services/backup/service.go` | Add context to backup logs |
+| `backend/internal/services/version/service.go` | Add plugin name to version logs |
+| `backend/internal/services/git/service.go` | Add plugin name to git logs |
 
 ---
 
-## Technical Details
+## Implementation Order
 
-### Router changes (router.go)
-Remove the `{plugin:.+}` pattern routes and register new clean routes:
-```go
-api.HandleFunc("/sites/{id}/remote-plugins/enable", handlers.EnableRemotePlugin).Methods("POST")
-api.HandleFunc("/sites/{id}/remote-plugins/disable", handlers.DisableRemotePlugin).Methods("POST")
-api.HandleFunc("/sites/{id}/remote-plugins/delete", handlers.DeleteRemotePlugin).Methods("POST")
-api.HandleFunc("/sites/{id}/remote-plugins/files", handlers.GetRemotePluginFiles).Methods("POST")
-api.HandleFunc("/sites/{id}/remote-plugins/file", handlers.GetRemotePluginFileContent).Methods("POST")
-```
+1. Create the spec first (Phase 1) - establishes the rules
+2. Fix the logger format (Phase 7) - affects all output immediately
+3. Fix publish service (Phase 3) - highest impact, most log volume
+4. Fix site service (Phase 2) - remote plugin action logs
+5. Fix watcher (Phase 4), version (Phase 5), git (Phase 5), backup (Phase 6) - secondary services
 
-These must be registered BEFORE the catch-all GET `/sites/{id}/remote-plugins` to avoid conflicts.
-
-### Handler changes (handlers.go)
-Each handler will parse a JSON body struct:
-```go
-var input struct {
-    Plugin string `json:"plugin"`
-}
-json.NewDecoder(r.Body).Decode(&input)
-pluginSlug := input.Plugin
-```
-
-### Frontend API changes (api.ts)
-```typescript
-enableRemotePlugin: (siteId: number, pluginSlug: string) =>
-  request(`/sites/${siteId}/remote-plugins/enable`, {
-    method: "POST",
-    body: JSON.stringify({ plugin: pluginSlug })
-  }),
-```
-
-### Report generation additions (GlobalErrorModal.tsx)
-Add these sections between the existing backend logs and parsed frames sections:
-- PHP stack frames table (from `error.phpStackFrames`)
-- User interaction path (from `error.uiClickPathString`)  
-- Frontend execution chain (from `error.executionLogsFormatted`)
-- Backend error.log.txt (fetched async)
-
-ADD LOGS OF User Interaction Path, STEPS IN THE COPY REPORT AND MAKE SURE ALL BUTTONS ARE FUNCTIONAL IN ERROR MODAL
