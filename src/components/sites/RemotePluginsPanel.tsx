@@ -342,33 +342,33 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col bg-background/95 backdrop-blur-sm border-border/50">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <Package className="h-6 w-6 text-primary" />
-              Plugins on {site.name}
+        <DialogContent className="w-[95vw] max-w-4xl h-[95vh] max-h-[95vh] flex flex-col bg-background/95 backdrop-blur-sm border-border/50 p-4 sm:p-6">
+          <DialogHeader className="pb-2 shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
+              <span className="truncate">Plugins on {site.name}</span>
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs sm:text-sm">
               View and manage plugins installed on this WordPress site.
             </DialogDescription>
           </DialogHeader>
 
-          {/* Search and Actions Bar */}
-          <div className="flex items-center gap-2">
+          {/* Search and Actions Bar - responsive layout */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search plugins by name, slug, or author..."
+                placeholder="Search plugins..."
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10 bg-muted/50 border-border/50 focus-visible:ring-primary/50"
+                className="pl-10 bg-muted/50 border-border/50 focus-visible:ring-primary/50 text-sm"
               />
             </div>
             
-            {/* Cache Status & Force Sync */}
-            <div className="flex items-center gap-1">
+            {/* Cache Status & Actions - stacked on mobile */}
+            <div className="flex items-center justify-between sm:justify-end gap-1 sm:gap-2">
               {lastFetchedAt && (
-                <Badge variant="outline" className="text-xs gap-1 text-muted-foreground shrink-0">
+                <Badge variant="outline" className="text-xs gap-1 text-muted-foreground shrink-0 hidden sm:flex">
                   <Clock className="h-3 w-3" />
                   {formatTimeAgo(lastFetchedAt)}
                 </Badge>
@@ -378,61 +378,61 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                 size="sm" 
                 onClick={() => forceSyncMutation.mutate()} 
                 disabled={forceSyncMutation.isPending || isFetching}
-                className="shrink-0 gap-1.5"
+                className="shrink-0 gap-1.5 text-xs sm:text-sm h-8 sm:h-9"
                 title="Force refresh from site (bypass cache)"
               >
-                <Zap className={`h-3.5 w-3.5 ${forceSyncMutation.isPending ? "animate-pulse" : ""}`} />
-                Force Sync
+                <Zap className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${forceSyncMutation.isPending ? "animate-pulse" : ""}`} />
+                <span className="hidden xs:inline">Force</span> Sync
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading || isFetching} className="shrink-0 h-8 w-8 sm:h-9 sm:w-9" title="Refresh (may use cache)">
+                <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
               </Button>
             </div>
-            
-            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading || isFetching} className="shrink-0" title="Refresh (may use cache)">
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-            </Button>
           </div>
 
-          {/* Bulk Actions Bar - visible when plugins selected */}
+          {/* Bulk Actions Bar - responsive layout */}
           {selectedPlugins.size > 0 && (
-            <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-              <span className="text-sm font-medium">
-                {selectedPlugins.size} plugin{selectedPlugins.size !== 1 ? "s" : ""} selected
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2 sm:p-3 rounded-lg bg-primary/10 border border-primary/20 shrink-0">
+              <span className="text-xs sm:text-sm font-medium">
+                {selectedPlugins.size} selected
               </span>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleBulkActivate}
                   disabled={bulkActionPending}
-                  className="gap-1"
+                  className="gap-1 text-xs h-7 sm:h-8 flex-1 sm:flex-none"
                 >
-                  <Power className="h-3.5 w-3.5" />
-                  Activate
+                  <Power className="h-3 w-3" />
+                  <span className="hidden xs:inline">Activate</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleBulkDeactivate}
                   disabled={bulkActionPending}
-                  className="gap-1"
+                  className="gap-1 text-xs h-7 sm:h-8 flex-1 sm:flex-none"
                 >
-                  <PowerOff className="h-3.5 w-3.5" />
-                  Deactivate
+                  <PowerOff className="h-3 w-3" />
+                  <span className="hidden xs:inline">Deactivate</span>
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={handleBulkDelete}
                   disabled={bulkActionPending}
-                  className="gap-1"
+                  className="gap-1 text-xs h-7 sm:h-8 flex-1 sm:flex-none"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Delete
+                  <Trash2 className="h-3 w-3" />
+                  <span className="hidden xs:inline">Delete</span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={deselectAll}
                   disabled={bulkActionPending}
+                  className="text-xs h-7 sm:h-8"
                 >
                   Clear
                 </Button>
@@ -440,50 +440,50 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             </div>
           )}
 
-          {/* Select All / Deselect All */}
+          {/* Select All / Deselect All - compact responsive */}
           {!isLoading && !isError && filteredPlugins.length > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={selectAllVisible} className="h-7 px-2 text-xs">
-                  Select page ({paginatedPlugins.length})
+            <div className="flex items-center justify-between text-xs sm:text-sm shrink-0">
+              <div className="flex items-center gap-1 sm:gap-3">
+                <Button variant="ghost" size="sm" onClick={selectAllVisible} className="h-6 sm:h-7 px-1.5 sm:px-2 text-xs">
+                  Select ({paginatedPlugins.length})
                 </Button>
                 {selectedPlugins.size > 0 && (
-                  <Button variant="ghost" size="sm" onClick={deselectAll} className="h-7 px-2 text-xs text-muted-foreground">
-                    Deselect all
+                  <Button variant="ghost" size="sm" onClick={deselectAll} className="h-6 sm:h-7 px-1.5 sm:px-2 text-xs text-muted-foreground">
+                    Clear
                   </Button>
                 )}
               </div>
               {totalPages > 1 && (
                 <span className="text-muted-foreground text-xs">
-                  Page {currentPage} of {totalPages}
+                  {currentPage}/{totalPages}
                 </span>
               )}
             </div>
           )}
 
-          {/* Plugin List */}
+          {/* Plugin List - flexible height */}
           {isLoading ? (
-            <div className="flex-1 flex items-center justify-center py-12">
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <span className="text-sm text-muted-foreground">Loading plugins...</span>
+            <div className="flex-1 flex items-center justify-center py-8 sm:py-12 min-h-[200px]">
+              <div className="flex flex-col items-center gap-2 sm:gap-3">
+                <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-primary" />
+                <span className="text-xs sm:text-sm text-muted-foreground">Loading plugins...</span>
               </div>
             </div>
           ) : isError ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <AlertCircle className="h-10 w-10 mb-3 text-destructive" />
-              <p className="font-medium">Failed to load plugins</p>
-              <Button variant="link" onClick={() => refetch()} className="mt-2">
+            <div className="flex-1 flex flex-col items-center justify-center py-8 sm:py-12 text-muted-foreground min-h-[200px]">
+              <AlertCircle className="h-8 w-8 sm:h-10 sm:w-10 mb-2 sm:mb-3 text-destructive" />
+              <p className="font-medium text-sm sm:text-base">Failed to load plugins</p>
+              <Button variant="link" onClick={() => refetch()} className="mt-2 text-sm">
                 Try again
               </Button>
             </div>
           ) : !filteredPlugins.length ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Package className="h-10 w-10 mb-3" />
-              <p className="font-medium">{searchQuery ? "No plugins match your search" : "No plugins installed"}</p>
+            <div className="flex-1 flex flex-col items-center justify-center py-8 sm:py-12 text-muted-foreground min-h-[200px]">
+              <Package className="h-8 w-8 sm:h-10 sm:w-10 mb-2 sm:mb-3" />
+              <p className="font-medium text-sm sm:text-base">{searchQuery ? "No plugins match your search" : "No plugins installed"}</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 -mx-6 px-6" style={{ minHeight: "300px", maxHeight: "calc(90vh - 320px)" }}>
+            <ScrollArea className="flex-1 min-h-0 -mx-4 sm:-mx-6 px-4 sm:px-6 touch-pan-y">
               <div className="space-y-2 pb-2">
                 {paginatedPlugins.map((plugin) => {
                   const isSelected = selectedPlugins.has(plugin.plugin);
@@ -610,35 +610,36 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
             </ScrollArea>
           )}
 
-          {/* Pagination */}
+          {/* Pagination - compact on mobile */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-2">
+            <div className="flex items-center justify-center gap-1 sm:gap-2 pt-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
+                className="h-7 sm:h-8 px-2 sm:px-3 text-xs"
               >
-                Previous
+                Prev
               </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
                   let pageNum: number;
-                  if (totalPages <= 5) {
+                  if (totalPages <= 3) {
                     pageNum = i + 1;
-                  } else if (currentPage <= 3) {
+                  } else if (currentPage <= 2) {
                     pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
+                  } else if (currentPage >= totalPages - 1) {
+                    pageNum = totalPages - 2 + i;
                   } else {
-                    pageNum = currentPage - 2 + i;
+                    pageNum = currentPage - 1 + i;
                   }
                   return (
                     <Button
                       key={pageNum}
                       variant={currentPage === pageNum ? "default" : "outline"}
                       size="sm"
-                      className="w-8 h-8 p-0"
+                      className="w-7 h-7 sm:w-8 sm:h-8 p-0 text-xs"
                       onClick={() => setCurrentPage(pageNum)}
                     >
                       {pageNum}
@@ -651,18 +652,21 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
+                className="h-7 sm:h-8 px-2 sm:px-3 text-xs"
               >
                 Next
               </Button>
             </div>
           )}
 
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/50 text-sm text-muted-foreground">
+          {/* Footer - responsive */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-2 sm:pt-3 border-t border-border/50 text-xs sm:text-sm text-muted-foreground shrink-0">
             <div className="flex items-center gap-2">
               <span>
                 {filteredPlugins.length} plugin{filteredPlugins.length !== 1 ? "s" : ""}
-                {searchQuery && plugins?.length !== filteredPlugins.length && ` (of ${plugins?.length} total)`}
+                {searchQuery && plugins?.length !== filteredPlugins.length && (
+                  <span className="hidden sm:inline"> (of {plugins?.length} total)</span>
+                )}
               </span>
               {isFromCache && (
                 <Badge variant="secondary" className="text-xs gap-1">
@@ -675,9 +679,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
               href={`${site.url}/wp-admin/plugins.php`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 hover:text-primary transition-colors"
+              className="flex items-center gap-1 hover:text-primary transition-colors text-xs sm:text-sm"
             >
-              Open in WordPress
+              <span className="hidden sm:inline">Open in WordPress</span>
+              <span className="sm:hidden">WP Admin</span>
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
