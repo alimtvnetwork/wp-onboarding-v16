@@ -72,6 +72,9 @@ class Riseup_Admin {
         add_action('wp_ajax_riseup_test_update_connection', array($this, 'ajax_test_update_connection'));
         add_action('wp_ajax_riseup_clear_update_cache', array($this, 'ajax_clear_update_cache'));
         add_action('wp_ajax_riseup_check_for_updates', array($this, 'ajax_check_for_updates'));
+        add_action('wp_ajax_riseup_save_snapshot_settings', array($this, 'ajax_save_snapshot_settings'));
+        add_action('wp_ajax_riseup_run_snapshot_cleanup', array($this, 'ajax_run_snapshot_cleanup'));
+        add_action('wp_ajax_riseup_get_snapshot_storage_stats', array($this, 'ajax_get_snapshot_storage_stats'));
     }
 
     /**
@@ -307,6 +310,15 @@ class Riseup_Admin {
         $settings = self::get_settings();
         $update_settings = Riseup_Update_Resolver::get_instance()->get_settings();
 
+        // Snapshot settings
+        require_once dirname(__FILE__) . '/class-snapshot-detector.php';
+        $detector = new RiseupSnapshotDetector(
+            Riseup_File_Logger::get_instance(),
+            Riseup_Database::get_instance()
+        );
+        $snapshot_settings = $detector->getSettings();
+        $snapshot_providers = $detector->detectAvailableProviders();
+
         // Endpoint metadata for display
         $endpoints_meta = array(
             'status'       => array('label' => 'Status Check', 'desc' => 'Returns plugin status and version'),
@@ -382,6 +394,139 @@ class Riseup_Admin {
                 'update_info' => $result,
             ));
         }
+    }
+
+    /**
+     * AJAX handler: Save snapshot settings.
+     */
+    public function ajax_save_snapshot_settings() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+
+        $settings = array();
+
+        // Provider
+        if (isset($_POST['preferred_provider'])) {
+            $settings['preferred_provider'] = sanitize_text_field($_POST['preferred_provider']);
+        }
+
+        // Scheduling
+        if (isset($_POST['schedule_enabled'])) {
+            $settings['schedule_enabled'] = ($_POST['schedule_enabled'] === '1');
+        }
+        if (isset($_POST['schedule_frequency'])) {
+            $settings['schedule_frequency'] = sanitize_text_field($_POST['schedule_frequency']);
+        }
+        if (isset($_POST['schedule_time'])) {
+            $settings['schedule_time'] = sanitize_text_field($_POST['schedule_time']);
+        }
+        if (isset($_POST['schedule_day'])) {
+            $settings['schedule_day'] = intval($_POST['schedule_day']);
+        }
+
+        // Scope
+        if (isset($_POST['default_scope'])) {
+            $settings['default_scope'] = sanitize_text_field($_POST['default_scope']);
+        }
+
+        // Retention
+        if (isset($_POST['retention_type'])) {
+            $settings['retention_type'] = sanitize_text_field($_POST['retention_type']);
+        }
+        if (isset($_POST['retention_days'])) {
+            $settings['retention_days'] = intval($_POST['retention_days']);
+        }
+        if (isset($_POST['retention_count'])) {
+            $settings['retention_count'] = intval($_POST['retention_count']);
+        }
+
+        // Safety
+        if (isset($_POST['pre_restore_backup'])) {
+            $settings['pre_restore_backup'] = ($_POST['pre_restore_backup'] === '1');
+        }
+
+        // Limits
+        if (isset($_POST['max_snapshot_size_mb'])) {
+            $settings['max_snapshot_size_mb'] = intval($_POST['max_snapshot_size_mb']);
+        }
+        if (isset($_POST['batch_size'])) {
+            $settings['batch_size'] = intval($_POST['batch_size']);
+        }
+
+        require_once dirname(__FILE__) . '/class-snapshot-detector.php';
+        $detector = new RiseupSnapshotDetector(
+            Riseup_File_Logger::get_instance(),
+            Riseup_Database::get_instance()
+        );
+        $result = $detector->updateSettings($settings);
+
+        // Re-sync cron schedule if scheduling changed
+        if (isset($settings['schedule_enabled']) || isset($settings['schedule_frequency'])) {
+            require_once dirname(__FILE__) . '/class-snapshot-scheduler.php';
+            $scheduler = RiseupSnapshotScheduler::getInstance(
+                Riseup_File_Logger::get_instance(),
+                Riseup_Database::get_instance()
+            );
+            $scheduler->syncScheduleWithSettings();
+        }
+
+        if ($result) {
+            wp_send_json_success(array('message' => 'Snapshot settings saved'));
+        } else {
+            wp_send_json_success(array('message' => 'Settings unchanged'));
+        }
+    }
+
+    /**
+     * AJAX handler: Run manual snapshot cleanup.
+     */
+    public function ajax_run_snapshot_cleanup() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+
+        require_once dirname(__FILE__) . '/class-snapshot-scheduler.php';
+        $scheduler = RiseupSnapshotScheduler::getInstance(
+            Riseup_File_Logger::get_instance(),
+            Riseup_Database::get_instance()
+        );
+        $result = $scheduler->runManualCleanup();
+
+        wp_send_json_success(array(
+            'message' => sprintf(
+                'Cleanup complete: %d by policy, %d orphans, %d failed removed. Freed %s.',
+                $result['deleted_by_policy'],
+                $result['deleted_orphans'],
+                $result['deleted_failed'],
+                RiseupPathUtils::formatBytes($result['space_freed_bytes'])
+            ),
+            'result' => $result,
+        ));
+    }
+
+    /**
+     * AJAX handler: Get snapshot storage stats.
+     */
+    public function ajax_get_snapshot_storage_stats() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+
+        require_once dirname(__FILE__) . '/class-snapshot-scheduler.php';
+        $scheduler = RiseupSnapshotScheduler::getInstance(
+            Riseup_File_Logger::get_instance(),
+            Riseup_Database::get_instance()
+        );
+        $stats = $scheduler->getStorageStats();
+
+        wp_send_json_success($stats);
     }
 
     /**
