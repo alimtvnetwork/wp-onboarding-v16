@@ -5,6 +5,8 @@
  * Defines the contract that all snapshot providers must implement.
  * Providers can be WP Reset, Updraft Plus, or the native SQLite engine.
  *
+ * PHP class naming follows PascalCase convention without underscores.
+ *
  * @package RiseupAsiaUploader
  * @since   1.9.0
  */
@@ -18,8 +20,10 @@ if (!defined('ABSPATH')) {
  * 
  * All snapshot providers must extend this class and implement
  * the abstract methods for creating, restoring, and managing snapshots.
+ *
+ * PHP class naming follows PascalCase convention without underscores.
  */
-abstract class Riseup_Snapshot_Provider_Interface {
+abstract class RiseupSnapshotProviderInterface {
 
     /**
      * Provider identifier constant.
@@ -38,22 +42,22 @@ abstract class Riseup_Snapshot_Provider_Interface {
     /**
      * Logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     protected $logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     protected $db;
 
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger $logger Logger instance.
-     * @param Riseup_Database    $db     Database instance.
+     * @param RiseupFileLogger $logger Logger instance.
+     * @param RiseupDatabase   $db     Database instance.
      */
     public function __construct($logger, $db) {
         $this->logger = $logger;
@@ -65,7 +69,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *
      * @return string Provider ID (e.g., 'native', 'wp_reset', 'updraft').
      */
-    public function get_provider_id() {
+    public function getProviderId() {
         return $this->provider_id;
     }
 
@@ -74,7 +78,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *
      * @return string Human-readable provider name.
      */
-    public function get_provider_name() {
+    public function getProviderName() {
         return $this->provider_name;
     }
 
@@ -83,7 +87,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *
      * @return bool True if the provider can be used.
      */
-    abstract public function is_available();
+    abstract public function isAvailable();
 
     /**
      * Get provider capabilities.
@@ -99,7 +103,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type bool $import         Supports import from file.
      * }
      */
-    abstract public function get_capabilities();
+    abstract public function getCapabilities();
 
     /**
      * Create a snapshot.
@@ -123,7 +127,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type string $error       Error message if failed.
      * }
      */
-    abstract public function create_snapshot($options);
+    abstract public function createSnapshot($options);
 
     /**
      * Restore from a snapshot.
@@ -146,7 +150,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type string $error         Error message if failed.
      * }
      */
-    abstract public function restore_snapshot($snapshot_id, $options);
+    abstract public function restoreSnapshot($snapshot_id, $options);
 
     /**
      * Delete a snapshot.
@@ -158,7 +162,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type string $error   Error message if failed.
      * }
      */
-    abstract public function delete_snapshot($snapshot_id);
+    abstract public function deleteSnapshot($snapshot_id);
 
     /**
      * Export a snapshot to a downloadable file.
@@ -173,7 +177,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type string $error    Error message if failed.
      * }
      */
-    abstract public function export_snapshot($snapshot_id);
+    abstract public function exportSnapshot($snapshot_id);
 
     /**
      * Import a snapshot from an uploaded file.
@@ -187,7 +191,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type string $error       Error message if failed.
      * }
      */
-    abstract public function import_snapshot($filepath);
+    abstract public function importSnapshot($filepath);
 
     /**
      * Get snapshot details.
@@ -195,7 +199,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      * @param int $snapshot_id Snapshot database ID.
      * @return array|null Snapshot details or null if not found.
      */
-    abstract public function get_snapshot($snapshot_id);
+    abstract public function getSnapshot($snapshot_id);
 
     /**
      * List all snapshots.
@@ -208,7 +212,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type int     $total     Total number of snapshots.
      * }
      */
-    abstract public function list_snapshots($limit = 50, $offset = 0);
+    abstract public function listSnapshots($limit = 50, $offset = 0);
 
     /**
      * Get list of available database tables.
@@ -220,7 +224,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *     @type bool   $is_core  Whether this is a WordPress core table.
      * }[]
      */
-    abstract public function get_available_tables();
+    abstract public function getAvailableTables();
 
     /**
      * Log a message with snapshot context.
@@ -260,13 +264,13 @@ abstract class Riseup_Snapshot_Provider_Interface {
     /**
      * Get the snapshots directory path.
      *
-     * Uses Riseup_Path_Utils for consistent path handling.
+     * Uses RiseupPathUtils for consistent path handling.
      *
      * @return string Full path to snapshots directory.
      */
-    protected function get_snapshots_dir() {
-        return Riseup_Path_Utils::join(
-            Riseup_Path_Utils::get_base_dir(),
+    protected function getSnapshotsDir() {
+        return RiseupPathUtils::join(
+            RiseupPathUtils::getBaseDir(),
             RISEUP_SNAPSHOTS_SUBDIR
         );
     }
@@ -274,14 +278,14 @@ abstract class Riseup_Snapshot_Provider_Interface {
     /**
      * Ensure snapshots directory exists with proper security.
      *
-     * Uses Riseup_Path_Utils for directory creation and security.
+     * Uses RiseupPathUtils for directory creation and security.
      *
      * @return bool True if directory exists or was created.
      */
-    protected function ensure_snapshots_dir() {
-        $dir = Riseup_Path_Utils::ensure_path(
+    protected function ensureSnapshotsDir() {
+        $dir = RiseupPathUtils::ensurePath(
             true, // secure with .htaccess
-            Riseup_Path_Utils::get_base_dir(),
+            RiseupPathUtils::getBaseDir(),
             RISEUP_SNAPSHOTS_SUBDIR
         );
 
@@ -300,7 +304,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      * @param int $sequence Sequence number.
      * @return string Filename without extension.
      */
-    protected function generate_snapshot_filename($sequence) {
+    protected function generateSnapshotFilename($sequence) {
         $sequence_padded = str_pad($sequence, 3, '0', STR_PAD_LEFT);
         $timestamp = date('Y-m-d_His');
         return sprintf('%s_%s', $sequence_padded, $timestamp);
@@ -311,7 +315,7 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *
      * @return int Next sequence number.
      */
-    protected function get_next_sequence() {
+    protected function getNextSequence() {
         $result = $this->db->query_single(
             'SELECT MAX(sequence) as max_seq FROM ' . RISEUP_TABLE_SNAPSHOTS
         );
@@ -323,17 +327,17 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *
      * @return bool True if locked.
      */
-    protected function is_locked() {
-        $lock_file = Riseup_Path_Utils::join($this->get_snapshots_dir(), '.lock');
+    protected function isLocked() {
+        $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
         
-        if (!Riseup_Path_Utils::file_exists($lock_file)) {
+        if (!RiseupPathUtils::fileExists($lock_file)) {
             return false;
         }
 
         // Check if lock is stale (older than 30 minutes)
         $lock_time = filemtime($lock_file);
         if (time() - $lock_time > 1800) {
-            Riseup_Path_Utils::delete_file($lock_file);
+            RiseupPathUtils::deleteFile($lock_file);
             $this->log(RISEUP_LOG_LEVEL_WARN, 'Removed stale lock file', array('age_minutes' => round((time() - $lock_time) / 60)));
             return false;
         }
@@ -346,18 +350,18 @@ abstract class Riseup_Snapshot_Provider_Interface {
      *
      * @return bool True if lock acquired.
      */
-    protected function acquire_lock() {
-        if ($this->is_locked()) {
+    protected function acquireLock() {
+        if ($this->isLocked()) {
             return false;
         }
 
         // Ensure directory exists first
-        if (!$this->ensure_snapshots_dir()) {
+        if (!$this->ensureSnapshotsDir()) {
             $this->log(RISEUP_LOG_LEVEL_ERROR, 'Cannot acquire lock - directory creation failed');
             return false;
         }
 
-        $lock_file = Riseup_Path_Utils::join($this->get_snapshots_dir(), '.lock');
+        $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
         $lock_data = json_encode(array(
             'locked_at' => date('c'),
             'locked_by' => $this->provider_id,
@@ -382,11 +386,11 @@ abstract class Riseup_Snapshot_Provider_Interface {
     /**
      * Release the snapshot lock.
      */
-    protected function release_lock() {
-        $lock_file = Riseup_Path_Utils::join($this->get_snapshots_dir(), '.lock');
+    protected function releaseLock() {
+        $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
         
-        if (Riseup_Path_Utils::file_exists($lock_file)) {
-            Riseup_Path_Utils::delete_file($lock_file);
+        if (RiseupPathUtils::fileExists($lock_file)) {
+            RiseupPathUtils::deleteFile($lock_file);
             $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Lock released');
         }
     }
@@ -394,13 +398,13 @@ abstract class Riseup_Snapshot_Provider_Interface {
     /**
      * Format bytes to human-readable string.
      *
-     * Delegates to Riseup_Path_Utils for consistency.
+     * Delegates to RiseupPathUtils for consistency.
      *
      * @param int $bytes    Bytes value.
      * @param int $decimals Number of decimal places.
      * @return string Formatted string (e.g., "15.7 MB").
      */
-    protected function format_bytes($bytes, $decimals = 1) {
-        return Riseup_Path_Utils::format_bytes($bytes, $decimals);
+    protected function formatBytes($bytes, $decimals = 1) {
+        return RiseupPathUtils::formatBytes($bytes, $decimals);
     }
 }

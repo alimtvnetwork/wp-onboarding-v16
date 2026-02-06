@@ -625,8 +625,22 @@ if (!defined('RISEUP_ERR_SNAPSHOT_TOO_LARGE')) {
 if (!defined('RISEUP_ERR_RESTORE_FAILED')) {
     define('RISEUP_ERR_RESTORE_FAILED', 'RESTORE_FAILED');
 }
+if (!defined('RISEUP_ERR_RESTORE_NO_CONFIRM')) {
+    define('RISEUP_ERR_RESTORE_NO_CONFIRM', 'RESTORE_NO_CONFIRM');
+}
 if (!defined('RISEUP_ERR_PROVIDER_NOT_AVAILABLE')) {
     define('RISEUP_ERR_PROVIDER_NOT_AVAILABLE', 'PROVIDER_NOT_AVAILABLE');
+}
+
+// Snapshot trigger sources
+if (!defined('RISEUP_SNAPSHOT_TRIGGER_MANUAL')) {
+    define('RISEUP_SNAPSHOT_TRIGGER_MANUAL', 'manual');
+}
+if (!defined('RISEUP_SNAPSHOT_TRIGGER_CRON')) {
+    define('RISEUP_SNAPSHOT_TRIGGER_CRON', 'cron');
+}
+if (!defined('RISEUP_SNAPSHOT_TRIGGER_API')) {
+    define('RISEUP_SNAPSHOT_TRIGGER_API', 'api');
 }
 
 // WordPress options key for snapshot settings

@@ -4,6 +4,8 @@
  *
  * Integrates with UpdraftPlus plugin for database backups.
  *
+ * PHP class naming follows PascalCase convention without underscores.
+ *
  * @package RiseupAsiaUploader
  * @since   1.9.0
  */
@@ -19,8 +21,10 @@ require_once dirname(__FILE__) . '/class-snapshot-provider-interface.php';
  * 
  * Leverages UpdraftPlus's backup functionality for database snapshots.
  * Only available when UpdraftPlus plugin is installed and active.
+ *
+ * PHP class naming follows PascalCase convention without underscores.
  */
-class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interface {
+class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
 
     /**
      * Provider ID.
@@ -46,8 +50,8 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger $logger Logger instance.
-     * @param Riseup_Database    $db     Database instance.
+     * @param RiseupFileLogger $logger Logger instance.
+     * @param RiseupDatabase   $db     Database instance.
      */
     public function __construct($logger, $db) {
         parent::__construct($logger, $db);
@@ -64,7 +68,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      *
      * @return bool True if UpdraftPlus is installed and active.
      */
-    public function is_available() {
+    public function isAvailable() {
         return class_exists('UpdraftPlus') || isset($GLOBALS['updraftplus']);
     }
 
@@ -73,7 +77,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      *
      * @return array Capabilities array.
      */
-    public function get_capabilities() {
+    public function getCapabilities() {
         // Check if premium version
         $is_premium = defined('UPDRAFTPLUS_VERSION') && 
                       strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
@@ -95,8 +99,8 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      * @param array $options Snapshot options.
      * @return array Snapshot result.
      */
-    public function create_snapshot($options) {
-        if (!$this->is_available()) {
+    public function createSnapshot($options) {
+        if (!$this->isAvailable()) {
             return array(
                 'success' => false,
                 'error' => 'UpdraftPlus is not available',
@@ -135,7 +139,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      * @param array $options     Restore options.
      * @return array Restore result.
      */
-    public function restore_snapshot($snapshot_id, $options) {
+    public function restoreSnapshot($snapshot_id, $options) {
         // TODO: Implement UpdraftPlus restore
         return array(
             'success' => false,
@@ -149,7 +153,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      * @param int $snapshot_id Snapshot ID.
      * @return array Delete result.
      */
-    public function delete_snapshot($snapshot_id) {
+    public function deleteSnapshot($snapshot_id) {
         // TODO: Implement UpdraftPlus delete
         return array(
             'success' => false,
@@ -163,7 +167,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      * @param int $snapshot_id Snapshot ID.
      * @return array Export result.
      */
-    public function export_snapshot($snapshot_id) {
+    public function exportSnapshot($snapshot_id) {
         // TODO: Implement UpdraftPlus export
         return array(
             'success' => false,
@@ -177,7 +181,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      * @param string $filepath Path to file.
      * @return array Import result.
      */
-    public function import_snapshot($filepath) {
+    public function importSnapshot($filepath) {
         // TODO: Implement UpdraftPlus import
         return array(
             'success' => false,
@@ -191,7 +195,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      * @param int $snapshot_id Snapshot ID.
      * @return array|null Snapshot or null.
      */
-    public function get_snapshot($snapshot_id) {
+    public function getSnapshot($snapshot_id) {
         return $this->db->query_single(
             'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE id = ? AND provider = ?',
             array($snapshot_id, $this->provider_id)
@@ -205,7 +209,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      * @param int $offset Offset.
      * @return array List result.
      */
-    public function list_snapshots($limit = 50, $offset = 0) {
+    public function listSnapshots($limit = 50, $offset = 0) {
         $snapshots = $this->db->query_all(
             'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
@@ -227,7 +231,7 @@ class Riseup_Snapshot_Provider_Updraft extends Riseup_Snapshot_Provider_Interfac
      *
      * @return array Tables list.
      */
-    public function get_available_tables() {
+    public function getAvailableTables() {
         global $wpdb;
         $tables = array();
         $all_tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);

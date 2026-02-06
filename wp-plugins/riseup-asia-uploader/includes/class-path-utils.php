@@ -5,6 +5,8 @@
  * Centralized path handling with validation, creation, and security.
  * All path operations in the plugin should go through this class.
  *
+ * PHP class naming follows PascalCase convention without underscores.
+ *
  * @package RiseupAsiaUploader
  * @since   1.9.0
  */
@@ -15,24 +17,26 @@ if (!defined('ABSPATH')) {
 
 /**
  * Path utility class for safe path operations.
+ *
+ * PHP class naming follows PascalCase convention without underscores.
  */
-class Riseup_Path_Utils {
+class RiseupPathUtils {
 
     /**
      * Logger instance (lazy loaded).
      *
-     * @var Riseup_File_Logger|null
+     * @var RiseupFileLogger|null
      */
     private static $logger = null;
 
     /**
      * Get logger instance.
      *
-     * @return Riseup_File_Logger
+     * @return RiseupFileLogger
      */
-    private static function get_logger() {
+    private static function getLogger() {
         if (self::$logger === null) {
-            self::$logger = Riseup_File_Logger::get_instance();
+            self::$logger = RiseupFileLogger::getInstance();
         }
         return self::$logger;
     }
@@ -74,7 +78,7 @@ class Riseup_Path_Utils {
      *
      * @return string Base path (wp-content/uploads/riseup-asia-uploader).
      */
-    public static function get_base_dir() {
+    public static function getBaseDir() {
         $upload_dir = wp_upload_dir();
         return self::join($upload_dir['basedir'], RISEUP_UPLOADS_SUBDIR);
     }
@@ -86,14 +90,14 @@ class Riseup_Path_Utils {
      * @param bool   $secure Add .htaccess and index.php for security.
      * @return bool True if directory exists or was created successfully.
      */
-    public static function ensure_dir($path, $secure = false) {
-        $logger = self::get_logger();
+    public static function ensureDir($path, $secure = false) {
+        $logger = self::getLogger();
 
         // Normalize the path
         $path = self::join($path);
 
         if (empty($path)) {
-            $logger->error('[PATH] Empty path provided to ensure_dir');
+            $logger->error('[PATH] Empty path provided to ensureDir');
             return false;
         }
 
@@ -103,7 +107,7 @@ class Riseup_Path_Utils {
 
             // Add security files if requested and missing
             if ($secure) {
-                self::add_security_files($path);
+                self::addSecurityFiles($path);
             }
 
             return true;
@@ -128,7 +132,7 @@ class Riseup_Path_Utils {
 
         // Add security files if requested
         if ($secure) {
-            self::add_security_files($path);
+            self::addSecurityFiles($path);
         }
 
         return true;
@@ -142,8 +146,8 @@ class Riseup_Path_Utils {
      * @param string $path Directory path.
      * @return bool True if files were created successfully.
      */
-    public static function add_security_files($path) {
-        $logger = self::get_logger();
+    public static function addSecurityFiles($path) {
+        $logger = self::getLogger();
         $success = true;
 
         // .htaccess
@@ -180,23 +184,23 @@ class Riseup_Path_Utils {
     /**
      * Join path segments and ensure the directory exists.
      *
-     * Combines join() and ensure_dir() in one convenient call.
+     * Combines join() and ensureDir() in one convenient call.
      *
      * @param bool   $secure    Add security files (.htaccess, index.php).
      * @param string ...$segments Path segments to join.
      * @return string|false Full path if successful, false on failure.
      */
-    public static function ensure_path($secure, ...$segments) {
+    public static function ensurePath($secure, ...$segments) {
         $path = self::join(...$segments);
 
         if (empty($path)) {
-            self::get_logger()->error('[PATH] Empty path from segments', array(
+            self::getLogger()->error('[PATH] Empty path from segments', array(
                 'segments' => $segments,
             ));
             return false;
         }
 
-        if (!self::ensure_dir($path, $secure)) {
+        if (!self::ensureDir($path, $secure)) {
             return false;
         }
 
@@ -213,8 +217,8 @@ class Riseup_Path_Utils {
      * @param string $base_path Allowed base path.
      * @return bool True if path is safe.
      */
-    public static function is_safe_path($path, $base_path) {
-        $logger = self::get_logger();
+    public static function isSafePath($path, $base_path) {
+        $logger = self::getLogger();
 
         // Resolve real paths
         $real_base = realpath($base_path);
@@ -266,7 +270,7 @@ class Riseup_Path_Utils {
      * @param string $path File path.
      * @return bool True if file exists.
      */
-    public static function file_exists($path) {
+    public static function fileExists($path) {
         $path = self::join($path);
         return !empty($path) && is_file($path);
     }
@@ -277,7 +281,7 @@ class Riseup_Path_Utils {
      * @param string $path Directory path.
      * @return bool True if directory exists.
      */
-    public static function dir_exists($path) {
+    public static function dirExists($path) {
         $path = self::join($path);
         return !empty($path) && is_dir($path);
     }
@@ -288,7 +292,7 @@ class Riseup_Path_Utils {
      * @param string $path Path to check.
      * @return bool True if writable.
      */
-    public static function is_writable($path) {
+    public static function isWritable($path) {
         $path = self::join($path);
         return !empty($path) && is_writable($path);
     }
@@ -299,8 +303,8 @@ class Riseup_Path_Utils {
      * @param string $full_path Full path.
      * @return string Relative path.
      */
-    public static function get_relative_path($full_path) {
-        $base = self::get_base_dir();
+    public static function getRelativePath($full_path) {
+        $base = self::getBaseDir();
         $full_path = str_replace('\\', '/', $full_path);
         $base = str_replace('\\', '/', $base);
 
@@ -317,12 +321,12 @@ class Riseup_Path_Utils {
      * @param string $path File path.
      * @return bool True if deleted or didn't exist.
      */
-    public static function delete_file($path) {
-        $logger = self::get_logger();
+    public static function deleteFile($path) {
+        $logger = self::getLogger();
         $path = self::join($path);
 
         if (empty($path)) {
-            $logger->warn('[PATH] Empty path provided to delete_file');
+            $logger->warn('[PATH] Empty path provided to deleteFile');
             return false;
         }
 
@@ -355,12 +359,12 @@ class Riseup_Path_Utils {
      * @param string $path Directory path.
      * @return bool True if deleted or didn't exist.
      */
-    public static function delete_dir($path) {
-        $logger = self::get_logger();
+    public static function deleteDir($path) {
+        $logger = self::getLogger();
         $path = self::join($path);
 
         if (empty($path)) {
-            $logger->warn('[PATH] Empty path provided to delete_dir');
+            $logger->warn('[PATH] Empty path provided to deleteDir');
             return false;
         }
 
@@ -379,11 +383,11 @@ class Riseup_Path_Utils {
         foreach ($files as $file) {
             $file_path = self::join($path, $file);
             if (is_dir($file_path)) {
-                if (!self::delete_dir($file_path)) {
+                if (!self::deleteDir($file_path)) {
                     return false;
                 }
             } else {
-                if (!self::delete_file($file_path)) {
+                if (!self::deleteFile($file_path)) {
                     return false;
                 }
             }
@@ -408,7 +412,7 @@ class Riseup_Path_Utils {
      * @param string $path Path to check.
      * @return int|false Free space in bytes, or false on error.
      */
-    public static function get_free_space($path) {
+    public static function getFreeSpace($path) {
         $path = self::join($path);
 
         // Find existing directory in path
@@ -430,7 +434,7 @@ class Riseup_Path_Utils {
      * @param int $decimals Decimal places.
      * @return string Formatted string (e.g., "15.7 MB").
      */
-    public static function format_bytes($bytes, $decimals = 1) {
+    public static function formatBytes($bytes, $decimals = 1) {
         if ($bytes === 0) {
             return '0 B';
         }
