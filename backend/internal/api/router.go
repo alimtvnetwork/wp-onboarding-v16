@@ -32,15 +32,17 @@ type ServerConfig struct {
 
 // ServiceRegistry holds all services for handlers
 type ServiceRegistry struct {
-	Site         handlers.SiteServiceInterface
-	Plugin       handlers.PluginServiceInterface
-	Sync         handlers.SyncServiceInterface
-	Git          handlers.GitServiceInterface
-	Watcher      handlers.WatcherServiceInterface
-	Publish      handlers.PublishServiceInterface
-	Backup       handlers.BackupServiceInterface
-	Session      handlers.SessionServiceInterface
-	ErrorHistory handlers.ErrorHistoryServiceInterface
+	Site           handlers.SiteServiceInterface
+	Plugin         handlers.PluginServiceInterface
+	Sync           handlers.SyncServiceInterface
+	Git            handlers.GitServiceInterface
+	Watcher        handlers.WatcherServiceInterface
+	Publish        handlers.PublishServiceInterface
+	Backup         handlers.BackupServiceInterface
+	Session        handlers.SessionServiceInterface
+	ErrorHistory   handlers.ErrorHistoryServiceInterface
+	PublishHistory handlers.PublishHistoryServiceInterface
+	SiteHealth     handlers.SiteHealthServiceInterface
 }
 
 // Server represents the HTTP server
@@ -54,15 +56,17 @@ func NewServer(cfg ServerConfig) *Server {
 	// Wire up the handlers service registry from the config
 	if cfg.Services != nil {
 		handlers.Services = &handlers.ServiceRegistry{
-			PluginService:       cfg.Services.Plugin,
-			SiteService:         cfg.Services.Site,
-			SyncService:         cfg.Services.Sync,
-			GitService:          cfg.Services.Git,
-			WatcherService:      cfg.Services.Watcher,
-			PublishService:      cfg.Services.Publish,
-			BackupService:       cfg.Services.Backup,
-			SessionService:      cfg.Services.Session,
-			ErrorHistoryService: cfg.Services.ErrorHistory,
+			PluginService:         cfg.Services.Plugin,
+			SiteService:           cfg.Services.Site,
+			SyncService:           cfg.Services.Sync,
+			GitService:            cfg.Services.Git,
+			WatcherService:        cfg.Services.Watcher,
+			PublishService:        cfg.Services.Publish,
+			BackupService:         cfg.Services.Backup,
+			SessionService:       cfg.Services.Session,
+			ErrorHistoryService:   cfg.Services.ErrorHistory,
+			PublishHistoryService: cfg.Services.PublishHistory,
+			SiteHealthService:    cfg.Services.SiteHealth,
 		}
 	}
 

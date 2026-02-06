@@ -23,9 +23,11 @@ import (
 	"wp-plugin-publish/internal/services/errorhistory"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
+	"wp-plugin-publish/internal/services/publishhistory"
 	"wp-plugin-publish/internal/services/requestsession"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/site"
+	"wp-plugin-publish/internal/services/sitehealth"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
 	"wp-plugin-publish/internal/version"
@@ -57,14 +59,16 @@ func (e errorOnlyWriter) Write(p []byte) (int, error) {
 
 // Services holds all application services
 type Services struct {
-	Site         *site.Service
-	Plugin       *plugin.Service
-	Watcher      *watcher.Service
-	Sync         sync.Service
-	Publish      *publish.Service
-	Backup       *backup.Service
-	Session      *session.Service
-	ErrorHistory *errorhistory.Service
+	Site           *site.Service
+	Plugin         *plugin.Service
+	Watcher        *watcher.Service
+	Sync           sync.Service
+	Publish        *publish.Service
+	Backup         *backup.Service
+	Session        *session.Service
+	ErrorHistory   *errorhistory.Service
+	PublishHistory *publishhistory.Service
+	SiteHealth     *sitehealth.Service
 }
 
 func main() {
@@ -210,20 +214,24 @@ func main() {
 		services.Backup,
 		services.Session,
 		services.ErrorHistory,
+		services.PublishHistory,
+		services.SiteHealth,
 	)
 	server := api.NewServer(api.ServerConfig{
 		Port:      cfg.Server.Port,
 		StaticDir: cfg.Server.StaticDir,
 		Services: &api.ServiceRegistry{
-			Site:         serviceRegistry.SiteService,
-			Plugin:       serviceRegistry.PluginService,
-			Sync:         serviceRegistry.SyncService,
-			Git:          serviceRegistry.GitService,
-			Watcher:      serviceRegistry.WatcherService,
-			Publish:      serviceRegistry.PublishService,
-			Backup:       serviceRegistry.BackupService,
-			Session:      serviceRegistry.SessionService,
-			ErrorHistory: serviceRegistry.ErrorHistoryService,
+			Site:           serviceRegistry.SiteService,
+			Plugin:         serviceRegistry.PluginService,
+			Sync:           serviceRegistry.SyncService,
+			Git:            serviceRegistry.GitService,
+			Watcher:        serviceRegistry.WatcherService,
+			Publish:        serviceRegistry.PublishService,
+			Backup:         serviceRegistry.BackupService,
+			Session:        serviceRegistry.SessionService,
+			ErrorHistory:   serviceRegistry.ErrorHistoryService,
+			PublishHistory: serviceRegistry.PublishHistoryService,
+			SiteHealth:     serviceRegistry.SiteHealthService,
 		},
 		WSHub:                  wsHub,
 		Logger:                 log,
@@ -344,17 +352,24 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		WSHub:           wsHub,
 	})
 
+	// Initialize publish history service
+	publishHistoryService := publishhistory.New(db, log)
+
+	// Initialize site health service
+	siteHealthService := sitehealth.NewService(db, log)
+
 	publishService := publish.New(publish.Config{
 		DB:                    db,
 		Logger:                log,
 		PluginService:         pluginService,
 		BackupService:         backupService,
 		SyncService:           syncService,
-		SitePasswordDecryptor: siteService, // Site service implements SitePasswordDecryptor
+		SitePasswordDecryptor: siteService,
 		WPClientFactory:       wpClientFactory,
 		TempDir:               cfg.TempDir,
 		WSHub:                 wsHub,
 		SessionService:        sessionService,
+		HistoryService:        publishHistoryService,
 	})
 
 	watcherService := watcher.New(watcher.Config{
@@ -371,13 +386,15 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 	})
 
 	return &Services{
-		Site:         siteService,
-		Plugin:       pluginService,
-		Watcher:      watcherService,
-		Sync:         syncService,
-		Publish:      publishService,
-		Backup:       backupService,
-		Session:      sessionService,
-		ErrorHistory: errorHistoryService,
+		Site:           siteService,
+		Plugin:         pluginService,
+		Watcher:        watcherService,
+		Sync:           syncService,
+		Publish:        publishService,
+		Backup:         backupService,
+		Session:        sessionService,
+		ErrorHistory:   errorHistoryService,
+		PublishHistory: publishHistoryService,
+		SiteHealth:     siteHealthService,
 	}
 }
