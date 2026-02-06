@@ -53,16 +53,20 @@ type PluginMapping struct {
 
 // FileChange represents a detected file modification
 type FileChange struct {
-	ID              int64     `json:"id"`
-	PluginID        int64     `json:"pluginId"`
-	FilePath        string    `json:"path"`
-	ChangeType      string    `json:"status"` // added, modified, deleted, renamed
-	LocalHash       string    `json:"localHash,omitempty"`
-	RemoteHash      string    `json:"remoteHash,omitempty"`
-	LocalModifiedAt *time.Time `json:"localModifiedAt,omitempty"`
-	DetectedAt      time.Time `json:"detectedAt"`
-	SyncedAt        *time.Time `json:"syncedAt,omitempty"`
-	Stats           *FileStats `json:"stats,omitempty"`
+	ID               int64      `json:"id"`
+	PluginID         int64      `json:"pluginId"`
+	FilePath         string     `json:"path"`
+	ChangeType       string     `json:"status"`    // added, modified, deleted, renamed
+	LocalHash        string     `json:"localHash,omitempty"`
+	RemoteHash       string     `json:"remoteHash,omitempty"`
+	LocalModifiedAt  *time.Time `json:"localModifiedAt,omitempty"`
+	RemoteModifiedAt *time.Time `json:"remoteModifiedAt,omitempty"`
+	LocalSize        int64      `json:"localSize,omitempty"`
+	RemoteSize       int64      `json:"remoteSize,omitempty"`
+	Direction        string     `json:"direction,omitempty"` // local_newer, remote_newer, local_only, remote_only
+	DetectedAt       time.Time  `json:"detectedAt"`
+	SyncedAt         *time.Time `json:"syncedAt,omitempty"`
+	Stats            *FileStats `json:"stats,omitempty"`
 }
 
 // FileStats holds diff statistics for a file
