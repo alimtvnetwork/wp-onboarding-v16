@@ -707,4 +707,42 @@ Created `templates/admin-agents.php`:
 
 ---
 
+## Phase 40: Site Health Monitor ✅ COMPLETE
+
+**Priority: MEDIUM**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
+
+### 40.1 Database Schema ✅
+- [x] Migration v9: `SiteHealthChecks` table with indexes on SiteId, CreatedAt, Status
+
+### 40.2 Backend Service ✅
+- [x] Created `backend/internal/services/sitehealth/service.go`
+- [x] `CheckSite(siteID)` - Pings site's Riseup Asia Uploader status endpoint, measures response time
+- [x] `CheckAllSites()` - Runs health checks on all registered sites
+- [x] `GetHistory(siteID, limit)` - Returns check history with join to Sites table
+- [x] `GetSummaries()` - Aggregated per-site health data (uptime %, avg response, last error)
+- [x] `GetStats()` - Overall health statistics (healthy/degraded/down/unknown counts)
+- [x] `ClearHistory(days)` - Purge old health check records
+
+### 40.3 API Endpoints ✅
+- [x] `POST /api/v1/site-health/check-all` - Check all sites
+- [x] `POST /api/v1/site-health/sites/{id}/check` - Check single site
+- [x] `GET /api/v1/site-health/summaries` - Per-site summaries
+- [x] `GET /api/v1/site-health/stats` - Overall stats
+- [x] `GET /api/v1/site-health/history` - Check history
+- [x] `DELETE /api/v1/site-health/history` - Clear old records
+
+### 40.4 Frontend Dashboard ✅
+- [x] Created `src/pages/SiteHealth.tsx` with stats cards and site status list
+- [x] Stats: Healthy, Degraded, Down counts + Avg Response time
+- [x] Per-site cards with status icon, response time, uptime %, last check time
+- [x] "Check All Sites" and per-site "Check" buttons
+- [x] Added route `/site-health` and nav item with HeartPulse icon
+
+### 40.5 API Client ✅
+- [x] Added health monitoring methods to `src/lib/api.ts`
+
+---
+
 *Last Updated: 2026-02-06*

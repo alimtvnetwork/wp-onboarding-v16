@@ -294,6 +294,28 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_publishhistory_created ON PublishHistory(CreatedAt DESC);
 		`,
 	},
+	},
+	{
+		Version:     9,
+		Description: "SiteHealthChecks table for health monitoring",
+		SQL: `
+			CREATE TABLE IF NOT EXISTS SiteHealthChecks (
+				Id INTEGER PRIMARY KEY AUTOINCREMENT,
+				SiteId INTEGER NOT NULL,
+				Status TEXT NOT NULL DEFAULT 'unknown',
+				ResponseMs INTEGER DEFAULT 0,
+				StatusCode INTEGER DEFAULT 0,
+				ErrorMessage TEXT DEFAULT '',
+				UploaderOk INTEGER DEFAULT 0,
+				CreatedAt TEXT DEFAULT (datetime('now')),
+				FOREIGN KEY (SiteId) REFERENCES Sites(Id) ON DELETE CASCADE
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_sitehealthchecks_site ON SiteHealthChecks(SiteId);
+			CREATE INDEX IF NOT EXISTS idx_sitehealthchecks_created ON SiteHealthChecks(CreatedAt DESC);
+			CREATE INDEX IF NOT EXISTS idx_sitehealthchecks_status ON SiteHealthChecks(Status);
+		`,
+	},
 }
 
 // Migrate runs all pending migrations

@@ -14,12 +14,14 @@ import {
   History,
   Code2,
   BarChart3,
+  HeartPulse,
 } from "lucide-react";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/sites", label: "Sites", icon: Globe },
   { to: "/plugins", label: "Plugins", icon: Package },
+  { to: "/site-health", label: "Site Health", icon: HeartPulse },
   { to: "/publish-history", label: "Publish History", icon: BarChart3 },
   { to: "/tests", label: "E2E Tests", icon: FlaskConical },
   { to: "/logs", label: "Logs", icon: ScrollText },
