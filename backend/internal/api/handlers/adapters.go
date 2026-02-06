@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/backup"
@@ -148,6 +149,10 @@ func (a *SiteServiceAdapter) DeleteRemoteSnapshot(ctx context.Context, siteID, s
 
 func (a *SiteServiceAdapter) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]interface{}) (interface{}, error) {
 	return a.Service.RestoreRemoteSnapshot(ctx, siteID, snapshotID, opts)
+}
+
+func (a *SiteServiceAdapter) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, error) {
+	return a.Service.ExportRemoteSnapshot(ctx, siteID, snapshotID)
 }
 
 func (a *SiteServiceAdapter) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (interface{}, error) {

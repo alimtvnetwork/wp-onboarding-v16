@@ -74,6 +74,7 @@ type SiteServiceInterface interface {
 	CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
 	DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) error
 	RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]interface{}) (interface{}, error)
+	ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, error)
 	GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (interface{}, error)
 	UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]interface{}) (interface{}, error)
 	GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (interface{}, error)

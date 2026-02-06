@@ -273,6 +273,31 @@ func (c *Client) UpdateSnapshotSettings(settings map[string]interface{}) (*Snaps
 	return &result, nil
 }
 
+// ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
+// The caller is responsible for closing the response body.
+func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
+	endpoint := riseupSnapshotEndpoint(fmt.Sprintf("/%d/export", snapshotID))
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to export snapshot")
+	}
+
+	if resp.StatusCode != 200 {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, &APIError{
+			Operation:    "export snapshot",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+
+	return resp, nil
+}
+
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 	endpoint := riseupSnapshotEndpoint("/providers")

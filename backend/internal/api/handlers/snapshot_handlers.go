@@ -3,6 +3,8 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -221,6 +223,51 @@ func GetRemoteSnapshotProviders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondSuccess(w, providers)
+}
+
+// ExportRemoteSnapshot streams a snapshot ZIP file from a remote WordPress site
+func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	snapshotID, err := getSnapshotIDParam(r)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid snapshot ID")
+		return
+	}
+
+	resp, err := Services.SiteService.ExportRemoteSnapshot(r.Context(), siteID, snapshotID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3028", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	// Forward content type and disposition headers
+	if ct := resp.Header.Get("Content-Type"); ct != "" {
+		w.Header().Set("Content-Type", ct)
+	} else {
+		w.Header().Set("Content-Type", "application/zip")
+	}
+	if cd := resp.Header.Get("Content-Disposition"); cd != "" {
+		w.Header().Set("Content-Disposition", cd)
+	} else {
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=snapshot-%d.zip", snapshotID))
+	}
+	if cl := resp.Header.Get("Content-Length"); cl != "" {
+		w.Header().Set("Content-Length", cl)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	io.Copy(w, resp.Body)
 }
 
 // getSnapshotIDParam extracts the snapshot ID from URL parameters

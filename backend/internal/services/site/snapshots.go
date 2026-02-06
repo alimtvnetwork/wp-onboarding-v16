@@ -3,6 +3,7 @@ package site
 
 import (
 	"context"
+	"net/http"
 
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
@@ -145,6 +146,25 @@ func (s *Service) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) 
 	}
 
 	return providers, nil
+}
+
+// ExportRemoteSnapshot streams a snapshot ZIP from a remote site.
+// Returns the raw HTTP response; caller must close the body.
+func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, error) {
+	client, err := s.createWPClient(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.ExportSnapshot(snapshotID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to export snapshot").
+			WithContext("siteId", siteID).
+			WithContext("snapshotId", snapshotID)
+	}
+
+	s.log.Info("Remote snapshot export started", "siteId", siteID, "snapshotId", snapshotID)
+	return resp, nil
 }
 
 // createWPClient is a helper that creates a WordPress client for a site.
