@@ -618,8 +618,8 @@ export function GlobalErrorModal() {
                 </div>
               </TabsContent>
 
-              {/* Backend Logs & Stack Tab */}
-              <TabsContent value="backend" className="m-0 space-y-4">
+              {/* Backend Logs & Stack Tab - Auto-fetch error.log.txt on focus */}
+              <TabsContent value="backend" className="m-0 space-y-4" onFocus={fetchErrorLog} onMouseEnter={fetchErrorLog}>
                 {/* Site URL if available */}
                 {selectedError.siteUrl && (
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
@@ -637,12 +637,107 @@ export function GlobalErrorModal() {
                   </div>
                 )}
 
+                {/* Backend Error Log (error.log.txt) - Auto-fetched */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      <Terminal className="h-4 w-4" />
+                      Backend Error Log (error.log.txt)
+                    </h4>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setErrorLogFetched(false);
+                          fetchErrorLog();
+                        }}
+                        disabled={errorLogLoading}
+                      >
+                        {errorLogLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
+                      {errorLogContent && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copySection("Backend error log", errorLogContent)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              const blob = new Blob([errorLogContent], { type: "text/plain" });
+                              const url = window.URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = "error.log.txt";
+                              link.click();
+                              window.URL.revokeObjectURL(url);
+                              toast.success("Downloaded error.log.txt");
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {errorLogLoading && !errorLogContent && (
+                    <div className="flex items-center justify-center py-6 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                      <span className="text-sm">Loading error log...</span>
+                    </div>
+                  )}
+
+                  {errorLogError && !errorLogContent && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <AlertCircle className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">{errorLogError}</p>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => {
+                          setErrorLogFetched(false);
+                          setErrorLogError(null);
+                          fetchErrorLog();
+                        }}
+                        className="mt-1"
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  )}
+
+                  {errorLogContent && (
+                    <ScrollArea className="h-48 rounded-md border bg-muted">
+                      <pre className="text-xs p-3 font-mono whitespace-pre-wrap">
+                        {errorLogContent}
+                      </pre>
+                    </ScrollArea>
+                  )}
+
+                  {!errorLogLoading && !errorLogError && !errorLogContent && !errorLogFetched && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Terminal className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">Hover or focus to load backend error log</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Backend Execution Logs */}
                 {selectedError.backendLogs && selectedError.backendLogs.length > 0 && (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                        <Terminal className="h-4 w-4" />
+                        <Activity className="h-4 w-4" />
                         Execution Logs ({selectedError.backendLogs.length} entries)
                       </h4>
                       <Button
@@ -772,7 +867,7 @@ export function GlobalErrorModal() {
                   </div>
                 )}
 
-                {!selectedError.backendLogs?.length && !selectedError.backendStackTrace && (
+                {!selectedError.backendLogs?.length && !selectedError.backendStackTrace && !errorLogContent && !errorLogLoading && errorLogFetched && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Server className="h-8 w-8 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">No backend logs captured</p>

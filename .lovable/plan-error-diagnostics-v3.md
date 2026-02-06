@@ -139,23 +139,26 @@ Show count of errors in session (in header/status bar):
 
 ---
 
-## Phase 4: Backend Tab Auto-Fetch
+## Phase 4: Backend Tab Auto-Fetch ✅ COMPLETE
 
 **Priority: MEDIUM**
+**Completed: 2026-02-06**
 
-### 4.1 Auto-fetch on Tab Focus
+### 4.1 Auto-fetch on Tab Focus ✅
 
-In `GlobalErrorModal.tsx`, the Backend tab should:
-1. Auto-fetch `error.log.txt` content on tab focus
-2. Show loading state
-3. Cache content for duration of modal open
-4. Add refresh button
+In `GlobalErrorModal.tsx`, the Backend tab now:
+1. Auto-fetches `error.log.txt` content on tab focus/hover
+2. Shows loading state with spinner
+3. Caches content for duration of modal open
+4. Has refresh, copy, and download buttons
 
-### 4.2 Backend/Frontend Sub-Tabs in Overview
+### 4.2 Backend Tab Content ✅
 
-Split Overview tab into:
-- **Frontend** - Current content (parsed frames, invocation chain)
-- **Backend** - Backend logs, Go stack trace, session info
+The Backend tab displays (in order):
+- **Target Site URL** - If available from error context
+- **Backend Error Log (error.log.txt)** - Auto-fetched, with refresh/copy/download
+- **Execution Logs** - Backend logs captured during operations
+- **Go Stack Trace** - Backend stack trace if available
 
 ---
 
