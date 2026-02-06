@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ApiError } from '@/lib/api';
+import { getClickPathForError, ClickEvent } from '@/hooks/useClickTracker';
 
 /**
  * Parsed stack frame with file, line, column info
@@ -91,6 +92,9 @@ export interface CapturedError {
   phpStackFrames?: PHPStackFrame[];
   errorFile?: string;
   errorLine?: number;
+  // UI click path tracking (Phase 5)
+  uiClickPath?: ClickEvent[];
+  uiClickPathString?: string;
 }
 
 interface ErrorStore {
@@ -324,6 +328,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     const triggerComponent = typeof meta?.context?.triggerComponent === 'string' ? meta.context.triggerComponent : undefined;
     const triggerAction = typeof meta?.context?.triggerAction === 'string' ? meta.context.triggerAction : undefined;
     
+    // Capture UI click path at the moment of error
+    const { clickPath, clickPathString } = getClickPathForError();
+    
     const captured: CapturedError = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       code: error.code || 'E9999',
@@ -360,6 +367,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       phpStackFrames: meta?.phpStackFrames,
       errorFile: meta?.errorFile,
       errorLine: meta?.errorLine,
+      // UI click path tracking
+      uiClickPath: clickPath.length > 0 ? clickPath : undefined,
+      uiClickPathString: clickPathString || undefined,
     };
     
     set((state) => {
@@ -411,6 +421,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       return Object.keys(base).length ? base : undefined;
     })();
 
+    // Capture UI click path at the moment of error
+    const { clickPath, clickPathString } = getClickPathForError();
+    
     const captured: CapturedError = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       code: 'E9003',
@@ -442,6 +455,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       phpStackFrames: 'phpStackFrames' in (context || {}) ? (context as { phpStackFrames?: PHPStackFrame[] }).phpStackFrames : undefined,
       errorFile: 'errorFile' in (context || {}) ? (context as { errorFile?: string }).errorFile : undefined,
       errorLine: 'errorLine' in (context || {}) ? (context as { errorLine?: number }).errorLine : undefined,
+      // UI click path tracking
+      uiClickPath: clickPath.length > 0 ? clickPath : undefined,
+      uiClickPathString: clickPathString || undefined,
     };
     
     set((state) => {

@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText, ChevronDown, FileDown, RefreshCw, Loader2, AlertTriangle } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText, ChevronDown, FileDown, RefreshCw, Loader2, AlertTriangle, MousePointerClick } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -234,6 +234,62 @@ export function GlobalErrorModal() {
                             )}>
                               {call}
                             </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* UI Click Path - User interactions leading to error */}
+                {selectedError.uiClickPath && selectedError.uiClickPath.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <MousePointerClick className="h-4 w-4" />
+                        User Interaction Path ({selectedError.uiClickPath.length} steps)
+                      </h4>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copySection("Click path", selectedError.uiClickPathString || '')}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="bg-muted p-3 rounded-md">
+                      <div className="space-y-1">
+                        {selectedError.uiClickPath.slice(-10).map((click, index) => (
+                          <div 
+                            key={click.id}
+                            className="flex items-start gap-2 text-xs"
+                          >
+                            <span className="text-muted-foreground font-mono w-4 text-right shrink-0">
+                              {index + 1}.
+                            </span>
+                            <div className="flex-1">
+                              <span className={cn(
+                                "font-medium",
+                                index === selectedError.uiClickPath!.length - 1 && "text-primary"
+                              )}>
+                                {click.componentName || click.element}
+                              </span>
+                              {click.text && (
+                                <span className="text-muted-foreground ml-1">
+                                  "{click.text.slice(0, 25)}{click.text.length > 25 ? '...' : ''}"
+                                </span>
+                              )}
+                              {click.action !== 'click' && (
+                                <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0">
+                                  {click.action}
+                                </Badge>
+                              )}
+                              {click.route && (
+                                <span className="text-muted-foreground ml-1 font-mono text-[10px]">
+                                  @ {click.route}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
