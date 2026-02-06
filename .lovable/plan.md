@@ -394,4 +394,177 @@ Based on analyzing the codebase, here are additional improvements to consider:
 
 ---
 
-*Last Updated: 2026-02-05*
+## Phase 11: WordPress Plugin Version Tracking ✅ COMPLETE
+
+**Priority: HIGH**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
+
+### 11.1 WordPress Plugin - Version Endpoint ✅
+
+The existing `/plugins` endpoint already returns version info for all plugins.
+No new endpoint needed - existing API is sufficient.
+
+### 11.2 React - Display Versions in Publish Dialog ✅
+
+- [x] Created `SiteVersionBadge` component for inline version display
+- [x] Shows remote version → local version with arrow indicator
+- [x] Displays "Install", "Upgrade", or "Downgrade" badges based on comparison
+- [x] Integrated into Publish Dialog site list
+- [x] Lazy loading with skeleton placeholders
+- [x] Error handling with graceful fallback
+
+**Files Created:**
+- `src/components/publish/SiteVersionBadge.tsx`
+
+**Files Modified:**
+- `src/pages/Plugins.tsx` - Added SiteVersionBadge to publish dialog
+
+---
+
+## Phase 12: Auto-Update with 301 Redirect Support
+
+**Priority: HIGH**
+**Status: PENDING**
+**Estimated: 4 hours**
+
+### 12.1 Database Schema - Update Settings
+
+Add new table for auto-update configuration in WordPress SQLite:
+
+```sql
+CREATE TABLE IF NOT EXISTS update_settings (
+    id INTEGER PRIMARY KEY,
+    master_url TEXT NOT NULL,           -- Original 301 redirect URL
+    resolved_url TEXT,                  -- Cached resolved URL
+    resolved_at TEXT,                   -- When URL was resolved
+    cache_days INTEGER DEFAULT 7,       -- Days to cache resolved URL
+    last_check TEXT,                    -- Last update check timestamp
+    last_error TEXT,                    -- Last error message
+    enabled INTEGER DEFAULT 0           -- Auto-update enabled
+);
+```
+
+### 12.2 WordPress Plugin - Update Resolver Class
+
+- [ ] Create `class-update-resolver.php`
+- [ ] `resolve_url($master_url)` - Resolve 301 redirect to final URL
+- [ ] `get_update_url()` - Get cached or resolve fresh URL
+- [ ] `clear_cache()` - Clear cached URL
+- [ ] `check_for_update()` - Check for updates using resolved URL
+- [ ] `install_update()` - Download and install update
+
+### 12.3 WordPress Plugin - Settings Page Update
+
+Add Auto-Update section:
+- [ ] Master Update URL (text input)
+- [ ] Cached/Resolved URL (read-only display)
+- [ ] Cache Duration (dropdown: 1/7/14/30 days)
+- [ ] [Clear Cache] button
+- [ ] [Check Now] button
+- [ ] Enable Auto-Update (toggle)
+
+### 12.4 WordPress Plugin - Update Hook Integration
+
+- [ ] Hook into `pre_set_site_transient_update_plugins`
+- [ ] Hook into `plugins_api` filter
+
+---
+
+## Phase 13: Multi-Site Orchestration (Master-Agent)
+
+**Priority: MEDIUM**
+**Status: PENDING**
+**Estimated: 6 hours**
+
+### 13.1 Database Schema - Agent Sites Table
+
+```sql
+CREATE TABLE IF NOT EXISTS agent_sites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    username TEXT NOT NULL,
+    app_password_encrypted TEXT NOT NULL,
+    redirect_url TEXT,                  -- Optional 301 redirect URL
+    redirect_resolved TEXT,             -- Cached resolved URL
+    status TEXT DEFAULT 'pending',      -- pending, connected, error
+    last_sync TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS agent_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_site_id INTEGER NOT NULL,
+    action TEXT NOT NULL,               -- enable, disable, update, sync
+    target_plugin TEXT,
+    status TEXT NOT NULL,               -- pending, success, failed
+    details TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (agent_site_id) REFERENCES agent_sites(id)
+);
+```
+
+### 13.2 WordPress Plugin - Agent Manager Class
+
+- [ ] Create `class-agent-manager.php`
+- [ ] `add_agent($url, $username, $password, $redirect_url)` - Onboard agent
+- [ ] `remove_agent($id)` - Remove agent
+- [ ] `list_agents()` - List all agents with status
+- [ ] `test_connection($id)` - Test connection to agent
+- [ ] `execute_action($agent_id, $action, $plugin_slug)` - Execute action on agent
+- [ ] `sync_agent($id)` - Sync status from agent
+- [ ] `push_update($agent_id, $plugin_slug, $zip_data)` - Push update to agent
+
+### 13.3 WordPress Plugin - Agent REST Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/agents` | List all agent sites |
+| POST | `/agents` | Add new agent site |
+| DELETE | `/agents/{id}` | Remove agent site |
+| POST | `/agents/{id}/test` | Test agent connection |
+| POST | `/agents/{id}/sync` | Sync agent status |
+| POST | `/agents/{id}/action` | Execute action on agent |
+
+### 13.4 WordPress Admin - Agent Management Page
+
+- [ ] Add new admin submenu "Agent Sites"
+- [ ] Table listing all agents (name, URL, status, last sync)
+- [ ] Add Agent form (URL, username, app password, redirect URL)
+- [ ] Action buttons (Test, Sync, Remove)
+- [ ] Remote plugin list per agent
+- [ ] Bulk actions (Update All, Enable/Disable)
+
+---
+
+## Phase 14: Enhanced SQLite Logging for Plugin Actions
+
+**Priority: MEDIUM**
+**Status: PENDING**
+**Estimated: 1 hour**
+
+### 14.1 Enhanced Transaction Details
+
+Add more detail to logged transactions:
+- [ ] `plugin_file` - Full plugin file path
+- [ ] `was_active` - Previous state before action
+- [ ] `triggered_by` - Source: 'api', 'dashboard', 'agent_push'
+- [ ] `agent_site_id` - If triggered by master site
+
+---
+
+## Implementation Priority
+
+| Phase | Description | Priority | Est. Hours |
+|-------|-------------|----------|------------|
+| 11 | Version Tracking | HIGH | 2 |
+| 12 | Auto-Update 301 | HIGH | 4 |
+| 14 | Enhanced Logging | MEDIUM | 1 |
+| 13 | Multi-Site Orchestration | MEDIUM | 6 |
+
+**Total: ~13 hours**
+
+---
+
+*Last Updated: 2026-02-06*
