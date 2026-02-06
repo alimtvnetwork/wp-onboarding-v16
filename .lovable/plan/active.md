@@ -16,9 +16,17 @@
 ### Plan Refactoring ✅ COMPLETE
 Break 748-line plan.md into smaller focused files.
 
-### Service Registry Cleanup (TODO - Future)
-**Priority: LOW**
-Refactor `adapters.go` (630+ lines) into per-service adapter files.
+### Service Registry Cleanup ✅ COMPLETE
+Refactored 630-line `adapters.go` into 8 focused files:
+- `adapter_site.go` - Site service adapter
+- `adapter_plugin.go` - Plugin service adapter
+- `adapter_sync.go` - Sync + Watcher adapters
+- `adapter_publish.go` - Publish + Backup adapters
+- `adapter_session.go` - Session + ErrorHistory adapters
+- `adapter_history.go` - PublishHistory + SiteHealth adapters
+- `adapter_helpers.go` - Input conversion helpers
+- `adapter_registry.go` - NewServiceRegistry factory
+- `adapters.go` - Compile-time interface checks only
 
 ---
 
