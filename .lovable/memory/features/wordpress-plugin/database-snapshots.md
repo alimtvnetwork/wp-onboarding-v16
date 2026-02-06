@@ -3,7 +3,7 @@ Updated: 2026-02-06
 
 ## Overview
 
-The Database Snapshot System provides automated MySQL → SQLite backups for WordPress sites. It integrates with WP Reset/Updraft when available, or uses a native SQLite export engine as fallback.
+The Database Snapshot System provides automated MySQL → SQLite backups for WordPress sites. It integrates with WP Reset/Updraft when available, or uses a native SQLite export engine as fallback. Cleanup and retention are handled by a dedicated cleaner class.
 
 ## Key Architecture
 
@@ -33,9 +33,10 @@ All snapshot operations run via WP-Cron, even "Snapshot Now":
 
 ### PHP Class Naming
 
-All new snapshot classes use PascalCase (no underscores):
+All snapshot classes use PascalCase (no underscores):
 - `RiseupSnapshotScheduler` - WP-Cron management
 - `RiseupSnapshotDetector` - Provider detection
+- `RiseupSnapshotCleaner` - Retention & cleanup logic
 - `RiseupSnapshotProviderInterface` - Abstract base class
 - `RiseupSnapshotProviderNative` - Native SQLite export
 - `RiseupSnapshotProviderWPReset` - WP Reset integration
@@ -71,6 +72,15 @@ All new snapshot classes use PascalCase (no underscores):
 - Count-based: Keep last N snapshots
 - None: Manual cleanup only
 
+## Cleanup Features (RiseupSnapshotCleaner)
+
+The cleaner class provides comprehensive cleanup:
+- **Policy cleanup**: Enforces days or count retention
+- **Orphan cleanup**: Removes files without database records
+- **Failed cleanup**: Deletes stuck/failed snapshots older than 24 hours
+- **Storage stats**: Reports total size, count, oldest/newest, disk free space
+- **Cleanup estimates**: Preview what would be deleted without action
+
 ## REST API Endpoints
 
 | Method | Endpoint | Description |
@@ -97,6 +107,7 @@ All new snapshot classes use PascalCase (no underscores):
 
 - Spec: `spec/wordpress-plugin/database-snapshots.md`
 - Scheduler: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-scheduler.php`
+- Cleaner: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-cleaner.php`
 - Detector: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-detector.php`
 - Interface: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-provider-interface.php`
 - Native: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-provider-native.php`
