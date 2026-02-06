@@ -422,52 +422,57 @@ No new endpoint needed - existing API is sufficient.
 
 ---
 
-## Phase 12: Auto-Update with 301 Redirect Support
+## Phase 12: Auto-Update with 301 Redirect Support ✅ COMPLETE
 
 **Priority: HIGH**
-**Status: PENDING**
-**Estimated: 4 hours**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
 
-### 12.1 Database Schema - Update Settings
+### 12.1 Update Resolver Class ✅
 
-Add new table for auto-update configuration in WordPress SQLite:
+Created `wp-plugins/riseup-asia-uploader/includes/class-update-resolver.php`:
+- `resolve_url($url)` - Follows 301/302/307/308 redirects to find final URL
+- `get_update_url($force)` - Returns cached or freshly resolved URL
+- `clear_cache()` - Clears cached resolved URL
+- `fetch_update_info($force)` - Fetches update metadata from server
+- `test_connection()` - Tests connection and resolves URL
+- Fallback logic: if cached URL fails, automatically re-resolves from master
 
-```sql
-CREATE TABLE IF NOT EXISTS update_settings (
-    id INTEGER PRIMARY KEY,
-    master_url TEXT NOT NULL,           -- Original 301 redirect URL
-    resolved_url TEXT,                  -- Cached resolved URL
-    resolved_at TEXT,                   -- When URL was resolved
-    cache_days INTEGER DEFAULT 7,       -- Days to cache resolved URL
-    last_check TEXT,                    -- Last update check timestamp
-    last_error TEXT,                    -- Last error message
-    enabled INTEGER DEFAULT 0           -- Auto-update enabled
-);
-```
+### 12.2 WordPress Update System Integration ✅
 
-### 12.2 WordPress Plugin - Update Resolver Class
+- `check_for_plugin_update()` - Hooks into `pre_set_site_transient_update_plugins`
+- `plugin_info()` - Hooks into `plugins_api` for "View Details" modal
+- Compares versions and registers update in WordPress transient
 
-- [ ] Create `class-update-resolver.php`
-- [ ] `resolve_url($master_url)` - Resolve 301 redirect to final URL
-- [ ] `get_update_url()` - Get cached or resolve fresh URL
-- [ ] `clear_cache()` - Clear cached URL
-- [ ] `check_for_update()` - Check for updates using resolved URL
-- [ ] `install_update()` - Download and install update
+### 12.3 Settings Page Update ✅
 
-### 12.3 WordPress Plugin - Settings Page Update
+Added Auto-Update section to `templates/admin-settings.php`:
+- Enable Auto-Update toggle
+- Master Update URL input
+- Cache Duration dropdown (1/7/14/30 days)
+- Resolved URL (Cached) display with timestamp
+- Last Check timestamp
+- Last Error display (if any)
+- Available Version with upgrade indicator
+- Action buttons: Test Connection, Clear Cache, Check Now
 
-Add Auto-Update section:
-- [ ] Master Update URL (text input)
-- [ ] Cached/Resolved URL (read-only display)
-- [ ] Cache Duration (dropdown: 1/7/14/30 days)
-- [ ] [Clear Cache] button
-- [ ] [Check Now] button
-- [ ] Enable Auto-Update (toggle)
+### 12.4 AJAX Handlers ✅
 
-### 12.4 WordPress Plugin - Update Hook Integration
+Added to `class-admin.php`:
+- `ajax_test_update_connection` - Tests and resolves URL
+- `ajax_clear_update_cache` - Clears cached URL
+- `ajax_check_for_updates` - Forces update check
 
-- [ ] Hook into `pre_set_site_transient_update_plugins`
-- [ ] Hook into `plugins_api` filter
+### 12.5 Constants Added ✅
+
+Added to `includes/constants.php`:
+- `RISEUP_UPDATE_CACHE_DAYS_DEFAULT` (7)
+- `RISEUP_UPDATE_MAX_REDIRECTS` (5)
+- `RISEUP_ACTION_UPDATE_CHECK/RESOLVE/DOWNLOAD/INSTALL`
+
+### 12.6 Version Bump ✅
+
+Updated plugin version to 1.8.0
 
 ---
 

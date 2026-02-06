@@ -69,6 +69,9 @@ class Riseup_Admin {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+        add_action('wp_ajax_riseup_test_update_connection', array($this, 'ajax_test_update_connection'));
+        add_action('wp_ajax_riseup_clear_update_cache', array($this, 'ajax_clear_update_cache'));
+        add_action('wp_ajax_riseup_check_for_updates', array($this, 'ajax_check_for_updates'));
     }
 
     /**
@@ -135,6 +138,13 @@ class Riseup_Admin {
             self::OPTION_NAME,
             array($this, 'sanitize_settings')
         );
+        
+        // Register auto-update settings
+        register_setting(
+            'riseup_asia_settings_group',
+            Riseup_Update_Resolver::OPTION_NAME,
+            array($this, 'sanitize_update_settings')
+        );
     }
 
     /**
@@ -155,6 +165,38 @@ class Riseup_Admin {
             }
         }
 
+        return $sanitized;
+    }
+
+    /**
+     * Sanitize auto-update settings on save.
+     *
+     * @param array $input Raw input.
+     * @return array Sanitized settings.
+     */
+    public function sanitize_update_settings($input) {
+        $current = get_option(Riseup_Update_Resolver::OPTION_NAME, array());
+        
+        $sanitized = array(
+            'enabled'      => !empty($input['enabled']),
+            'master_url'   => isset($input['master_url']) ? esc_url_raw($input['master_url']) : '',
+            'cache_days'   => isset($input['cache_days']) ? max(1, min(30, (int) $input['cache_days'])) : 7,
+            // Preserve these from current settings
+            'resolved_url' => isset($current['resolved_url']) ? $current['resolved_url'] : '',
+            'resolved_at'  => isset($current['resolved_at']) ? $current['resolved_at'] : '',
+            'last_check'   => isset($current['last_check']) ? $current['last_check'] : '',
+            'last_error'   => isset($current['last_error']) ? $current['last_error'] : '',
+            'package_url'  => isset($current['package_url']) ? $current['package_url'] : '',
+            'new_version'  => isset($current['new_version']) ? $current['new_version'] : '',
+            'update_info'  => isset($current['update_info']) ? $current['update_info'] : array(),
+        );
+        
+        // If master URL changed, clear cache
+        if (isset($current['master_url']) && $current['master_url'] !== $sanitized['master_url']) {
+            $sanitized['resolved_url'] = '';
+            $sanitized['resolved_at'] = '';
+        }
+        
         return $sanitized;
     }
 
@@ -241,6 +283,7 @@ class Riseup_Admin {
      */
     public function render_settings_page() {
         $settings = self::get_settings();
+        $update_settings = Riseup_Update_Resolver::get_instance()->get_settings();
 
         // Endpoint metadata for display
         $endpoints_meta = array(
@@ -258,5 +301,64 @@ class Riseup_Admin {
         );
 
         include dirname(__FILE__) . '/../templates/admin-settings.php';
+    }
+
+    /**
+     * AJAX handler: Test update server connection.
+     */
+    public function ajax_test_update_connection() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+        
+        $resolver = Riseup_Update_Resolver::get_instance();
+        $result = $resolver->test_connection();
+        
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+
+    /**
+     * AJAX handler: Clear update URL cache.
+     */
+    public function ajax_clear_update_cache() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+        
+        $resolver = Riseup_Update_Resolver::get_instance();
+        $resolver->clear_cache();
+        
+        wp_send_json_success(array('message' => 'Cache cleared successfully'));
+    }
+
+    /**
+     * AJAX handler: Check for updates now.
+     */
+    public function ajax_check_for_updates() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+        
+        $resolver = Riseup_Update_Resolver::get_instance();
+        $result = $resolver->fetch_update_info(true);
+        
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => $result->get_error_message()));
+        } else {
+            wp_send_json_success(array(
+                'message'     => 'Update check complete',
+                'update_info' => $result,
+            ));
+        }
     }
 }
