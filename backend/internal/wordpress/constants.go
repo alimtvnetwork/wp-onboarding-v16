@@ -231,3 +231,39 @@ const (
 	// UploadIgnoreFilename is the name of the ignore file.
 	UploadIgnoreFilename = ".uploadignore"
 )
+
+// =============================================================================
+// WORDPRESS CORE API ENDPOINTS (not Riseup Asia plugin)
+// =============================================================================
+
+const (
+	// WPCoreAPIRoot is the root path for WordPress REST API.
+	WPCoreAPIRoot = "/wp-json"
+
+	// WPCoreUsersMe is the endpoint for current user info.
+	WPCoreUsersMe = "/wp/v2/users/me"
+
+	// WPCorePlugins is the endpoint for WordPress core plugins API.
+	WPCorePlugins = "/wp/v2/plugins"
+
+	// WPCorePluginBySlug is the endpoint for a specific plugin (format: /wp/v2/plugins/%s).
+	WPCorePluginBySlug = "/wp/v2/plugins/%s"
+
+	// WPCorePosts is the endpoint for posts.
+	WPCorePosts = "/wp/v2/posts"
+
+	// WPCorePostByID is the endpoint for a specific post (format: /wp/v2/posts/%d).
+	WPCorePostByID = "/wp/v2/posts/%d"
+)
+
+// =============================================================================
+// PLUGIN STATUS VALUES
+// =============================================================================
+
+const (
+	// PluginStatusActive is the active status for a plugin.
+	PluginStatusActive = "active"
+
+	// PluginStatusInactive is the inactive status for a plugin.
+	PluginStatusInactive = "inactive"
+)

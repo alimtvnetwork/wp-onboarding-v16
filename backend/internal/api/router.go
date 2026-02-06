@@ -104,6 +104,8 @@ func NewServer(cfg ServerConfig) *Server {
 	// Use regex to allow slashes in plugin slugs (e.g., "broken-link-checker/broken-link-checker.php")
 	api.HandleFunc("/sites/{id}/remote-plugins/{plugin:.+}/enable", handlers.EnableRemotePlugin).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/{plugin:.+}/disable", handlers.DisableRemotePlugin).Methods("POST")
+	api.HandleFunc("/sites/{id}/remote-plugins/{plugin:.+}/files", handlers.GetRemotePluginFiles).Methods("GET")
+	api.HandleFunc("/sites/{id}/remote-plugins/{plugin:.+}/file", handlers.GetRemotePluginFileContent).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/{plugin:.+}", handlers.DeleteRemotePlugin).Methods("DELETE")
 	// API Explorer credentials (on-demand decryption)
 	api.HandleFunc("/sites/{id}/credentials", handlers.GetSiteCredentials).Methods("GET")

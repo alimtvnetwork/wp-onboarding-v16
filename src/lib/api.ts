@@ -345,6 +345,20 @@ export interface RemotePlugin {
   textDomain: string;
 }
 
+// Phase 10: Remote Plugin File Browser
+export interface RemotePluginFile {
+  path: string;
+  hash: string;
+  size: number;
+  modifiedAt?: string;
+}
+
+export interface RemotePluginFilesResult {
+  pluginSlug: string;
+  totalFiles: number;
+  files: RemotePluginFile[];
+}
+
 export interface ErrorLog {
   id: number;
   code: string;
@@ -531,6 +545,16 @@ export const api = {
     request<{ deleted: boolean; plugin: string }>(
       `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}`,
       { method: "DELETE" }
+    ),
+  // Remote plugin file browser (Phase 10)
+  getRemotePluginFiles: (siteId: number, pluginSlug: string) =>
+    request<RemotePluginFilesResult>(
+      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/files`
+    ),
+  getRemotePluginFileContent: (siteId: number, pluginSlug: string, filePath: string) =>
+    request<{ path: string; content: string }>(
+      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/file`,
+      { method: "POST", body: JSON.stringify({ path: filePath }) }
     ),
 
   // Git operations

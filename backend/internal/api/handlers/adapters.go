@@ -118,6 +118,14 @@ func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteID int6
 	return a.Service.DeleteRemotePlugin(ctx, siteID, pluginSlug)
 }
 
+func (a *SiteServiceAdapter) GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (interface{}, error) {
+	return a.Service.GetRemotePluginFiles(ctx, siteID, pluginSlug)
+}
+
+func (a *SiteServiceAdapter) GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error) {
+	return a.Service.GetRemotePluginFileContent(ctx, siteID, pluginSlug, filePath)
+}
+
 func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteID int64) (interface{}, error) {
 	return a.Service.GetCredentials(ctx, siteID)
 }
