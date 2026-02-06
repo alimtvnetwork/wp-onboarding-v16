@@ -381,6 +381,14 @@ class Riseup_Asia {
             $this->file_logger->info('Registering REST API init hook');
             add_action('rest_api_init', array($this, 'register_routes'));
 
+            // Register WordPress core plugin lifecycle hooks for complete action auditing.
+            // These hooks fire when plugins are activated/deactivated from ANY source
+            // (dashboard, WP-CLI, other plugins, etc.), ensuring complete audit trail.
+            add_action('activated_plugin', array($this, 'on_plugin_activated'), 10, 2);
+            add_action('deactivated_plugin', array($this, 'on_plugin_deactivated'), 10, 2);
+            add_action('deleted_plugin', array($this, 'on_plugin_deleted'), 10, 2);
+            $this->file_logger->info('Plugin lifecycle hooks registered');
+
             $this->file_logger->info('Plugin constructor complete');
         } catch (Throwable $e) {
             // Catch both Exception and Error (PHP 7+)
@@ -390,6 +398,197 @@ class Riseup_Asia {
                 'line'           => $e->getLine(),
             ));
         }
+    }
+
+    // =========================================================================
+    // WORDPRESS CORE PLUGIN LIFECYCLE HOOKS
+    // These methods capture plugin actions from ANY source (dashboard, WP-CLI, etc.)
+    // =========================================================================
+
+    /**
+     * Handle WordPress core activated_plugin hook.
+     * Logs when a plugin is activated from any source (dashboard, WP-CLI, other plugins).
+     *
+     * @param string $plugin Plugin file path relative to plugins directory (e.g., "akismet/akismet.php").
+     * @param bool   $network_wide Whether the plugin was activated for the entire network.
+     * @return void
+     */
+    public function on_plugin_activated($plugin, $network_wide = false) {
+        // Skip if this is our own API action (to avoid duplicate logging)
+        if ($this->is_rest_request()) {
+            return;
+        }
+
+        try {
+            $slug = $this->extract_plugin_slug($plugin);
+            $triggered_by = $this->detect_trigger_source();
+            
+            $this->file_logger->info('WordPress hook: Plugin activated', array(
+                'plugin'       => $plugin,
+                'slug'         => $slug,
+                'network_wide' => $network_wide,
+                'triggered_by' => $triggered_by,
+            ));
+
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_ENABLE,
+                $slug,
+                RISEUP_STATUS_SUCCESS,
+                array(
+                    'plugin_file'   => $plugin,
+                    'network_wide'  => $network_wide,
+                    'triggered_by'  => $triggered_by,
+                    'hook_source'   => 'activated_plugin',
+                )
+            );
+        } catch (Throwable $e) {
+            $this->file_logger->error('Failed to log plugin activation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle WordPress core deactivated_plugin hook.
+     * Logs when a plugin is deactivated from any source.
+     *
+     * @param string $plugin Plugin file path relative to plugins directory.
+     * @param bool   $network_deactivating Whether deactivating across the network.
+     * @return void
+     */
+    public function on_plugin_deactivated($plugin, $network_deactivating = false) {
+        // Skip if this is our own API action (to avoid duplicate logging)
+        if ($this->is_rest_request()) {
+            return;
+        }
+
+        try {
+            $slug = $this->extract_plugin_slug($plugin);
+            $triggered_by = $this->detect_trigger_source();
+            
+            $this->file_logger->info('WordPress hook: Plugin deactivated', array(
+                'plugin'       => $plugin,
+                'slug'         => $slug,
+                'network'      => $network_deactivating,
+                'triggered_by' => $triggered_by,
+            ));
+
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_DISABLE,
+                $slug,
+                RISEUP_STATUS_SUCCESS,
+                array(
+                    'plugin_file'          => $plugin,
+                    'network_deactivating' => $network_deactivating,
+                    'triggered_by'         => $triggered_by,
+                    'hook_source'          => 'deactivated_plugin',
+                )
+            );
+        } catch (Throwable $e) {
+            $this->file_logger->error('Failed to log plugin deactivation: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle WordPress core deleted_plugin hook.
+     * Logs when a plugin is deleted from any source.
+     *
+     * @param string $plugin Plugin file path relative to plugins directory.
+     * @param bool   $deleted Whether the plugin was successfully deleted.
+     * @return void
+     */
+    public function on_plugin_deleted($plugin, $deleted = true) {
+        // Skip if this is our own API action (to avoid duplicate logging)
+        if ($this->is_rest_request()) {
+            return;
+        }
+
+        // Only log successful deletions
+        if (!$deleted) {
+            return;
+        }
+
+        try {
+            $slug = $this->extract_plugin_slug($plugin);
+            $triggered_by = $this->detect_trigger_source();
+            
+            $this->file_logger->info('WordPress hook: Plugin deleted', array(
+                'plugin'       => $plugin,
+                'slug'         => $slug,
+                'triggered_by' => $triggered_by,
+            ));
+
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_DELETE,
+                $slug,
+                RISEUP_STATUS_SUCCESS,
+                array(
+                    'plugin_file'  => $plugin,
+                    'triggered_by' => $triggered_by,
+                    'hook_source'  => 'deleted_plugin',
+                )
+            );
+        } catch (Throwable $e) {
+            $this->file_logger->error('Failed to log plugin deletion: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Detect the source that triggered the current action.
+     *
+     * @return string One of the RISEUP_TRIGGERED_BY_* constants.
+     */
+    private function detect_trigger_source() {
+        // Check if running from WP-CLI
+        if (defined('WP_CLI') && WP_CLI) {
+            return RISEUP_TRIGGERED_BY_CLI;
+        }
+
+        // Check if this is a cron job
+        if (defined('DOING_CRON') && DOING_CRON) {
+            return RISEUP_TRIGGERED_BY_CRON;
+        }
+
+        // Check if this is a REST API request (should be caught earlier, but just in case)
+        if ($this->is_rest_request()) {
+            return RISEUP_TRIGGERED_BY_API;
+        }
+
+        // Default to dashboard (admin UI action)
+        return RISEUP_TRIGGERED_BY_DASHBOARD;
+    }
+
+    /**
+     * Check if the current request is a REST API request.
+     *
+     * @return bool True if REST request.
+     */
+    private function is_rest_request() {
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return true;
+        }
+        
+        // Additional check for REST API URL pattern
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/wp-json/') !== false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Extract plugin slug from full plugin file path.
+     *
+     * @param string $plugin_file Plugin file path (e.g., "akismet/akismet.php" or "hello.php").
+     * @return string Plugin slug.
+     */
+    private function extract_plugin_slug($plugin_file) {
+        // For directory-based plugins: "plugin-folder/plugin-file.php" -> "plugin-folder"
+        if (strpos($plugin_file, '/') !== false) {
+            $parts = explode('/', $plugin_file);
+            return $parts[0];
+        }
+        
+        // For single-file plugins: "hello.php" -> "hello"
+        return str_replace('.php', '', $plugin_file);
     }
 
     /**
