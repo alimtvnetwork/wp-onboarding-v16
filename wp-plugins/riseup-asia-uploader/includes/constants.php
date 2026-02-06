@@ -438,3 +438,23 @@ if (!defined('RISEUP_ENDPOINT_AGENT_ACTION')) {
 if (!defined('RISEUP_ENDPOINT_AGENT_HISTORY')) {
     define('RISEUP_ENDPOINT_AGENT_HISTORY', 'agents/(?P<id>\\d+)/history');
 }
+
+// =============================================================================
+// TRIGGERED_BY VALUES (for enhanced transaction logging)
+// =============================================================================
+
+if (!defined('RISEUP_TRIGGERED_BY_API')) {
+    define('RISEUP_TRIGGERED_BY_API', 'api');
+}
+if (!defined('RISEUP_TRIGGERED_BY_DASHBOARD')) {
+    define('RISEUP_TRIGGERED_BY_DASHBOARD', 'dashboard');
+}
+if (!defined('RISEUP_TRIGGERED_BY_AGENT')) {
+    define('RISEUP_TRIGGERED_BY_AGENT', 'agent_push');
+}
+if (!defined('RISEUP_TRIGGERED_BY_CRON')) {
+    define('RISEUP_TRIGGERED_BY_CRON', 'cron');
+}
+if (!defined('RISEUP_TRIGGERED_BY_CLI')) {
+    define('RISEUP_TRIGGERED_BY_CLI', 'cli');
+}

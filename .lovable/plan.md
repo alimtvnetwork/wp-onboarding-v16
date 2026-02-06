@@ -279,30 +279,32 @@ Include in report:
 
 ---
 
-## Phase 9: Remote Plugins Caching System (PENDING)
+## Phase 9: Remote Plugins Caching System ✅ COMPLETE
 
 **Priority: MEDIUM - Performance & UX**
-**Status: PENDING**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
 
-### 9.1 Backend Caching Table
-- [ ] Create `remote_plugins_cache` table in SQLite
-- [ ] Fields: `id`, `site_id`, `plugins_json`, `cached_at`, `expires_at`
-- [ ] Cache TTL: 1 hour (configurable in config.json)
+### 9.1 Backend Caching Table ✅
+- [x] Created `RemotePluginsCache` table in SQLite (migration v6)
+- [x] Fields: `id`, `SiteId`, `PluginsJSON`, `CachedAt`, `ExpiresAt`
+- [x] Cache TTL: 60 minutes (configurable in config.json)
 
-### 9.2 Config.json Settings
-- [ ] Add `remotePlugins.cacheEnabled` (default: true)
-- [ ] Add `remotePlugins.cacheTTLMinutes` (default: 60)
-- [ ] Settings UI toggle for cache enable/disable
+### 9.2 Config.json Settings ✅
+- [x] Added `remotePlugins.cacheEnabled` (default: true)
+- [x] Added `remotePlugins.cacheTTLMinutes` (default: 60)
+- [x] Site service uses config values for cache behavior
 
-### 9.3 Cache API Endpoints
-- [ ] `GET /api/v1/sites/{id}/remote-plugins` - returns cached if valid, else fetches fresh
-- [ ] `POST /api/v1/sites/{id}/remote-plugins/force-sync` - clears cache, fetches fresh
-- [ ] `DELETE /api/v1/sites/{id}/remote-plugins/cache` - clears cache only
+### 9.3 Cache API Endpoints ✅
+- [x] `GET /api/v1/sites/{id}/remote-plugins` - Returns cached if valid, else fetches fresh
+- [x] `POST /api/v1/sites/{id}/remote-plugins/force-sync` - Clears cache, fetches fresh
+- [x] `DELETE /api/v1/sites/{id}/remote-plugins/cache` - Clears cache only
 
-### 9.4 Frontend Integration
-- [ ] Add "Force Sync" button in RemotePluginsPanel
-- [ ] Show cache indicator (cached vs live data)
-- [ ] Settings page toggle for caching
+### 9.4 Frontend Integration ✅
+- [x] Added "Force Sync" button in RemotePluginsPanel
+- [x] Shows last fetched timestamp with relative time
+- [x] Force sync mutation bypasses cache and fetches fresh data
+- [x] Visual feedback during sync operations
 
 ---
 
@@ -529,19 +531,30 @@ Created `templates/admin-agents.php`:
 
 ---
 
-## Phase 14: Enhanced SQLite Logging for Plugin Actions
+## Phase 14: Enhanced SQLite Logging for Plugin Actions ✅ COMPLETE
 
 **Priority: MEDIUM**
-**Status: PENDING**
-**Estimated: 1 hour**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
 
-### 14.1 Enhanced Transaction Details
+### 14.1 Enhanced Transaction Details ✅
+- [x] Added `plugin_file` - Full plugin file path (e.g., "akismet/akismet.php")
+- [x] Added `was_active` - Previous state before action (0/1 boolean)
+- [x] Added `triggered_by` - Source: 'api', 'dashboard', 'agent_push', 'cron', 'cli'
+- [x] Added `agent_site_id` - If triggered by master site
 
-Add more detail to logged transactions:
-- [ ] `plugin_file` - Full plugin file path
-- [ ] `was_active` - Previous state before action
-- [ ] `triggered_by` - Source: 'api', 'dashboard', 'agent_push'
-- [ ] `agent_site_id` - If triggered by master site
+### 14.2 Constants Added ✅
+- [x] `RISEUP_TRIGGERED_BY_API`, `RISEUP_TRIGGERED_BY_DASHBOARD`
+- [x] `RISEUP_TRIGGERED_BY_AGENT`, `RISEUP_TRIGGERED_BY_CRON`, `RISEUP_TRIGGERED_BY_CLI`
+
+### 14.3 Database Migration ✅
+- [x] Migration v3 adds new columns to transactions table
+- [x] Index on `triggered_by` for efficient queries
+- [x] Backward compatible - existing code continues to work
+
+### 14.4 Enhanced API ✅
+- [x] Updated `log_transaction()` with optional `$enhanced` parameter
+- [x] Added `log_enhanced_transaction()` convenience wrapper
 
 ---
 

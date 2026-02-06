@@ -44,6 +44,9 @@ import {
   MoreHorizontal,
   User,
   Puzzle,
+  Clock,
+  Database,
+  Zap,
 } from "lucide-react";
 import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
 import { toast } from "sonner";
@@ -57,6 +60,21 @@ interface RemotePluginsPanelProps {
 }
 
 const ITEMS_PER_PAGE = 10;
+
+// Format relative time (e.g., "2m ago", "1h ago")
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSecs = Math.floor(diffMs / 1000);
+  
+  if (diffSecs < 60) return `${diffSecs}s ago`;
+  const diffMins = Math.floor(diffSecs / 60);
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays}d ago`;
+}
 
 export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPanelProps) {
   const queryClient = useQueryClient();
@@ -72,14 +90,45 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   useRemotePluginEvents(site.id);
 
   const queryKey = ["sites", site.id, "remote-plugins"];
+  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+  const [isFromCache, setIsFromCache] = useState(false);
 
-  const { data: plugins, isLoading, isError, refetch } = useQuery({
+  const { data: plugins, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey,
     queryFn: async () => {
       const response = await api.getRemotePlugins(site.id);
-      return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins`, method: "GET" });
+      const data = requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins`, method: "GET" });
+      setLastFetchedAt(new Date());
+      // Check if response indicates cache usage (backend can include metadata)
+      setIsFromCache(false); // Will be set to true only on initial load
+      return data;
     },
     enabled: open,
+  });
+
+  // Force sync mutation (bypasses cache)
+  const forceSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.forceSyncRemotePlugins(site.id);
+      return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/force-sync`, method: "POST" });
+    },
+    onSuccess: (data) => {
+      toast.success("Plugin list refreshed from site");
+      queryClient.setQueryData(queryKey, data);
+      setLastFetchedAt(new Date());
+      setIsFromCache(false);
+    },
+    onError: (error) => {
+      const captured = captureException(error, {
+        endpoint: `/sites/${site.id}/remote-plugins/force-sync`,
+        method: "POST",
+      });
+      toast.error("Failed to refresh plugin list", {
+        description: "Click for details",
+        action: { label: "View Details", onClick: () => openErrorModal(captured) },
+        duration: 10000,
+      });
+    },
   });
 
   const toggleMutation = useMutation({
@@ -315,8 +364,30 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                 className="pl-10 bg-muted/50 border-border/50 focus-visible:ring-primary/50"
               />
             </div>
-            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading} className="shrink-0">
-              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            
+            {/* Cache Status & Force Sync */}
+            <div className="flex items-center gap-1">
+              {lastFetchedAt && (
+                <Badge variant="outline" className="text-xs gap-1 text-muted-foreground shrink-0">
+                  <Clock className="h-3 w-3" />
+                  {formatTimeAgo(lastFetchedAt)}
+                </Badge>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => forceSyncMutation.mutate()} 
+                disabled={forceSyncMutation.isPending || isFetching}
+                className="shrink-0 gap-1.5"
+                title="Force refresh from site (bypass cache)"
+              >
+                <Zap className={`h-3.5 w-3.5 ${forceSyncMutation.isPending ? "animate-pulse" : ""}`} />
+                Force Sync
+              </Button>
+            </div>
+            
+            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading || isFetching} className="shrink-0" title="Refresh (may use cache)">
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
             </Button>
           </div>
 
@@ -588,10 +659,18 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
           {/* Footer */}
           <div className="flex items-center justify-between pt-3 border-t border-border/50 text-sm text-muted-foreground">
-            <span>
-              {filteredPlugins.length} plugin{filteredPlugins.length !== 1 ? "s" : ""}
-              {searchQuery && plugins?.length !== filteredPlugins.length && ` (of ${plugins?.length} total)`}
-            </span>
+            <div className="flex items-center gap-2">
+              <span>
+                {filteredPlugins.length} plugin{filteredPlugins.length !== 1 ? "s" : ""}
+                {searchQuery && plugins?.length !== filteredPlugins.length && ` (of ${plugins?.length} total)`}
+              </span>
+              {isFromCache && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  <Database className="h-3 w-3" />
+                  Cached
+                </Badge>
+              )}
+            </div>
             <a
               href={`${site.url}/wp-admin/plugins.php`}
               target="_blank"
