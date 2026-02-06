@@ -35,6 +35,14 @@ type Service interface {
 	ClearChanges(ctx context.Context, pluginID int64) error
 }
 
+// FileEntry represents a file with its hash, modification time, and size
+type FileEntry struct {
+	Path       string    `json:"path"`
+	Hash       string    `json:"hash"`
+	ModifiedAt time.Time `json:"modifiedAt"`
+	Size       int64     `json:"size"`
+}
+
 // SyncResult represents the result of a sync check
 type SyncResult struct {
 	PluginID     int64               `json:"pluginId"`
@@ -117,14 +125,13 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	}
 	result.LocalFiles = len(localFiles)
 
-	// Get remote file hashes (from WordPress)
+	// Get remote file entries (from WordPress sync-manifest)
 	s.broadcastProgress(pluginID, siteID, "comparing", 50, "Fetching remote files...")
-	// Note: WordPress doesn't have a native file hash endpoint
-	// This would require a custom endpoint or comparing via backup
-	remoteFiles := make(map[string]string) // path -> hash
+	// TODO (Phase 43): Call GetPluginSyncManifest() to populate remote entries
+	remoteFiles := make(map[string]FileEntry)
 	result.RemoteFiles = len(remoteFiles)
 
-	// Compare files
+	// Compare files using enhanced comparison with timestamps
 	s.broadcastProgress(pluginID, siteID, "comparing", 70, "Comparing files...")
 	changes := s.compareFiles(localFiles, remoteFiles)
 	
@@ -327,9 +334,9 @@ func (s *serviceImpl) ClearChanges(ctx context.Context, pluginID int64) error {
 	return nil
 }
 
-// scanLocalFiles scans the plugin directory and returns file hashes
-func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string) (map[string]string, error) {
-	files := make(map[string]string)
+// scanLocalFiles scans the plugin directory and returns file entries with hashes and timestamps
+func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string) (map[string]FileEntry, error) {
+	files := make(map[string]FileEntry)
 
 	absPluginPath, err := pathutil.ToAbsolute(pluginPath)
 	if err != nil {
@@ -343,7 +350,6 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 		}
 
 		if info.IsDir() {
-			// Skip excluded directories
 			for _, pattern := range excludePatterns {
 				if strings.Contains(path, pattern) {
 					return filepath.SkipDir
@@ -357,25 +363,28 @@ func (s *serviceImpl) scanLocalFiles(pluginPath string, excludePatterns []string
 			return nil
 		}
 
-		// Skip excluded files
 		for _, pattern := range excludePatterns {
 			if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
 				return nil
 			}
 		}
 
-		// Skip hidden files
 		if strings.HasPrefix(filepath.Base(path), ".") {
 			return nil
 		}
 
-		// Calculate hash
 		hash, err := s.calculateFileHash(path)
 		if err != nil {
-			return nil // Skip files we can't hash
+			return nil
 		}
 
-		files[filepath.ToSlash(relPath)] = hash
+		key := filepath.ToSlash(relPath)
+		files[key] = FileEntry{
+			Path:       key,
+			Hash:       hash,
+			ModifiedAt: info.ModTime().UTC(),
+			Size:       info.Size(),
+		}
 		return nil
 	})
 
@@ -398,37 +407,53 @@ func (s *serviceImpl) calculateFileHash(path string) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-// compareFiles compares local and remote file lists
-func (s *serviceImpl) compareFiles(local, remote map[string]string) []models.FileChange {
+// compareFiles compares local and remote file entries with timestamp-based conflict resolution
+func (s *serviceImpl) compareFiles(local, remote map[string]FileEntry) []models.FileChange {
 	var changes []models.FileChange
 
-	// Check for added and modified files
-	for path, localHash := range local {
-		if remoteHash, exists := remote[path]; exists {
-			if localHash != remoteHash {
+	for path, localEntry := range local {
+		localMod := localEntry.ModifiedAt
+		if remoteEntry, exists := remote[path]; exists {
+			if localEntry.Hash != remoteEntry.Hash {
+				remoteMod := remoteEntry.ModifiedAt
+				direction := "local_newer"
+				if remoteMod.After(localMod) {
+					direction = "remote_newer"
+				}
 				changes = append(changes, models.FileChange{
-					FilePath:   path,
-					ChangeType: "modified",
-					LocalHash:  localHash,
-					RemoteHash: remoteHash,
+					FilePath:         path,
+					ChangeType:       "modified",
+					LocalHash:        localEntry.Hash,
+					RemoteHash:       remoteEntry.Hash,
+					LocalModifiedAt:  &localMod,
+					RemoteModifiedAt: &remoteMod,
+					LocalSize:        localEntry.Size,
+					RemoteSize:       remoteEntry.Size,
+					Direction:        direction,
 				})
 			}
 		} else {
 			changes = append(changes, models.FileChange{
-				FilePath:   path,
-				ChangeType: "added",
-				LocalHash:  localHash,
+				FilePath:        path,
+				ChangeType:      "added",
+				LocalHash:       localEntry.Hash,
+				LocalModifiedAt: &localMod,
+				LocalSize:       localEntry.Size,
+				Direction:       "local_only",
 			})
 		}
 	}
 
-	// Check for deleted files
-	for path, remoteHash := range remote {
+	for path, remoteEntry := range remote {
 		if _, exists := local[path]; !exists {
+			remoteMod := remoteEntry.ModifiedAt
 			changes = append(changes, models.FileChange{
-				FilePath:   path,
-				ChangeType: "deleted",
-				RemoteHash: remoteHash,
+				FilePath:         path,
+				ChangeType:       "deleted",
+				RemoteHash:       remoteEntry.Hash,
+				RemoteModifiedAt: &remoteMod,
+				RemoteSize:       remoteEntry.Size,
+				Direction:        "remote_only",
 			})
 		}
 	}
