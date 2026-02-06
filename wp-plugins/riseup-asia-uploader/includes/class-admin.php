@@ -118,6 +118,16 @@ class Riseup_Admin {
             'riseup-asia-agents',
             array($this, 'render_agents_page')
         );
+
+        // Snapshots submenu
+        add_submenu_page(
+            'riseup-asia-uploader',
+            __('Snapshots', 'riseup-asia-uploader'),
+            __('Snapshots', 'riseup-asia-uploader'),
+            'manage_options',
+            'riseup-asia-snapshots',
+            array($this, 'render_snapshots_page')
+        );
     }
 
     /**
@@ -379,5 +389,12 @@ class Riseup_Admin {
      */
     public function render_agents_page() {
         include dirname(__FILE__) . '/../templates/admin-agents.php';
+    }
+
+    /**
+     * Render the snapshots page.
+     */
+    public function render_snapshots_page() {
+        include dirname(__FILE__) . '/../templates/admin-snapshots.php';
     }
 }
