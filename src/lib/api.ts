@@ -555,28 +555,29 @@ export const api = {
     request<{ cleared: boolean }>(`/sites/${siteId}/remote-plugins/cache`, { method: "DELETE" }),
   enableRemotePlugin: (siteId: number, pluginSlug: string) =>
     request<{ enabled: boolean; plugin: string }>(
-      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/enable`,
-      { method: "POST" }
+      `/sites/${siteId}/remote-plugins/enable`,
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
     ),
   disableRemotePlugin: (siteId: number, pluginSlug: string) =>
     request<{ disabled: boolean; plugin: string }>(
-      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/disable`,
-      { method: "POST" }
+      `/sites/${siteId}/remote-plugins/disable`,
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
     ),
   deleteRemotePlugin: (siteId: number, pluginSlug: string) =>
     request<{ deleted: boolean; plugin: string }>(
-      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}`,
-      { method: "DELETE" }
+      `/sites/${siteId}/remote-plugins/delete`,
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
     ),
   // Remote plugin file browser (Phase 10)
   getRemotePluginFiles: (siteId: number, pluginSlug: string) =>
     request<RemotePluginFilesResult>(
-      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/files`
+      `/sites/${siteId}/remote-plugins/files`,
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
     ),
   getRemotePluginFileContent: (siteId: number, pluginSlug: string, filePath: string) =>
     request<{ path: string; content: string }>(
-      `/sites/${siteId}/remote-plugins/${encodeURIComponent(pluginSlug)}/file`,
-      { method: "POST", body: JSON.stringify({ path: filePath }) }
+      `/sites/${siteId}/remote-plugins/file`,
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug, path: filePath }) }
     ),
 
   // Git operations
