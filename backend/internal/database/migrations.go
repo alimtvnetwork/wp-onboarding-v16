@@ -294,7 +294,6 @@ var migrations = []Migration{
 			CREATE INDEX IF NOT EXISTS idx_publishhistory_created ON PublishHistory(CreatedAt DESC);
 		`,
 	},
-	},
 	{
 		Version:     9,
 		Description: "SiteHealthChecks table for health monitoring",

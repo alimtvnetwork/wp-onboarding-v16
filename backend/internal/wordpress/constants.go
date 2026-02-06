@@ -80,7 +80,7 @@ const (
 
 	// EndpointSyncManifest fetches the cached file manifest for sync comparison (format: /plugins/%s/sync-manifest).
 	EndpointSyncManifest = "/plugins/%s/sync-manifest"
-
+)
 // =============================================================================
 // ACTION TYPES (match PHP constants)
 // =============================================================================
