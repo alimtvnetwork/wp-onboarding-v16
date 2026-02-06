@@ -730,5 +730,100 @@ export const api = {
     request<unknown>(`/e2e/runs/${runId}`),
   deleteE2ERun: (runId: string) =>
     request<void>(`/e2e/runs/${runId}`, { method: "DELETE" }),
+
+  // Error History (persistent error/notification storage)
+  saveErrorHistory: (input: ErrorHistoryInput) =>
+    request<ErrorHistoryRecord>("/error-history", { 
+      method: "POST", 
+      body: JSON.stringify(input) 
+    }),
+  listErrorHistory: (opts?: { limit?: number; offset?: number; code?: string; level?: string; search?: string }) => {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", opts.limit.toString());
+    if (opts?.offset) params.set("offset", opts.offset.toString());
+    if (opts?.code) params.set("code", opts.code);
+    if (opts?.level) params.set("level", opts.level);
+    if (opts?.search) params.set("search", opts.search);
+    const query = params.toString();
+    return request<ErrorHistoryListResponse>(`/error-history${query ? `?${query}` : ""}`);
+  },
+  getErrorHistoryById: (id: number | string) =>
+    request<ErrorHistoryRecord>(`/error-history/${id}`),
+  deleteErrorHistory: (id: number) =>
+    request<{ deleted: boolean; id: number }>(`/error-history/${id}`, { method: "DELETE" }),
+  clearErrorHistory: () =>
+    request<{ cleared: boolean; deleted: number }>("/error-history", { method: "DELETE" }),
+  bulkExportErrorHistory: (ids: number[]) =>
+    request<{ report: string; count: number }>("/error-history/bulk-export", { 
+      method: "POST", 
+      body: JSON.stringify({ ids }) 
+    }),
+  getErrorHistoryStats: () =>
+    request<ErrorHistoryStats>("/error-history/stats"),
 };
 
+// Error History Types
+export interface ErrorHistoryInput {
+  errorId?: string;
+  code: string;
+  level: string;
+  message: string;
+  details?: string;
+  context?: Record<string, unknown>;
+  stackTrace?: string;
+  endpoint?: string;
+  method?: string;
+  requestBody?: Record<string, unknown>;
+  responseStatus?: number;
+  sessionId?: string;
+  sessionType?: string;
+  phpStackFrames?: Array<{ file?: string; fileBase?: string; line?: number; function?: string; class?: string }>;
+  backendLogs?: string[];
+  backendStackTrace?: string;
+  siteUrl?: string;
+  triggerComponent?: string;
+  triggerAction?: string;
+  invocationChain?: string[];
+  uiClickPath?: string;
+  markdownReport?: string;
+}
+
+export interface ErrorHistoryRecord {
+  id: number;
+  errorId: string;
+  code: string;
+  level: string;
+  message: string;
+  details?: string;
+  context?: Record<string, unknown>;
+  stackTrace?: string;
+  endpoint?: string;
+  method?: string;
+  requestBody?: Record<string, unknown>;
+  responseStatus?: number;
+  sessionId?: string;
+  sessionType?: string;
+  phpStackFrames?: Array<{ file?: string; fileBase?: string; line?: number; function?: string; class?: string }>;
+  backendLogs?: string[];
+  backendStackTrace?: string;
+  siteUrl?: string;
+  triggerComponent?: string;
+  triggerAction?: string;
+  invocationChain?: string[];
+  uiClickPath?: string;
+  markdownReport?: string;
+  createdAt: string;
+}
+
+export interface ErrorHistoryListResponse {
+  errors: ErrorHistoryRecord[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ErrorHistoryStats {
+  total: number;
+  byLevel: Record<string, number>;
+  byCode: Record<string, number>;
+}

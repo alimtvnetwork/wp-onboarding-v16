@@ -101,6 +101,9 @@ interface ErrorStore {
   // Recent errors list (for history)
   recentErrors: CapturedError[];
   
+  // Error history sync state
+  pendingSync: Set<string>; // Error IDs pending backend sync
+  
   // Actions
   captureError: (error: ApiError, meta?: { 
     endpoint?: string; 
@@ -138,6 +141,8 @@ interface ErrorStore {
   openErrorModal: (error: CapturedError) => void;
   closeErrorModal: () => void;
   clearRecentErrors: () => void;
+  markErrorSynced: (errorId: string) => void;
+  getPendingSyncErrors: () => CapturedError[];
 }
 
 /**
@@ -302,6 +307,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
   selectedError: null,
   isModalOpen: false,
   recentErrors: [],
+  pendingSync: new Set<string>(),
   
   captureError: (error, meta) => {
     // Always capture client-side stack trace for better debugging
@@ -356,9 +362,14 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       errorLine: meta?.errorLine,
     };
     
-    set((state) => ({
-      recentErrors: [captured, ...state.recentErrors].slice(0, 50),
-    }));
+    set((state) => {
+      const newPendingSync = new Set(state.pendingSync);
+      newPendingSync.add(captured.id);
+      return {
+        recentErrors: [captured, ...state.recentErrors].slice(0, 50),
+        pendingSync: newPendingSync,
+      };
+    });
     
     return captured;
   },
@@ -433,9 +444,14 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       errorLine: 'errorLine' in (context || {}) ? (context as { errorLine?: number }).errorLine : undefined,
     };
     
-    set((state) => ({
-      recentErrors: [captured, ...state.recentErrors].slice(0, 50),
-    }));
+    set((state) => {
+      const newPendingSync = new Set(state.pendingSync);
+      newPendingSync.add(captured.id);
+      return {
+        recentErrors: [captured, ...state.recentErrors].slice(0, 50),
+        pendingSync: newPendingSync,
+      };
+    });
     
     return captured;
   },
@@ -449,6 +465,19 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
   },
   
   clearRecentErrors: () => {
-    set({ recentErrors: [] });
+    set({ recentErrors: [], pendingSync: new Set() });
+  },
+  
+  markErrorSynced: (errorId: string) => {
+    set((state) => {
+      const newPendingSync = new Set(state.pendingSync);
+      newPendingSync.delete(errorId);
+      return { pendingSync: newPendingSync };
+    });
+  },
+  
+  getPendingSyncErrors: () => {
+    const state = get();
+    return state.recentErrors.filter(e => state.pendingSync.has(e.id));
   },
 }));

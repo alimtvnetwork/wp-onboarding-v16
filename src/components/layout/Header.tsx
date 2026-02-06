@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import { VersionBadge } from "@/components/settings/VersionBadge";
 import { WebSocketIndicator } from "@/components/shared/WebSocketIndicator";
 import { GlobalPublishProgress } from "@/components/plugins/GlobalPublishProgress";
+import { ErrorQueueBadge } from "@/components/errors/ErrorQueueBadge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +36,9 @@ export function Header() {
       </h1>
 
       <div className="flex items-center gap-3">
+        {/* Error queue badge */}
+        <ErrorQueueBadge />
+        
         {/* Global publish progress indicator */}
         <GlobalPublishProgress />
         
