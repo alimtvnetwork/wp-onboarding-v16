@@ -755,6 +755,33 @@ export const api = {
   deleteE2ERun: (runId: string) =>
     request<void>(`/e2e/runs/${runId}`, { method: "DELETE" }),
 
+  // Remote Snapshot Management (Phase 28)
+  getRemoteSnapshots: (siteId: number) =>
+    request<SnapshotRecord[]>(`/sites/${siteId}/snapshots`),
+  getRemoteSnapshot: (siteId: number, snapshotId: number) =>
+    request<SnapshotRecord>(`/sites/${siteId}/snapshots/${snapshotId}`),
+  createRemoteSnapshot: (siteId: number, opts?: Record<string, unknown>) =>
+    request<Record<string, unknown>>(`/sites/${siteId}/snapshots`, {
+      method: "POST",
+      body: JSON.stringify(opts || {}),
+    }),
+  deleteRemoteSnapshot: (siteId: number, snapshotId: number) =>
+    request<{ deleted: boolean }>(`/sites/${siteId}/snapshots/${snapshotId}`, { method: "DELETE" }),
+  restoreRemoteSnapshot: (siteId: number, snapshotId: number, opts?: Record<string, unknown>) =>
+    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/${snapshotId}/restore`, {
+      method: "POST",
+      body: JSON.stringify(opts || {}),
+    }),
+  getRemoteSnapshotSettings: (siteId: number) =>
+    request<SnapshotSettings>(`/sites/${siteId}/snapshots/settings`),
+  updateRemoteSnapshotSettings: (siteId: number, settings: Record<string, unknown>) =>
+    request<SnapshotSettings>(`/sites/${siteId}/snapshots/settings`, {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }),
+  getRemoteSnapshotProviders: (siteId: number) =>
+    request<SnapshotProviderInfo[]>(`/sites/${siteId}/snapshots/providers`),
+
   // Error History (persistent error/notification storage)
   saveErrorHistory: (input: ErrorHistoryInput) =>
     request<ErrorHistoryRecord>("/error-history", { 
@@ -850,4 +877,39 @@ export interface ErrorHistoryStats {
   total: number;
   byLevel: Record<string, number>;
   byCode: Record<string, number>;
+}
+
+// Snapshot Types (Phase 28)
+export interface SnapshotRecord {
+  id: number;
+  sequence: number;
+  filename: string;
+  scope: string;
+  provider: string;
+  status: string;
+  file_size: number;
+  total_rows: number;
+  tables: string;
+  created_at: string;
+  error?: string;
+}
+
+export interface SnapshotSettings {
+  provider: string;
+  schedule: string;
+  schedule_time?: string;
+  schedule_day?: string;
+  scope: string;
+  retention_type: string;
+  retention_days?: number;
+  retention_max?: number;
+  pre_restore_backup: boolean;
+  batch_size?: number;
+}
+
+export interface SnapshotProviderInfo {
+  id: string;
+  name: string;
+  available: boolean;
+  priority: number;
 }

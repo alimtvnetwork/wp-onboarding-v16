@@ -110,6 +110,16 @@ func NewServer(cfg ServerConfig) *Server {
 	// API Explorer credentials (on-demand decryption)
 	api.HandleFunc("/sites/{id}/credentials", handlers.GetSiteCredentials).Methods("GET")
 
+	// Remote snapshot management (Phase 28)
+	api.HandleFunc("/sites/{id}/snapshots", handlers.GetRemoteSnapshots).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots", handlers.CreateRemoteSnapshot).Methods("POST")
+	api.HandleFunc("/sites/{id}/snapshots/settings", handlers.GetRemoteSnapshotSettings).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots/settings", handlers.UpdateRemoteSnapshotSettings).Methods("PUT")
+	api.HandleFunc("/sites/{id}/snapshots/providers", handlers.GetRemoteSnapshotProviders).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.GetRemoteSnapshot).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.DeleteRemoteSnapshot).Methods("DELETE")
+	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}/restore", handlers.RestoreRemoteSnapshot).Methods("POST")
+
 	// Plugins endpoints
 	api.HandleFunc("/plugins", handlers.GetPlugins).Methods("GET")
 	api.HandleFunc("/plugins", handlers.CreatePlugin).Methods("POST")
