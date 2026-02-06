@@ -392,7 +392,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		retryCfg := DefaultRetryConfig()
 		type uploadOut struct {
 			performed    bool
-			uploadResult *wordpress.UploadResult
+			uploadResult *wordpress.OnboardUploadResult
 			activated    bool
 		}
 		uploadVal, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (uploadOut, error) {
@@ -703,7 +703,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 				s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
 					What: "Deactivating broken plugin to stabilize site",
 				})
-				if disableErr := wpClient.DisablePlugin(mapping.RemoteSlug); disableErr != nil {
+				if disableErr := wpClient.DeactivatePlugin(mapping.RemoteSlug); disableErr != nil {
 					s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
 						What:   "Deactivation during rollback",
 						Result: fmt.Sprintf("Could not deactivate: %s (site may already be safe)", disableErr.Error()),
