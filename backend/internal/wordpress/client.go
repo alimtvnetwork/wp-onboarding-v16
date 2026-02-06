@@ -468,7 +468,14 @@ func (c *Client) ActivatePlugin(slug string) error {
 
 // DeactivatePlugin deactivates a plugin
 func (c *Client) DeactivatePlugin(slug string) error {
-	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(slug)
+	// Resolve plugin identifier (consistent with ActivatePlugin and DeletePlugin)
+	resolvedID, resolveErr := c.ResolvePluginIdentifier(slug)
+	if resolveErr != nil {
+		// Keep going with the given slug, but the error can be surfaced upstream via extra logs.
+		resolvedID = slug
+	}
+
+	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(resolvedID)
 	resp, err := c.request("PUT", endpoint, map[string]string{
 		"status": "inactive",
 	})
@@ -491,7 +498,7 @@ func (c *Client) DeactivatePlugin(slug string) error {
 			StatusCode:   resp.StatusCode,
 			ResponseBody: body,
 			PluginSlugIn: slug,
-			PluginIDUsed: slug,
+			PluginIDUsed: resolvedID,
 		}
 	}
 
