@@ -318,10 +318,30 @@ export interface FileChange {
   status: "added" | "modified" | "deleted" | "renamed" | "synced";
   localHash?: string;
   remoteHash?: string;
+  localModifiedAt?: string;
+  remoteModifiedAt?: string;
+  localSize?: number;
+  remoteSize?: number;
+  direction?: "local_newer" | "remote_newer" | "local_only" | "remote_only";
   stats?: {
     additions: number;
     deletions: number;
   };
+}
+
+export interface SyncResult {
+  pluginId: number;
+  siteId: number;
+  siteName?: string;
+  inSync: boolean;
+  localFiles: number;
+  remoteFiles: number;
+  added: number;
+  modified: number;
+  deleted: number;
+  changes: FileChange[];
+  checkedAt: string;
+  errorMessage?: string;
 }
 
 export interface Backup {
@@ -656,7 +676,7 @@ export const api = {
   getFileChanges: (pluginId: number, siteId: number) =>
     request<FileChange[]>(`/plugins/${pluginId}/changes?siteId=${siteId}`),
   checkSync: (pluginId: number, siteId: number) =>
-    request<{ changedFiles: number }>(`/plugins/${pluginId}/sites/${siteId}/sync`, { method: "POST" }),
+    request<SyncResult>(`/plugins/${pluginId}/sites/${siteId}/sync`, { method: "POST" }),
   checkAllSites: (pluginId: number) =>
     request<void>(`/plugins/${pluginId}/sync/check-all`, { method: "POST" }),
 
