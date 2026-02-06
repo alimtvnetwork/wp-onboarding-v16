@@ -285,6 +285,7 @@ require_once __DIR__ . '/includes/class-post-manager.php';
 require_once __DIR__ . '/includes/class-upload-ignore.php';
 require_once __DIR__ . '/includes/class-admin.php';
 require_once __DIR__ . '/includes/class-update-resolver.php';
+require_once __DIR__ . '/includes/class-agent-manager.php';
 
 // =============================================================================
 // PLUGIN CLASS
@@ -563,6 +564,95 @@ class Riseup_Asia {
                         'validate_callback' => function($param) {
                             return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
                         },
+                    ),
+                ),
+            ));
+
+            // =================================================================
+            // AGENT MANAGEMENT ENDPOINTS
+            // =================================================================
+
+            // List/Add agents
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENTS);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENTS, array(
+                array(
+                    'methods'             => 'GET',
+                    'callback'            => array($this, 'handle_list_agents'),
+                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                ),
+                array(
+                    'methods'             => 'POST',
+                    'callback'            => array($this, 'handle_add_agent'),
+                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                ),
+            ));
+
+            // Get/Update/Delete single agent
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENTS . '/(?P<id>\\d+)', array(
+                array(
+                    'methods'             => 'GET',
+                    'callback'            => array($this, 'handle_get_agent'),
+                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                ),
+                array(
+                    'methods'             => 'DELETE',
+                    'callback'            => array($this, 'handle_remove_agent'),
+                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                ),
+            ));
+
+            // Test agent connection
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_TEST);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_TEST, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_test_agent'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'id' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) { return is_numeric($param); },
+                    ),
+                ),
+            ));
+
+            // Sync plugins from agent
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_SYNC);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_SYNC, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_sync_agent'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'id' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) { return is_numeric($param); },
+                    ),
+                ),
+            ));
+
+            // Execute action on agent plugin
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_ACTION);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_ACTION, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_agent_action'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'id' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) { return is_numeric($param); },
+                    ),
+                ),
+            ));
+
+            // Get agent action history
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_HISTORY);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_HISTORY, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_agent_history'),
+                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'id' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) { return is_numeric($param); },
                     ),
                 ),
             ));
@@ -2221,6 +2311,232 @@ class Riseup_Asia {
         }
 
         closedir($dir);
+    }
+
+    // =========================================================================
+    // AGENT MANAGEMENT HANDLERS
+    // =========================================================================
+
+    /**
+     * Handle listing all agent sites.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_list_agents($request) {
+        return $this->safe_execute(function() use ($request) {
+            $this->file_logger->info('Listing agent sites');
+            
+            $status = $request->get_param('status');
+            $limit = $request->get_param('limit') ?: 100;
+            $offset = $request->get_param('offset') ?: 0;
+            
+            $filters = array();
+            if ($status) {
+                $filters['status'] = sanitize_key($status);
+            }
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $result = $manager->list_agents($filters, $limit, $offset);
+            
+            return new WP_REST_Response(array(
+                'success' => true,
+                'total'   => $result['total'],
+                'agents'  => $result['agents'],
+            ), 200);
+        }, 'list_agents');
+    }
+
+    /**
+     * Handle adding a new agent site.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_add_agent($request) {
+        return $this->safe_execute(function() use ($request) {
+            $this->file_logger->info('Adding agent site');
+            
+            $data = array(
+                'name'         => $request->get_param('name'),
+                'url'          => $request->get_param('url'),
+                'username'     => $request->get_param('username'),
+                'app_password' => $request->get_param('app_password'),
+                'redirect_url' => $request->get_param('redirect_url'),
+            );
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $result = $manager->add_agent($data);
+            
+            if (is_wp_error($result)) {
+                return $this->error_response($result->get_error_message(), 400);
+            }
+            
+            return new WP_REST_Response(array(
+                'success'  => true,
+                'agent_id' => $result,
+                'message'  => 'Agent site added successfully',
+            ), 201);
+        }, 'add_agent');
+    }
+
+    /**
+     * Handle getting a single agent site.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_get_agent($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $this->file_logger->info('Getting agent site', array('id' => $id));
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $agent = $manager->get_agent($id, false);
+            
+            if (!$agent) {
+                return $this->error_response('Agent site not found', 404);
+            }
+            
+            return new WP_REST_Response(array(
+                'success' => true,
+                'agent'   => $agent,
+            ), 200);
+        }, 'get_agent');
+    }
+
+    /**
+     * Handle removing an agent site.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_remove_agent($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $this->file_logger->info('Removing agent site', array('id' => $id));
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $result = $manager->remove_agent($id);
+            
+            if (is_wp_error($result)) {
+                return $this->error_response($result->get_error_message(), 400);
+            }
+            
+            return new WP_REST_Response(array(
+                'success' => true,
+                'message' => 'Agent site removed successfully',
+            ), 200);
+        }, 'remove_agent');
+    }
+
+    /**
+     * Handle testing agent connection.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_test_agent($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $this->file_logger->info('Testing agent connection', array('id' => $id));
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $result = $manager->test_connection($id);
+            
+            $status_code = $result['success'] ? 200 : 400;
+            return new WP_REST_Response($result, $status_code);
+        }, 'test_agent');
+    }
+
+    /**
+     * Handle syncing plugins from agent.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_sync_agent($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $this->file_logger->info('Syncing plugins from agent', array('id' => $id));
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $result = $manager->sync_plugins($id);
+            
+            if (is_wp_error($result)) {
+                return $this->error_response($result->get_error_message(), 400);
+            }
+            
+            return new WP_REST_Response(array(
+                'success' => true,
+                'plugins' => $result,
+                'count'   => count($result),
+            ), 200);
+        }, 'sync_agent');
+    }
+
+    /**
+     * Handle executing action on agent plugin.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_agent_action($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $action = sanitize_key($request->get_param('action'));
+            $slug = sanitize_text_field($request->get_param('slug'));
+            
+            $this->file_logger->info('Executing agent action', array(
+                'id'     => $id,
+                'action' => $action,
+                'slug'   => $slug,
+            ));
+            
+            // Validate action
+            $allowed_actions = array('enable', 'disable', 'delete');
+            if (!in_array($action, $allowed_actions)) {
+                return $this->error_response('Invalid action. Allowed: ' . implode(', ', $allowed_actions), 400);
+            }
+            
+            if (empty($slug)) {
+                return $this->error_response('Plugin slug is required', 400);
+            }
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $result = $manager->execute_plugin_action($id, $action, $slug);
+            
+            if (is_wp_error($result)) {
+                return $this->error_response($result->get_error_message(), 400);
+            }
+            
+            return new WP_REST_Response($result, 200);
+        }, 'agent_action');
+    }
+
+    /**
+     * Handle getting agent action history.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_agent_history($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $limit = $request->get_param('limit') ?: 50;
+            $offset = $request->get_param('offset') ?: 0;
+            
+            $this->file_logger->info('Getting agent action history', array('id' => $id));
+            
+            $manager = Riseup_Agent_Manager::get_instance();
+            $result = $manager->get_action_history($id, $limit, $offset);
+            
+            return new WP_REST_Response(array(
+                'success' => true,
+                'total'   => $result['total'],
+                'actions' => $result['actions'],
+            ), 200);
+        }, 'agent_history');
     }
 }
 

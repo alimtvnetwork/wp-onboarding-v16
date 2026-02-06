@@ -108,6 +108,16 @@ class Riseup_Admin {
             'riseup-asia-settings',
             array($this, 'render_settings_page')
         );
+
+        // Agent Sites submenu
+        add_submenu_page(
+            'riseup-asia-uploader',
+            __('Agent Sites', 'riseup-asia-uploader'),
+            __('Agent Sites', 'riseup-asia-uploader'),
+            'manage_options',
+            'riseup-asia-agents',
+            array($this, 'render_agents_page')
+        );
     }
 
     /**
@@ -360,5 +370,12 @@ class Riseup_Admin {
                 'update_info' => $result,
             ));
         }
+    }
+
+    /**
+     * Render the agent sites page.
+     */
+    public function render_agents_page() {
+        include dirname(__FILE__) . '/../templates/admin-agents.php';
     }
 }
