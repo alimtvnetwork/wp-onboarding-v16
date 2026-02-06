@@ -18,6 +18,7 @@ import { useLocation } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { logger } from "@/lib/logger";
 import { configureRetry } from "@/lib/retry";
+import { useExecutionLoggerStore } from "@/hooks/useExecutionLogger";
 import { configureCircuitBreaker, circuitBreaker } from "@/lib/circuitBreaker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,8 @@ export default function Settings() {
         minLevel: settings.logging.frontendDebugMode ? 'trace' : 'info',
         consoleOutput: true 
       });
+      // Sync execution logger state with debug mode setting
+      useExecutionLoggerStore.getState().setEnabled(settings.logging.frontendDebugMode ?? false);
       configureRetry({
         maxAttempts: settings.logging.retryMaxAttempts ?? 3,
         initialDelayMs: settings.logging.retryInitialDelayMs ?? 1000,
@@ -196,7 +199,9 @@ export default function Settings() {
       minLevel: enabled ? 'trace' : 'info',
       consoleOutput: true 
     });
-    toast.success(`Debug mode ${enabled ? 'enabled' : 'disabled'}`, {
+    // Enable/disable the React execution logger (call chain tracking)
+    useExecutionLoggerStore.getState().setEnabled(enabled);
+    toast.success(`Debug mode ${enabled ? 'enabled' : 'disabled'} (execution logger ${enabled ? 'on' : 'off'})`, {
       style: {
         background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
         color: "white",

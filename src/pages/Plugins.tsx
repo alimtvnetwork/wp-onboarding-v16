@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useExecutionLoggerStore } from "@/hooks/useExecutionLogger";
 import { usePlugins } from "@/hooks/usePlugins";
 import { useSites } from "@/hooks/useSites";
 import { usePluginFormPersistence } from "@/hooks/usePluginFormPersistence";
@@ -305,13 +306,17 @@ export default function Plugins() {
   };
 
   const handleSyncPlugin = async (plugin: Plugin) => {
+    const execLogger = useExecutionLoggerStore.getState();
+    const chainId = execLogger.startChain(`SyncPlugin → ${plugin.name}`);
+    execLogger.log({ type: 'handler', name: 'handleSyncPlugin', args: `plugin=${plugin.name}` });
+
     if (!plugin.mappings || plugin.mappings.length === 0) {
       toast.warning("No sites mapped - add a site first");
+      execLogger.endChain(chainId);
       return;
     }
 
     // Open sync progress dialog for the first mapped site
-    // TODO: Add site selection if multiple sites are mapped
     const firstMapping = plugin.mappings[0];
     setSyncPlugin(plugin);
     setSyncSiteId(firstMapping.siteId);
@@ -320,11 +325,16 @@ export default function Plugins() {
 
     try {
       // Trigger sync via API - the dialog will track progress via WebSocket
+      execLogger.log({ type: 'api', name: `checkSync(${plugin.id}, ${firstMapping.siteId})` });
       const response = await api.checkSync(plugin.id, firstMapping.siteId);
       if (!response.success && response.error) {
+        execLogger.endChain(chainId, response.error.message);
         toast.error(response.error.message || "Sync check failed");
+      } else {
+        execLogger.endChain(chainId);
       }
     } catch (error) {
+      execLogger.endChain(chainId, error instanceof Error ? error.message : 'Sync failed');
       toast.error("Sync check failed");
     } finally {
       setIsSyncing(null);
@@ -493,6 +503,8 @@ export default function Plugins() {
   };
 
   const handleBulkSync = async () => {
+    const execLogger = useExecutionLoggerStore.getState();
+    const chainId = execLogger.startChain(`BulkSync → ${selectedPluginIds.size} plugins`);
     setIsBulkProcessing(true);
     toast.info("Syncing selected plugins...");
     try {
@@ -509,10 +521,12 @@ export default function Plugins() {
           }
         }
       }
+      execLogger.endChain(chainId);
       toast.success(`Sync complete: ${totalChanges} total changes detected`);
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
       clearSelection();
     } catch (error) {
+      execLogger.endChain(chainId, error instanceof Error ? error.message : 'Bulk sync failed');
       toast.error("Failed to sync plugins");
     } finally {
       setIsBulkProcessing(false);

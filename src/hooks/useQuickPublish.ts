@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { api, Plugin } from '@/lib/api';
 import { usePublishStore, initializePublishWebSocketListeners } from '@/stores/publishStore';
 import { useErrorStore } from '@/stores/errorStore';
+import { useExecutionLoggerStore } from '@/hooks/useExecutionLogger';
 
 /**
  * Hook for quick publish operations.
@@ -28,6 +29,10 @@ export function useQuickPublish() {
     siteName: string,
     siteUrl: string
   ): Promise<{ success: boolean; error?: string; filesUpdated?: number }> => {
+    const execLogger = useExecutionLoggerStore.getState();
+    const chainId = execLogger.startChain(`QuickPublish → ${plugin.name} → ${siteName}`);
+    execLogger.log({ type: 'handler', name: 'publishToSite', args: `plugin=${plugin.name}, site=${siteName}` });
+
     // Get upload mode from localStorage
     let uploadMode: "file" | "zip" = "file";
     try {
@@ -56,21 +61,27 @@ export function useQuickPublish() {
       });
 
       if (response.success) {
+        execLogger.log({ type: 'function', name: 'publishToSite.success', result: `${response.data?.filesUpdated || 0} files updated` });
+        execLogger.endChain(chainId);
         return { 
           success: true, 
           filesUpdated: response.data?.filesUpdated || 0 
         };
       } else if (response.error) {
+        execLogger.endChain(chainId, response.error.message);
         return { 
           success: false, 
           error: response.error.message 
         };
       }
+      execLogger.endChain(chainId, 'Unknown error');
       return { success: false, error: 'Unknown error' };
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      execLogger.endChain(chainId, errMsg);
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: errMsg 
       };
     }
   }, []);
