@@ -290,10 +290,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 			WithContext("url", uploadURL)
 	}
 
-	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderContentType, ContentTypeJSON)
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
+	c.setStandardHeaders(req, ContentTypeJSON)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -468,9 +465,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 			WithContext("url", url)
 	}
 
-	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
+	c.setStandardHeaders(req, "")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -590,10 +585,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 			WithContext("url", url)
 	}
 
-	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderContentType, ContentTypeJSON)
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
+	c.setStandardHeaders(req, ContentTypeJSON)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -637,10 +629,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 			WithContext("url", url)
 	}
 
-	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderContentType, ContentTypeJSON)
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
+	c.setStandardHeaders(req, ContentTypeJSON)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -725,10 +714,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 			WithContext("url", url)
 	}
 
-	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderContentType, ContentTypeJSON)
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
+	c.setStandardHeaders(req, ContentTypeJSON)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

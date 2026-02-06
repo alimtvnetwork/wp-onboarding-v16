@@ -221,11 +221,8 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 		return nil, fmt.Errorf("create upload request: %w", err)
 	}
 
-	// Auth header
-	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderContentType, writer.FormDataContentType())
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
+	// Set standard headers with multipart content type
+	c.setStandardHeaders(req, writer.FormDataContentType())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

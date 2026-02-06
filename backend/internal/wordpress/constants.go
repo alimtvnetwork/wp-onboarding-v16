@@ -165,6 +165,10 @@ const (
 	// HeaderUserAgent is the HTTP User-Agent header.
 	HeaderUserAgent = "User-Agent"
 
+	// HeaderSourceMachine is a custom header identifying the source machine (hostname).
+	// This enables audit trails on remote WordPress sites to track which server triggered actions.
+	HeaderSourceMachine = "X-Riseup-Source-Machine"
+
 	// UserAgentValue is the default User-Agent for WordPress API requests.
 	UserAgentValue = "WP-Plugin-Publish/1.0"
 )
