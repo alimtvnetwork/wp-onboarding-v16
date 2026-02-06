@@ -1090,26 +1090,28 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 }
 
 // EnableRemotePlugin activates a plugin on a remote WordPress site
+// Uses the Riseup Asia Uploader API for reliable plugin lifecycle management.
 func (s *Service) EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
 	return s.executeRemotePluginAction(ctx, siteID, pluginSlug, "enable", func(client *wordpress.Client) error {
-		return client.ActivatePlugin(pluginSlug)
+		return client.EnablePluginViaUploader(pluginSlug)
 	})
 }
 
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
+// Uses the Riseup Asia Uploader API for reliable plugin lifecycle management.
 func (s *Service) DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
 	return s.executeRemotePluginAction(ctx, siteID, pluginSlug, "disable", func(client *wordpress.Client) error {
-		return client.DeactivatePlugin(pluginSlug)
+		return client.DisablePluginViaUploader(pluginSlug)
 	})
 }
 
 // DeleteRemotePlugin removes a plugin from a remote WordPress site
+// Uses the Riseup Asia Uploader API for reliable plugin lifecycle management.
 func (s *Service) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
 	return s.executeRemotePluginAction(ctx, siteID, pluginSlug, "delete", func(client *wordpress.Client) error {
-		// First deactivate the plugin (WordPress requires this before deletion)
-		_ = client.DeactivatePlugin(pluginSlug)
-		// Then delete it
-		return client.DeletePlugin(pluginSlug)
+		// First deactivate, then delete via Riseup Asia Uploader
+		_ = client.DisablePluginViaUploader(pluginSlug)
+		return client.DeletePluginViaUploader(pluginSlug)
 	})
 }
 
