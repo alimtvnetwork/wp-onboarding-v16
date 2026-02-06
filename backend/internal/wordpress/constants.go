@@ -74,6 +74,9 @@ const (
 
 	// EndpointExportSelf exports the Rise Up Asia plugin as a ZIP.
 	EndpointExportSelf = "/export-self"
+
+	// EndpointExportPlugin exports any plugin as a base64-encoded ZIP (format: /plugins/%s/export).
+	EndpointExportPlugin = "/plugins/%s/export"
 )
 
 // =============================================================================
@@ -122,6 +125,9 @@ const (
 
 	// ActionExportSelf represents exporting the plugin itself.
 	ActionExportSelf = "export_self"
+
+	// ActionExportPlugin represents exporting an arbitrary plugin as ZIP.
+	ActionExportPlugin = "export_plugin"
 )
 
 // =============================================================================

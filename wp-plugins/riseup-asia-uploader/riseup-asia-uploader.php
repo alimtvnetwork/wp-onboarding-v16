@@ -781,6 +781,22 @@ class Riseup_Asia {
                 ),
             ));
 
+            // Plugin export endpoint (export any plugin as base64 ZIP).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_EXPORT);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_EXPORT, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_export_plugin'),
+                'permission_callback' => $this->build_permission_callback('plugin_export', array($this, 'check_plugin_permission')),
+                'args'                => array(
+                    'slug' => array(
+                        'required'          => true,
+                        'validate_callback' => function($param) {
+                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
+                        },
+                    ),
+                ),
+            ));
+
             // =================================================================
             // AGENT MANAGEMENT ENDPOINTS
             // =================================================================
@@ -1815,6 +1831,70 @@ class Riseup_Asia {
             $this->file_logger->log_exception($e, 'Export-self error');
             return $this->error_response('Export failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /**
+     * Export any installed plugin as a base64-encoded ZIP.
+     * Used by the Go backend for pre-publish backup / rollback.
+     */
+    public function handle_export_plugin($request) {
+        $slug = $request->get_param('slug');
+        $this->file_logger->info('Export-plugin endpoint called', array('slug' => $slug));
+
+        return $this->safe_execute(function () use ($slug) {
+            $plugins_dir = WP_PLUGIN_DIR;
+            $plugin_dir  = RiseupPathUtils::join($plugins_dir, $slug);
+
+            if (!RiseupPathUtils::dirExists($plugin_dir)) {
+                return $this->error_response('Plugin not found: ' . $slug, RISEUP_HTTP_NOT_FOUND);
+            }
+
+            // Safety: prevent path traversal
+            if (!RiseupPathUtils::isSafePath($plugin_dir, $plugins_dir)) {
+                return $this->error_response('Invalid plugin slug', RISEUP_HTTP_BAD_REQUEST);
+            }
+
+            $temp_dir = $this->get_temp_dir();
+            $zip_file = RiseupPathUtils::join($temp_dir, $slug . '-backup.zip');
+
+            $zip = new ZipArchive();
+            if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                $this->file_logger->error('Failed to create export ZIP');
+                return $this->error_response('Failed to create ZIP file', RISEUP_HTTP_SERVER_ERROR);
+            }
+
+            // Add all files recursively
+            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+            $this->add_dir_to_zip($zip, $plugin_dir, $slug, $ignore);
+            $file_count = $zip->numFiles;
+            $zip->close();
+
+            $zip_content = file_get_contents($zip_file);
+            @unlink($zip_file);
+
+            if ($zip_content === false) {
+                return $this->error_response('Failed to read ZIP file', RISEUP_HTTP_SERVER_ERROR);
+            }
+
+            $this->file_logger->info('Export-plugin complete', array(
+                'slug' => $slug,
+                'size' => strlen($zip_content),
+                'files' => $file_count,
+            ));
+
+            $this->logger->log_plugin_action(RISEUP_ACTION_EXPORT_PLUGIN, $slug, RISEUP_STATUS_SUCCESS, array(
+                'size'  => strlen($zip_content),
+                'files' => $file_count,
+            ));
+
+            return new WP_REST_Response(array(
+                'success'    => true,
+                'plugin_zip' => base64_encode($zip_content),
+                'slug'       => $slug,
+                'file_count' => $file_count,
+                'size'       => strlen($zip_content),
+            ), RISEUP_HTTP_OK);
+        });
     }
 
     // =========================================================================

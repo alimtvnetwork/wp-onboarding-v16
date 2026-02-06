@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.9.1');
+    define('RISEUP_VERSION', '1.10.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -121,6 +121,10 @@ if (!defined('RISEUP_ENDPOINT_PLUGIN_DISABLE')) {
 if (!defined('RISEUP_ENDPOINT_PLUGIN_DELETE')) {
     define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/delete');
 }
+// Plugin export endpoint - exports a plugin as base64-encoded ZIP (expects slug as path parameter)
+if (!defined('RISEUP_ENDPOINT_PLUGIN_EXPORT')) {
+    define('RISEUP_ENDPOINT_PLUGIN_EXPORT', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/export');
+}
 // OpenAPI specification endpoint
 if (!defined('RISEUP_ENDPOINT_OPENAPI')) {
     define('RISEUP_ENDPOINT_OPENAPI', 'openapi');
@@ -182,6 +186,9 @@ if (!defined('RISEUP_ACTION_AUTH_FAILED')) {
 }
 if (!defined('RISEUP_ACTION_EXPORT_SELF')) {
     define('RISEUP_ACTION_EXPORT_SELF', 'export_self');
+}
+if (!defined('RISEUP_ACTION_EXPORT_PLUGIN')) {
+    define('RISEUP_ACTION_EXPORT_PLUGIN', 'export_plugin');
 }
 
 // =============================================================================

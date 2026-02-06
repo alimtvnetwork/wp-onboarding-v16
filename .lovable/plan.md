@@ -390,7 +390,7 @@ All originally suggested improvements have been implemented:
 2. ~~Batch Publishing~~ → Phase 34 ✅
 3. **Progress Persistence**: Save publish progress to localStorage (considered low priority - Zustand store persists across navigation)
 4. ~~Publish Queue~~ → Phase 35 ✅
-5. **Rollback on Failure**: If activation fails, offer to restore from backup automatically (future)
+5. ~~Rollback on Failure~~ → Phase 38 ✅
 6. ~~Diff View~~ → Phase 8 ✅
 7. ~~Scheduled Publishing~~ → Phase 36 ✅
 
@@ -644,6 +644,35 @@ Created `templates/admin-agents.php`:
 - [x] Updated `handleBulkDeploy` to use `useBulkQuickPublish` hook
 - [x] Replaced sequential publish loop with concurrency-controlled bulk publish
 - [x] "Deploy All" button now uses efficient parallel execution
+
+---
+
+## Phase 38: Rollback on Failure ✅ COMPLETE
+
+**Priority: HIGH**
+**Status: COMPLETE**
+**Completed: 2026-02-06**
+
+### 38.1 WordPress Plugin - Export Plugin Endpoint ✅
+- [x] Added `RISEUP_ENDPOINT_PLUGIN_EXPORT` constant (`plugins/{slug}/export`)
+- [x] Added `RISEUP_ACTION_EXPORT_PLUGIN` constant
+- [x] Created `handle_export_plugin()` handler - exports any plugin as base64 ZIP
+- [x] Route registered with slug validation and permission checks
+- [x] Uses `RiseupPathUtils` for safe path handling
+- [x] Version bumped to 1.10.0
+
+### 38.2 Go Backend - ExportPlugin Client Method ✅
+- [x] Added `EndpointExportPlugin` and `ActionExportPlugin` constants
+- [x] Created `ExportPluginResult` struct
+- [x] Created `ExportPlugin(slug)` method on WordPress client
+
+### 38.3 Publish Pipeline Rollback Logic ✅
+- [x] Added `RollbackOnFailure` option to `PublishOptions` (default: true)
+- [x] Added `RollbackStatus` and `RollbackMessage` to `PublishResult`
+- [x] Pre-upload: exports remote plugin as backup ZIP before overwriting
+- [x] On activation failure: deactivates broken plugin, re-uploads backup ZIP
+- [x] Full session logging with structured stage context for rollback operations
+- [x] Graceful degradation if export unavailable (rollback skipped with warning)
 
 ---
 

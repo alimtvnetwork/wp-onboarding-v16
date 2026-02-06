@@ -752,8 +752,57 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 }
 
 // =============================================================================
-// EXPORT SELF TYPES AND METHODS
+// EXPORT TYPES AND METHODS
 // =============================================================================
+
+// ExportPluginResult holds the response from the export-plugin endpoint.
+type ExportPluginResult struct {
+	Success   bool   `json:"success"`
+	PluginZip string `json:"plugin_zip"` // base64 encoded
+	Slug      string `json:"slug"`
+	FileCount int    `json:"file_count"`
+	Size      int    `json:"size"`
+}
+
+// ExportPlugin fetches an arbitrary plugin as a base64-encoded ZIP from the remote site.
+// Used for pre-publish backup to enable rollback on activation failure.
+func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
+	if namespace == "" {
+		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
+	}
+
+	endpoint := fmt.Sprintf("/%s"+EndpointExportPlugin, namespace, slug)
+
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "export-plugin request failed").
+			WithContext("slug", slug)
+	}
+	defer resp.Body.Close()
+
+	respBytes, _ := io.ReadAll(resp.Body)
+	respBody := string(respBytes)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &APIError{
+			Operation:    "export plugin for rollback",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(respBody, 8192),
+			PluginSlugIn: slug,
+		}
+	}
+
+	var result ExportPluginResult
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode export-plugin result")
+	}
+
+	return &result, nil
+}
 
 // ExportSelfResult represents the result of exporting the uploader plugin.
 type ExportSelfResult struct {
