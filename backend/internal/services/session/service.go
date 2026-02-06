@@ -474,6 +474,49 @@ func (s *Service) cleanupOldSessions() {
 	}
 }
 
+// ClearAllSessions removes all session log files
+func (s *Service) ClearAllSessions() error {
+	s.mu.Lock()
+	// Close all open sessions
+	for id, session := range s.sessions {
+		session.mu.Lock()
+		if session.logFile != nil {
+			session.logFile.Close()
+			session.logFile = nil
+		}
+		session.mu.Unlock()
+		delete(s.sessions, id)
+	}
+	s.mu.Unlock()
+
+	// Remove all files in sessions directory
+	files, err := os.ReadDir(s.sessionsDir)
+	if err != nil {
+		return fmt.Errorf("read sessions directory: %w", err)
+	}
+
+	var removeErrors []error
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		filePath := pathutil.MustJoin(s.sessionsDir, f.Name())
+		if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+			removeErrors = append(removeErrors, err)
+		}
+	}
+
+	if len(removeErrors) > 0 {
+		return fmt.Errorf("failed to remove %d session files", len(removeErrors))
+	}
+
+	if s.log != nil {
+		s.log.Info("All sessions cleared", "count", len(files))
+	}
+
+	return nil
+}
+
 // SetMetadata sets metadata on a session
 func (s *Service) SetMetadata(sessionID, key string, value interface{}) {
 	s.mu.RLock()

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ApiError } from '@/lib/api';
 import { getClickPathForError, ClickEvent } from '@/hooks/useClickTracker';
+import { getExecutionLogsForError, ExecutionLogEntry, CallChain } from '@/hooks/useExecutionLogger';
 
 /**
  * Parsed stack frame with file, line, column info
@@ -95,6 +96,11 @@ export interface CapturedError {
   // UI click path tracking (Phase 5)
   uiClickPath?: ClickEvent[];
   uiClickPathString?: string;
+  // React execution logs (Phase 6.3)
+  executionLogs?: ExecutionLogEntry[];
+  executionChain?: CallChain | null;
+  executionLogsEnabled?: boolean;
+  executionLogsFormatted?: string;
 }
 
 interface ErrorStore {
@@ -331,6 +337,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     // Capture UI click path at the moment of error
     const { clickPath, clickPathString } = getClickPathForError();
     
+    // Capture React execution logs at the moment of error
+    const execLogs = getExecutionLogsForError();
+    
     const captured: CapturedError = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       code: error.code || 'E9999',
@@ -370,6 +379,11 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       // UI click path tracking
       uiClickPath: clickPath.length > 0 ? clickPath : undefined,
       uiClickPathString: clickPathString || undefined,
+      // React execution logs
+      executionLogs: execLogs.entries.length > 0 ? execLogs.entries : undefined,
+      executionChain: execLogs.chain,
+      executionLogsEnabled: execLogs.enabled,
+      executionLogsFormatted: execLogs.formatted || undefined,
     };
     
     set((state) => {
@@ -424,6 +438,9 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     // Capture UI click path at the moment of error
     const { clickPath, clickPathString } = getClickPathForError();
     
+    // Capture React execution logs at the moment of error
+    const execLogs = getExecutionLogsForError();
+    
     const captured: CapturedError = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       code: 'E9003',
@@ -458,6 +475,11 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       // UI click path tracking
       uiClickPath: clickPath.length > 0 ? clickPath : undefined,
       uiClickPathString: clickPathString || undefined,
+      // React execution logs
+      executionLogs: execLogs.entries.length > 0 ? execLogs.entries : undefined,
+      executionChain: execLogs.chain,
+      executionLogsEnabled: execLogs.enabled,
+      executionLogsFormatted: execLogs.formatted || undefined,
     };
     
     set((state) => {

@@ -434,23 +434,57 @@ export function GlobalErrorModal() {
                                 </TabsTrigger>
                               </TabsList>
                               
-                              <TabsContent value="frontend" className="m-0">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                                    <FileCode2 className="h-4 w-4" />
-                                    Frontend Stack Trace
-                                  </h4>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => copySection("Frontend stack trace", stack)}
-                                  >
-                                    <Copy className="h-4 w-4" />
-                                  </Button>
+                              <TabsContent value="frontend" className="m-0 space-y-4">
+                                {/* React Execution Logs (if debug mode was enabled) */}
+                                {selectedError.executionLogs && selectedError.executionLogs.length > 0 && (
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                        <Activity className="h-4 w-4 text-blue-500" />
+                                        React Execution Chain ({selectedError.executionLogs.length} calls)
+                                      </h4>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => copySection("React execution logs", selectedError.executionLogsFormatted || "")}
+                                      >
+                                        <Copy className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    <ScrollArea className="h-32 rounded-md border bg-blue-500/5">
+                                      <pre className="text-xs p-3 font-mono whitespace-pre-wrap">
+                                        {selectedError.executionLogsFormatted || "(no logs captured)"}
+                                      </pre>
+                                    </ScrollArea>
+                                  </div>
+                                )}
+                                
+                                {/* Note about debug mode if no execution logs */}
+                                {!selectedError.executionLogs && selectedError.executionLogsEnabled === false && (
+                                  <div className="p-3 rounded-md bg-muted text-xs text-muted-foreground">
+                                    <span className="font-medium">Tip:</span> Enable Debug Mode in settings to capture React execution chains for detailed function call tracking.
+                                  </div>
+                                )}
+                                
+                                {/* Frontend Stack Trace */}
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                                      <FileCode2 className="h-4 w-4" />
+                                      Raw Stack Trace
+                                    </h4>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => copySection("Frontend stack trace", stack)}
+                                    >
+                                      <Copy className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-40">
+                                    {isFrontendStack ? stack : "No frontend stack trace available"}
+                                  </pre>
                                 </div>
-                                <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto whitespace-pre-wrap font-mono max-h-60">
-                                  {isFrontendStack ? stack : "No frontend stack trace available"}
-                                </pre>
                               </TabsContent>
                               
                               <TabsContent value="backend" className="m-0">
