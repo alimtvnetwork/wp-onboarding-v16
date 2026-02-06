@@ -361,6 +361,27 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v3 applied successfully');
             }
             
+            // Migration v4: Source machine tracking for request attribution
+            if ($current_version < 4) {
+                $this->file_logger->info('Applying migration v4: source machine tracking');
+                
+                // Add source_machine column to track which server triggered the action
+                try {
+                    $this->pdo->exec("ALTER TABLE " . RISEUP_TABLE_TRANSACTIONS . " ADD COLUMN source_machine TEXT");
+                    $this->file_logger->debug("Column added: source_machine");
+                } catch (PDOException $e) {
+                    // Column might already exist
+                    $this->file_logger->debug("Column might exist: source_machine", array('error' => $e->getMessage()));
+                }
+                
+                // Create index for source_machine queries
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_source_machine ON " . RISEUP_TABLE_TRANSACTIONS . "(source_machine)");
+                
+                // Record migration
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (4, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v4 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {
@@ -458,6 +479,9 @@ class Riseup_Database {
             }
             if (!empty($enhanced['agent_site_id'])) {
                 $record->set('agent_site_id', (int) $enhanced['agent_site_id']);
+            }
+            if (!empty($enhanced['source_machine'])) {
+                $record->set('source_machine', $enhanced['source_machine']);
             }
             
             $result = $record->save();

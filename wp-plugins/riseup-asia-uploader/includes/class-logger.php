@@ -97,6 +97,22 @@ class Riseup_Logger {
     }
 
     /**
+     * Get source machine hostname from request header.
+     * This identifies which management server triggered the API request.
+     *
+     * @return string|null Source machine hostname or null if not provided.
+     */
+    private function get_source_machine() {
+        $header_key = 'HTTP_X_RISEUP_SOURCE_MACHINE';
+        if (!empty($_SERVER[$header_key])) {
+            // Sanitize: allow alphanumeric, dots, hyphens, underscores
+            $machine = preg_replace('/[^a-zA-Z0-9.\-_]/', '', $_SERVER[$header_key]);
+            return !empty($machine) ? $machine : null;
+        }
+        return null;
+    }
+
+    /**
      * Get current user info.
      *
      * @return array User info with 'login' and 'id'.
@@ -142,6 +158,14 @@ class Riseup_Logger {
         ));
         
         $user = $this->get_user_info();
+        $source_machine = $this->get_source_machine();
+        
+        // Include source machine in enhanced fields
+        $enhanced = array();
+        if ($source_machine) {
+            $enhanced['source_machine'] = $source_machine;
+        }
+        
         return $this->get_db()->log_transaction(
             $action,
             $plugin_slug,
@@ -151,7 +175,8 @@ class Riseup_Logger {
             $this->get_client_ip(),
             $details,
             $status,
-            $error_msg
+            $error_msg,
+            $enhanced
         );
     }
 
@@ -174,6 +199,14 @@ class Riseup_Logger {
         ));
         
         $user = $this->get_user_info();
+        $source_machine = $this->get_source_machine();
+        
+        // Include source machine in enhanced fields
+        $enhanced = array();
+        if ($source_machine) {
+            $enhanced['source_machine'] = $source_machine;
+        }
+        
         return $this->get_db()->log_transaction(
             $action,
             null, // plugin_slug
@@ -183,7 +216,8 @@ class Riseup_Logger {
             $this->get_client_ip(),
             $details,
             $status,
-            $error_msg
+            $error_msg,
+            $enhanced
         );
     }
 
@@ -200,6 +234,14 @@ class Riseup_Logger {
         
         // For auth failures, we may not have a valid user
         $provided_user = isset($details['username']) ? $details['username'] : 'unknown';
+        $source_machine = $this->get_source_machine();
+        
+        // Include source machine in enhanced fields
+        $enhanced = array();
+        if ($source_machine) {
+            $enhanced['source_machine'] = $source_machine;
+        }
+        
         return $this->get_db()->log_transaction(
             RISEUP_ACTION_AUTH_FAILED,
             null,
@@ -209,7 +251,8 @@ class Riseup_Logger {
             $this->get_client_ip(),
             $details,
             RISEUP_STATUS_FAILED,
-            $reason
+            $reason,
+            $enhanced
         );
     }
 

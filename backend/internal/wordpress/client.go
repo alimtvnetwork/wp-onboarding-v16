@@ -7,13 +7,26 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/url"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"wp-plugin-publish/pkg/apperror"
 )
+
+// sourceMachineHostname caches the machine hostname for header attribution.
+// Computed once at package init to avoid repeated syscalls.
+var sourceMachineHostname string
+
+func init() {
+	var err error
+	sourceMachineHostname, err = os.Hostname()
+	if err != nil || sourceMachineHostname == "" {
+		sourceMachineHostname = "unknown"
+	}
+}
 
 // APIError contains rich request/response context for failed WordPress REST calls.
 // It intentionally keeps Error() short/stable (so user-facing messages remain readable)
@@ -98,6 +111,16 @@ func (c *Client) progress(step, status, message string, details map[string]inter
 	}
 }
 
+// setStandardHeaders applies all standard headers to an HTTP request including
+// authentication, content type, user agent, and source machine identification.
+func (c *Client) setStandardHeaders(req *http.Request, contentType string) {
+	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
+	req.Header.Set(HeaderAuthorization, "Basic "+auth)
+	req.Header.Set(HeaderContentType, contentType)
+	req.Header.Set(HeaderUserAgent, UserAgentValue)
+	req.Header.Set(HeaderSourceMachine, sourceMachineHostname)
+}
+
 // request makes an authenticated HTTP request to the WordPress API
 func (c *Client) request(method, endpoint string, body interface{}) (*http.Response, error) {
 	var bodyReader io.Reader
@@ -117,12 +140,7 @@ func (c *Client) request(method, endpoint string, body interface{}) (*http.Respo
 			WithContext("method", method)
 	}
 
-	// Add Application Password authentication
-	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderContentType, ContentTypeJSON)
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
-
+	c.setStandardHeaders(req, ContentTypeJSON)
 	return c.httpClient.Do(req)
 }
 
