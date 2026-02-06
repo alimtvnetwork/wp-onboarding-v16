@@ -231,6 +231,203 @@ if (!defined('ABSPATH')) {
             </p>
         </div>
 
+        <!-- Database Snapshot Settings -->
+        <div class="riseup-card">
+            <h2>
+                <span class="dashicons dashicons-database"></span>
+                <?php esc_html_e('Database Snapshot Settings', 'riseup-asia-uploader'); ?>
+            </h2>
+            <p class="description">
+                <?php esc_html_e('Configure automated database snapshots, retention policies, and provider preferences. Manage snapshots from the', 'riseup-asia-uploader'); ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-snapshots')); ?>"><?php esc_html_e('Snapshots Dashboard', 'riseup-asia-uploader'); ?></a>.
+            </p>
+
+            <!-- Provider Selection -->
+            <h3><?php esc_html_e('Snapshot Provider', 'riseup-asia-uploader'); ?></h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="snap_preferred_provider"><?php esc_html_e('Preferred Provider', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <select id="snap_preferred_provider">
+                            <option value="auto" <?php selected($snapshot_settings['preferred_provider'], 'auto'); ?>>
+                                <?php esc_html_e('Auto-detect (recommended)', 'riseup-asia-uploader'); ?>
+                            </option>
+                            <?php foreach ($snapshot_providers as $provider): ?>
+                                <option value="<?php echo esc_attr($provider['id']); ?>" 
+                                        <?php selected($snapshot_settings['preferred_provider'], $provider['id']); ?>
+                                        <?php disabled(!$provider['available']); ?>>
+                                    <?php echo esc_html($provider['name']); ?>
+                                    <?php if (!$provider['available']): ?>(<?php esc_html_e('not installed', 'riseup-asia-uploader'); ?>)<?php endif; ?>
+                                    <?php if ($provider['version']): ?>(v<?php echo esc_html($provider['version']); ?>)<?php endif; ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="description"><?php esc_html_e('Priority: WP Reset > UpdraftPlus > Native SQLite.', 'riseup-asia-uploader'); ?></p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Scheduling -->
+            <h3><?php esc_html_e('Scheduling', 'riseup-asia-uploader'); ?></h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="snap_schedule_enabled"><?php esc_html_e('Enable Scheduled Snapshots', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="snap_schedule_enabled" value="1" <?php checked($snapshot_settings['schedule_enabled']); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="snap_schedule_frequency"><?php esc_html_e('Frequency', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <select id="snap_schedule_frequency">
+                            <option value="manual" <?php selected($snapshot_settings['schedule_frequency'], 'manual'); ?>><?php esc_html_e('Manual Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="daily" <?php selected($snapshot_settings['schedule_frequency'], 'daily'); ?>><?php esc_html_e('Daily', 'riseup-asia-uploader'); ?></option>
+                            <option value="weekly" <?php selected($snapshot_settings['schedule_frequency'], 'weekly'); ?>><?php esc_html_e('Weekly', 'riseup-asia-uploader'); ?></option>
+                            <option value="monthly" <?php selected($snapshot_settings['schedule_frequency'], 'monthly'); ?>><?php esc_html_e('Monthly', 'riseup-asia-uploader'); ?></option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="snap_schedule_time"><?php esc_html_e('Time', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <input type="time" id="snap_schedule_time" value="<?php echo esc_attr($snapshot_settings['schedule_time']); ?>">
+                    </td>
+                </tr>
+                <tr id="snap_day_row" style="<?php echo ($snapshot_settings['schedule_frequency'] === 'daily' || $snapshot_settings['schedule_frequency'] === 'manual') ? 'display:none;' : ''; ?>">
+                    <th scope="row">
+                        <label for="snap_schedule_day"><?php esc_html_e('Day', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" id="snap_schedule_day" min="1" max="28" value="<?php echo esc_attr($snapshot_settings['schedule_day']); ?>" class="small-text">
+                        <p class="description"><?php esc_html_e('Day of week (1=Mon, 7=Sun) for weekly, or day of month (1-28) for monthly.', 'riseup-asia-uploader'); ?></p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Default Scope -->
+            <h3><?php esc_html_e('Default Scope', 'riseup-asia-uploader'); ?></h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="snap_default_scope"><?php esc_html_e('Tables to Snapshot', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <select id="snap_default_scope">
+                            <option value="all" <?php selected($snapshot_settings['default_scope'], 'all'); ?>><?php esc_html_e('All Tables', 'riseup-asia-uploader'); ?></option>
+                            <option value="wordpress" <?php selected($snapshot_settings['default_scope'], 'wordpress'); ?>><?php esc_html_e('WordPress Core Only', 'riseup-asia-uploader'); ?></option>
+                            <option value="content" <?php selected($snapshot_settings['default_scope'], 'content'); ?>><?php esc_html_e('Content Only (posts, terms, comments)', 'riseup-asia-uploader'); ?></option>
+                            <option value="custom" <?php selected($snapshot_settings['default_scope'], 'custom'); ?>><?php esc_html_e('Custom Selection', 'riseup-asia-uploader'); ?></option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Retention Policy -->
+            <h3><?php esc_html_e('Retention Policy', 'riseup-asia-uploader'); ?></h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="snap_retention_type"><?php esc_html_e('Cleanup Strategy', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <select id="snap_retention_type">
+                            <option value="none" <?php selected($snapshot_settings['retention_type'], 'none'); ?>><?php esc_html_e('None (manual only)', 'riseup-asia-uploader'); ?></option>
+                            <option value="days" <?php selected($snapshot_settings['retention_type'], 'days'); ?>><?php esc_html_e('Keep for N days', 'riseup-asia-uploader'); ?></option>
+                            <option value="count" <?php selected($snapshot_settings['retention_type'], 'count'); ?>><?php esc_html_e('Keep last N snapshots', 'riseup-asia-uploader'); ?></option>
+                        </select>
+                    </td>
+                </tr>
+                <tr id="snap_retention_days_row" style="<?php echo $snapshot_settings['retention_type'] !== 'days' ? 'display:none;' : ''; ?>">
+                    <th scope="row">
+                        <label for="snap_retention_days"><?php esc_html_e('Retention Days', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" id="snap_retention_days" min="1" max="365" value="<?php echo esc_attr($snapshot_settings['retention_days']); ?>" class="small-text">
+                        <p class="description"><?php esc_html_e('Snapshots older than this will be deleted during cleanup.', 'riseup-asia-uploader'); ?></p>
+                    </td>
+                </tr>
+                <tr id="snap_retention_count_row" style="<?php echo $snapshot_settings['retention_type'] !== 'count' ? 'display:none;' : ''; ?>">
+                    <th scope="row">
+                        <label for="snap_retention_count"><?php esc_html_e('Maximum Count', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" id="snap_retention_count" min="1" max="100" value="<?php echo esc_attr($snapshot_settings['retention_count']); ?>" class="small-text">
+                        <p class="description"><?php esc_html_e('Oldest snapshots beyond this limit will be deleted.', 'riseup-asia-uploader'); ?></p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Safety & Limits -->
+            <h3><?php esc_html_e('Safety & Limits', 'riseup-asia-uploader'); ?></h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="snap_pre_restore_backup"><?php esc_html_e('Pre-Restore Backup', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="snap_pre_restore_backup" value="1" <?php checked($snapshot_settings['pre_restore_backup']); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <p class="description"><?php esc_html_e('Automatically create a backup before restoring a snapshot.', 'riseup-asia-uploader'); ?></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="snap_max_size"><?php esc_html_e('Max Snapshot Size (MB)', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" id="snap_max_size" min="50" max="2000" value="<?php echo esc_attr($snapshot_settings['max_snapshot_size_mb']); ?>" class="small-text">
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="snap_batch_size"><?php esc_html_e('Batch Size', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <input type="number" id="snap_batch_size" min="100" max="10000" step="100" value="<?php echo esc_attr($snapshot_settings['batch_size']); ?>" class="small-text">
+                        <p class="description"><?php esc_html_e('Rows per batch during export/import. Lower values use less memory.', 'riseup-asia-uploader'); ?></p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Storage Stats -->
+            <h3><?php esc_html_e('Storage', 'riseup-asia-uploader'); ?></h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><?php esc_html_e('Storage Info', 'riseup-asia-uploader'); ?></th>
+                    <td>
+                        <span id="snap_storage_info"><em><?php esc_html_e('Loading...', 'riseup-asia-uploader'); ?></em></span>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e('Actions', 'riseup-asia-uploader'); ?></th>
+                    <td>
+                        <button type="button" id="btn_save_snapshot_settings" class="button button-primary">
+                            <span class="dashicons dashicons-yes"></span>
+                            <?php esc_html_e('Save Snapshot Settings', 'riseup-asia-uploader'); ?>
+                        </button>
+                        <button type="button" id="btn_run_cleanup" class="button button-secondary">
+                            <span class="dashicons dashicons-trash"></span>
+                            <?php esc_html_e('Run Cleanup Now', 'riseup-asia-uploader'); ?>
+                        </button>
+                        <span id="snap_action_status" style="margin-left: 10px;"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
         <?php submit_button(__('Save Settings', 'riseup-asia-uploader')); ?>
     </form>
 </div>
@@ -327,3 +524,101 @@ jQuery(document).ready(function($) {
     color: #dc3232;
 }
 </style>
+
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+    var ajaxNonce = '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>';
+    var $snapStatus = $('#snap_action_status');
+
+    function showSnapStatus(message, isError) {
+        $snapStatus.html(message).css('color', isError ? '#dc3232' : '#46b450').show();
+        setTimeout(function() { $snapStatus.fadeOut(); }, 5000);
+    }
+
+    // Toggle day row visibility based on frequency
+    $('#snap_schedule_frequency').on('change', function() {
+        var freq = $(this).val();
+        $('#snap_day_row').toggle(freq === 'weekly' || freq === 'monthly');
+    });
+
+    // Toggle retention rows based on type
+    $('#snap_retention_type').on('change', function() {
+        var type = $(this).val();
+        $('#snap_retention_days_row').toggle(type === 'days');
+        $('#snap_retention_count_row').toggle(type === 'count');
+    });
+
+    // Load storage stats on page load
+    function loadStorageStats() {
+        $.post(ajaxurl, {
+            action: 'riseup_get_snapshot_storage_stats',
+            nonce: ajaxNonce
+        }, function(response) {
+            if (response.success) {
+                var d = response.data;
+                var info = d.total_snapshots + ' snapshots, ' + d.total_size_formatted + ' used';
+                if (d.disk_free_formatted) {
+                    info += ' (' + d.disk_free_formatted + ' free)';
+                }
+                $('#snap_storage_info').html(info);
+            } else {
+                $('#snap_storage_info').html('<em>Unable to load stats</em>');
+            }
+        }).fail(function() {
+            $('#snap_storage_info').html('<em>Unable to load stats</em>');
+        });
+    }
+    loadStorageStats();
+
+    // Save snapshot settings
+    $('#btn_save_snapshot_settings').on('click', function() {
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+
+        $.post(ajaxurl, {
+            action: 'riseup_save_snapshot_settings',
+            nonce: ajaxNonce,
+            preferred_provider: $('#snap_preferred_provider').val(),
+            schedule_enabled: $('#snap_schedule_enabled').is(':checked') ? '1' : '0',
+            schedule_frequency: $('#snap_schedule_frequency').val(),
+            schedule_time: $('#snap_schedule_time').val(),
+            schedule_day: $('#snap_schedule_day').val(),
+            default_scope: $('#snap_default_scope').val(),
+            retention_type: $('#snap_retention_type').val(),
+            retention_days: $('#snap_retention_days').val(),
+            retention_count: $('#snap_retention_count').val(),
+            pre_restore_backup: $('#snap_pre_restore_backup').is(':checked') ? '1' : '0',
+            max_snapshot_size_mb: $('#snap_max_size').val(),
+            batch_size: $('#snap_batch_size').val()
+        }, function(response) {
+            showSnapStatus('✓ ' + (response.data ? response.data.message : 'Saved'), false);
+        }).fail(function() {
+            showSnapStatus('✗ Failed to save settings', true);
+        }).always(function() {
+            $btn.prop('disabled', false);
+        });
+    });
+
+    // Run cleanup
+    $('#btn_run_cleanup').on('click', function() {
+        var $btn = $(this);
+        $btn.prop('disabled', true).find('.dashicons').addClass('spin');
+
+        $.post(ajaxurl, {
+            action: 'riseup_run_snapshot_cleanup',
+            nonce: ajaxNonce
+        }, function(response) {
+            if (response.success) {
+                showSnapStatus('✓ ' + response.data.message, false);
+                loadStorageStats();
+            } else {
+                showSnapStatus('✗ ' + (response.data ? response.data.message : 'Cleanup failed'), true);
+            }
+        }).fail(function() {
+            showSnapStatus('✗ Request failed', true);
+        }).always(function() {
+            $btn.prop('disabled', false).find('.dashicons').removeClass('spin');
+        });
+    });
+});
+</script>
