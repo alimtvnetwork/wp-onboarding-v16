@@ -382,6 +382,58 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v4 applied successfully');
             }
             
+            // Migration v5: Snapshot system tables
+            if ($current_version < 5) {
+                $this->file_logger->info('Applying migration v5: snapshot system tables');
+                
+                // Snapshots table - stores metadata about each snapshot
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_SNAPSHOTS . " (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sequence INTEGER NOT NULL,
+                    filename TEXT NOT NULL UNIQUE,
+                    filepath TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT,
+                    status TEXT DEFAULT 'pending',
+                    provider TEXT NOT NULL,
+                    scope TEXT NOT NULL,
+                    tables_json TEXT,
+                    table_counts_json TEXT,
+                    total_rows INTEGER,
+                    file_size INTEGER,
+                    duration_ms INTEGER,
+                    triggered_by TEXT,
+                    error_message TEXT,
+                    metadata_json TEXT
+                )");
+                $this->file_logger->debug('Table created: snapshots');
+                
+                // Snapshot progress table - tracks per-table export progress
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_SNAPSHOT_PROGRESS . " (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    snapshot_id INTEGER NOT NULL,
+                    table_name TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    rows_total INTEGER,
+                    rows_exported INTEGER DEFAULT 0,
+                    started_at TEXT,
+                    completed_at TEXT,
+                    error_message TEXT,
+                    FOREIGN KEY (snapshot_id) REFERENCES snapshots(id) ON DELETE CASCADE
+                )");
+                $this->file_logger->debug('Table created: snapshot_progress');
+                
+                // Indexes for snapshot tables
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_created ON " . RISEUP_TABLE_SNAPSHOTS . "(created_at DESC)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_status ON " . RISEUP_TABLE_SNAPSHOTS . "(status)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_provider ON " . RISEUP_TABLE_SNAPSHOTS . "(provider)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_progress_snapshot ON " . RISEUP_TABLE_SNAPSHOT_PROGRESS . "(snapshot_id)");
+                
+                // Record migration
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (5, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v5 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {
