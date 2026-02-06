@@ -70,31 +70,39 @@ type BatchSyncResult struct {
 	Errors     int          `json:"errors"`
 }
 
+// SitePasswordDecryptor interface for getting decrypted site passwords
+type SitePasswordDecryptor interface {
+	GetDecryptedPassword(ctx context.Context, siteID int64) (string, error)
+}
+
 // Config holds sync service configuration
 type Config struct {
-	DB              *database.DB
-	Logger          *logger.Logger
-	PluginService   *plugin.Service
-	WPClientFactory func(url, user, pass string) *wordpress.Client
-	WSHub           *ws.Hub
+	DB                    *database.DB
+	Logger                *logger.Logger
+	PluginService         *plugin.Service
+	SitePasswordDecryptor SitePasswordDecryptor
+	WPClientFactory       func(url, user, pass string) *wordpress.Client
+	WSHub                 *ws.Hub
 }
 
 type serviceImpl struct {
-	db              *database.DB
-	log             *logger.Logger
-	pluginService   *plugin.Service
-	wpClientFactory func(url, user, pass string) *wordpress.Client
-	wsHub           *ws.Hub
+	db                    *database.DB
+	log                   *logger.Logger
+	pluginService         *plugin.Service
+	sitePasswordDecryptor SitePasswordDecryptor
+	wpClientFactory       func(url, user, pass string) *wordpress.Client
+	wsHub                 *ws.Hub
 }
 
 // New creates a new sync service
 func New(cfg Config) Service {
 	return &serviceImpl{
-		db:              cfg.DB,
-		log:             cfg.Logger,
-		pluginService:   cfg.PluginService,
-		wpClientFactory: cfg.WPClientFactory,
-		wsHub:           cfg.WSHub,
+		db:                    cfg.DB,
+		log:                   cfg.Logger,
+		pluginService:         cfg.PluginService,
+		sitePasswordDecryptor: cfg.SitePasswordDecryptor,
+		wpClientFactory:       cfg.WPClientFactory,
+		wsHub:                 cfg.WSHub,
 	}
 }
 
@@ -125,10 +133,51 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	}
 	result.LocalFiles = len(localFiles)
 
-	// Get remote file entries (from WordPress sync-manifest)
-	s.broadcastProgress(pluginID, siteID, "comparing", 50, "Fetching remote files...")
-	// TODO (Phase 43): Call GetPluginSyncManifest() to populate remote entries
+	// Get mapping to find remote slug
+	mapping, err := s.getMapping(ctx, pluginID, siteID)
+	if err != nil {
+		result.ErrorMessage = "No site mapping found: " + err.Error()
+		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
+		return result, nil
+	}
+
+	// Get site info and decrypt credentials
+	s.broadcastProgress(pluginID, siteID, "comparing", 40, "Retrieving site credentials...")
+	siteInfo, err := s.getSiteInfo(ctx, siteID)
+	if err != nil {
+		result.ErrorMessage = "Failed to get site info: " + err.Error()
+		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
+		return result, nil
+	}
+
+	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
+	if err != nil {
+		result.ErrorMessage = "Failed to decrypt credentials: " + err.Error()
+		s.broadcastProgress(pluginID, siteID, "error", 100, result.ErrorMessage)
+		return result, nil
+	}
+
+	// Fetch remote file manifest via WordPress sync-manifest endpoint
+	s.broadcastProgress(pluginID, siteID, "comparing", 50, "Fetching remote file manifest...")
+	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	remoteManifest, err := wpClient.GetPluginSyncManifest(ctx, mapping.RemoteSlug)
+
 	remoteFiles := make(map[string]FileEntry)
+	if err != nil {
+		// Log warning but continue with empty remote (graceful degradation)
+		s.log.Warn("Failed to fetch remote sync manifest, comparing local only",
+			"pluginId", pluginID, "siteId", siteID, "slug", mapping.RemoteSlug, "error", err)
+		s.broadcastProgress(pluginID, siteID, "comparing", 60, "Remote manifest unavailable, comparing local only...")
+	} else {
+		for _, rf := range remoteManifest {
+			remoteFiles[rf.Path] = FileEntry{
+				Path:       rf.Path,
+				Hash:       rf.Hash,
+				ModifiedAt: rf.ModifiedAt,
+				Size:       rf.Size,
+			}
+		}
+	}
 	result.RemoteFiles = len(remoteFiles)
 
 	// Compare files using enhanced comparison with timestamps
@@ -495,6 +544,46 @@ func (s *serviceImpl) getMappings(ctx context.Context, pluginID int64) ([]models
 	}
 
 	return mappings, nil
+}
+
+// siteInfo holds minimal site data needed for sync
+type siteInfo struct {
+	URL      string
+	Username string
+}
+
+// getSiteInfo retrieves minimal site info for creating a WP client
+func (s *serviceImpl) getSiteInfo(ctx context.Context, siteID int64) (*siteInfo, error) {
+	query := `SELECT Url, Username FROM Sites WHERE Id = ?`
+	row := s.db.QueryRowContext(ctx, query, siteID)
+
+	var info siteInfo
+	if err := row.Scan(&info.URL, &info.Username); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site info").
+			WithContext("siteId", siteID)
+	}
+	return &info, nil
+}
+
+// getMapping retrieves a specific plugin-site mapping
+func (s *serviceImpl) getMapping(ctx context.Context, pluginID, siteID int64) (*models.PluginMapping, error) {
+	query := `
+		SELECT pm.Id, pm.PluginId, pm.SiteId, pm.RemoteSlug, pm.SyncStatus,
+		       s.Name as SiteName, s.Url as SiteUrl
+		FROM PluginMappings pm
+		JOIN Sites s ON s.Id = pm.SiteId
+		WHERE pm.PluginId = ? AND pm.SiteId = ?
+	`
+	row := s.db.QueryRowContext(ctx, query, pluginID, siteID)
+
+	var m models.PluginMapping
+	var syncStatus string
+	if err := row.Scan(&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &syncStatus, &m.SiteName, &m.SiteURL); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin-site mapping").
+			WithContext("pluginId", pluginID).WithContext("siteId", siteID)
+	}
+	m.SyncStatus = syncStatus
+	return &m, nil
 }
 
 // updateMappingSyncStatus updates the sync status of a mapping

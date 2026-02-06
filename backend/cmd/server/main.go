@@ -345,11 +345,12 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 	})
 
 	syncService := sync.New(sync.Config{
-		DB:              db,
-		Logger:          log,
-		PluginService:   pluginService,
-		WPClientFactory: wpClientFactory,
-		WSHub:           wsHub,
+		DB:                    db,
+		Logger:                log,
+		PluginService:         pluginService,
+		SitePasswordDecryptor: siteService,
+		WPClientFactory:       wpClientFactory,
+		WSHub:                 wsHub,
 	})
 
 	// Initialize publish history service

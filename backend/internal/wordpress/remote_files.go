@@ -65,6 +65,52 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 	return files, nil
 }
 
+// GetPluginSyncManifest retrieves the cached file manifest for a remote plugin via Riseup Asia Uploader.
+// Returns files with MD5 hashes, modification timestamps (UTC), and sizes for sync comparison.
+func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
+	endpoint := fmt.Sprintf("/%s"+EndpointSyncManifest, RiseupAsiaNamespace, slug)
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sync manifest: %w", err)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	body := string(bodyBytes)
+
+	if resp.StatusCode != 200 {
+		return nil, &APIError{
+			Operation:    "get sync manifest",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(body, 2000),
+		}
+	}
+
+	// The sync-manifest endpoint wraps files in {success, data: {files: [...]}}
+	var result struct {
+		Success bool `json:"success"`
+		Data    struct {
+			Plugin      string       `json:"plugin"`
+			FileCount   int          `json:"fileCount"`
+			GeneratedAt string       `json:"generatedAt"`
+			Cached      bool         `json:"cached"`
+			Files       []RemoteFile `json:"files"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, fmt.Errorf("failed to decode sync manifest: %w (body: %s)", err, truncateBody(body, 500))
+	}
+
+	if !result.Success {
+		return nil, fmt.Errorf("remote API returned failure for sync manifest: %s", slug)
+	}
+
+	return result.Data.Files, nil
+}
+
 // GetPluginFilesViaRiseup retrieves the list of files for a remote plugin via Riseup Asia Uploader.
 // Returns the files with their MD5 hashes for comparison.
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
