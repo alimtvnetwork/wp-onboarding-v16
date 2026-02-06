@@ -647,3 +647,28 @@ if (!defined('RISEUP_SNAPSHOT_TRIGGER_API')) {
 if (!defined('RISEUP_OPTION_SNAPSHOT_SETTINGS')) {
     define('RISEUP_OPTION_SNAPSHOT_SETTINGS', 'riseup_snapshot_settings');
 }
+
+// =============================================================================
+// SNAPSHOT CLEANUP CONSTANTS
+// =============================================================================
+
+// Cleanup timing
+if (!defined('RISEUP_SNAPSHOT_STUCK_HOURS')) {
+    define('RISEUP_SNAPSHOT_STUCK_HOURS', 24);
+}
+
+// Retention type options
+if (!defined('RISEUP_RETENTION_TYPE_DAYS')) {
+    define('RISEUP_RETENTION_TYPE_DAYS', 'days');
+}
+if (!defined('RISEUP_RETENTION_TYPE_COUNT')) {
+    define('RISEUP_RETENTION_TYPE_COUNT', 'count');
+}
+if (!defined('RISEUP_RETENTION_TYPE_NONE')) {
+    define('RISEUP_RETENTION_TYPE_NONE', 'none');
+}
+
+// Cleanup action for transaction logging
+if (!defined('RISEUP_ACTION_SNAPSHOT_CLEANUP')) {
+    define('RISEUP_ACTION_SNAPSHOT_CLEANUP', 'snapshot_cleanup');
+}

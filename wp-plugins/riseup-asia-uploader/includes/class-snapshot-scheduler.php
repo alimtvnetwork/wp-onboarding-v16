@@ -376,134 +376,75 @@ class RiseupSnapshotScheduler {
 
     /**
      * Execute cleanup of old snapshots based on retention policy.
+     * 
+     * Uses RiseupSnapshotCleaner for comprehensive cleanup including:
+     * - Retention policy enforcement (days or count based)
+     * - Orphan file cleanup (files without database records)
+     * - Failed/stuck snapshot cleanup (older than 24 hours)
      */
     public function executeCleanup() {
         $this->logger->info('[SCHEDULER] Executing snapshot cleanup');
 
         try {
+            require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
+            
             $settings = $this->detector->getSettings();
-
-            // Skip if retention is 'none'
-            if ($settings['retention_type'] === 'none') {
-                $this->logger->debug('[SCHEDULER] Retention policy is "none" - skipping cleanup');
-                return;
-            }
-
-            $deleted = 0;
-
-            if ($settings['retention_type'] === 'days') {
-                $deleted = $this->cleanupByDays($settings['retention_days']);
-            } elseif ($settings['retention_type'] === 'count') {
-                $deleted = $this->cleanupByCount($settings['retention_count']);
-            }
+            $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+            
+            $result = $cleaner->runCleanup($settings);
 
             $this->logger->info('[SCHEDULER] Cleanup complete', array(
-                'deleted' => $deleted,
-                'retention_type' => $settings['retention_type'],
+                'deleted_by_policy' => $result['deleted_by_policy'],
+                'deleted_orphans' => $result['deleted_orphans'],
+                'deleted_failed' => $result['deleted_failed'],
+                'space_freed' => RiseupPathUtils::formatBytes($result['space_freed_bytes']),
+                'errors_count' => count($result['errors']),
             ));
 
         } catch (Exception $e) {
             $this->logger->error('[SCHEDULER] Exception during cleanup', array(
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ));
         }
     }
 
     /**
-     * Delete snapshots older than N days.
+     * Get storage statistics for the scheduler status panel.
      *
-     * @param int $days Retention days.
-     * @return int Number deleted.
+     * @return array Storage stats from cleaner.
      */
-    private function cleanupByDays($days) {
-        $cutoff = date('c', strtotime("-{$days} days"));
+    public function getStorageStats() {
+        require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
         
-        // Get snapshots to delete
-        $snapshots = $this->db->query_all(
-            'SELECT id, filepath, filename FROM ' . RISEUP_TABLE_SNAPSHOTS . 
-            ' WHERE status = ? AND created_at < ? ORDER BY created_at ASC',
-            array(RISEUP_SNAPSHOT_STATUS_COMPLETE, $cutoff)
-        );
-
-        if (empty($snapshots)) {
-            return 0;
-        }
-
-        return $this->deleteSnapshots($snapshots);
+        $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+        return $cleaner->getStorageStats();
     }
 
     /**
-     * Keep only the most recent N snapshots.
+     * Estimate what cleanup would remove without actually deleting.
      *
-     * @param int $count Number to keep.
-     * @return int Number deleted.
+     * @return array Cleanup estimate.
      */
-    private function cleanupByCount($count) {
-        // Get total count of complete snapshots
-        $total = $this->db->query_single(
-            'SELECT COUNT(*) as cnt FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE status = ?',
-            array(RISEUP_SNAPSHOT_STATUS_COMPLETE)
-        );
-
-        if (!$total || $total['cnt'] <= $count) {
-            return 0;
-        }
-
-        $to_delete = $total['cnt'] - $count;
-
-        // Get oldest snapshots beyond the count limit
-        $snapshots = $this->db->query_all(
-            'SELECT id, filepath, filename FROM ' . RISEUP_TABLE_SNAPSHOTS . 
-            ' WHERE status = ? ORDER BY created_at ASC LIMIT ?',
-            array(RISEUP_SNAPSHOT_STATUS_COMPLETE, $to_delete)
-        );
-
-        if (empty($snapshots)) {
-            return 0;
-        }
-
-        return $this->deleteSnapshots($snapshots);
+    public function estimateCleanup() {
+        require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
+        
+        $settings = $this->detector->getSettings();
+        $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+        return $cleaner->estimateCleanup($settings);
     }
 
     /**
-     * Delete a list of snapshots.
+     * Run cleanup manually (not via cron).
      *
-     * @param array $snapshots Snapshots to delete.
-     * @return int Number deleted.
+     * @return array Cleanup result.
      */
-    private function deleteSnapshots($snapshots) {
-        $deleted = 0;
-
-        foreach ($snapshots as $snapshot) {
-            // Delete file
-            $filepath = $snapshot['filepath'];
-            if (RiseupPathUtils::fileExists($filepath)) {
-                if (!RiseupPathUtils::deleteFile($filepath)) {
-                    $this->logger->warn('[SCHEDULER] Failed to delete snapshot file', array(
-                        'filepath' => $filepath,
-                    ));
-                    continue;
-                }
-            }
-
-            // Delete ZIP if exists
-            $zip_path = str_replace('.sqlite', '.zip', $filepath);
-            if (RiseupPathUtils::fileExists($zip_path)) {
-                RiseupPathUtils::deleteFile($zip_path);
-            }
-
-            // Delete database record
-            $this->db->delete(RISEUP_TABLE_SNAPSHOTS, array('id' => $snapshot['id']));
-
-            $this->logger->debug('[SCHEDULER] Deleted old snapshot', array(
-                'id' => $snapshot['id'],
-                'filename' => $snapshot['filename'],
-            ));
-
-            $deleted++;
-        }
-
-        return $deleted;
+    public function runManualCleanup() {
+        require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
+        
+        $settings = $this->detector->getSettings();
+        $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+        return $cleaner->runCleanup($settings);
     }
 
     /**
