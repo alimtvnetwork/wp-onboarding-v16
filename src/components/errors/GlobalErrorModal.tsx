@@ -1347,6 +1347,39 @@ function CopyDropdown({
           <Server className="h-4 w-4 mr-2" />
           Copy with Backend Logs
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={async () => {
+          try {
+            const resp = await api.getBackendErrorLog();
+            if (resp.success && resp.data) {
+              navigator.clipboard.writeText(toClipboardText(resp.data.content));
+              toast.success("Copied error.log.txt to clipboard");
+            } else {
+              toast.error(resp.error?.message || "No error log available");
+            }
+          } catch (err) {
+            toast.error("Failed to copy error log");
+          }
+        }}>
+          <Terminal className="h-4 w-4 mr-2" />
+          Copy error.log.txt
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={async () => {
+          try {
+            const resp = await api.getBackendFullLog();
+            if (resp.success && resp.data) {
+              navigator.clipboard.writeText(toClipboardText(resp.data.content));
+              toast.success("Copied log.txt to clipboard");
+            } else {
+              toast.error(resp.error?.message || "No full log available");
+            }
+          } catch (err) {
+            toast.error("Failed to copy full log");
+          }
+        }}>
+          <FileText className="h-4 w-4 mr-2" />
+          Copy log.txt
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

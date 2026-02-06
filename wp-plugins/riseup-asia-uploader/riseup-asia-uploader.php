@@ -870,6 +870,96 @@ class Riseup_Asia {
                 ),
             ));
 
+            // =================================================================
+            // SNAPSHOT ENDPOINTS
+            // =================================================================
+
+            // List snapshots
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOTS);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOTS, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_list_snapshots'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Schedule/create snapshot
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_create_snapshot'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Get single snapshot
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_BY_ID);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_BY_ID, array(
+                array(
+                    'methods'             => 'GET',
+                    'callback'            => array($this, 'handle_get_snapshot'),
+                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+                ),
+                array(
+                    'methods'             => 'DELETE',
+                    'callback'            => array($this, 'handle_delete_snapshot'),
+                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+                ),
+            ));
+
+            // Restore snapshot
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_RESTORE);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_RESTORE, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_restore_snapshot'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Export snapshot as ZIP
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_EXPORT);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_EXPORT, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_export_snapshot'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Import snapshot from ZIP
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_IMPORT);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_IMPORT, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_import_snapshot'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Snapshot settings
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_SETTINGS);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_SETTINGS, array(
+                array(
+                    'methods'             => 'GET',
+                    'callback'            => array($this, 'handle_get_snapshot_settings'),
+                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+                ),
+                array(
+                    'methods'             => 'PUT',
+                    'callback'            => array($this, 'handle_update_snapshot_settings'),
+                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+                ),
+            ));
+
+            // Snapshot providers
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_list_snapshot_providers'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Available tables
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_TABLES);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_TABLES, array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_list_snapshot_tables'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
             $this->file_logger->info('All REST API routes registered successfully');
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to register routes');
@@ -2750,6 +2840,271 @@ class Riseup_Asia {
                 'actions' => $result['actions'],
             ), 200);
         }, 'agent_history');
+    }
+
+    // =========================================================================
+    // SNAPSHOT HANDLERS
+    // =========================================================================
+
+    /**
+     * Handle listing snapshots.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_list_snapshots($request) {
+        return $this->safe_execute(function() use ($request) {
+            $limit = (int) ($request->get_param('limit') ?: 50);
+            $offset = (int) ($request->get_param('offset') ?: 0);
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $snapshots = $manager->listSnapshots($limit, $offset);
+
+            return new WP_REST_Response(array(
+                'success'   => true,
+                'snapshots' => $snapshots['snapshots'],
+                'total'     => $snapshots['total'],
+            ), 200);
+        }, 'list_snapshots');
+    }
+
+    /**
+     * Handle creating/scheduling a snapshot.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_create_snapshot($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+            $options = array(
+                'scope'   => isset($body['scope']) ? sanitize_key($body['scope']) : RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
+                'trigger' => RISEUP_SNAPSHOT_TRIGGER_API,
+                'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
+            );
+
+            $this->file_logger->info('Creating snapshot via API', array('scope' => $options['scope']));
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $result = $manager->createSnapshot($options);
+
+            $status_code = $result['success'] ? 201 : 500;
+            return new WP_REST_Response($result, $status_code);
+        }, 'create_snapshot');
+    }
+
+    /**
+     * Handle getting a single snapshot.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_get_snapshot($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $provider = $manager->getProvider();
+            if (!$provider) {
+                return $this->error_response('No snapshot provider available', 500);
+            }
+
+            $snapshot = $provider->getSnapshot($id);
+            if (!$snapshot) {
+                return $this->error_response('Snapshot not found', 404);
+            }
+
+            return new WP_REST_Response(array(
+                'success'  => true,
+                'snapshot' => $snapshot,
+            ), 200);
+        }, 'get_snapshot');
+    }
+
+    /**
+     * Handle deleting a snapshot.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_delete_snapshot($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $this->file_logger->info('Deleting snapshot', array('id' => $id));
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $result = $manager->deleteSnapshot($id);
+
+            $status_code = $result['success'] ? 200 : 400;
+            return new WP_REST_Response($result, $status_code);
+        }, 'delete_snapshot');
+    }
+
+    /**
+     * Handle restoring a snapshot.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_restore_snapshot($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $body = $request->get_json_params();
+
+            $options = array(
+                'confirm'        => !empty($body['confirm']),
+                'create_backup'  => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
+                'require_backup' => !empty($body['requireBackup']),
+                'mode'           => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
+                'tables'         => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
+                'strict'         => !empty($body['strict']),
+            );
+
+            $this->file_logger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $result = $manager->restoreSnapshot($id, $options);
+
+            $status_code = $result['success'] ? 200 : 400;
+            return new WP_REST_Response($result, $status_code);
+        }, 'restore_snapshot');
+    }
+
+    /**
+     * Handle exporting a snapshot as ZIP.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|WP_Error Response.
+     */
+    public function handle_export_snapshot($request) {
+        return $this->safe_execute(function() use ($request) {
+            $id = (int) $request->get_param('id');
+            $this->file_logger->info('Exporting snapshot', array('id' => $id));
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $result = $manager->exportSnapshot($id);
+
+            if (!$result['success']) {
+                return $this->error_response($result['error'], 400);
+            }
+
+            // Stream the ZIP file as download
+            $filepath = $result['filepath'];
+            if (!file_exists($filepath)) {
+                return $this->error_response('Export file not found', 500);
+            }
+
+            // Return file info for client-side download
+            return new WP_REST_Response(array(
+                'success'  => true,
+                'filename' => $result['filename'],
+                'size'     => $result['size'],
+                'downloadUrl' => rest_url(RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_SNAPSHOTS . '/' . $id . '/download'),
+            ), 200);
+        }, 'export_snapshot');
+    }
+
+    /**
+     * Handle importing a snapshot from ZIP upload.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_import_snapshot($request) {
+        return $this->safe_execute(function() use ($request) {
+            $files = $request->get_file_params();
+
+            if (empty($files['file']['tmp_name'])) {
+                return $this->error_response('No file uploaded', 400);
+            }
+
+            $tmp_file = $files['file']['tmp_name'];
+            $this->file_logger->info('Importing snapshot from uploaded ZIP', array(
+                'originalName' => $files['file']['name'],
+                'size'         => $files['file']['size'],
+            ));
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $result = $manager->importSnapshot($tmp_file);
+
+            $status_code = $result['success'] ? 201 : 400;
+            return new WP_REST_Response($result, $status_code);
+        }, 'import_snapshot');
+    }
+
+    /**
+     * Handle getting snapshot settings.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_get_snapshot_settings($request) {
+        return $this->safe_execute(function() {
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $settings = $manager->getSettings();
+
+            return new WP_REST_Response(array(
+                'success'  => true,
+                'settings' => $settings,
+            ), 200);
+        }, 'get_snapshot_settings');
+    }
+
+    /**
+     * Handle updating snapshot settings.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_update_snapshot_settings($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+            $this->file_logger->info('Updating snapshot settings', array('keys' => array_keys($body)));
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $result = $manager->updateSettings($body);
+
+            return new WP_REST_Response(array(
+                'success'  => true,
+                'settings' => $result,
+            ), 200);
+        }, 'update_snapshot_settings');
+    }
+
+    /**
+     * Handle listing snapshot providers.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_list_snapshot_providers($request) {
+        return $this->safe_execute(function() {
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $providers = $manager->getProviders();
+
+            return new WP_REST_Response(array(
+                'success'   => true,
+                'providers' => $providers,
+            ), 200);
+        }, 'list_snapshot_providers');
+    }
+
+    /**
+     * Handle listing available database tables.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_list_snapshot_tables($request) {
+        return $this->safe_execute(function() {
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $tables = $manager->getAvailableTables();
+
+            return new WP_REST_Response(array(
+                'success' => true,
+                'tables'  => $tables,
+            ), 200);
+        }, 'list_snapshot_tables');
     }
 }
 
