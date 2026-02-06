@@ -1417,3 +1417,89 @@ func (s *Service) GetCredentials(ctx context.Context, siteID int64) (*SiteCreden
 		AppPassword: string(password),
 	}, nil
 }
+
+// =============================================================================
+// REMOTE PLUGIN FILE BROWSER (Phase 10)
+// =============================================================================
+
+// RemotePluginFile represents a file in a remote plugin
+type RemotePluginFile struct {
+	Path       string    `json:"path"`
+	Hash       string    `json:"hash"`
+	Size       int64     `json:"size"`
+	ModifiedAt time.Time `json:"modifiedAt,omitempty"`
+}
+
+// RemotePluginFilesResult wraps the file list result
+type RemotePluginFilesResult struct {
+	PluginSlug string             `json:"pluginSlug"`
+	TotalFiles int                `json:"totalFiles"`
+	Files      []RemotePluginFile `json:"files"`
+}
+
+// GetRemotePluginFiles fetches the file list for a remote plugin via Riseup Asia Uploader
+func (s *Service) GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (*RemotePluginFilesResult, error) {
+	site, err := s.GetByID(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	
+	// Use the Riseup Asia Uploader endpoint
+	files, err := client.GetPluginFilesViaRiseup(ctx, pluginSlug)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote plugin files").
+			WithContext("siteId", siteID).
+			WithContext("pluginSlug", pluginSlug)
+	}
+
+	// Convert wordpress.RemoteFile to our local type
+	result := &RemotePluginFilesResult{
+		PluginSlug: pluginSlug,
+		TotalFiles: len(files),
+		Files:      make([]RemotePluginFile, 0, len(files)),
+	}
+	for _, f := range files {
+		result.Files = append(result.Files, RemotePluginFile{
+			Path:       f.Path,
+			Hash:       f.Hash,
+			Size:       f.Size,
+			ModifiedAt: f.ModifiedAt,
+		})
+	}
+
+	s.log.Debug("Remote plugin files fetched", "siteId", siteID, "pluginSlug", pluginSlug, "fileCount", len(result.Files))
+	return result, nil
+}
+
+// GetRemotePluginFileContent fetches the content of a specific file from a remote plugin
+func (s *Service) GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error) {
+	site, err := s.GetByID(ctx, siteID)
+	if err != nil {
+		return "", err
+	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+	
+	content, err := client.GetPluginFileContent(ctx, pluginSlug, filePath)
+	if err != nil {
+		return "", apperror.Wrap(err, apperror.ErrWPConnection, "failed to fetch remote file content").
+			WithContext("siteId", siteID).
+			WithContext("pluginSlug", pluginSlug).
+			WithContext("filePath", filePath)
+	}
+
+	s.log.Debug("Remote file content fetched", "siteId", siteID, "pluginSlug", pluginSlug, "filePath", filePath, "contentLen", len(content))
+	return content, nil
+}

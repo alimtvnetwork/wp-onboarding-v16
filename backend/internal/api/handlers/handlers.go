@@ -63,6 +63,9 @@ type SiteServiceInterface interface {
 	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	// Remote plugin file browser (Phase 10)
+	GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (interface{}, error)
+	GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error)
 	// Credentials for API Explorer
 	GetCredentials(ctx context.Context, siteID int64) (interface{}, error)
 }
@@ -635,6 +638,78 @@ func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondSuccess(w, map[string]interface{}{"deleted": true, "plugin": pluginSlug})
+}
+
+// GetRemotePluginFiles returns the file list for a remote plugin (Phase 10)
+func GetRemotePluginFiles(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	vars := mux.Vars(r)
+	pluginSlug := vars["plugin"]
+	if pluginSlug == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		return
+	}
+
+	files, err := Services.SiteService.GetRemotePluginFiles(r.Context(), id, pluginSlug)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3011", err.Error())
+		return
+	}
+	respondSuccess(w, files)
+}
+
+// GetRemotePluginFileContent returns the content of a specific file from a remote plugin (Phase 10)
+func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	id, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	vars := mux.Vars(r)
+	pluginSlug := vars["plugin"]
+	if pluginSlug == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required")
+		return
+	}
+
+	// Parse request body for file path
+	var input struct {
+		Path string `json:"path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		return
+	}
+	if input.Path == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "File path is required")
+		return
+	}
+
+	content, err := Services.SiteService.GetRemotePluginFileContent(r.Context(), id, pluginSlug, input.Path)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3012", err.Error())
+		return
+	}
+	respondSuccess(w, map[string]interface{}{
+		"path":    input.Path,
+		"content": content,
+	})
 }
 
 // --- Plugins Handlers ---

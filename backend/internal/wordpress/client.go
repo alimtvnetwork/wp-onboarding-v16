@@ -226,7 +226,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		"url":      c.baseURL,
 		"username": c.username,
 	})
-	resp, err = c.request("GET", "/wp/v2/users/me", nil)
+	resp, err = c.request("GET", WPCoreUsersMe, nil)
 	if err != nil {
 		c.progress("auth_check", "error", fmt.Sprintf("Authentication request failed: %v", err), map[string]interface{}{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPAuth, "authentication request failed").
@@ -288,7 +288,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	c.progress("plugin_access_check", "running", "Checking plugin management access...", map[string]interface{}{
 		"url": c.baseURL,
 	})
-	resp, err = c.request("GET", "/wp/v2/plugins", nil)
+	resp, err = c.request("GET", WPCorePlugins, nil)
 	if err != nil {
 		c.progress("plugin_access_check", "error", fmt.Sprintf("Plugin endpoint request failed: %v", err), map[string]interface{}{"url": c.baseURL})
 		return nil, apperror.Wrap(err, apperror.ErrWPPluginList, "plugin endpoint not accessible").
@@ -321,7 +321,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		"content": "This draft was created to test API write permissions. You can safely delete it.",
 		"status":  "draft",
 	}
-	resp, err = c.request("POST", "/wp/v2/posts", testPost)
+	resp, err = c.request("POST", WPCorePosts, testPost)
 	if err != nil {
 		c.progress("write_test", "warning", "Could not test write permissions", map[string]interface{}{"error": err.Error(), "url": c.baseURL})
 		// Non-fatal - just report
@@ -334,7 +334,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			}
 			if err := json.NewDecoder(resp.Body).Decode(&createdPost); err == nil && createdPost.ID > 0 {
 				// Delete the test post
-				deleteResp, _ := c.request("DELETE", fmt.Sprintf("/wp/v2/posts/%d?force=true", createdPost.ID), nil)
+				deleteResp, _ := c.request("DELETE", fmt.Sprintf(WPCorePostByID+"?force=true", createdPost.ID), nil)
 				if deleteResp != nil {
 					deleteResp.Body.Close()
 				}
@@ -357,7 +357,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 
 // GetPlugins returns a list of installed plugins
 func (c *Client) GetPlugins() ([]PluginInfo, error) {
-	endpoint := "/wp/v2/plugins"
+	endpoint := WPCorePlugins
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -387,7 +387,7 @@ func (c *Client) GetPlugins() ([]PluginInfo, error) {
 
 // GetPlugin returns information about a specific plugin
 func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
-	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(slug)
+	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(slug))
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -436,9 +436,9 @@ func (c *Client) ActivatePlugin(slug string) error {
 		resolvedID = slug
 	}
 
-	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(resolvedID)
+	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(resolvedID))
 	resp, err := c.request("PUT", endpoint, map[string]string{
-		"status": "active",
+		"status": PluginStatusActive,
 	})
 	if err != nil {
 		return err
@@ -475,9 +475,9 @@ func (c *Client) DeactivatePlugin(slug string) error {
 		resolvedID = slug
 	}
 
-	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(resolvedID)
+	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(resolvedID))
 	resp, err := c.request("PUT", endpoint, map[string]string{
-		"status": "inactive",
+		"status": PluginStatusInactive,
 	})
 	if err != nil {
 		return err
@@ -512,7 +512,7 @@ func (c *Client) DeletePlugin(slug string) error {
 		resolvedID = slug
 	}
 
-	endpoint := "/wp/v2/plugins/" + escapePathSegmentPreservingPercent(resolvedID)
+	endpoint := fmt.Sprintf(WPCorePluginBySlug, escapePathSegmentPreservingPercent(resolvedID))
 	resp, err := c.request("DELETE", endpoint, nil)
 	if err != nil {
 		return err
