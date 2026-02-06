@@ -13,6 +13,7 @@ import (
 	"wp-plugin-publish/internal/services/publishhistory"
 	"wp-plugin-publish/internal/services/session"
 	"wp-plugin-publish/internal/services/site"
+	"wp-plugin-publish/internal/services/sitehealth"
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
 )
@@ -391,6 +392,7 @@ func NewServiceRegistry(
 	sessionService *session.Service,
 	errorHistoryService *errorhistory.Service,
 	publishHistoryService *publishhistory.Service,
+	siteHealthService *sitehealth.Service,
 ) *ServiceRegistry {
 	var sessionAdapter SessionServiceInterface
 	if sessionService != nil {
@@ -406,6 +408,11 @@ func NewServiceRegistry(
 	if publishHistoryService != nil {
 		publishHistoryAdapter = &PublishHistoryServiceAdapter{publishHistoryService}
 	}
+
+	var siteHealthAdapter SiteHealthServiceInterface
+	if siteHealthService != nil {
+		siteHealthAdapter = &SiteHealthServiceAdapter{siteHealthService}
+	}
 	
 	return &ServiceRegistry{
 		SiteService:           &SiteServiceAdapter{siteService},
@@ -418,6 +425,7 @@ func NewServiceRegistry(
 		SessionService:        sessionAdapter,
 		ErrorHistoryService:   errorHistoryAdapter,
 		PublishHistoryService: publishHistoryAdapter,
+		SiteHealthService:     siteHealthAdapter,
 	}
 }
 
@@ -579,6 +587,35 @@ func firstStringSlice(m map[string]interface{}, keys ...string) ([]string, bool)
 	return nil, false
 }
 
+// SiteHealthServiceAdapter wraps *sitehealth.Service
+type SiteHealthServiceAdapter struct {
+	*sitehealth.Service
+}
+
+func (a *SiteHealthServiceAdapter) CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, error) {
+	return a.Service.CheckSite(ctx, siteID)
+}
+
+func (a *SiteHealthServiceAdapter) CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, error) {
+	return a.Service.CheckAllSites(ctx)
+}
+
+func (a *SiteHealthServiceAdapter) GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, error) {
+	return a.Service.GetHistory(siteID, limit)
+}
+
+func (a *SiteHealthServiceAdapter) GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, error) {
+	return a.Service.GetSummaries(ctx)
+}
+
+func (a *SiteHealthServiceAdapter) GetStats(ctx context.Context) (*models.SiteHealthStats, error) {
+	return a.Service.GetStats(ctx)
+}
+
+func (a *SiteHealthServiceAdapter) ClearHistory(olderThanDays int) (int64, error) {
+	return a.Service.ClearHistory(olderThanDays)
+}
+
 // Ensure adapters implement their interfaces
 var _ SiteServiceInterface = (*SiteServiceAdapter)(nil)
 var _ PluginServiceInterface = (*PluginServiceAdapter)(nil)
@@ -589,6 +626,7 @@ var _ BackupServiceInterface = (*BackupServiceAdapter)(nil)
 var _ SessionServiceInterface = (*SessionServiceAdapter)(nil)
 var _ ErrorHistoryServiceInterface = (*ErrorHistoryServiceAdapter)(nil)
 var _ PublishHistoryServiceInterface = (*PublishHistoryServiceAdapter)(nil)
+var _ SiteHealthServiceInterface = (*SiteHealthServiceAdapter)(nil)
 
 // Placeholder types to satisfy imports (actual types come from models package)
 var _ = models.Site{}

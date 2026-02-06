@@ -43,6 +43,11 @@ type SessionLogger interface {
 }
 
 // Config holds publish service configuration
+// PublishHistoryRecorder records publish history entries
+type PublishHistoryRecorder interface {
+	Record(entry models.PublishHistory) (*models.PublishHistory, error)
+}
+
 type Config struct {
 	DB                    *database.DB
 	Logger                *logger.Logger
@@ -54,6 +59,7 @@ type Config struct {
 	TempDir               string
 	WSHub                 *ws.Hub
 	SessionService        SessionLogger
+	HistoryService        PublishHistoryRecorder
 }
 
 // Service provides plugin publishing operations
@@ -68,6 +74,7 @@ type Service struct {
 	tempDir               string
 	wsHub                 *ws.Hub
 	sessionService        SessionLogger
+	historyService        PublishHistoryRecorder
 }
 
 // New creates a new publish service
@@ -83,6 +90,7 @@ func New(cfg Config) *Service {
 		tempDir:               cfg.TempDir,
 		wsHub:                 cfg.WSHub,
 		sessionService:        cfg.SessionService,
+		historyService:        cfg.HistoryService,
 	}
 }
 
@@ -803,6 +811,33 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		"files", result.FilesUpdated,
 		"duration", result.Duration,
 		"success", result.Success)
+
+	// Record publish history
+	if s.historyService != nil {
+		historyStatus := "success"
+		if !result.Success {
+			historyStatus = "failed"
+		}
+		_, err := s.historyService.Record(models.PublishHistory{
+			PluginID:         pluginID,
+			PluginName:       pluginInfo.Name,
+			SiteID:           siteID,
+			SiteName:         siteInfo.Name,
+			SiteURL:          siteInfo.URL,
+			SessionID:        result.SessionID,
+			Status:           historyStatus,
+			Mode:             options.Mode,
+			FilesUpdated:     result.FilesUpdated,
+			ActivationStatus: result.ActivationStatus,
+			RollbackStatus:   result.RollbackStatus,
+			RollbackMessage:  result.RollbackMessage,
+			ErrorMessage:     result.ErrorMessage,
+			DurationMs:       result.Duration,
+		})
+		if err != nil {
+			s.log.Error("Failed to record publish history", "error", err)
+		}
+	}
 
 	return result, nil
 }
