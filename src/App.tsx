@@ -17,6 +17,7 @@ import { AppErrorBoundary } from "@/components/errors/AppErrorBoundary";
 import { toast } from "sonner";
 import { isApiClientError } from "@/lib/api";
 import { useErrorStore } from "@/stores/errorStore";
+import { useErrorHistorySync } from "@/hooks/useErrorHistory";
 
 // Pages
 import Dashboard from "@/pages/Dashboard";
@@ -98,6 +99,12 @@ function WebSocketProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Error history sync - persists captured errors to backend
+function ErrorHistorySyncProvider({ children }: { children: React.ReactNode }) {
+  useErrorHistorySync();
+  return <>{children}</>;
+}
+
 // Global unhandled rejection handler component
 function GlobalErrorHandler({ children }: { children: React.ReactNode }) {
   const { captureException, openErrorModal } = useErrorStore.getState();
@@ -171,30 +178,32 @@ const App = () => (
     <ThemeProvider defaultTheme="system" storageKey="wpp-theme">
       <TooltipProvider>
         <GlobalErrorHandler>
-          <Toaster />
-          <Sonner />
-          <GlobalErrorModal />
-          <AppErrorBoundary>
-            <BrowserRouter>
-              <WebSocketProvider>
-                <Routes>
-                  <Route path="/" element={<Layout />}>
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="sites" element={<Sites />} />
-                    <Route path="plugins" element={<Plugins />} />
-                    <Route path="tests" element={<Tests />} />
-                    <Route path="logs" element={<Logs />} />
-                    <Route path="sessions" element={<Sessions />} />
-                    <Route path="api-explorer" element={<ApiExplorer />} />
-                    <Route path="settings" element={<Settings />} />
-                    <Route path="errors" element={<Errors />} />
-                  </Route>
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </WebSocketProvider>
-            </BrowserRouter>
-          </AppErrorBoundary>
+          <ErrorHistorySyncProvider>
+            <Toaster />
+            <Sonner />
+            <GlobalErrorModal />
+            <AppErrorBoundary>
+              <BrowserRouter>
+                <WebSocketProvider>
+                  <Routes>
+                    <Route path="/" element={<Layout />}>
+                      <Route index element={<Navigate to="/dashboard" replace />} />
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="sites" element={<Sites />} />
+                      <Route path="plugins" element={<Plugins />} />
+                      <Route path="tests" element={<Tests />} />
+                      <Route path="logs" element={<Logs />} />
+                      <Route path="sessions" element={<Sessions />} />
+                      <Route path="api-explorer" element={<ApiExplorer />} />
+                      <Route path="settings" element={<Settings />} />
+                      <Route path="errors" element={<Errors />} />
+                    </Route>
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </WebSocketProvider>
+              </BrowserRouter>
+            </AppErrorBoundary>
+          </ErrorHistorySyncProvider>
         </GlobalErrorHandler>
       </TooltipProvider>
     </ThemeProvider>

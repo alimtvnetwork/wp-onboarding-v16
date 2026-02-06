@@ -71,9 +71,54 @@ Located at `backend/internal/services/errorhistory/service.go`:
 - Handlers: `backend/internal/api/handlers/error_history_handlers.go`
 - Migration: `backend/internal/database/migrations.go` (version 7)
 
-## Next Steps (Phase 3-6)
+## Phase 3: Frontend Integration ✅ COMPLETE
 
-- Phase 3: Frontend integration - auto-save on captureError, load history on mount
+### API Client Functions
+
+Added to `src/lib/api.ts`:
+- `saveErrorHistory(input)` - POST to persist error
+- `listErrorHistory(opts)` - GET with pagination/filters
+- `getErrorHistoryById(id)` - GET single error
+- `deleteErrorHistory(id)` - DELETE single
+- `clearErrorHistory()` - DELETE all
+- `bulkExportErrorHistory(ids)` - POST for markdown export
+- `getErrorHistoryStats()` - GET statistics
+
+### useErrorHistory Hook
+
+Located at `src/hooks/useErrorHistory.ts`:
+- Fetches error history from backend
+- Provides CRUD operations via React Query mutations
+- `useErrorHistorySync()` - Auto-syncs pending errors to backend
+
+### ErrorStore Updates
+
+Updated `src/stores/errorStore.ts`:
+- Added `pendingSync: Set<string>` to track unsaved errors
+- `markErrorSynced(errorId)` - Mark error as persisted
+- `getPendingSyncErrors()` - Get errors awaiting sync
+
+### UI Components
+
+- `ErrorHistoryDrawer` (`src/components/errors/ErrorHistoryDrawer.tsx`)
+  - Multi-select with checkboxes
+  - Search filter
+  - Bulk copy to clipboard
+  - Click to open in GlobalErrorModal
+  
+- `ErrorQueueBadge` (`src/components/errors/ErrorQueueBadge.tsx`)
+  - Shows error count in header
+  - Click to open ErrorHistoryDrawer
+  - Red badge styling
+
+### App Integration
+
+`src/App.tsx` now includes:
+- `ErrorHistorySyncProvider` wrapping the app
+- Auto-persists errors as they're captured
+
+## Next Steps (Phase 4-6)
+
 - Phase 4: Backend tab auto-fetch of error.log.txt
 - Phase 5: UI click path tracking
 - Phase 6: Multi-error queue UI with navigation and bulk copy
