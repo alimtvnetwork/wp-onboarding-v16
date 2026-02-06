@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, Plugin } from '@/lib/api';
 import { usePublishStore, initializePublishWebSocketListeners } from '@/stores/publishStore';
+import { useExecutionLoggerStore } from '@/hooks/useExecutionLogger';
 
 /**
  * Hook for bulk quick publish operations.
@@ -28,6 +29,9 @@ export function useBulkQuickPublish() {
     }
   ) => {
     const concurrency = options?.concurrency ?? 2;
+    const execLogger = useExecutionLoggerStore.getState();
+    const chainId = execLogger.startChain(`BulkQuickPublish → ${plugins.length} plugins`);
+    execLogger.log({ type: 'handler', name: 'bulkQuickPublish', args: `${plugins.length} plugins, concurrency=${concurrency}` });
 
     // Filter plugins that have mappings and aren't already publishing
     const publishablePlugins = plugins.filter(

@@ -3,6 +3,7 @@
 import { resolveApiBase, resolveApiOrigin, resolveApiUrl, toAbsoluteUrl } from "@/lib/endpoints";
 import { logger } from "@/lib/logger";
 import { withCircuitBreaker } from "@/lib/circuitBreaker";
+import { logApiCall } from "@/hooks/useExecutionLogger";
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -89,6 +90,7 @@ async function fetchRequest<T>(
   const functionName = `api.${method.toLowerCase()}.${endpoint}`;
   
   logger.trace(functionName, 'enter', { endpoint, method });
+  logApiCall(method, endpoint);
   const startTime = Date.now();
   try {
     const apiBase = resolveApiBase();
