@@ -15,7 +15,8 @@ import {
   RefreshCw,
   X,
   CheckSquare,
-  Square
+  Square,
+  Eye
 } from "lucide-react";
 import { useErrorHistory, recordToCapturedError } from "@/hooks/useErrorHistory";
 import { useErrorStore } from "@/stores/errorStore";
@@ -42,7 +43,7 @@ const levelColors = {
 
 export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerProps) {
   const { errors, total, isLoading, refetch, deleteError, clearErrors, exportErrors, isExporting } = useErrorHistory();
-  const { openErrorModal } = useErrorStore();
+  const { openErrorModal, openErrorQueue } = useErrorStore();
   
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -106,6 +107,16 @@ export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerPro
   const handleViewError = (record: ErrorHistoryRecord) => {
     const captured = recordToCapturedError(record);
     openErrorModal(captured);
+    onOpenChange(false);
+  };
+  
+  // View all selected errors in queue
+  const handleViewSelected = () => {
+    if (selectedIds.size === 0) return;
+    
+    const selectedRecords = filteredErrors.filter(e => selectedIds.has(e.id));
+    const capturedErrors = selectedRecords.map(recordToCapturedError);
+    openErrorQueue(capturedErrors, 0);
     onOpenChange(false);
   };
   
@@ -176,11 +187,20 @@ export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerPro
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={handleViewSelected}
+                  title="View selected errors in queue"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  View ({selectedIds.size})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleCopySelected}
                   disabled={isExporting}
                 >
                   <Copy className="h-4 w-4 mr-1" />
-                  Copy ({selectedIds.size})
+                  Copy
                 </Button>
                 <Button
                   variant="outline"

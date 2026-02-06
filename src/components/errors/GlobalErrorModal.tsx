@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText, ChevronDown, FileDown, RefreshCw, Loader2, AlertTriangle, MousePointerClick } from "lucide-react";
+import { Copy, ExternalLink, AlertCircle, FileCode2, Network, Lightbulb, Globe, ChevronRight, Layers, Server, Terminal, Download, Activity, FileText, ChevronDown, FileDown, RefreshCw, Loader2, AlertTriangle, MousePointerClick, ChevronLeft, CopyPlus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
@@ -31,7 +31,7 @@ interface PHPStackFrame {
 }
 
 export function GlobalErrorModal() {
-  const { selectedError, isModalOpen, closeErrorModal } = useErrorStore();
+  const { selectedError, isModalOpen, closeErrorModal, errorQueue, currentQueueIndex, navigateQueue, getQueuedErrorsMarkdown } = useErrorStore();
   const { data: versionInfo } = useVersionInfo();
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
@@ -99,6 +99,12 @@ export function GlobalErrorModal() {
     toast.success("Full error report copied to clipboard");
   };
 
+  const copyAllErrors = () => {
+    const text = getQueuedErrorsMarkdown();
+    navigator.clipboard.writeText(toClipboardText(text));
+    toast.success(`Copied ${errorQueue.length} error(s) to clipboard`);
+  };
+
   const copySection = (label: string, content: string) => {
     navigator.clipboard.writeText(toClipboardText(content));
     toast.success(`${label} copied`);
@@ -119,39 +125,80 @@ export function GlobalErrorModal() {
     ? selectedError.parsedFrames 
     : selectedError.parsedFrames?.filter(f => !f.isInternal);
 
+  const hasMultipleErrors = errorQueue.length > 1;
+
   return (
     <Dialog open={isModalOpen} onOpenChange={closeErrorModal}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <div className="flex items-center gap-3">
-            <AlertCircle className={cn(
-              "h-6 w-6",
-              selectedError.level === "error"
-                ? "text-destructive"
-                : selectedError.level === "warn"
-                  ? "text-warning"
-                  : "text-muted-foreground"
-            )} />
-            <div>
-              <DialogTitle className="flex items-center gap-2">
-                Error Details
-                <Badge 
-                  variant="secondary" 
-                  className={levelColors[selectedError.level] || ""}
-                >
-                  {selectedError.code}
-                </Badge>
-              </DialogTitle>
-              <DialogDescription>
-                <span>
-                  {formatTs(selectedError.createdAt)}
-                </span>
-                <span className="mx-2">•</span>
-                <span className="font-mono">
-                  {appName} v{appVersion}
-                </span>
-              </DialogDescription>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <AlertCircle className={cn(
+                "h-6 w-6",
+                selectedError.level === "error"
+                  ? "text-destructive"
+                  : selectedError.level === "warn"
+                    ? "text-warning"
+                    : "text-muted-foreground"
+              )} />
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  Error Details
+                  <Badge 
+                    variant="secondary" 
+                    className={levelColors[selectedError.level] || ""}
+                  >
+                    {selectedError.code}
+                  </Badge>
+                </DialogTitle>
+                <DialogDescription>
+                  <span>
+                    {formatTs(selectedError.createdAt)}
+                  </span>
+                  <span className="mx-2">•</span>
+                  <span className="font-mono">
+                    {appName} v{appVersion}
+                  </span>
+                </DialogDescription>
+              </div>
             </div>
+            
+            {/* Queue Navigation */}
+            {hasMultipleErrors && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => navigateQueue('prev')}
+                  title="Previous error"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Badge variant="secondary" className="px-2 py-1 font-mono text-xs">
+                  {currentQueueIndex + 1} / {errorQueue.length}
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => navigateQueue('next')}
+                  title="Next error"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 ml-1"
+                  onClick={copyAllErrors}
+                  title="Copy all errors"
+                >
+                  <CopyPlus className="h-3 w-3 mr-1" />
+                  All
+                </Button>
+              </div>
+            )}
           </div>
         </DialogHeader>
 
