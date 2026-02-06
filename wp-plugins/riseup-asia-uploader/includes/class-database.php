@@ -434,6 +434,44 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v5 applied successfully');
             }
             
+            // Migration v6: Remote plugins cache table
+            if ($current_version < 6) {
+                $this->file_logger->info('Applying migration v6: remote plugins cache');
+                
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS remote_plugins_cache (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    site_id INTEGER NOT NULL,
+                    data_json TEXT NOT NULL,
+                    fetched_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL
+                )");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_rpc_site_id ON remote_plugins_cache(site_id)");
+                
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (6, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v6 applied successfully');
+            }
+            
+            // Migration v7: File hash cache table (Phase 41 - Sync System)
+            if ($current_version < 7) {
+                $this->file_logger->info('Applying migration v7: file hash cache table');
+                
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_FILE_CACHE . " (
+                    plugin_slug TEXT NOT NULL,
+                    relative_path TEXT NOT NULL,
+                    md5_hash TEXT NOT NULL,
+                    modified_at TEXT NOT NULL,
+                    file_size INTEGER NOT NULL DEFAULT 0,
+                    cached_at TEXT NOT NULL,
+                    PRIMARY KEY (plugin_slug, relative_path)
+                )");
+                
+                // Indexes for efficient lookups
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_file_cache_slug ON " . RISEUP_TABLE_FILE_CACHE . "(plugin_slug)");
+                
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (7, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v7 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {

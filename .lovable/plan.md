@@ -114,8 +114,8 @@ The current sync system has a placeholder for remote file comparison -- it scans
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| **41** | WP Plugin - File Hash Cache (SQLite) | Next |
-| **42** | Go Backend - Local Scanning with Timestamps | TODO |
+| **41** | WP Plugin - File Hash Cache (SQLite) | ✅ Complete |
+| **42** | Go Backend - Local Scanning with Timestamps | Next |
 | **43** | Go Backend - Remote Integration | TODO |
 | **44** | React Frontend - Sync Tree View UI | TODO |
 

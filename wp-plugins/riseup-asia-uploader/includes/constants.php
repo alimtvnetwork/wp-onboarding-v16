@@ -679,3 +679,17 @@ if (!defined('RISEUP_RETENTION_TYPE_NONE')) {
 if (!defined('RISEUP_ACTION_SNAPSHOT_CLEANUP')) {
     define('RISEUP_ACTION_SNAPSHOT_CLEANUP', 'snapshot_cleanup');
 }
+
+// =============================================================================
+// FILE CACHE CONSTANTS (Phase 41 - Sync System)
+// =============================================================================
+
+// File cache table name
+if (!defined('RISEUP_TABLE_FILE_CACHE')) {
+    define('RISEUP_TABLE_FILE_CACHE', 'file_cache');
+}
+
+// Sync manifest endpoint - returns cached file hashes for sync comparison
+if (!defined('RISEUP_ENDPOINT_SYNC_MANIFEST')) {
+    define('RISEUP_ENDPOINT_SYNC_MANIFEST', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/sync-manifest');
+}
