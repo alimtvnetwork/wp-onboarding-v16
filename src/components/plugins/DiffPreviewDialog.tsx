@@ -228,15 +228,15 @@ export function DiffPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Files className="h-5 w-5 text-primary" />
-            Publish Preview
+      <DialogContent className="w-[95vw] sm:max-w-2xl h-[95vh] sm:h-auto sm:max-h-[85vh] flex flex-col p-4 sm:p-6">
+        <DialogHeader className="shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Files className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
+            <span className="truncate">Publish Preview</span>
           </DialogTitle>
-          <DialogDescription>
-            Select files to deploy from <strong>{pluginName}</strong> to{" "}
-            <strong>{siteName}</strong>
+          <DialogDescription className="text-xs sm:text-sm">
+            Select files to deploy from <strong className="truncate">{pluginName}</strong> to{" "}
+            <strong className="truncate">{siteName}</strong>
           </DialogDescription>
         </DialogHeader>
 
@@ -259,25 +259,25 @@ export function DiffPreviewDialog({
 
         {preview && (
           <>
-            {/* Version Comparison Banner */}
+            {/* Version Comparison Banner - responsive */}
             {(preview.localVersion || preview.remoteVersion) && (
-              <div className="flex items-center justify-center gap-3 py-3 px-4 rounded-lg bg-muted/50 border">
-                <div className="flex items-center gap-2">
-                  <Tag className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Version:</span>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 py-2 sm:py-3 px-3 sm:px-4 rounded-lg bg-muted/50 border shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+                  <span className="text-xs sm:text-sm text-muted-foreground">Version:</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   {preview.remoteVersion ? (
-                    <Badge variant="outline" className="text-xs font-mono">
+                    <Badge variant="outline" className="text-xs font-mono px-1.5 sm:px-2">
                       {preview.remoteVersion}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs text-muted-foreground italic">
+                    <Badge variant="outline" className="text-xs text-muted-foreground italic px-1.5 sm:px-2">
                       Not installed
                     </Badge>
                   )}
-                  <ArrowRight className="h-4 w-4 text-primary" />
-                  <Badge variant="default" className="text-xs font-mono bg-primary">
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
+                  <Badge variant="default" className="text-xs font-mono bg-primary px-1.5 sm:px-2">
                     {preview.localVersion || "Unknown"}
                   </Badge>
                 </div>
@@ -288,53 +288,53 @@ export function DiffPreviewDialog({
                 )}
                 {!preview.remoteVersion && (
                   <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
-                    New Install
+                    New
                   </Badge>
                 )}
               </div>
             )}
 
-            {/* Summary Stats */}
-            <div className="grid grid-cols-4 gap-3 py-3 border-b">
-              <div className="flex items-center gap-2 text-sm">
-                <CheckSquare className="h-4 w-4 text-primary" />
-                <span className="text-muted-foreground">Selected:</span>
+            {/* Summary Stats - responsive grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-2 sm:py-3 border-b shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <CheckSquare className="h-3 w-3 sm:h-4 sm:w-4 text-primary shrink-0" />
+                <span className="text-muted-foreground hidden sm:inline">Selected:</span>
                 <span className="font-medium">{selectionStats.selected}/{selectionStats.total}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <FilePlus className="h-4 w-4 text-green-500" />
-                <span className="text-muted-foreground">Added:</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <FilePlus className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 shrink-0" />
+                <span className="text-muted-foreground hidden sm:inline">Added:</span>
                 <span className="font-medium text-green-600">{preview.added}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <FileEdit className="h-4 w-4 text-yellow-500" />
-                <span className="text-muted-foreground">Modified:</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <FileEdit className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 shrink-0" />
+                <span className="text-muted-foreground hidden sm:inline">Modified:</span>
                 <span className="font-medium text-yellow-600">{preview.modified}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <HardDrive className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Size:</span>
+              <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                <HardDrive className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground hidden sm:inline">Size:</span>
                 <span className="font-medium">{formatBytes(selectionStats.selectedSize)}</span>
               </div>
             </div>
 
-            {/* Selection Controls */}
-            <div className="flex gap-2 py-2 items-center justify-between">
+            {/* Selection Controls - responsive */}
+            <div className="flex flex-col sm:flex-row gap-2 py-2 items-stretch sm:items-center justify-between shrink-0">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search files..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
+                  className="pl-9 text-sm h-9"
                 />
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 justify-end">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleSelectAllFiles}
-                  className="text-xs"
+                  className="text-xs h-8 px-2"
                 >
                   <CheckSquare className="h-3 w-3 mr-1" />
                   All
@@ -343,7 +343,7 @@ export function DiffPreviewDialog({
                   variant="outline"
                   size="sm"
                   onClick={handleSelectNone}
-                  className="text-xs"
+                  className="text-xs h-8 px-2"
                 >
                   <Square className="h-3 w-3 mr-1" />
                   None
@@ -351,27 +351,29 @@ export function DiffPreviewDialog({
               </div>
             </div>
 
-            {/* Tabs for filtering */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all" className="text-xs">
-                  All ({preview.totalFiles})
-                </TabsTrigger>
-                <TabsTrigger value="added" className="text-xs">
-                  Added ({preview.added})
-                </TabsTrigger>
-                <TabsTrigger value="modified" className="text-xs">
-                  Modified ({preview.modified})
-                </TabsTrigger>
-                <TabsTrigger value="deleted" className="text-xs">
-                  Deleted ({preview.deleted})
-                </TabsTrigger>
-              </TabsList>
+            {/* Tabs for filtering - horizontally scrollable on mobile */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden min-h-0">
+              <div className="overflow-x-auto touch-pan-x shrink-0 -mx-4 sm:mx-0 px-4 sm:px-0">
+                <TabsList className="grid w-full min-w-[320px] grid-cols-4">
+                  <TabsTrigger value="all" className="text-xs px-2">
+                    All ({preview.totalFiles})
+                  </TabsTrigger>
+                  <TabsTrigger value="added" className="text-xs px-2">
+                    <span className="hidden sm:inline">Added</span> ({preview.added})
+                  </TabsTrigger>
+                  <TabsTrigger value="modified" className="text-xs px-2">
+                    <span className="hidden sm:inline">Mod</span> ({preview.modified})
+                  </TabsTrigger>
+                  <TabsTrigger value="deleted" className="text-xs px-2">
+                    <span className="hidden sm:inline">Del</span> ({preview.deleted})
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-              <TabsContent value={activeTab} className="flex-1 overflow-hidden mt-2">
+              <TabsContent value={activeTab} className="flex-1 overflow-hidden mt-2 min-h-0">
                 {/* Select all visible toggle */}
                 {filteredFiles.length > 0 && (
-                  <div className="flex items-center gap-2 px-2 py-1.5 border-b mb-2">
+                  <div className="flex items-center gap-2 px-2 py-1.5 border-b mb-2 shrink-0">
                     <Checkbox
                       id="select-visible"
                       checked={allVisibleSelected}
@@ -382,12 +384,12 @@ export function DiffPreviewDialog({
                       htmlFor="select-visible" 
                       className="text-xs text-muted-foreground cursor-pointer"
                     >
-                      {allVisibleSelected ? "Deselect" : "Select"} all visible ({filteredFiles.length} files)
+                      {allVisibleSelected ? "Deselect" : "Select"} visible ({filteredFiles.length})
                     </label>
                   </div>
                 )}
                 
-                <ScrollArea className="h-[280px] rounded-md border">
+                <ScrollArea className="h-[200px] sm:h-[280px] rounded-md border touch-pan-y">
                   {filteredFiles.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                       <FolderOpen className="h-12 w-12 mb-2 opacity-50" />
@@ -460,19 +462,20 @@ export function DiffPreviewDialog({
             </Tabs>
 
             {/* Remote slug info */}
-            <div className="text-xs text-muted-foreground pt-2 border-t">
-              Files will be deployed to: <code className="bg-muted px-1 rounded">{preview.remoteSlug}</code>
+            <div className="text-xs text-muted-foreground pt-2 border-t shrink-0 truncate">
+              Deploy to: <code className="bg-muted px-1 rounded text-xs">{preview.remoteSlug}</code>
             </div>
           </>
         )}
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col sm:flex-row gap-2 shrink-0">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={isLoading || !!error || selectionStats.selected === 0}
+            className="w-full sm:w-auto"
           >
             <Upload className="h-4 w-4 mr-2" />
             Publish {selectionStats.selected} File{selectionStats.selected !== 1 ? "s" : ""}
