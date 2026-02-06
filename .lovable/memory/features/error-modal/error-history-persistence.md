@@ -117,8 +117,21 @@ Updated `src/stores/errorStore.ts`:
 - `ErrorHistorySyncProvider` wrapping the app
 - Auto-persists errors as they're captured
 
-## Next Steps (Phase 4-6)
+## Phase 4: Backend Tab Auto-Fetch ✅ COMPLETE
 
-- Phase 4: Backend tab auto-fetch of error.log.txt
+The Backend tab in GlobalErrorModal now:
+1. Auto-fetches `error.log.txt` on hover/focus (same as Stack tab)
+2. Displays error log content with copy/download/refresh buttons
+3. Shows loading and error states with retry
+4. Cached for duration of modal open
+
+Tab content order:
+- Target Site URL (if available)
+- Backend Error Log (error.log.txt) - auto-fetched
+- Execution Logs (from CapturedError.backendLogs)
+- Go Stack Trace (from CapturedError.backendStackTrace)
+
+## Next Steps (Phase 5-6)
+
 - Phase 5: UI click path tracking
 - Phase 6: Multi-error queue UI with navigation and bulk copy
