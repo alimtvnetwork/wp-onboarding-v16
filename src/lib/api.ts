@@ -680,6 +680,17 @@ export const api = {
     request<FileChange[]>(`/plugins/${pluginId}/changes?siteId=${siteId}`),
   checkSync: (pluginId: number, siteId: number) =>
     request<SyncResult>(`/plugins/${pluginId}/sites/${siteId}/sync`, { method: "POST" }),
+  pushSync: (pluginId: number, siteId: number) =>
+    request<{
+      pluginId: number;
+      siteId: number;
+      filesUpdated: number;
+      filesDeleted: number;
+      filesIgnored: number;
+      totalChanges: number;
+      success: boolean;
+      errorMessage?: string;
+    }>(`/plugins/${pluginId}/sites/${siteId}/sync/push`, { method: "POST" }),
   checkAllSites: (pluginId: number) =>
     request<void>(`/plugins/${pluginId}/sync/check-all`, { method: "POST" }),
 

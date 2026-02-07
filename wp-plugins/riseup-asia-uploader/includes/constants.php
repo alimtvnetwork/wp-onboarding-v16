@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.10.0');
+    define('RISEUP_VERSION', '1.11.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -695,4 +695,22 @@ if (!defined('RISEUP_TABLE_FILE_CACHE')) {
 // Sync manifest endpoint - fixed URL, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_SYNC_MANIFEST')) {
     define('RISEUP_ENDPOINT_SYNC_MANIFEST', 'plugins/sync-manifest');
+}
+
+// Sync push endpoint - fixed URL, slug + files in JSON body
+if (!defined('RISEUP_ENDPOINT_SYNC')) {
+    define('RISEUP_ENDPOINT_SYNC', 'plugins/sync');
+}
+
+// Sync file actions
+if (!defined('RISEUP_SYNC_ACTION_REPLACE')) {
+    define('RISEUP_SYNC_ACTION_REPLACE', 'replace');
+}
+if (!defined('RISEUP_SYNC_ACTION_DELETE')) {
+    define('RISEUP_SYNC_ACTION_DELETE', 'delete');
+}
+
+// Sync action for transaction logging
+if (!defined('RISEUP_ACTION_SYNC_DELETE')) {
+    define('RISEUP_ACTION_SYNC_DELETE', 'sync_delete');
 }
