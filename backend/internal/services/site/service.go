@@ -4,7 +4,9 @@ package site
 import (
 	"archive/zip"
 	"context"
+	"crypto/md5"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"wp-plugin-publish/internal/database"
@@ -65,6 +68,11 @@ type Service struct {
 	sessionService  SessionService
 	cacheEnabled    bool
 	cacheTTLMinutes int
+	// errorLogHashes tracks MD5 hashes of error log entries to prevent duplicate writes.
+	// Key: MD5 hex string of (action+siteID+plugin+endpoint+statusCode+responseBody).
+	// Identical errors are written only once; subsequent occurrences are silently skipped.
+	errorLogHashes   map[string]struct{}
+	errorLogHashesMu sync.Mutex
 }
 
 // New creates a new site service instance
@@ -82,6 +90,7 @@ func New(cfg Config) *Service {
 		sessionService:  cfg.SessionService,
 		cacheEnabled:    cfg.CacheEnabled,
 		cacheTTLMinutes: cacheTTL,
+		errorLogHashes:  make(map[string]struct{}),
 	}
 }
 
@@ -1382,6 +1391,32 @@ func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 // logToErrorFile writes error details to data/errors/error.log.txt
 // Includes full request attribution: Go backend route and WordPress delegated URL.
 func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details map[string]interface{}) {
+	// Build deduplication hash from stable error identity (excludes timestamp)
+	statusCode := 0
+	if sc, ok := details["statusCode"].(int); ok {
+		statusCode = sc
+	}
+	endpoint := ""
+	if ep, ok := details["endpoint"].(string); ok {
+		endpoint = ep
+	}
+	responseBody := ""
+	if rb, ok := details["responseBody"].(string); ok {
+		responseBody = rb
+	}
+	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteID, pluginSlug, endpoint, statusCode, responseBody)
+	hashBytes := md5.Sum([]byte(hashInput))
+	hashHex := hex.EncodeToString(hashBytes[:])
+
+	s.errorLogHashesMu.Lock()
+	if _, exists := s.errorLogHashes[hashHex]; exists {
+		s.errorLogHashesMu.Unlock()
+		s.log.Debug("Duplicate error log entry suppressed", "action", action, "siteId", siteID, "plugin", pluginSlug, "hash", hashHex)
+		return
+	}
+	s.errorLogHashes[hashHex] = struct{}{}
+	s.errorLogHashesMu.Unlock()
+
 	errorsDir := pathutil.MustJoin(filepath.Dir(s.db.Path()), "errors")
 	errorLogPath := pathutil.MustJoin(errorsDir, "error.log.txt")
 
@@ -1412,10 +1447,6 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	if m, ok := details["method"].(string); ok && m != "" {
 		method = m
 	}
-	endpoint := ""
-	if ep, ok := details["endpoint"].(string); ok {
-		endpoint = ep
-	}
 	fullURL := ""
 	if u, ok := details["url"].(string); ok && u != "" {
 		fullURL = u
@@ -1428,14 +1459,15 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	if errMsg, ok := details["error"].(string); ok {
 		logEntry += fmt.Sprintf("  Error: %s\n", errMsg)
 	}
-	if statusCode, ok := details["statusCode"].(int); ok {
+	if statusCode > 0 {
 		logEntry += fmt.Sprintf("  Status Code: %d\n", statusCode)
 	}
-	if responseBody, ok := details["responseBody"].(string); ok && len(responseBody) > 0 {
-		if len(responseBody) > 2000 {
-			responseBody = responseBody[:2000] + "... (truncated)"
+	if len(responseBody) > 0 {
+		displayBody := responseBody
+		if len(displayBody) > 2000 {
+			displayBody = displayBody[:2000] + "... (truncated)"
 		}
-		logEntry += fmt.Sprintf("  Response Body:\n    %s\n", responseBody)
+		logEntry += fmt.Sprintf("  Response Body:\n    %s\n", displayBody)
 	}
 	if frames, ok := details["stackTraceFrames"].([]interface{}); ok && len(frames) > 0 {
 		logEntry += "  PHP Stack Trace Frames:\n"
