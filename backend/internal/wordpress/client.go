@@ -144,6 +144,20 @@ func (c *Client) request(method, endpoint string, body interface{}) (*http.Respo
 	return c.httpClient.Do(req)
 }
 
+// requestMultipart sends a multipart HTTP request (for file uploads).
+func (c *Client) requestMultipart(method, endpoint string, body io.Reader, contentType string) (*http.Response, error) {
+	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create HTTP request").
+			WithContext("url", url).
+			WithContext("method", method)
+	}
+
+	c.setStandardHeaders(req, contentType)
+	return c.httpClient.Do(req)
+}
+
 func (c *Client) fullURL(endpoint string) string {
 	return fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 }

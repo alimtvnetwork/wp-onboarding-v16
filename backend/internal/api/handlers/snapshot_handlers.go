@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -353,6 +354,62 @@ func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	result, err := Services.SiteService.IncrementalBackupRemoteSnapshot(r.Context(), siteID, opts)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E3031", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"data":    result,
+	})
+}
+
+// ImportRemoteSnapshot handles uploading a ZIP file to import as a snapshot on a remote site.
+// Accepts multipart form-data with a "file" field, streams the file to a temp location,
+// then proxies to the WordPress plugin import endpoint.
+func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	// Parse multipart form (max 500MB)
+	if err := r.ParseMultipartForm(500 << 20); err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "Failed to parse multipart form: "+err.Error())
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1001", "No file provided: "+err.Error())
+		return
+	}
+	defer file.Close()
+
+	// Write to temp file
+	tempFile, err := os.CreateTemp("", "snapshot-import-*.zip")
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E9002", "Failed to create temp file")
+		return
+	}
+	defer os.Remove(tempFile.Name())
+	defer tempFile.Close()
+
+	if _, err := io.Copy(tempFile, file); err != nil {
+		respondError(w, http.StatusInternalServerError, "E9002", "Failed to write temp file")
+		return
+	}
+	tempFile.Close()
+
+	_ = header // used for logging if needed
+
+	result, err := Services.SiteService.ImportRemoteSnapshot(r.Context(), siteID, tempFile.Name())
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3032", err.Error())
 		return
 	}
 	respondJSON(w, http.StatusCreated, map[string]interface{}{
