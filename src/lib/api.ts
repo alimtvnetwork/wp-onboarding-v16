@@ -9,6 +9,147 @@ export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: ApiError;
+  /** Full envelope metadata when response came from the PascalCase envelope format */
+  envelope?: EnvelopeMeta;
+}
+
+// ---------------------------------------------------------------------------
+// Universal Response Envelope types (PascalCase, matches Go backend)
+// ---------------------------------------------------------------------------
+
+export interface EnvelopeStatus {
+  IsSuccess: boolean;
+  IsFailed: boolean;
+  Code: number;
+  Message: string;
+  Timestamp: string;
+}
+
+export interface EnvelopeAttributes {
+  IsSingle: boolean;
+  IsMultiple: boolean;
+  TotalRecords?: number;
+  PerPage?: number;
+  TotalPages?: number;
+  CurrentPage?: number;
+  RequestedEndpoint?: string;
+  DelegatedEndpoint?: string;
+  TraversalSteps?: string[];
+}
+
+export interface EnvelopeNavigation {
+  NextPage: number | null;
+  PrevPage: number | null;
+  Pages: number[];
+}
+
+export interface EnvelopeErrorDetail {
+  Code: string;
+  Message: string;
+  StackTrace?: string;
+  StackTraceFrames?: EnvelopeStackFrame[];
+}
+
+export interface EnvelopeStackFrame {
+  File: string;
+  Line: number;
+  Function: string;
+  Class?: string;
+}
+
+export interface EnvelopeDelegatedError {
+  Endpoint: string;
+  StatusCode: number;
+  Message: string;
+  StackTrace?: string;
+  StackTraceFrames?: EnvelopeStackFrame[];
+}
+
+/** Metadata preserved from the envelope for downstream use (pagination, diagnostics) */
+export interface EnvelopeMeta {
+  attributes: EnvelopeAttributes;
+  navigation?: EnvelopeNavigation;
+  delegatedError?: EnvelopeDelegatedError;
+  additional?: unknown;
+}
+
+/** Raw envelope shape as received from the backend */
+interface RawEnvelope {
+  Status: EnvelopeStatus;
+  Attributes: EnvelopeAttributes;
+  Results: unknown[];
+  Navigation?: EnvelopeNavigation;
+  Error?: EnvelopeErrorDetail | null;
+  Additional?: unknown;
+}
+
+/**
+ * Detect whether a parsed JSON object is a PascalCase universal envelope.
+ */
+function isEnvelope(obj: unknown): obj is RawEnvelope {
+  if (!obj || typeof obj !== 'object') return false;
+  const o = obj as Record<string, unknown>;
+  return (
+    o.Status !== undefined &&
+    typeof o.Status === 'object' &&
+    o.Status !== null &&
+    'IsSuccess' in (o.Status as Record<string, unknown>)
+  );
+}
+
+/**
+ * Convert a PascalCase envelope response into the legacy ApiResponse<T> shape.
+ * For single items (IsSingle), data = Results[0].
+ * For lists (IsMultiple), data = Results (as T).
+ * Envelope metadata is preserved on the .envelope property.
+ */
+function parseEnvelope<T>(env: RawEnvelope): ApiResponse<T> {
+  const meta: EnvelopeMeta = {
+    attributes: env.Attributes,
+    navigation: env.Navigation ?? undefined,
+    additional: env.Additional ?? undefined,
+  };
+
+  // Extract delegated error from Additional if present
+  if (env.Additional && typeof env.Additional === 'object' && 'DelegatedError' in (env.Additional as Record<string, unknown>)) {
+    meta.delegatedError = (env.Additional as Record<string, unknown>).DelegatedError as EnvelopeDelegatedError;
+  }
+
+  if (env.Status.IsFailed || (env.Error && env.Error.Code)) {
+    const err = env.Error;
+    return {
+      success: false,
+      error: {
+        code: err?.Code || 'E9999',
+        message: err?.Message || env.Status.Message || 'Unknown error',
+        stackTrace: err?.StackTrace,
+        details: err?.StackTrace ? `Stack trace available (${(err.StackTraceFrames || []).length} frames)` : undefined,
+        context: {
+          ...(env.Attributes.RequestedEndpoint ? { requestedEndpoint: env.Attributes.RequestedEndpoint } : {}),
+          ...(env.Attributes.DelegatedEndpoint ? { delegatedEndpoint: env.Attributes.DelegatedEndpoint } : {}),
+          ...(env.Attributes.TraversalSteps?.length ? { traversalSteps: env.Attributes.TraversalSteps } : {}),
+          ...(meta.delegatedError ? { delegatedError: meta.delegatedError } : {}),
+          envelopeStackFrames: err?.StackTraceFrames,
+        },
+        timestamp: env.Status.Timestamp,
+      },
+      envelope: meta,
+    };
+  }
+
+  // Success: extract data from Results
+  let data: unknown;
+  if (env.Attributes.IsSingle) {
+    data = Array.isArray(env.Results) && env.Results.length > 0 ? env.Results[0] : env.Results;
+  } else {
+    data = env.Results;
+  }
+
+  return {
+    success: true,
+    data: data as T,
+    envelope: meta,
+  };
 }
 
 export interface ApiError {
@@ -117,7 +258,12 @@ async function fetchRequest<T>(
 
     // JSON happy-path
     if (looksLikeJson(raw)) {
-      return JSON.parse(raw) as ApiResponse<T>;
+      const parsed = JSON.parse(raw);
+      // Auto-detect PascalCase universal envelope and convert transparently
+      if (isEnvelope(parsed)) {
+        return parseEnvelope<T>(parsed);
+      }
+      return parsed as ApiResponse<T>;
     }
 
     // HTML / SPA fallback detection
@@ -873,7 +1019,11 @@ export const api = {
     if (!looksLikeJson(text)) {
       return { success: false, error: { code: "E9005", message: "Non-JSON response", timestamp: new Date().toISOString() } };
     }
-    return JSON.parse(text) as ApiResponse<Record<string, unknown>>;
+    const parsed = JSON.parse(text);
+    if (isEnvelope(parsed)) {
+      return parseEnvelope<Record<string, unknown>>(parsed);
+    }
+    return parsed as ApiResponse<Record<string, unknown>>;
   },
 
   // Snapshot cleanup (Phase 10)
