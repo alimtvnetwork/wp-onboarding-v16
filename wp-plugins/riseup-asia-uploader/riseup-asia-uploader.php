@@ -91,13 +91,15 @@ function riseup_backtrace_to_frames($backtrace) {
  */
 function riseup_fatal_error_handler() {
     $error = error_get_last();
-    if (RiseupBooleanHelpers::is_null($error)) {
+    // SAFETY: Use native PHP checks here — RiseupBooleanHelpers may not be loaded yet
+    // if the fatal error occurred during class loading.
+    if ($error === null) {
         return;
     }
     
     // Only handle fatal errors
     $fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
-    if (RiseupBooleanHelpers::is_falsy(in_array($error['type'], $fatal_types))) {
+    if (!in_array($error['type'], $fatal_types)) {
         return;
     }
     
@@ -128,7 +130,7 @@ function riseup_fatal_error_handler() {
     }
     
     // Set proper headers before any output
-    if (RiseupBooleanHelpers::is_falsy(headers_sent())) {
+    if (!headers_sent()) {
         header('Content-Type: application/json; charset=utf-8');
         http_response_code(500);
     }

@@ -1441,6 +1441,9 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	if endpoint, ok := details["endpoint"].(string); ok {
 		logEntry += fmt.Sprintf("  Endpoint: %s\n", endpoint)
 	}
+	if fullURL, ok := details["url"].(string); ok && fullURL != "" {
+		logEntry += fmt.Sprintf("  Full URL: %s\n", fullURL)
+	}
 	if responseBody, ok := details["responseBody"].(string); ok && len(responseBody) > 0 {
 		// Truncate if too long
 		if len(responseBody) > 2000 {
