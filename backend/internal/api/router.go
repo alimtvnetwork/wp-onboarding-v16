@@ -83,10 +83,11 @@ func NewServer(cfg ServerConfig) *Server {
 	// API v1 routes
 	api := router.PathPrefix("/api/v1").Subrouter()
 
-	// API index and health check
+	// API index, health check, and OpenAPI spec
 	api.HandleFunc("", handlers.APIIndex).Methods("GET")
 	api.HandleFunc("/", handlers.APIIndex).Methods("GET")
 	api.HandleFunc("/health", handlers.Health).Methods("GET")
+	api.HandleFunc("/openapi", handlers.ServeOpenAPISpec).Methods("GET")
 
 	// Sites endpoints
 	api.HandleFunc("/sites", handlers.GetSites).Methods("GET")

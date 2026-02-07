@@ -1,0 +1,1591 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "WP Plugin Publish API",
+    "description": "REST API for managing WordPress plugin deployments, site connections, sync operations, backups, and monitoring.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "WP Plugin Publish"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "Local API server"
+    }
+  ],
+  "tags": [
+    { "name": "Health", "description": "Server health and metadata" },
+    { "name": "Sites", "description": "WordPress site connection management" },
+    { "name": "Remote Plugins", "description": "Manage plugins on remote WordPress sites" },
+    { "name": "Snapshots", "description": "Remote site snapshot/backup management" },
+    { "name": "Plugins", "description": "Local plugin registration and scanning" },
+    { "name": "Git", "description": "Git operations on plugin repositories" },
+    { "name": "Sync", "description": "Local-to-remote file synchronization" },
+    { "name": "Publish", "description": "Plugin deployment pipeline" },
+    { "name": "Backups", "description": "Local plugin backup management" },
+    { "name": "Versions", "description": "Plugin version history and rollback" },
+    { "name": "Site Health", "description": "Site health monitoring" },
+    { "name": "Publish History", "description": "Deployment audit trail" },
+    { "name": "Error Logs", "description": "Backend log file access" },
+    { "name": "Error History", "description": "Persistent error/notification storage" },
+    { "name": "Sessions", "description": "Operation session logs (publish, sync)" },
+    { "name": "Request Sessions", "description": "Per-API-call request logging" },
+    { "name": "Settings", "description": "Application configuration" },
+    { "name": "E2E Tests", "description": "End-to-end test runner" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "API index",
+        "operationId": "apiIndex",
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Server health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessEnvelope" },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "status": { "type": "string", "example": "ok" },
+                            "timestamp": { "type": "string", "format": "date-time" }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sites": {
+      "get": {
+        "tags": ["Sites"],
+        "summary": "List all sites",
+        "operationId": "listSites",
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      },
+      "post": {
+        "tags": ["Sites"],
+        "summary": "Create a site connection",
+        "operationId": "createSite",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SiteCreateInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "$ref": "#/components/responses/Created" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      }
+    },
+    "/sites/test": {
+      "post": {
+        "tags": ["Sites"],
+        "summary": "Test credentials before creating a site",
+        "operationId": "testSiteCredentials",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["url", "username", "password"],
+                "properties": {
+                  "url": { "type": "string" },
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}": {
+      "get": {
+        "tags": ["Sites"],
+        "summary": "Get a site by ID",
+        "operationId": "getSite",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      },
+      "put": {
+        "tags": ["Sites"],
+        "summary": "Update a site",
+        "operationId": "updateSite",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SiteUpdateInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" },
+          "400": { "$ref": "#/components/responses/Error" }
+        }
+      },
+      "delete": {
+        "tags": ["Sites"],
+        "summary": "Delete a site",
+        "operationId": "deleteSite",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Deleted" }
+        }
+      }
+    },
+    "/sites/{id}/test": {
+      "post": {
+        "tags": ["Sites"],
+        "summary": "Test an existing site connection",
+        "operationId": "testSiteConnection",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/credentials": {
+      "get": {
+        "tags": ["Sites"],
+        "summary": "Get decrypted site credentials (API Explorer)",
+        "operationId": "getSiteCredentials",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/bootstrap-uploader": {
+      "post": {
+        "tags": ["Sites"],
+        "summary": "Deploy companion uploader plugin to a site",
+        "operationId": "bootstrapUploader",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "uploaderPath": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/bulk-bootstrap-uploader": {
+      "post": {
+        "tags": ["Sites"],
+        "summary": "Deploy companion uploader to multiple sites",
+        "operationId": "bulkBootstrapUploader",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["siteIds"],
+                "properties": {
+                  "siteIds": { "type": "array", "items": { "type": "integer", "format": "int64" } },
+                  "uploaderPath": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/mappings": {
+      "get": {
+        "tags": ["Sites"],
+        "summary": "Get plugin mappings for a site",
+        "operationId": "getSiteMappings",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      },
+      "put": {
+        "tags": ["Sites"],
+        "summary": "Update plugin mappings for a site",
+        "operationId": "updateSiteMappings",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pluginIds": { "type": "array", "items": { "type": "integer", "format": "int64" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins": {
+      "get": {
+        "tags": ["Remote Plugins"],
+        "summary": "List plugins on a remote site",
+        "operationId": "getRemotePlugins",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins/force-sync": {
+      "post": {
+        "tags": ["Remote Plugins"],
+        "summary": "Force-sync remote plugin list (clears cache)",
+        "operationId": "forceSyncRemotePlugins",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins/cache": {
+      "delete": {
+        "tags": ["Remote Plugins"],
+        "summary": "Clear remote plugins cache",
+        "operationId": "clearRemotePluginsCache",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins/enable": {
+      "post": {
+        "tags": ["Remote Plugins"],
+        "summary": "Enable a plugin on a remote site",
+        "operationId": "enableRemotePlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RemotePluginInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins/disable": {
+      "post": {
+        "tags": ["Remote Plugins"],
+        "summary": "Disable a plugin on a remote site",
+        "operationId": "disableRemotePlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RemotePluginInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins/delete": {
+      "post": {
+        "tags": ["Remote Plugins"],
+        "summary": "Delete a plugin from a remote site",
+        "operationId": "deleteRemotePlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RemotePluginInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins/files": {
+      "post": {
+        "tags": ["Remote Plugins"],
+        "summary": "Get file listing for a remote plugin",
+        "operationId": "getRemotePluginFiles",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RemotePluginInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/remote-plugins/file": {
+      "post": {
+        "tags": ["Remote Plugins"],
+        "summary": "Get content of a specific remote plugin file",
+        "operationId": "getRemotePluginFileContent",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["plugin", "path"],
+                "properties": {
+                  "plugin": { "type": "string", "description": "Plugin slug" },
+                  "path": { "type": "string", "description": "File path within the plugin" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/sites/{id}/snapshots": {
+      "get": {
+        "tags": ["Snapshots"],
+        "summary": "List remote snapshots",
+        "operationId": "getRemoteSnapshots",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "post": {
+        "tags": ["Snapshots"],
+        "summary": "Create a new snapshot",
+        "operationId": "createRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      }
+    },
+    "/sites/{id}/snapshots/settings": {
+      "get": {
+        "tags": ["Snapshots"],
+        "summary": "Get snapshot settings",
+        "operationId": "getRemoteSnapshotSettings",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "put": {
+        "tags": ["Snapshots"],
+        "summary": "Update snapshot settings",
+        "operationId": "updateRemoteSnapshotSettings",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/sites/{id}/snapshots/providers": {
+      "get": {
+        "tags": ["Snapshots"],
+        "summary": "List available snapshot providers",
+        "operationId": "getRemoteSnapshotProviders",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/sites/{id}/snapshots/tables": {
+      "get": {
+        "tags": ["Snapshots"],
+        "summary": "List available database tables for snapshotting",
+        "operationId": "getRemoteAvailableTables",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/sites/{id}/snapshots/full-backup": {
+      "post": {
+        "tags": ["Snapshots"],
+        "summary": "Trigger full backup orchestration",
+        "operationId": "fullBackupRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      }
+    },
+    "/sites/{id}/snapshots/incremental": {
+      "post": {
+        "tags": ["Snapshots"],
+        "summary": "Trigger incremental backup",
+        "operationId": "incrementalBackupRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      }
+    },
+    "/sites/{id}/snapshots/import": {
+      "post": {
+        "tags": ["Snapshots"],
+        "summary": "Import a snapshot from a ZIP file",
+        "operationId": "importRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      }
+    },
+    "/sites/{id}/snapshots/cleanup": {
+      "post": {
+        "tags": ["Snapshots"],
+        "summary": "Cleanup old/orphan snapshots",
+        "operationId": "cleanupRemoteSnapshots",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/sites/{id}/snapshots/{snapshotId}": {
+      "get": {
+        "tags": ["Snapshots"],
+        "summary": "Get a specific snapshot",
+        "operationId": "getRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/snapshotId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Snapshots"],
+        "summary": "Delete a snapshot",
+        "operationId": "deleteRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/snapshotId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/sites/{id}/snapshots/{snapshotId}/restore": {
+      "post": {
+        "tags": ["Snapshots"],
+        "summary": "Restore from a snapshot",
+        "operationId": "restoreRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/snapshotId" }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/sites/{id}/snapshots/{snapshotId}/export": {
+      "get": {
+        "tags": ["Snapshots"],
+        "summary": "Export/download a snapshot as ZIP",
+        "operationId": "exportRemoteSnapshot",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/snapshotId" }],
+        "responses": {
+          "200": {
+            "description": "Snapshot ZIP file",
+            "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
+    "/plugins": {
+      "get": {
+        "tags": ["Plugins"],
+        "summary": "List all registered plugins",
+        "operationId": "listPlugins",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "post": {
+        "tags": ["Plugins"],
+        "summary": "Register a new local plugin",
+        "operationId": "createPlugin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "path": { "type": "string" },
+                  "slug": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      }
+    },
+    "/plugins/{id}": {
+      "get": {
+        "tags": ["Plugins"],
+        "summary": "Get a plugin by ID",
+        "operationId": "getPlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "put": {
+        "tags": ["Plugins"],
+        "summary": "Update a plugin",
+        "operationId": "updatePlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Plugins"],
+        "summary": "Delete a plugin registration",
+        "operationId": "deletePlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/plugins/{id}/mappings": {
+      "get": {
+        "tags": ["Plugins"],
+        "summary": "Get site mappings for a plugin",
+        "operationId": "getPluginMappings",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "post": {
+        "tags": ["Plugins"],
+        "summary": "Create a plugin-site mapping",
+        "operationId": "createPluginMapping",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      },
+      "put": {
+        "tags": ["Plugins"],
+        "summary": "Bulk-update site mappings for a plugin",
+        "operationId": "updatePluginMappings",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "siteIds": { "type": "array", "items": { "type": "integer", "format": "int64" } },
+                  "remoteSlug": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/changes": {
+      "get": {
+        "tags": ["Plugins"],
+        "summary": "Get detected file changes for a plugin",
+        "operationId": "getFileChanges",
+        "parameters": [
+          { "$ref": "#/components/parameters/id" },
+          { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/scan": {
+      "post": {
+        "tags": ["Plugins"],
+        "summary": "Trigger a file scan for a plugin",
+        "operationId": "scanPlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/scan": {
+      "post": {
+        "tags": ["Plugins"],
+        "summary": "Scan all plugins",
+        "operationId": "scanAllPlugins",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/scan-directory": {
+      "post": {
+        "tags": ["Plugins"],
+        "summary": "Scan a directory for WordPress plugin metadata",
+        "operationId": "scanDirectoryPath",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": { "type": "string" },
+                  "createDetection": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/scan-directories": {
+      "post": {
+        "tags": ["Plugins"],
+        "summary": "Scan multiple directories for WordPress plugins",
+        "operationId": "scanDirectoriesPath",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["paths"],
+                "properties": {
+                  "paths": { "type": "array", "items": { "type": "string" } },
+                  "createDetection": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/file": {
+      "post": {
+        "tags": ["Plugins"],
+        "summary": "Get local file content within a plugin",
+        "operationId": "getLocalFileContent",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/git/pull": {
+      "post": {
+        "tags": ["Git"],
+        "summary": "Git pull for a plugin",
+        "operationId": "gitPull",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/git/status": {
+      "get": {
+        "tags": ["Git"],
+        "summary": "Git status for a plugin",
+        "operationId": "gitStatus",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/git/commit": {
+      "post": {
+        "tags": ["Git"],
+        "summary": "Git commit for a plugin",
+        "operationId": "gitCommit",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "message": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/git/push": {
+      "post": {
+        "tags": ["Git"],
+        "summary": "Git push for a plugin",
+        "operationId": "gitPush",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/git/pull": {
+      "post": {
+        "tags": ["Git"],
+        "summary": "Git pull all plugins",
+        "operationId": "gitPullAll",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/sites/{siteId}/sync": {
+      "post": {
+        "tags": ["Sync"],
+        "summary": "Check sync status between local and remote",
+        "operationId": "checkSync",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/sites/{siteId}/sync/push": {
+      "post": {
+        "tags": ["Sync"],
+        "summary": "Push local changes to remote site",
+        "operationId": "pushSync",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/sync/check-all": {
+      "post": {
+        "tags": ["Sync"],
+        "summary": "Check sync status for all mapped sites",
+        "operationId": "checkAllSites",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/sites/{siteId}/publish": {
+      "post": {
+        "tags": ["Publish"],
+        "summary": "Publish plugin to a site",
+        "operationId": "publishPlugin",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PublishInput" }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/sites/{siteId}/preview": {
+      "get": {
+        "tags": ["Publish"],
+        "summary": "Preview files that will be published",
+        "operationId": "previewPublish",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/sites/{siteId}/file-diff": {
+      "post": {
+        "tags": ["Publish"],
+        "summary": "Get local vs remote file diff",
+        "operationId": "getFileDiff",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/backups": {
+      "get": {
+        "tags": ["Backups"],
+        "summary": "List backups for a plugin",
+        "operationId": "getBackups",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/backups/{id}/restore": {
+      "post": {
+        "tags": ["Backups"],
+        "summary": "Restore a plugin from backup",
+        "operationId": "restoreBackup",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/backups/{id}": {
+      "delete": {
+        "tags": ["Backups"],
+        "summary": "Delete a backup",
+        "operationId": "deleteBackup",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/plugins/{id}/versions": {
+      "get": {
+        "tags": ["Versions"],
+        "summary": "Get version history for a plugin",
+        "operationId": "getPluginVersions",
+        "parameters": [
+          { "$ref": "#/components/parameters/id" },
+          { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/plugins/{id}/versions/{versionId}": {
+      "get": {
+        "tags": ["Versions"],
+        "summary": "Get a specific version entry",
+        "operationId": "getPluginVersion",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/versionId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Versions"],
+        "summary": "Delete a version entry",
+        "operationId": "deletePluginVersion",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/versionId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/plugins/{id}/versions/{versionId}/rollback": {
+      "post": {
+        "tags": ["Versions"],
+        "summary": "Rollback to a previous version",
+        "operationId": "rollbackPluginVersion",
+        "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/versionId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/site-health/check-all": {
+      "post": {
+        "tags": ["Site Health"],
+        "summary": "Check health of all sites",
+        "operationId": "checkAllSitesHealth",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/site-health/summaries": {
+      "get": {
+        "tags": ["Site Health"],
+        "summary": "Get health summaries for all sites",
+        "operationId": "getSiteHealthSummaries",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/site-health/stats": {
+      "get": {
+        "tags": ["Site Health"],
+        "summary": "Get overall health statistics",
+        "operationId": "getSiteHealthStats",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/site-health/history": {
+      "get": {
+        "tags": ["Site Health"],
+        "summary": "Get health check history",
+        "operationId": "getSiteHealthHistory",
+        "parameters": [
+          { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Site Health"],
+        "summary": "Clear health check history",
+        "operationId": "clearSiteHealthHistory",
+        "parameters": [
+          { "name": "days", "in": "query", "schema": { "type": "integer" }, "description": "Clear records older than N days" }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/site-health/sites/{id}/check": {
+      "post": {
+        "tags": ["Site Health"],
+        "summary": "Check health of a single site",
+        "operationId": "checkSiteHealth",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/publish-history": {
+      "get": {
+        "tags": ["Publish History"],
+        "summary": "List publish history",
+        "operationId": "listPublishHistory",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 25 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "pluginId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Publish History"],
+        "summary": "Clear all publish history",
+        "operationId": "clearPublishHistory",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["confirm"],
+                "properties": {
+                  "confirm": { "type": "boolean" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/publish-history/stats": {
+      "get": {
+        "tags": ["Publish History"],
+        "summary": "Get publish statistics",
+        "operationId": "getPublishHistoryStats",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/publish-history/{id}": {
+      "get": {
+        "tags": ["Publish History"],
+        "summary": "Get a publish history entry",
+        "operationId": "getPublishHistoryById",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Publish History"],
+        "summary": "Delete a publish history entry",
+        "operationId": "deletePublishHistoryEntry",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/errors": {
+      "get": {
+        "tags": ["Error Logs"],
+        "summary": "Get error log content",
+        "operationId": "getErrors",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["errors", "all"], "default": "errors" } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Error Logs"],
+        "summary": "Clear all error log files",
+        "operationId": "clearErrors",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/errors/{id}": {
+      "get": {
+        "tags": ["Error Logs"],
+        "summary": "Get a specific error (not implemented)",
+        "operationId": "getError",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "501": { "description": "Not implemented" } }
+      }
+    },
+    "/errors/bundle": {
+      "get": {
+        "tags": ["Error Logs"],
+        "summary": "Download error log bundle as ZIP",
+        "operationId": "downloadErrorBundleGet",
+        "responses": {
+          "200": {
+            "description": "ZIP bundle",
+            "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Error Logs"],
+        "summary": "Download error log bundle with optional report",
+        "operationId": "downloadErrorBundlePost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "report": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ZIP bundle",
+            "content": { "application/zip": { "schema": { "type": "string", "format": "binary" } } }
+          }
+        }
+      }
+    },
+    "/errors/stream": {
+      "get": {
+        "tags": ["Error Logs"],
+        "summary": "Stream tail of error log",
+        "operationId": "streamErrorLogs",
+        "parameters": [
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["errors", "all"], "default": "all" } },
+          { "name": "tail", "in": "query", "schema": { "type": "integer", "default": 100 } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/errors/log": {
+      "get": {
+        "tags": ["Error Logs"],
+        "summary": "Get error.log.txt content",
+        "operationId": "getBackendErrorLog",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/logs/full": {
+      "get": {
+        "tags": ["Error Logs"],
+        "summary": "Get full log.txt content",
+        "operationId": "getBackendFullLog",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/error-history": {
+      "get": {
+        "tags": ["Error History"],
+        "summary": "List error history (paginated)",
+        "operationId": "listErrorHistory",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } },
+          { "name": "code", "in": "query", "schema": { "type": "string" } },
+          { "name": "level", "in": "query", "schema": { "type": "string" } },
+          { "name": "startDate", "in": "query", "schema": { "type": "string" } },
+          { "name": "endDate", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "post": {
+        "tags": ["Error History"],
+        "summary": "Save a new error to history",
+        "operationId": "saveErrorHistory",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code", "message"],
+                "properties": {
+                  "code": { "type": "string" },
+                  "message": { "type": "string" },
+                  "level": { "type": "string" },
+                  "details": { "type": "string" },
+                  "context": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      },
+      "delete": {
+        "tags": ["Error History"],
+        "summary": "Clear all error history",
+        "operationId": "clearErrorHistory",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/error-history/stats": {
+      "get": {
+        "tags": ["Error History"],
+        "summary": "Get error statistics",
+        "operationId": "getErrorHistoryStats",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/error-history/bulk-export": {
+      "post": {
+        "tags": ["Error History"],
+        "summary": "Export selected errors as markdown report",
+        "operationId": "bulkExportErrorHistory",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ids"],
+                "properties": {
+                  "ids": { "type": "array", "items": { "type": "integer", "format": "int64" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/error-history/{id}": {
+      "get": {
+        "tags": ["Error History"],
+        "summary": "Get error by ID",
+        "operationId": "getErrorHistoryById",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Error History"],
+        "summary": "Delete an error from history",
+        "operationId": "deleteErrorHistory",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/settings": {
+      "get": {
+        "tags": ["Settings"],
+        "summary": "Get application settings",
+        "operationId": "getSettings",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "put": {
+        "tags": ["Settings"],
+        "summary": "Update application settings (not implemented)",
+        "operationId": "updateSettings",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
+        "responses": { "501": { "description": "Not implemented" } }
+      }
+    },
+    "/mappings/{id}": {
+      "delete": {
+        "tags": ["Plugins"],
+        "summary": "Delete a plugin-site mapping",
+        "operationId": "deletePluginMapping",
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/sessions": {
+      "get": {
+        "tags": ["Sessions"],
+        "summary": "List operation sessions",
+        "operationId": "getSessions",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/sessions/{id}": {
+      "get": {
+        "tags": ["Sessions"],
+        "summary": "Get session details",
+        "operationId": "getSession",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Sessions"],
+        "summary": "Delete a session",
+        "operationId": "deleteSession",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/sessions/{id}/logs": {
+      "get": {
+        "tags": ["Sessions"],
+        "summary": "Get session logs",
+        "operationId": "getSessionLogs",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": {
+          "200": { "$ref": "#/components/responses/Success" }
+        }
+      }
+    },
+    "/request-sessions": {
+      "get": {
+        "tags": ["Request Sessions"],
+        "summary": "List request sessions (paginated)",
+        "operationId": "getRequestSessions",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Request Sessions"],
+        "summary": "Clear all request sessions",
+        "operationId": "clearRequestSessions",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/request-sessions/errors": {
+      "get": {
+        "tags": ["Request Sessions"],
+        "summary": "List request sessions with errors",
+        "operationId": "getRequestSessionsByError",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/request-sessions/{id}": {
+      "get": {
+        "tags": ["Request Sessions"],
+        "summary": "Get a request session",
+        "operationId": "getRequestSession",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["Request Sessions"],
+        "summary": "Delete a request session",
+        "operationId": "deleteRequestSession",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/request-sessions/{id}/export": {
+      "get": {
+        "tags": ["Request Sessions"],
+        "summary": "Export a request session as JSON file",
+        "operationId": "exportRequestSession",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": {
+          "200": {
+            "description": "JSON file download",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    },
+    "/e2e/suites": {
+      "get": {
+        "tags": ["E2E Tests"],
+        "summary": "List test suites",
+        "operationId": "getE2ESuites",
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/e2e/suites/{id}/cases": {
+      "get": {
+        "tags": ["E2E Tests"],
+        "summary": "Get test cases for a suite",
+        "operationId": "getE2ECases",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/e2e/run": {
+      "post": {
+        "tags": ["E2E Tests"],
+        "summary": "Start a new test run",
+        "operationId": "startE2ERun",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "suiteId": { "type": "string" },
+                  "caseIds": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+      }
+    },
+    "/e2e/runs": {
+      "get": {
+        "tags": ["E2E Tests"],
+        "summary": "List past test runs",
+        "operationId": "getE2ERuns",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/e2e/runs/{id}": {
+      "get": {
+        "tags": ["E2E Tests"],
+        "summary": "Get a test run with results",
+        "operationId": "getE2ERun",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      },
+      "delete": {
+        "tags": ["E2E Tests"],
+        "summary": "Delete a test run",
+        "operationId": "deleteE2ERun",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Deleted" } }
+      }
+    },
+    "/e2e/runs/{id}/abort": {
+      "post": {
+        "tags": ["E2E Tests"],
+        "summary": "Abort a running test",
+        "operationId": "abortE2ERun",
+        "parameters": [{ "$ref": "#/components/parameters/stringId" }],
+        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+      }
+    },
+    "/openapi": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Get this OpenAPI specification",
+        "operationId": "getOpenAPISpec",
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3.0 JSON specification",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SuccessEnvelope": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "type": "object" }
+        }
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "E1001" },
+              "message": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        }
+      },
+      "SiteCreateInput": {
+        "type": "object",
+        "required": ["name", "url", "username"],
+        "properties": {
+          "name": { "type": "string", "example": "Production Site" },
+          "url": { "type": "string", "example": "https://example.com" },
+          "username": { "type": "string", "example": "admin" },
+          "password": { "type": "string", "description": "Legacy field" },
+          "applicationPassword": { "type": "string", "description": "WordPress application password" }
+        }
+      },
+      "SiteUpdateInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "url": { "type": "string" },
+          "username": { "type": "string" },
+          "password": { "type": "string" },
+          "applicationPassword": { "type": "string" }
+        }
+      },
+      "RemotePluginInput": {
+        "type": "object",
+        "required": ["plugin"],
+        "properties": {
+          "plugin": { "type": "string", "description": "Plugin slug", "example": "akismet/akismet.php" },
+          "path": { "type": "string", "description": "Optional file path" }
+        }
+      },
+      "PublishInput": {
+        "type": "object",
+        "properties": {
+          "mode": { "type": "string", "enum": ["full", "selected"], "default": "full" },
+          "files": { "type": "array", "items": { "type": "string" }, "description": "Files to publish (selected mode)" },
+          "createBackup": { "type": "boolean", "default": false },
+          "keepZipFiles": { "type": "boolean", "default": false }
+        }
+      }
+    },
+    "parameters": {
+      "id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "stringId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string" }
+      },
+      "siteId": {
+        "name": "siteId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "snapshotId": {
+        "name": "snapshotId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      },
+      "versionId": {
+        "name": "versionId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer", "format": "int64" }
+      }
+    },
+    "responses": {
+      "Success": {
+        "description": "Successful operation",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SuccessEnvelope" }
+          }
+        }
+      },
+      "Created": {
+        "description": "Resource created",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/SuccessEnvelope" }
+          }
+        }
+      },
+      "Deleted": {
+        "description": "Resource deleted",
+        "content": {
+          "application/json": {
+            "schema": {
+              "allOf": [
+                { "$ref": "#/components/schemas/SuccessEnvelope" },
+                {
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": { "type": "boolean", "example": true }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Error": {
+        "description": "Error response",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" }
+          }
+        }
+      }
+    }
+  }
+}
