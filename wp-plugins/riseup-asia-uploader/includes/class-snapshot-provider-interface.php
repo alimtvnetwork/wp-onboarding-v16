@@ -269,10 +269,7 @@ abstract class RiseupSnapshotProviderInterface {
      * @return string Full path to snapshots directory.
      */
     protected function getSnapshotsDir() {
-        return RiseupPathUtils::join(
-            RiseupPathUtils::getBaseDir(),
-            RISEUP_SNAPSHOTS_SUBDIR
-        );
+        return RiseupPathUtils::getSnapshotsDir();
     }
 
     /**
@@ -285,8 +282,7 @@ abstract class RiseupSnapshotProviderInterface {
     protected function ensureSnapshotsDir() {
         $dir = RiseupPathUtils::ensurePath(
             true, // secure with .htaccess
-            RiseupPathUtils::getBaseDir(),
-            RISEUP_SNAPSHOTS_SUBDIR
+            RiseupPathUtils::getSnapshotsDir()
         );
 
         if ($dir === false) {

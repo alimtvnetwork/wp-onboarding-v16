@@ -84,6 +84,42 @@ class RiseupPathUtils {
     }
 
     /**
+     * Get the logs directory path.
+     *
+     * @return string Full path to logs directory.
+     */
+    public static function getLogsDir() {
+        return self::join(self::getBaseDir(), RISEUP_LOGS_SUBDIR);
+    }
+
+    /**
+     * Get the snapshots directory path.
+     *
+     * @return string Full path to snapshots directory.
+     */
+    public static function getSnapshotsDir() {
+        return self::join(self::getBaseDir(), RISEUP_SNAPSHOTS_SUBDIR);
+    }
+
+    /**
+     * Get the temp directory path.
+     *
+     * @return string Full path to temp directory.
+     */
+    public static function getTempDir() {
+        return self::join(self::getBaseDir(), RISEUP_TEMP_SUBDIR);
+    }
+
+    /**
+     * Get the database file path.
+     *
+     * @return string Full path to SQLite database file.
+     */
+    public static function getDbPath() {
+        return self::join(self::getBaseDir(), RISEUP_DB_FILENAME);
+    }
+
+    /**
      * Ensure a directory exists, creating it if necessary.
      *
      * @param string $path   Directory path.

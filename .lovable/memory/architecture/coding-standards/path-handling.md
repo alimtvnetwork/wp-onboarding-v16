@@ -1,5 +1,5 @@
 # Memory: architecture/coding-standards/path-handling
-Updated: 2026-02-06
+Updated: 2026-02-07
 
 ## Overview
 
@@ -23,8 +23,9 @@ Method names should use camelCase: `ensureDir()`, `isSafePath()`, `formatBytes()
 
 1. **Constants First**: All base paths originate from constants (RISEUP_*_SUBDIR in PHP, pathutil in Go)
 2. **Centralized Joining**: Use `RiseupPathUtils::join()` in PHP, `pathutil.ToAbsolute()` in Go
-3. **Validate Before Use**: Always check directory exists, create if missing
-4. **Log All Failures**: Every path operation failure logs full context
+3. **Typed Directory Methods**: Use `RiseupPathUtils::getLogsDir()`, `getSnapshotsDir()`, `getTempDir()`, `getDbPath()` instead of manual joins
+4. **Validate Before Use**: Always check directory exists, create if missing
+5. **Log All Failures**: Every path operation failure logs full context
 
 ## PHP Path Utility
 
@@ -34,11 +35,15 @@ Located at `wp-plugins/riseup-asia-uploader/includes/class-path-utils.php`:
 // Join path segments
 $path = RiseupPathUtils::join($base, $subdir, $filename);
 
+// Typed directory accessors (preferred over manual joins)
+$base = RiseupPathUtils::getBaseDir();
+$logs = RiseupPathUtils::getLogsDir();
+$snaps = RiseupPathUtils::getSnapshotsDir();
+$temp = RiseupPathUtils::getTempDir();
+$db = RiseupPathUtils::getDbPath();
+
 // Ensure directory exists (with optional security)
 $dir = RiseupPathUtils::ensurePath(true, $base, RISEUP_SNAPSHOTS_SUBDIR);
-
-// Get plugin base directory
-$base = RiseupPathUtils::getBaseDir();
 
 // Validate path is safe (no traversal)
 $safe = RiseupPathUtils::isSafePath($path, $base);

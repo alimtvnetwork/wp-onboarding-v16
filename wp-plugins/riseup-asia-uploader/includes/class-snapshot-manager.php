@@ -539,8 +539,7 @@ class RiseupSnapshotManager {
 
         // Create temp extraction directory
         $temp_dir = RiseupPathUtils::join(
-            RiseupPathUtils::getBaseDir(),
-            RISEUP_TEMP_SUBDIR,
+            RiseupPathUtils::getTempDir(),
             'import_' . uniqid()
         );
 
@@ -594,10 +593,7 @@ class RiseupSnapshotManager {
             }
 
             // Move to snapshots directory
-            $snapshots_dir = RiseupPathUtils::join(
-                RiseupPathUtils::getBaseDir(),
-                RISEUP_SNAPSHOTS_SUBDIR
-            );
+            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
             if (!RiseupPathUtils::ensureDir($snapshots_dir, true)) {
                 throw new Exception('Failed to ensure snapshots directory');
             }

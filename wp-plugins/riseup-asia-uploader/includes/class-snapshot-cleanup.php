@@ -296,8 +296,7 @@ class RiseupSnapshotCleanup {
      * Get the snapshots directory path.
      */
     private function getSnapshotsDir() {
-        $upload_dir = wp_upload_dir();
-        return $upload_dir['basedir'] . DIRECTORY_SEPARATOR . RISEUP_UPLOADS_SUBDIR . DIRECTORY_SEPARATOR . RISEUP_SNAPSHOTS_SUBDIR;
+        return RiseupPathUtils::getSnapshotsDir();
     }
 
     /**

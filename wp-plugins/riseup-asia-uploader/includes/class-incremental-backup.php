@@ -711,8 +711,7 @@ class RiseupIncrementalBackup {
      * @return string Base snapshots directory path.
      */
     private function getSnapshotsBaseDir() {
-        $upload_dir = wp_upload_dir();
-        return $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR . '/' . RISEUP_SNAPSHOTS_SUBDIR;
+        return RiseupPathUtils::getSnapshotsDir();
     }
 
     /**

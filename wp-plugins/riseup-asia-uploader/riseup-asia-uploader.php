@@ -2806,12 +2806,8 @@ class Riseup_Asia {
      * @return string
      */
     private function get_temp_dir() {
-        $temp_dir = $this->file_logger->get_base_dir() . '/' . RISEUP_TEMP_SUBDIR;
-
-        if (RiseupBooleanHelpers::is_file_missing($temp_dir)) {
-            wp_mkdir_p($temp_dir);
-        }
-
+        $temp_dir = RiseupPathUtils::getTempDir();
+        RiseupPathUtils::ensureDir($temp_dir);
         return $temp_dir;
     }
 
