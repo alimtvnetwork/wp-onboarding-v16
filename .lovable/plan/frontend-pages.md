@@ -156,14 +156,17 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 8: Logs Page — Filtering & Search
+### Phase 8: Logs Page — Filtering & Search ✅ COMPLETE
 
 **Goal:** Add structured filtering (by level, service, time range) and full-text search to the Logs page.
 
-**Files to change:**
-- `src/pages/Logs.tsx` — Add filter bar (level checkboxes, service dropdown, date range picker)
-- `src/components/shared/LogViewer.tsx` — Support filtered rendering
-- `src/components/shared/LiveLogEntry.tsx` — Highlight search matches
+**Implementation:** Replaced the single-select level dropdown with multi-select level checkboxes (info/warn/error/debug) for simultaneous filtering. Added search match highlighting via a reusable `HighlightedText` component. Replaced hover-only detail display with expandable `Collapsible` rows that show formatted JSON details on click. Level counter badges in the header now toggle with opacity feedback.
+
+**Files created:**
+- `src/components/shared/HighlightedText.tsx` — Reusable regex-based search match highlighter
+
+**Files changed:**
+- `src/pages/Logs.tsx` — Multi-select level checkboxes, search highlighting, expandable log details
 
 **Backend dependency:** WebSocket log stream (✅ working)
 
