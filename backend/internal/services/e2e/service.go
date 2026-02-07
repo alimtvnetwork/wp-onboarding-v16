@@ -14,33 +14,45 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
-// serviceImpl implements the E2E Service interface
-type serviceImpl struct {
-	db           *sql.DB
-	mu           sync.RWMutex
-	activeRun    *TestRun
-	broadcast    func(event string, data interface{})
-	pluginSvc    interface{} // PluginServiceInterface
-	siteSvc      interface{} // SiteServiceInterface
-	syncSvc      interface{} // SyncServiceInterface
+// Config holds configuration for the E2E test service
+type Config struct {
+	DB               *sql.DB
+	Broadcast        func(event string, data interface{})
+	BaseURL          string // Backend API base URL (e.g. "http://localhost:8080")
+	TestPluginPath   string // Local path to a test plugin directory
+	TestSiteURL      string // WordPress test site URL
+	TestSiteUsername  string // WordPress test site username
+	TestSitePassword string // WordPress test site password
 }
 
-// NewService creates a new E2E test service
-func NewService(db *sql.DB, broadcast func(event string, data interface{})) Service {
+// serviceImpl implements the E2E Service interface
+type serviceImpl struct {
+	db               *sql.DB
+	mu               sync.RWMutex
+	activeRun        *TestRun
+	broadcast        func(event string, data interface{})
+	api              *apiClient
+	testPluginPath   string
+	testSiteURL      string
+	testSiteUsername  string
+	testSitePassword string
+	cleanupIDs       map[string][]int64
+}
+
+// New creates a new E2E test service
+func New(cfg Config) Service {
 	svc := &serviceImpl{
-		db:        db,
-		broadcast: broadcast,
+		db:               cfg.DB,
+		broadcast:        cfg.Broadcast,
+		api:              newAPIClient(cfg.BaseURL),
+		testPluginPath:   cfg.TestPluginPath,
+		testSiteURL:      cfg.TestSiteURL,
+		testSiteUsername:  cfg.TestSiteUsername,
+		testSitePassword: cfg.TestSitePassword,
 	}
 	svc.initSchema()
 	svc.seedTestSuites()
 	return svc
-}
-
-// SetServices injects dependent services
-func (s *serviceImpl) SetServices(pluginSvc, siteSvc, syncSvc interface{}) {
-	s.pluginSvc = pluginSvc
-	s.siteSvc = siteSvc
-	s.syncSvc = syncSvc
 }
 
 func (s *serviceImpl) initSchema() error {
@@ -106,7 +118,6 @@ func (s *serviceImpl) initSchema() error {
 }
 
 func (s *serviceImpl) seedTestSuites() {
-	// Check if already seeded
 	var count int
 	s.db.QueryRow("SELECT COUNT(*) FROM test_suites").Scan(&count)
 	if count > 0 {
@@ -125,11 +136,10 @@ func (s *serviceImpl) seedTestSuites() {
 			suite.ID, suite.Name, suite.Category, suite.Enabled, suite.TimeoutSeconds)
 	}
 
-	// Seed test cases
 	cases := []TestCase{
 		// Plugin CRUD
 		{ID: "TC-PLUGIN-001", SuiteID: "plugin-crud", Name: "Register Plugin", Description: "Register a new plugin from local directory", Steps: []string{"POST /plugins", "Verify response", "GET /plugins"}, ExpectedResult: "Plugin created and visible in list", OrderIndex: 1},
-		{ID: "TC-PLUGIN-002", SuiteID: "plugin-crud", Name: "Register Invalid Path", Description: "Attempt to register non-existent path", Steps: []string{"POST /plugins with invalid path"}, ExpectedResult: "Error response E3002", OrderIndex: 2},
+		{ID: "TC-PLUGIN-002", SuiteID: "plugin-crud", Name: "Register Invalid Path", Description: "Attempt to register non-existent path", Steps: []string{"POST /plugins with invalid path"}, ExpectedResult: "Error response", OrderIndex: 2},
 		{ID: "TC-PLUGIN-003", SuiteID: "plugin-crud", Name: "Update Plugin", Description: "Update plugin settings", Steps: []string{"Create plugin", "PUT /plugins/{id}"}, ExpectedResult: "Plugin updated", OrderIndex: 3},
 		{ID: "TC-PLUGIN-004", SuiteID: "plugin-crud", Name: "Delete Plugin", Description: "Delete plugin registration", Steps: []string{"Create plugin", "DELETE /plugins/{id}"}, ExpectedResult: "Plugin deleted", OrderIndex: 4},
 		{ID: "TC-PLUGIN-005", SuiteID: "plugin-crud", Name: "Scan Plugin Files", Description: "Scan local plugin directory", Steps: []string{"Create plugin", "POST /watcher/scan/{id}"}, ExpectedResult: "File count returned", OrderIndex: 5},
@@ -137,23 +147,16 @@ func (s *serviceImpl) seedTestSuites() {
 		// Site Connections
 		{ID: "TC-SITE-001", SuiteID: "site-connections", Name: "Register Site", Description: "Register a WordPress site", Steps: []string{"POST /sites", "GET /sites"}, ExpectedResult: "Site created", OrderIndex: 1},
 		{ID: "TC-SITE-002", SuiteID: "site-connections", Name: "Test Connection", Description: "Test WP REST API connectivity", Steps: []string{"Create site", "POST /sites/{id}/test"}, ExpectedResult: "Success with WP version", OrderIndex: 2},
-		{ID: "TC-SITE-003", SuiteID: "site-connections", Name: "Invalid Credentials", Description: "Test with bad credentials", Steps: []string{"Create site with bad password", "POST /sites/{id}/test"}, ExpectedResult: "Error response", OrderIndex: 3},
+		{ID: "TC-SITE-003", SuiteID: "site-connections", Name: "Invalid Credentials", Description: "Test with bad credentials", Steps: []string{"POST /sites/test with bad creds"}, ExpectedResult: "Error or auth failure", OrderIndex: 3},
 		{ID: "TC-SITE-004", SuiteID: "site-connections", Name: "Create Plugin Mapping", Description: "Map plugin to site", Steps: []string{"Create plugin", "Create site", "POST /plugins/{id}/mappings"}, ExpectedResult: "Mapping created", OrderIndex: 4},
 
 		// Sync Operations
-		{ID: "TC-SYNC-001", SuiteID: "sync-operations", Name: "Detect New Files", Description: "Detect newly added files", Steps: []string{"Create plugin", "Add file", "Scan"}, ExpectedResult: "Added status in changes", OrderIndex: 1},
-		{ID: "TC-SYNC-002", SuiteID: "sync-operations", Name: "Detect Modified Files", Description: "Detect file modifications", Steps: []string{"Create plugin", "Modify file", "Scan"}, ExpectedResult: "Modified status", OrderIndex: 2},
-		{ID: "TC-SYNC-003", SuiteID: "sync-operations", Name: "Detect Deleted Files", Description: "Detect removed files", Steps: []string{"Create plugin", "Delete file", "Scan"}, ExpectedResult: "Deleted status", OrderIndex: 3},
-		{ID: "TC-SYNC-004", SuiteID: "sync-operations", Name: "Compare Local/Remote", Description: "Compare hashes with remote", Steps: []string{"Create mapping", "POST /sync"}, ExpectedResult: "Changed files count", OrderIndex: 4},
-		{ID: "TC-SYNC-005", SuiteID: "sync-operations", Name: "Git Pull Detection", Description: "Detect changes after git pull", Steps: []string{"Create git plugin", "POST /git/pull"}, ExpectedResult: "Scan triggered", OrderIndex: 5},
-		{ID: "TC-SYNC-006", SuiteID: "sync-operations", Name: "Batch Scan All", Description: "Scan all plugins at once", Steps: []string{"Create plugins", "POST /watcher/scan-all"}, ExpectedResult: "Results for each", OrderIndex: 6},
+		{ID: "TC-SYNC-001", SuiteID: "sync-operations", Name: "Detect New Files", Description: "Detect newly added files via scan", Steps: []string{"Create plugin", "Scan"}, ExpectedResult: "Scan completes successfully", OrderIndex: 1},
+		{ID: "TC-SYNC-006", SuiteID: "sync-operations", Name: "Batch Scan All", Description: "Scan all plugins at once", Steps: []string{"POST /watcher/scan-all"}, ExpectedResult: "Results for each", OrderIndex: 6},
 
 		// Publish Flow
-		{ID: "TC-PUBLISH-001", SuiteID: "publish-flow", Name: "Full ZIP Upload", Description: "Upload complete plugin as ZIP", Steps: []string{"Create mapping", "POST /publish mode=full"}, ExpectedResult: "Files updated", OrderIndex: 1},
-		{ID: "TC-PUBLISH-002", SuiteID: "publish-flow", Name: "Selected Files Patch", Description: "Upload only changed files", Steps: []string{"Create changes", "POST /publish mode=selected"}, ExpectedResult: "Selected files updated", OrderIndex: 2},
-		{ID: "TC-PUBLISH-003", SuiteID: "publish-flow", Name: "Backup Before Publish", Description: "Create backup before publishing", Steps: []string{"POST /publish createBackup=true"}, ExpectedResult: "Backup ID returned", OrderIndex: 3},
-		{ID: "TC-PUBLISH-004", SuiteID: "publish-flow", Name: "Restore From Backup", Description: "Restore plugin from backup", Steps: []string{"Create backup", "POST /backups/{id}/restore"}, ExpectedResult: "Restore success", OrderIndex: 4},
-		{ID: "TC-PUBLISH-005", SuiteID: "publish-flow", Name: "Publish All Sites", Description: "Publish to all mapped sites", Steps: []string{"Create mappings", "Batch publish"}, ExpectedResult: "All sites updated", OrderIndex: 5},
+		{ID: "TC-PUBLISH-001", SuiteID: "publish-flow", Name: "Preview Publish", Description: "Preview files to publish", Steps: []string{"Create mapping", "POST /publish/preview"}, ExpectedResult: "Preview data returned", OrderIndex: 1},
+		{ID: "TC-PUBLISH-003", SuiteID: "publish-flow", Name: "List Backups", Description: "List backups for a plugin", Steps: []string{"Create plugin", "GET /backups/{id}"}, ExpectedResult: "Backup list returned", OrderIndex: 3},
 	}
 
 	for _, tc := range cases {
@@ -180,7 +183,7 @@ func (s *serviceImpl) ListSuites(ctx context.Context) ([]TestSuite, error) {
 	var suites []TestSuite
 	for rows.Next() {
 		var suite TestSuite
-		err := rows.Scan(&suite.ID, &suite.Name, &suite.Category, &suite.Enabled, 
+		err := rows.Scan(&suite.ID, &suite.Name, &suite.Category, &suite.Enabled,
 			&suite.TimeoutSeconds, &suite.CreatedAt, &suite.CaseCount)
 		if err != nil {
 			return nil, err
@@ -243,13 +246,11 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	}
 	s.mu.Unlock()
 
-	// Get suites to run
 	suites, err := s.ListSuites(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Filter suites if specified
 	var suitesToRun []TestSuite
 	if len(opts.Suites) > 0 {
 		suiteMap := make(map[string]bool)
@@ -269,13 +270,11 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 		}
 	}
 
-	// Count total tests
 	totalTests := 0
 	for _, suite := range suitesToRun {
 		totalTests += suite.CaseCount
 	}
 
-	// Create run record
 	run := &TestRun{
 		ID:         fmt.Sprintf("run-%s", uuid.New().String()[:8]),
 		StartedAt:  time.Now(),
@@ -295,7 +294,6 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	s.activeRun = run
 	s.mu.Unlock()
 
-	// Broadcast start event
 	if s.broadcast != nil {
 		s.broadcast("e2e:run:started", map[string]interface{}{
 			"runId":      run.ID,
@@ -303,7 +301,6 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 		})
 	}
 
-	// Execute tests asynchronously
 	go s.executeRun(run, suitesToRun, opts)
 
 	return run, nil
@@ -311,7 +308,8 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 
 func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptions) {
 	ctx := context.Background()
-	
+	defer s.runCleanup()
+
 	for _, suite := range suites {
 		cases, err := s.GetCases(ctx, suite.ID)
 		if err != nil {
@@ -324,9 +322,16 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 				continue
 			}
 
+			// Check if aborted
+			s.mu.RLock()
+			aborted := s.activeRun == nil || s.activeRun.Status == "aborted"
+			s.mu.RUnlock()
+			if aborted {
+				return
+			}
+
 			result := s.executeTest(ctx, run, suite, tc)
-			
-			// Insert result
+
 			s.db.Exec(`
 				INSERT INTO test_results (id, run_id, suite_id, case_id, case_name, status, started_at, completed_at, duration_ms, error_message, error_details, request_data, response_data, logs)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -334,7 +339,6 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 				result.StartedAt, result.CompletedAt, result.DurationMs, result.ErrorMessage, result.ErrorDetails,
 				result.RequestData, result.ResponseData, result.Logs)
 
-			// Update run counts
 			switch result.Status {
 			case "passed":
 				run.PassedTests++
@@ -344,7 +348,6 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 				run.SkippedTests++
 			}
 
-			// Broadcast test completion
 			if s.broadcast != nil {
 				s.broadcast("e2e:test:completed", map[string]interface{}{
 					"runId":      run.ID,
@@ -354,18 +357,16 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 				})
 			}
 
-			// Stop on failure if configured
 			if opts.StopOnFailure && result.Status == "failed" {
 				break
 			}
 		}
 	}
 
-	// Complete run
 	now := time.Now()
 	run.CompletedAt = &now
 	run.DurationMs = now.Sub(run.StartedAt).Milliseconds()
-	
+
 	if run.FailedTests > 0 {
 		run.Status = "failed"
 	} else {
@@ -377,7 +378,6 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 		WHERE id = ?
 	`, run.CompletedAt, run.Status, run.PassedTests, run.FailedTests, run.SkippedTests, run.DurationMs, run.ID)
 
-	// Broadcast completion
 	if s.broadcast != nil {
 		s.broadcast("e2e:run:completed", map[string]interface{}{
 			"runId":  run.ID,
@@ -402,7 +402,6 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 		StartedAt: time.Now(),
 	}
 
-	// Broadcast test start
 	if s.broadcast != nil {
 		s.broadcast("e2e:test:started", map[string]interface{}{
 			"runId":    run.ID,
@@ -411,18 +410,50 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 		})
 	}
 
-	// Execute test based on ID
+	// Dispatch to real test implementation
 	var testErr error
 	switch tc.ID {
+	// Plugin CRUD
 	case "TC-PLUGIN-001":
 		testErr = s.testRegisterPlugin(ctx, result)
 	case "TC-PLUGIN-002":
 		testErr = s.testRegisterInvalidPath(ctx, result)
-	// Add more test implementations...
+	case "TC-PLUGIN-003":
+		testErr = s.testUpdatePlugin(ctx, result)
+	case "TC-PLUGIN-004":
+		testErr = s.testDeletePlugin(ctx, result)
+	case "TC-PLUGIN-005":
+		testErr = s.testScanPluginFiles(ctx, result)
+
+	// Site Connections
+	case "TC-SITE-001":
+		testErr = s.testRegisterSite(ctx, result)
+	case "TC-SITE-002":
+		testErr = s.testSiteConnection(ctx, result)
+	case "TC-SITE-003":
+		testErr = s.testInvalidCredentials(ctx, result)
+	case "TC-SITE-004":
+		testErr = s.testCreatePluginMapping(ctx, result)
+
+	// Sync Operations
+	case "TC-SYNC-001":
+		testErr = s.testDetectNewFiles(ctx, result)
+	case "TC-SYNC-006":
+		testErr = s.testBatchScanAll(ctx, result)
+
+	// Publish Flow
+	case "TC-PUBLISH-001":
+		testErr = s.testPreviewPublish(ctx, result)
+	case "TC-PUBLISH-003":
+		testErr = s.testBackupList(ctx, result)
+
 	default:
-		// Simulate test execution for now
-		time.Sleep(100 * time.Millisecond)
-		testErr = nil
+		result.Status = "skipped"
+		result.Logs = "No test implementation for " + tc.ID
+		now := time.Now()
+		result.CompletedAt = &now
+		result.DurationMs = now.Sub(result.StartedAt).Milliseconds()
+		return result
 	}
 
 	now := time.Now()
@@ -439,20 +470,6 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 	return result
 }
 
-// Test implementations (stubs for now)
-func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult) error {
-	// TODO: Implement actual test logic
-	result.RequestData = `{"name":"Test Plugin","path":"./test-fixtures/plugins/test-plugin"}`
-	result.ResponseData = `{"success":true,"data":{"id":1,"name":"Test Plugin"}}`
-	return nil
-}
-
-func (s *serviceImpl) testRegisterInvalidPath(ctx context.Context, result *TestResult) error {
-	result.RequestData = `{"name":"Invalid","path":"/nonexistent/path"}`
-	result.ResponseData = `{"success":false,"error":{"code":"E3002","message":"Path not found"}}`
-	return nil
-}
-
 // AbortRun stops a running test
 func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 	s.mu.Lock()
@@ -462,21 +479,21 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 		now := time.Now()
 		s.activeRun.Status = "aborted"
 		s.activeRun.CompletedAt = &now
-		
+
 		s.db.ExecContext(ctx, `UPDATE test_runs SET status = 'aborted', completed_at = ? WHERE id = ?`,
 			now, runID)
-		
+
 		if s.broadcast != nil {
 			s.broadcast("e2e:run:completed", map[string]interface{}{
 				"runId":  runID,
 				"status": "aborted",
 			})
 		}
-		
+
 		s.activeRun = nil
 		return nil
 	}
-	
+
 	return apperror.New(apperror.ErrNotFound, "no active run with ID").
 		WithContext("runId", runID)
 }

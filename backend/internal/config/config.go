@@ -27,6 +27,16 @@ type Config struct {
 	RemotePlugins RemotePluginsConfig `json:"remotePlugins"`
 	Snapshot      SnapshotConfig      `json:"snapshot"`
 	Seed          SeedConfig          `json:"seed"`
+	E2E           E2EConfig           `json:"e2e"`
+}
+
+// E2EConfig holds end-to-end test settings
+type E2EConfig struct {
+	Enabled          bool   `json:"enabled"`
+	TestPluginPath   string `json:"testPluginPath"`   // Local path to test plugin
+	TestSiteURL      string `json:"testSiteURL"`      // WordPress test site URL
+	TestSiteUsername  string `json:"testSiteUsername"`  // Test site username
+	TestSitePassword string `json:"testSitePassword"` // Test site password (base64)
 }
 
 // SnapshotConfig holds snapshot backup system settings
@@ -182,6 +192,9 @@ func DefaultConfig() *Config {
 			Enabled: false,
 			Sites:   []SeedSite{},
 			Plugins: []SeedPlugin{},
+		},
+		E2E: E2EConfig{
+			Enabled: false,
 		},
 	}
 }
