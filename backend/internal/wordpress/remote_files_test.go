@@ -228,8 +228,9 @@ func TestEnablePlugin_UsesOnboardNamespaceAndEnableRoute(t *testing.T) {
 
 func TestEnablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/wp-json/plugin-uploader/v1/plugins/my-plugin/enable" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+		// Fixed URL endpoint - slug is in JSON body, not in URL path
+		if r.URL.Path != "/wp-json/plugin-uploader/v1/plugins/enable" {
+			t.Fatalf("unexpected path: %s (expected /wp-json/plugin-uploader/v1/plugins/enable)", r.URL.Path)
 		}
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method: %s", r.Method)
@@ -248,8 +249,9 @@ func TestEnablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
 
 func TestDisablePluginViaUploader_UsesUploaderNamespace(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/wp-json/plugin-uploader/v1/plugins/my-plugin/disable" {
-			t.Fatalf("unexpected path: %s", r.URL.Path)
+		// Fixed URL endpoint - slug is in JSON body, not in URL path
+		if r.URL.Path != "/wp-json/plugin-uploader/v1/plugins/disable" {
+			t.Fatalf("unexpected path: %s (expected /wp-json/plugin-uploader/v1/plugins/disable)", r.URL.Path)
 		}
 		if r.Method != http.MethodPost {
 			t.Fatalf("unexpected method: %s", r.Method)
