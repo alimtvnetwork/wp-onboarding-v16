@@ -127,6 +127,18 @@ export function useWebSocket() {
       setLastMessage(createMessage(WS_EVENTS.REMOTE_PLUGIN_ACTION_COMPLETE, data));
     });
 
+    // E2E test events
+    const unsubE2EStarted = wsClient.on(WS_EVENTS.E2E_TEST_STARTED, (data: unknown) => {
+      setLastMessage(createMessage(WS_EVENTS.E2E_TEST_STARTED, data));
+    });
+    const unsubE2EResult = wsClient.on(WS_EVENTS.E2E_TEST_RESULT, (data: unknown) => {
+      setLastMessage(createMessage(WS_EVENTS.E2E_TEST_RESULT, data));
+    });
+    const unsubE2EComplete = wsClient.on(WS_EVENTS.E2E_TEST_COMPLETE, (data: unknown) => {
+      queryClient.invalidateQueries({ queryKey: ["e2e", "runs"] });
+      setLastMessage(createMessage(WS_EVENTS.E2E_TEST_COMPLETE, data));
+    });
+
     // Error events
     const unsubError = wsClient.on(WS_EVENTS.ERROR, (data: unknown) => {
       queryClient.invalidateQueries({ queryKey: ["errors"] });
@@ -161,6 +173,9 @@ export function useWebSocket() {
       unsubScanComplete();
       unsubRemotePluginStarted();
       unsubRemotePluginComplete();
+      unsubE2EStarted();
+      unsubE2EResult();
+      unsubE2EComplete();
       unsubError();
       unsubLog();
       wsClient.disconnect();

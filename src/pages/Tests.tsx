@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -29,6 +28,10 @@ import { api } from "@/lib/api";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { ErrorDetailModal } from "@/components/errors/ErrorDetailModal";
+import { TestCaseCard } from "@/components/tests/TestCaseCard";
+import { TestResultRow } from "@/components/tests/TestResultRow";
+import { LiveTestProgress } from "@/components/tests/LiveTestProgress";
+import { useE2ETestStream } from "@/hooks/useE2ETestStream";
 
 interface TestSuite {
   id: string;
@@ -112,13 +115,6 @@ const testCasesData: Record<string, TestCase[]> = {
   ],
 };
 
-const categoryIcons: Record<string, React.ElementType> = {
-  "plugin-crud": Plug,
-  "site-connections": Globe,
-  "sync-operations": RefreshCw,
-  "publish-flow": Upload,
-};
-
 const categoryLabels: Record<string, string> = {
   "plugin-crud": "Plugin CRUD",
   "site-connections": "Site Connections",
@@ -132,6 +128,14 @@ export default function Tests() {
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
   const [selectedError, setSelectedError] = useState<TestResult | null>(null);
   const [activeTab, setActiveTab] = useState("plugin-crud");
+  const [rerunningCase, setRerunningCase] = useState<string | null>(null);
+
+  const { liveResults, progress, isStreaming } = useE2ETestStream();
+
+  // Build a map of caseId -> last known status from live results
+  const liveStatusMap = new Map(
+    liveResults.map((r) => [r.caseId, { status: r.status, durationMs: r.durationMs }])
+  );
 
   // Fetch past runs
   const { data: runs, isLoading: runsLoading } = useQuery({
@@ -172,6 +176,26 @@ export default function Tests() {
     },
   });
 
+  // Rerun single test case
+  const rerunCase = useMutation({
+    mutationFn: async (caseId: string) => {
+      setRerunningCase(caseId);
+      const response = await api.rerunE2ECase(caseId);
+      if (!response.success) throw new Error(response.error?.message);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Test rerun started");
+      queryClient.invalidateQueries({ queryKey: ["e2e", "runs"] });
+    },
+    onError: (error) => {
+      toast.error(`Rerun failed: ${error.message}`);
+    },
+    onSettled: () => {
+      setRerunningCase(null);
+    },
+  });
+
   // Delete run mutation
   const deleteRun = useMutation({
     mutationFn: async (runId: string) => {
@@ -195,6 +219,17 @@ export default function Tests() {
     },
     enabled: !!expandedRun,
   });
+
+  // Build last-result map from most recent completed run
+  const lastRunResults = new Map<string, { status: string; durationMs: number }>();
+  if (runs?.length) {
+    const lastCompleted = runs.find((r) => r.status !== "running");
+    if (lastCompleted && expandedRun === lastCompleted.id && runDetails?.results) {
+      runDetails.results.forEach((r) => {
+        lastRunResults.set(r.caseId, { status: r.status, durationMs: r.durationMs });
+      });
+    }
+  }
 
   const toggleCase = (id: string) => {
     setSelectedCases((prev) =>
@@ -248,7 +283,6 @@ export default function Tests() {
   const currentCategoryTests = testCasesData[activeTab] || [];
   const selectedInCategory = currentCategoryTests.filter(t => selectedCases.includes(t.id)).length;
   const allSelectedInCategory = selectedInCategory === currentCategoryTests.length;
-  const CategoryIcon = categoryIcons[activeTab] || FlaskConical;
 
   if (runsLoading) {
     return (
@@ -263,17 +297,17 @@ export default function Tests() {
       {/* Action Bar */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <CategoryIcon className="h-5 w-5 text-muted-foreground" />
+          <FlaskConical className="h-5 w-5 text-muted-foreground" />
           <span className="text-muted-foreground">
             {selectedCases.length} test{selectedCases.length !== 1 ? "s" : ""} selected
           </span>
         </div>
         <div className="flex gap-2">
-          {runningRun ? (
+          {runningRun || isStreaming ? (
             <Button
               variant="destructive"
-              onClick={() => abortRun.mutate(runningRun.id)}
-              disabled={abortRun.isPending}
+              onClick={() => runningRun && abortRun.mutate(runningRun.id)}
+              disabled={abortRun.isPending || !runningRun}
             >
               <StopCircle className="h-4 w-4 mr-2" />
               Abort Run
@@ -292,8 +326,18 @@ export default function Tests() {
         </div>
       </div>
 
-      {/* Running Test Progress */}
-      {runningRun && (
+      {/* Live Test Progress (WebSocket-streamed) */}
+      {isStreaming && progress && (
+        <LiveTestProgress
+          progress={progress}
+          liveResults={liveResults}
+          onAbort={runningRun ? () => abortRun.mutate(runningRun.id) : undefined}
+          isAborting={abortRun.isPending}
+        />
+      )}
+
+      {/* Fallback: Running Test Progress (polling-based) */}
+      {!isStreaming && runningRun && (
         <Card className="border-primary/50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -307,20 +351,10 @@ export default function Tests() {
             </div>
           </CardHeader>
           <CardContent>
-            <Progress
-              value={
-                ((runningRun.passedTests + runningRun.failedTests) /
-                  runningRun.totalTests) *
-                100
-              }
-              className="h-2"
-            />
-            <div className="flex gap-4 mt-3 text-sm">
+            <div className="flex gap-4 mt-1 text-sm">
               <span className="text-emerald-600 dark:text-emerald-400">✓ {runningRun.passedTests} passed</span>
               <span className="text-destructive">✗ {runningRun.failedTests} failed</span>
-              <span className="text-muted-foreground">
-                ○ {runningRun.skippedTests} skipped
-              </span>
+              <span className="text-muted-foreground">○ {runningRun.skippedTests} skipped</span>
             </div>
           </CardContent>
         </Card>
@@ -363,45 +397,25 @@ export default function Tests() {
 
             {/* Test Case Cards */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {tests.map((testCase) => (
-                <Card
-                  key={testCase.id}
-                  className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
-                    selectedCases.includes(testCase.id)
-                      ? "border-primary ring-2 ring-primary/20"
-                      : "border-border hover:border-primary/50"
-                  )}
-                  onClick={() => toggleCase(testCase.id)}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          checked={selectedCases.includes(testCase.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          onCheckedChange={() => toggleCase(testCase.id)}
-                          className="mt-0.5"
-                        />
-                        <div>
-                          <CardTitle className="text-sm font-medium">{testCase.name}</CardTitle>
-                          <Badge variant="outline" className="text-xs mt-1 font-mono">
-                            {testCase.id}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {testCase.description}
-                    </p>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      {testCase.steps.length} step{testCase.steps.length !== 1 ? "s" : ""}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {tests.map((testCase) => {
+                const liveStatus = liveStatusMap.get(testCase.id);
+                const lastResult = lastRunResults.get(testCase.id);
+                const displayStatus = liveStatus?.status || lastResult?.status;
+                const displayDuration = liveStatus?.durationMs ?? lastResult?.durationMs;
+
+                return (
+                  <TestCaseCard
+                    key={testCase.id}
+                    testCase={testCase}
+                    selected={selectedCases.includes(testCase.id)}
+                    onToggle={() => toggleCase(testCase.id)}
+                    lastStatus={displayStatus as TestResult["status"] | undefined}
+                    lastDurationMs={displayDuration}
+                    onRerun={() => rerunCase.mutate(testCase.id)}
+                    isRerunning={rerunningCase === testCase.id}
+                  />
+                );
+              })}
             </div>
           </TabsContent>
         ))}
@@ -474,30 +488,17 @@ export default function Tests() {
                       {expandedRun === run.id && runDetails && (
                         <div className="mt-2 ml-8 space-y-1">
                           {runDetails.results.map((result) => (
-                            <div
+                            <TestResultRow
                               key={result.id}
-                            className={cn(
-                                "flex items-center justify-between p-2 rounded text-sm",
-                                result.status === "failed" &&
-                                  "bg-destructive/10 cursor-pointer"
-                              )}
-                              onClick={() => {
-                                if (result.status === "failed") {
-                                  setSelectedError(result);
-                                }
-                              }}
-                            >
-                              <div className="flex items-center gap-2">
-                                {getStatusIcon(result.status)}
-                                <span className="font-mono text-xs text-muted-foreground">
-                                  {result.caseId}
-                                </span>
-                                <span>{result.caseName}</span>
-                              </div>
-                              <span className="text-muted-foreground">
-                                {result.durationMs}ms
-                              </span>
-                            </div>
+                              result={result}
+                              onViewError={
+                                result.status === "failed" || result.status === "error"
+                                  ? () => setSelectedError(result)
+                                  : undefined
+                              }
+                              onRerun={() => rerunCase.mutate(result.caseId)}
+                              isRerunning={rerunningCase === result.caseId}
+                            />
                           ))}
                         </div>
                       )}

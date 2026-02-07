@@ -184,6 +184,10 @@ export const WS_EVENTS = {
   // Remote plugin actions (enable/disable/delete on WordPress sites)
   REMOTE_PLUGIN_ACTION_STARTED: "remote_plugin_action_started",
   REMOTE_PLUGIN_ACTION_COMPLETE: "remote_plugin_action_complete",
+  // E2E test events
+  E2E_TEST_STARTED: "e2e_test_started",
+  E2E_TEST_RESULT: "e2e_test_result",
+  E2E_TEST_COMPLETE: "e2e_test_complete",
   ERROR: "error",
   CONNECTION: "connection",
   LOG: "log",
