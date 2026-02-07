@@ -67,19 +67,30 @@ The `logToErrorFile` function uses multi-line blocks with indented key-values. I
 - Endpoint (if HTTP)
 - Response body (truncated to 2000 chars)
 
-## 5. URL Design Rule
+## 5. URL Design Rule — Fixed Endpoints Only
 
-**Never embed user-provided identifiers in URL paths.** Use JSON request bodies instead.
+**All REST API endpoints MUST use fixed, lowercase paths.** User-provided identifiers (plugin slugs, file paths) MUST be passed in JSON request bodies, never embedded in URL paths.
 
 ```
-// ❌ WRONG
-DELETE /sites/{id}/remote-plugins/{plugin:.+}
+// ❌ WRONG - dynamic slug in URL path
+GET  /plugins/{slug}/files
+GET  /plugins/(?P<slug>[a-zA-Z0-9_-]+)/export
+DELETE /plugins/{slug}
 
-// ✅ CORRECT  
-POST /sites/{id}/remote-plugins/delete  { "plugin": "slug" }
+// ✅ CORRECT - fixed URL, slug in JSON body
+POST /plugins/files    { "plugin": "my-plugin" }
+POST /plugins/export   { "plugin": "my-plugin" }
+POST /plugins/delete   { "plugin": "my-plugin" }
+POST /plugins/enable   { "plugin": "my-plugin" }
+POST /plugins/disable  { "plugin": "my-plugin" }
+POST /plugins/file     { "plugin": "my-plugin", "path": "includes/main.php" }
+POST /plugins/sync     { "plugin": "my-plugin", "files": [...] }
+POST /plugins/sync-manifest { "plugin": "my-plugin" }
 ```
 
-This prevents issues with slashes in plugin identifiers (e.g., `broken-link-checker/broken-link-checker`).
+**Why:** Plugin slugs can contain slashes (e.g., `broken-link-checker/broken-link-checker`) which break URL routing. Fixed endpoints eliminate this entire class of bugs.
+
+**PHP resolution:** The `find_plugin_file($slug)` method iterates `get_plugins()`, extracts the folder name via `dirname()`, and matches against the provided slug. This maps `"broken-link-checker"` → `"broken-link-checker/broken-link-checker.php"` for use with WordPress core functions (`activate_plugin()`, `deactivate_plugins()`, `delete_plugins()`).
 
 ## 6. No Hardcoded Fallback Names
 

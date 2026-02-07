@@ -36,8 +36,8 @@ const (
 	// EndpointPlugins lists all installed plugins.
 	EndpointPlugins = "/plugins"
 
-	// EndpointPluginInfo gets info for a specific plugin (format: /plugins/%s).
-	EndpointPluginInfo = "/plugins/%s"
+	// EndpointPluginInfo gets info for a specific plugin (fixed URL, slug in JSON body).
+	EndpointPluginInfo = "/plugins/info"
 
 	// EndpointEnable activates a plugin (fixed URL, slug in JSON body).
 	EndpointEnable = "/plugins/enable"
@@ -48,11 +48,11 @@ const (
 	// EndpointDelete removes a plugin (fixed URL, slug in JSON body).
 	EndpointDelete = "/plugins/delete"
 
-	// EndpointFiles handles file operations (format: /plugins/%s/files).
-	EndpointFiles = "/plugins/%s/files"
+	// EndpointFiles handles file operations (fixed URL, slug in JSON body).
+	EndpointFiles = "/plugins/files"
 
-	// EndpointSync handles delta file sync (format: /plugins/%s/sync).
-	EndpointSync = "/plugins/%s/sync"
+	// EndpointSync handles delta file sync (fixed URL, slug in JSON body).
+	EndpointSync = "/plugins/sync"
 
 	// EndpointLogs queries transaction logs.
 	EndpointLogs = "/logs"
@@ -75,11 +75,11 @@ const (
 	// EndpointExportSelf exports the Rise Up Asia plugin as a ZIP.
 	EndpointExportSelf = "/export-self"
 
-	// EndpointExportPlugin exports any plugin as a base64-encoded ZIP (format: /plugins/%s/export).
-	EndpointExportPlugin = "/plugins/%s/export"
+	// EndpointExportPlugin exports any plugin as a base64-encoded ZIP (fixed URL, slug in JSON body).
+	EndpointExportPlugin = "/plugins/export"
 
-	// EndpointSyncManifest fetches the cached file manifest for sync comparison (format: /plugins/%s/sync-manifest).
-	EndpointSyncManifest = "/plugins/%s/sync-manifest"
+	// EndpointSyncManifest fetches the cached file manifest for sync comparison (fixed URL, slug in JSON body).
+	EndpointSyncManifest = "/plugins/sync-manifest"
 )
 // =============================================================================
 // ACTION TYPES (match PHP constants)

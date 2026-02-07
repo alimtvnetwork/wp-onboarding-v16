@@ -704,55 +704,31 @@ class Riseup_Asia {
                 'permission_callback' => $this->build_permission_callback('logs_stats', array($this, 'check_logs_permission')),
             ));
 
-            // Plugin files listing endpoint (for diff preview).
+            // Plugin files listing endpoint - fixed URL, slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_FILES);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILES, array(
-                'methods'             => 'GET',
+                'methods'             => 'POST',
                 'callback'            => array($this, 'handle_plugin_files'),
                 'permission_callback' => $this->build_permission_callback('plugin_files', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'slug' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) {
-                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
-                        },
-                    ),
-                ),
             ));
 
-            // Sync manifest endpoint (Phase 41 - cached file hashes for sync).
+            // Sync manifest endpoint - fixed URL, slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SYNC_MANIFEST);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SYNC_MANIFEST, array(
-                'methods'             => 'GET',
+                'methods'             => 'POST',
                 'callback'            => array($this, 'handle_sync_manifest'),
                 'permission_callback' => $this->build_permission_callback('sync_manifest', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'slug' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) {
-                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
-                        },
-                    ),
-                ),
             ));
 
-            // Plugin file content endpoint (for diff viewing).
+            // Plugin file content endpoint - fixed URL, slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_FILE);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILE, array(
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_plugin_file_content'),
                 'permission_callback' => $this->build_permission_callback('plugin_file', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'slug' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) {
-                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
-                        },
-                    ),
-                ),
             ));
 
-            // Plugin enable endpoint (activate plugin).
+            // Plugin enable endpoint (activate plugin) - slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_ENABLE);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_ENABLE, array(
                 'methods'             => 'POST',
@@ -776,20 +752,12 @@ class Riseup_Asia {
                 'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
             ));
 
-            // Plugin export endpoint (export any plugin as base64 ZIP).
+            // Plugin export endpoint - fixed URL, slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_EXPORT);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_EXPORT, array(
-                'methods'             => 'GET',
+                'methods'             => 'POST',
                 'callback'            => array($this, 'handle_export_plugin'),
                 'permission_callback' => $this->build_permission_callback('plugin_export', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'slug' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) {
-                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
-                        },
-                    ),
-                ),
             ));
 
             // =================================================================
@@ -1614,7 +1582,11 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     public function handle_plugin_files($request) {
-        $slug = $request->get_param('slug');
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
         $this->file_logger->info('Plugin files endpoint called', array('slug' => $slug));
 
         try {
@@ -1664,7 +1636,11 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     public function handle_sync_manifest($request) {
-        $slug = $request->get_param('slug');
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
         $this->file_logger->info('Sync manifest endpoint called', array('slug' => $slug));
 
         try {
@@ -1762,9 +1738,12 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     public function handle_plugin_file_content($request) {
-        $slug = $request->get_param('slug');
         $json = $request->get_json_params();
+        $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
         $file_path = isset($json['path']) ? $json['path'] : null;
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
 
         $this->file_logger->info('Plugin file content endpoint called', array(
             'slug' => $slug,
@@ -1888,7 +1867,11 @@ class Riseup_Asia {
      * Used by the Go backend for pre-publish backup / rollback.
      */
     public function handle_export_plugin($request) {
-        $slug = $request->get_param('slug');
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
         $this->file_logger->info('Export-plugin endpoint called', array('slug' => $slug));
 
         return $this->safe_execute(function () use ($slug) {
