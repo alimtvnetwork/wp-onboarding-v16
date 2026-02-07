@@ -38,10 +38,7 @@ func SaveErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"data":    result,
-	})
+	respondCreated(w, result)
 }
 
 // ListErrorHistory returns paginated error history

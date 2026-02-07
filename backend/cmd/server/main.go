@@ -34,6 +34,7 @@ import (
 	"wp-plugin-publish/internal/version"
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
+	"wp-plugin-publish/internal/envelope"
 )
 
 var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -148,6 +149,13 @@ func main() {
 		TimeFormat: cfg.Logging.TimeFormat,
 		AppName:    versionInfo.AppName,
 		AppVersion: versionInfo.Version,
+	})
+
+	// Initialize envelope debug config from seedable config
+	envelope.SetDebugConfig(envelope.DebugConfig{
+		IncludeStackTrace:     cfg.ResponseDebug.IncludeStackTrace,
+		IncludeInternalErrors: cfg.ResponseDebug.IncludeInternalErrors,
+		MaxStackFrames:        cfg.ResponseDebug.MaxStackFrames,
 	})
 
 	log.Info("Starting application", "version", versionInfo.String())

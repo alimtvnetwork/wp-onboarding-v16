@@ -1,53 +1,51 @@
-// Package handlers provides shared response helpers for HTTP API handlers
+// Package handlers provides shared response helpers for HTTP API handlers.
+// All helpers now emit the universal envelope format via the envelope package.
 package handlers
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gorilla/mux"
+	"wp-plugin-publish/internal/envelope"
 )
 
-// respondJSON writes a JSON response
+// respondJSON writes a raw JSON response (used only for non-envelope responses like file downloads)
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
 
-// respondSuccess writes a successful API response
+// respondSuccess writes a single-item success envelope
 func respondSuccess(w http.ResponseWriter, data interface{}) {
-	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"data":    data,
-	})
+	envelope.Write(w, envelope.Success(data))
 }
 
-// respondCreated writes a 201 Created API response
+// respondCreated writes a 201 Created envelope
 func respondCreated(w http.ResponseWriter, data interface{}) {
-	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"data":    data,
-	})
+	envelope.Write(w, envelope.Created(data))
 }
 
-// respondError writes an error API response
+// respondError writes an error envelope
 func respondError(w http.ResponseWriter, status int, code, message string) {
-	respondJSON(w, status, map[string]interface{}{
-		"success": false,
-		"error": map[string]interface{}{
-			"code":      code,
-			"message":   message,
-			"timestamp": time.Now().Format(time.RFC3339),
-		},
-	})
+	envelope.Write(w, envelope.Error(status, code, message))
 }
 
-// respondDeleted writes a standard deletion success response
+// respondDeleted writes a standard deletion success envelope
 func respondDeleted(w http.ResponseWriter) {
-	respondSuccess(w, map[string]interface{}{"deleted": true})
+	envelope.Write(w, envelope.Deleted())
+}
+
+// respondList writes a paginated list envelope
+func respondList(w http.ResponseWriter, data interface{}, pg envelope.Pagination) {
+	envelope.Write(w, envelope.List(data, pg))
+}
+
+// respondListUnpaginated writes an unpaginated list envelope
+func respondListUnpaginated(w http.ResponseWriter, data interface{}, count int) {
+	envelope.Write(w, envelope.ListUnpaginated(data, count))
 }
 
 // getIDParam extracts an ID parameter from the URL
