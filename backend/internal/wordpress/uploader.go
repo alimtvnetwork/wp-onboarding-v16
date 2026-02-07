@@ -385,9 +385,9 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) EnablePluginViaUploader(slug string) error {
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace
+		namespace = RiseupAsiaNamespace
 	}
 
 	endpoint := "/" + namespace + EndpointEnable
@@ -419,9 +419,9 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 // DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) DisablePluginViaUploader(slug string) error {
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace
+		namespace = RiseupAsiaNamespace
 	}
 
 	endpoint := "/" + namespace + EndpointDisable
@@ -453,9 +453,9 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 // DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) DeletePluginViaUploader(slug string) error {
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace
+		namespace = RiseupAsiaNamespace
 	}
 
 	endpoint := "/" + namespace + EndpointDelete
@@ -486,9 +486,9 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 
 // ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.
 func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace
+		namespace = RiseupAsiaNamespace
 	}
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointPlugins)
@@ -518,9 +518,9 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 // ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace
+		namespace = RiseupAsiaNamespace
 	}
 
 	endpoint := "/" + namespace + EndpointFiles
@@ -553,9 +553,9 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 // ReplaceFileViaUploader replaces a single file in a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with slug and file details in JSON body.
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
-	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
+	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
-		namespace = RiseUpUploaderNamespace
+		namespace = RiseupAsiaNamespace
 	}
 
 	endpoint := "/" + namespace + EndpointFiles
