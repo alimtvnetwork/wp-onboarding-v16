@@ -213,6 +213,7 @@ func NewServer(cfg ServerConfig) *Server {
 	// Settings endpoints
 	api.HandleFunc("/settings", handlers.GetSettings).Methods("GET")
 	api.HandleFunc("/settings", handlers.UpdateSettings).Methods("PUT")
+	api.HandleFunc("/settings/clear-error-dedup", handlers.ClearErrorLogHashes).Methods("POST")
 
 	// Mappings endpoints
 	api.HandleFunc("/mappings/{id}", handlers.DeletePluginMapping).Methods("DELETE")

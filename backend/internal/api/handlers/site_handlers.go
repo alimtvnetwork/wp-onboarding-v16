@@ -4,6 +4,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -437,5 +438,17 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 		"content": content,
 		"plugin":  input.Plugin,
 		"path":    input.Path,
+	})
+}
+
+// ClearErrorLogHashes resets the in-memory error deduplication map
+func ClearErrorLogHashes(w http.ResponseWriter, r *http.Request) {
+	if !requireService(w, Services.SiteService, "Site service") {
+		return
+	}
+	count := Services.SiteService.ClearErrorLogHashes()
+	respondSuccess(w, map[string]interface{}{
+		"cleared": count,
+		"message": fmt.Sprintf("Cleared %d error deduplication hashes", count),
 	})
 }

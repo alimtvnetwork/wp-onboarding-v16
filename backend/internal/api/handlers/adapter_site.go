@@ -41,6 +41,7 @@ type SiteServiceInterface interface {
 	IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
 	ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (interface{}, error)
 	CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
+	ClearErrorLogHashes() int
 }
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
@@ -207,4 +208,8 @@ func (a *SiteServiceAdapter) ImportRemoteSnapshot(ctx context.Context, siteID in
 
 func (a *SiteServiceAdapter) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
 	return a.Service.CleanupRemoteSnapshots(ctx, siteID, opts)
+}
+
+func (a *SiteServiceAdapter) ClearErrorLogHashes() int {
+	return a.Service.ClearErrorLogHashes()
 }
