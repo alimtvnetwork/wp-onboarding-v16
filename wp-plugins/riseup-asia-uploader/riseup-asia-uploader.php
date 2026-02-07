@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.19.0
+ * Version: 1.21.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -265,52 +265,48 @@ register_shutdown_function('riseup_fatal_error_handler');
 // LOAD DEPENDENCIES IN ORDER
 // =============================================================================
 
-// Load constants first (must be before any other includes).
+// Foundation: constants, boolean helpers, init helpers (must be loaded raw).
 require_once __DIR__ . '/includes/constants.php';
-
-// Load boolean helpers (used by all classes for positive boolean checks).
 require_once __DIR__ . '/includes/class-boolean-helpers.php';
-
-// Load init helpers (idempotent directory/DB setup, component tracking).
 require_once __DIR__ . '/includes/class-init-helpers.php';
 
-// Load file logger (used by all other classes).
-require_once __DIR__ . '/includes/class-file-logger.php';
+// Load dependency loader (uses BooleanHelpers, so must be after it).
+require_once __DIR__ . '/includes/class-dependency-loader.php';
 
-// Load ORM before database.
-require_once __DIR__ . '/includes/class-orm.php';
+// Load all remaining dependencies via structured loader with error tracking.
+$__includes = __DIR__ . '/includes';
+RiseupDependencyLoader::loadManifest(array(
+    // Core infrastructure
+    array('FileLogger',          $__includes . '/class-file-logger.php'),
+    array('ORM',                 $__includes . '/class-orm.php'),
+    array('Database',            $__includes . '/class-database.php'),
+    array('TransactionLogger',   $__includes . '/class-logger.php'),
+    array('PathUtils',           $__includes . '/class-path-utils.php'),
 
-// Load database (depends on file logger and ORM).
-require_once __DIR__ . '/includes/class-database.php';
+    // Snapshot system
+    array('SnapshotDetector',    $__includes . '/class-snapshot-detector.php'),
+    array('SnapshotScheduler',   $__includes . '/class-snapshot-scheduler.php'),
+    array('SnapshotCleaner',     $__includes . '/class-snapshot-cleaner.php'),
+    array('SnapshotManager',     $__includes . '/class-snapshot-manager.php'),
+    array('DependencyAnalyzer',  $__includes . '/class-dependency-analyzer.php'),
+    array('RootDb',              $__includes . '/class-root-db.php'),
+    array('SnapshotWorker',      $__includes . '/class-snapshot-worker.php'),
+    array('SnapshotOrchestrator',$__includes . '/class-snapshot-orchestrator.php'),
+    array('IncrementalBackup',   $__includes . '/class-incremental-backup.php'),
+    array('RestoreEngine',       $__includes . '/class-restore-engine.php'),
+    array('SnapshotImport',      $__includes . '/class-snapshot-import.php'),
 
-// Load transaction logger (depends on database and file logger).
-require_once __DIR__ . '/includes/class-logger.php';
+    // Sync system
+    array('FileCache',           $__includes . '/class-file-cache.php'),
 
-// Load path utilities (used by snapshot system and other file operations).
-require_once __DIR__ . '/includes/class-path-utils.php';
-
-// Load snapshot system classes.
-require_once __DIR__ . '/includes/class-snapshot-detector.php';
-require_once __DIR__ . '/includes/class-snapshot-scheduler.php';
-require_once __DIR__ . '/includes/class-snapshot-cleaner.php';
-require_once __DIR__ . '/includes/class-snapshot-manager.php';
-require_once __DIR__ . '/includes/class-dependency-analyzer.php';
-require_once __DIR__ . '/includes/class-root-db.php';
-require_once __DIR__ . '/includes/class-snapshot-worker.php';
-require_once __DIR__ . '/includes/class-snapshot-orchestrator.php';
-	require_once __DIR__ . '/includes/class-incremental-backup.php';
-	require_once __DIR__ . '/includes/class-restore-engine.php';
-	require_once __DIR__ . '/includes/class-snapshot-import.php';
-
-// Load file cache (Phase 41 - Sync System).
-require_once __DIR__ . '/includes/class-file-cache.php';
-
-// Load other classes.
-require_once __DIR__ . '/includes/class-post-manager.php';
-require_once __DIR__ . '/includes/class-upload-ignore.php';
-require_once __DIR__ . '/includes/class-admin.php';
-require_once __DIR__ . '/includes/class-update-resolver.php';
-require_once __DIR__ . '/includes/class-agent-manager.php';
+    // Other classes
+    array('PostManager',         $__includes . '/class-post-manager.php'),
+    array('UploadIgnore',        $__includes . '/class-upload-ignore.php'),
+    array('Admin',               $__includes . '/class-admin.php'),
+    array('UpdateResolver',      $__includes . '/class-update-resolver.php'),
+    array('AgentManager',        $__includes . '/class-agent-manager.php'),
+));
+unset($__includes);
 
 // =============================================================================
 // PLUGIN CLASS
@@ -375,6 +371,9 @@ class Riseup_Asia {
         // Initialize file logger first (it doesn't depend on anything else).
         $this->file_logger = Riseup_File_Logger::get_instance();
         $this->file_logger->info('Plugin constructor starting', array('version' => RISEUP_VERSION));
+
+        // Log dependency loading results from structured loader
+        RiseupDependencyLoader::logSummary($this->file_logger);
 
         try {
             // Use structured component startup tracking
