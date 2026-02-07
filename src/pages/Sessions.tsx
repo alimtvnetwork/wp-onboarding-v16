@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, formatDistance } from "date-fns";
 import {
   Activity,
   Clock,
@@ -14,8 +14,11 @@ import {
   Globe,
   ChevronRight,
   Search,
+  AlertCircle,
+  FileJson,
+  Timer,
 } from "lucide-react";
-import { api, SessionSummary, requireSuccess } from "@/lib/api";
+import { api, SessionSummary, SessionInfo, requireSuccess } from "@/lib/api";
 import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 import { requireSuccessWithEnvelope } from "@/lib/apiHelpers";
 import { Button } from "@/components/ui/button";
@@ -45,6 +48,7 @@ const SESSION_TYPE_ICONS: Record<string, typeof Activity> = {
   connect: Globe,
   backup: FileText,
   bulk_publish: Package,
+  remote_plugin_action: Globe,
 };
 
 const SESSION_TYPE_LABELS: Record<string, string> = {
@@ -53,38 +57,41 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
   connect: "Connection Test",
   backup: "Backup",
   bulk_publish: "Bulk Publish",
+  remote_plugin_action: "Remote Plugin Action",
 };
 
 function getStatusBadge(status: string) {
   switch (status) {
     case "completed":
       return (
-        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
           <CheckCircle className="h-3 w-3 mr-1" />
           Completed
         </Badge>
       );
     case "error":
       return (
-        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
           <XCircle className="h-3 w-3 mr-1" />
           Error
         </Badge>
       );
     case "running":
       return (
-        <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
           Running
         </Badge>
       );
     default:
-      return (
-        <Badge variant="outline">
-          {status}
-        </Badge>
-      );
+      return <Badge variant="outline">{status}</Badge>;
   }
+}
+
+function formatDuration(startedAt: string, endedAt?: string): string {
+  const start = new Date(startedAt);
+  const end = endedAt ? new Date(endedAt) : new Date();
+  return formatDistance(start, end, { includeSeconds: true });
 }
 
 export default function Sessions() {
@@ -92,6 +99,7 @@ export default function Sessions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [detailTab, setDetailTab] = useState<string>("logs");
   const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch sessions list
@@ -105,6 +113,17 @@ export default function Sessions() {
 
   const sessions = sessionsResult?.data;
   const sessionsEnvelope = sessionsResult?.envelope;
+
+  // Fetch full session info (includes errorMsg + metadata)
+  const { data: sessionInfo } = useQuery({
+    queryKey: ["session-info", selectedSessionId],
+    queryFn: async () => {
+      if (!selectedSessionId) return null;
+      const response = await api.getSession(selectedSessionId);
+      return requireSuccess(response, { endpoint: `/sessions/${selectedSessionId}` });
+    },
+    enabled: !!selectedSessionId,
+  });
 
   // Fetch selected session logs
   const { data: sessionLogs, isLoading: logsLoading } = useQuery({
@@ -152,30 +171,38 @@ export default function Sessions() {
     return matchesSearch && matchesTab;
   });
 
-  const selectedSession = sessions?.find(
-    (s: SessionSummary) => s.sessionId === selectedSessionId
-  );
+  // Use sessionInfo if available, fall back to summary from list
+  const selectedSession: SessionInfo | SessionSummary | undefined =
+    sessionInfo || sessions?.find((s: SessionSummary) => s.sessionId === selectedSessionId);
 
   // Parse logs into entries for LogViewer
   const logEntries = sessionLogs?.logs
     ? sessionLogs.logs.split("\n").filter(Boolean).map((line: string) => {
-        // Try to extract timestamp from log line
         const tsMatch = line.match(/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]/);
         const levelMatch = line.match(/\[(ERROR|WARN|INFO|DEBUG)\]/i);
         const stepMatch = line.match(/\[([^\]]+)\]\s+/g);
-        
+
         return {
           timestamp: tsMatch ? tsMatch[1] : new Date().toISOString(),
-          level: (levelMatch 
+          level: (levelMatch
             ? levelMatch[1].toLowerCase() as "error" | "warn" | "info" | "debug"
             : "info") as "error" | "warn" | "info" | "debug",
-          step: stepMatch && stepMatch.length > 1 
-            ? stepMatch[1]?.replace(/[\[\]]/g, "") || "log" 
+          step: stepMatch && stepMatch.length > 1
+            ? stepMatch[1]?.replace(/[\[\]]/g, "") || "log"
             : "log",
           message: line,
         };
       })
     : [];
+
+  // Separate error logs
+  const errorLogEntries = logEntries.filter((e) => e.level === "error");
+
+  // Reset detail tab when switching sessions
+  const handleSelectSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    setDetailTab("logs");
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -243,7 +270,7 @@ export default function Sessions() {
                                 ? "bg-primary/10 border-primary/30"
                                 : "hover:bg-muted/50 border-transparent"
                             )}
-                            onClick={() => setSelectedSessionId(session.sessionId)}
+                            onClick={() => handleSelectSession(session.sessionId)}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-2 min-w-0">
@@ -268,11 +295,17 @@ export default function Sessions() {
                                   <span className="truncate">{session.siteName}</span>
                                 </div>
                               )}
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                <span>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
                                   {format(new Date(session.startedAt), "MMM d, HH:mm:ss")}
                                 </span>
+                                {session.endedAt && (
+                                  <span className="flex items-center gap-1">
+                                    <Timer className="h-3 w-3" />
+                                    {formatDuration(session.startedAt, session.endedAt)}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -334,7 +367,7 @@ export default function Sessions() {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-                <CardDescription className="flex items-center gap-4 text-xs">
+                <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                   {selectedSession.pluginName && (
                     <span className="flex items-center gap-1">
                       <Package className="h-3 w-3" />
@@ -351,25 +384,89 @@ export default function Sessions() {
                     <Clock className="h-3 w-3" />
                     {format(new Date(selectedSession.startedAt), "MMM d, yyyy HH:mm:ss")}
                   </span>
+                  {selectedSession.endedAt && (
+                    <span className="flex items-center gap-1">
+                      <Timer className="h-3 w-3" />
+                      {formatDuration(selectedSession.startedAt, selectedSession.endedAt)}
+                    </span>
+                  )}
                   <span className="font-mono text-muted-foreground">
                     {selectedSession.sessionId.slice(0, 8)}
                   </span>
                 </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 overflow-hidden p-4 pt-0">
-                {logsLoading ? (
-                  <div className="flex items-center justify-center h-full">
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+
+                {/* Error message banner */}
+                {"errorMsg" in selectedSession && selectedSession.errorMsg && (
+                  <div className="mt-2 p-2.5 rounded-md bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-destructive break-all">{selectedSession.errorMsg}</p>
                   </div>
-                ) : (
-                  <LogViewer
-                    logs={logEntries}
-                    title="Session Logs"
-                    height="h-full"
-                    showToggle={false}
-                    autoScroll={false}
-                  />
                 )}
+              </CardHeader>
+
+              <CardContent className="flex-1 overflow-hidden p-0 flex flex-col">
+                {/* Detail tabs */}
+                <Tabs value={detailTab} onValueChange={setDetailTab} className="flex-1 flex flex-col overflow-hidden">
+                  <div className="px-4 border-b">
+                    <TabsList className="bg-transparent h-9">
+                      <TabsTrigger value="logs" className="text-xs gap-1.5">
+                        <FileText className="h-3 w-3" />
+                        Logs
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1">{logEntries.length}</Badge>
+                      </TabsTrigger>
+                      {errorLogEntries.length > 0 && (
+                        <TabsTrigger value="errors" className="text-xs gap-1.5">
+                          <AlertCircle className="h-3 w-3" />
+                          Errors
+                          <Badge variant="destructive" className="text-[10px] h-4 px-1">{errorLogEntries.length}</Badge>
+                        </TabsTrigger>
+                      )}
+                      {"metadata" in selectedSession && selectedSession.metadata && Object.keys(selectedSession.metadata).length > 0 && (
+                        <TabsTrigger value="metadata" className="text-xs gap-1.5">
+                          <FileJson className="h-3 w-3" />
+                          Metadata
+                        </TabsTrigger>
+                      )}
+                    </TabsList>
+                  </div>
+
+                  <TabsContent value="logs" className="flex-1 overflow-hidden m-0 p-4 pt-2">
+                    {logsLoading ? (
+                      <div className="flex items-center justify-center h-full">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : (
+                      <LogViewer
+                        logs={logEntries}
+                        title="Session Logs"
+                        height="h-full"
+                        showToggle={false}
+                        autoScroll={false}
+                      />
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="errors" className="flex-1 overflow-hidden m-0 p-4 pt-2">
+                    <LogViewer
+                      logs={errorLogEntries}
+                      title="Error Logs"
+                      height="h-full"
+                      showToggle={false}
+                      autoScroll={false}
+                      emptyMessage="No errors in this session"
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="metadata" className="flex-1 overflow-hidden m-0 p-4 pt-2">
+                    {"metadata" in selectedSession && selectedSession.metadata && (
+                      <ScrollArea className="h-full">
+                        <pre className="text-xs font-mono bg-muted/50 p-4 rounded-lg whitespace-pre-wrap break-all">
+                          {JSON.stringify(selectedSession.metadata, null, 2)}
+                        </pre>
+                      </ScrollArea>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </>
           ) : (

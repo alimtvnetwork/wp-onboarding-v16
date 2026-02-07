@@ -172,13 +172,14 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 9: Sessions Page — Detail View
+### Phase 9: Sessions Page — Detail View ✅ COMPLETE
 
 **Goal:** Add expandable session detail with full log timeline when clicking a session row.
 
-**Files to change:**
-- `src/pages/Sessions.tsx` — Add click-to-expand with session log timeline
-- `src/components/errors/SessionLogsTab.tsx` — Reuse for inline session detail
+**Implementation:** Enhanced the detail panel with: (1) Full session info fetch via `getSession` to access `errorMsg` and `metadata`; (2) Duration display using `formatDistance` in both the list and detail header; (3) Error message banner when session has an error; (4) Tabbed detail view with Logs, Errors (filtered error-only view), and Metadata (formatted JSON) tabs; (5) Added `remote_plugin_action` session type support.
+
+**Files changed:**
+- `src/pages/Sessions.tsx` — Added session info query, tabbed detail view, error banner, duration display, metadata tab
 
 **Backend dependency:** Session service (✅ implemented)
 
