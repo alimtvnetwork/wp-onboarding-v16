@@ -1,0 +1,36 @@
+{
+  "Status": {
+    "IsSuccess": false,
+    "IsFailed": true,
+    "Code": 500,
+    "Message": "Internal Server Error",
+    "Timestamp": "2026-02-07T12:00:00Z"
+  },
+  "Attributes": {
+    "RequestedAt": "/api/v1/plugins/details",
+    "RequestDelegatedAt": "https://example.com/wp-json/riseup-asia-uploader/v1/plugin-info",
+    "HasAnyErrors": true,
+    "IsSingle": false,
+    "IsMultiple": false,
+    "TotalRecords": 0,
+    "PerPage": 0,
+    "TotalPages": 0,
+    "CurrentPage": 0
+  },
+  "Results": [],
+  "Errors": {
+    "BackendMessage": "Failed to fetch plugin details from remote site",
+    "DelegatedServiceErrorStack": [
+      "PHP Fatal error: Class 'PDO' not found in /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/plugin-manager.php on line 42",
+      "Stack trace:",
+      "#0 /var/www/html/wp-content/plugins/riseup-asia-uploader/api/endpoints.php(15): PluginManager->connect()",
+      "#1 {main}"
+    ],
+    "Backend": [
+      "plugin_handlers.go:85 HandlePluginDetails",
+      "plugin_service.go:120 FetchPluginFromSite",
+      "http_client.go:45 doRequest"
+    ],
+    "Frontend": []
+  }
+}
