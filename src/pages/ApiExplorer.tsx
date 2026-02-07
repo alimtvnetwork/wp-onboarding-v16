@@ -8,9 +8,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Loader2, Globe, Key, RefreshCw, ExternalLink, AlertCircle, CheckCircle2, Lock, History, Trash2, Clock, ChevronDown, Copy, Check } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Globe, Key, RefreshCw, ExternalLink, AlertCircle, CheckCircle2, Lock, History, Trash2, Clock, ChevronDown, Copy, Check, Server } from "lucide-react";
 import { useSites } from "@/hooks/useSites";
 import { api, requireSuccess } from "@/lib/api";
+import { resolveApiBase } from "@/lib/endpoints";
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 
@@ -25,12 +27,16 @@ interface RequestHistoryItem {
   responseBody?: string;
 }
 
+type ApiMode = "wordpress" | "backend";
+
 export default function ApiExplorer() {
   const [searchParams] = useSearchParams();
   const { data: sites, isLoading: sitesLoading } = useSites();
+  const [apiMode, setApiMode] = useState<ApiMode>("backend");
   const [selectedSiteId, setSelectedSiteId] = useState<string>("");
   const [credentials, setCredentials] = useState<{ url: string; username: string; appPassword: string } | null>(null);
   const [spec, setSpec] = useState<object | null>(null);
+  const [backendSpec, setBackendSpec] = useState<object | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingCredentials, setLoadingCredentials] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +158,49 @@ export default function ApiExplorer() {
     }
   }, [credentials, selectedSite?.name]);
 
+  // Fetch backend OpenAPI spec (no auth needed)
+  const fetchBackendSpec = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const url = `${resolveApiBase()}/openapi`;
+      const startTime = performance.now();
+      const response = await fetch(url);
+      const duration = Math.round(performance.now() - startTime);
+
+      const historyItem: RequestHistoryItem = {
+        id: `req-${++historyIdRef.current}`,
+        method: "GET",
+        url,
+        status: response.status,
+        duration,
+        timestamp: new Date(),
+      };
+
+      if (!response.ok) {
+        historyItem.responseBody = await response.text();
+        setRequestHistory(prev => [historyItem, ...prev].slice(0, 50));
+        throw new Error(`Failed to fetch backend spec: ${response.status}`);
+      }
+
+      const data = await response.json();
+      historyItem.responseBody = JSON.stringify(data, null, 2).slice(0, 500) + "...";
+      setRequestHistory(prev => [historyItem, ...prev].slice(0, 50));
+      setBackendSpec(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch backend OpenAPI spec");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Auto-load backend spec when switching to backend mode
+  useEffect(() => {
+    if (apiMode === "backend" && !backendSpec) {
+      fetchBackendSpec();
+    }
+  }, [apiMode, backendSpec, fetchBackendSpec]);
+
   // Request interceptor to add auth header and track requests
   const requestInterceptor = useCallback((req: { url: string; headers: Record<string, string>; body?: string; method?: string }) => {
     if (credentials) {
@@ -249,157 +298,247 @@ export default function ApiExplorer() {
               API Explorer
             </h1>
             <p className="text-muted-foreground mt-1">
-              Browse and test WordPress REST API endpoints with Swagger UI
+              Browse and test API endpoints with Swagger UI
             </p>
           </div>
+          <Tabs value={apiMode} onValueChange={(v) => setApiMode(v as ApiMode)}>
+            <TabsList>
+              <TabsTrigger value="backend" className="gap-1.5">
+                <Server className="h-3.5 w-3.5" />
+                Backend API
+              </TabsTrigger>
+              <TabsTrigger value="wordpress" className="gap-1.5">
+                <Globe className="h-3.5 w-3.5" />
+                WordPress API
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Site Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  Select WordPress Site
-                </CardTitle>
-                <CardDescription>
-                  Credentials are automatically loaded from the database.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Label htmlFor="site-select">WordPress Site</Label>
-                    <Select
-                      value={selectedSiteId}
-                      onValueChange={setSelectedSiteId}
-                      disabled={sitesLoading}
-                    >
-                      <SelectTrigger id="site-select" className="mt-1.5">
-                        <SelectValue placeholder="Select a site..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sites?.map((site) => (
-                          <SelectItem key={site.id} value={site.id.toString()}>
-                            {site.name} ({site.url})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button
-                    onClick={fetchOpenApiSpec}
-                    disabled={!credentials || loading}
-                    variant="outline"
-                  >
-                    {loading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Refresh
-                  </Button>
-                </div>
-
-                {loadingCredentials && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading credentials...
-                  </div>
+            {/* Backend API mode */}
+            {apiMode === "backend" && (
+              <>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
 
-                {credentials && (
-                  <div className="flex flex-wrap items-center gap-4 text-sm">
-                    <code className="bg-muted px-2 py-0.5 rounded text-xs">{credentials.url}</code>
-                    <code className="bg-muted px-2 py-0.5 rounded text-xs">{credentials.username}</code>
-                    <code className="bg-muted px-2 py-0.5 rounded text-xs">••••••••</code>
-                    {authenticated && (
-                      <Badge variant="secondary" className="gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Connected
-                      </Badge>
-                    )}
-                  </div>
+                {loading && (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-12">
+                      <div className="text-center space-y-3">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                        <p className="text-muted-foreground">Loading backend API specification...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-            </Card>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+                {backendSpec && !loading && (
+                  <Card className="swagger-card overflow-hidden">
+                    <CardHeader className="bg-muted/30 border-b">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Server className="h-4 w-4" />
+                            Backend API
+                          </CardTitle>
+                          <CardDescription>
+                            Go backend REST API — auto-generated from handler registrations
+                          </CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={fetchBackendSpec}
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Refresh
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(`${resolveApiBase()}/openapi`, "_blank")}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Raw JSON
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="swagger-ui-wrapper">
+                        <SwaggerUI
+                          spec={backendSpec}
+                          docExpansion="list"
+                          defaultModelsExpandDepth={-1}
+                          displayOperationId={false}
+                          filter={true}
+                          showExtensions={false}
+                          showCommonExtensions={false}
+                          tryItOutEnabled={true}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
 
-            {loading && (
-              <Card>
-                <CardContent className="flex items-center justify-center py-12">
-                  <div className="text-center space-y-3">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-                    <p className="text-muted-foreground">Loading API specification...</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {!selectedSite && !loading && (
-              <Card>
-                <CardContent className="flex items-center justify-center py-12">
-                  <div className="text-center space-y-3">
-                    <Lock className="h-12 w-12 mx-auto text-muted-foreground/50" />
-                    <div>
-                      <p className="font-medium">Select a WordPress Site</p>
-                      <p className="text-sm text-muted-foreground">
-                        Choose a site to automatically connect using stored credentials
-                      </p>
+            {/* WordPress API mode */}
+            {apiMode === "wordpress" && (
+              <>
+                {/* Site Selection */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Key className="h-4 w-4" />
+                      Select WordPress Site
+                    </CardTitle>
+                    <CardDescription>
+                      Credentials are automatically loaded from the database.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="site-select">WordPress Site</Label>
+                        <Select
+                          value={selectedSiteId}
+                          onValueChange={setSelectedSiteId}
+                          disabled={sitesLoading}
+                        >
+                          <SelectTrigger id="site-select" className="mt-1.5">
+                            <SelectValue placeholder="Select a site..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sites?.map((site) => (
+                              <SelectItem key={site.id} value={site.id.toString()}>
+                                {site.name} ({site.url})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <Button
+                        onClick={fetchOpenApiSpec}
+                        disabled={!credentials || loading}
+                        variant="outline"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Refresh
+                      </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
-            {spec && !loading && (
-              <Card className="swagger-card overflow-hidden">
-                <CardHeader className="bg-muted/30 border-b">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">Riseup Asia Uploader API</CardTitle>
-                      <CardDescription>
-                        Interactive API documentation - expand endpoints to test them
-                      </CardDescription>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const baseUrl = credentials?.url.replace(/\/$/, "");
-                        window.open(`${baseUrl}/wp-json/riseup-asia-uploader/v1/openapi`, "_blank");
-                      }}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Raw JSON
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="swagger-ui-wrapper">
-                    <SwaggerUI
-                      spec={spec}
-                      requestInterceptor={requestInterceptor}
-                      responseInterceptor={responseInterceptor}
-                      docExpansion="list"
-                      defaultModelsExpandDepth={-1}
-                      displayOperationId={false}
-                      filter={true}
-                      showExtensions={false}
-                      showCommonExtensions={false}
-                      tryItOutEnabled={true}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                    {loadingCredentials && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Loading credentials...
+                      </div>
+                    )}
+
+                    {credentials && (
+                      <div className="flex flex-wrap items-center gap-4 text-sm">
+                        <code className="bg-muted px-2 py-0.5 rounded text-xs">{credentials.url}</code>
+                        <code className="bg-muted px-2 py-0.5 rounded text-xs">{credentials.username}</code>
+                        <code className="bg-muted px-2 py-0.5 rounded text-xs">••••••••</code>
+                        {authenticated && (
+                          <Badge variant="secondary" className="gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Connected
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                {loading && (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-12">
+                      <div className="text-center space-y-3">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                        <p className="text-muted-foreground">Loading API specification...</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {!selectedSite && !loading && (
+                  <Card>
+                    <CardContent className="flex items-center justify-center py-12">
+                      <div className="text-center space-y-3">
+                        <Lock className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                        <div>
+                          <p className="font-medium">Select a WordPress Site</p>
+                          <p className="text-sm text-muted-foreground">
+                            Choose a site to automatically connect using stored credentials
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {spec && !loading && (
+                  <Card className="swagger-card overflow-hidden">
+                    <CardHeader className="bg-muted/30 border-b">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">Riseup Asia Uploader API</CardTitle>
+                          <CardDescription>
+                            Interactive API documentation - expand endpoints to test them
+                          </CardDescription>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const baseUrl = credentials?.url.replace(/\/$/, "");
+                            window.open(`${baseUrl}/wp-json/riseup-asia-uploader/v1/openapi`, "_blank");
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Raw JSON
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="swagger-ui-wrapper">
+                        <SwaggerUI
+                          spec={spec}
+                          requestInterceptor={requestInterceptor}
+                          responseInterceptor={responseInterceptor}
+                          docExpansion="list"
+                          defaultModelsExpandDepth={-1}
+                          displayOperationId={false}
+                          filter={true}
+                          showExtensions={false}
+                          showCommonExtensions={false}
+                          tryItOutEnabled={true}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </div>
 
