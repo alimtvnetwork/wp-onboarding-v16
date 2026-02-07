@@ -1400,9 +1400,10 @@ func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 }
 
 // logToErrorFile writes error details to data/errors/error.log.txt
-// Includes full request attribution: Go backend route and WordPress delegated URL.
+// Uses MD5 deduplication to suppress identical error entries.
+// Format matches the standardized error log spec with full request attribution.
 func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details map[string]interface{}) {
-	// Build deduplication hash from stable error identity (excludes timestamp)
+	// Extract fields from details
 	statusCode := 0
 	if sc, ok := details["statusCode"].(int); ok {
 		statusCode = sc
@@ -1415,6 +1416,12 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	if rb, ok := details["responseBody"].(string); ok {
 		responseBody = rb
 	}
+	errMsg := ""
+	if em, ok := details["error"].(string); ok {
+		errMsg = em
+	}
+
+	// Build deduplication hash from stable error identity (excludes timestamp)
 	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteID, pluginSlug, endpoint, statusCode, responseBody)
 	hashBytes := md5.Sum([]byte(hashInput))
 	hashHex := hex.EncodeToString(hashBytes[:])
@@ -1445,34 +1452,34 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	}
 	defer f.Close()
 
-	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
-	logEntry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
-	logEntry += fmt.Sprintf("  Site: %s (ID: %d)\n", siteName, siteID)
-	logEntry += fmt.Sprintf("  Plugin: %s\n", pluginSlug)
-
-	// Request attribution: Go backend route
-	logEntry += fmt.Sprintf("  RequestedAt: GET /api/v1/sites/%d/remote-plugins/%s\n", siteID, action)
-
-	// Request attribution: WordPress delegated URL
+	// Build delegated URL (the WordPress endpoint that was actually called)
 	method := "POST"
 	if m, ok := details["method"].(string); ok && m != "" {
 		method = m
 	}
-	fullURL := ""
+	delegatedURL := ""
 	if u, ok := details["url"].(string); ok && u != "" {
-		fullURL = u
+		delegatedURL = u
 	} else if endpoint != "" {
-		fullURL = fmt.Sprintf("%s/wp-json%s", siteURL, endpoint)
+		delegatedURL = fmt.Sprintf("%s/wp-json%s", siteURL, endpoint)
 	}
-	logEntry += fmt.Sprintf("  DelegatedAt: %s %s\n", method, fullURL)
 
-	// Error message
-	if errMsg, ok := details["error"].(string); ok {
-		logEntry += fmt.Sprintf("  Error: %s\n", errMsg)
-	}
-	if statusCode > 0 {
-		logEntry += fmt.Sprintf("  Status Code: %d\n", statusCode)
-	}
+	// Go backend endpoint that initiated the request
+	goEndpoint := fmt.Sprintf("POST /api/v1/sites/%d/remote-plugins/%s", siteID, action)
+
+	// Build log entry in the standardized format
+	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
+	logEntry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
+	logEntry += fmt.Sprintf("  Site ID: %d\n", siteID)
+	logEntry += fmt.Sprintf("  Site Name: %s\n", siteName)
+	logEntry += fmt.Sprintf("  Site URL: %s\n", siteURL)
+	logEntry += fmt.Sprintf("  Delegated URL: %s %s\n", method, delegatedURL)
+	logEntry += fmt.Sprintf("  Plugin: %s\n", pluginSlug)
+	logEntry += fmt.Sprintf("  Error: %s\n", errMsg)
+	logEntry += fmt.Sprintf("  Status Code: %d\n", statusCode)
+	logEntry += fmt.Sprintf("  Endpoint: \"%s\"\n", goEndpoint)
+
+	// Response body
 	if len(responseBody) > 0 {
 		displayBody := responseBody
 		if len(displayBody) > 2000 {
@@ -1480,6 +1487,8 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 		}
 		logEntry += fmt.Sprintf("  Response Body:\n    %s\n", displayBody)
 	}
+
+	// PHP stack trace frames
 	if frames, ok := details["stackTraceFrames"].([]interface{}); ok && len(frames) > 0 {
 		logEntry += "  PHP Stack Trace Frames:\n"
 		for i, frame := range frames {

@@ -5,6 +5,10 @@
  * Logs all operations to file with file path and line numbers.
  * Logs are stored in wp-content/uploads/riseup-asia-uploader/logs/
  *
+ * Implements MD5-based deduplication: identical log entries (same level+message+file+line)
+ * are written once and subsequent occurrences are silently suppressed until the hash map
+ * is cleared (on next request lifecycle or explicit reset).
+ *
  * @package RiseupAsiaUploader
  * @since   1.4.0
  */
@@ -16,7 +20,7 @@ if (!defined('ABSPATH')) {
 /**
  * Class Riseup_File_Logger
  *
- * Provides file-based logging with detailed context.
+ * Provides file-based logging with detailed context and MD5 deduplication.
  */
 class Riseup_File_Logger {
 
@@ -61,6 +65,15 @@ class Riseup_File_Logger {
      * @var bool
      */
     private $initialized = false;
+
+    /**
+     * MD5 deduplication map.
+     * Keys are MD5 hex hashes of (level + message + file + line).
+     * Values are true. Entries logged once are suppressed on repeat.
+     *
+     * @var array<string, bool>
+     */
+    private $dedup_hashes = array();
 
     /**
      * Get singleton instance.
@@ -126,6 +139,44 @@ class Riseup_File_Logger {
         
         $this->initialized = true;
         return true;
+    }
+
+    /**
+     * Check if a log entry is a duplicate using MD5 hashing.
+     *
+     * Generates an MD5 hash from (level + message + file + line) and checks if it
+     * has already been logged in this request lifecycle. If so, returns true (duplicate).
+     * Otherwise, registers the hash and returns false (new entry).
+     *
+     * @param string $level   Log level.
+     * @param string $message Log message.
+     * @param string $file    Source file.
+     * @param int    $line    Source line number.
+     *
+     * @return bool True if this is a duplicate entry that should be skipped.
+     */
+    private function is_duplicate($level, $message, $file, $line) {
+        $hash_input = $level . '|' . $message . '|' . basename($file) . '|' . $line;
+        $hash = md5($hash_input);
+
+        if (isset($this->dedup_hashes[$hash])) {
+            return true;
+        }
+
+        $this->dedup_hashes[$hash] = true;
+        return false;
+    }
+
+    /**
+     * Clear the deduplication hash map.
+     * After calling this, previously suppressed entries will be logged again.
+     *
+     * @return int Number of hashes that were cleared.
+     */
+    public function clear_dedup_hashes() {
+        $count = count($this->dedup_hashes);
+        $this->dedup_hashes = array();
+        return $count;
     }
 
     /**
@@ -227,6 +278,10 @@ class Riseup_File_Logger {
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+
+        if ($this->is_duplicate(RISEUP_LOG_LEVEL_DEBUG, $message, $file, $line)) {
+            return true; // Silently skip duplicate
+        }
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_DEBUG, $message, $file, $line, $context);
         return $this->write($entry, false);
@@ -245,6 +300,10 @@ class Riseup_File_Logger {
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+
+        if ($this->is_duplicate(RISEUP_LOG_LEVEL_INFO, $message, $file, $line)) {
+            return true;
+        }
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_INFO, $message, $file, $line, $context);
         return $this->write($entry, false);
@@ -263,6 +322,10 @@ class Riseup_File_Logger {
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+
+        if ($this->is_duplicate(RISEUP_LOG_LEVEL_WARN, $message, $file, $line)) {
+            return true;
+        }
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context);
         return $this->write($entry, false);
@@ -281,6 +344,10 @@ class Riseup_File_Logger {
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+
+        if ($this->is_duplicate(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line)) {
+            return true;
+        }
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
         return $this->write($entry, true);
@@ -298,6 +365,10 @@ class Riseup_File_Logger {
      * @return bool
      */
     public function log_at($level, $message, $file, $line, $context = array()) {
+        if ($this->is_duplicate($level, $message, $file, $line)) {
+            return true;
+        }
+
         $is_error = ($level === RISEUP_LOG_LEVEL_ERROR);
         $entry = $this->format_entry($level, $message, $file, $line, $context);
         return $this->write($entry, $is_error);
@@ -312,6 +383,10 @@ class Riseup_File_Logger {
      * @return bool
      */
     public function log_exception($e, $context = '') {
+        if ($this->is_duplicate(RISEUP_LOG_LEVEL_ERROR, $e->getMessage(), $e->getFile(), $e->getLine())) {
+            return true;
+        }
+
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
         $entry = $this->format_entry(
             RISEUP_LOG_LEVEL_ERROR,
