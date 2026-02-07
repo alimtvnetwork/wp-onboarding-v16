@@ -24,18 +24,11 @@ type E2EServiceInterface interface {
 var E2EService E2EServiceInterface
 
 // GetE2ESuites returns all test suites
-func GetE2ESuites(w http.ResponseWriter, r *http.Request) {
-	if E2EService == nil {
-		respondSuccess(w, []interface{}{})
-		return
-	}
-	suites, err := E2EService.ListSuites(r.Context())
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E7001", err.Error())
-		return
-	}
-	respondSuccess(w, suites)
-}
+var GetE2ESuites = handleListNilSafe(e2eServiceGetter, "E7001",
+	func(ctx context.Context) (interface{}, error) {
+		return E2EService.ListSuites(ctx)
+	},
+)
 
 // GetE2ECases returns test cases for a suite
 func GetE2ECases(w http.ResponseWriter, r *http.Request) {

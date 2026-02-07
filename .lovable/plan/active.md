@@ -6,6 +6,7 @@
 
 ## Recently Completed
 
+- **Phase 7: Generic CRUD Handler Factory**: Created `handler_factory.go` with 7 reusable factory functions (`handleActionByID`, `handleDeleteByID`, `handleListNilSafe`, `handleSiteActionByID`, `handleSiteActionByIDWithOpts`, `handleNoArgs`, `handleTwoIDs`) + nil-safe lazy service getters. Refactored ~30 handlers across 7 files to use factories, eliminating ~300 lines of boilerplate.
 - **Publish History Integration**: Wired `publishHistoryService.Record()` into publish pipeline; wired SiteHealth + PublishHistory into main.go and service registry.
 - **Phase 10: Remote Plugin File Browser**: Browse files button in RemotePluginsPanel, tree view with syntax highlighting.
 

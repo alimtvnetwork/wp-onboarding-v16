@@ -85,3 +85,9 @@ func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (i
 	}
 	return id, true
 }
+
+// decodeJSONSilent decodes a JSON request body without writing an error response.
+// Returns nil on success, error on failure. Used by optional body decoders.
+func decodeJSONSilent(r *http.Request, target interface{}) error {
+	return json.NewDecoder(r.Body).Decode(target)
+}

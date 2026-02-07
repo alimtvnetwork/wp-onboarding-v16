@@ -20,25 +20,11 @@ type SiteHealthServiceInterface interface {
 }
 
 // CheckSiteHealth performs a health check on a single site
-func CheckSiteHealth(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteHealthService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site health service not available")
-		return
-	}
-
-	id, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	check, err := Services.SiteHealthService.CheckSite(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E4001", err.Error())
-		return
-	}
-	respondSuccess(w, check)
-}
+var CheckSiteHealth = handleSiteActionByID("E4001",
+	func(ctx context.Context, siteID int64) (interface{}, error) {
+		return Services.SiteHealthService.CheckSite(ctx, siteID)
+	},
+)
 
 // CheckAllSitesHealth performs health checks on all sites
 func CheckAllSitesHealth(w http.ResponseWriter, r *http.Request) {

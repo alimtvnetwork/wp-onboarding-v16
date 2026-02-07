@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 )
@@ -27,18 +28,11 @@ type SiteUpdateInput struct {
 }
 
 // GetSites returns all registered WordPress sites
-func GetSites(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondSuccess(w, []interface{}{})
-		return
-	}
-	sites, err := Services.SiteService.List(r.Context())
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E2001", err.Error())
-		return
-	}
-	respondSuccess(w, sites)
-}
+var GetSites = handleListNilSafe(siteService, "E2001",
+	func(ctx context.Context) (interface{}, error) {
+		return Services.SiteService.List(ctx)
+	},
+)
 
 // CreateSite creates a new WordPress site connection
 func CreateSite(w http.ResponseWriter, r *http.Request) {
@@ -83,23 +77,11 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetSite returns a specific site by ID
-func GetSite(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "site ID")
-	if !ok {
-		return
-	}
-
-	site, err := Services.SiteService.GetByID(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusNotFound, "E9001", err.Error())
-		return
-	}
-	respondSuccess(w, site)
-}
+var GetSite = handleActionByID(siteService, "Site service", "id", "site ID", "E9001",
+	func(ctx context.Context, id int64) (interface{}, error) {
+		return Services.SiteService.GetByID(ctx, id)
+	},
+)
 
 // UpdateSite updates an existing site
 func UpdateSite(w http.ResponseWriter, r *http.Request) {
@@ -131,41 +113,18 @@ func UpdateSite(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteSite removes a site
-func DeleteSite(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "site ID")
-	if !ok {
-		return
-	}
-
-	if err := Services.SiteService.Delete(r.Context(), id); err != nil {
-		respondError(w, http.StatusBadRequest, "E2006", err.Error())
-		return
-	}
-	respondDeleted(w)
-}
+var DeleteSite = handleDeleteByID(siteService, "Site service", "id", "site ID", "E2006",
+	func(ctx context.Context, id int64) error {
+		return Services.SiteService.Delete(ctx, id)
+	},
+)
 
 // TestSiteConnection tests the WordPress REST API connection
-func TestSiteConnection(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "site ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.SiteService.TestConnection(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var TestSiteConnection = handleActionByID(siteService, "Site service", "id", "site ID", "E3001",
+	func(ctx context.Context, id int64) (interface{}, error) {
+		return Services.SiteService.TestConnection(ctx, id)
+	},
+)
 
 // TestSiteCredentials tests credentials without saving (for pre-create validation)
 func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
@@ -191,23 +150,11 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetSiteCredentials returns decrypted credentials for API Explorer
-func GetSiteCredentials(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "site ID")
-	if !ok {
-		return
-	}
-
-	credentials, err := Services.SiteService.GetCredentials(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusNotFound, "E2002", err.Error())
-		return
-	}
-	respondSuccess(w, credentials)
-}
+var GetSiteCredentials = handleActionByID(siteService, "Site service", "id", "site ID", "E2002",
+	func(ctx context.Context, id int64) (interface{}, error) {
+		return Services.SiteService.GetCredentials(ctx, id)
+	},
+)
 
 // BootstrapUploader deploys the Riseup Asia Uploader plugin to a site
 func BootstrapUploader(w http.ResponseWriter, r *http.Request) {
@@ -333,42 +280,18 @@ func parseRemotePluginInput(r *http.Request) (int64, string, error) {
 }
 
 // GetRemotePlugins returns all plugins installed on a remote WordPress site
-func GetRemotePlugins(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "site ID")
-	if !ok {
-		return
-	}
-
-	plugins, err := Services.SiteService.GetRemotePlugins(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3004", err.Error())
-		return
-	}
-	respondSuccess(w, plugins)
-}
+var GetRemotePlugins = handleSiteActionByID("E3004",
+	func(ctx context.Context, siteID int64) (interface{}, error) {
+		return Services.SiteService.GetRemotePlugins(ctx, siteID)
+	},
+)
 
 // ForceSyncRemotePlugins clears cache and fetches fresh plugin data
-func ForceSyncRemotePlugins(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SiteService, "Site service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "site ID")
-	if !ok {
-		return
-	}
-
-	plugins, err := Services.SiteService.ForceSyncRemotePlugins(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3004", err.Error())
-		return
-	}
-	respondSuccess(w, plugins)
-}
+var ForceSyncRemotePlugins = handleSiteActionByID("E3004",
+	func(ctx context.Context, siteID int64) (interface{}, error) {
+		return Services.SiteService.ForceSyncRemotePlugins(ctx, siteID)
+	},
+)
 
 // ClearRemotePluginsCache invalidates the cache without fetching
 func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
@@ -499,12 +422,9 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &input) {
 		return
 	}
-	if input.Plugin == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required in JSON body")
-		return
-	}
-	if input.Path == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "File path is required")
+
+	if input.Plugin == "" || input.Path == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin and path are required")
 		return
 	}
 
@@ -514,7 +434,8 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondSuccess(w, map[string]interface{}{
-		"path":    input.Path,
 		"content": content,
+		"plugin":  input.Plugin,
+		"path":    input.Path,
 	})
 }

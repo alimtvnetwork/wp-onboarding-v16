@@ -118,8 +118,6 @@ type BackupServiceInterface interface {
 // Global service registry - set during server initialization
 var Services *ServiceRegistry
 
-// Global request session store - set during server initialization
-var RequestSessionStore interface{}
 
 // Health returns server health status
 func Health(w http.ResponseWriter, r *http.Request) {
