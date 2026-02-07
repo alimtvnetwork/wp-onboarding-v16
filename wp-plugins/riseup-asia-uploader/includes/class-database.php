@@ -112,31 +112,10 @@ class Riseup_Database {
         
         $this->file_logger->debug('Base directory', array('dir' => $base_dir));
         
-        // Ensure base directory exists
-        if (RiseupBooleanHelpers::is_file_missing($base_dir)) {
-            $this->file_logger->info('Creating base directory', array('dir' => $base_dir));
-            
-            if (RiseupBooleanHelpers::is_falsy(wp_mkdir_p($base_dir))) {
-                $this->file_logger->error('Failed to create base directory', array('dir' => $base_dir));
-                throw new Exception('Failed to create data directory: ' . $base_dir);
-            }
-            
-            // Add .htaccess to protect database
-            $htaccess_path = $base_dir . '/.htaccess';
-            $htaccess_content = "Order deny,allow\nDeny from all\n";
-            if (@file_put_contents($htaccess_path, $htaccess_content) === false) {
-                $this->file_logger->warn('Failed to create .htaccess', array('path' => $htaccess_path));
-            } else {
-                $this->file_logger->debug('.htaccess created', array('path' => $htaccess_path));
-            }
-            
-            // Add index.php for additional protection
-            $index_path = $base_dir . '/index.php';
-            if (@file_put_contents($index_path, '<?php // Silence is golden.') === false) {
-                $this->file_logger->warn('Failed to create index.php', array('path' => $index_path));
-            } else {
-                $this->file_logger->debug('index.php created', array('path' => $index_path));
-            }
+        // Ensure base directory exists with security files (idempotent)
+        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($base_dir, true))) {
+            $this->file_logger->error('Failed to create base directory', array('dir' => $base_dir));
+            throw new Exception('Failed to create data directory: ' . $base_dir);
         }
         
         $db_path = $base_dir . '/' . RISEUP_DB_FILENAME;
@@ -154,36 +133,13 @@ class Riseup_Database {
         $this->file_logger->info('Initializing PDO connection');
         
         try {
-            // Check if PDO class exists
-            if (RiseupBooleanHelpers::is_class_missing('PDO')) {
-                $this->file_logger->error('PDO class not found - PHP PDO extension not installed');
-                throw new Exception('PDO class not found. Please ensure the PHP PDO extension is installed and enabled.');
+            // Use centralized SQLite connection helper
+            $this->pdo = RiseupInitHelpers::initSqliteConnection($this->db_path, $this->file_logger);
+            
+            if (RiseupBooleanHelpers::is_null($this->pdo)) {
+                $this->file_logger->error('SQLite connection returned null - check PDO/pdo_sqlite availability');
+                return false;
             }
-            
-            // Check if SQLite extension is available
-            if (RiseupBooleanHelpers::is_extension_missing('pdo_sqlite')) {
-                $this->file_logger->error('PDO SQLite extension not loaded');
-                throw new Exception('PDO SQLite extension is not available. Please enable pdo_sqlite in php.ini.');
-            }
-            
-            $this->file_logger->debug('Creating PDO connection', array('path' => $this->db_path));
-            
-            $this->pdo = new PDO('sqlite:' . $this->db_path);
-            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-            
-            $this->file_logger->info('PDO connection established');
-
-            // Enable WAL mode for better performance
-            if (RISEUP_DB_WAL_MODE) {
-                $this->file_logger->debug('Enabling WAL mode');
-                $this->pdo->exec('PRAGMA journal_mode = WAL');
-                $this->file_logger->info('WAL mode enabled');
-            }
-
-            // Enable auto-vacuum
-            $this->file_logger->debug('Setting auto-vacuum');
-            $this->pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');
 
             // Configure the ORM with our PDO instance
             $this->file_logger->debug('Configuring ORM');
