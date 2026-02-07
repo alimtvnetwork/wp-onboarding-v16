@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ApiError } from '@/lib/api';
+import { ApiError, EnvelopeDelegatedError, EnvelopeStackFrame } from '@/lib/api';
 import { getClickPathForError, ClickEvent } from '@/hooks/useClickTracker';
 import { getExecutionLogsForError, ExecutionLogEntry, CallChain } from '@/hooks/useExecutionLogger';
 
@@ -101,6 +101,12 @@ export interface CapturedError {
   executionChain?: CallChain | null;
   executionLogsEnabled?: boolean;
   executionLogsFormatted?: string;
+  // Universal Envelope diagnostic fields
+  traversalSteps?: string[];
+  requestedEndpoint?: string;
+  delegatedEndpoint?: string;
+  delegatedError?: EnvelopeDelegatedError;
+  envelopeStackFrames?: EnvelopeStackFrame[];
 }
 
 interface ErrorStore {
@@ -393,6 +399,12 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       executionChain: execLogs.chain,
       executionLogsEnabled: execLogs.enabled,
       executionLogsFormatted: execLogs.formatted || undefined,
+      // Universal Envelope diagnostic fields (extracted from error.context)
+      traversalSteps: Array.isArray(error.context?.traversalSteps) ? error.context.traversalSteps as string[] : undefined,
+      requestedEndpoint: typeof error.context?.requestedEndpoint === 'string' ? error.context.requestedEndpoint : undefined,
+      delegatedEndpoint: typeof error.context?.delegatedEndpoint === 'string' ? error.context.delegatedEndpoint : undefined,
+      delegatedError: error.context?.delegatedError as EnvelopeDelegatedError | undefined,
+      envelopeStackFrames: Array.isArray(error.context?.envelopeStackFrames) ? error.context.envelopeStackFrames as EnvelopeStackFrame[] : undefined,
     };
     
     set((state) => {

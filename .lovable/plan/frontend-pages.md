@@ -27,17 +27,15 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ## Pending Cross-Cutting Work (Phases)
 
-### Phase 1: Universal Envelope — Frontend Migration
+### Phase 1: Universal Envelope — Frontend Migration ✅ COMPLETE
 
 **Goal:** Update the frontend API client (`src/lib/api.ts`) and all hooks to consume the new PascalCase Universal Response Envelope from the Go backend.
 
-**Files to change:**
-- `src/lib/api.ts` — Add `parseEnvelope()` utility; update `ApiResponse<T>` type to match new envelope shape (`Status.IsSuccess`, `Results[]`, `Attributes`, `Error`, `DelegatedError`)
-- All hooks (`usePlugins`, `useSites`, `useSettings`, `useErrors`, `useCategories`, `useSiteMappings`, `useQuickPublish`, `useBulkQuickPublish`, `useRemoteSnapshots`, `useRemotePluginEvents`, `useConnectionTestLogs`, `useErrorHistory`, `useWhatsNew`) — Update response parsing to use `parseEnvelope()`
-- `src/stores/errorStore.ts` — Update error capture to read `Error.StackTrace`, `Error.StackTraceFrames`, `DelegatedError`
-- `src/stores/publishStore.ts` — Update if it reads API responses directly
+**Implementation:** Auto-detection in `fetchRequest()` — when a PascalCase envelope is detected, it's transparently converted to the existing `ApiResponse<T>` shape. All hooks work unchanged. Envelope metadata (attributes, navigation, delegated error) is preserved on `response.envelope`.
 
-**Backend dependency:** Go envelope package (✅ Done), OpenAPI spec (✅ Done)
+**Files changed:**
+- `src/lib/api.ts` — Added 18 envelope types, `isEnvelope()` detector, `parseEnvelope<T>()` converter, auto-detection in `fetchRequest()` and `importRemoteSnapshot()`
+- `src/stores/errorStore.ts` — Added `traversalSteps`, `requestedEndpoint`, `delegatedEndpoint`, `delegatedError`, `envelopeStackFrames` to `CapturedError`; extraction in `captureError()`
 
 ---
 
