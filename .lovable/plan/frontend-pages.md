@@ -57,20 +57,27 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 3: Pagination Support
+### Phase 3: Pagination Support ✅ COMPLETE
 
 **Goal:** Add pagination UI to list pages that support it (Sites, Plugins, Publish History, Errors, Sessions).
 
-**Files to change:**
-- Create `src/components/shared/Pagination.tsx` — Reusable pagination component reading `Navigation` and `Attributes` from envelope
-- `src/pages/Plugins.tsx` — Add pagination controls
-- `src/pages/Sites.tsx` — Add pagination controls
-- `src/pages/PublishHistory.tsx` — Add pagination controls
-- `src/pages/Errors.tsx` — Add pagination controls
-- `src/pages/Sessions.tsx` — Add pagination controls
-- Corresponding hooks — Pass `page`/`perPage` params to API calls
+**Implementation:** Created a reusable `EnvelopePagination` component that reads `Navigation` (NextPage, PrevPage, Pages) and `Attributes` (TotalRecords, PerPage, TotalPages, CurrentPage) from the envelope. The component renders nothing when pagination data is absent or there's only one page, ensuring graceful degradation. Added `requireSuccessWithEnvelope` helper that returns both data and envelope metadata. Created paginated variants of hooks (`useSitesPaginated`, `usePluginsPaginated`, `useErrorsPaginated`) that preserve envelope metadata. PublishHistory falls back to its existing offset-based pagination when envelope is not present.
 
-**Backend dependency:** Phase 1 (envelope migration), backend list endpoints returning pagination
+**Files created:**
+- `src/components/shared/EnvelopePagination.tsx` — Reusable pagination with sliding page window, first/last/prev/next controls
+- `src/lib/apiHelpers.ts` — `requireSuccessWithEnvelope`, `withPaginationParams`, `PaginatedResult` type
+
+**Files changed:**
+- `src/hooks/useSites.ts` — Added `useSitesPaginated` hook
+- `src/hooks/usePlugins.ts` — Added `usePluginsPaginated` hook
+- `src/hooks/useErrors.ts` — Added `useErrorsPaginated` hook
+- `src/pages/Sites.tsx` — Wired `EnvelopePagination`
+- `src/pages/Plugins.tsx` — Wired `EnvelopePagination`
+- `src/pages/PublishHistory.tsx` — Added envelope pagination with fallback
+- `src/pages/Errors.tsx` — Wired `EnvelopePagination`
+- `src/pages/Sessions.tsx` — Wired `EnvelopePagination`
+
+**Backend dependency:** Phase 1 (✅ Done)
 
 ---
 

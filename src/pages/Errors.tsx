@@ -1,4 +1,4 @@
-import { useErrors } from "@/hooks/useErrors";
+import { useErrorsPaginated } from "@/hooks/useErrors";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -8,9 +8,13 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
+import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 
 export default function Errors() {
-  const { data: errors, isLoading } = useErrors();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: paginatedResult, isLoading } = useErrorsPaginated(currentPage);
+  const errors = paginatedResult?.data;
+  const envelopeMeta = paginatedResult?.envelope;
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const { data: versionInfo } = useVersionInfo();
 
@@ -162,6 +166,12 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
           ))}
         </div>
       )}
+
+      {/* Envelope Pagination */}
+      <EnvelopePagination
+        meta={envelopeMeta ? { attributes: envelopeMeta.attributes, navigation: envelopeMeta.navigation } : null}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

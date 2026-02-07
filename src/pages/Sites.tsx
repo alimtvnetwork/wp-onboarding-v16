@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useSites } from "@/hooks/useSites";
+import { useSites, useSitesPaginated } from "@/hooks/useSites";
 import { useSettings } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,9 +21,13 @@ import { api, Site } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
+import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 
 export default function Sites() {
-  const { data: sites, isLoading, error: queryError } = useSites();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: paginatedResult, isLoading, error: queryError } = useSitesPaginated(currentPage);
+  const sites = paginatedResult?.data;
+  const envelopeMeta = paginatedResult?.envelope;
   const { data: settings } = useSettings();
   const queryClient = useQueryClient();
   const { captureError, captureException, openErrorModal } = useErrorStore();
@@ -262,6 +266,12 @@ export default function Sites() {
         onOpenChange={setShowDeployDialog}
         sites={connectedSites.map((s) => ({ id: s.id, name: s.name, url: s.url }))}
         onDeploy={handleBulkDeploy}
+      />
+
+      {/* Envelope Pagination */}
+      <EnvelopePagination
+        meta={envelopeMeta ? { attributes: envelopeMeta.attributes, navigation: envelopeMeta.navigation } : null}
+        onPageChange={setCurrentPage}
       />
     </div>
   );

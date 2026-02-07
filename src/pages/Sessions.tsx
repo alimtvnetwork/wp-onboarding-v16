@@ -16,6 +16,8 @@ import {
   Search,
 } from "lucide-react";
 import { api, SessionSummary, requireSuccess } from "@/lib/api";
+import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
+import { requireSuccessWithEnvelope } from "@/lib/apiHelpers";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -90,15 +92,19 @@ export default function Sessions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch sessions list
-  const { data: sessions, isLoading: sessionsLoading, refetch } = useQuery({
-    queryKey: ["sessions"],
+  const { data: sessionsResult, isLoading: sessionsLoading, refetch } = useQuery({
+    queryKey: ["sessions", currentPage],
     queryFn: async () => {
       const response = await api.getSessions(100);
-      return requireSuccess(response, { endpoint: "/sessions" });
+      return requireSuccessWithEnvelope<SessionSummary[]>(response, { endpoint: "/sessions" });
     },
   });
+
+  const sessions = sessionsResult?.data;
+  const sessionsEnvelope = sessionsResult?.envelope;
 
   // Fetch selected session logs
   const { data: sessionLogs, isLoading: logsLoading } = useQuery({
@@ -277,6 +283,13 @@ export default function Sessions() {
                 </ScrollArea>
               </TabsContent>
             </Tabs>
+            {/* Sessions Pagination */}
+            <div className="px-4 pb-3">
+              <EnvelopePagination
+                meta={sessionsEnvelope ? { attributes: sessionsEnvelope.attributes, navigation: sessionsEnvelope.navigation } : null}
+                onPageChange={setCurrentPage}
+              />
+            </div>
           </CardContent>
         </Card>
 
