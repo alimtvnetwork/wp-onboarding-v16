@@ -1479,22 +1479,147 @@
     "schemas": {
       "SuccessEnvelope": {
         "type": "object",
+        "description": "Universal Response Envelope — all API responses use this structure.",
         "properties": {
-          "success": { "type": "boolean", "example": true },
-          "data": {}
+          "Status": {
+            "$ref": "#/components/schemas/EnvelopeStatus"
+          },
+          "Attributes": {
+            "$ref": "#/components/schemas/EnvelopeAttributes"
+          },
+          "Results": {
+            "type": "array",
+            "description": "Always an array. Length 1 for single items, 0+ for lists.",
+            "items": {}
+          },
+          "Navigation": {
+            "$ref": "#/components/schemas/EnvelopeNavigation"
+          },
+          "Error": {
+            "nullable": true,
+            "description": "Null on success.",
+            "example": null
+          },
+          "Additional": {
+            "nullable": true,
+            "description": "Optional metadata payload (e.g., DelegatedError)."
+          }
         }
       },
       "ErrorEnvelope": {
         "type": "object",
+        "description": "Universal Response Envelope — error variant.",
         "properties": {
-          "success": { "type": "boolean", "example": false },
-          "error": {
-            "type": "object",
+          "Status": {
+            "$ref": "#/components/schemas/EnvelopeStatus"
+          },
+          "Attributes": {
+            "$ref": "#/components/schemas/EnvelopeAttributes"
+          },
+          "Results": {
+            "type": "array",
+            "description": "Empty array on error.",
+            "items": {},
+            "example": []
+          },
+          "Navigation": {
+            "nullable": true,
+            "description": "Omitted on error."
+          },
+          "Error": {
+            "$ref": "#/components/schemas/EnvelopeErrorDetail"
+          },
+          "Additional": {
+            "nullable": true,
+            "description": "May contain DelegatedError for downstream failures.",
             "properties": {
-              "code": { "type": "string", "example": "E1001" },
-              "message": { "type": "string" },
-              "timestamp": { "type": "string", "format": "date-time" }
+              "DelegatedError": {
+                "$ref": "#/components/schemas/DelegatedError"
+              }
             }
+          }
+        }
+      },
+      "EnvelopeStatus": {
+        "type": "object",
+        "description": "Describes the outcome of the request.",
+        "properties": {
+          "IsSuccess": { "type": "boolean", "example": true },
+          "IsFailed": { "type": "boolean", "example": false },
+          "Code": { "type": "integer", "example": 200 },
+          "Message": { "type": "string", "example": "OK" },
+          "Timestamp": { "type": "string", "format": "date-time", "example": "2026-02-07T12:00:00Z" }
+        }
+      },
+      "EnvelopeAttributes": {
+        "type": "object",
+        "description": "Describes the shape and size of the result set, plus endpoint tracking.",
+        "properties": {
+          "IsSingle": { "type": "boolean", "example": true },
+          "IsMultiple": { "type": "boolean", "example": false },
+          "TotalRecords": { "type": "integer", "example": 1 },
+          "PerPage": { "type": "integer", "example": 20 },
+          "TotalPages": { "type": "integer", "example": 1 },
+          "CurrentPage": { "type": "integer", "example": 1 },
+          "RequestedEndpoint": { "type": "string", "description": "The Go API endpoint that received the request.", "example": "/api/v1/plugins/1/publish/3" },
+          "DelegatedEndpoint": { "type": "string", "description": "The downstream endpoint (e.g., PHP/WordPress) the request was proxied to.", "example": "/wp-json/riseup-asia-uploader/v1/upload" },
+          "TraversalSteps": {
+            "type": "array",
+            "description": "Ordered list of methods/functions invoked during request processing.",
+            "items": { "type": "string" },
+            "example": ["PublishHandler.Handle", "PublishService.Upload", "WordPressClient.UploadPlugin"]
+          }
+        }
+      },
+      "EnvelopeNavigation": {
+        "type": "object",
+        "description": "Pagination links for list responses. Omitted for single items.",
+        "properties": {
+          "NextPage": { "type": "integer", "nullable": true, "example": 3 },
+          "PrevPage": { "type": "integer", "nullable": true, "example": 1 },
+          "Pages": {
+            "type": "array",
+            "description": "5-page sliding window centered on current page.",
+            "items": { "type": "integer" },
+            "example": [1, 2, 3, 4, 5]
+          }
+        }
+      },
+      "EnvelopeErrorDetail": {
+        "type": "object",
+        "description": "Error information. Stack traces are config-controlled via ResponseDebug.",
+        "properties": {
+          "Code": { "type": "string", "example": "E5001" },
+          "Message": { "type": "string", "example": "Something failed" },
+          "StackTrace": { "type": "string", "description": "Full stack trace string (debug mode only)." },
+          "StackTraceFrames": {
+            "type": "array",
+            "description": "Structured stack frames (debug mode only).",
+            "items": { "$ref": "#/components/schemas/EnvelopeStackFrame" }
+          }
+        }
+      },
+      "EnvelopeStackFrame": {
+        "type": "object",
+        "properties": {
+          "File": { "type": "string", "example": "publish_service.go" },
+          "Line": { "type": "integer", "example": 142 },
+          "Function": { "type": "string", "example": "Upload" },
+          "Class": { "type": "string", "example": "PublishService" }
+        }
+      },
+      "DelegatedError": {
+        "type": "object",
+        "description": "Error from a delegated downstream call (e.g., Go → PHP). Included in Additional when a proxied call fails.",
+        "properties": {
+          "Endpoint": { "type": "string", "example": "/wp-json/riseup-asia-uploader/v1/upload" },
+          "StatusCode": { "type": "integer", "example": 500 },
+          "Message": { "type": "string", "example": "PHP fatal error: Class PDO not found" },
+          "StackTrace": { "type": "string", "description": "PHP stack trace (debug mode only)." },
+          "StackTraceFrames": {
+            "type": "array",
+            "description": "Structured PHP stack frames (debug mode only).",
+            "items": { "$ref": "#/components/schemas/EnvelopeStackFrame" }
           }
         }
       },
