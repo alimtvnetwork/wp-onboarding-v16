@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -30,11 +31,14 @@ func TestSuccess(t *testing.T) {
 	if len(results) != 1 {
 		t.Errorf("expected 1 result, got %d", len(results))
 	}
-	if resp.Error != nil {
-		t.Error("expected error=nil")
+	if resp.Errors != nil {
+		t.Error("expected Errors=nil")
+	}
+	if resp.MethodsStack != nil {
+		t.Error("expected MethodsStack=nil")
 	}
 	if resp.Navigation != nil {
-		t.Error("expected navigation=nil for single item")
+		t.Error("expected Navigation=nil for single item")
 	}
 }
 
@@ -46,9 +50,6 @@ func TestCreated(t *testing.T) {
 	if resp.Status.Message != "Created" {
 		t.Errorf("expected message 'Created', got %q", resp.Status.Message)
 	}
-	if resp.Status.IsFailed {
-		t.Error("expected IsFailed=false for Created")
-	}
 }
 
 func TestDeleted(t *testing.T) {
@@ -57,16 +58,15 @@ func TestDeleted(t *testing.T) {
 		t.Errorf("expected code 200, got %d", resp.Status.Code)
 	}
 	results := resp.Results.([]interface{})
-	m := results[0].(map[string]interface{})
-	if m["deleted"] != true {
-		t.Error("expected deleted=true in results")
+	if len(results) != 0 {
+		t.Errorf("expected empty results, got %d", len(results))
 	}
 }
 
 func TestList(t *testing.T) {
 	items := []string{"a", "b", "c"}
 	pg := NewPagination(50, 3, 10)
-	resp := List(items, pg)
+	resp := List(items, pg, "/api/v1/plugins")
 
 	if resp.Attributes.IsSingle {
 		t.Error("expected IsSingle=false")
@@ -86,14 +86,20 @@ func TestList(t *testing.T) {
 	if resp.Navigation == nil {
 		t.Fatal("expected navigation to be present")
 	}
-	if *resp.Navigation.NextPage != 4 {
-		t.Errorf("expected NextPage=4, got %d", *resp.Navigation.NextPage)
+	if resp.Navigation.NextPage == nil || !strings.Contains(*resp.Navigation.NextPage, "page=4") {
+		t.Error("expected NextPage URL containing page=4")
 	}
-	if *resp.Navigation.PrevPage != 2 {
-		t.Errorf("expected PrevPage=2, got %d", *resp.Navigation.PrevPage)
+	if resp.Navigation.PrevPage == nil || !strings.Contains(*resp.Navigation.PrevPage, "page=2") {
+		t.Error("expected PrevPage URL containing page=2")
 	}
-	if len(resp.Navigation.Pages) != 5 {
-		t.Errorf("expected 5 pages, got %d", len(resp.Navigation.Pages))
+	if len(resp.Navigation.CloserLinks) != 5 {
+		t.Errorf("expected 5 closer links, got %d", len(resp.Navigation.CloserLinks))
+	}
+	// Verify URLs are strings, not ints
+	for _, link := range resp.Navigation.CloserLinks {
+		if !strings.HasPrefix(link, "/api/v1/plugins?page=") {
+			t.Errorf("expected URL string, got %q", link)
+		}
 	}
 }
 
@@ -105,14 +111,17 @@ func TestListUnpaginated(t *testing.T) {
 		t.Error("expected IsMultiple=true")
 	}
 	if resp.Navigation != nil {
-		t.Error("expected navigation=nil for unpaginated")
+		t.Error("expected Navigation=nil for unpaginated")
 	}
 	if resp.Attributes.TotalRecords != 3 {
 		t.Errorf("expected TotalRecords=3, got %d", resp.Attributes.TotalRecords)
 	}
 }
 
-func TestError(t *testing.T) {
+func TestError_WithErrorsEnabled(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: true})
+	defer SetDebugConfig(DefaultDebugConfig())
+
 	resp := Error(500, "E5001", "Something failed")
 
 	if resp.Status.IsSuccess {
@@ -121,14 +130,14 @@ func TestError(t *testing.T) {
 	if !resp.Status.IsFailed {
 		t.Error("expected IsFailed=true")
 	}
-	if resp.Status.Code != 500 {
-		t.Errorf("expected code 500, got %d", resp.Status.Code)
+	if !resp.Attributes.HasAnyErrors {
+		t.Error("expected HasAnyErrors=true")
 	}
-	if resp.Error == nil {
-		t.Fatal("expected error to be present")
+	if resp.Errors == nil {
+		t.Fatal("expected Errors to be present when IncludeErrors=true")
 	}
-	if resp.Error.Code != "E5001" {
-		t.Errorf("expected error code E5001, got %s", resp.Error.Code)
+	if !strings.Contains(resp.Errors.BackendMessage, "E5001") {
+		t.Errorf("expected BackendMessage to contain error code, got %q", resp.Errors.BackendMessage)
 	}
 	results := resp.Results.([]interface{})
 	if len(results) != 0 {
@@ -136,118 +145,126 @@ func TestError(t *testing.T) {
 	}
 }
 
-func TestErrorWithTrace_DebugOff(t *testing.T) {
-	SetDebugConfig(DefaultDebugConfig()) // stack traces off
-	resp := ErrorWithTrace(500, "E5001", "fail", "trace here", []StackFrame{{File: "a.go", Line: 1}})
-
-	if resp.Error.StackTrace != "" {
-		t.Error("expected empty stack trace when debug is off")
-	}
-	if len(resp.Error.StackTraceFrames) != 0 {
-		t.Error("expected empty stack trace frames when debug is off")
-	}
-}
-
-func TestErrorWithTrace_DebugOn(t *testing.T) {
-	SetDebugConfig(DebugConfig{IncludeStackTrace: true, MaxStackFrames: 10})
+func TestError_WithErrorsDisabled(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: false})
 	defer SetDebugConfig(DefaultDebugConfig())
 
-	frames := []StackFrame{{File: "a.go", Line: 1}, {File: "b.go", Line: 2}}
-	resp := ErrorWithTrace(500, "E5001", "fail", "trace", frames)
+	resp := Error(500, "E5001", "Something failed")
 
-	if resp.Error.StackTrace != "trace" {
-		t.Error("expected stack trace when debug is on")
+	if !resp.Attributes.HasAnyErrors {
+		t.Error("expected HasAnyErrors=true even when errors disabled")
 	}
-	if len(resp.Error.StackTraceFrames) != 2 {
-		t.Errorf("expected 2 frames, got %d", len(resp.Error.StackTraceFrames))
+	if resp.Errors != nil {
+		t.Error("expected Errors=nil when IncludeErrors=false")
 	}
 }
 
-func TestErrorWithTrace_MaxFrames(t *testing.T) {
-	SetDebugConfig(DebugConfig{IncludeStackTrace: true, MaxStackFrames: 1})
+func TestWithBackendTrace_DebugOn(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: true, IncludeStackTrace: true, MaxStackFrames: 10})
 	defer SetDebugConfig(DefaultDebugConfig())
 
-	frames := []StackFrame{{File: "a.go", Line: 1}, {File: "b.go", Line: 2}, {File: "c.go", Line: 3}}
-	resp := ErrorWithTrace(500, "E5001", "fail", "trace", frames)
+	lines := []string{"handler.go:85 HandlePluginList", "service.go:120 FetchPlugins"}
+	resp := Error(500, "E5001", "fail").WithBackendTrace(lines)
 
-	if len(resp.Error.StackTraceFrames) != 1 {
-		t.Errorf("expected 1 frame (max), got %d", len(resp.Error.StackTraceFrames))
+	if resp.Errors == nil {
+		t.Fatal("expected Errors to be present")
+	}
+	if len(resp.Errors.Backend) != 2 {
+		t.Errorf("expected 2 backend trace lines, got %d", len(resp.Errors.Backend))
 	}
 }
 
-func TestWithAdditional(t *testing.T) {
-	resp := Success("data").WithAdditional(map[string]bool{"retryable": true})
+func TestWithBackendTrace_DebugOff(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: true, IncludeStackTrace: false})
+	defer SetDebugConfig(DefaultDebugConfig())
 
-	if resp.Additional == nil {
-		t.Fatal("expected additional to be present")
+	lines := []string{"handler.go:85 HandlePluginList"}
+	resp := Error(500, "E5001", "fail").WithBackendTrace(lines)
+
+	if resp.Errors != nil && len(resp.Errors.Backend) > 0 {
+		t.Error("expected no backend trace when IncludeStackTrace=false")
 	}
-	m := resp.Additional.(map[string]bool)
-	if !m["retryable"] {
-		t.Error("expected retryable=true")
+}
+
+func TestWithBackendTrace_MaxFrames(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: true, IncludeStackTrace: true, MaxStackFrames: 1})
+	defer SetDebugConfig(DefaultDebugConfig())
+
+	lines := []string{"a.go:1", "b.go:2", "c.go:3"}
+	resp := Error(500, "E5001", "fail").WithBackendTrace(lines)
+
+	if len(resp.Errors.Backend) != 1 {
+		t.Errorf("expected 1 frame (max), got %d", len(resp.Errors.Backend))
+	}
+}
+
+func TestWithDelegatedErrorStack_DebugOn(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: true, IncludeStackTrace: true, MaxStackFrames: 10})
+	defer SetDebugConfig(DefaultDebugConfig())
+
+	lines := []string{"PHP Fatal error: Class 'PDO' not found", "#0 upload.php(42): connect()"}
+	resp := Error(502, "E6001", "Delegated call failed").WithDelegatedErrorStack(lines)
+
+	if resp.Errors == nil {
+		t.Fatal("expected Errors to be present")
+	}
+	if len(resp.Errors.DelegatedServiceErrorStack) != 2 {
+		t.Errorf("expected 2 delegated lines, got %d", len(resp.Errors.DelegatedServiceErrorStack))
+	}
+}
+
+func TestWithDelegatedErrorStack_DebugOff(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: true, IncludeStackTrace: false})
+	defer SetDebugConfig(DefaultDebugConfig())
+
+	lines := []string{"PHP Fatal error"}
+	resp := Error(502, "E6001", "fail").WithDelegatedErrorStack(lines)
+
+	if resp.Errors != nil && len(resp.Errors.DelegatedServiceErrorStack) > 0 {
+		t.Error("expected no delegated stack when IncludeStackTrace=false")
+	}
+}
+
+func TestWithMethodsStack_Enabled(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeMethodsStack: true})
+	defer SetDebugConfig(DefaultDebugConfig())
+
+	frames := []MethodFrame{
+		{Method: "HandlePublishUpload", File: "publish_handlers.go", LineNumber: 55},
+		{Method: "UploadToSite", File: "publish_service.go", LineNumber: 112},
+	}
+	resp := Success("data").WithMethodsStack(frames)
+
+	if resp.MethodsStack == nil {
+		t.Fatal("expected MethodsStack to be present")
+	}
+	if len(resp.MethodsStack.Backend) != 2 {
+		t.Errorf("expected 2 backend frames, got %d", len(resp.MethodsStack.Backend))
+	}
+	if resp.MethodsStack.Backend[0].Method != "HandlePublishUpload" {
+		t.Errorf("unexpected method: %q", resp.MethodsStack.Backend[0].Method)
+	}
+}
+
+func TestWithMethodsStack_Disabled(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeMethodsStack: false})
+	defer SetDebugConfig(DefaultDebugConfig())
+
+	frames := []MethodFrame{{Method: "Handle", File: "a.go", LineNumber: 1}}
+	resp := Success("data").WithMethodsStack(frames)
+
+	if resp.MethodsStack != nil {
+		t.Error("expected MethodsStack=nil when disabled")
 	}
 }
 
 func TestWithEndpoints(t *testing.T) {
 	resp := Success("data").WithEndpoints("/api/v1/plugins/1", "/wp-json/riseup-asia-uploader/v1/plugin")
-	if resp.Attributes.RequestedEndpoint != "/api/v1/plugins/1" {
-		t.Errorf("expected RequestedEndpoint, got %q", resp.Attributes.RequestedEndpoint)
+	if resp.Attributes.RequestedAt != "/api/v1/plugins/1" {
+		t.Errorf("expected RequestedAt, got %q", resp.Attributes.RequestedAt)
 	}
-	if resp.Attributes.DelegatedEndpoint != "/wp-json/riseup-asia-uploader/v1/plugin" {
-		t.Errorf("expected DelegatedEndpoint, got %q", resp.Attributes.DelegatedEndpoint)
-	}
-}
-
-func TestWithTraversal(t *testing.T) {
-	resp := Success("data").WithTraversal("PublishHandler.Handle", "PublishService.Upload", "WordPressClient.UploadPlugin")
-	if len(resp.Attributes.TraversalSteps) != 3 {
-		t.Errorf("expected 3 traversal steps, got %d", len(resp.Attributes.TraversalSteps))
-	}
-	if resp.Attributes.TraversalSteps[0] != "PublishHandler.Handle" {
-		t.Errorf("unexpected first step: %q", resp.Attributes.TraversalSteps[0])
-	}
-}
-
-func TestWithDelegatedError_DebugOn(t *testing.T) {
-	SetDebugConfig(DebugConfig{IncludeStackTrace: true, MaxStackFrames: 10})
-	defer SetDebugConfig(DefaultDebugConfig())
-
-	de := DelegatedError{
-		Endpoint:   "/wp-json/riseup-asia-uploader/v1/upload",
-		StatusCode: 500,
-		Message:    "PHP fatal error",
-		StackTrace: "php trace",
-		StackTraceFrames: []StackFrame{
-			{File: "upload.php", Line: 42, Function: "handle", Class: "UploadController"},
-		},
-	}
-	resp := Error(502, "E6001", "Delegated call failed").WithDelegatedError(de)
-
-	additional := resp.Additional.(map[string]interface{})
-	got := additional["DelegatedError"].(DelegatedError)
-	if got.StackTrace != "php trace" {
-		t.Error("expected delegated stack trace when debug is on")
-	}
-}
-
-func TestWithDelegatedError_DebugOff(t *testing.T) {
-	SetDebugConfig(DefaultDebugConfig())
-
-	de := DelegatedError{
-		Endpoint:         "/wp-json/riseup-asia-uploader/v1/upload",
-		StatusCode:       500,
-		Message:          "PHP fatal error",
-		StackTrace:       "php trace",
-		StackTraceFrames: []StackFrame{{File: "a.php", Line: 1}},
-	}
-	resp := Error(502, "E6001", "Delegated call failed").WithDelegatedError(de)
-
-	additional := resp.Additional.(map[string]interface{})
-	got := additional["DelegatedError"].(DelegatedError)
-	if got.StackTrace != "" {
-		t.Error("expected empty delegated stack trace when debug is off")
-	}
-	if got.StackTraceFrames != nil {
-		t.Error("expected nil delegated frames when debug is off")
+	if resp.Attributes.RequestDelegatedAt != "/wp-json/riseup-asia-uploader/v1/plugin" {
+		t.Errorf("expected RequestDelegatedAt, got %q", resp.Attributes.RequestDelegatedAt)
 	}
 }
 
@@ -289,40 +306,40 @@ func TestPagination_Defaults(t *testing.T) {
 
 func TestNavigation_FirstPage(t *testing.T) {
 	pg := NewPagination(100, 1, 10)
-	nav := pg.Navigation()
+	nav := pg.NavigationURLs("/api/v1/items")
 
 	if nav.PrevPage != nil {
 		t.Error("expected no prev page on first page")
 	}
-	if nav.NextPage == nil || *nav.NextPage != 2 {
-		t.Error("expected NextPage=2")
+	if nav.NextPage == nil || !strings.Contains(*nav.NextPage, "page=2") {
+		t.Error("expected NextPage URL containing page=2")
 	}
-	if nav.Pages[0] != 1 {
-		t.Errorf("expected pages starting at 1, got %d", nav.Pages[0])
+	if !strings.HasPrefix(nav.CloserLinks[0], "/api/v1/items?page=1") {
+		t.Errorf("expected first closer link to start with path, got %q", nav.CloserLinks[0])
 	}
 }
 
 func TestNavigation_LastPage(t *testing.T) {
 	pg := NewPagination(100, 10, 10)
-	nav := pg.Navigation()
+	nav := pg.NavigationURLs("/api/v1/items")
 
 	if nav.NextPage != nil {
 		t.Error("expected no next page on last page")
 	}
-	if nav.PrevPage == nil || *nav.PrevPage != 9 {
-		t.Error("expected PrevPage=9")
+	if nav.PrevPage == nil || !strings.Contains(*nav.PrevPage, "page=9") {
+		t.Error("expected PrevPage URL containing page=9")
 	}
 }
 
 func TestNavigation_SmallDataset(t *testing.T) {
 	pg := NewPagination(3, 1, 10)
-	nav := pg.Navigation()
+	nav := pg.NavigationURLs("/api/v1/items")
 
 	if nav.NextPage != nil {
 		t.Error("expected no next page for single-page dataset")
 	}
-	if len(nav.Pages) != 1 {
-		t.Errorf("expected 1 page, got %d", len(nav.Pages))
+	if len(nav.CloserLinks) != 1 {
+		t.Errorf("expected 1 closer link, got %d", len(nav.CloserLinks))
 	}
 }
 
@@ -348,6 +365,9 @@ func TestWrite(t *testing.T) {
 }
 
 func TestJSON_Serialization_PascalCase(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeErrors: true})
+	defer SetDebugConfig(DefaultDebugConfig())
+
 	resp := Error(400, "E1001", "Bad request")
 	b, err := json.Marshal(resp)
 	if err != nil {
@@ -358,26 +378,24 @@ func TestJSON_Serialization_PascalCase(t *testing.T) {
 	json.Unmarshal(b, &decoded)
 
 	// Verify PascalCase top-level keys
-	for _, key := range []string{"Status", "Attributes", "Results", "Error"} {
+	for _, key := range []string{"Status", "Attributes", "Results", "Errors"} {
 		if _, ok := decoded[key]; !ok {
 			t.Errorf("missing PascalCase top-level key %q", key)
 		}
 	}
-	// Navigation should be omitted (omitempty) for error responses
+	// Navigation should be omitted for error responses
 	if _, ok := decoded["Navigation"]; ok {
 		t.Error("Navigation should be omitted for error responses")
 	}
-
-	// Verify Status uses IsSuccess/IsFailed
-	status := decoded["Status"].(map[string]interface{})
-	if _, ok := status["IsSuccess"]; !ok {
-		t.Error("missing IsSuccess in Status")
+	// MethodsStack should be omitted when disabled
+	if _, ok := decoded["MethodsStack"]; ok {
+		t.Error("MethodsStack should be omitted when disabled")
 	}
-	if _, ok := status["IsFailed"]; !ok {
-		t.Error("missing IsFailed in Status")
+	// Old keys must not exist
+	if _, ok := decoded["Error"]; ok {
+		t.Error("old 'Error' key should not exist")
 	}
-	// Old "success" key must not exist
-	if _, ok := status["success"]; ok {
-		t.Error("old 'success' key should not exist")
+	if _, ok := decoded["Additional"]; ok {
+		t.Error("old 'Additional' key should not exist")
 	}
 }
