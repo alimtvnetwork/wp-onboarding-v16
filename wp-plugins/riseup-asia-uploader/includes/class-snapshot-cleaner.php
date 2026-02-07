@@ -263,10 +263,7 @@ class RiseupSnapshotCleaner {
         );
 
         try {
-            $snapshots_dir = RiseupPathUtils::join(
-                RiseupPathUtils::getBaseDir(),
-                RISEUP_SNAPSHOTS_SUBDIR
-            );
+            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
 
             if (!RiseupPathUtils::dirExists($snapshots_dir)) {
                 return $result;
@@ -423,10 +420,7 @@ class RiseupSnapshotCleaner {
             }
 
             // Get disk free space
-            $snapshots_dir = RiseupPathUtils::join(
-                RiseupPathUtils::getBaseDir(),
-                RISEUP_SNAPSHOTS_SUBDIR
-            );
+            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
             
             if (RiseupPathUtils::dirExists($snapshots_dir)) {
                 $free = RiseupPathUtils::getFreeSpace($snapshots_dir);

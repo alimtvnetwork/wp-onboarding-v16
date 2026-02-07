@@ -476,8 +476,7 @@ class RiseupSnapshotWorker {
      * @return string Base snapshots directory path.
      */
     private function getSnapshotsBaseDir() {
-        $upload_dir = wp_upload_dir();
-        $base = $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR . '/' . RISEUP_SNAPSHOTS_SUBDIR;
+        $base = RiseupPathUtils::getSnapshotsDir();
         RiseupPathUtils::ensureDir($base, true);
         return $base;
     }
