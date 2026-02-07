@@ -990,36 +990,9 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 		return result, nil
 	}
 
-	s.log.Warn("Uploader API unavailable, falling back to WP Core API", "siteId", siteID, "error", uploaderErr)
-
-	// Fallback to WP Core API
-	plugins, err := client.GetPlugins()
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPPluginList, "failed to fetch remote plugins")
-	}
-
-	result := make([]RemotePlugin, 0, len(plugins))
-	for _, p := range plugins {
-		slug := p.Plugin
-		if idx := strings.Index(p.Plugin, "/"); idx > 0 {
-			slug = p.Plugin[:idx]
-		}
-
-		result = append(result, RemotePlugin{
-			Plugin:      p.Plugin,
-			Slug:        slug,
-			Name:        p.Name,
-			Version:     p.Version,
-			Status:      p.Status,
-			Author:      p.Author,
-			Description: p.Description.Raw,
-			PluginURI:   p.PluginURI,
-			TextDomain:  p.TextDomain,
-		})
-	}
-
-	s.log.Debug("Remote plugins fetched via WP Core API", "siteId", siteID, "count", len(result))
-	return result, nil
+	// No WP Core fallback — Riseup Asia Uploader is required for reliable plugin management
+	s.log.Warn("Riseup Asia Uploader API unavailable on remote site", "siteId", siteID, "siteUrl", site.URL, "error", uploaderErr)
+	return nil, apperror.Wrap(uploaderErr, apperror.ErrWPPluginList, "Riseup Asia Uploader is not available on this site. Please deploy or update the companion plugin.")
 }
 
 // getRemotePluginsFromCache retrieves cached plugins if not expired
