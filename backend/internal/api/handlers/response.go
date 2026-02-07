@@ -38,9 +38,10 @@ func respondDeleted(w http.ResponseWriter) {
 	envelope.Write(w, envelope.Deleted())
 }
 
-// respondList writes a paginated list envelope
-func respondList(w http.ResponseWriter, data interface{}, pg envelope.Pagination) {
-	envelope.Write(w, envelope.List(data, pg))
+// respondList writes a paginated list envelope.
+// requestPath is the base URL path used to generate navigation URLs.
+func respondList(w http.ResponseWriter, data interface{}, pg envelope.Pagination, requestPath string) {
+	envelope.Write(w, envelope.List(data, pg, requestPath))
 }
 
 // respondListUnpaginated writes an unpaginated list envelope

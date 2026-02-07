@@ -1,10 +1,11 @@
 // Package envelope provides a universal response envelope for all API responses.
 // Both the Go backend and PHP WordPress plugin must emit responses conforming
-// to this structure for consistency.
+// to this structure. See spec/response-envelope/README.md for the full spec.
 package envelope
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"time"
@@ -12,13 +13,14 @@ import (
 
 // Response is the universal API response envelope.
 // Every endpoint — success or error, single or list — returns this structure.
+// Optional sections use pointers with omitempty so they are absent from JSON when nil.
 type Response struct {
-	Status     Status       `json:"Status"`
-	Attributes Attributes   `json:"Attributes"`
-	Results    interface{}  `json:"Results"`
-	Navigation *Navigation  `json:"Navigation,omitempty"`
-	Error      *ErrorDetail `json:"Error"`
-	Additional interface{}  `json:"Additional,omitempty"`
+	Status       Status        `json:"Status"`
+	Attributes   Attributes    `json:"Attributes"`
+	Results      interface{}   `json:"Results"`
+	Navigation   *Navigation   `json:"Navigation,omitempty"`
+	Errors       *Errors       `json:"Errors,omitempty"`
+	MethodsStack *MethodsStack `json:"MethodsStack,omitempty"`
 }
 
 // Status describes the outcome of the request.
@@ -32,42 +34,46 @@ type Status struct {
 
 // Attributes describes the shape and size of the result set.
 type Attributes struct {
-	IsSingle          bool     `json:"IsSingle"`
-	IsMultiple        bool     `json:"IsMultiple"`
-	TotalRecords      int      `json:"TotalRecords,omitempty"`
-	PerPage           int      `json:"PerPage,omitempty"`
-	TotalPages        int      `json:"TotalPages,omitempty"`
-	CurrentPage       int      `json:"CurrentPage,omitempty"`
-	RequestedEndpoint string   `json:"RequestedEndpoint,omitempty"`
-	DelegatedEndpoint string   `json:"DelegatedEndpoint,omitempty"`
-	TraversalSteps    []string `json:"TraversalSteps,omitempty"`
+	RequestedAt      string `json:"RequestedAt,omitempty"`
+	RequestDelegatedAt string `json:"RequestDelegatedAt,omitempty"`
+	HasAnyErrors     bool   `json:"HasAnyErrors"`
+	IsSingle         bool   `json:"IsSingle"`
+	IsMultiple       bool   `json:"IsMultiple"`
+	TotalRecords     int    `json:"TotalRecords,omitempty"`
+	PerPage          int    `json:"PerPage,omitempty"`
+	TotalPages       int    `json:"TotalPages,omitempty"`
+	CurrentPage      int    `json:"CurrentPage,omitempty"`
 }
 
-// Navigation provides pagination links for list responses.
+// Navigation provides pagination URL links for list responses.
 type Navigation struct {
-	NextPage *int  `json:"NextPage"`
-	PrevPage *int  `json:"PrevPage"`
-	Pages    []int `json:"Pages"`
+	NextPage    *string  `json:"NextPage"`
+	PrevPage    *string  `json:"PrevPage"`
+	CloserLinks []string `json:"CloserLinks"`
 }
 
-// ErrorDetail carries error information. Stack traces are config-controlled.
-type ErrorDetail struct {
-	Code             string       `json:"Code"`
-	Message          string       `json:"Message"`
-	StackTrace       string       `json:"StackTrace,omitempty"`
-	StackTraceFrames []StackFrame `json:"StackTraceFrames,omitempty"`
+// Errors carries error information. Top-level, conditionally included.
+type Errors struct {
+	BackendMessage             string   `json:"BackendMessage"`
+	DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack,omitempty"`
+	Backend                    []string `json:"Backend,omitempty"`
+	Frontend                   []string `json:"Frontend,omitempty"`
 }
 
-// DelegatedError carries error info from a delegated call (e.g., Go → PHP).
-type DelegatedError struct {
-	Endpoint         string       `json:"Endpoint"`
-	StatusCode       int          `json:"StatusCode"`
-	Message          string       `json:"Message"`
-	StackTrace       string       `json:"StackTrace,omitempty"`
-	StackTraceFrames []StackFrame `json:"StackTraceFrames,omitempty"`
+// MethodsStack carries debug call-chain traces. Top-level, conditionally included.
+type MethodsStack struct {
+	Backend  []MethodFrame `json:"Backend"`
+	Frontend []MethodFrame `json:"Frontend"`
 }
 
-// StackFrame represents a single frame in a stack trace.
+// MethodFrame represents a single frame in the methods stack.
+type MethodFrame struct {
+	Method     string `json:"Method"`
+	File       string `json:"File"`
+	LineNumber int    `json:"LineNumber"`
+}
+
+// StackFrame represents a single frame in a stack trace (used in Errors.Backend parsing).
 type StackFrame struct {
 	File     string `json:"File"`
 	Line     int    `json:"Line"`
@@ -75,19 +81,21 @@ type StackFrame struct {
 	Class    string `json:"Class,omitempty"`
 }
 
-// DebugConfig controls error verbosity in responses.
+// DebugConfig controls error and diagnostic verbosity in responses.
 type DebugConfig struct {
-	IncludeStackTrace    bool `json:"includeStackTrace"`
-	IncludeInternalErrors bool `json:"includeInternalErrors"`
-	MaxStackFrames       int  `json:"maxStackFrames"`
+	IncludeErrors       bool `json:"includeErrors"`
+	IncludeStackTrace   bool `json:"includeStackTrace"`
+	IncludeMethodsStack bool `json:"includeMethodsStack"`
+	MaxStackFrames      int  `json:"maxStackFrames"`
 }
 
-// DefaultDebugConfig returns a production-safe default (no stack traces).
+// DefaultDebugConfig returns a production-safe default.
 func DefaultDebugConfig() DebugConfig {
 	return DebugConfig{
-		IncludeStackTrace:    false,
-		IncludeInternalErrors: false,
-		MaxStackFrames:       20,
+		IncludeErrors:       true,
+		IncludeStackTrace:   false,
+		IncludeMethodsStack: false,
+		MaxStackFrames:      20,
 	}
 }
 
@@ -107,9 +115,8 @@ func GetDebugConfig() DebugConfig {
 
 // --- Builder Functions ---
 
-// Success creates a single-item success response (slim envelope, no navigation).
+// Success creates a single-item success response (slim envelope).
 func Success(data interface{}) Response {
-	results := []interface{}{data}
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -122,14 +129,12 @@ func Success(data interface{}) Response {
 			IsSingle:   true,
 			IsMultiple: false,
 		},
-		Results: results,
-		Error:   nil,
+		Results: []interface{}{data},
 	}
 }
 
 // Created creates a single-item 201 response.
 func Created(data interface{}) Response {
-	results := []interface{}{data}
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -142,8 +147,7 @@ func Created(data interface{}) Response {
 			IsSingle:   true,
 			IsMultiple: false,
 		},
-		Results: results,
-		Error:   nil,
+		Results: []interface{}{data},
 	}
 }
 
@@ -158,17 +162,17 @@ func Deleted() Response {
 			Timestamp: now(),
 		},
 		Attributes: Attributes{
-			IsSingle:   true,
+			IsSingle:   false,
 			IsMultiple: false,
 		},
-		Results: []interface{}{map[string]interface{}{"deleted": true}},
-		Error:   nil,
+		Results: []interface{}{},
 	}
 }
 
-// List creates a paginated list response with navigation.
-func List(data interface{}, pg Pagination) Response {
-	nav := pg.Navigation()
+// List creates a paginated list response with navigation URL links.
+// requestPath is the base URL path (e.g., "/api/v1/plugins") used to generate navigation URLs.
+func List(data interface{}, pg Pagination, requestPath string) Response {
+	nav := pg.NavigationURLs(requestPath)
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -187,12 +191,10 @@ func List(data interface{}, pg Pagination) Response {
 		},
 		Results:    data,
 		Navigation: &nav,
-		Error:      nil,
 	}
 }
 
 // ListUnpaginated creates a list response without pagination metadata.
-// Use when the endpoint returns all items without paging.
 func ListUnpaginated(data interface{}, count int) Response {
 	return Response{
 		Status: Status{
@@ -208,13 +210,13 @@ func ListUnpaginated(data interface{}, count int) Response {
 			TotalRecords: count,
 		},
 		Results: data,
-		Error:   nil,
 	}
 }
 
-// Error creates an error response. Stack traces are included only if debug config allows.
+// Error creates an error response. Populates the top-level Errors block
+// if error reporting is enabled in debug config.
 func Error(statusCode int, code, message string) Response {
-	return Response{
+	resp := Response{
 		Status: Status{
 			IsSuccess: false,
 			IsFailed:  true,
@@ -223,62 +225,74 @@ func Error(statusCode int, code, message string) Response {
 			Timestamp: now(),
 		},
 		Attributes: Attributes{
-			IsSingle:   false,
-			IsMultiple: false,
+			HasAnyErrors: true,
 		},
 		Results: []interface{}{},
-		Error: &ErrorDetail{
-			Code:    code,
-			Message: message,
-		},
 	}
-}
-
-// ErrorWithTrace creates an error response with stack trace (respects debug config).
-func ErrorWithTrace(statusCode int, code, message, stackTrace string, frames []StackFrame) Response {
-	resp := Error(statusCode, code, message)
-	if globalDebug.IncludeStackTrace {
-		resp.Error.StackTrace = stackTrace
-		if globalDebug.MaxStackFrames > 0 && len(frames) > globalDebug.MaxStackFrames {
-			frames = frames[:globalDebug.MaxStackFrames]
+	if globalDebug.IncludeErrors {
+		resp.Errors = &Errors{
+			BackendMessage: fmt.Sprintf("[%s] %s", code, message),
 		}
-		resp.Error.StackTraceFrames = frames
 	}
 	return resp
 }
 
-// WithAdditional attaches additional payload to a response.
-func (r Response) WithAdditional(data interface{}) Response {
-	r.Additional = data
-	return r
-}
+// --- Fluent Modifiers ---
 
 // WithEndpoints sets the requested and delegated endpoint in attributes.
 func (r Response) WithEndpoints(requested, delegated string) Response {
-	r.Attributes.RequestedEndpoint = requested
-	r.Attributes.DelegatedEndpoint = delegated
+	r.Attributes.RequestedAt = requested
+	r.Attributes.RequestDelegatedAt = delegated
 	return r
 }
 
-// WithTraversal records the method/function traversal steps for diagnostics.
-func (r Response) WithTraversal(steps ...string) Response {
-	r.Attributes.TraversalSteps = append(r.Attributes.TraversalSteps, steps...)
+// WithBackendTrace appends backend stack trace lines to the Errors block.
+// Only populated if IncludeStackTrace is enabled.
+func (r Response) WithBackendTrace(lines []string) Response {
+	if !globalDebug.IncludeStackTrace || len(lines) == 0 {
+		return r
+	}
+	if globalDebug.MaxStackFrames > 0 && len(lines) > globalDebug.MaxStackFrames {
+		lines = lines[:globalDebug.MaxStackFrames]
+	}
+	r.ensureErrors()
+	r.Errors.Backend = lines
 	return r
 }
 
-// WithDelegatedError attaches a delegated (downstream) error to the additional payload.
-// Used when Go proxies to PHP and the PHP call fails.
-func (r Response) WithDelegatedError(de DelegatedError) Response {
-	if !globalDebug.IncludeStackTrace {
-		de.StackTrace = ""
-		de.StackTraceFrames = nil
-	} else if globalDebug.MaxStackFrames > 0 && len(de.StackTraceFrames) > globalDebug.MaxStackFrames {
-		de.StackTraceFrames = de.StackTraceFrames[:globalDebug.MaxStackFrames]
+// WithDelegatedErrorStack attaches delegated service error stack lines.
+// Only populated if IncludeStackTrace is enabled.
+func (r Response) WithDelegatedErrorStack(lines []string) Response {
+	if !globalDebug.IncludeStackTrace || len(lines) == 0 {
+		return r
 	}
-	r.Additional = map[string]interface{}{
-		"DelegatedError": de,
+	if globalDebug.MaxStackFrames > 0 && len(lines) > globalDebug.MaxStackFrames {
+		lines = lines[:globalDebug.MaxStackFrames]
+	}
+	r.ensureErrors()
+	r.Errors.DelegatedServiceErrorStack = lines
+	return r
+}
+
+// WithMethodsStack attaches the backend methods stack for diagnostics.
+// Only populated if IncludeMethodsStack is enabled.
+func (r Response) WithMethodsStack(frames []MethodFrame) Response {
+	if !globalDebug.IncludeMethodsStack || len(frames) == 0 {
+		return r
+	}
+	r.MethodsStack = &MethodsStack{
+		Backend:  frames,
+		Frontend: []MethodFrame{},
 	}
 	return r
+}
+
+// ensureErrors initializes the Errors block if nil.
+func (r *Response) ensureErrors() {
+	if r.Errors == nil {
+		r.Errors = &Errors{}
+		r.Attributes.HasAnyErrors = true
+	}
 }
 
 // --- Pagination ---
@@ -323,20 +337,20 @@ func (p Pagination) Offset() int {
 	return (p.Page - 1) * p.PerPage
 }
 
-// Navigation computes the navigation block (next, prev, 5-page window).
-func (p Pagination) Navigation() Navigation {
+// NavigationURLs computes the navigation block with URL string links.
+func (p Pagination) NavigationURLs(basePath string) Navigation {
 	total := p.TotalPages()
 	nav := Navigation{}
 
 	// Next page
 	if p.Page < total {
-		next := p.Page + 1
+		next := fmt.Sprintf("%s?page=%d&perPage=%d", basePath, p.Page+1, p.PerPage)
 		nav.NextPage = &next
 	}
 
 	// Previous page
 	if p.Page > 1 {
-		prev := p.Page - 1
+		prev := fmt.Sprintf("%s?page=%d&perPage=%d", basePath, p.Page-1, p.PerPage)
 		nav.PrevPage = &prev
 	}
 
@@ -355,11 +369,11 @@ func (p Pagination) Navigation() Navigation {
 		}
 	}
 
-	pages := make([]int, 0, windowSize)
+	links := make([]string, 0, windowSize)
 	for i := start; i <= end; i++ {
-		pages = append(pages, i)
+		links = append(links, fmt.Sprintf("%s?page=%d&perPage=%d", basePath, i, p.PerPage))
 	}
-	nav.Pages = pages
+	nav.CloserLinks = links
 
 	return nav
 }
