@@ -39,16 +39,21 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 2: Error Modal — DelegatedError & TraversalSteps
+### Phase 2: Error Modal — DelegatedError & TraversalSteps ✅ COMPLETE
 
-**Goal:** Display the new diagnostic fields (`TraversalSteps`, `DelegatedError`, `RequestedEndpoint`, `DelegatedEndpoint`) in the Global Error Modal.
+**Goal:** Display the new diagnostic fields in the Global Error Modal.
 
-**Files to change:**
-- `src/components/errors/GlobalErrorModal.tsx` — Add "Traversal" tab showing step chain; add "Delegated Error" section showing downstream PHP failures
-- `src/components/errors/ErrorDetailModal.tsx` — Same enhancements for history view
-- `src/stores/errorStore.ts` — Store new fields in captured error shape
+**Implementation:** Added a conditional "Traversal" tab to the BackendSection showing:
+- **Endpoint Flow** — Go → PHP delegation chain with labeled badges
+- **Traversal Steps** — Indented step chain with color-coded first/last entries
+- **Delegated Error** — Full PHP failure details with status code, message, stack trace, and stack frames table
+- **Go Envelope Stack Frames** — Tabular display of Go-side stack frames from the envelope
 
-**Backend dependency:** Phase 1 (envelope migration)
+**Files changed:**
+- `src/components/errors/GlobalErrorModal.tsx` — Added `TraversalDetails` component, `Route` icon import, conditional "Traversal" tab trigger and content
+- `src/stores/errorStore.ts` — Already enriched in Phase 1
+
+**Backend dependency:** Phase 1 (✅ Done)
 
 ---
 
