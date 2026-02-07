@@ -83,7 +83,19 @@
         "summary": "List all sites",
         "operationId": "listSites",
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": {
+            "description": "Array of sites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessEnvelope" },
+                    { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Site" } } } }
+                  ]
+                }
+              }
+            }
+          }
         }
       },
       "post": {
@@ -137,7 +149,19 @@
         "operationId": "getSite",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": {
+            "description": "Site details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/SuccessEnvelope" },
+                    { "properties": { "data": { "$ref": "#/components/schemas/Site" } } }
+                  ]
+                }
+              }
+            }
+          }
         }
       },
       "put": {
@@ -175,7 +199,10 @@
         "operationId": "testSiteConnection",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": {
+            "description": "Connection test result",
+            "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/ConnectionResult" } } }] } } }
+          }
         }
       }
     },
@@ -186,7 +213,10 @@
         "operationId": "getSiteCredentials",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": {
+            "description": "Decrypted credentials",
+            "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SiteCredentials" } } }] } } }
+          }
         }
       }
     },
@@ -555,7 +585,7 @@
         "tags": ["Plugins"],
         "summary": "List all registered plugins",
         "operationId": "listPlugins",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Array of plugins", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" } } } }] } } } } }
       },
       "post": {
         "tags": ["Plugins"],
@@ -585,7 +615,7 @@
         "summary": "Get a plugin by ID",
         "operationId": "getPlugin",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Plugin details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/Plugin" } } }] } } } } }
       },
       "put": {
         "tags": ["Plugins"],
@@ -609,7 +639,7 @@
         "summary": "Get site mappings for a plugin",
         "operationId": "getPluginMappings",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Plugin mappings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PluginMapping" } } } }] } } } } }
       },
       "post": {
         "tags": ["Plugins"],
@@ -650,7 +680,7 @@
           { "$ref": "#/components/parameters/id" },
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "File changes", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/FileChange" } } } }] } } } } }
       }
     },
     "/plugins/{id}/scan": {
@@ -803,7 +833,7 @@
         "summary": "Check sync status between local and remote",
         "operationId": "checkSync",
         "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Sync check result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SyncResult" } } }] } } } } }
       }
     },
     "/plugins/{id}/sites/{siteId}/sync/push": {
@@ -812,7 +842,7 @@
         "summary": "Push local changes to remote site",
         "operationId": "pushSync",
         "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Push sync result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PushSyncResult" } } }] } } } } }
       }
     },
     "/plugins/{id}/sync/check-all": {
@@ -821,7 +851,7 @@
         "summary": "Check sync status for all mapped sites",
         "operationId": "checkAllSites",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Batch sync result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/BatchSyncResult" } } }] } } } } }
       }
     },
     "/plugins/{id}/sites/{siteId}/publish": {
@@ -879,7 +909,7 @@
         "summary": "List backups for a plugin",
         "operationId": "getBackups",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Backups list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Backup" } } } }] } } } } }
       }
     },
     "/backups/{id}/restore": {
@@ -910,7 +940,7 @@
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Version history", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PluginVersion" } } } }] } } } } }
       }
     },
     "/plugins/{id}/versions/{versionId}": {
@@ -919,7 +949,7 @@
         "summary": "Get a specific version entry",
         "operationId": "getPluginVersion",
         "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/versionId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Version details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PluginVersion" } } }] } } } } }
       },
       "delete": {
         "tags": ["Versions"],
@@ -951,7 +981,7 @@
         "tags": ["Site Health"],
         "summary": "Get health summaries for all sites",
         "operationId": "getSiteHealthSummaries",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Health summaries", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthSummary" } } } }] } } } } }
       }
     },
     "/site-health/stats": {
@@ -959,7 +989,7 @@
         "tags": ["Site Health"],
         "summary": "Get overall health statistics",
         "operationId": "getSiteHealthStats",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Health stats", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SiteHealthStats" } } }] } } } } }
       }
     },
     "/site-health/history": {
@@ -971,7 +1001,7 @@
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
           { "name": "limit", "in": "query", "schema": { "type": "integer" } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Health check history", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthCheck" } } } }] } } } } }
       },
       "delete": {
         "tags": ["Site Health"],
@@ -989,7 +1019,7 @@
         "summary": "Check health of a single site",
         "operationId": "checkSiteHealth",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Health check result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SiteHealthCheck" } } }] } } } } }
       }
     },
     "/publish-history": {
@@ -1005,7 +1035,7 @@
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
           { "name": "search", "in": "query", "schema": { "type": "string" } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Publish history list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PublishHistory" } } } }] } } } } }
       },
       "delete": {
         "tags": ["Publish History"],
@@ -1033,7 +1063,7 @@
         "tags": ["Publish History"],
         "summary": "Get publish statistics",
         "operationId": "getPublishHistoryStats",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Publish stats", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PublishHistoryStats" } } }] } } } } }
       }
     },
     "/publish-history/{id}": {
@@ -1042,7 +1072,7 @@
         "summary": "Get a publish history entry",
         "operationId": "getPublishHistoryById",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Publish history entry", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PublishHistory" } } }] } } } } }
       },
       "delete": {
         "tags": ["Publish History"],
@@ -1156,7 +1186,7 @@
           { "name": "endDate", "in": "query", "schema": { "type": "string" } },
           { "name": "search", "in": "query", "schema": { "type": "string" } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Error history list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorHistory" } } } }] } } } } }
       },
       "post": {
         "tags": ["Error History"],
@@ -1225,7 +1255,7 @@
         "summary": "Get error by ID",
         "operationId": "getErrorHistoryById",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Error details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/ErrorHistory" } } }] } } } } }
       },
       "delete": {
         "tags": ["Error History"],
@@ -1240,7 +1270,7 @@
         "tags": ["Settings"],
         "summary": "Get application settings",
         "operationId": "getSettings",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Application settings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/Settings" } } }] } } } } }
       },
       "put": {
         "tags": ["Settings"],
@@ -1267,7 +1297,7 @@
         "parameters": [
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Sessions list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Session" } } } }] } } } } }
       }
     },
     "/sessions/{id}": {
@@ -1276,7 +1306,7 @@
         "summary": "Get session details",
         "operationId": "getSession",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Session details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/Session" } } }] } } } } }
       },
       "delete": {
         "tags": ["Sessions"],
@@ -1293,7 +1323,7 @@
         "operationId": "getSessionLogs",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Session log entries", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/SessionLogEntry" } } } }] } } } }
         }
       }
     },
@@ -1306,7 +1336,7 @@
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
           { "name": "offset", "in": "query", "schema": { "type": "integer" } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Request sessions", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSession" } } } }] } } } } }
       },
       "delete": {
         "tags": ["Request Sessions"],
@@ -1323,7 +1353,7 @@
         "parameters": [
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Error request sessions", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSession" } } } }] } } } } }
       }
     },
     "/request-sessions/{id}": {
@@ -1332,7 +1362,7 @@
         "summary": "Get a request session",
         "operationId": "getRequestSession",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Request session details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/RequestSession" } } }] } } } } }
       },
       "delete": {
         "tags": ["Request Sessions"],
@@ -1451,7 +1481,7 @@
         "type": "object",
         "properties": {
           "success": { "type": "boolean", "example": true },
-          "data": { "type": "object" }
+          "data": {}
         }
       },
       "ErrorEnvelope": {
@@ -1466,6 +1496,21 @@
               "timestamp": { "type": "string", "format": "date-time" }
             }
           }
+        }
+      },
+      "Site": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "name": { "type": "string", "example": "Production Site" },
+          "url": { "type": "string", "example": "https://example.com" },
+          "username": { "type": "string", "example": "admin" },
+          "category": { "type": "string" },
+          "connectionStatus": { "type": "string", "enum": ["connected", "disconnected", "unknown"], "example": "connected" },
+          "lastTestedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "lastSyncAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
       "SiteCreateInput": {
@@ -1487,6 +1532,402 @@
           "username": { "type": "string" },
           "password": { "type": "string" },
           "applicationPassword": { "type": "string" }
+        }
+      },
+      "SiteCredentials": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string" },
+          "username": { "type": "string" },
+          "appPassword": { "type": "string" }
+        }
+      },
+      "ConnectionResult": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "wpVersion": { "type": "string" },
+          "pluginsEndpoint": { "type": "boolean" },
+          "message": { "type": "string" }
+        }
+      },
+      "Plugin": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "name": { "type": "string", "example": "My Plugin" },
+          "path": { "type": "string", "example": "/plugins/my-plugin" },
+          "category": { "type": "string" },
+          "watchEnabled": { "type": "boolean" },
+          "autoPublish": { "type": "boolean" },
+          "excludePatterns": { "type": "array", "items": { "type": "string" } },
+          "fileCount": { "type": "integer" },
+          "modifiedCount": { "type": "integer" },
+          "lastScannedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "mappings": { "type": "array", "items": { "$ref": "#/components/schemas/PluginMapping" } },
+          "gitEnabled": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PluginMapping": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "pluginId": { "type": "integer", "format": "int64" },
+          "siteId": { "type": "integer", "format": "int64" },
+          "siteName": { "type": "string" },
+          "siteUrl": { "type": "string" },
+          "remoteSlug": { "type": "string" },
+          "syncStatus": { "type": "string" },
+          "lastSyncAt": { "type": "string", "format": "date-time", "nullable": true },
+          "lastBackupAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ScanResult": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "isValid": { "type": "boolean" },
+          "pluginName": { "type": "string" },
+          "version": { "type": "string" },
+          "mainFile": { "type": "string" },
+          "description": { "type": "string" },
+          "author": { "type": "string" },
+          "authorUri": { "type": "string" },
+          "pluginUri": { "type": "string" },
+          "textDomain": { "type": "string" },
+          "requiresPHP": { "type": "string" },
+          "requiresWP": { "type": "string" },
+          "fileCount": { "type": "integer" },
+          "totalSize": { "type": "integer", "format": "int64" },
+          "files": { "type": "array", "items": { "$ref": "#/components/schemas/FileInfo" } },
+          "error": { "type": "string" }
+        }
+      },
+      "FileInfo": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "size": { "type": "integer", "format": "int64" },
+          "hash": { "type": "string" },
+          "modifiedAt": { "type": "string", "format": "date-time" },
+          "isDirectory": { "type": "boolean" }
+        }
+      },
+      "FileChange": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "pluginId": { "type": "integer", "format": "int64" },
+          "path": { "type": "string" },
+          "status": { "type": "string", "enum": ["added", "modified", "deleted", "renamed"] },
+          "localHash": { "type": "string" },
+          "remoteHash": { "type": "string" },
+          "localModifiedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "remoteModifiedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "localSize": { "type": "integer", "format": "int64" },
+          "remoteSize": { "type": "integer", "format": "int64" },
+          "direction": { "type": "string", "enum": ["local_newer", "remote_newer", "local_only", "remote_only"] },
+          "detectedAt": { "type": "string", "format": "date-time" },
+          "syncedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "stats": { "$ref": "#/components/schemas/FileStats" }
+        }
+      },
+      "FileStats": {
+        "type": "object",
+        "properties": {
+          "additions": { "type": "integer" },
+          "deletions": { "type": "integer" }
+        }
+      },
+      "SyncResult": {
+        "type": "object",
+        "properties": {
+          "pluginId": { "type": "integer", "format": "int64" },
+          "siteId": { "type": "integer", "format": "int64" },
+          "siteName": { "type": "string" },
+          "inSync": { "type": "boolean" },
+          "localFiles": { "type": "integer" },
+          "remoteFiles": { "type": "integer" },
+          "added": { "type": "integer" },
+          "modified": { "type": "integer" },
+          "deleted": { "type": "integer" },
+          "changes": { "type": "array", "items": { "$ref": "#/components/schemas/FileChange" } },
+          "checkedAt": { "type": "string", "format": "date-time" },
+          "errorMessage": { "type": "string" }
+        }
+      },
+      "BatchSyncResult": {
+        "type": "object",
+        "properties": {
+          "pluginId": { "type": "integer", "format": "int64" },
+          "pluginName": { "type": "string" },
+          "results": { "type": "array", "items": { "$ref": "#/components/schemas/SyncResult" } },
+          "totalSites": { "type": "integer" },
+          "inSync": { "type": "integer" },
+          "outOfSync": { "type": "integer" },
+          "errors": { "type": "integer" }
+        }
+      },
+      "PushSyncResult": {
+        "type": "object",
+        "properties": {
+          "pluginId": { "type": "integer", "format": "int64" },
+          "siteId": { "type": "integer", "format": "int64" },
+          "filesUpdated": { "type": "integer" },
+          "filesDeleted": { "type": "integer" },
+          "filesIgnored": { "type": "integer" },
+          "totalChanges": { "type": "integer" },
+          "success": { "type": "boolean" },
+          "errorMessage": { "type": "string" }
+        }
+      },
+      "Backup": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "pluginMappingId": { "type": "integer", "format": "int64" },
+          "filePath": { "type": "string" },
+          "fileSize": { "type": "integer", "format": "int64" },
+          "pluginVersion": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "PluginVersion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "pluginId": { "type": "integer", "format": "int64" },
+          "siteId": { "type": "integer", "format": "int64" },
+          "siteName": { "type": "string" },
+          "version": { "type": "string" },
+          "backupPath": { "type": "string" },
+          "filesUpdated": { "type": "integer" },
+          "gitCommitHash": { "type": "string" },
+          "publishType": { "type": "string" },
+          "status": { "type": "string" },
+          "notes": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SiteHealthCheck": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "siteId": { "type": "integer", "format": "int64" },
+          "siteName": { "type": "string" },
+          "siteUrl": { "type": "string" },
+          "status": { "type": "string", "enum": ["healthy", "degraded", "down", "unknown"] },
+          "responseMs": { "type": "integer", "format": "int64" },
+          "statusCode": { "type": "integer" },
+          "errorMessage": { "type": "string" },
+          "uploaderOk": { "type": "boolean" },
+          "wpVersion": { "type": "string" },
+          "phpVersion": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SiteHealthSummary": {
+        "type": "object",
+        "properties": {
+          "siteId": { "type": "integer", "format": "int64" },
+          "siteName": { "type": "string" },
+          "siteUrl": { "type": "string" },
+          "currentStatus": { "type": "string", "enum": ["healthy", "degraded", "down", "unknown"] },
+          "lastCheckedAt": { "type": "string", "nullable": true },
+          "avgResponseMs": { "type": "number", "format": "double" },
+          "uptimePercent": { "type": "number", "format": "double" },
+          "totalChecks": { "type": "integer" },
+          "healthyChecks": { "type": "integer" },
+          "downChecks": { "type": "integer" },
+          "lastErrorAt": { "type": "string", "nullable": true },
+          "lastError": { "type": "string" },
+          "consecutiveDown": { "type": "integer" }
+        }
+      },
+      "SiteHealthStats": {
+        "type": "object",
+        "properties": {
+          "totalSites": { "type": "integer" },
+          "healthySites": { "type": "integer" },
+          "degradedSites": { "type": "integer" },
+          "downSites": { "type": "integer" },
+          "unknownSites": { "type": "integer" },
+          "avgResponseMs": { "type": "number", "format": "double" },
+          "avgUptime": { "type": "number", "format": "double" }
+        }
+      },
+      "PublishHistory": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "pluginId": { "type": "integer", "format": "int64" },
+          "pluginName": { "type": "string" },
+          "siteId": { "type": "integer", "format": "int64" },
+          "siteName": { "type": "string" },
+          "siteUrl": { "type": "string" },
+          "sessionId": { "type": "string" },
+          "status": { "type": "string", "enum": ["success", "failed", "partial"] },
+          "mode": { "type": "string", "enum": ["full", "selected"] },
+          "filesUpdated": { "type": "integer" },
+          "activationStatus": { "type": "string", "enum": ["active", "inactive", "error"] },
+          "rollbackStatus": { "type": "string" },
+          "rollbackMessage": { "type": "string" },
+          "errorMessage": { "type": "string" },
+          "durationMs": { "type": "integer", "format": "int64" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PublishHistoryStats": {
+        "type": "object",
+        "properties": {
+          "totalPublishes": { "type": "integer" },
+          "successCount": { "type": "integer" },
+          "failureCount": { "type": "integer" },
+          "partialCount": { "type": "integer" },
+          "avgDurationMs": { "type": "number", "format": "double" },
+          "totalFilesUpdated": { "type": "integer" },
+          "lastPublishAt": { "type": "string", "nullable": true }
+        }
+      },
+      "ErrorHistory": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "errorId": { "type": "string" },
+          "code": { "type": "string" },
+          "level": { "type": "string", "enum": ["error", "warning", "info"] },
+          "message": { "type": "string" },
+          "details": { "type": "string" },
+          "context": { "type": "object", "additionalProperties": true },
+          "stackTrace": { "type": "string" },
+          "endpoint": { "type": "string" },
+          "method": { "type": "string" },
+          "requestBody": { "type": "object", "additionalProperties": true },
+          "responseStatus": { "type": "integer" },
+          "sessionId": { "type": "string" },
+          "sessionType": { "type": "string" },
+          "phpStackFrames": { "type": "array", "items": { "$ref": "#/components/schemas/PHPStackFrame" } },
+          "backendLogs": { "type": "array", "items": { "type": "string" } },
+          "backendStackTrace": { "type": "string" },
+          "siteUrl": { "type": "string" },
+          "triggerComponent": { "type": "string" },
+          "triggerAction": { "type": "string" },
+          "invocationChain": { "type": "array", "items": { "type": "string" } },
+          "uiClickPath": { "type": "string" },
+          "markdownReport": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PHPStackFrame": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string" },
+          "fileBase": { "type": "string" },
+          "line": { "type": "integer" },
+          "function": { "type": "string" },
+          "class": { "type": "string" }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "pluginId": { "type": "integer", "format": "int64" },
+          "siteId": { "type": "integer", "format": "int64" },
+          "pluginName": { "type": "string" },
+          "siteName": { "type": "string" },
+          "status": { "type": "string", "enum": ["running", "success", "error"] },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "endedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "errorMessage": { "type": "string" },
+          "metadata": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "SessionLogEntry": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string" },
+          "level": { "type": "string", "enum": ["debug", "info", "warn", "error"] },
+          "step": { "type": "string" },
+          "message": { "type": "string" },
+          "details": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "RequestSession": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "method": { "type": "string" },
+          "path": { "type": "string" },
+          "query": { "type": "string" },
+          "requestBody": { "type": "string" },
+          "responseBody": { "type": "string" },
+          "statusCode": { "type": "integer" },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "endedAt": { "type": "string", "format": "date-time" },
+          "durationMs": { "type": "integer", "format": "int64" },
+          "error": { "type": "string" },
+          "logs": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSessionLogEntry" } },
+          "headers": { "type": "object", "additionalProperties": { "type": "string" } }
+        }
+      },
+      "RequestSessionLogEntry": {
+        "type": "object",
+        "properties": {
+          "timestamp": { "type": "string" },
+          "level": { "type": "string" },
+          "message": { "type": "string" },
+          "details": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "Settings": {
+        "type": "object",
+        "properties": {
+          "watcher": {
+            "type": "object",
+            "properties": {
+              "pollIntervalMs": { "type": "integer" },
+              "debounceMs": { "type": "integer" },
+              "defaultExcludePatterns": { "type": "array", "items": { "type": "string" } }
+            }
+          },
+          "backup": {
+            "type": "object",
+            "properties": {
+              "autoBackupBeforePublish": { "type": "boolean" },
+              "retentionDays": { "type": "integer" },
+              "maxBackupsPerPlugin": { "type": "integer" },
+              "location": { "type": "string" }
+            }
+          },
+          "logging": {
+            "type": "object",
+            "properties": {
+              "level": { "type": "string" },
+              "retentionDays": { "type": "integer" },
+              "debugMode": { "type": "boolean" }
+            }
+          },
+          "appearance": {
+            "type": "object",
+            "properties": {
+              "theme": { "type": "string" },
+              "compactMode": { "type": "boolean" }
+            }
+          },
+          "server": {
+            "type": "object",
+            "properties": {
+              "port": { "type": "integer" },
+              "wsReconnectDelayMs": { "type": "integer" }
+            }
+          }
         }
       },
       "RemotePluginInput": {
