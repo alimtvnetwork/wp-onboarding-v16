@@ -25,20 +25,59 @@ class RiseupPathUtils {
     /**
      * Logger instance (lazy loaded).
      *
-     * @var RiseupFileLogger|null
+     * @var Riseup_File_Logger|null
      */
     private static $logger = null;
 
     /**
-     * Get logger instance.
+     * Re-entrancy guard to prevent circular dependency during logger init.
      *
-     * @return RiseupFileLogger
+     * @var bool
+     */
+    private static $initializing = false;
+
+    /**
+     * Get logger instance (null-safe).
+     *
+     * Returns null if the logger class is not yet loaded or if we are
+     * inside logger initialization (re-entrancy guard). Callers must
+     * check for null before invoking logger methods.
+     *
+     * @return Riseup_File_Logger|null
      */
     private static function getLogger() {
+        // Prevent circular dependency: if we're already initializing the logger, bail out
+        if (self::$initializing) {
+            return null;
+        }
+
         if (RiseupBooleanHelpers::is_null(self::$logger)) {
-            self::$logger = RiseupFileLogger::getInstance();
+            if (!class_exists('Riseup_File_Logger')) {
+                return null;
+            }
+
+            self::$initializing = true;
+            self::$logger = Riseup_File_Logger::get_instance();
+            self::$initializing = false;
         }
         return self::$logger;
+    }
+
+    /**
+     * Log a message safely — falls back to error_log() when logger is unavailable.
+     *
+     * @param string $level   One of 'debug', 'info', 'warn', 'error'.
+     * @param string $message Log message.
+     * @param array  $context Optional context.
+     * @return void
+     */
+    private static function safeLog($level, $message, $context = array()) {
+        $logger = self::getLogger();
+        if (RiseupBooleanHelpers::is_set($logger)) {
+            $logger->$level($message, $context);
+        } else {
+            error_log('[Riseup Asia] [' . strtoupper($level) . '] ' . $message);
+        }
     }
 
     /**
@@ -127,19 +166,17 @@ class RiseupPathUtils {
      * @return bool True if directory exists or was created successfully.
      */
     public static function ensureDir($path, $secure = false) {
-        $logger = self::getLogger();
-
         // Normalize the path
         $path = self::join($path);
 
         if (empty($path)) {
-            $logger->error('[PATH] Empty path provided to ensureDir');
+            self::safeLog('error', '[PATH] Empty path provided to ensureDir');
             return false;
         }
 
         // Check if already exists
         if (is_dir($path)) {
-            $logger->debug('[PATH] Directory already exists', array('path' => $path));
+            self::safeLog('debug', '[PATH] Directory already exists', array('path' => $path));
 
             // Add security files if requested and missing
             if ($secure) {
@@ -150,12 +187,12 @@ class RiseupPathUtils {
         }
 
         // Attempt to create
-        $logger->info('[PATH] Creating directory', array('path' => $path, 'secure' => $secure));
+        self::safeLog('info', '[PATH] Creating directory', array('path' => $path, 'secure' => $secure));
 
         // Use wp_mkdir_p for WordPress compatibility
         if (RiseupBooleanHelpers::is_falsy(wp_mkdir_p($path))) {
             $error = error_get_last();
-            $logger->error('[PATH] Directory creation failed', array(
+            self::safeLog('error', '[PATH] Directory creation failed', array(
                 'path' => $path,
                 'error' => $error ? $error['message'] : 'Unknown error',
                 'parent_exists' => is_dir(dirname($path)),
@@ -164,7 +201,7 @@ class RiseupPathUtils {
             return false;
         }
 
-        $logger->info('[PATH] Directory created successfully', array('path' => $path));
+        self::safeLog('info', '[PATH] Directory created successfully', array('path' => $path));
 
         // Add security files if requested
         if ($secure) {
@@ -183,7 +220,6 @@ class RiseupPathUtils {
      * @return bool True if files were created successfully.
      */
     public static function addSecurityFiles($path) {
-        $logger = self::getLogger();
         $success = true;
 
         // .htaccess
@@ -194,10 +230,10 @@ class RiseupPathUtils {
             $htaccess_content .= "Deny from all\n";
 
             if (@file_put_contents($htaccess_path, $htaccess_content) === false) {
-                $logger->warn('[PATH] Failed to create .htaccess', array('path' => $htaccess_path));
+                self::safeLog('warn', '[PATH] Failed to create .htaccess', array('path' => $htaccess_path));
                 $success = false;
             } else {
-                $logger->debug('[PATH] Created .htaccess', array('path' => $htaccess_path));
+                self::safeLog('debug', '[PATH] Created .htaccess', array('path' => $htaccess_path));
             }
         }
 
@@ -207,10 +243,10 @@ class RiseupPathUtils {
             $index_content = "<?php\n// Silence is golden.\n";
 
             if (@file_put_contents($index_path, $index_content) === false) {
-                $logger->warn('[PATH] Failed to create index.php', array('path' => $index_path));
+                self::safeLog('warn', '[PATH] Failed to create index.php', array('path' => $index_path));
                 $success = false;
             } else {
-                $logger->debug('[PATH] Created index.php', array('path' => $index_path));
+                self::safeLog('debug', '[PATH] Created index.php', array('path' => $index_path));
             }
         }
 
@@ -230,7 +266,7 @@ class RiseupPathUtils {
         $path = self::join(...$segments);
 
         if (empty($path)) {
-            self::getLogger()->error('[PATH] Empty path from segments', array(
+            self::safeLog('error', '[PATH] Empty path from segments', array(
                 'segments' => $segments,
             ));
             return false;
@@ -254,12 +290,10 @@ class RiseupPathUtils {
      * @return bool True if path is safe.
      */
     public static function isSafePath($path, $base_path) {
-        $logger = self::getLogger();
-
         // Resolve real paths
         $real_base = realpath($base_path);
         if ($real_base === false) {
-            $logger->warn('[PATH] Base path does not exist', array('base' => $base_path));
+            self::safeLog('warn', '[PATH] Base path does not exist', array('base' => $base_path));
             return false;
         }
 
@@ -271,7 +305,7 @@ class RiseupPathUtils {
             $real_parent = realpath($parent);
 
             if ($real_parent === false) {
-                $logger->warn('[PATH] Neither path nor parent exists', array(
+                self::safeLog('warn', '[PATH] Neither path nor parent exists', array(
                     'path' => $path,
                     'parent' => $parent,
                 ));
@@ -290,7 +324,7 @@ class RiseupPathUtils {
         $is_safe = strpos($real_path, $real_base) === 0;
 
         if (RiseupBooleanHelpers::is_falsy($is_safe)) {
-            $logger->error('[PATH] Path traversal attempt detected', array(
+            self::safeLog('error', '[PATH] Path traversal attempt detected', array(
                 'path' => $path,
                 'resolved' => $real_path,
                 'base' => $real_base,
@@ -358,34 +392,33 @@ class RiseupPathUtils {
      * @return bool True if deleted or didn't exist.
      */
     public static function deleteFile($path) {
-        $logger = self::getLogger();
         $path = self::join($path);
 
         if (empty($path)) {
-            $logger->warn('[PATH] Empty path provided to deleteFile');
+            self::safeLog('warn', '[PATH] Empty path provided to deleteFile');
             return false;
         }
 
         if (RiseupBooleanHelpers::is_file_missing($path)) {
-            $logger->debug('[PATH] File does not exist, nothing to delete', array('path' => $path));
+            self::safeLog('debug', '[PATH] File does not exist, nothing to delete', array('path' => $path));
             return true;
         }
 
         if (RiseupBooleanHelpers::is_falsy(is_file($path))) {
-            $logger->error('[PATH] Path is not a file', array('path' => $path));
+            self::safeLog('error', '[PATH] Path is not a file', array('path' => $path));
             return false;
         }
 
         if (RiseupBooleanHelpers::is_falsy(@unlink($path))) {
             $error = error_get_last();
-            $logger->error('[PATH] Failed to delete file', array(
+            self::safeLog('error', '[PATH] Failed to delete file', array(
                 'path' => $path,
                 'error' => $error ? $error['message'] : 'Unknown error',
             ));
             return false;
         }
 
-        $logger->debug('[PATH] File deleted', array('path' => $path));
+        self::safeLog('debug', '[PATH] File deleted', array('path' => $path));
         return true;
     }
 
@@ -396,21 +429,20 @@ class RiseupPathUtils {
      * @return bool True if deleted or didn't exist.
      */
     public static function deleteDir($path) {
-        $logger = self::getLogger();
         $path = self::join($path);
 
         if (empty($path)) {
-            $logger->warn('[PATH] Empty path provided to deleteDir');
+            self::safeLog('warn', '[PATH] Empty path provided to deleteDir');
             return false;
         }
 
         if (RiseupBooleanHelpers::is_file_missing($path)) {
-            $logger->debug('[PATH] Directory does not exist, nothing to delete', array('path' => $path));
+            self::safeLog('debug', '[PATH] Directory does not exist, nothing to delete', array('path' => $path));
             return true;
         }
 
         if (RiseupBooleanHelpers::is_falsy(is_dir($path))) {
-            $logger->error('[PATH] Path is not a directory', array('path' => $path));
+            self::safeLog('error', '[PATH] Path is not a directory', array('path' => $path));
             return false;
         }
 
@@ -431,14 +463,14 @@ class RiseupPathUtils {
 
         if (RiseupBooleanHelpers::is_falsy(@rmdir($path))) {
             $error = error_get_last();
-            $logger->error('[PATH] Failed to delete directory', array(
+            self::safeLog('error', '[PATH] Failed to delete directory', array(
                 'path' => $path,
                 'error' => $error ? $error['message'] : 'Unknown error',
             ));
             return false;
         }
 
-        $logger->debug('[PATH] Directory deleted', array('path' => $path));
+        self::safeLog('debug', '[PATH] Directory deleted', array('path' => $path));
         return true;
     }
 

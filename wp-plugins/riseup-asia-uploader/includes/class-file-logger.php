@@ -110,13 +110,16 @@ class Riseup_File_Logger {
      * @return bool True if successful.
      */
     private function ensure_directories() {
-        // Use idempotent init helpers for directory creation + security
-        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($this->base_dir, true))) {
+        // CRITICAL: Use native PHP directory creation to avoid circular dependency.
+        // RiseupInitHelpers::ensureDir() delegates to RiseupPathUtils::ensureDir()
+        // which calls getLogger() which tries to create *this* logger instance → infinite loop.
+        // ensureDirNative() uses only raw PHP (mkdir / wp_mkdir_p), no logger involved.
+        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDirNative($this->base_dir, true))) {
             error_log('[Riseup Asia] Failed to create base directory: ' . $this->base_dir);
             return false;
         }
 
-        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($this->logs_dir, false))) {
+        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDirNative($this->logs_dir, false))) {
             error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logs_dir);
             return false;
         }

@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.23.0
+ * Version: 1.24.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -278,12 +278,15 @@ require_once __DIR__ . '/includes/class-dependency-loader.php';
 // Load all remaining dependencies via structured loader with error tracking.
 $__includes = __DIR__ . '/includes';
 RiseupDependencyLoader::loadManifest(array(
-    // Core infrastructure
+    // Core infrastructure — PathUtils MUST load before FileLogger to avoid
+    // "Class not found" errors. The logger's ensureDirNative() path avoids
+    // the circular dependency, but PathUtils must still be available for
+    // all subsequent code that calls RiseupPathUtils methods.
+    array('PathUtils',           $__includes . '/class-path-utils.php'),
     array('FileLogger',          $__includes . '/class-file-logger.php'),
     array('ORM',                 $__includes . '/class-orm.php'),
     array('Database',            $__includes . '/class-database.php'),
     array('TransactionLogger',   $__includes . '/class-logger.php'),
-    array('PathUtils',           $__includes . '/class-path-utils.php'),
 
     // Snapshot system
     array('SnapshotDetector',    $__includes . '/class-snapshot-detector.php'),
