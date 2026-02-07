@@ -68,7 +68,7 @@ class Riseup_File_Logger {
      * @return Riseup_File_Logger
      */
     public static function get_instance() {
-        if (self::$instance === null) {
+        if (RiseupBooleanHelpers::is_null(self::$instance)) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -94,7 +94,7 @@ class Riseup_File_Logger {
         }
 
         // Check if WordPress functions are available
-        if (!function_exists('wp_upload_dir')) {
+        if (RiseupBooleanHelpers::is_func_missing('wp_upload_dir')) {
             // Fallback to plugin directory if WordPress not ready
             $this->base_dir = dirname(__DIR__) . '/data';
         } else {
@@ -124,11 +124,11 @@ class Riseup_File_Logger {
      */
     private function ensure_directories() {
         // Use native PHP functions to avoid WordPress dependency issues
-        if (!file_exists($this->base_dir)) {
+        if (RiseupBooleanHelpers::is_file_missing($this->base_dir)) {
             // Use mkdir with recursive flag
-            if (!@mkdir($this->base_dir, 0755, true)) {
+            if (RiseupBooleanHelpers::is_falsy(@mkdir($this->base_dir, 0755, true))) {
                 // Try wp_mkdir_p as fallback if available
-                if (function_exists('wp_mkdir_p') && !wp_mkdir_p($this->base_dir)) {
+                if (function_exists('wp_mkdir_p') && RiseupBooleanHelpers::is_falsy(wp_mkdir_p($this->base_dir))) {
                     error_log('[Riseup Asia] Failed to create base directory: ' . $this->base_dir);
                     return false;
                 }
@@ -136,19 +136,19 @@ class Riseup_File_Logger {
             
             // Protect with .htaccess
             $htaccess = $this->base_dir . '/.htaccess';
-            if (!file_exists($htaccess)) {
+            if (RiseupBooleanHelpers::is_file_missing($htaccess)) {
                 @file_put_contents($htaccess, "Order deny,allow\nDeny from all\n");
             }
             // Add index.php for extra protection
             $index = $this->base_dir . '/index.php';
-            if (!file_exists($index)) {
+            if (RiseupBooleanHelpers::is_file_missing($index)) {
                 @file_put_contents($index, '<?php // Silence is golden.');
             }
         }
         
-        if (!file_exists($this->logs_dir)) {
-            if (!@mkdir($this->logs_dir, 0755, true)) {
-                if (function_exists('wp_mkdir_p') && !wp_mkdir_p($this->logs_dir)) {
+        if (RiseupBooleanHelpers::is_file_missing($this->logs_dir)) {
+            if (RiseupBooleanHelpers::is_falsy(@mkdir($this->logs_dir, 0755, true))) {
+                if (function_exists('wp_mkdir_p') && RiseupBooleanHelpers::is_falsy(wp_mkdir_p($this->logs_dir))) {
                     error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logs_dir);
                     return false;
                 }
@@ -165,7 +165,7 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_base_dir() {
-        if ($this->base_dir === null) {
+        if (RiseupBooleanHelpers::is_null($this->base_dir)) {
             $this->initialize_paths();
         }
         return $this->base_dir;
@@ -177,7 +177,7 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_logs_dir() {
-        if ($this->logs_dir === null) {
+        if (RiseupBooleanHelpers::is_null($this->logs_dir)) {
             $this->initialize_paths();
         }
         return $this->logs_dir;
@@ -208,7 +208,7 @@ class Riseup_File_Logger {
             $line
         );
         
-        if (!empty($context)) {
+        if (RiseupBooleanHelpers::has_content($context)) {
             $json_flags = defined('JSON_UNESCAPED_SLASHES') ? JSON_UNESCAPED_SLASHES : 0;
             $entry .= ' ' . json_encode($context, $json_flags);
         }
@@ -226,7 +226,7 @@ class Riseup_File_Logger {
      */
     private function write($entry, $is_error = false) {
         // Initialize paths on first write
-        if (!$this->initialized) {
+        if (RiseupBooleanHelpers::is_falsy($this->initialized)) {
             if (!$this->initialize_paths()) {
                 // Fallback to error_log if we can't write to file
                 error_log('[Riseup Asia] ' . trim($entry));

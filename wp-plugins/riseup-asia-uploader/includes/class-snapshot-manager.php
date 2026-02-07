@@ -66,7 +66,7 @@ class RiseupSnapshotManager {
      * @return RiseupSnapshotManager
      */
     public static function getInstance($logger = null, $db = null) {
-        if (self::$instance === null && $logger && $db) {
+        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db) {
             self::$instance = new self($logger, $db);
         }
         return self::$instance;
@@ -105,7 +105,7 @@ class RiseupSnapshotManager {
      */
     public function createSnapshot($options = array()) {
         $provider = $this->getProvider();
-        if (!$provider) {
+        if (RiseupBooleanHelpers::is_falsy($provider)) {
             return array(
                 'success' => false,
                 'error' => 'No snapshot provider available',
@@ -130,7 +130,7 @@ class RiseupSnapshotManager {
      */
     public function restoreSnapshot($snapshot_id, $options = array()) {
         // Verify confirmation flag for safety
-        if (empty($options['confirm']) || $options['confirm'] !== true) {
+        if (RiseupBooleanHelpers::is_empty($options['confirm']) || $options['confirm'] !== true) {
             return array(
                 'success' => false,
                 'error' => 'Restore requires explicit confirmation (confirm=true)',
@@ -139,7 +139,7 @@ class RiseupSnapshotManager {
         }
 
         $provider = $this->getProvider();
-        if (!$provider) {
+        if (RiseupBooleanHelpers::is_falsy($provider)) {
             return array(
                 'success' => false,
                 'error' => 'No snapshot provider available',
@@ -149,7 +149,7 @@ class RiseupSnapshotManager {
 
         // Get snapshot details
         $snapshot = $provider->getSnapshot($snapshot_id);
-        if (!$snapshot) {
+        if (RiseupBooleanHelpers::is_falsy($snapshot)) {
             return array(
                 'success' => false,
                 'error' => 'Snapshot not found',
@@ -160,7 +160,7 @@ class RiseupSnapshotManager {
         $this->log(RISEUP_LOG_LEVEL_INFO, 'Starting snapshot restore', array(
             'snapshot_id' => $snapshot_id,
             'filename' => $snapshot['filename'],
-            'create_backup' => !empty($options['create_backup']),
+            'create_backup' => RiseupBooleanHelpers::has_content($options['create_backup']),
         ));
 
         // Create pre-restore backup if requested (default true)
@@ -177,7 +177,7 @@ class RiseupSnapshotManager {
                     'error' => $backup_result['error'],
                 ));
                 // Continue with restore anyway unless strict mode
-                if (!empty($options['require_backup'])) {
+                if (RiseupBooleanHelpers::has_content($options['require_backup'])) {
                     return array(
                         'success' => false,
                         'error' => 'Pre-restore backup failed: ' . $backup_result['error'],
@@ -218,7 +218,7 @@ class RiseupSnapshotManager {
         $filepath = $snapshot['filepath'];
 
         // Validate file exists
-        if (!RiseupPathUtils::fileExists($filepath)) {
+        if (RiseupBooleanHelpers::is_falsy(RiseupPathUtils::fileExists($filepath))) {
             return array(
                 'success' => false,
                 'error' => 'Snapshot file not found: ' . basename($filepath),
@@ -236,7 +236,7 @@ class RiseupSnapshotManager {
 
             // Filter by mode if selective
             $mode = isset($options['mode']) ? $options['mode'] : 'full';
-            if ($mode === 'selective' && !empty($options['tables'])) {
+            if ($mode === 'selective' && RiseupBooleanHelpers::has_content($options['tables'])) {
                 $tables = array_intersect($all_tables, $options['tables']);
             } else {
                 $tables = $all_tables;
@@ -272,7 +272,7 @@ class RiseupSnapshotManager {
                         'error' => $result['error'],
                     ));
                     // Continue with other tables unless strict mode
-                    if (!empty($options['strict'])) {
+                    if (RiseupBooleanHelpers::has_content($options['strict'])) {
                         throw new Exception('Table restore failed: ' . $table);
                     }
                 }
@@ -395,7 +395,7 @@ class RiseupSnapshotManager {
      */
     private function createPreRestoreBackup($original_snapshot_id) {
         $provider = $this->getProvider();
-        if (!$provider) {
+        if (RiseupBooleanHelpers::is_falsy($provider)) {
             return array('success' => false, 'error' => 'No provider available');
         }
 
@@ -414,7 +414,7 @@ class RiseupSnapshotManager {
      */
     public function exportSnapshot($snapshot_id) {
         $provider = $this->getProvider();
-        if (!$provider) {
+        if (RiseupBooleanHelpers::is_falsy($provider)) {
             return array(
                 'success' => false,
                 'error' => 'No snapshot provider available',
@@ -422,7 +422,7 @@ class RiseupSnapshotManager {
         }
 
         $snapshot = $provider->getSnapshot($snapshot_id);
-        if (!$snapshot) {
+        if (RiseupBooleanHelpers::is_falsy($snapshot)) {
             return array(
                 'success' => false,
                 'error' => 'Snapshot not found',
@@ -431,7 +431,7 @@ class RiseupSnapshotManager {
         }
 
         $filepath = $snapshot['filepath'];
-        if (!RiseupPathUtils::fileExists($filepath)) {
+        if (RiseupBooleanHelpers::is_falsy(RiseupPathUtils::fileExists($filepath))) {
             return array(
                 'success' => false,
                 'error' => 'Snapshot file not found',

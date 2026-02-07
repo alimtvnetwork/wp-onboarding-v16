@@ -61,7 +61,7 @@ class Riseup_Database {
      * @return Riseup_Database
      */
     public static function get_instance() {
-        if (self::$instance === null) {
+        if (RiseupBooleanHelpers::is_null(self::$instance)) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -82,7 +82,7 @@ class Riseup_Database {
      */
     public function init() {
         if ($this->init_attempted) {
-            return $this->pdo !== null;
+            return RiseupBooleanHelpers::is_set($this->pdo);
         }
         
         $this->init_attempted = true;
@@ -113,10 +113,10 @@ class Riseup_Database {
         $this->file_logger->debug('Base directory', array('dir' => $base_dir));
         
         // Ensure base directory exists
-        if (!file_exists($base_dir)) {
+        if (RiseupBooleanHelpers::is_file_missing($base_dir)) {
             $this->file_logger->info('Creating base directory', array('dir' => $base_dir));
             
-            if (!wp_mkdir_p($base_dir)) {
+            if (RiseupBooleanHelpers::is_falsy(wp_mkdir_p($base_dir))) {
                 $this->file_logger->error('Failed to create base directory', array('dir' => $base_dir));
                 throw new Exception('Failed to create data directory: ' . $base_dir);
             }
@@ -155,13 +155,13 @@ class Riseup_Database {
         
         try {
             // Check if PDO class exists
-            if (!class_exists('PDO')) {
+            if (RiseupBooleanHelpers::is_class_missing('PDO')) {
                 $this->file_logger->error('PDO class not found - PHP PDO extension not installed');
                 throw new Exception('PDO class not found. Please ensure the PHP PDO extension is installed and enabled.');
             }
             
             // Check if SQLite extension is available
-            if (!extension_loaded('pdo_sqlite')) {
+            if (RiseupBooleanHelpers::is_extension_missing('pdo_sqlite')) {
                 $this->file_logger->error('PDO SQLite extension not loaded');
                 throw new Exception('PDO SQLite extension is not available. Please enable pdo_sqlite in php.ini.');
             }

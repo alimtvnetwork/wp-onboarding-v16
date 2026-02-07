@@ -61,7 +61,7 @@ class RiseupSnapshotOrchestrator {
      * @return RiseupSnapshotOrchestrator
      */
     public static function getInstance($logger = null, $db = null, $manager = null) {
-        if (self::$instance === null && $logger && $db && $manager) {
+        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db && $manager) {
             self::$instance = new self($logger, $db, $manager);
         }
         return self::$instance;
@@ -120,7 +120,7 @@ class RiseupSnapshotOrchestrator {
                 'settings' => $settings,
             ));
 
-            if (!$worker_result['success']) {
+            if (RiseupBooleanHelpers::is_falsy($worker_result['success'])) {
                 return array(
                     'success' => false,
                     'error'   => 'Table export failed: ' . ($worker_result['error'] ?? 'Unknown error'),
@@ -227,7 +227,7 @@ class RiseupSnapshotOrchestrator {
         }
 
         // Get installed plugins
-        if (!function_exists('get_plugins')) {
+        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
@@ -282,7 +282,7 @@ class RiseupSnapshotOrchestrator {
             $slug = $info['slug'];
             $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
 
-            if (!is_dir($plugin_path)) {
+            if (RiseupBooleanHelpers::is_dir_missing($plugin_path)) {
                 // Single-file plugin — skip ZIP, not a directory
                 $this->log('INFO', 'Skipping single-file plugin: ' . $slug);
                 continue;
@@ -467,7 +467,7 @@ class RiseupSnapshotOrchestrator {
      */
     private function registerSnapshot($title, $scope, $worker_result, $plugin_stats, $snapshot_dir) {
         $pdo = $this->db->get_pdo();
-        if (!$pdo) {
+        if (RiseupBooleanHelpers::is_falsy($pdo)) {
             return false;
         }
 

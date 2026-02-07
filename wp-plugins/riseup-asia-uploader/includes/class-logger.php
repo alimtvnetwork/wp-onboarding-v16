@@ -46,7 +46,7 @@ class Riseup_Logger {
      * @return Riseup_Logger
      */
     public static function get_instance() {
-        if (self::$instance === null) {
+        if (RiseupBooleanHelpers::is_null(self::$instance)) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -67,7 +67,7 @@ class Riseup_Logger {
      * @return Riseup_Database
      */
     private function get_db() {
-        if ($this->db === null) {
+        if (RiseupBooleanHelpers::is_null($this->db)) {
             $this->db = Riseup_Database::get_instance();
         }
         return $this->db;
@@ -81,7 +81,7 @@ class Riseup_Logger {
     private function get_client_ip() {
         $ip_keys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');
         foreach ($ip_keys as $key) {
-            if (!empty($_SERVER[$key])) {
+            if (RiseupBooleanHelpers::has_content($_SERVER[$key])) {
                 $ip = $_SERVER[$key];
                 // Handle comma-separated IPs (X-Forwarded-For)
                 if (strpos($ip, ',') !== false) {
@@ -104,10 +104,10 @@ class Riseup_Logger {
      */
     private function get_source_machine() {
         $header_key = 'HTTP_X_RISEUP_SOURCE_MACHINE';
-        if (!empty($_SERVER[$header_key])) {
+        if (RiseupBooleanHelpers::has_content($_SERVER[$header_key])) {
             // Sanitize: allow alphanumeric, dots, hyphens, underscores
             $machine = preg_replace('/[^a-zA-Z0-9.\-_]/', '', $_SERVER[$header_key]);
-            return !empty($machine) ? $machine : null;
+            return RiseupBooleanHelpers::has_content($machine) ? $machine : null;
         }
         return null;
     }
@@ -119,7 +119,7 @@ class Riseup_Logger {
      */
     private function get_user_info() {
         // Check if WordPress user functions are available
-        if (!function_exists('wp_get_current_user')) {
+        if (RiseupBooleanHelpers::is_func_missing('wp_get_current_user')) {
             return array(
                 'login' => 'anonymous',
                 'id'    => 0,

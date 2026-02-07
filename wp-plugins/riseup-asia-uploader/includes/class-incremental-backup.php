@@ -52,7 +52,7 @@ class RiseupIncrementalBackup {
      * @return RiseupIncrementalBackup
      */
     public static function getInstance($logger = null, $db = null, $rootDb = null) {
-        if (self::$instance === null && $logger && $db && $rootDb) {
+        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db && $rootDb) {
             self::$instance = new self($logger, $db, $rootDb);
         }
         return self::$instance;
@@ -86,7 +86,7 @@ class RiseupIncrementalBackup {
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
 
         $root_path = $master_dir . '/a-root.db';
-        if (!file_exists($root_path)) {
+        if (RiseupBooleanHelpers::is_file_missing($root_path)) {
             return array(
                 'success' => false,
                 'error'   => 'Master snapshot a-root.db not found at: ' . $root_path,
@@ -375,7 +375,7 @@ class RiseupIncrementalBackup {
         $stmt->execute(array($table_name));
         $filename = $stmt->fetchColumn();
 
-        if (!$filename) {
+        if (RiseupBooleanHelpers::is_falsy($filename)) {
             return null;
         }
 
