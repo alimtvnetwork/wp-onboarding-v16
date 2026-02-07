@@ -119,6 +119,9 @@ const (
 
 	// EndpointSnapshotsFullBackup triggers end-to-end full backup orchestration.
 	EndpointSnapshotsFullBackup = "/snapshots/full-backup"
+
+	// EndpointSnapshotsIncremental triggers an incremental backup against the latest master.
+	EndpointSnapshotsIncremental = "/snapshots/incremental"
 )
 // =============================================================================
 // ACTION TYPES (match PHP constants)

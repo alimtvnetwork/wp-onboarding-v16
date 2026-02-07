@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.13.0');
+    define('RISEUP_VERSION', '1.14.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -737,4 +737,14 @@ if (!defined('RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP')) {
 // Snapshot actions for orchestrator
 if (!defined('RISEUP_ACTION_SNAPSHOT_FULL_BACKUP')) {
     define('RISEUP_ACTION_SNAPSHOT_FULL_BACKUP', 'snapshot_full_backup');
+}
+
+// Incremental backup endpoint (Phase 6)
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL', 'snapshots/incremental');
+}
+
+// Incremental backup action for transaction logging
+if (!defined('RISEUP_ACTION_SNAPSHOT_INCREMENTAL')) {
+    define('RISEUP_ACTION_SNAPSHOT_INCREMENTAL', 'snapshot_incremental');
 }

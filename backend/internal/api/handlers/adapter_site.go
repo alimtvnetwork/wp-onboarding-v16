@@ -161,3 +161,7 @@ func (a *SiteServiceAdapter) GetRemoteAvailableTables(ctx context.Context, siteI
 func (a *SiteServiceAdapter) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
 	return a.Service.FullBackupRemoteSnapshot(ctx, siteID, opts)
 }
+
+func (a *SiteServiceAdapter) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+	return a.Service.IncrementalBackupRemoteSnapshot(ctx, siteID, opts)
+}
