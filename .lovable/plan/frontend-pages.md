@@ -116,14 +116,19 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 6: Site Health Page — Deep Integration
+### Phase 6: Site Health Page — Deep Integration ✅ COMPLETE
 
 **Goal:** Enhance Site Health with live connection indicators, uploader version checks, and bulk re-test.
 
-**Files to change:**
-- `src/pages/SiteHealth.tsx` — Add bulk "Re-test All" action, uploader version column, last-seen timestamps
-- `src/hooks/useSiteHealth.ts` (create if needed) — Dedicated hook for health polling
-- `src/components/sites/SiteHealthCard.tsx` (create if needed)
+**Implementation:** Extracted site health logic into a dedicated hook with 30s auto-polling, created a `SiteHealthCard` component with live pulsing status dots, uploader version badges, consecutive-failure warnings, high-latency/low-uptime color indicators, and error detail callouts. Added an "Avg Uptime" stat card. Renamed button to "Re-test All Sites".
+
+**Files created:**
+- `src/types/siteHealth.ts` — `SiteHealthSummary` and `SiteHealthStats` types (with optional `uploaderVersion`)
+- `src/hooks/useSiteHealth.ts` — Polling hooks + mutation hooks for check operations
+- `src/components/sites/SiteHealthCard.tsx` — Rich card with live indicators, version badge, consecutive-down warnings
+
+**Files changed:**
+- `src/pages/SiteHealth.tsx` — Refactored to use new hooks and components, added Avg Uptime stat
 
 **Backend dependency:** Site health service (✅ scaffolded)
 
