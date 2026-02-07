@@ -201,6 +201,22 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
+### Phase 12: Responsive & Mobile Layout ✅ COMPLETE
+
+**Goal:** Audit and fix responsive layout across all pages, especially sidebar, header, and API Explorer on mobile viewports.
+
+**Implementation:** Made the sidebar collapsible on mobile using a `Sheet` overlay triggered by a hamburger `Menu` button in the header (hidden on `md+`). The desktop sidebar remains a fixed `w-64` aside, hidden below `md`. The Layout wrapper now uses `overflow-x-hidden` and `min-w-0` to prevent horizontal scroll. Header spacing, labels, and badges adapt with `sm:` breakpoints. API Explorer header stacks vertically on mobile with `flex-col sm:flex-row`. Main content padding reduces from `p-6` to `p-3` on mobile.
+
+**Files changed:**
+- `src/components/layout/Sidebar.tsx` — Desktop/mobile split with Sheet overlay, `onNavigate` auto-close
+- `src/components/layout/Header.tsx` — Hamburger button, responsive spacing, hidden labels on mobile
+- `src/components/layout/Layout.tsx` — Mobile menu state, overflow protection, responsive padding
+- `src/pages/ApiExplorer.tsx` — Responsive header and grid layout
+
+**Backend dependency:** None
+
+---
+
 ## Implementation Order (Recommended)
 
 ```
@@ -210,17 +226,11 @@ Phase 2 (Error Modal Enhancements)
   ↓
 Phase 3 (Pagination)
   ↓
-Phase 4 (Dashboard) — can be done independently
-Phase 5 (Settings Debug Config) — can be done independently
-Phase 6 (Site Health) — can be done independently
-Phase 7 (E2E Tests) — can be done independently
-Phase 8 (Logs Filtering) — can be done independently
-Phase 9 (Sessions Detail) — can be done independently
-Phase 10 (API Explorer) — can be done independently
+Phase 4–12: Independent phases, all complete
 ```
 
-Phases 4–10 are independent of each other and can be completed in any order after Phase 3.
+All phases (1–12) are complete.
 
 ---
 
-*Ask: "Complete Phase X" to implement any phase.*
+*All planned phases have been implemented.*
