@@ -20,6 +20,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/services/backup"
+	"wp-plugin-publish/internal/services/e2e"
 	"wp-plugin-publish/internal/services/errorhistory"
 	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/services/publish"
@@ -201,6 +202,21 @@ func main() {
 		} else {
 			log.Info("Request session logging enabled")
 		}
+	}
+
+	// Initialize E2E test service if enabled
+	if cfg.E2E.Enabled {
+		e2eSvc := e2e.New(e2e.Config{
+			DB:               db.DB,
+			Broadcast:        func(event string, data interface{}) { wsHub.Broadcast(event, data) },
+			BaseURL:          fmt.Sprintf("http://localhost:%d", cfg.Server.Port),
+			TestPluginPath:   cfg.E2E.TestPluginPath,
+			TestSiteURL:      cfg.E2E.TestSiteURL,
+			TestSiteUsername:  cfg.E2E.TestSiteUsername,
+			TestSitePassword: cfg.E2E.TestSitePassword,
+		})
+		handlers.E2EService = &E2EServiceAdapter{e2eSvc}
+		log.Info("E2E test service enabled")
 	}
 
 	// Start HTTP server - use handlers.NewServiceRegistry to wrap services with adapters
@@ -404,4 +420,54 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 		PublishHistory: publishHistoryService,
 		SiteHealth:     siteHealthService,
 	}
+}
+
+// E2EServiceAdapter wraps e2e.Service to implement handlers.E2EServiceInterface
+type E2EServiceAdapter struct {
+	svc e2e.Service
+}
+
+func (a *E2EServiceAdapter) ListSuites(ctx context.Context) (interface{}, error) {
+	return a.svc.ListSuites(ctx)
+}
+
+func (a *E2EServiceAdapter) GetCases(ctx context.Context, suiteID string) (interface{}, error) {
+	return a.svc.GetCases(ctx, suiteID)
+}
+
+func (a *E2EServiceAdapter) StartRun(ctx context.Context, opts interface{}) (interface{}, error) {
+	// Convert opts from map to RunOptions
+	runOpts := e2e.RunOptions{}
+	if m, ok := opts.(map[string]interface{}); ok {
+		if suites, ok := m["suites"].([]interface{}); ok {
+			for _, s := range suites {
+				if str, ok := s.(string); ok {
+					runOpts.Suites = append(runOpts.Suites, str)
+				}
+			}
+		}
+		if v, ok := m["stopOnFailure"].(bool); ok {
+			runOpts.StopOnFailure = v
+		}
+		if v, ok := m["parallel"].(bool); ok {
+			runOpts.Parallel = v
+		}
+	}
+	return a.svc.StartRun(ctx, runOpts)
+}
+
+func (a *E2EServiceAdapter) AbortRun(ctx context.Context, runID string) error {
+	return a.svc.AbortRun(ctx, runID)
+}
+
+func (a *E2EServiceAdapter) ListRuns(ctx context.Context, limit int) (interface{}, error) {
+	return a.svc.ListRuns(ctx, limit)
+}
+
+func (a *E2EServiceAdapter) GetRun(ctx context.Context, runID string) (interface{}, error) {
+	return a.svc.GetRun(ctx, runID)
+}
+
+func (a *E2EServiceAdapter) DeleteRun(ctx context.Context, runID string) error {
+	return a.svc.DeleteRun(ctx, runID)
 }
