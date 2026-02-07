@@ -288,6 +288,8 @@ require_once __DIR__ . '/includes/class-snapshot-detector.php';
 require_once __DIR__ . '/includes/class-snapshot-scheduler.php';
 require_once __DIR__ . '/includes/class-snapshot-cleaner.php';
 require_once __DIR__ . '/includes/class-snapshot-manager.php';
+require_once __DIR__ . '/includes/class-dependency-analyzer.php';
+require_once __DIR__ . '/includes/class-root-db.php';
 
 // Load file cache (Phase 41 - Sync System).
 require_once __DIR__ . '/includes/class-file-cache.php';
@@ -947,6 +949,14 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_TABLES, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_list_snapshot_tables'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Dependency analysis endpoint
+            $this->file_logger->debug('Registering endpoint: snapshots/dependencies');
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/snapshots/dependencies', array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_analyze_dependencies'),
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
@@ -3403,6 +3413,31 @@ class Riseup_Asia {
                 'tables'  => $tables,
             ), 200);
         }, 'list_snapshot_tables');
+    }
+
+    /**
+     * Handle dependency analysis request.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_analyze_dependencies($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+            $scope = isset($body['scope']) ? $body['scope'] : 'all';
+
+            $analyzer = RiseupDependencyAnalyzer::getInstance($this->file_logger);
+            $analysis = $analyzer->analyze($scope);
+
+            return new WP_REST_Response(array(
+                'success'      => true,
+                'tables'       => $analysis['tables'],
+                'dependencies' => $analysis['dependencies'],
+                'seed_order'   => $analysis['seed_order'],
+                'table_count'  => $analysis['table_count'],
+                'dep_count'    => $analysis['dep_count'],
+            ), 200);
+        }, 'analyze_dependencies');
     }
 }
 
