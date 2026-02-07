@@ -93,27 +93,14 @@ class Riseup_File_Logger {
             return true;
         }
 
-        // Check if WordPress functions are available
-        if (RiseupBooleanHelpers::is_func_missing('wp_upload_dir')) {
-            // Fallback to plugin directory if WordPress not ready
-            $this->base_dir = dirname(__DIR__) . '/data';
-        } else {
-            // Get WordPress uploads directory
-            $upload_dir = wp_upload_dir();
-            
-            if (isset($upload_dir['error']) && $upload_dir['error']) {
-                // Fallback to plugin directory if uploads not available
-                $this->base_dir = dirname(__DIR__) . '/data';
-            } else {
-                $this->base_dir = $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR;
-            }
-        }
+        // Resolve base directory via centralized helper
+        $this->base_dir = RiseupInitHelpers::resolveBaseDir();
         
         $this->logs_dir   = $this->base_dir . '/' . RISEUP_LOGS_SUBDIR;
         $this->log_file   = $this->logs_dir . '/' . RISEUP_LOG_FILENAME;
         $this->error_file = $this->logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
         
-        // Create directories
+        // Create directories via idempotent helper
         return $this->ensure_directories();
     }
 
@@ -123,36 +110,15 @@ class Riseup_File_Logger {
      * @return bool True if successful.
      */
     private function ensure_directories() {
-        // Use native PHP functions to avoid WordPress dependency issues
-        if (RiseupBooleanHelpers::is_file_missing($this->base_dir)) {
-            // Use mkdir with recursive flag
-            if (RiseupBooleanHelpers::is_falsy(@mkdir($this->base_dir, 0755, true))) {
-                // Try wp_mkdir_p as fallback if available
-                if (function_exists('wp_mkdir_p') && RiseupBooleanHelpers::is_falsy(wp_mkdir_p($this->base_dir))) {
-                    error_log('[Riseup Asia] Failed to create base directory: ' . $this->base_dir);
-                    return false;
-                }
-            }
-            
-            // Protect with .htaccess
-            $htaccess = $this->base_dir . '/.htaccess';
-            if (RiseupBooleanHelpers::is_file_missing($htaccess)) {
-                @file_put_contents($htaccess, "Order deny,allow\nDeny from all\n");
-            }
-            // Add index.php for extra protection
-            $index = $this->base_dir . '/index.php';
-            if (RiseupBooleanHelpers::is_file_missing($index)) {
-                @file_put_contents($index, '<?php // Silence is golden.');
-            }
+        // Use idempotent init helpers for directory creation + security
+        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($this->base_dir, true))) {
+            error_log('[Riseup Asia] Failed to create base directory: ' . $this->base_dir);
+            return false;
         }
-        
-        if (RiseupBooleanHelpers::is_file_missing($this->logs_dir)) {
-            if (RiseupBooleanHelpers::is_falsy(@mkdir($this->logs_dir, 0755, true))) {
-                if (function_exists('wp_mkdir_p') && RiseupBooleanHelpers::is_falsy(wp_mkdir_p($this->logs_dir))) {
-                    error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logs_dir);
-                    return false;
-                }
-            }
+
+        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($this->logs_dir, false))) {
+            error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logs_dir);
+            return false;
         }
         
         $this->initialized = true;

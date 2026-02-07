@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.18.0
+ * Version: 1.19.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -271,7 +271,10 @@ require_once __DIR__ . '/includes/constants.php';
 // Load boolean helpers (used by all classes for positive boolean checks).
 require_once __DIR__ . '/includes/class-boolean-helpers.php';
 
-// Load file logger second (used by all other classes).
+// Load init helpers (idempotent directory/DB setup, component tracking).
+require_once __DIR__ . '/includes/class-init-helpers.php';
+
+// Load file logger (used by all other classes).
 require_once __DIR__ . '/includes/class-file-logger.php';
 
 // Load ORM before database.
@@ -374,47 +377,44 @@ class Riseup_Asia {
         $this->file_logger->info('Plugin constructor starting', array('version' => RISEUP_VERSION));
 
         try {
-            // Initialize database and run migrations immediately.
-            $this->db = Riseup_Database::get_instance();
-            $this->file_logger->info('Database instance created');
-            
-            // Run database initialization (creates tables if not exist).
-            $this->file_logger->info('Running database migration/initialization');
-            $db_ready = $this->db->init();
-            if ($db_ready) {
-                $this->file_logger->info('Database initialized successfully');
-            } else {
-                $this->file_logger->error('Database initialization failed - some features may not work');
-            }
+            // Use structured component startup tracking
+            $this->db = RiseupInitHelpers::initComponent('Database', function () {
+                $db = Riseup_Database::get_instance();
+                $db_ready = $db->init();
+                if (RiseupBooleanHelpers::is_falsy($db_ready)) {
+                    throw new Exception('Database initialization failed - some features may not work');
+                }
+                return $db;
+            });
 
-            // Initialize transaction logger (depends on database).
-            $this->logger = Riseup_Logger::get_instance();
-            $this->file_logger->info('Transaction logger initialized');
+            $this->logger = RiseupInitHelpers::initComponent('TransactionLogger', function () {
+                return Riseup_Logger::get_instance();
+            });
 
-            // Initialize post manager (depends on logger).
-            $this->post_manager = Riseup_Post_Manager::get_instance();
-            $this->file_logger->info('Post manager initialized');
+            $this->post_manager = RiseupInitHelpers::initComponent('PostManager', function () {
+                return Riseup_Post_Manager::get_instance();
+            });
 
-            // Initialize update resolver (handles auto-update with 301 redirect).
-            $update_resolver = Riseup_Update_Resolver::get_instance();
-            $this->file_logger->info('Update resolver initialized');
+            RiseupInitHelpers::initComponent('UpdateResolver', function () {
+                return Riseup_Update_Resolver::get_instance();
+            });
 
-            // Initialize snapshot scheduler (handles WP-Cron for database snapshots).
-            $snapshot_scheduler = RiseupSnapshotScheduler::getInstance($this->file_logger, $this->db);
-            $snapshot_scheduler->init();
-            $this->file_logger->info('Snapshot scheduler initialized');
+            RiseupInitHelpers::initComponent('SnapshotScheduler', function () {
+                $scheduler = RiseupSnapshotScheduler::getInstance($this->file_logger, $this->db);
+                $scheduler->init();
+                return $scheduler;
+            });
+
+            // Log structured startup summary
+            RiseupInitHelpers::logStartupSummary($this->file_logger);
 
             // Register REST API routes.
-            $this->file_logger->info('Registering REST API init hook');
             add_action('rest_api_init', array($this, 'register_routes'));
 
             // Register WordPress core plugin lifecycle hooks for complete action auditing.
-            // These hooks fire when plugins are activated/deactivated from ANY source
-            // (dashboard, WP-CLI, other plugins, etc.), ensuring complete audit trail.
             add_action('activated_plugin', array($this, 'on_plugin_activated'), 10, 2);
             add_action('deactivated_plugin', array($this, 'on_plugin_deactivated'), 10, 2);
             add_action('deleted_plugin', array($this, 'on_plugin_deleted'), 10, 2);
-            $this->file_logger->info('Plugin lifecycle hooks registered');
 
             $this->file_logger->info('Plugin constructor complete');
         } catch (Throwable $e) {
