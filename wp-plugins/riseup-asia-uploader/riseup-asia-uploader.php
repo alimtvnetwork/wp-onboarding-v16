@@ -293,6 +293,7 @@ require_once __DIR__ . '/includes/class-root-db.php';
 require_once __DIR__ . '/includes/class-snapshot-worker.php';
 require_once __DIR__ . '/includes/class-snapshot-orchestrator.php';
 require_once __DIR__ . '/includes/class-incremental-backup.php';
+require_once __DIR__ . '/includes/class-restore-engine.php';
 
 // Load file cache (Phase 41 - Sync System).
 require_once __DIR__ . '/includes/class-file-cache.php';
@@ -3301,25 +3302,85 @@ class Riseup_Asia {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
-            $body = $request->get_json_params();
 
             $options = array(
-                'confirm'        => !empty($body['confirm']),
-                'create_backup'  => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
-                'require_backup' => !empty($body['requireBackup']),
-                'mode'           => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
-                'tables'         => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
-                'strict'         => !empty($body['strict']),
+                'confirm'            => !empty($body['confirm']),
+                'create_backup'      => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
+                'require_backup'     => !empty($body['requireBackup']),
+                'mode'               => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
+                'tables'             => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
+                'strict'             => !empty($body['strict']),
+                'apply_incrementals' => isset($body['applyIncrementals']) ? (bool) $body['applyIncrementals'] : true,
             );
 
             $this->file_logger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+
+            // Check if this is a per-table snapshot (has a snapshot directory with a-root.db)
+            $snapshot = $manager->getSnapshotById($id);
+            if ($snapshot && $this->isPerTableSnapshot($snapshot)) {
+                // Route through the new per-table Restore Engine
+                $snapshot_dir = $this->resolveSnapshotDir($snapshot);
+                if ($snapshot_dir && file_exists($snapshot_dir . '/a-root.db')) {
+                    $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
+                    $engine = RiseupRestoreEngine::getInstance($this->file_logger, $this->db, $orchestrator);
+                    $result = $engine->execute($snapshot_dir, $options);
+                    $status_code = $result['success'] ? 200 : 400;
+                    return new WP_REST_Response($result, $status_code);
+                }
+            }
+
+            // Fallback to legacy single-file restore
             $result = $manager->restoreSnapshot($id, $options);
 
             $status_code = $result['success'] ? 200 : 400;
             return new WP_REST_Response($result, $status_code);
         }, 'restore_snapshot');
+    }
+
+    /**
+     * Check if a snapshot is a per-table snapshot (has a directory with a-root.db).
+     *
+     * @param array $snapshot Snapshot record.
+     * @return bool True if per-table snapshot.
+     */
+    private function isPerTableSnapshot($snapshot) {
+        // Per-table snapshots store a directory path rather than a single SQLite file
+        $filepath = $snapshot['filepath'] ?? '';
+        if (is_dir($filepath)) {
+            return file_exists($filepath . '/a-root.db');
+        }
+        // Check if there's a directory alongside the file
+        $dir = $snapshot['directory'] ?? '';
+        if (!empty($dir) && is_dir($dir)) {
+            return file_exists($dir . '/a-root.db');
+        }
+        return false;
+    }
+
+    /**
+     * Resolve the snapshot directory path from a snapshot record.
+     *
+     * @param array $snapshot Snapshot record.
+     * @return string|null Directory path or null.
+     */
+    private function resolveSnapshotDir($snapshot) {
+        // Direct directory path
+        $filepath = $snapshot['filepath'] ?? '';
+        if (is_dir($filepath)) {
+            return $filepath;
+        }
+        // Check directory field
+        $dir = $snapshot['directory'] ?? '';
+        if (!empty($dir) && is_dir($dir)) {
+            return $dir;
+        }
+        // Try deriving from filepath (strip filename)
+        if (!empty($filepath) && file_exists(dirname($filepath) . '/a-root.db')) {
+            return dirname($filepath);
+        }
+        return null;
     }
 
     /**

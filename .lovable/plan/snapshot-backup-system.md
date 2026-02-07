@@ -280,15 +280,17 @@ CREATE TABLE IF NOT EXISTS snapshot_settings (
 - ZIP export includes `incremental/` folder hierarchy
 - Go backend proxy + REST endpoint registered
 
-### Phase 7: Restore Engine
-- Full restore: topological order from `a-root.db`
-  - Pre-restore safety backup (auto)
-  - Truncate + INSERT per table in dependency order
-  - Transactional MySQL restoration
-- Incremental restore: master + incrementals in sequence
+### Phase 7: Restore Engine ✅ DONE
+- `RiseupRestoreEngine` class with full, incremental, and selective restore modes
+- Dependency-aware restore order via topological sort from `a-root.db`
+- Pre-restore safety backup (auto) via orchestrator
+- Transactional MySQL restoration with FK checks disabled
+- Incremental replay: master first, then incrementals in sequence using REPLACE
 - Selective table restore: pick specific tables from snapshot
-- Progress reporting via WS
-- REST endpoint: `POST /snapshots/restore` (enhanced)
+- Smart routing: `handle_restore_snapshot` auto-detects per-table vs legacy snapshots
+- Progress reporting via audit trail logging
+- REST endpoint: `POST /snapshots/restore` (enhanced to route through engine)
+- PHP plugin version bumped to 1.15.0
 
 ### Phase 8: Import/Export ZIP Protocol
 - Export: ZIP all snapshot files with a-root.db as manifest
