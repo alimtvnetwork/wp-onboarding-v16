@@ -3,7 +3,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -280,66 +279,10 @@ func resolveSpaStaticDir(dir string) string {
 	return dir
 }
 
+// fileExists checks if a file exists (used by SPA handler)
 func fileExists(path string) bool {
 	fi, err := os.Stat(path)
 	return err == nil && !fi.IsDir()
-}
-
-// Start begins listening for HTTP requests
-func (s *Server) Start() error {
-	return s.server.ListenAndServe()
-}
-
-// Shutdown gracefully stops the server
-func (s *Server) Shutdown(ctx context.Context) error {
-	return s.server.Shutdown(ctx)
-}
-
-// APIResponse is the standard API response format
-type APIResponse struct {
-	Success bool        `json:"success"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   *APIError   `json:"error,omitempty"`
-}
-
-// APIError represents an error in API responses
-type APIError struct {
-	Code       string                 `json:"code"`
-	Message    string                 `json:"message"`
-	Details    string                 `json:"details,omitempty"`
-	Context    map[string]interface{} `json:"context,omitempty"`
-	File       string                 `json:"file,omitempty"`
-	Line       int                    `json:"line,omitempty"`
-	Function   string                 `json:"function,omitempty"`
-	StackTrace string                 `json:"stackTrace,omitempty"`
-	Timestamp  string                 `json:"timestamp"`
-}
-
-// JSON helper to write JSON responses
-func JSON(w http.ResponseWriter, status int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
-}
-
-// Success writes a successful JSON response
-func Success(w http.ResponseWriter, data interface{}) {
-	JSON(w, http.StatusOK, APIResponse{
-		Success: true,
-		Data:    data,
-	})
-}
-
-// Error writes an error JSON response
-func Error(w http.ResponseWriter, status int, code, message string) {
-	JSON(w, status, APIResponse{
-		Success: false,
-		Error: &APIError{
-			Code:      code,
-			Message:   message,
-			Timestamp: time.Now().Format(time.RFC3339),
-		},
-	})
 }
 
 // spaHandler serves static files with SPA fallback for client-side routing
