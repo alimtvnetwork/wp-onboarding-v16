@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useExecutionLoggerStore } from "@/hooks/useExecutionLogger";
-import { usePlugins } from "@/hooks/usePlugins";
+import { usePlugins, usePluginsPaginated } from "@/hooks/usePlugins";
 import { useSites } from "@/hooks/useSites";
 import { usePluginFormPersistence } from "@/hooks/usePluginFormPersistence";
 import { useQuickPublish } from "@/hooks/useQuickPublish";
@@ -83,9 +83,13 @@ import { api, Plugin } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
+import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 
 export default function Plugins() {
-  const { data: plugins, isLoading: pluginsLoading } = usePlugins();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: paginatedResult, isLoading: pluginsLoading } = usePluginsPaginated(currentPage);
+  const plugins = paginatedResult?.data;
+  const envelopeMeta = paginatedResult?.envelope;
   const { data: sites } = useSites();
   const queryClient = useQueryClient();
   const { captureError, openErrorModal } = useErrorStore();
@@ -1074,6 +1078,12 @@ export default function Plugins() {
           ))}
         </div>
       )}
+
+      {/* Envelope Pagination */}
+      <EnvelopePagination
+        meta={envelopeMeta ? { attributes: envelopeMeta.attributes, navigation: envelopeMeta.navigation } : null}
+        onPageChange={setCurrentPage}
+      />
 
       {/* Add Plugin Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

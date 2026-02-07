@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2, Search, BarChart3, Clock, CheckCircle2, XCircle, AlertTriangle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 
 export default function PublishHistory() {
   const queryClient = useQueryClient();
@@ -182,7 +183,12 @@ export default function PublishHistory() {
       </Card>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {data?.envelope?.attributes?.TotalPages ? (
+        <EnvelopePagination
+          meta={{ attributes: data.envelope.attributes, navigation: data.envelope.navigation }}
+          onPageChange={(p) => setPage(p - 1)}
+        />
+      ) : totalPages > 1 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>Showing {page * limit + 1}–{Math.min((page + 1) * limit, total)} of {total}</span>
           <div className="flex gap-2">
