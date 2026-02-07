@@ -630,9 +630,12 @@ export interface Settings {
     wsReconnectDelayMs: number;
   };
   responseDebug?: {
+    includeErrors: boolean;
     includeStackTrace: boolean;
-    includeInternalErrors: boolean;
-    maxStackFrames: number;
+    includeMethodsStack: boolean;
+  };
+  pagination?: {
+    defaultPerPage: number;
   };
 }
 
