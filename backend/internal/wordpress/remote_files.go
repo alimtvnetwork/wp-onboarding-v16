@@ -411,7 +411,7 @@ func truncateBody(body string, maxLen int) string {
 // Uses a fixed endpoint with slug and path in JSON body.
 func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
 	// Use the Riseup Asia Uploader fixed endpoint
-	endpoint := "/" + RiseupAsiaNamespace + "/plugins/file"
+	endpoint := "/" + RiseupAsiaNamespace + EndpointFile
 	
 	body := map[string]string{"plugin": pluginSlug, "path": filePath}
 	jsonBody, err := json.Marshal(body)

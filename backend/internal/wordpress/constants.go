@@ -48,8 +48,11 @@ const (
 	// EndpointDelete removes a plugin (fixed URL, slug in JSON body).
 	EndpointDelete = "/plugins/delete"
 
-	// EndpointFiles handles file operations (fixed URL, slug in JSON body).
+	// EndpointFiles handles file listing (fixed URL, slug in JSON body).
 	EndpointFiles = "/plugins/files"
+
+	// EndpointFile handles single file content retrieval (fixed URL, slug+path in JSON body).
+	EndpointFile = "/plugins/file"
 
 	// EndpointSync handles delta file sync (fixed URL, slug in JSON body).
 	EndpointSync = "/plugins/sync"

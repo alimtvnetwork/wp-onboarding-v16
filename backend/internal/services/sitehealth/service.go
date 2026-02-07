@@ -11,6 +11,7 @@ import (
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -53,7 +54,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 
 	// Measure response time to the WP REST API
 	start := time.Now()
-	statusURL := fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/status", siteURL)
+	statusURL := fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, wordpress.EndpointStatus)
 	req, err := http.NewRequestWithContext(ctx, "GET", statusURL, nil)
 	if err != nil {
 		check.Status = "down"
