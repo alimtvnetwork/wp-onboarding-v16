@@ -116,6 +116,9 @@ const (
 
 	// EndpointSnapshotsTables lists available database tables.
 	EndpointSnapshotsTables = "/snapshots/tables"
+
+	// EndpointSnapshotsFullBackup triggers end-to-end full backup orchestration.
+	EndpointSnapshotsFullBackup = "/snapshots/full-backup"
 )
 // =============================================================================
 // ACTION TYPES (match PHP constants)

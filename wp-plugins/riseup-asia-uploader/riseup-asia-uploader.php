@@ -291,6 +291,7 @@ require_once __DIR__ . '/includes/class-snapshot-manager.php';
 require_once __DIR__ . '/includes/class-dependency-analyzer.php';
 require_once __DIR__ . '/includes/class-root-db.php';
 require_once __DIR__ . '/includes/class-snapshot-worker.php';
+require_once __DIR__ . '/includes/class-snapshot-orchestrator.php';
 
 // Load file cache (Phase 41 - Sync System).
 require_once __DIR__ . '/includes/class-file-cache.php';
@@ -966,6 +967,14 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/snapshots/export-pertable', array(
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_export_pertable'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Full backup endpoint (end-to-end orchestration)
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_full_backup'),
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
@@ -3190,15 +3199,33 @@ class Riseup_Asia {
     public function handle_create_snapshot($request) {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $settings = $manager->getSettings();
+
+            // Route to full orchestrator when mode is per_table
+            if (($settings['mode'] ?? 'per_table') === 'per_table') {
+                $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
+                $result = $orchestrator->executeFullBackup(array(
+                    'title'            => $body['title'] ?? null,
+                    'scope'            => isset($body['scope']) ? sanitize_key($body['scope']) : null,
+                    'include_plugins'  => $body['include_plugins'] ?? null,
+                    'plugin_selection' => $body['plugin_selection'] ?? null,
+                    'compression'      => $body['compression'] ?? null,
+                ));
+                $status_code = $result['success'] ? 201 : 500;
+                return new WP_REST_Response($result, $status_code);
+            }
+
+            // Legacy single-db mode via provider
             $options = array(
                 'scope'   => isset($body['scope']) ? sanitize_key($body['scope']) : RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
                 'trigger' => RISEUP_SNAPSHOT_TRIGGER_API,
                 'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
             );
 
-            $this->file_logger->info('Creating snapshot via API', array('scope' => $options['scope']));
+            $this->file_logger->info('Creating snapshot via API (legacy mode)', array('scope' => $options['scope']));
 
-            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $result = $manager->createSnapshot($options);
 
             $status_code = $result['success'] ? 201 : 500;
@@ -3482,6 +3509,45 @@ class Riseup_Asia {
                 'error'      => $result['error'] ?? null,
             ), $status);
         }, 'export_pertable');
+    }
+
+    /**
+     * Handle full end-to-end backup (Phase 5 orchestration).
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_full_backup($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
+
+            $result = $orchestrator->executeFullBackup(array(
+                'title'            => $body['title'] ?? null,
+                'scope'            => $body['scope'] ?? null,
+                'include_plugins'  => $body['include_plugins'] ?? null,
+                'plugin_selection' => $body['plugin_selection'] ?? null,
+                'compression'      => $body['compression'] ?? null,
+            ));
+
+            $status = $result['success'] ? 201 : 500;
+
+            return new WP_REST_Response(array(
+                'success'     => $result['success'],
+                'snapshot_id' => $result['snapshot_id'] ?? null,
+                'directory'   => $result['directory'] ?? null,
+                'tables'      => $result['tables'] ?? 0,
+                'total_rows'  => $result['total_rows'] ?? 0,
+                'plugins'     => $result['plugins'] ?? 0,
+                'zip_size'    => $result['zip_size'] ?? 0,
+                'duration'    => $result['duration'] ?? 0,
+                'errors'      => $result['errors'] ?? array(),
+                'error'       => $result['error'] ?? null,
+                'phase'       => $result['phase'] ?? null,
+            ), $status);
+        }, 'full_backup');
     }
 }
 

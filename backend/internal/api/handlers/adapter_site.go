@@ -157,3 +157,7 @@ func (a *SiteServiceAdapter) GetRemoteSnapshotProviders(ctx context.Context, sit
 func (a *SiteServiceAdapter) GetRemoteAvailableTables(ctx context.Context, siteID int64) (interface{}, error) {
 	return a.Service.GetRemoteAvailableTables(ctx, siteID)
 }
+
+func (a *SiteServiceAdapter) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+	return a.Service.FullBackupRemoteSnapshot(ctx, siteID, opts)
+}
