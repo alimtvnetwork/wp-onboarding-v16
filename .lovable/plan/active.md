@@ -6,17 +6,13 @@
 
 ## Recently Completed
 
-- **Phase 8: Unify ServiceRegistry Definitions**: Co-located all 11 service interfaces with their adapter implementations in domain-specific adapter files (`adapter_site.go`, `adapter_plugin.go`, `adapter_sync.go`, `adapter_publish.go`, `adapter_session.go`, `adapter_history.go`). Reduced `handlers.go` to a lean registry-only file (~45 lines) containing just `ServiceRegistry` struct, global `Services` var, and Health/APIIndex handlers. Removed duplicate interface declarations from handler files (`sessions.go`, `error_history_handlers.go`, `publish_history_handlers.go`, `site_health_handlers.go`).
-- **Phase 7: Generic CRUD Handler Factory**: Created `handler_factory.go` with 7 reusable factory functions (`handleActionByID`, `handleDeleteByID`, `handleListNilSafe`, `handleSiteActionByID`, `handleSiteActionByIDWithOpts`, `handleNoArgs`, `handleTwoIDs`) + nil-safe lazy service getters. Refactored ~30 handlers across 7 files to use factories, eliminating ~300 lines of boilerplate.
-- **Publish History Integration**: Wired `publishHistoryService.Record()` into publish pipeline; wired SiteHealth + PublishHistory into main.go and service registry.
-- **Phase 10: Remote Plugin File Browser**: Browse files button in RemotePluginsPanel, tree view with syntax highlighting.
+- **Phase 9: Standardize Base Service Configs**: Added `Config` structs to `publishhistory` and `sitehealth` services (the only two that used raw parameters). Renamed `sitehealth.NewService()` → `sitehealth.New()` for consistency. All 10 services now follow the uniform `New(Config{...})` constructor pattern.
+- **Phase 8: Unify ServiceRegistry Definitions**: Co-located all 11 service interfaces with their adapter implementations in domain-specific adapter files. Reduced `handlers.go` to a lean registry-only file (~45 lines).
+- **Phase 7: Generic CRUD Handler Factory**: Created `handler_factory.go` with 7 reusable factory functions + nil-safe lazy service getters. Refactored ~30 handlers, eliminating ~300 lines of boilerplate.
 
 ---
 
 ## Backlog
-
-### Phase 9: Standardize Base Service Configs
-Normalize service initialization patterns and configuration across all services.
 
 ### Phase 10: Real HTTP-based E2E Tests
 Replace stub tests with actual HTTP request-based end-to-end test logic.

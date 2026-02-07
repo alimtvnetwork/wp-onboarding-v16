@@ -354,10 +354,16 @@ func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logge
 	})
 
 	// Initialize publish history service
-	publishHistoryService := publishhistory.New(db, log)
+	publishHistoryService := publishhistory.New(publishhistory.Config{
+		DB:     db,
+		Logger: log,
+	})
 
 	// Initialize site health service
-	siteHealthService := sitehealth.NewService(db, log)
+	siteHealthService := sitehealth.New(sitehealth.Config{
+		DB:     db,
+		Logger: log,
+	})
 
 	publishService := publish.New(publish.Config{
 		DB:                    db,
