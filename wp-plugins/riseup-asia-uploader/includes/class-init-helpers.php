@@ -88,7 +88,7 @@ class RiseupInitHelpers {
      * @param bool   $secure Add security files.
      * @return bool True on success.
      */
-    private static function ensureDirNative($path, $secure = false) {
+    public static function ensureDirNative($path, $secure = false) {
         if (RiseupBooleanHelpers::is_empty($path)) {
             return false;
         }
