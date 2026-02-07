@@ -153,9 +153,9 @@ func main() {
 
 	// Initialize envelope debug config from seedable config
 	envelope.SetDebugConfig(envelope.DebugConfig{
-		IncludeStackTrace:     cfg.ResponseDebug.IncludeStackTrace,
-		IncludeInternalErrors: cfg.ResponseDebug.IncludeInternalErrors,
-		MaxStackFrames:        cfg.ResponseDebug.MaxStackFrames,
+		IncludeErrors:     cfg.ResponseDebug.IncludeInternalErrors,
+		IncludeStackTrace: cfg.ResponseDebug.IncludeStackTrace,
+		MaxStackFrames:    cfg.ResponseDebug.MaxStackFrames,
 	})
 
 	log.Info("Starting application", "version", versionInfo.String())
