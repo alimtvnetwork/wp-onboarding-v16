@@ -101,16 +101,18 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 5: Settings Page — Response Debug Config
+### Phase 5: Settings Page — Response Debug Config ✅ COMPLETE
 
 **Goal:** Add UI to toggle `ResponseDebug` settings (stack trace exposure, max frames) from the Settings page.
 
-**Files to change:**
-- `src/pages/Settings.tsx` — Add "Debug & Diagnostics" section with toggles for `IncludeStackTrace`, `IncludeInternalErrors`, `MaxStackFrames`
-- `src/hooks/useSettings.ts` — Ensure save mutation includes new ResponseDebug fields
-- `src/lib/api.ts` — Update `Settings` interface to include `responseDebug` block
+**Implementation:** Added a "Response Debug (Backend)" section to the Developer tab with toggles for `IncludeStackTrace`, `IncludeInternalErrors`, and a numeric input for `MaxStackFrames`. Changes are persisted to the backend via PUT /settings using a new `useSaveSettings` mutation hook. The `Settings` interface was extended with an optional `responseDebug` block.
 
-**Backend dependency:** Config system already supports `ResponseDebug`
+**Files changed:**
+- `src/lib/api.ts` — Added `responseDebug` to `Settings` interface
+- `src/hooks/useSettings.ts` — Added `useSaveSettings` mutation hook
+- `src/pages/Settings.tsx` — Added Response Debug section with Shield icon, toggles, and numeric input
+
+**Backend dependency:** Config system already supports `ResponseDebug` (✅)
 
 ---
 

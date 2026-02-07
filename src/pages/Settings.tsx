@@ -11,8 +11,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useSettings } from "@/hooks/useSettings";
-import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight } from "lucide-react";
+import { useSettings, useSaveSettings } from "@/hooks/useSettings";
+import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
 import { useLocation } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -43,6 +43,7 @@ const TABS: TabItem[] = [
 
 export default function Settings() {
   const { data: settings, isLoading } = useSettings();
+  const saveSettings = useSaveSettings();
   const location = useLocation();
   const { captureError, openErrorModal } = useErrorStore();
   
@@ -89,6 +90,11 @@ export default function Settings() {
   const [circuitBreakerThreshold, setCircuitBreakerThreshold] = useState(5);
   const [circuitBreakerCooldownMs, setCircuitBreakerCooldownMs] = useState(60000);
   
+  // Response Debug settings (backend-persisted)
+  const [includeStackTrace, setIncludeStackTrace] = useState(true);
+  const [includeInternalErrors, setIncludeInternalErrors] = useState(false);
+  const [maxStackFrames, setMaxStackFrames] = useState(20);
+  
   // Appearance settings
   const [theme, setTheme] = useState<string>("system");
   const [compactMode, setCompactMode] = useState(false);
@@ -126,6 +132,11 @@ export default function Settings() {
         failureThreshold: settings.logging.circuitBreakerThreshold ?? 5,
         cooldownMs: settings.logging.circuitBreakerCooldownMs ?? 60000,
       });
+    }
+    if (settings?.responseDebug) {
+      setIncludeStackTrace(settings.responseDebug.includeStackTrace ?? true);
+      setIncludeInternalErrors(settings.responseDebug.includeInternalErrors ?? false);
+      setMaxStackFrames(settings.responseDebug.maxStackFrames ?? 20);
     }
   }, [settings]);
   
@@ -247,6 +258,31 @@ export default function Settings() {
         border: "none",
       },
     });
+  };
+  
+  const handleResponseDebugSave = (patch: { includeStackTrace?: boolean; includeInternalErrors?: boolean; maxStackFrames?: number }) => {
+    const updated = {
+      includeStackTrace: patch.includeStackTrace ?? includeStackTrace,
+      includeInternalErrors: patch.includeInternalErrors ?? includeInternalErrors,
+      maxStackFrames: patch.maxStackFrames ?? maxStackFrames,
+    };
+    saveSettings.mutate(
+      { responseDebug: updated },
+      {
+        onSuccess: () => {
+          toast.success("Response debug settings saved", {
+            style: {
+              background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+              color: "white",
+              border: "none",
+            },
+          });
+        },
+        onError: (err) => {
+          toast.error(`Failed to save: ${err.message}`);
+        },
+      }
+    );
   };
   
   const handlePollIntervalChange = (value: string) => {
@@ -596,6 +632,68 @@ export default function Settings() {
               <p className="text-xs text-muted-foreground">
                 Stops calling failing functions after threshold failures
               </p>
+            </div>
+
+            {/* Response Debug Settings (backend-persisted) */}
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Shield className="h-4 w-4" />
+                Response Debug (Backend)
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Controls what diagnostic data the Go backend includes in API error responses. Changes are persisted to config.json.
+              </p>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-sm">Include Stack Traces</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Expose Go stack traces in error responses
+                  </p>
+                </div>
+                <Switch
+                  checked={includeStackTrace}
+                  onCheckedChange={(v) => {
+                    setIncludeStackTrace(v);
+                    handleResponseDebugSave({ includeStackTrace: v });
+                  }}
+                  className="shrink-0"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-sm">Include Internal Errors</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Show internal error details (file, function) in responses
+                  </p>
+                </div>
+                <Switch
+                  checked={includeInternalErrors}
+                  onCheckedChange={(v) => {
+                    setIncludeInternalErrors(v);
+                    handleResponseDebugSave({ includeInternalErrors: v });
+                  }}
+                  className="shrink-0"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="max-frames" className="text-xs">Max Stack Frames</Label>
+                <Input
+                  id="max-frames"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={maxStackFrames}
+                  onChange={(e) => setMaxStackFrames(parseInt(e.target.value) || 20)}
+                  onBlur={() => handleResponseDebugSave({ maxStackFrames })}
+                  className="h-9"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Limit the number of stack frames returned per error
+                </p>
+              </div>
             </div>
           </div>
         );
