@@ -944,7 +944,8 @@ func (s *Service) GetRemotePluginsWithCache(ctx context.Context, siteID int64, f
 	return plugins, nil
 }
 
-// fetchRemotePlugins fetches plugins directly from the remote WordPress site
+// fetchRemotePlugins fetches plugins directly from the remote WordPress site.
+// Prefers the Riseup Asia Uploader API for reliability; falls back to WP Core API.
 func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]RemotePlugin, error) {
 	site, err := s.GetByID(ctx, siteID)
 	if err != nil {
@@ -957,6 +958,41 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 	}
 
 	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
+
+	// Try Riseup Asia Uploader API first (more reliable, avoids WP Core 500 errors)
+	uploaderPlugins, uploaderErr := client.ListPluginsViaUploader()
+	if uploaderErr == nil {
+		result := make([]RemotePlugin, 0, len(uploaderPlugins))
+		for _, p := range uploaderPlugins {
+			slug := p.Slug
+			if slug == "" {
+				// Derive slug from file path (e.g., "akismet/akismet.php" -> "akismet")
+				slug = p.File
+				if idx := strings.Index(p.File, "/"); idx > 0 {
+					slug = p.File[:idx]
+				}
+			}
+			status := "inactive"
+			if p.Active {
+				status = "active"
+			}
+			result = append(result, RemotePlugin{
+				Plugin:      p.File,
+				Slug:        slug,
+				Name:        p.Name,
+				Version:     p.Version,
+				Status:      status,
+				Author:      p.Author,
+				Description: p.Description,
+			})
+		}
+		s.log.Debug("Remote plugins fetched via Uploader API", "siteId", siteID, "count", len(result))
+		return result, nil
+	}
+
+	s.log.Warn("Uploader API unavailable, falling back to WP Core API", "siteId", siteID, "error", uploaderErr)
+
+	// Fallback to WP Core API
 	plugins, err := client.GetPlugins()
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPPluginList, "failed to fetch remote plugins")
@@ -964,7 +1000,6 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 
 	result := make([]RemotePlugin, 0, len(plugins))
 	for _, p := range plugins {
-		// Extract slug from plugin identifier (e.g., "akismet/akismet.php" -> "akismet")
 		slug := p.Plugin
 		if idx := strings.Index(p.Plugin, "/"); idx > 0 {
 			slug = p.Plugin[:idx]
@@ -983,7 +1018,7 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 		})
 	}
 
-	s.log.Debug("Remote plugins fetched from site", "siteId", siteID, "count", len(result))
+	s.log.Debug("Remote plugins fetched via WP Core API", "siteId", siteID, "count", len(result))
 	return result, nil
 }
 
