@@ -39,14 +39,14 @@ const (
 	// EndpointPluginInfo gets info for a specific plugin (format: /plugins/%s).
 	EndpointPluginInfo = "/plugins/%s"
 
-	// EndpointEnable activates a plugin (format: /plugins/%s/enable).
-	EndpointEnable = "/plugins/%s/enable"
+	// EndpointEnable activates a plugin (fixed URL, slug in JSON body).
+	EndpointEnable = "/plugins/enable"
 
-	// EndpointDisable deactivates a plugin (format: /plugins/%s/disable).
-	EndpointDisable = "/plugins/%s/disable"
+	// EndpointDisable deactivates a plugin (fixed URL, slug in JSON body).
+	EndpointDisable = "/plugins/disable"
 
-	// EndpointDelete removes a plugin (format: /plugins/%s/delete).
-	EndpointDelete = "/plugins/%s/delete"
+	// EndpointDelete removes a plugin (fixed URL, slug in JSON body).
+	EndpointDelete = "/plugins/delete"
 
 	// EndpointFiles handles file operations (format: /plugins/%s/files).
 	EndpointFiles = "/plugins/%s/files"

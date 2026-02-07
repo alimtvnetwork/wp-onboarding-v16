@@ -383,14 +383,16 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 }
 
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
+// Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) EnablePluginViaUploader(slug string) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
 		namespace = RiseUpUploaderNamespace
 	}
 
-	endpoint := fmt.Sprintf("/%s"+EndpointEnable, namespace, slug)
-	resp, err := c.request("POST", endpoint, nil)
+	endpoint := "/" + namespace + EndpointEnable
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "enable plugin request failed").
 			WithContext("slug", slug)
@@ -398,7 +400,6 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	body := string(bodyBytes)
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
@@ -407,7 +408,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(body, 8192),
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
 			PluginSlugIn: slug,
 		}
 	}
@@ -416,14 +417,16 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 }
 
 // DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
+// Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) DisablePluginViaUploader(slug string) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
 		namespace = RiseUpUploaderNamespace
 	}
 
-	endpoint := fmt.Sprintf("/%s"+EndpointDisable, namespace, slug)
-	resp, err := c.request("POST", endpoint, nil)
+	endpoint := "/" + namespace + EndpointDisable
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "disable plugin request failed").
 			WithContext("slug", slug)
@@ -431,7 +434,6 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	body := string(bodyBytes)
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
@@ -440,7 +442,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(body, 8192),
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
 			PluginSlugIn: slug,
 		}
 	}
@@ -449,25 +451,16 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 }
 
 // DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
+// Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) DeletePluginViaUploader(slug string) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
 		namespace = RiseUpUploaderNamespace
 	}
 
-	endpoint := fmt.Sprintf("/%s"+EndpointDelete, namespace, slug)
-
-	// Build DELETE request
-	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrInternal, "create delete request").
-			WithContext("url", url)
-	}
-
-	c.setStandardHeaders(req, "")
-
-	resp, err := c.httpClient.Do(req)
+	endpoint := "/" + namespace + EndpointDelete
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "delete plugin request failed").
 			WithContext("slug", slug)
@@ -475,16 +468,15 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	body := string(bodyBytes)
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
 			Operation:    "delete plugin via RiseupAsia Uploader",
-			Method:       "DELETE",
+			Method:       "POST",
 			Endpoint:     endpoint,
-			URL:          url,
+			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(body, 8192),
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
 			PluginSlugIn: slug,
 		}
 	}
