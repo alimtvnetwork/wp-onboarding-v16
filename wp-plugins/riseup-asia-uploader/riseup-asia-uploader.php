@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.22.0
+ * Version: 1.23.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -377,55 +377,59 @@ class Riseup_Asia {
         // Log dependency loading results from structured loader
         RiseupDependencyLoader::logSummary($this->file_logger);
 
-        try {
-            // Use structured component startup tracking
-            $this->db = RiseupInitHelpers::initComponent('Database', function () {
-                $db = Riseup_Database::get_instance();
-                $db_ready = $db->init();
-                if (RiseupBooleanHelpers::is_falsy($db_ready)) {
-                    throw new Exception('Database initialization failed - some features may not work');
-                }
-                return $db;
-            });
+        // =====================================================================
+        // CRITICAL: Register REST routes and lifecycle hooks BEFORE any
+        // component initialization. This ensures all API endpoints are
+        // available even when optional dependencies (PDO, SQLite) are missing.
+        // =====================================================================
+        add_action('rest_api_init', array($this, 'register_routes'));
+        add_action('activated_plugin', array($this, 'on_plugin_activated'), 10, 2);
+        add_action('deactivated_plugin', array($this, 'on_plugin_deactivated'), 10, 2);
+        add_action('deleted_plugin', array($this, 'on_plugin_deleted'), 10, 2);
+        $this->file_logger->info('REST routes and lifecycle hooks registered (pre-init)');
 
-            $this->logger = RiseupInitHelpers::initComponent('TransactionLogger', function () {
-                return Riseup_Logger::get_instance();
-            });
+        // =====================================================================
+        // Component initialization — each wrapped in initComponent so failures
+        // are isolated and do not block subsequent components.
+        // =====================================================================
+        $this->db = RiseupInitHelpers::initComponent('Database', function () {
+            $db = Riseup_Database::get_instance();
+            $db_ready = $db->init();
+            if (RiseupBooleanHelpers::is_falsy($db_ready)) {
+                $this->file_logger->error('Database initialization failed - some features may not work');
+                return null;
+            }
+            return $db;
+        });
 
-            $this->post_manager = RiseupInitHelpers::initComponent('PostManager', function () {
-                return Riseup_Post_Manager::get_instance();
-            });
+        $this->logger = RiseupInitHelpers::initComponent('TransactionLogger', function () {
+            return Riseup_Logger::get_instance();
+        });
 
-            RiseupInitHelpers::initComponent('UpdateResolver', function () {
-                return Riseup_Update_Resolver::get_instance();
-            });
+        $this->post_manager = RiseupInitHelpers::initComponent('PostManager', function () {
+            return Riseup_Post_Manager::get_instance();
+        });
 
+        RiseupInitHelpers::initComponent('UpdateResolver', function () {
+            return Riseup_Update_Resolver::get_instance();
+        });
+
+        // Only init scheduler if database is available (requires DB for snapshot tracking)
+        if (RiseupBooleanHelpers::is_set($this->db)) {
             RiseupInitHelpers::initComponent('SnapshotScheduler', function () {
                 $scheduler = RiseupSnapshotScheduler::getInstance($this->file_logger, $this->db);
                 $scheduler->init();
                 return $scheduler;
             });
-
-            // Log structured startup summary
-            RiseupInitHelpers::logStartupSummary($this->file_logger);
-
-            // Register REST API routes.
-            add_action('rest_api_init', array($this, 'register_routes'));
-
-            // Register WordPress core plugin lifecycle hooks for complete action auditing.
-            add_action('activated_plugin', array($this, 'on_plugin_activated'), 10, 2);
-            add_action('deactivated_plugin', array($this, 'on_plugin_deactivated'), 10, 2);
-            add_action('deleted_plugin', array($this, 'on_plugin_deleted'), 10, 2);
-
-            $this->file_logger->info('Plugin constructor complete');
-        } catch (Throwable $e) {
-            // Catch both Exception and Error (PHP 7+)
-            $this->file_logger->error('Fatal error during plugin init: ' . $e->getMessage(), array(
-                'exceptionClass' => get_class($e),
-                'file'           => $e->getFile(),
-                'line'           => $e->getLine(),
-            ));
+        } else {
+            $this->file_logger->info('SnapshotScheduler skipped - database not available');
         }
+
+        // Log structured startup summary
+        RiseupInitHelpers::logStartupSummary($this->file_logger);
+        $this->file_logger->info('Plugin constructor complete', array(
+            'db_available' => RiseupBooleanHelpers::is_set($this->db),
+        ));
     }
 
     // =========================================================================
