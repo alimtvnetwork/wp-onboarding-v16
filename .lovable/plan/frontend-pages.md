@@ -101,16 +101,16 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 5: Settings Page — Response Debug Config ✅ COMPLETE
+### Phase 5: Settings Page — Response Debug Config ✅ COMPLETE (Updated in Envelope Refactor C8)
 
-**Goal:** Add UI to toggle `ResponseDebug` settings (stack trace exposure, max frames) from the Settings page.
+**Goal:** Add UI to toggle `ResponseDebug` settings from the Settings page.
 
-**Implementation:** Added a "Response Debug (Backend)" section to the Developer tab with toggles for `IncludeStackTrace`, `IncludeInternalErrors`, and a numeric input for `MaxStackFrames`. Changes are persisted to the backend via PUT /settings using a new `useSaveSettings` mutation hook. The `Settings` interface was extended with an optional `responseDebug` block.
+**Implementation:** The Developer tab features a "Response Debug (Backend)" section with toggles for `includeErrors`, `includeStackTrace`, `includeMethodsStack`, and a numeric input for `defaultPerPage`. These match the CONFIGURABILITY spec in `spec/response-envelope/CONFIGURABILITY.md`. Changes are persisted via `useSaveSettings`.
 
 **Files changed:**
-- `src/lib/api.ts` — Added `responseDebug` to `Settings` interface
-- `src/hooks/useSettings.ts` — Added `useSaveSettings` mutation hook
-- `src/pages/Settings.tsx` — Added Response Debug section with Shield icon, toggles, and numeric input
+- `src/lib/api.ts` — `Settings.responseDebug` with `includeErrors`, `includeStackTrace`, `includeMethodsStack`; added `Settings.pagination.defaultPerPage`
+- `src/hooks/useSettings.ts` — `useSaveSettings` mutation hook
+- `src/pages/Settings.tsx` — Four controls: Include Errors, Include Stack Traces, Include Methods Stack, Default Per Page
 
 **Backend dependency:** Config system already supports `ResponseDebug` (✅)
 
