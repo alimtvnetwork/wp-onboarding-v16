@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.16.0');
+    define('RISEUP_VERSION', '1.17.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -757,4 +757,9 @@ if (!defined('RISEUP_ACTION_SNAPSHOT_RESTORE_PERTABLE')) {
 // Import per-table action (Phase 8)
 if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT_PERTABLE')) {
     define('RISEUP_ACTION_SNAPSHOT_IMPORT_PERTABLE', 'snapshot_import_pertable');
+}
+
+// Cleanup endpoint (Phase 10)
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP', 'snapshots/cleanup');
 }

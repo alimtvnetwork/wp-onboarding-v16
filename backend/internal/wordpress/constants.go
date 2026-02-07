@@ -125,6 +125,9 @@ const (
 
 	// EndpointSnapshotsImport imports a snapshot from an uploaded ZIP file.
 	EndpointSnapshotsImport = "/snapshots/import"
+
+	// EndpointSnapshotsCleanup triggers cleanup of old/orphan/stuck snapshots.
+	EndpointSnapshotsCleanup = "/snapshots/cleanup"
 )
 // =============================================================================
 // ACTION TYPES (match PHP constants)

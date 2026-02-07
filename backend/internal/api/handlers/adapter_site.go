@@ -169,3 +169,7 @@ func (a *SiteServiceAdapter) IncrementalBackupRemoteSnapshot(ctx context.Context
 func (a *SiteServiceAdapter) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (interface{}, error) {
 	return a.Service.ImportRemoteSnapshot(ctx, siteID, zipPath)
 }
+
+func (a *SiteServiceAdapter) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+	return a.Service.CleanupRemoteSnapshots(ctx, siteID, opts)
+}

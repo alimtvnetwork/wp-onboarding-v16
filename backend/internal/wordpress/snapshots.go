@@ -494,3 +494,32 @@ func (c *Client) ImportSnapshot(zipPath string) (map[string]interface{}, error) 
 
 	return result, nil
 }
+
+// CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
+func (c *Client) CleanupSnapshots(opts map[string]interface{}) (map[string]interface{}, error) {
+	endpoint := snapshotEndpoint(EndpointSnapshotsCleanup)
+	resp, err := c.request("POST", endpoint, opts)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger snapshot cleanup")
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, &APIError{
+			Operation:    "snapshot cleanup",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode cleanup response")
+	}
+
+	return result, nil
+}

@@ -124,6 +124,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/{id}/snapshots/full-backup", handlers.FullBackupRemoteSnapshot).Methods("POST")
 	api.HandleFunc("/sites/{id}/snapshots/incremental", handlers.IncrementalBackupRemoteSnapshot).Methods("POST")
 	api.HandleFunc("/sites/{id}/snapshots/import", handlers.ImportRemoteSnapshot).Methods("POST")
+	api.HandleFunc("/sites/{id}/snapshots/cleanup", handlers.CleanupRemoteSnapshots).Methods("POST")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.GetRemoteSnapshot).Methods("GET")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.DeleteRemoteSnapshot).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}/restore", handlers.RestoreRemoteSnapshot).Methods("POST")

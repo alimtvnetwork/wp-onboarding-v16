@@ -417,3 +417,32 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		"data":    result,
 	})
 }
+
+// CleanupRemoteSnapshots triggers cleanup of old/orphan/stuck snapshots on a remote WordPress site
+func CleanupRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	var opts map[string]interface{}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&opts)
+	}
+	if opts == nil {
+		opts = map[string]interface{}{}
+	}
+
+	result, err := Services.SiteService.CleanupRemoteSnapshots(r.Context(), siteID, opts)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3033", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}

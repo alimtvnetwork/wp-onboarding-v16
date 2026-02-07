@@ -249,6 +249,8 @@ function SnapshotSettingsTab({
     isLoadingProviders,
     updateSettings,
     isUpdatingSettings,
+    cleanupSnapshots,
+    isCleaningUp,
   } = useRemoteSnapshots(siteId);
 
   const [localSettings, setLocalSettings] = useState<Record<string, unknown> | null>(null);
@@ -426,6 +428,30 @@ function SnapshotSettingsTab({
           Save Settings
         </Button>
       )}
+
+      <Separator />
+
+      {/* Manual Cleanup */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">Manual Cleanup</Label>
+        <p className="text-xs text-muted-foreground">
+          Run retention cleanup, remove orphan files, and mark stuck snapshots as failed.
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => cleanupSnapshots({})}
+          disabled={isCleaningUp}
+          className="w-full h-8"
+        >
+          {isCleaningUp ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5 mr-1" />
+          )}
+          Run Cleanup Now
+        </Button>
+      </div>
     </div>
   );
 }
