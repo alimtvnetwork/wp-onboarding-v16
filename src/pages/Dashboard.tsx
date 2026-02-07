@@ -46,6 +46,8 @@ export default function Dashboard() {
       icon: AlertCircle,
       colorClass: recentErrors > 0 ? "text-destructive" : "text-muted-foreground",
       href: "/errors",
+      sparkline: stats?.trends.errors,
+      sparklineColor: "hsl(var(--destructive))",
     },
     {
       title: "Total Publishes",
@@ -53,6 +55,8 @@ export default function Dashboard() {
       icon: Rocket,
       colorClass: "text-primary",
       href: "/publish-history",
+      sparkline: stats?.trends.publishes,
+      sparklineColor: "hsl(var(--primary))",
     },
   ];
 

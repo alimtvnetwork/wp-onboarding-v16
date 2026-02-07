@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SparklineChart, type SparklinePoint } from "./SparklineChart";
 import type { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
@@ -9,9 +10,11 @@ interface StatCardProps {
   icon: LucideIcon;
   colorClass: string;
   href: string;
+  sparkline?: SparklinePoint[];
+  sparklineColor?: string;
 }
 
-export function StatCard({ title, value, total, icon: Icon, colorClass, href }: StatCardProps) {
+export function StatCard({ title, value, total, icon: Icon, colorClass, href, sparkline, sparklineColor }: StatCardProps) {
   return (
     <Link to={href}>
       <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
@@ -21,7 +24,7 @@ export function StatCard({ title, value, total, icon: Icon, colorClass, href }: 
           </CardTitle>
           <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${colorClass} shrink-0`} />
         </CardHeader>
-        <CardContent className="p-3 sm:p-4 pt-0">
+        <CardContent className="p-3 sm:p-4 pt-0 space-y-1">
           <div className="text-xl sm:text-2xl font-bold">
             {value}
             {total !== undefined && (
@@ -30,6 +33,9 @@ export function StatCard({ title, value, total, icon: Icon, colorClass, href }: 
               </span>
             )}
           </div>
+          {sparkline && sparkline.length >= 2 && (
+            <SparklineChart data={sparkline} color={sparklineColor} height={28} />
+          )}
         </CardContent>
       </Card>
     </Link>

@@ -217,35 +217,35 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 13: WebSocket Toast Notifications ✅ COMPLETE
+### Phase 15: Dashboard Sparklines & Trends ✅ COMPLETE
 
-**Goal:** Surface critical WebSocket events as Sonner toasts so users are notified regardless of which page they're viewing.
+**Goal:** Add Recharts sparkline mini-charts to Dashboard stat cards showing 7-day trends for errors and publishes.
 
-**Implementation:** Created a `useWsToastNotifications` hook that subscribes directly to the `wsClient` for key lifecycle events: publish complete/failed, auto-publish triggered/complete/failed, sync complete/failed, connection test results, E2E test results, git pull complete/failed, remote plugin action results, and backend errors. Each event maps to an appropriate `toast.success`, `toast.error`, or `toast.info` call with contextual descriptions (plugin slug, site name, error messages). The hook is wired into the `WebSocketProvider` in `App.tsx`.
+**Implementation:** Created a `SparklineChart` component using Recharts `AreaChart` in a `ResponsiveContainer` — no axes or labels, just a gradient-filled trend line. Updated `useDashboardStats` to fetch last 200 publish entries and aggregate them into 7-day daily buckets via `buildDailyBuckets()`. The "Recent Errors" and "Total Publishes" stat cards now display sparklines with theme-appropriate colors (destructive for errors, primary for publishes). `StatCard` accepts optional `sparkline` and `sparklineColor` props.
 
 **Files created:**
-- `src/hooks/useWsToastNotifications.ts` — WS event → Sonner toast mapping
+- `src/components/dashboard/SparklineChart.tsx` — Tiny area chart component for stat cards
 
 **Files changed:**
-- `src/App.tsx` — Added `useWsToastNotifications` to `WebSocketProvider`
+- `src/components/dashboard/StatCard.tsx` — Added sparkline/sparklineColor props
+- `src/hooks/useDashboardStats.ts` — Added trend data fetching and daily bucket aggregation
+- `src/pages/Dashboard.tsx` — Passed sparkline data to error and publish stat cards
 
-**Backend dependency:** None (uses existing WS events)
+**Backend dependency:** Existing publish-history and errors endpoints (✅)
 
 ---
 
 ## Implementation Order (Recommended)
 
 ```
-Phase 1 (Envelope Migration) ← foundation, everything else depends on this
+Phase 1 (Envelope Migration) ← foundation
   ↓
-Phase 2 (Error Modal Enhancements)
+Phase 2 (Error Modal) → Phase 3 (Pagination)
   ↓
-Phase 3 (Pagination)
-  ↓
-Phase 4–13: Independent phases, all complete
+Phase 4–15: Independent phases, all complete
 ```
 
-All phases (1–13) are complete.
+All phases (1–13, 15) are complete.
 
 ---
 
