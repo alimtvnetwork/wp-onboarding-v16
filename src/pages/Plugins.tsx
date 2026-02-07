@@ -1328,7 +1328,7 @@ export default function Plugins() {
 
       {/* Publish Dialog */}
       <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
@@ -1339,7 +1339,7 @@ export default function Plugins() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 overflow-x-hidden">
             <p className="text-sm text-muted-foreground">
               Select a site to publish this plugin to:
             </p>
