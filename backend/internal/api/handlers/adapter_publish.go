@@ -1,4 +1,4 @@
-// Package handlers - Publish and Backup service adapters
+// Package handlers - Publish and Backup service interfaces and adapters
 package handlers
 
 import (
@@ -7,6 +7,22 @@ import (
 	"wp-plugin-publish/internal/services/backup"
 	"wp-plugin-publish/internal/services/publish"
 )
+
+// PublishServiceInterface defines publish service methods
+type PublishServiceInterface interface {
+	Publish(ctx context.Context, pluginID, siteID int64, opts interface{}) (interface{}, error)
+	PublishFiles(ctx context.Context, pluginID, siteID int64, files []string) (interface{}, error)
+	PreviewPublish(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	GetFileDiff(ctx context.Context, pluginID, siteID int64, filePath string) (interface{}, error)
+}
+
+// BackupServiceInterface defines backup service methods
+type BackupServiceInterface interface {
+	List(ctx context.Context, pluginID int64) (interface{}, error)
+	Create(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	Restore(ctx context.Context, backupID int64) error
+	Delete(ctx context.Context, backupID int64) error
+}
 
 // PublishServiceAdapter wraps *publish.Service to implement PublishServiceInterface
 type PublishServiceAdapter struct {

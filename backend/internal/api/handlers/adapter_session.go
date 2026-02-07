@@ -1,4 +1,4 @@
-// Package handlers - Session and ErrorHistory service adapters
+// Package handlers - Session and ErrorHistory service interfaces and adapters
 package handlers
 
 import (
@@ -6,6 +6,26 @@ import (
 	"wp-plugin-publish/internal/services/errorhistory"
 	"wp-plugin-publish/internal/services/session"
 )
+
+// SessionServiceInterface defines session service methods needed by handlers
+type SessionServiceInterface interface {
+	ListSessions(limit int) (interface{}, error)
+	GetSession(sessionID string) (interface{}, error)
+	GetSessionLogs(sessionID string) (string, error)
+	DeleteSession(sessionID string) error
+}
+
+// ErrorHistoryServiceInterface defines error history service methods
+type ErrorHistoryServiceInterface interface {
+	Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error)
+	List(limit, offset int, filters models.ErrorHistoryFilters) ([]models.ErrorHistory, int, error)
+	GetByID(id int64) (*models.ErrorHistory, error)
+	GetByErrorID(errorID string) (*models.ErrorHistory, error)
+	Delete(id int64) error
+	Clear() (int64, error)
+	BulkExport(ids []int64) (string, error)
+	GetStats() (map[string]interface{}, error)
+}
 
 // SessionServiceAdapter wraps *session.Service to implement SessionServiceInterface
 type SessionServiceAdapter struct {

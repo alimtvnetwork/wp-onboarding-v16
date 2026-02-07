@@ -1,4 +1,4 @@
-// Package handlers - Plugin service adapter
+// Package handlers - Plugin service interface and adapter
 package handlers
 
 import (
@@ -6,6 +6,24 @@ import (
 
 	"wp-plugin-publish/internal/services/plugin"
 )
+
+// PluginServiceInterface defines plugin service methods needed by handlers
+type PluginServiceInterface interface {
+	List(ctx context.Context) (interface{}, error)
+	GetByID(ctx context.Context, id int64) (interface{}, error)
+	Create(ctx context.Context, input interface{}) (interface{}, error)
+	Update(ctx context.Context, id int64, input interface{}) (interface{}, error)
+	Delete(ctx context.Context, id int64) error
+	GetMappings(ctx context.Context, pluginID int64) (interface{}, error)
+	GetMappingsBySite(ctx context.Context, siteID int64) (interface{}, error)
+	CreateMapping(ctx context.Context, pluginID int64, input interface{}) (interface{}, error)
+	DeleteMapping(ctx context.Context, id int64) error
+	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
+	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
+	ScanDirectory(ctx context.Context, path string) (interface{}, error)
+	WritePluginDetected(ctx context.Context, path string) error
+	RefreshFileCount(ctx context.Context, id int64) error
+}
 
 // PluginServiceAdapter wraps *plugin.Service to implement PluginServiceInterface
 type PluginServiceAdapter struct {

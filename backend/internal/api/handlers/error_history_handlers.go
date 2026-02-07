@@ -10,18 +10,6 @@ import (
 	"wp-plugin-publish/internal/models"
 )
 
-// ErrorHistoryServiceInterface defines error history service methods
-type ErrorHistoryServiceInterface interface {
-	Save(input models.ErrorHistoryInput) (*models.ErrorHistory, error)
-	List(limit, offset int, filters models.ErrorHistoryFilters) ([]models.ErrorHistory, int, error)
-	GetByID(id int64) (*models.ErrorHistory, error)
-	GetByErrorID(errorID string) (*models.ErrorHistory, error)
-	Delete(id int64) error
-	Clear() (int64, error)
-	BulkExport(ids []int64) (string, error)
-	GetStats() (map[string]interface{}, error)
-}
-
 // SaveErrorHistory persists a new error to history
 func SaveErrorHistory(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.ErrorHistoryService == nil {

@@ -8,14 +8,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// SessionServiceInterface defines session service methods needed by handlers
-type SessionServiceInterface interface {
-	ListSessions(limit int) (interface{}, error)
-	GetSession(sessionID string) (interface{}, error)
-	GetSessionLogs(sessionID string) (string, error)
-	DeleteSession(sessionID string) error
-}
-
 // GetSessions returns a list of recent sessions
 func GetSessions(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SessionService == nil {

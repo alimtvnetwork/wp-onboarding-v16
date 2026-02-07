@@ -1,4 +1,4 @@
-// Package handlers - PublishHistory and SiteHealth service adapters
+// Package handlers - PublishHistory and SiteHealth service interfaces and adapters
 package handlers
 
 import (
@@ -8,6 +8,26 @@ import (
 	"wp-plugin-publish/internal/services/publishhistory"
 	"wp-plugin-publish/internal/services/sitehealth"
 )
+
+// PublishHistoryServiceInterface defines publish history service methods
+type PublishHistoryServiceInterface interface {
+	Record(entry models.PublishHistory) (*models.PublishHistory, error)
+	List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error)
+	GetByID(id int64) (*models.PublishHistory, error)
+	GetStats() (*models.PublishHistoryStats, error)
+	Delete(id int64) error
+	Clear() (int64, error)
+}
+
+// SiteHealthServiceInterface defines health check service methods
+type SiteHealthServiceInterface interface {
+	CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, error)
+	CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, error)
+	GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, error)
+	GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, error)
+	GetStats(ctx context.Context) (*models.SiteHealthStats, error)
+	ClearHistory(olderThanDays int) (int64, error)
+}
 
 // PublishHistoryServiceAdapter wraps *publishhistory.Service
 type PublishHistoryServiceAdapter struct {

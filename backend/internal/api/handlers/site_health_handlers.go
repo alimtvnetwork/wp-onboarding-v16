@@ -5,19 +5,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
-
-	"wp-plugin-publish/internal/models"
 )
-
-// SiteHealthServiceInterface defines health check service methods
-type SiteHealthServiceInterface interface {
-	CheckSite(ctx context.Context, siteID int64) (*models.SiteHealthCheck, error)
-	CheckAllSites(ctx context.Context) ([]models.SiteHealthCheck, error)
-	GetHistory(siteID int64, limit int) ([]models.SiteHealthCheck, error)
-	GetSummaries(ctx context.Context) ([]models.SiteHealthSummary, error)
-	GetStats(ctx context.Context) (*models.SiteHealthStats, error)
-	ClearHistory(olderThanDays int) (int64, error)
-}
 
 // CheckSiteHealth performs a health check on a single site
 var CheckSiteHealth = handleSiteActionByID("E4001",

@@ -1,4 +1,4 @@
-// Package handlers - Sync and Watcher service adapters
+// Package handlers - Sync, Watcher, and Git service interfaces and adapters
 package handlers
 
 import (
@@ -7,6 +7,30 @@ import (
 	"wp-plugin-publish/internal/services/sync"
 	"wp-plugin-publish/internal/services/watcher"
 )
+
+// SyncServiceInterface defines sync service methods
+type SyncServiceInterface interface {
+	CheckSync(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	CheckAllSites(ctx context.Context, pluginID int64) (interface{}, error)
+	CheckAllPlugins(ctx context.Context) (interface{}, error)
+	GetFileChanges(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	PushSync(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+}
+
+// GitServiceInterface defines git service methods
+type GitServiceInterface interface {
+	Pull(ctx context.Context, pluginID int64) (interface{}, error)
+	PullAll(ctx context.Context) (interface{}, error)
+	Status(ctx context.Context, pluginID int64) (interface{}, error)
+	Commit(ctx context.Context, pluginID int64, message string) (interface{}, error)
+	Push(ctx context.Context, pluginID int64) (interface{}, error)
+}
+
+// WatcherServiceInterface defines watcher service methods
+type WatcherServiceInterface interface {
+	TriggerScan(ctx context.Context, pluginID int64) (interface{}, error)
+	ScanAll(ctx context.Context) (interface{}, error)
+}
 
 // SyncServiceAdapter wraps sync.Service to implement SyncServiceInterface
 type SyncServiceAdapter struct {

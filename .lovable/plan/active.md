@@ -1,11 +1,12 @@
 # Active & Future Phases
 
-**Updated: 2026-02-06**
+**Updated: 2026-02-07**
 
 ---
 
 ## Recently Completed
 
+- **Phase 8: Unify ServiceRegistry Definitions**: Co-located all 11 service interfaces with their adapter implementations in domain-specific adapter files (`adapter_site.go`, `adapter_plugin.go`, `adapter_sync.go`, `adapter_publish.go`, `adapter_session.go`, `adapter_history.go`). Reduced `handlers.go` to a lean registry-only file (~45 lines) containing just `ServiceRegistry` struct, global `Services` var, and Health/APIIndex handlers. Removed duplicate interface declarations from handler files (`sessions.go`, `error_history_handlers.go`, `publish_history_handlers.go`, `site_health_handlers.go`).
 - **Phase 7: Generic CRUD Handler Factory**: Created `handler_factory.go` with 7 reusable factory functions (`handleActionByID`, `handleDeleteByID`, `handleListNilSafe`, `handleSiteActionByID`, `handleSiteActionByIDWithOpts`, `handleNoArgs`, `handleTwoIDs`) + nil-safe lazy service getters. Refactored ~30 handlers across 7 files to use factories, eliminating ~300 lines of boilerplate.
 - **Publish History Integration**: Wired `publishHistoryService.Record()` into publish pipeline; wired SiteHealth + PublishHistory into main.go and service registry.
 - **Phase 10: Remote Plugin File Browser**: Browse files button in RemotePluginsPanel, tree view with syntax highlighting.
@@ -14,20 +15,11 @@
 
 ## Backlog
 
-### Plan Refactoring ✅ COMPLETE
-Break 748-line plan.md into smaller focused files.
+### Phase 9: Standardize Base Service Configs
+Normalize service initialization patterns and configuration across all services.
 
-### Service Registry Cleanup ✅ COMPLETE
-Refactored 630-line `adapters.go` into 8 focused files:
-- `adapter_site.go` - Site service adapter
-- `adapter_plugin.go` - Plugin service adapter
-- `adapter_sync.go` - Sync + Watcher adapters
-- `adapter_publish.go` - Publish + Backup adapters
-- `adapter_session.go` - Session + ErrorHistory adapters
-- `adapter_history.go` - PublishHistory + SiteHealth adapters
-- `adapter_helpers.go` - Input conversion helpers
-- `adapter_registry.go` - NewServiceRegistry factory
-- `adapters.go` - Compile-time interface checks only
+### Phase 10: Real HTTP-based E2E Tests
+Replace stub tests with actual HTTP request-based end-to-end test logic.
 
 ---
 
