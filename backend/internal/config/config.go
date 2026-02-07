@@ -28,15 +28,24 @@ type Config struct {
 	Snapshot      SnapshotConfig      `json:"snapshot"`
 	Seed          SeedConfig          `json:"seed"`
 	E2E           E2EConfig           `json:"e2e"`
+	ResponseDebug ResponseDebugConfig `json:"responseDebug"`
 }
 
 // E2EConfig holds end-to-end test settings
 type E2EConfig struct {
 	Enabled          bool   `json:"enabled"`
-	TestPluginPath   string `json:"testPluginPath"`   // Local path to test plugin
-	TestSiteURL      string `json:"testSiteURL"`      // WordPress test site URL
-	TestSiteUsername  string `json:"testSiteUsername"`  // Test site username
-	TestSitePassword string `json:"testSitePassword"` // Test site password (base64)
+	TestPluginPath   string `json:"testPluginPath"`
+	TestSiteURL      string `json:"testSiteURL"`
+	TestSiteUsername  string `json:"testSiteUsername"`
+	TestSitePassword string `json:"testSitePassword"`
+}
+
+// ResponseDebugConfig controls error verbosity in API responses.
+// When disabled, stack traces and internal error details are stripped from responses.
+type ResponseDebugConfig struct {
+	IncludeStackTrace     bool `json:"includeStackTrace"`
+	IncludeInternalErrors bool `json:"includeInternalErrors"`
+	MaxStackFrames        int  `json:"maxStackFrames"`
 }
 
 // SnapshotConfig holds snapshot backup system settings
@@ -195,6 +204,11 @@ func DefaultConfig() *Config {
 		},
 		E2E: E2EConfig{
 			Enabled: false,
+		},
+		ResponseDebug: ResponseDebugConfig{
+			IncludeStackTrace:     false,
+			IncludeInternalErrors: false,
+			MaxStackFrames:        20,
 		},
 	}
 }
