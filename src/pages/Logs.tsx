@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import {
   ScrollText,
+  ChevronDown,
   Search,
   Trash2,
   Download,
@@ -35,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { formatTime24h } from "@/lib/logText";
+import { HighlightedText } from "@/components/shared/HighlightedText";
 
 interface LogEntry {
   id: string;
@@ -263,7 +266,7 @@ function wsEventToLogEntry(message: { type: string; data: unknown; timestamp: st
 export default function Logs() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [filter, setFilter] = useState("");
-  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [activeLevels, setActiveLevels] = useState<Set<string>>(new Set(["info", "warn", "error", "debug"]));
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [isPaused, setIsPaused] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -305,8 +308,20 @@ export default function Logs() {
     }
   }, [logs, autoScroll]);
 
+  const toggleLevel = useCallback((level: string) => {
+    setActiveLevels((prev) => {
+      const next = new Set(prev);
+      if (next.has(level)) {
+        next.delete(level);
+      } else {
+        next.add(level);
+      }
+      return next;
+    });
+  }, []);
+
   const filteredLogs = logs.filter((log) => {
-    if (levelFilter !== "all" && log.level !== levelFilter) return false;
+    if (!activeLevels.has(log.level)) return false;
     if (sourceFilter !== "all" && log.source !== sourceFilter) return false;
     if (filter && !log.message.toLowerCase().includes(filter.toLowerCase())) return false;
     return true;
@@ -434,18 +449,28 @@ export default function Logs() {
                 />
               </div>
             </div>
-            <Select value={levelFilter} onValueChange={setLevelFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Levels</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="warn">Warning</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
-                <SelectItem value="debug">Debug</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-3">
+              {(["info", "warn", "error", "debug"] as const).map((level) => {
+                const config = levelConfig[level];
+                const LevelIcon = config.icon;
+                return (
+                  <div key={level} className="flex items-center gap-1.5">
+                    <Checkbox
+                      id={`level-${level}`}
+                      checked={activeLevels.has(level)}
+                      onCheckedChange={() => toggleLevel(level)}
+                    />
+                    <label
+                      htmlFor={`level-${level}`}
+                      className={cn("text-xs font-medium cursor-pointer flex items-center gap-1", config.color)}
+                    >
+                      <LevelIcon className="h-3 w-3" />
+                      {level}
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Source" />
@@ -494,8 +519,12 @@ export default function Logs() {
                   <Badge
                     key={level}
                     variant="outline"
-                    className={cn("cursor-pointer", config.color)}
-                    onClick={() => setLevelFilter(level === levelFilter ? "all" : level)}
+                    className={cn(
+                      "cursor-pointer transition-opacity",
+                      config.color,
+                      !activeLevels.has(level) && "opacity-40"
+                    )}
+                    onClick={() => toggleLevel(level)}
                   >
                     {level}: {count}
                   </Badge>
@@ -521,12 +550,14 @@ export default function Logs() {
                 const config = levelConfig[log.level];
                 const Icon = config.icon;
                 const SourceIcon = getSourceIcon(log.source);
-                return (
+                const hasDetails = log.details && Object.keys(log.details).length > 0;
+
+                const row = (
                   <div
-                    key={log.id}
                     className={cn(
                       "flex items-start gap-3 px-3 py-2 rounded-md hover:bg-muted/50 transition-colors group",
-                      config.bg
+                      config.bg,
+                      hasDetails && "cursor-pointer"
                     )}
                   >
                     <span className="text-muted-foreground text-xs whitespace-nowrap pt-0.5">
@@ -537,13 +568,30 @@ export default function Logs() {
                       <SourceIcon className="h-3 w-3" />
                       {log.source}
                     </Badge>
-                    <span className="flex-1 break-all">{log.message}</span>
-                    {log.details && Object.keys(log.details).length > 0 && (
-                      <code className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded hidden group-hover:block max-w-[300px] truncate">
-                        {JSON.stringify(log.details)}
-                      </code>
+                    <HighlightedText
+                      text={log.message}
+                      query={filter}
+                      className="flex-1 break-all"
+                    />
+                    {hasDetails && (
+                      <ChevronDown className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-1" />
                     )}
                   </div>
+                );
+
+                if (!hasDetails) {
+                  return <div key={log.id}>{row}</div>;
+                }
+
+                return (
+                  <Collapsible key={log.id}>
+                    <CollapsibleTrigger asChild>{row}</CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <pre className="ml-[120px] text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md mt-1 overflow-x-auto max-h-48">
+                        {JSON.stringify(log.details, null, 2)}
+                      </pre>
+                    </CollapsibleContent>
+                  </Collapsible>
                 );
               })
             )}
