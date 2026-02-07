@@ -134,15 +134,25 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 7: E2E Tests Page — Live Results & Rerun
+### Phase 7: E2E Tests Page — Live Results & Rerun ✅ COMPLETE
 
 **Goal:** Polish the E2E Tests page with real-time result streaming and individual test rerun.
 
-**Files to change:**
-- `src/pages/Tests.tsx` — Add per-test status indicators, rerun button, result details expandable rows
-- WebSocket event handling for test progress updates
+**Implementation:** Refactored the monolithic Tests page into focused components. Added WebSocket-based real-time test result streaming via a `useE2ETestStream` hook that listens for `e2e_test_started`, `e2e_test_result`, and `e2e_test_complete` events. Each test case card now shows its last result status indicator and a rerun button. The run history results also have per-test rerun buttons. A `LiveTestProgress` component shows a scrollable live result stream during active runs.
 
-**Backend dependency:** E2E service (✅ implemented in Phase 10)
+**Files created:**
+- `src/hooks/useE2ETestStream.ts` — WebSocket hook for live E2E test result streaming
+- `src/components/tests/TestCaseCard.tsx` — Test case card with status indicator and rerun button
+- `src/components/tests/TestResultRow.tsx` — Test result row with rerun and error view actions
+- `src/components/tests/LiveTestProgress.tsx` — Live progress card with scrollable result stream
+
+**Files changed:**
+- `src/pages/Tests.tsx` — Refactored to use new components, added rerun mutation and live status map
+- `src/lib/ws.ts` — Added `E2E_TEST_STARTED`, `E2E_TEST_RESULT`, `E2E_TEST_COMPLETE` events
+- `src/hooks/useWebSocket.ts` — Added E2E event listeners and cleanup
+- `src/lib/api.ts` — Added `rerunE2ECase` method
+
+**Backend dependency:** E2E service (✅ implemented)
 
 ---
 

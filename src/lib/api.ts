@@ -976,6 +976,11 @@ export const api = {
     request<unknown>(`/e2e/runs/${runId}`),
   deleteE2ERun: (runId: string) =>
     request<void>(`/e2e/runs/${runId}`, { method: "DELETE" }),
+  rerunE2ECase: (caseId: string) =>
+    request<{ runId: string }>("/e2e/run", {
+      method: "POST",
+      body: JSON.stringify({ cases: [caseId], parallel: false, stopOnFailure: false }),
+    }),
 
   // Remote Snapshot Management (Phase 28)
   getRemoteSnapshots: (siteId: number) =>
