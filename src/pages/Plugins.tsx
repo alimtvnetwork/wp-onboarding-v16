@@ -1328,7 +1328,7 @@ export default function Plugins() {
 
       {/* Publish Dialog */}
       <Dialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
-        <DialogContent className="sm:max-w-md overflow-hidden">
+        <DialogContent className="sm:max-w-lg overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
@@ -1345,22 +1345,21 @@ export default function Plugins() {
             </p>
             
             {publishPlugin?.mappings && publishPlugin.mappings.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
                 {publishPlugin.mappings.map((mapping) => (
                   <div
                     key={mapping.id}
-                    className="flex items-center gap-2 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
                   >
                     <Globe className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium truncate">{mapping.siteName}</p>
-                        <SiteVersionBadge 
-                          pluginId={publishPlugin.id} 
-                          siteId={mapping.siteId}
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{mapping.siteUrl}</p>
+                      <p className="font-medium truncate">{mapping.siteName}</p>
+                      <SiteVersionBadge 
+                        pluginId={publishPlugin.id} 
+                        siteId={mapping.siteId}
+                        className="mt-1.5"
+                      />
+                      <p className="text-xs text-muted-foreground truncate mt-1">{mapping.siteUrl}</p>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       <Tooltip>
