@@ -55,7 +55,7 @@ class RiseupRestoreEngine {
      * @return RiseupRestoreEngine
      */
     public static function getInstance($logger = null, $db = null, $orchestrator = null) {
-        if (self::$instance === null && $logger && $db) {
+        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db) {
             self::$instance = new self($logger, $db, $orchestrator);
         }
         return self::$instance;
@@ -93,7 +93,7 @@ class RiseupRestoreEngine {
         $apply_incrementals = $options['apply_incrementals'] ?? true;
 
         // Validate confirmation
-        if (empty($options['confirm']) || $options['confirm'] !== true) {
+        if (RiseupBooleanHelpers::is_empty($options['confirm']) || $options['confirm'] !== true) {
             return array(
                 'success' => false,
                 'error'   => 'Restore requires explicit confirmation (confirm=true)',
@@ -102,7 +102,7 @@ class RiseupRestoreEngine {
         }
 
         $root_path = $snapshot_dir . '/a-root.db';
-        if (!file_exists($root_path)) {
+        if (RiseupBooleanHelpers::is_file_missing($root_path)) {
             return array(
                 'success' => false,
                 'error'   => 'Snapshot a-root.db not found at: ' . basename($snapshot_dir),
@@ -130,7 +130,7 @@ class RiseupRestoreEngine {
             $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
 
             // 4. Filter tables for selective mode
-            if ($mode === 'selective' && !empty($selected_tables)) {
+            if ($mode === 'selective' && RiseupBooleanHelpers::has_content($selected_tables)) {
                 $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
                     return in_array($t, $selected_tables);
                 }));
@@ -169,7 +169,7 @@ class RiseupRestoreEngine {
                         'error' => $backup_result['error'] ?? 'Unknown',
                     ));
                     // Continue unless strict mode
-                    if (!empty($options['require_backup'])) {
+                    if (RiseupBooleanHelpers::has_content($options['require_backup'])) {
                         $rootPdo = null;
                         return array(
                             'success' => false,
@@ -195,7 +195,7 @@ class RiseupRestoreEngine {
                 }
 
                 $sqlite_path = $snapshot_dir . '/' . $table_info['sqlite_file'];
-                if (!file_exists($sqlite_path)) {
+                if (RiseupBooleanHelpers::is_file_missing($sqlite_path)) {
                     $errors[] = $table . ': SQLite file missing (' . $table_info['sqlite_file'] . ')';
                     $this->log('ERROR', 'SQLite file missing for table', array(
                         'table' => $table,
@@ -216,7 +216,7 @@ class RiseupRestoreEngine {
                         'error' => $result['error'],
                     ));
 
-                    if (!empty($options['strict'])) {
+                    if (RiseupBooleanHelpers::has_content($options['strict'])) {
                         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
                         $rootPdo = null;
                         return array(
@@ -312,7 +312,7 @@ class RiseupRestoreEngine {
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='" .
                 str_replace("'", "''", $table) . "'"
             );
-            if (!$check->fetch()) {
+            if (RiseupBooleanHelpers::is_falsy($check->fetch())) {
                 $sqlite = null;
                 return array('success' => false, 'error' => 'Table not found in SQLite file', 'rows' => 0);
             }
@@ -411,7 +411,7 @@ class RiseupRestoreEngine {
 
         foreach ($incrementals as $inc) {
             $inc_dir = $snapshot_dir . '/' . rtrim($inc['relative_path'], '/');
-            if (!is_dir($inc_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($inc_dir)) {
                 $errors[] = 'Incremental directory missing: ' . $inc['folder_name'];
                 $this->log('WARN', 'Incremental directory missing', array(
                     'folder' => $inc['folder_name'],

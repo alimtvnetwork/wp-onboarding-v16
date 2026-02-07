@@ -81,7 +81,7 @@ class RiseupSnapshotWorker {
      * @return RiseupSnapshotWorker
      */
     public static function getInstance($logger = null, $db = null, $rootDb = null, $analyzer = null) {
-        if (self::$instance === null && $logger && $db && $rootDb && $analyzer) {
+        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db && $rootDb && $analyzer) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
         return self::$instance;
@@ -247,7 +247,7 @@ class RiseupSnapshotWorker {
 
             // Get MySQL CREATE TABLE and convert
             $create_sql = $this->getCreateTableSql($table);
-            if (!$create_sql) {
+            if (RiseupBooleanHelpers::is_falsy($create_sql)) {
                 throw new Exception('Failed to get table structure for ' . $table);
             }
 
@@ -419,7 +419,7 @@ class RiseupSnapshotWorker {
      */
     private function initProgressRecords($tables) {
         $pdo = $this->db->get_pdo();
-        if (!$pdo) return;
+        if (RiseupBooleanHelpers::is_falsy($pdo)) return;
 
         try {
             // Use a temporary progress tracking (reuse snapshot_progress with snapshot_id = 0 for per-table mode)
@@ -451,7 +451,7 @@ class RiseupSnapshotWorker {
      */
     private function updateProgress($table, $status, $rows = 0, $error = null) {
         $pdo = $this->db->get_pdo();
-        if (!$pdo) return;
+        if (RiseupBooleanHelpers::is_falsy($pdo)) return;
 
         try {
             $now = gmdate('c');
