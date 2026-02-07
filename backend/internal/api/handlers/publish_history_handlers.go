@@ -10,16 +10,6 @@ import (
 	"wp-plugin-publish/internal/models"
 )
 
-// PublishHistoryServiceInterface defines publish history service methods
-type PublishHistoryServiceInterface interface {
-	Record(entry models.PublishHistory) (*models.PublishHistory, error)
-	List(limit, offset int, filters models.PublishHistoryFilters) ([]models.PublishHistory, int, error)
-	GetByID(id int64) (*models.PublishHistory, error)
-	GetStats() (*models.PublishHistoryStats, error)
-	Delete(id int64) error
-	Clear() (int64, error)
-}
-
 // ListPublishHistory returns paginated publish history
 func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PublishHistoryService == nil {

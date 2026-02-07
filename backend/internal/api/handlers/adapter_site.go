@@ -1,4 +1,4 @@
-// Package handlers - Site service adapter
+// Package handlers - Site service interface and adapter
 package handlers
 
 import (
@@ -7,6 +7,41 @@ import (
 
 	"wp-plugin-publish/internal/services/site"
 )
+
+// SiteServiceInterface defines site service methods
+type SiteServiceInterface interface {
+	List(ctx context.Context) (interface{}, error)
+	GetByID(ctx context.Context, id int64) (interface{}, error)
+	Create(ctx context.Context, input interface{}) (interface{}, error)
+	Update(ctx context.Context, id int64, input interface{}) (interface{}, error)
+	Delete(ctx context.Context, id int64) error
+	TestConnection(ctx context.Context, id int64) (interface{}, error)
+	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (interface{}, error)
+	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (interface{}, error)
+	GetRemotePlugins(ctx context.Context, siteID int64) (interface{}, error)
+	ForceSyncRemotePlugins(ctx context.Context, siteID int64) (interface{}, error)
+	InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error
+	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (interface{}, error)
+	GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error)
+	GetCredentials(ctx context.Context, siteID int64) (interface{}, error)
+	GetRemoteSnapshots(ctx context.Context, siteID int64) (interface{}, error)
+	GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (interface{}, error)
+	CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
+	DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) error
+	RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]interface{}) (interface{}, error)
+	ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, error)
+	GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (interface{}, error)
+	UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]interface{}) (interface{}, error)
+	GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (interface{}, error)
+	GetRemoteAvailableTables(ctx context.Context, siteID int64) (interface{}, error)
+	FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
+	IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
+	ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (interface{}, error)
+	CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
+}
 
 // SiteServiceAdapter wraps *site.Service to implement SiteServiceInterface
 type SiteServiceAdapter struct {
