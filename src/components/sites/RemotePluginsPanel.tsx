@@ -53,7 +53,8 @@ import { toast } from "sonner";
 import { useErrorStore, PHPStackFrame } from "@/stores/errorStore";
 import { useRemotePluginEvents } from "@/hooks/useRemotePluginEvents";
 import { RemotePluginFileBrowser } from "./RemotePluginFileBrowser";
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, AlertTriangle } from "lucide-react";
+import { compareVersions } from "@/lib/versionUtils";
 
 interface RemotePluginsPanelProps {
   site: Site;
@@ -62,6 +63,11 @@ interface RemotePluginsPanelProps {
 }
 
 const ITEMS_PER_PAGE = 10;
+
+// The expected latest version of the Riseup Asia Uploader plugin.
+// Keep this in sync with wp-plugins/riseup-asia-uploader/includes/constants.php RISEUP_VERSION.
+const EXPECTED_UPLOADER_VERSION = "1.21.0";
+const UPLOADER_SLUG = "riseup-asia-uploader";
 
 // Format relative time (e.g., "2m ago", "1h ago")
 function formatTimeAgo(date: Date): string {
@@ -225,7 +231,22 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     return filteredPlugins.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPlugins, currentPage]);
 
-  // Reset to page 1 when search changes
+  // Check if the Riseup Asia Uploader on the remote site is outdated
+  const uploaderVersionInfo = useMemo(() => {
+    if (!plugins) return null;
+    const uploader = plugins.find(
+      (p) => p.slug === UPLOADER_SLUG || p.plugin.startsWith(UPLOADER_SLUG + "/")
+    );
+    if (!uploader) return { found: false, version: null, isOutdated: false } as const;
+    const cmp = compareVersions(uploader.version, EXPECTED_UPLOADER_VERSION);
+    return {
+      found: true,
+      version: uploader.version,
+      isOutdated: cmp < 0,
+      isActive: uploader.status === "active",
+    } as const;
+  }, [plugins]);
+
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     setCurrentPage(1);
@@ -392,6 +413,32 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
               </Button>
             </div>
           </div>
+
+          {/* Uploader Version Warning */}
+          {uploaderVersionInfo && uploaderVersionInfo.isOutdated && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 shrink-0">
+              <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm">
+                <p className="font-medium text-amber-300">
+                  Riseup Asia Uploader is outdated (v{uploaderVersionInfo.version} → v{EXPECTED_UPLOADER_VERSION})
+                </p>
+                <p className="text-amber-400/80 mt-0.5">
+                  Some features like enable/disable/delete may not work. Republish the uploader to this site to update.
+                </p>
+              </div>
+            </div>
+          )}
+          {uploaderVersionInfo && !uploaderVersionInfo.found && !isLoading && !isError && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive shrink-0">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm">
+                <p className="font-medium">Riseup Asia Uploader not found</p>
+                <p className="text-destructive/80 mt-0.5">
+                  The companion plugin is not installed on this site. Deploy it to enable full plugin management.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Bulk Actions Bar - responsive layout */}
           {selectedPlugins.size > 0 && (
