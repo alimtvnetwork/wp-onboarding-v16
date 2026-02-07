@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.9.1
+ * Version: 1.18.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -91,13 +91,13 @@ function riseup_backtrace_to_frames($backtrace) {
  */
 function riseup_fatal_error_handler() {
     $error = error_get_last();
-    if ($error === null) {
+    if (RiseupBooleanHelpers::is_null($error)) {
         return;
     }
     
     // Only handle fatal errors
     $fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
-    if (!in_array($error['type'], $fatal_types)) {
+    if (RiseupBooleanHelpers::is_falsy(in_array($error['type'], $fatal_types))) {
         return;
     }
     
@@ -128,7 +128,7 @@ function riseup_fatal_error_handler() {
     }
     
     // Set proper headers before any output
-    if (!headers_sent()) {
+    if (RiseupBooleanHelpers::is_falsy(headers_sent())) {
         header('Content-Type: application/json; charset=utf-8');
         http_response_code(500);
     }
@@ -359,7 +359,7 @@ class Riseup_Asia {
      * @return Riseup_Asia
      */
     public static function get_instance() {
-        if (self::$instance === null) {
+        if (RiseupBooleanHelpers::is_null(self::$instance)) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -529,7 +529,7 @@ class Riseup_Asia {
         }
 
         // Only log successful deletions
-        if (!$deleted) {
+        if (RiseupBooleanHelpers::is_falsy($deleted)) {
             return;
         }
 
@@ -1040,7 +1040,7 @@ class Riseup_Asia {
     private function build_permission_callback($endpoint, $auth_check) {
         return function($request) use ($endpoint, $auth_check) {
             // Check if endpoint is enabled
-            if (!$this->is_endpoint_enabled($endpoint)) {
+            if (RiseupBooleanHelpers::is_falsy($this->is_endpoint_enabled($endpoint))) {
                 return new WP_Error(
                     'rest_disabled',
                     'This endpoint is disabled',
@@ -1049,7 +1049,7 @@ class Riseup_Asia {
             }
             
             // Check if auth is required
-            if (!$this->is_auth_required($endpoint)) {
+            if (RiseupBooleanHelpers::is_falsy($this->is_auth_required($endpoint))) {
                 return true; // Allow without auth
             }
             
@@ -1120,7 +1120,7 @@ class Riseup_Asia {
             // Get Authorization header.
             $auth_header = $request->get_header('Authorization');
 
-            if (empty($auth_header)) {
+            if (RiseupBooleanHelpers::is_empty($auth_header)) {
                 $this->file_logger->warn('Missing Authorization header');
                 $this->logger->log_auth_failure('Missing Authorization header');
                 return new WP_Error(
@@ -1145,7 +1145,7 @@ class Riseup_Asia {
             }
 
             $credentials = base64_decode(substr($auth_header, 6));
-            if (!$credentials || strpos($credentials, ':') === false) {
+            if (RiseupBooleanHelpers::is_falsy($credentials) || strpos($credentials, ':') === false) {
                 $this->file_logger->warn('Invalid credentials format');
                 $this->logger->log_auth_failure('Invalid credentials format');
                 return new WP_Error(
@@ -1161,7 +1161,7 @@ class Riseup_Asia {
             // Authenticate using application password.
             $user = wp_authenticate_application_password(null, $username, $password);
 
-            if (is_wp_error($user) || !$user) {
+            if (is_wp_error($user) || RiseupBooleanHelpers::is_falsy($user)) {
                 $this->file_logger->warn('Invalid credentials', array('username' => $username));
                 $this->logger->log_auth_failure(
                     'Invalid credentials',
@@ -1203,7 +1203,7 @@ class Riseup_Asia {
             // Get Authorization header.
             $auth_header = $request->get_header('Authorization');
 
-            if (empty($auth_header)) {
+            if (RiseupBooleanHelpers::is_empty($auth_header)) {
                 $this->file_logger->warn('Missing Authorization header');
                 $this->logger->log_auth_failure('Missing Authorization header');
                 return new WP_Error(
@@ -1225,7 +1225,7 @@ class Riseup_Asia {
             }
 
             $credentials = base64_decode(substr($auth_header, 6));
-            if (!$credentials || strpos($credentials, ':') === false) {
+            if (RiseupBooleanHelpers::is_falsy($credentials) || strpos($credentials, ':') === false) {
                 $this->file_logger->warn('Invalid credentials format');
                 $this->logger->log_auth_failure('Invalid credentials format');
                 return new WP_Error(
@@ -1241,7 +1241,7 @@ class Riseup_Asia {
             // Authenticate using application password.
             $user = wp_authenticate_application_password(null, $username, $password);
 
-            if (is_wp_error($user) || !$user) {
+            if (is_wp_error($user) || RiseupBooleanHelpers::is_falsy($user)) {
                 $this->file_logger->warn('Invalid credentials', array('username' => $username));
                 $this->logger->log_auth_failure(
                     'Invalid credentials',
@@ -1259,7 +1259,7 @@ class Riseup_Asia {
             $this->file_logger->debug('User authenticated', array('user_id' => $user->ID));
 
             // Check capability.
-            if (!current_user_can($capability)) {
+            if (RiseupBooleanHelpers::is_falsy(current_user_can($capability))) {
                 $this->file_logger->warn('Insufficient permissions', array(
                     'username'     => $username,
                     'required_cap' => $capability,
@@ -1334,7 +1334,7 @@ class Riseup_Asia {
         // Read the OpenAPI spec from the data directory.
         $spec_file = plugin_dir_path(__FILE__) . 'data/openapi.json';
         
-        if (!file_exists($spec_file)) {
+        if (RiseupBooleanHelpers::is_file_missing($spec_file)) {
             $this->file_logger->error('OpenAPI spec file not found', array('path' => $spec_file));
             return new WP_REST_Response(array(
                 'success' => false,
@@ -1352,7 +1352,7 @@ class Riseup_Asia {
         }
 
         $spec = json_decode($spec_content, true);
-        if ($spec === null) {
+        if (RiseupBooleanHelpers::is_null($spec)) {
             $this->file_logger->error('Invalid JSON in OpenAPI spec file');
             return new WP_REST_Response(array(
                 'success' => false,
@@ -1383,7 +1383,7 @@ class Riseup_Asia {
         try {
             $data = $request->get_json_params();
 
-            if (empty($data['plugin_zip'])) {
+            if (RiseupBooleanHelpers::is_empty($data['plugin_zip'])) {
                 $this->file_logger->warn('Upload failed: plugin_zip required');
                 return $this->error_response(RISEUP_MSG_INVALID_REQUEST . ': plugin_zip is required', RISEUP_HTTP_BAD_REQUEST);
             }
@@ -1398,7 +1398,7 @@ class Riseup_Asia {
 
             // Get optional parameters.
             $slug     = sanitize_file_name($data['slug'] ?? '');
-            $activate = !empty($data['activate']);
+            $activate = RiseupBooleanHelpers::has_content($data['activate']);
             $this->file_logger->debug('Upload parameters', array('slug' => $slug, 'activate' => $activate));
 
             // Create temp file.
@@ -1426,7 +1426,7 @@ class Riseup_Asia {
             $detected_slug = $this->detect_plugin_slug_from_zip($zip);
             $zip->close();
 
-            if (!$detected_slug) {
+            if (RiseupBooleanHelpers::is_falsy($detected_slug)) {
                 @unlink($temp_file);
                 $this->file_logger->error('Could not detect plugin in ZIP');
                 $this->logger->log_upload_failed($slug, 'Could not detect plugin in ZIP');
@@ -1434,7 +1434,7 @@ class Riseup_Asia {
             }
 
             // Use detected slug if not provided.
-            if (empty($slug)) {
+            if (RiseupBooleanHelpers::is_empty($slug)) {
                 $slug = $detected_slug;
             }
             $this->file_logger->info('Plugin slug determined', array('slug' => $slug));
@@ -1490,7 +1490,7 @@ class Riseup_Asia {
 
             // Find the extracted folder (should be exactly one directory).
             $extracted_folders = glob($temp_extract_dir . '/*', GLOB_ONLYDIR);
-            if (empty($extracted_folders)) {
+            if (RiseupBooleanHelpers::is_empty($extracted_folders)) {
                 $this->delete_directory($temp_extract_dir);
                 $this->file_logger->error('No folder found in extracted ZIP');
                 $this->logger->log_upload_failed($slug, 'No folder found in extracted ZIP');
@@ -1527,7 +1527,7 @@ class Riseup_Asia {
 
             // Find the main plugin file.
             $plugin_file = $this->find_plugin_file($slug);
-            if (!$plugin_file) {
+            if (RiseupBooleanHelpers::is_falsy($plugin_file)) {
                 $this->file_logger->error('Could not find plugin file after extraction', array(
                     'slug'       => $slug,
                     'target_dir' => $target_dir,
@@ -1597,7 +1597,7 @@ class Riseup_Asia {
         $this->file_logger->info('List plugins endpoint called');
 
         try {
-            if (!function_exists('get_plugins')) {
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
@@ -1645,20 +1645,20 @@ class Riseup_Asia {
     public function handle_plugin_files($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Plugin files endpoint called', array('slug' => $slug));
 
         try {
-            if (!function_exists('get_plugins')) {
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
             // Find the plugin directory
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             
-            if (!is_dir($plugin_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
                 $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
                 return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
             }
@@ -1699,19 +1699,19 @@ class Riseup_Asia {
     public function handle_sync_manifest($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Sync manifest endpoint called', array('slug' => $slug));
 
         try {
-            if (!function_exists('get_plugins')) {
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             
-            if (!is_dir($plugin_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
                 $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
                 return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
             }
@@ -1756,10 +1756,10 @@ class Riseup_Asia {
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : '';
         $files = isset($body['files']) ? $body['files'] : array();
 
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
-        if (empty($files) || !is_array($files)) {
+        if (RiseupBooleanHelpers::is_empty($files) || RiseupBooleanHelpers::is_falsy(is_array($files))) {
             return $this->error_response('Files array is required', RISEUP_HTTP_BAD_REQUEST);
         }
 
@@ -1767,7 +1767,7 @@ class Riseup_Asia {
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-            if (!is_dir($plugin_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
                 return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
             }
 
@@ -1783,7 +1783,7 @@ class Riseup_Asia {
                 $action = isset($file['action']) ? $file['action'] : '';
                 $content = isset($file['content']) ? $file['content'] : '';
 
-                if (empty($path) || empty($action)) {
+                if (RiseupBooleanHelpers::is_empty($path) || RiseupBooleanHelpers::is_empty($action)) {
                     $results[] = array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
                     continue;
                 }
@@ -1818,7 +1818,7 @@ class Riseup_Asia {
                         continue;
                     }
                     $dir = dirname($full_path);
-                    if (!is_dir($dir)) {
+                    if (RiseupBooleanHelpers::is_dir_missing($dir)) {
                         RiseupPathUtils::ensureDir($dir);
                     }
                     if (file_put_contents($full_path, $decoded) !== false) {
@@ -1957,7 +1957,7 @@ class Riseup_Asia {
         $json = $request->get_json_params();
         $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
         $file_path = isset($json['path']) ? $json['path'] : null;
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
 
@@ -1967,7 +1967,7 @@ class Riseup_Asia {
         ));
 
         try {
-            if (empty($file_path)) {
+            if (RiseupBooleanHelpers::is_empty($file_path)) {
                 return $this->error_response('File path is required', RISEUP_HTTP_BAD_REQUEST);
             }
 
@@ -1980,7 +1980,7 @@ class Riseup_Asia {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             $full_path = $plugin_dir . '/' . $file_path;
 
-            if (!is_dir($plugin_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
                 return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
             }
 
@@ -1992,7 +1992,7 @@ class Riseup_Asia {
                 return $this->error_response('File not found or invalid path', RISEUP_HTTP_NOT_FOUND);
             }
 
-            if (!is_file($real_file_path)) {
+            if (RiseupBooleanHelpers::is_falsy(is_file($real_file_path))) {
                 return $this->error_response('File not found', RISEUP_HTTP_NOT_FOUND);
             }
 
@@ -2085,7 +2085,7 @@ class Riseup_Asia {
     public function handle_export_plugin($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Export-plugin endpoint called', array('slug' => $slug));
@@ -2308,14 +2308,14 @@ class Riseup_Asia {
         // Read slug from JSON body (fixed endpoint design)
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Enable plugin endpoint called', array('slug' => $slug));
 
         // Step 1: Load plugin functions
         try {
-            if (!function_exists('get_plugins')) {
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
         } catch (Throwable $e) {
@@ -2331,7 +2331,7 @@ class Riseup_Asia {
         $plugin_file = null;
         try {
             $plugin_file = $this->find_plugin_file($slug);
-            if (!$plugin_file) {
+            if (RiseupBooleanHelpers::is_falsy($plugin_file)) {
                 $this->file_logger->warn('Plugin not found', array('slug' => $slug));
                 return $this->error_response(
                     RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
@@ -2429,14 +2429,14 @@ class Riseup_Asia {
         // Read slug from JSON body (fixed endpoint design)
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Disable plugin endpoint called', array('slug' => $slug));
 
         // Step 1: Load plugin functions
         try {
-            if (!function_exists('get_plugins')) {
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
         } catch (Throwable $e) {
@@ -2452,7 +2452,7 @@ class Riseup_Asia {
         $plugin_file = null;
         try {
             $plugin_file = $this->find_plugin_file($slug);
-            if (!$plugin_file) {
+            if (RiseupBooleanHelpers::is_falsy($plugin_file)) {
                 $this->file_logger->warn('Plugin not found', array('slug' => $slug));
                 return $this->error_response(
                     RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
@@ -2471,7 +2471,7 @@ class Riseup_Asia {
 
         // Step 3: Check if already inactive
         try {
-            if (!is_plugin_active($plugin_file)) {
+            if (RiseupBooleanHelpers::is_falsy(is_plugin_active($plugin_file))) {
                 $this->file_logger->info('Plugin already inactive', array('slug' => $slug));
                 return new WP_REST_Response(array(
                     'success'     => true,
@@ -2554,17 +2554,17 @@ class Riseup_Asia {
         // Read slug from JSON body (fixed endpoint design)
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-        if (empty($slug)) {
+        if (RiseupBooleanHelpers::is_empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Delete plugin endpoint called', array('slug' => $slug));
 
         // Step 1: Load plugin functions
         try {
-            if (!function_exists('get_plugins')) {
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
-            if (!function_exists('delete_plugins')) {
+            if (RiseupBooleanHelpers::is_func_missing('delete_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/file.php';
             }
         } catch (Throwable $e) {
@@ -2580,7 +2580,7 @@ class Riseup_Asia {
         $plugin_file = null;
         try {
             $plugin_file = $this->find_plugin_file($slug);
-            if (!$plugin_file) {
+            if (RiseupBooleanHelpers::is_falsy($plugin_file)) {
                 $this->file_logger->warn('Plugin not found', array('slug' => $slug));
                 return $this->error_response(
                     RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
@@ -2794,7 +2794,7 @@ class Riseup_Asia {
         // Generate code from class name
         $class = get_class($exception);
         $short = str_replace(array('Exception', 'Error'), '', $class);
-        if (empty($short)) {
+        if (RiseupBooleanHelpers::is_empty($short)) {
             return 'EXCEPTION';
         }
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '_', $short));
@@ -2808,7 +2808,7 @@ class Riseup_Asia {
     private function get_temp_dir() {
         $temp_dir = $this->file_logger->get_base_dir() . '/' . RISEUP_TEMP_SUBDIR;
 
-        if (!file_exists($temp_dir)) {
+        if (RiseupBooleanHelpers::is_file_missing($temp_dir)) {
             wp_mkdir_p($temp_dir);
         }
 
@@ -2823,7 +2823,7 @@ class Riseup_Asia {
      * @return string|null Plugin file or null.
      */
     private function find_plugin_file($slug) {
-        if (!function_exists('get_plugins')) {
+        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
@@ -2869,7 +2869,7 @@ class Riseup_Asia {
      * @return bool Success.
      */
     private function delete_directory($dir) {
-        if (!is_dir($dir)) {
+        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
             return false;
         }
 
@@ -2896,11 +2896,11 @@ class Riseup_Asia {
      * @return bool Success.
      */
     private function copy_directory($src, $dst) {
-        if (!is_dir($src)) {
+        if (RiseupBooleanHelpers::is_dir_missing($src)) {
             return false;
         }
 
-        if (!is_dir($dst)) {
+        if (RiseupBooleanHelpers::is_dir_missing($dst)) {
             wp_mkdir_p($dst);
         }
 
@@ -2930,7 +2930,7 @@ class Riseup_Asia {
      */
     private function add_dir_to_zip($zip, $src_dir, $zip_dir, $ignore) {
         $dir = opendir($src_dir);
-        if (!$dir) {
+        if (RiseupBooleanHelpers::is_falsy($dir)) {
             return;
         }
 
@@ -3041,7 +3041,7 @@ class Riseup_Asia {
             $manager = Riseup_Agent_Manager::get_instance();
             $agent = $manager->get_agent($id, false);
             
-            if (!$agent) {
+            if (RiseupBooleanHelpers::is_falsy($agent)) {
                 return $this->error_response('Agent site not found', 404);
             }
             
@@ -3142,11 +3142,11 @@ class Riseup_Asia {
             
             // Validate action
             $allowed_actions = array('enable', 'disable', 'delete');
-            if (!in_array($action, $allowed_actions)) {
+            if (RiseupBooleanHelpers::is_falsy(in_array($action, $allowed_actions))) {
                 return $this->error_response('Invalid action. Allowed: ' . implode(', ', $allowed_actions), 400);
             }
             
-            if (empty($slug)) {
+            if (RiseupBooleanHelpers::is_empty($slug)) {
                 return $this->error_response('Plugin slug is required', 400);
             }
             
@@ -3268,12 +3268,12 @@ class Riseup_Asia {
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $provider = $manager->getProvider();
-            if (!$provider) {
+            if (RiseupBooleanHelpers::is_falsy($provider)) {
                 return $this->error_response('No snapshot provider available', 500);
             }
 
             $snapshot = $provider->getSnapshot($id);
-            if (!$snapshot) {
+            if (RiseupBooleanHelpers::is_falsy($snapshot)) {
                 return $this->error_response('Snapshot not found', 404);
             }
 
@@ -3316,12 +3316,12 @@ class Riseup_Asia {
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
 
             $options = array(
-                'confirm'            => !empty($body['confirm']),
+                'confirm'            => RiseupBooleanHelpers::has_content($body['confirm']),
                 'create_backup'      => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
-                'require_backup'     => !empty($body['requireBackup']),
+                'require_backup'     => RiseupBooleanHelpers::has_content($body['requireBackup']),
                 'mode'               => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
                 'tables'             => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
-                'strict'             => !empty($body['strict']),
+                'strict'             => RiseupBooleanHelpers::has_content($body['strict']),
                 'apply_incrementals' => isset($body['applyIncrementals']) ? (bool) $body['applyIncrementals'] : true,
             );
 
@@ -3365,7 +3365,7 @@ class Riseup_Asia {
         }
         // Check if there's a directory alongside the file
         $dir = $snapshot['directory'] ?? '';
-        if (!empty($dir) && is_dir($dir)) {
+        if (RiseupBooleanHelpers::has_content($dir) && is_dir($dir)) {
             return file_exists($dir . '/a-root.db');
         }
         return false;
@@ -3385,11 +3385,11 @@ class Riseup_Asia {
         }
         // Check directory field
         $dir = $snapshot['directory'] ?? '';
-        if (!empty($dir) && is_dir($dir)) {
+        if (RiseupBooleanHelpers::has_content($dir) && is_dir($dir)) {
             return $dir;
         }
         // Try deriving from filepath (strip filename)
-        if (!empty($filepath) && file_exists(dirname($filepath) . '/a-root.db')) {
+        if (RiseupBooleanHelpers::has_content($filepath) && file_exists(dirname($filepath) . '/a-root.db')) {
             return dirname($filepath);
         }
         return null;
@@ -3410,13 +3410,13 @@ class Riseup_Asia {
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $result = $manager->exportSnapshot($id);
 
-            if (!$result['success']) {
+            if (RiseupBooleanHelpers::is_falsy($result['success'])) {
                 return $this->error_response($result['error'], 400);
             }
 
             // Stream the ZIP file as download
             $filepath = $result['filepath'];
-            if (!file_exists($filepath)) {
+            if (RiseupBooleanHelpers::is_file_missing($filepath)) {
                 return $this->error_response('Export file not found', 500);
             }
 
@@ -3440,7 +3440,7 @@ class Riseup_Asia {
         return $this->safe_execute(function() use ($request) {
             $files = $request->get_file_params();
 
-            if (empty($files['file']['tmp_name'])) {
+            if (RiseupBooleanHelpers::is_empty($files['file']['tmp_name'])) {
                 return $this->error_response('No file uploaded', 400);
             }
 
@@ -3653,12 +3653,12 @@ class Riseup_Asia {
 
             // Determine master directory
             $master_dir = $body['master_dir'] ?? null;
-            if (!$master_dir) {
+            if (RiseupBooleanHelpers::is_falsy($master_dir)) {
                 // Auto-detect latest full backup
                 $master_dir = $incremental->findLatestMasterSnapshot();
             }
 
-            if (!$master_dir || !is_dir($master_dir)) {
+            if (RiseupBooleanHelpers::is_falsy($master_dir) || RiseupBooleanHelpers::is_dir_missing($master_dir)) {
                 return new WP_REST_Response(array(
                     'success' => false,
                     'error'   => 'No master (full) snapshot found. Create a full backup first.',
