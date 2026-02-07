@@ -89,6 +89,7 @@ type SyncServiceInterface interface {
 	CheckAllSites(ctx context.Context, pluginID int64) (interface{}, error)
 	CheckAllPlugins(ctx context.Context) (interface{}, error)
 	GetFileChanges(ctx context.Context, pluginID, siteID int64) (interface{}, error)
+	PushSync(ctx context.Context, pluginID, siteID int64) (interface{}, error)
 }
 
 // GitServiceInterface defines git service methods
@@ -1078,6 +1079,33 @@ func CheckAllSites(w http.ResponseWriter, r *http.Request) {
 	result, err := Services.SyncService.CheckAllSites(r.Context(), pluginID)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E4003", err.Error())
+		return
+	}
+	respondSuccess(w, result)
+}
+
+// PushSync pushes local changes (including deletions) to the remote site
+func PushSync(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SyncService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Sync service not available")
+		return
+	}
+
+	pluginID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid plugin ID")
+		return
+	}
+
+	siteID, err := getIDParam(r, "siteId")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	result, err := Services.SyncService.PushSync(r.Context(), pluginID, siteID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E4004", err.Error())
 		return
 	}
 	respondSuccess(w, result)

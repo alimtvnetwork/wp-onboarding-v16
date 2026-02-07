@@ -720,6 +720,14 @@ class Riseup_Asia {
                 'permission_callback' => $this->build_permission_callback('sync_manifest', array($this, 'check_plugin_permission')),
             ));
 
+            // Sync push endpoint - receives delta files (replacements + deletions).
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SYNC);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SYNC, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_sync_push'),
+                'permission_callback' => $this->build_permission_callback('sync_push', array($this, 'check_plugin_permission')),
+            ));
+
             // Plugin file content endpoint - fixed URL, slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_FILE);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILE, array(
@@ -1681,6 +1689,161 @@ class Riseup_Asia {
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Sync manifest error');
             return $this->error_response('Failed to generate sync manifest: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+        }
+    }
+
+    /**
+     * Handle sync push endpoint.
+     * Receives delta files (replacements and deletions) from the Go backend.
+     *
+     * Expected JSON body: { "plugin": "slug", "files": [{ "path": "...", "content": "base64", "action": "replace|delete" }] }
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function handle_sync_push($request) {
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : '';
+        $files = isset($body['files']) ? $body['files'] : array();
+
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
+        if (empty($files) || !is_array($files)) {
+            return $this->error_response('Files array is required', RISEUP_HTTP_BAD_REQUEST);
+        }
+
+        $this->file_logger->info('Sync push endpoint called', array('slug' => $slug, 'fileCount' => count($files)));
+
+        try {
+            $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+            if (!is_dir($plugin_dir)) {
+                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+            }
+
+            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+            $results = array();
+            $files_updated = 0;
+            $files_deleted = 0;
+            $files_ignored = 0;
+            $ignored_files = array();
+
+            foreach ($files as $file) {
+                $path = isset($file['path']) ? $file['path'] : '';
+                $action = isset($file['action']) ? $file['action'] : '';
+                $content = isset($file['content']) ? $file['content'] : '';
+
+                if (empty($path) || empty($action)) {
+                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
+                    continue;
+                }
+
+                // Check ignore patterns
+                if ($ignore && $ignore->is_ignored($path)) {
+                    $files_ignored++;
+                    $ignored_files[] = $path;
+                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => RISEUP_MSG_FILE_IGNORED);
+                    continue;
+                }
+
+                $full_path = $plugin_dir . '/' . $path;
+
+                // Security: prevent path traversal
+                $real_plugin_dir = realpath($plugin_dir);
+                $resolved = realpath(dirname($full_path));
+                if ($resolved === false) {
+                    // Directory doesn't exist yet for new files
+                    $resolved = $plugin_dir;
+                }
+                if (strpos($resolved, $real_plugin_dir) !== 0 && $action !== RISEUP_SYNC_ACTION_DELETE) {
+                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Path traversal detected');
+                    continue;
+                }
+
+                if ($action === RISEUP_SYNC_ACTION_REPLACE) {
+                    // Decode base64 content and write file
+                    $decoded = base64_decode($content, true);
+                    if ($decoded === false) {
+                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Invalid base64 content');
+                        continue;
+                    }
+                    $dir = dirname($full_path);
+                    if (!is_dir($dir)) {
+                        RiseupPathUtils::ensureDir($dir);
+                    }
+                    if (file_put_contents($full_path, $decoded) !== false) {
+                        $files_updated++;
+                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'success');
+                    } else {
+                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Failed to write file');
+                    }
+
+                } elseif ($action === RISEUP_SYNC_ACTION_DELETE) {
+                    // Delete the file from remote
+                    if (file_exists($full_path)) {
+                        // Log deletion to audit trail
+                        $this->file_logger->info('Sync delete', array('slug' => $slug, 'path' => $path));
+                        if ($this->db) {
+                            $this->db->log_transaction(
+                                RISEUP_ACTION_SYNC_DELETE,
+                                $slug,
+                                RISEUP_STATUS_SUCCESS,
+                                'Deleted via sync: ' . $path,
+                                null,
+                                null,
+                                RISEUP_TRIGGERED_BY_API
+                            );
+                        }
+                        if (unlink($full_path)) {
+                            $files_deleted++;
+                            $results[] = array('path' => $path, 'action' => $action, 'status' => 'success');
+                            // Clean up empty parent directories
+                            $parent = dirname($full_path);
+                            while ($parent !== $plugin_dir && is_dir($parent) && count(scandir($parent)) <= 2) {
+                                rmdir($parent);
+                                $parent = dirname($parent);
+                            }
+                        } else {
+                            $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Failed to delete file');
+                        }
+                    } else {
+                        // File already doesn't exist — treat as success
+                        $files_deleted++;
+                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'success', 'reason' => 'Already absent');
+                    }
+                } else {
+                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Unknown action: ' . $action);
+                }
+            }
+
+            // Log overall sync operation
+            if ($this->db) {
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SYNC,
+                    $slug,
+                    RISEUP_STATUS_SUCCESS,
+                    sprintf('Sync: %d updated, %d deleted, %d ignored', $files_updated, $files_deleted, $files_ignored),
+                    null,
+                    null,
+                    RISEUP_TRIGGERED_BY_API
+                );
+            }
+
+            // Invalidate file cache after sync
+            $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
+            $fileCache->invalidate($slug);
+
+            return new WP_REST_Response(array(
+                'success'       => true,
+                'files_updated' => $files_updated,
+                'files_deleted' => $files_deleted,
+                'files_ignored' => $files_ignored,
+                'ignored_files' => $ignored_files,
+                'results'       => $results,
+            ), RISEUP_HTTP_OK);
+        } catch (Throwable $e) {
+            $this->file_logger->log_exception($e, 'Sync push error');
+            return $this->error_response('Sync push failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
         }
     }
 

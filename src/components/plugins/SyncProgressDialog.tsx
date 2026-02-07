@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +11,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
-import { Check, X, RefreshCw, AlertCircle, Copy } from "lucide-react";
+import { Check, X, RefreshCw, AlertCircle, Copy, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import { toast } from "sonner";
 import { SyncTreeView } from "@/components/plugins/SyncTreeView";
+import { api } from "@/lib/api";
 import type { FileChange } from "@/lib/api";
 
 export interface SyncStage {
@@ -406,12 +407,33 @@ export function SyncProgressDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
+          {isComplete && isSuccess && syncResult && syncResult.changes && syncResult.changes.length > 0 && (
+            <Button
+              variant="default"
+              onClick={async () => {
+                try {
+                  toast.info("Pushing changes to remote...");
+                  const res = await api.pushSync(pluginId, siteId);
+                  if (res.data?.success) {
+                    toast.success(`Sync pushed: ${res.data.filesUpdated} updated, ${res.data.filesDeleted} deleted`);
+                  } else {
+                    toast.error("Push failed: " + (res.data?.errorMessage || "Unknown error"));
+                  }
+                } catch (err: any) {
+                  toast.error("Push failed: " + (err?.message || "Unknown error"));
+                }
+              }}
+            >
+              <Upload className="h-4 w-4 mr-1" />
+              Push Changes
+            </Button>
+          )}
           <Button
-            variant={isComplete ? "default" : "outline"}
+            variant={isComplete ? "outline" : "default"}
             onClick={() => onOpenChange(false)}
           >
-            {isComplete ? "Done" : "Close"}
+            {isComplete ? "Close" : "Cancel"}
           </Button>
         </DialogFooter>
       </DialogContent>

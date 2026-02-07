@@ -152,6 +152,7 @@ func NewServer(cfg ServerConfig) *Server {
 
 	// Sync endpoints
 	api.HandleFunc("/plugins/{id}/sites/{siteId}/sync", handlers.CheckSync).Methods("POST")
+	api.HandleFunc("/plugins/{id}/sites/{siteId}/sync/push", handlers.PushSync).Methods("POST")
 	api.HandleFunc("/plugins/{id}/sync/check-all", handlers.CheckAllSites).Methods("POST")
 
 	// Publish endpoints

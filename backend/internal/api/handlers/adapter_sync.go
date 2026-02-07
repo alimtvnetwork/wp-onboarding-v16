@@ -29,6 +29,10 @@ func (a *SyncServiceAdapter) GetFileChanges(ctx context.Context, pluginID, siteI
 	return a.Service.GetFileChanges(ctx, pluginID, siteID)
 }
 
+func (a *SyncServiceAdapter) PushSync(ctx context.Context, pluginID, siteID int64) (interface{}, error) {
+	return a.Service.PushSync(ctx, pluginID, siteID)
+}
+
 // WatcherServiceAdapter wraps *watcher.Service to implement WatcherServiceInterface
 type WatcherServiceAdapter struct {
 	*watcher.Service

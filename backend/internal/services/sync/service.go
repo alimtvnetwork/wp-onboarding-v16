@@ -4,7 +4,9 @@ package sync
 import (
 	"context"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,12 +23,27 @@ import (
 	"wp-plugin-publish/pkg/pathutil"
 )
 
+// PushSyncResult represents the result of a sync push operation
+type PushSyncResult struct {
+	PluginID     int64  `json:"pluginId"`
+	SiteID       int64  `json:"siteId"`
+	FilesUpdated int    `json:"filesUpdated"`
+	FilesDeleted int    `json:"filesDeleted"`
+	FilesIgnored int    `json:"filesIgnored"`
+	TotalChanges int    `json:"totalChanges"`
+	Success      bool   `json:"success"`
+	ErrorMessage string `json:"errorMessage,omitempty"`
+}
+
 // Service interface for sync operations
 type Service interface {
 	// Sync checking
 	CheckSync(ctx context.Context, pluginID, siteID int64) (*SyncResult, error)
 	CheckAllSites(ctx context.Context, pluginID int64) (*BatchSyncResult, error)
 	CheckAllPlugins(ctx context.Context) ([]SyncResult, error)
+
+	// Sync push (applies changes including deletions to remote)
+	PushSync(ctx context.Context, pluginID, siteID int64) (*PushSyncResult, error)
 
 	// File change management
 	GetFileChanges(ctx context.Context, pluginID, siteID int64) ([]models.FileChange, error)
@@ -263,6 +280,144 @@ func (s *serviceImpl) CheckAllPlugins(ctx context.Context) ([]SyncResult, error)
 	}
 
 	return results, nil
+}
+
+// PushSync performs a full comparison and pushes all changes (including deletions) to the remote site
+func (s *serviceImpl) PushSync(ctx context.Context, pluginID, siteID int64) (*PushSyncResult, error) {
+	result := &PushSyncResult{
+		PluginID: pluginID,
+		SiteID:   siteID,
+	}
+
+	// 1. Run comparison to get changes
+	s.broadcastProgress(pluginID, siteID, "checking", 0, "Running sync comparison...")
+	syncResult, err := s.CheckSync(ctx, pluginID, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "sync comparison failed")
+	}
+	if syncResult.ErrorMessage != "" {
+		result.ErrorMessage = syncResult.ErrorMessage
+		return result, nil
+	}
+
+	if syncResult.InSync {
+		result.Success = true
+		s.broadcastProgress(pluginID, siteID, "complete", 100, "Already in sync, nothing to push")
+		return result, nil
+	}
+
+	// 2. Get plugin info for reading local files
+	plug, err := s.pluginService.GetByID(ctx, pluginID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
+	}
+
+	// 3. Get mapping for remote slug
+	mapping, err := s.getMapping(ctx, pluginID, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get mapping")
+	}
+
+	// 4. Get site info and credentials
+	siteInfo, err := s.getSiteInfo(ctx, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site info")
+	}
+	password, err := s.sitePasswordDecryptor.GetDecryptedPassword(ctx, siteID)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt credentials")
+	}
+
+	// 5. Build SyncFile array from changes
+	s.broadcastProgress(pluginID, siteID, "packaging", 40, "Packaging file changes...")
+	var syncFiles []wordpress.SyncFile
+
+	absPluginPath, err := pathutil.ToAbsolute(plug.Path)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve plugin path")
+	}
+
+	for _, change := range syncResult.Changes {
+		switch change.ChangeType {
+		case "added", "modified":
+			// Only push local-newer or local-only files
+			if change.Direction == "remote_newer" {
+				continue // skip remote-newer files (pull, not push)
+			}
+			localPath := filepath.Join(absPluginPath, filepath.FromSlash(change.FilePath))
+			content, readErr := os.ReadFile(localPath)
+			if readErr != nil {
+				s.log.Warn("Failed to read file for sync, skipping",
+					"path", change.FilePath, "error", readErr)
+				continue
+			}
+			syncFiles = append(syncFiles, wordpress.SyncFile{
+				Path:    change.FilePath,
+				Content: base64.StdEncoding.EncodeToString(content),
+				Action:  "replace",
+			})
+
+		case "deleted":
+			// File exists on remote but not locally → send delete
+			syncFiles = append(syncFiles, wordpress.SyncFile{
+				Path:   change.FilePath,
+				Action: "delete",
+			})
+		}
+	}
+
+	if len(syncFiles) == 0 {
+		result.Success = true
+		s.broadcastProgress(pluginID, siteID, "complete", 100, "No pushable changes found")
+		return result, nil
+	}
+
+	result.TotalChanges = len(syncFiles)
+	s.log.Info("Pushing sync changes",
+		"plugin", plug.Name,
+		"pluginId", pluginID,
+		"site", mapping.SiteName,
+		"siteId", siteID,
+		"totalFiles", len(syncFiles),
+	)
+
+	// 6. Push to remote via WordPress client
+	s.broadcastProgress(pluginID, siteID, "pushing", 60,
+		fmt.Sprintf("Pushing %d files to remote...", len(syncFiles)))
+
+	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
+	syncPushResult, err := wpClient.SyncPluginFilesViaUploader(mapping.RemoteSlug, syncFiles)
+	if err != nil {
+		result.ErrorMessage = err.Error()
+		s.broadcastProgress(pluginID, siteID, "error", 100, "Sync push failed: "+err.Error())
+		return result, nil
+	}
+
+	result.FilesUpdated = syncPushResult.FilesUpdated
+	result.FilesDeleted = syncPushResult.FilesDeleted
+	result.FilesIgnored = syncPushResult.FilesIgnored
+	result.Success = syncPushResult.Success
+
+	// 7. Update sync status
+	if result.Success {
+		s.updateMappingSyncStatus(ctx, pluginID, siteID, true)
+	}
+
+	s.broadcastProgress(pluginID, siteID, "complete", 100,
+		fmt.Sprintf("Sync complete: %d updated, %d deleted, %d ignored",
+			result.FilesUpdated, result.FilesDeleted, result.FilesIgnored))
+
+	s.log.Info("Sync push completed",
+		"plugin", plug.Name,
+		"pluginId", pluginID,
+		"site", mapping.SiteName,
+		"siteId", siteID,
+		"updated", result.FilesUpdated,
+		"deleted", result.FilesDeleted,
+		"ignored", result.FilesIgnored,
+	)
+
+	return result, nil
 }
 
 // GetFileChanges returns pending file changes for a plugin
