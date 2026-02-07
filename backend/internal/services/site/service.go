@@ -1380,6 +1380,7 @@ func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 }
 
 // logToErrorFile writes error details to data/errors/error.log.txt
+// Includes full request attribution: Go backend route and WordPress delegated URL.
 func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details map[string]interface{}) {
 	errorsDir := pathutil.MustJoin(filepath.Dir(s.db.Path()), "errors")
 	errorLogPath := pathutil.MustJoin(errorsDir, "error.log.txt")
@@ -1401,24 +1402,36 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
 	logEntry += fmt.Sprintf("  Site: %s (ID: %d)\n", siteName, siteID)
-	logEntry += fmt.Sprintf("  Site URL: %s\n", siteURL)
 	logEntry += fmt.Sprintf("  Plugin: %s\n", pluginSlug)
 
-	// Add error details
+	// Request attribution: Go backend route
+	logEntry += fmt.Sprintf("  RequestedAt: GET /api/v1/sites/%d/remote-plugins/%s\n", siteID, action)
+
+	// Request attribution: WordPress delegated URL
+	method := "POST"
+	if m, ok := details["method"].(string); ok && m != "" {
+		method = m
+	}
+	endpoint := ""
+	if ep, ok := details["endpoint"].(string); ok {
+		endpoint = ep
+	}
+	fullURL := ""
+	if u, ok := details["url"].(string); ok && u != "" {
+		fullURL = u
+	} else if endpoint != "" {
+		fullURL = fmt.Sprintf("%s/wp-json%s", siteURL, endpoint)
+	}
+	logEntry += fmt.Sprintf("  DelegatedAt: %s %s\n", method, fullURL)
+
+	// Error message
 	if errMsg, ok := details["error"].(string); ok {
 		logEntry += fmt.Sprintf("  Error: %s\n", errMsg)
 	}
 	if statusCode, ok := details["statusCode"].(int); ok {
 		logEntry += fmt.Sprintf("  Status Code: %d\n", statusCode)
 	}
-	if endpoint, ok := details["endpoint"].(string); ok {
-		logEntry += fmt.Sprintf("  Endpoint: %s\n", endpoint)
-	}
-	if fullURL, ok := details["url"].(string); ok && fullURL != "" {
-		logEntry += fmt.Sprintf("  Full URL: %s\n", fullURL)
-	}
 	if responseBody, ok := details["responseBody"].(string); ok && len(responseBody) > 0 {
-		// Truncate if too long
 		if len(responseBody) > 2000 {
 			responseBody = responseBody[:2000] + "... (truncated)"
 		}
