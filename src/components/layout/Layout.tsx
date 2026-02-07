@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { BackendStatus } from "@/components/shared/BackendStatus";
+import { CommandPalette } from "@/components/command-palette/CommandPalette";
 
 export function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -10,6 +11,7 @@ export function Layout() {
   return (
     <div className="flex min-h-screen bg-background overflow-x-hidden">
       <BackendStatus />
+      <CommandPalette />
       <Sidebar
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
