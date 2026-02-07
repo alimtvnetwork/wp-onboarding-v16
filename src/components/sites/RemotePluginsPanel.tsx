@@ -138,10 +138,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     mutationFn: async ({ plugin, enable }: { plugin: RemotePlugin; enable: boolean }) => {
       if (enable) {
         const response = await api.enableRemotePlugin(site.id, plugin.plugin);
-        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}/enable`, method: "POST" });
+        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
       } else {
         const response = await api.disableRemotePlugin(site.id, plugin.plugin);
-        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}/disable`, method: "POST" });
+        return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
       }
     },
     onMutate: ({ plugin }) => {
@@ -153,7 +153,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     },
     onError: (error, { plugin, enable }) => {
       const captured = captureException(error, {
-        endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}/${enable ? "enable" : "disable"}`,
+        endpoint: `/sites/${site.id}/remote-plugins/${enable ? "enable" : "disable"}`,
         method: "POST",
       });
       toast.error(`Failed to ${enable ? "activate" : "deactivate"} ${plugin.name}`, {
@@ -176,10 +176,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       // If plugin is active, deactivate first, then delete
       if (plugin.status === "active") {
         const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin);
-        requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}/disable`, method: "POST" });
+        requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
       }
       const response = await api.deleteRemotePlugin(site.id, plugin.plugin);
-      return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}`, method: "DELETE" });
+      return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/delete`, method: "POST" });
     },
     onSuccess: (_, plugin) => {
       toast.success(`${plugin.name} deleted`);
@@ -194,8 +194,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     },
     onError: (error, plugin) => {
       const captured = captureException(error, {
-        endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}`,
-        method: "DELETE",
+        endpoint: `/sites/${site.id}/remote-plugins/delete`,
+        method: "POST",
       });
       toast.error(`Failed to delete ${plugin.name}`, {
         description: "Click for details",
@@ -269,7 +269,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     for (const plugin of selectedList) {
       try {
         const response = await api.enableRemotePlugin(site.id, plugin.plugin);
-        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}/enable`, method: "POST" });
+        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
         successCount++;
       } catch (error) {
         console.error(`Failed to activate ${plugin.name}`, error);
@@ -289,7 +289,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     for (const plugin of selectedList) {
       try {
         const response = await api.disableRemotePlugin(site.id, plugin.plugin);
-        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}/disable`, method: "POST" });
+        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
         successCount++;
       } catch (error) {
         console.error(`Failed to deactivate ${plugin.name}`, error);
@@ -311,10 +311,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         // Deactivate first if active
         if (plugin.status === "active") {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin);
-          requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}/disable`, method: "POST" });
+          requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
         }
         const response = await api.deleteRemotePlugin(site.id, plugin.plugin);
-        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/${plugin.plugin}`, method: "DELETE" });
+        requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/delete`, method: "POST" });
         successCount++;
       } catch (error) {
         console.error(`Failed to delete ${plugin.name}`, error);
