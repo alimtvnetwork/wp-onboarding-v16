@@ -89,8 +89,15 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
   }
 
   return (
-    <div className={`flex items-center gap-1.5 ${className}`}>
-      {/* Remote version */}
+    <div className={`flex items-center gap-2 ${className}`}>
+      {/* Local version (what we're deploying) */}
+      <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
+        v{versionInfo.localVersion}
+      </Badge>
+      
+      <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
+      
+      {/* Remote version (what's currently installed) */}
       {versionInfo.remoteVersion ? (
         <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
           v{versionInfo.remoteVersion}
@@ -100,13 +107,6 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
           new
         </Badge>
       )}
-      
-      <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
-      
-      {/* Local version */}
-      <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
-        v{versionInfo.localVersion}
-      </Badge>
       
       {/* Status badge */}
       {versionInfo.isNewInstall && (
