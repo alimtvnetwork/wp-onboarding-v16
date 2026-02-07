@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useErrorStore, CapturedError, StackFrame } from '@/stores/errorStore';
-import { EnvelopeDelegatedError, EnvelopeStackFrame } from '@/lib/api';
+import { EnvelopeErrors, EnvelopeMethodsStack } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -390,7 +390,7 @@ function BackendSection({
             <Network className="h-3 w-3" />
             Request
           </TabsTrigger>
-          {(error.traversalSteps?.length || error.delegatedError || error.requestedEndpoint) && (
+          {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
             <TabsTrigger value="traversal" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
               <Route className="h-3 w-3" />
               Traversal
@@ -625,7 +625,7 @@ function BackendSection({
       </TabsContent>
 
       {/* Traversal Tab — Request flow diagnostics */}
-      {(error.traversalSteps?.length || error.delegatedError || error.requestedEndpoint) && (
+      {(error.envelopeErrors || error.envelopeMethodsStack || error.requestedAt) && (
         <TabsContent value="traversal" className="space-y-4 m-0">
           <TraversalDetails error={error} copySection={copySection} />
         </TabsContent>
@@ -1217,23 +1217,23 @@ function RequestDetails({ error, copySection }: { error: CapturedError; copySect
 // ============================================================================
 
 function TraversalDetails({ error, copySection }: { error: CapturedError; copySection: (label: string, content: string) => void }) {
-  const hasEndpoints = error.requestedEndpoint || error.delegatedEndpoint;
-  const hasSteps = error.traversalSteps && error.traversalSteps.length > 0;
-  const hasDelegated = !!error.delegatedError;
-  const hasEnvelopeFrames = error.envelopeStackFrames && error.envelopeStackFrames.length > 0;
+  const hasEndpoints = error.requestedAt || error.requestDelegatedAt;
+  const hasMethodsStack = error.envelopeMethodsStack?.Backend && error.envelopeMethodsStack.Backend.length > 0;
+  const hasDelegatedStack = error.envelopeErrors?.DelegatedServiceErrorStack && error.envelopeErrors.DelegatedServiceErrorStack.length > 0;
+  const hasBackendTrace = error.envelopeErrors?.Backend && error.envelopeErrors.Backend.length > 0;
 
   const copyAll = () => {
     const parts: string[] = [];
-    if (error.requestedEndpoint) parts.push(`Requested Endpoint: ${error.requestedEndpoint}`);
-    if (error.delegatedEndpoint) parts.push(`Delegated Endpoint: ${error.delegatedEndpoint}`);
-    if (hasSteps) parts.push(`\nTraversal Steps:\n${error.traversalSteps!.map((s, i) => `  ${i + 1}. ${s}`).join('\n')}`);
-    if (hasDelegated) {
-      const de = error.delegatedError!;
-      parts.push(`\nDelegated Error:\n  Endpoint: ${de.Endpoint}\n  Status: ${de.StatusCode}\n  Message: ${de.Message}`);
-      if (de.StackTrace) parts.push(`  Stack Trace:\n${de.StackTrace}`);
+    if (error.requestedAt) parts.push(`Requested At: ${error.requestedAt}`);
+    if (error.requestDelegatedAt) parts.push(`Delegated At: ${error.requestDelegatedAt}`);
+    if (hasMethodsStack) {
+      parts.push(`\nMethods Stack:\n${error.envelopeMethodsStack!.Backend.map((f, i) => `  #${i} ${f.Method} at ${f.File}:${f.LineNumber}`).join('\n')}`);
     }
-    if (hasEnvelopeFrames) {
-      parts.push(`\nGo Stack Frames:\n${error.envelopeStackFrames!.map((f, i) => `  #${i} ${f.Function} at ${f.File}:${f.Line}`).join('\n')}`);
+    if (hasDelegatedStack) {
+      parts.push(`\nDelegated Service Error Stack:\n${error.envelopeErrors!.DelegatedServiceErrorStack!.map(l => `  ${l}`).join('\n')}`);
+    }
+    if (hasBackendTrace) {
+      parts.push(`\nBackend Trace:\n${error.envelopeErrors!.Backend!.map(l => `  ${l}`).join('\n')}`);
     }
     copySection("Traversal details", parts.join('\n'));
   };
@@ -1253,20 +1253,20 @@ function TraversalDetails({ error, copySection }: { error: CapturedError; copySe
             </Button>
           </div>
           <div className="bg-muted p-3 rounded-md space-y-2">
-            {error.requestedEndpoint && (
+            {error.requestedAt && (
               <div className="flex items-center gap-2 text-sm">
                 <Badge variant="outline" className="shrink-0 text-xs">Go</Badge>
-                <code className="text-xs bg-background/60 px-1.5 py-0.5 rounded break-all">{error.requestedEndpoint}</code>
+                <code className="text-xs bg-background/60 px-1.5 py-0.5 rounded break-all">{error.requestedAt}</code>
               </div>
             )}
-            {error.delegatedEndpoint && (
+            {error.requestDelegatedAt && (
               <>
                 <div className="flex items-center justify-center">
                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Badge variant="outline" className="shrink-0 text-xs bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400">PHP</Badge>
-                  <code className="text-xs bg-background/60 px-1.5 py-0.5 rounded break-all">{error.delegatedEndpoint}</code>
+                  <code className="text-xs bg-background/60 px-1.5 py-0.5 rounded break-all">{error.requestDelegatedAt}</code>
                 </div>
               </>
             )}
@@ -1274,152 +1274,36 @@ function TraversalDetails({ error, copySection }: { error: CapturedError; copySe
         </div>
       )}
 
-      {/* Traversal Steps */}
-      {hasSteps && (
+      {/* Methods Stack (Backend call chain) */}
+      {hasMethodsStack && (
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
             <Layers className="h-4 w-4" />
-            Traversal Steps ({error.traversalSteps!.length})
+            Methods Stack ({error.envelopeMethodsStack!.Backend.length})
           </h4>
-          <div className="bg-muted p-3 rounded-md">
-            <div className="space-y-1">
-              {error.traversalSteps!.map((step, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center gap-2 text-xs font-mono"
-                  style={{ marginLeft: `${index * 12}px` }}
-                >
-                  {index > 0 && <span className="text-muted-foreground">└─</span>}
-                  <span className={cn(
-                    index === 0 ? "text-primary font-semibold" : "text-foreground",
-                    index === error.traversalSteps!.length - 1 && index > 0 && "text-destructive font-semibold"
-                  )}>
-                    {step}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delegated Error */}
-      {hasDelegated && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
-              <span className="text-orange-600 dark:text-orange-400">Delegated Error (PHP)</span>
-            </h4>
-          </div>
-          <div className="border border-orange-500/30 rounded-md overflow-hidden">
-            <div className="bg-orange-500/10 p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <Badge variant={error.delegatedError!.StatusCode >= 500 ? "destructive" : "secondary"}>
-                  {error.delegatedError!.StatusCode}
-                </Badge>
-                <code className="text-xs break-all">{error.delegatedError!.Endpoint}</code>
-              </div>
-              <p className="text-sm">{error.delegatedError!.Message}</p>
-            </div>
-
-            {/* Delegated stack trace */}
-            {error.delegatedError!.StackTrace && (
-              <div className="p-3 border-t border-orange-500/20">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-muted-foreground">PHP Stack Trace</span>
-                  <Button variant="ghost" size="sm" onClick={() => copySection("Delegated stack trace", error.delegatedError!.StackTrace!)}>
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-                <ScrollArea className="h-[200px] rounded-md border bg-muted">
-                  <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">{error.delegatedError!.StackTrace}</pre>
-                </ScrollArea>
-              </div>
-            )}
-
-            {/* Delegated stack frames */}
-            {error.delegatedError!.StackTraceFrames && error.delegatedError!.StackTraceFrames.length > 0 && (
-              <div className="p-3 border-t border-orange-500/20">
-                <span className="text-xs font-medium text-muted-foreground mb-2 block">
-                  PHP Stack Frames ({error.delegatedError!.StackTraceFrames.length})
-                </span>
-                <div className="border rounded-md overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-orange-500/10">
-                      <tr>
-                        <th className="text-left p-2 font-medium text-muted-foreground">#</th>
-                        <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
-                        <th className="text-left p-2 font-medium text-muted-foreground">File</th>
-                        <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {error.delegatedError!.StackTraceFrames.map((frame, index) => (
-                        <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-orange-500/5")}>
-                          <td className="p-2 font-mono text-muted-foreground">{index}</td>
-                          <td className="p-2 font-mono">
-                            <span className={cn(index === 0 && "text-orange-600 dark:text-orange-400 font-semibold")}>
-                              {frame.Class ? `${frame.Class}::${frame.Function}` : frame.Function || 'unknown'}()
-                            </span>
-                          </td>
-                          <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.File}>
-                            {frame.File || 'unknown'}
-                          </td>
-                          <td className="p-2 font-mono text-right">{frame.Line || '?'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Go Envelope Stack Frames */}
-      {hasEnvelopeFrames && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Server className="h-4 w-4" />
-              Go Stack Frames ({error.envelopeStackFrames!.length})
-            </h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const text = error.envelopeStackFrames!.map((f, i) => `#${i} ${f.Function} at ${f.File}:${f.Line}`).join('\n');
-                copySection("Go stack frames", text);
-              }}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
           <div className="border rounded-md overflow-hidden">
             <table className="w-full text-xs">
               <thead className="bg-muted">
                 <tr>
                   <th className="text-left p-2 font-medium text-muted-foreground">#</th>
-                  <th className="text-left p-2 font-medium text-muted-foreground">Function</th>
+                  <th className="text-left p-2 font-medium text-muted-foreground">Method</th>
                   <th className="text-left p-2 font-medium text-muted-foreground">File</th>
                   <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
                 </tr>
               </thead>
               <tbody>
-                {error.envelopeStackFrames!.map((frame, index) => (
+                {error.envelopeMethodsStack!.Backend.map((frame, index) => (
                   <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-primary/5")}>
                     <td className="p-2 font-mono text-muted-foreground">{index}</td>
                     <td className="p-2 font-mono">
                       <span className={cn(index === 0 && "text-primary font-semibold")}>
-                        {frame.Function || 'unknown'}
+                        {frame.Method || 'unknown'}
                       </span>
                     </td>
                     <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]" title={frame.File}>
                       {frame.File || 'unknown'}
                     </td>
-                    <td className="p-2 font-mono text-right">{frame.Line || '?'}</td>
+                    <td className="p-2 font-mono text-right">{frame.LineNumber || '?'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1428,7 +1312,47 @@ function TraversalDetails({ error, copySection }: { error: CapturedError; copySe
         </div>
       )}
 
-      {!hasEndpoints && !hasSteps && !hasDelegated && !hasEnvelopeFrames && (
+      {/* Delegated Service Error Stack */}
+      {hasDelegatedStack && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <span className="text-orange-600 dark:text-orange-400">Delegated Service Error Stack</span>
+            </h4>
+            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated error stack", error.envelopeErrors!.DelegatedServiceErrorStack!.join('\n'))}>
+              <Copy className="h-3 w-3" />
+            </Button>
+          </div>
+          <ScrollArea className="h-[200px] rounded-md border border-orange-500/30 bg-orange-500/5">
+            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">
+              {error.envelopeErrors!.DelegatedServiceErrorStack!.join('\n')}
+            </pre>
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* Backend Trace */}
+      {hasBackendTrace && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Server className="h-4 w-4" />
+              Backend Trace ({error.envelopeErrors!.Backend!.length} lines)
+            </h4>
+            <Button variant="ghost" size="sm" onClick={() => copySection("Backend trace", error.envelopeErrors!.Backend!.join('\n'))}>
+              <Copy className="h-3 w-3" />
+            </Button>
+          </div>
+          <ScrollArea className="h-[150px] rounded-md border bg-muted">
+            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">
+              {error.envelopeErrors!.Backend!.join('\n')}
+            </pre>
+          </ScrollArea>
+        </div>
+      )}
+
+      {!hasEndpoints && !hasMethodsStack && !hasDelegatedStack && !hasBackendTrace && (
         <div className="text-center py-8 text-muted-foreground">
           <Route className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No traversal data available</p>

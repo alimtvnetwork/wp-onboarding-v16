@@ -30,9 +30,9 @@ export function EnvelopePagination({ meta, onPageChange, className }: EnvelopePa
   const perPage = PerPage ?? 0;
   const nav = meta.navigation;
 
-  // Build visible page numbers from Navigation.Pages or generate a sliding window
-  const pages: number[] = nav?.Pages?.length
-    ? nav.Pages
+  // Build visible page numbers from Navigation.CloserLinks or generate a sliding window
+  const pages: number[] = nav?.CloserLinks?.length
+    ? nav.CloserLinks.map(extractPageFromUrl).filter((p): p is number => p !== null)
     : buildPageWindow(currentPage, totalPages);
 
   const startRecord = (currentPage - 1) * perPage + 1;
@@ -62,7 +62,7 @@ export function EnvelopePagination({ meta, onPageChange, className }: EnvelopePa
           size="icon"
           className="h-8 w-8"
           disabled={!nav?.PrevPage}
-          onClick={() => nav?.PrevPage && onPageChange(nav.PrevPage)}
+          onClick={() => nav?.PrevPage && onPageChange(extractPageFromUrl(nav.PrevPage) ?? currentPage - 1)}
           aria-label="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -93,7 +93,7 @@ export function EnvelopePagination({ meta, onPageChange, className }: EnvelopePa
           size="icon"
           className="h-8 w-8"
           disabled={!nav?.NextPage}
-          onClick={() => nav?.NextPage && onPageChange(nav.NextPage)}
+          onClick={() => nav?.NextPage && onPageChange(extractPageFromUrl(nav.NextPage) ?? currentPage + 1)}
           aria-label="Next page"
         >
           <ChevronRight className="h-4 w-4" />
@@ -115,12 +115,21 @@ export function EnvelopePagination({ meta, onPageChange, className }: EnvelopePa
   );
 }
 
+/** Extract page number from a URL string like "/api/v1/plugins?page=3&perPage=10" */
+function extractPageFromUrl(url: string): number | null {
+  try {
+    const match = url.match(/[?&]page=(\d+)/);
+    return match ? parseInt(match[1], 10) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Generate a sliding window of page numbers centered on current page */
 function buildPageWindow(current: number, total: number, windowSize = 5): number[] {
   const half = Math.floor(windowSize / 2);
   let start = Math.max(1, current - half);
   let end = Math.min(total, start + windowSize - 1);
-  // Adjust start if we're near the end
   if (end - start + 1 < windowSize) {
     start = Math.max(1, end - windowSize + 1);
   }

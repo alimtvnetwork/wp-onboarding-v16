@@ -15,6 +15,7 @@ export interface ApiResponse<T> {
 
 // ---------------------------------------------------------------------------
 // Universal Response Envelope types (PascalCase, matches Go backend)
+// See spec/response-envelope/README.md for the full specification.
 // ---------------------------------------------------------------------------
 
 export interface EnvelopeStatus {
@@ -26,51 +27,47 @@ export interface EnvelopeStatus {
 }
 
 export interface EnvelopeAttributes {
+  RequestedAt?: string;
+  RequestDelegatedAt?: string;
+  HasAnyErrors: boolean;
   IsSingle: boolean;
   IsMultiple: boolean;
   TotalRecords?: number;
   PerPage?: number;
   TotalPages?: number;
   CurrentPage?: number;
-  RequestedEndpoint?: string;
-  DelegatedEndpoint?: string;
-  TraversalSteps?: string[];
 }
 
 export interface EnvelopeNavigation {
-  NextPage: number | null;
-  PrevPage: number | null;
-  Pages: number[];
+  NextPage: string | null;
+  PrevPage: string | null;
+  CloserLinks: string[];
 }
 
-export interface EnvelopeErrorDetail {
-  Code: string;
-  Message: string;
-  StackTrace?: string;
-  StackTraceFrames?: EnvelopeStackFrame[];
+export interface EnvelopeErrors {
+  BackendMessage: string;
+  DelegatedServiceErrorStack?: string[];
+  Backend?: string[];
+  Frontend?: string[];
 }
 
-export interface EnvelopeStackFrame {
+export interface EnvelopeMethodFrame {
+  Method: string;
   File: string;
-  Line: number;
-  Function: string;
-  Class?: string;
+  LineNumber: number;
 }
 
-export interface EnvelopeDelegatedError {
-  Endpoint: string;
-  StatusCode: number;
-  Message: string;
-  StackTrace?: string;
-  StackTraceFrames?: EnvelopeStackFrame[];
+export interface EnvelopeMethodsStack {
+  Backend: EnvelopeMethodFrame[];
+  Frontend: EnvelopeMethodFrame[];
 }
 
 /** Metadata preserved from the envelope for downstream use (pagination, diagnostics) */
 export interface EnvelopeMeta {
   attributes: EnvelopeAttributes;
   navigation?: EnvelopeNavigation;
-  delegatedError?: EnvelopeDelegatedError;
-  additional?: unknown;
+  errors?: EnvelopeErrors;
+  methodsStack?: EnvelopeMethodsStack;
 }
 
 /** Raw envelope shape as received from the backend */
@@ -79,8 +76,8 @@ interface RawEnvelope {
   Attributes: EnvelopeAttributes;
   Results: unknown[];
   Navigation?: EnvelopeNavigation;
-  Error?: EnvelopeErrorDetail | null;
-  Additional?: unknown;
+  Errors?: EnvelopeErrors;
+  MethodsStack?: EnvelopeMethodsStack;
 }
 
 /**
@@ -107,29 +104,39 @@ function parseEnvelope<T>(env: RawEnvelope): ApiResponse<T> {
   const meta: EnvelopeMeta = {
     attributes: env.Attributes,
     navigation: env.Navigation ?? undefined,
-    additional: env.Additional ?? undefined,
+    errors: env.Errors ?? undefined,
+    methodsStack: env.MethodsStack ?? undefined,
   };
 
-  // Extract delegated error from Additional if present
-  if (env.Additional && typeof env.Additional === 'object' && 'DelegatedError' in (env.Additional as Record<string, unknown>)) {
-    meta.delegatedError = (env.Additional as Record<string, unknown>).DelegatedError as EnvelopeDelegatedError;
-  }
+  if (env.Status.IsFailed || env.Attributes.HasAnyErrors) {
+    const errBlock = env.Errors;
+    // Extract error code from BackendMessage if formatted as "[E1234] message"
+    let code = 'E9999';
+    let message = env.Status.Message || 'Unknown error';
+    if (errBlock?.BackendMessage) {
+      const match = errBlock.BackendMessage.match(/^\[([A-Z]\d+)\]\s*(.*)$/);
+      if (match) {
+        code = match[1];
+        message = match[2];
+      } else {
+        message = errBlock.BackendMessage;
+      }
+    }
 
-  if (env.Status.IsFailed || (env.Error && env.Error.Code)) {
-    const err = env.Error;
     return {
       success: false,
       error: {
-        code: err?.Code || 'E9999',
-        message: err?.Message || env.Status.Message || 'Unknown error',
-        stackTrace: err?.StackTrace,
-        details: err?.StackTrace ? `Stack trace available (${(err.StackTraceFrames || []).length} frames)` : undefined,
+        code,
+        message,
+        details: errBlock?.Backend?.length
+          ? `Backend trace available (${errBlock.Backend.length} lines)`
+          : undefined,
         context: {
-          ...(env.Attributes.RequestedEndpoint ? { requestedEndpoint: env.Attributes.RequestedEndpoint } : {}),
-          ...(env.Attributes.DelegatedEndpoint ? { delegatedEndpoint: env.Attributes.DelegatedEndpoint } : {}),
-          ...(env.Attributes.TraversalSteps?.length ? { traversalSteps: env.Attributes.TraversalSteps } : {}),
-          ...(meta.delegatedError ? { delegatedError: meta.delegatedError } : {}),
-          envelopeStackFrames: err?.StackTraceFrames,
+          ...(env.Attributes.RequestedAt ? { requestedAt: env.Attributes.RequestedAt } : {}),
+          ...(env.Attributes.RequestDelegatedAt ? { requestDelegatedAt: env.Attributes.RequestDelegatedAt } : {}),
+          ...(errBlock?.Backend?.length ? { backendTrace: errBlock.Backend } : {}),
+          ...(errBlock?.DelegatedServiceErrorStack?.length ? { delegatedServiceErrorStack: errBlock.DelegatedServiceErrorStack } : {}),
+          ...(env.MethodsStack ? { methodsStack: env.MethodsStack } : {}),
         },
         timestamp: env.Status.Timestamp,
       },

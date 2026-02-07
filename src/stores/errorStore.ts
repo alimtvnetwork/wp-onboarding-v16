@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ApiError, EnvelopeDelegatedError, EnvelopeStackFrame } from '@/lib/api';
+import { ApiError, EnvelopeErrors, EnvelopeMethodsStack } from '@/lib/api';
 import { getClickPathForError, ClickEvent } from '@/hooks/useClickTracker';
 import { getExecutionLogsForError, ExecutionLogEntry, CallChain } from '@/hooks/useExecutionLogger';
 
@@ -102,11 +102,10 @@ export interface CapturedError {
   executionLogsEnabled?: boolean;
   executionLogsFormatted?: string;
   // Universal Envelope diagnostic fields
-  traversalSteps?: string[];
-  requestedEndpoint?: string;
-  delegatedEndpoint?: string;
-  delegatedError?: EnvelopeDelegatedError;
-  envelopeStackFrames?: EnvelopeStackFrame[];
+  requestedAt?: string;
+  requestDelegatedAt?: string;
+  envelopeErrors?: EnvelopeErrors;
+  envelopeMethodsStack?: EnvelopeMethodsStack;
 }
 
 interface ErrorStore {
@@ -400,11 +399,16 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       executionLogsEnabled: execLogs.enabled,
       executionLogsFormatted: execLogs.formatted || undefined,
       // Universal Envelope diagnostic fields (extracted from error.context)
-      traversalSteps: Array.isArray(error.context?.traversalSteps) ? error.context.traversalSteps as string[] : undefined,
-      requestedEndpoint: typeof error.context?.requestedEndpoint === 'string' ? error.context.requestedEndpoint : undefined,
-      delegatedEndpoint: typeof error.context?.delegatedEndpoint === 'string' ? error.context.delegatedEndpoint : undefined,
-      delegatedError: error.context?.delegatedError as EnvelopeDelegatedError | undefined,
-      envelopeStackFrames: Array.isArray(error.context?.envelopeStackFrames) ? error.context.envelopeStackFrames as EnvelopeStackFrame[] : undefined,
+      requestedAt: typeof error.context?.requestedAt === 'string' ? error.context.requestedAt : undefined,
+      requestDelegatedAt: typeof error.context?.requestDelegatedAt === 'string' ? error.context.requestDelegatedAt : undefined,
+      envelopeErrors: error.context?.delegatedServiceErrorStack || error.context?.backendTrace
+        ? {
+            BackendMessage: error.message,
+            DelegatedServiceErrorStack: Array.isArray(error.context?.delegatedServiceErrorStack) ? error.context.delegatedServiceErrorStack as string[] : undefined,
+            Backend: Array.isArray(error.context?.backendTrace) ? error.context.backendTrace as string[] : undefined,
+          }
+        : undefined,
+      envelopeMethodsStack: error.context?.methodsStack as EnvelopeMethodsStack | undefined,
     };
     
     set((state) => {
