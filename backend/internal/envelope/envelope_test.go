@@ -11,17 +11,20 @@ func TestSuccess(t *testing.T) {
 	data := map[string]string{"name": "Test"}
 	resp := Success(data)
 
-	if !resp.Status.Success {
-		t.Error("expected success=true")
+	if !resp.Status.IsSuccess {
+		t.Error("expected IsSuccess=true")
+	}
+	if resp.Status.IsFailed {
+		t.Error("expected IsFailed=false")
 	}
 	if resp.Status.Code != 200 {
 		t.Errorf("expected code 200, got %d", resp.Status.Code)
 	}
 	if !resp.Attributes.IsSingle {
-		t.Error("expected isSingle=true")
+		t.Error("expected IsSingle=true")
 	}
 	if resp.Attributes.IsMultiple {
-		t.Error("expected isMultiple=false")
+		t.Error("expected IsMultiple=false")
 	}
 	results := resp.Results.([]interface{})
 	if len(results) != 1 {
@@ -43,6 +46,9 @@ func TestCreated(t *testing.T) {
 	if resp.Status.Message != "Created" {
 		t.Errorf("expected message 'Created', got %q", resp.Status.Message)
 	}
+	if resp.Status.IsFailed {
+		t.Error("expected IsFailed=false for Created")
+	}
 }
 
 func TestDeleted(t *testing.T) {
@@ -63,28 +69,28 @@ func TestList(t *testing.T) {
 	resp := List(items, pg)
 
 	if resp.Attributes.IsSingle {
-		t.Error("expected isSingle=false")
+		t.Error("expected IsSingle=false")
 	}
 	if !resp.Attributes.IsMultiple {
-		t.Error("expected isMultiple=true")
+		t.Error("expected IsMultiple=true")
 	}
 	if resp.Attributes.TotalRecords != 50 {
-		t.Errorf("expected totalRecords=50, got %d", resp.Attributes.TotalRecords)
+		t.Errorf("expected TotalRecords=50, got %d", resp.Attributes.TotalRecords)
 	}
 	if resp.Attributes.TotalPages != 5 {
-		t.Errorf("expected totalPages=5, got %d", resp.Attributes.TotalPages)
+		t.Errorf("expected TotalPages=5, got %d", resp.Attributes.TotalPages)
 	}
 	if resp.Attributes.CurrentPage != 3 {
-		t.Errorf("expected currentPage=3, got %d", resp.Attributes.CurrentPage)
+		t.Errorf("expected CurrentPage=3, got %d", resp.Attributes.CurrentPage)
 	}
 	if resp.Navigation == nil {
 		t.Fatal("expected navigation to be present")
 	}
 	if *resp.Navigation.NextPage != 4 {
-		t.Errorf("expected nextPage=4, got %d", *resp.Navigation.NextPage)
+		t.Errorf("expected NextPage=4, got %d", *resp.Navigation.NextPage)
 	}
 	if *resp.Navigation.PrevPage != 2 {
-		t.Errorf("expected prevPage=2, got %d", *resp.Navigation.PrevPage)
+		t.Errorf("expected PrevPage=2, got %d", *resp.Navigation.PrevPage)
 	}
 	if len(resp.Navigation.Pages) != 5 {
 		t.Errorf("expected 5 pages, got %d", len(resp.Navigation.Pages))
@@ -96,21 +102,24 @@ func TestListUnpaginated(t *testing.T) {
 	resp := ListUnpaginated(items, 3)
 
 	if !resp.Attributes.IsMultiple {
-		t.Error("expected isMultiple=true")
+		t.Error("expected IsMultiple=true")
 	}
 	if resp.Navigation != nil {
 		t.Error("expected navigation=nil for unpaginated")
 	}
 	if resp.Attributes.TotalRecords != 3 {
-		t.Errorf("expected totalRecords=3, got %d", resp.Attributes.TotalRecords)
+		t.Errorf("expected TotalRecords=3, got %d", resp.Attributes.TotalRecords)
 	}
 }
 
 func TestError(t *testing.T) {
 	resp := Error(500, "E5001", "Something failed")
 
-	if resp.Status.Success {
-		t.Error("expected success=false")
+	if resp.Status.IsSuccess {
+		t.Error("expected IsSuccess=false")
+	}
+	if !resp.Status.IsFailed {
+		t.Error("expected IsFailed=true")
 	}
 	if resp.Status.Code != 500 {
 		t.Errorf("expected code 500, got %d", resp.Status.Code)
@@ -178,6 +187,70 @@ func TestWithAdditional(t *testing.T) {
 	}
 }
 
+func TestWithEndpoints(t *testing.T) {
+	resp := Success("data").WithEndpoints("/api/v1/plugins/1", "/wp-json/riseup-asia-uploader/v1/plugin")
+	if resp.Attributes.RequestedEndpoint != "/api/v1/plugins/1" {
+		t.Errorf("expected RequestedEndpoint, got %q", resp.Attributes.RequestedEndpoint)
+	}
+	if resp.Attributes.DelegatedEndpoint != "/wp-json/riseup-asia-uploader/v1/plugin" {
+		t.Errorf("expected DelegatedEndpoint, got %q", resp.Attributes.DelegatedEndpoint)
+	}
+}
+
+func TestWithTraversal(t *testing.T) {
+	resp := Success("data").WithTraversal("PublishHandler.Handle", "PublishService.Upload", "WordPressClient.UploadPlugin")
+	if len(resp.Attributes.TraversalSteps) != 3 {
+		t.Errorf("expected 3 traversal steps, got %d", len(resp.Attributes.TraversalSteps))
+	}
+	if resp.Attributes.TraversalSteps[0] != "PublishHandler.Handle" {
+		t.Errorf("unexpected first step: %q", resp.Attributes.TraversalSteps[0])
+	}
+}
+
+func TestWithDelegatedError_DebugOn(t *testing.T) {
+	SetDebugConfig(DebugConfig{IncludeStackTrace: true, MaxStackFrames: 10})
+	defer SetDebugConfig(DefaultDebugConfig())
+
+	de := DelegatedError{
+		Endpoint:   "/wp-json/riseup-asia-uploader/v1/upload",
+		StatusCode: 500,
+		Message:    "PHP fatal error",
+		StackTrace: "php trace",
+		StackTraceFrames: []StackFrame{
+			{File: "upload.php", Line: 42, Function: "handle", Class: "UploadController"},
+		},
+	}
+	resp := Error(502, "E6001", "Delegated call failed").WithDelegatedError(de)
+
+	additional := resp.Additional.(map[string]interface{})
+	got := additional["DelegatedError"].(DelegatedError)
+	if got.StackTrace != "php trace" {
+		t.Error("expected delegated stack trace when debug is on")
+	}
+}
+
+func TestWithDelegatedError_DebugOff(t *testing.T) {
+	SetDebugConfig(DefaultDebugConfig())
+
+	de := DelegatedError{
+		Endpoint:         "/wp-json/riseup-asia-uploader/v1/upload",
+		StatusCode:       500,
+		Message:          "PHP fatal error",
+		StackTrace:       "php trace",
+		StackTraceFrames: []StackFrame{{File: "a.php", Line: 1}},
+	}
+	resp := Error(502, "E6001", "Delegated call failed").WithDelegatedError(de)
+
+	additional := resp.Additional.(map[string]interface{})
+	got := additional["DelegatedError"].(DelegatedError)
+	if got.StackTrace != "" {
+		t.Error("expected empty delegated stack trace when debug is off")
+	}
+	if got.StackTraceFrames != nil {
+		t.Error("expected nil delegated frames when debug is off")
+	}
+}
+
 func TestPagination_TotalPages(t *testing.T) {
 	tests := []struct {
 		total, perPage, expected int
@@ -222,7 +295,7 @@ func TestNavigation_FirstPage(t *testing.T) {
 		t.Error("expected no prev page on first page")
 	}
 	if nav.NextPage == nil || *nav.NextPage != 2 {
-		t.Error("expected nextPage=2")
+		t.Error("expected NextPage=2")
 	}
 	if nav.Pages[0] != 1 {
 		t.Errorf("expected pages starting at 1, got %d", nav.Pages[0])
@@ -237,7 +310,7 @@ func TestNavigation_LastPage(t *testing.T) {
 		t.Error("expected no next page on last page")
 	}
 	if nav.PrevPage == nil || *nav.PrevPage != 9 {
-		t.Error("expected prevPage=9")
+		t.Error("expected PrevPage=9")
 	}
 }
 
@@ -269,12 +342,12 @@ func TestWrite(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&decoded); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if !decoded.Status.Success {
-		t.Error("expected decoded success=true")
+	if !decoded.Status.IsSuccess {
+		t.Error("expected decoded IsSuccess=true")
 	}
 }
 
-func TestJSON_Serialization(t *testing.T) {
+func TestJSON_Serialization_PascalCase(t *testing.T) {
 	resp := Error(400, "E1001", "Bad request")
 	b, err := json.Marshal(resp)
 	if err != nil {
@@ -284,14 +357,27 @@ func TestJSON_Serialization(t *testing.T) {
 	var decoded map[string]interface{}
 	json.Unmarshal(b, &decoded)
 
-	// Verify top-level keys exist
-	for _, key := range []string{"status", "attributes", "results", "error"} {
+	// Verify PascalCase top-level keys
+	for _, key := range []string{"Status", "Attributes", "Results", "Error"} {
 		if _, ok := decoded[key]; !ok {
-			t.Errorf("missing top-level key %q", key)
+			t.Errorf("missing PascalCase top-level key %q", key)
 		}
 	}
 	// Navigation should be omitted (omitempty) for error responses
-	if _, ok := decoded["navigation"]; ok {
-		t.Error("navigation should be omitted for error responses")
+	if _, ok := decoded["Navigation"]; ok {
+		t.Error("Navigation should be omitted for error responses")
+	}
+
+	// Verify Status uses IsSuccess/IsFailed
+	status := decoded["Status"].(map[string]interface{})
+	if _, ok := status["IsSuccess"]; !ok {
+		t.Error("missing IsSuccess in Status")
+	}
+	if _, ok := status["IsFailed"]; !ok {
+		t.Error("missing IsFailed in Status")
+	}
+	// Old "success" key must not exist
+	if _, ok := status["success"]; ok {
+		t.Error("old 'success' key should not exist")
 	}
 }

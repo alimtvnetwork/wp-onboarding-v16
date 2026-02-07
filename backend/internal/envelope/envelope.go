@@ -13,53 +13,66 @@ import (
 // Response is the universal API response envelope.
 // Every endpoint — success or error, single or list — returns this structure.
 type Response struct {
-	Status     Status       `json:"status"`
-	Attributes Attributes   `json:"attributes"`
-	Results    interface{}  `json:"results"`
-	Navigation *Navigation  `json:"navigation,omitempty"`
-	Error      *ErrorDetail `json:"error"`
-	Additional interface{}  `json:"additional,omitempty"`
+	Status     Status       `json:"Status"`
+	Attributes Attributes   `json:"Attributes"`
+	Results    interface{}  `json:"Results"`
+	Navigation *Navigation  `json:"Navigation,omitempty"`
+	Error      *ErrorDetail `json:"Error"`
+	Additional interface{}  `json:"Additional,omitempty"`
 }
 
 // Status describes the outcome of the request.
 type Status struct {
-	Success   bool   `json:"success"`
-	Code      int    `json:"code"`
-	Message   string `json:"message"`
-	Timestamp string `json:"timestamp"`
+	IsSuccess bool   `json:"IsSuccess"`
+	IsFailed  bool   `json:"IsFailed"`
+	Code      int    `json:"Code"`
+	Message   string `json:"Message"`
+	Timestamp string `json:"Timestamp"`
 }
 
 // Attributes describes the shape and size of the result set.
 type Attributes struct {
-	IsSingle     bool `json:"isSingle"`
-	IsMultiple   bool `json:"isMultiple"`
-	TotalRecords int  `json:"totalRecords,omitempty"`
-	PerPage      int  `json:"perPage,omitempty"`
-	TotalPages   int  `json:"totalPages,omitempty"`
-	CurrentPage  int  `json:"currentPage,omitempty"`
+	IsSingle          bool     `json:"IsSingle"`
+	IsMultiple        bool     `json:"IsMultiple"`
+	TotalRecords      int      `json:"TotalRecords,omitempty"`
+	PerPage           int      `json:"PerPage,omitempty"`
+	TotalPages        int      `json:"TotalPages,omitempty"`
+	CurrentPage       int      `json:"CurrentPage,omitempty"`
+	RequestedEndpoint string   `json:"RequestedEndpoint,omitempty"`
+	DelegatedEndpoint string   `json:"DelegatedEndpoint,omitempty"`
+	TraversalSteps    []string `json:"TraversalSteps,omitempty"`
 }
 
 // Navigation provides pagination links for list responses.
 type Navigation struct {
-	NextPage *int  `json:"nextPage"`
-	PrevPage *int  `json:"prevPage"`
-	Pages    []int `json:"pages"`
+	NextPage *int  `json:"NextPage"`
+	PrevPage *int  `json:"PrevPage"`
+	Pages    []int `json:"Pages"`
 }
 
 // ErrorDetail carries error information. Stack traces are config-controlled.
 type ErrorDetail struct {
-	Code             string       `json:"code"`
-	Message          string       `json:"message"`
-	StackTrace       string       `json:"stackTrace,omitempty"`
-	StackTraceFrames []StackFrame `json:"stackTraceFrames,omitempty"`
+	Code             string       `json:"Code"`
+	Message          string       `json:"Message"`
+	StackTrace       string       `json:"StackTrace,omitempty"`
+	StackTraceFrames []StackFrame `json:"StackTraceFrames,omitempty"`
+}
+
+// DelegatedError carries error info from a delegated call (e.g., Go → PHP).
+type DelegatedError struct {
+	Endpoint         string       `json:"Endpoint"`
+	StatusCode       int          `json:"StatusCode"`
+	Message          string       `json:"Message"`
+	StackTrace       string       `json:"StackTrace,omitempty"`
+	StackTraceFrames []StackFrame `json:"StackTraceFrames,omitempty"`
 }
 
 // StackFrame represents a single frame in a stack trace.
 type StackFrame struct {
-	File     string `json:"file"`
-	Line     int    `json:"line"`
-	Function string `json:"function"`
-	Class    string `json:"class,omitempty"`
+	File     string `json:"File"`
+	Line     int    `json:"Line"`
+	Function string `json:"Function"`
+	Class    string `json:"Class,omitempty"`
 }
 
 // DebugConfig controls error verbosity in responses.
@@ -99,7 +112,8 @@ func Success(data interface{}) Response {
 	results := []interface{}{data}
 	return Response{
 		Status: Status{
-			Success:   true,
+			IsSuccess: true,
+			IsFailed:  false,
 			Code:      http.StatusOK,
 			Message:   "OK",
 			Timestamp: now(),
@@ -118,7 +132,8 @@ func Created(data interface{}) Response {
 	results := []interface{}{data}
 	return Response{
 		Status: Status{
-			Success:   true,
+			IsSuccess: true,
+			IsFailed:  false,
 			Code:      http.StatusCreated,
 			Message:   "Created",
 			Timestamp: now(),
@@ -136,7 +151,8 @@ func Created(data interface{}) Response {
 func Deleted() Response {
 	return Response{
 		Status: Status{
-			Success:   true,
+			IsSuccess: true,
+			IsFailed:  false,
 			Code:      http.StatusOK,
 			Message:   "Deleted",
 			Timestamp: now(),
@@ -155,7 +171,8 @@ func List(data interface{}, pg Pagination) Response {
 	nav := pg.Navigation()
 	return Response{
 		Status: Status{
-			Success:   true,
+			IsSuccess: true,
+			IsFailed:  false,
 			Code:      http.StatusOK,
 			Message:   "OK",
 			Timestamp: now(),
@@ -179,7 +196,8 @@ func List(data interface{}, pg Pagination) Response {
 func ListUnpaginated(data interface{}, count int) Response {
 	return Response{
 		Status: Status{
-			Success:   true,
+			IsSuccess: true,
+			IsFailed:  false,
 			Code:      http.StatusOK,
 			Message:   "OK",
 			Timestamp: now(),
@@ -198,7 +216,8 @@ func ListUnpaginated(data interface{}, count int) Response {
 func Error(statusCode int, code, message string) Response {
 	return Response{
 		Status: Status{
-			Success:   false,
+			IsSuccess: false,
+			IsFailed:  true,
 			Code:      statusCode,
 			Message:   message,
 			Timestamp: now(),
@@ -231,6 +250,34 @@ func ErrorWithTrace(statusCode int, code, message, stackTrace string, frames []S
 // WithAdditional attaches additional payload to a response.
 func (r Response) WithAdditional(data interface{}) Response {
 	r.Additional = data
+	return r
+}
+
+// WithEndpoints sets the requested and delegated endpoint in attributes.
+func (r Response) WithEndpoints(requested, delegated string) Response {
+	r.Attributes.RequestedEndpoint = requested
+	r.Attributes.DelegatedEndpoint = delegated
+	return r
+}
+
+// WithTraversal records the method/function traversal steps for diagnostics.
+func (r Response) WithTraversal(steps ...string) Response {
+	r.Attributes.TraversalSteps = append(r.Attributes.TraversalSteps, steps...)
+	return r
+}
+
+// WithDelegatedError attaches a delegated (downstream) error to the additional payload.
+// Used when Go proxies to PHP and the PHP call fails.
+func (r Response) WithDelegatedError(de DelegatedError) Response {
+	if !globalDebug.IncludeStackTrace {
+		de.StackTrace = ""
+		de.StackTraceFrames = nil
+	} else if globalDebug.MaxStackFrames > 0 && len(de.StackTraceFrames) > globalDebug.MaxStackFrames {
+		de.StackTraceFrames = de.StackTraceFrames[:globalDebug.MaxStackFrames]
+	}
+	r.Additional = map[string]interface{}{
+		"DelegatedError": de,
+	}
 	return r
 }
 
