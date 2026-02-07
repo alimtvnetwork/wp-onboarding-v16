@@ -301,12 +301,15 @@ CREATE TABLE IF NOT EXISTS snapshot_settings (
 - REST endpoint: `POST /sites/{id}/snapshots/import`
 - PHP plugin version bumped to 1.16.0
 
-### Phase 9: Frontend Visualization
-- Snapshot history timeline with metadata cards
-- Incremental chain visualization (master → inc01 → inc02)
-- Table-level detail view (row counts, sizes, checksums)
-- Dependency graph visualization (optional)
-- Restore wizard with table selection
+### Phase 9: Frontend Visualization ✅ DONE
+- 3-tab layout: Snapshots, Timeline, Settings
+- Timeline tab with visual dot-and-line chain (Master/Incremental/Imported badges)
+- Full Backup and Incremental Backup buttons wired to Phase 5-6 endpoints
+- Import ZIP button with file picker, streams multipart to Phase 8 endpoint
+- API client methods: `fullBackupRemoteSnapshot`, `incrementalBackupRemoteSnapshot`, `importRemoteSnapshot`
+- Hook enhanced with `fullBackup`, `incrementalBackup`, `importSnapshot` mutations
+- Table-level detail view with row counts, sizes (existing)
+- Restore wizard with selective table selection (existing)
 
 ### Phase 10: Cleanup and Retention
 - Auto-cleanup based on `retention_days` and `retention_count`

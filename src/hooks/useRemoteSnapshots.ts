@@ -116,6 +116,51 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     },
   });
 
+  const fullBackupMutation = useMutation({
+    mutationFn: async (opts?: Record<string, unknown>) => {
+      const res = await api.fullBackupRemoteSnapshot(siteId, opts);
+      if (!res.success) throw new Error(res.error?.message || "Failed to trigger full backup");
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Full backup initiated");
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (err: Error) => {
+      toast.error("Full backup failed", { description: err.message });
+    },
+  });
+
+  const incrementalBackupMutation = useMutation({
+    mutationFn: async (opts?: Record<string, unknown>) => {
+      const res = await api.incrementalBackupRemoteSnapshot(siteId, opts);
+      if (!res.success) throw new Error(res.error?.message || "Failed to trigger incremental backup");
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Incremental backup initiated");
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (err: Error) => {
+      toast.error("Incremental backup failed", { description: err.message });
+    },
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const res = await api.importRemoteSnapshot(siteId, file);
+      if (!res.success) throw new Error(res.error?.message || "Failed to import snapshot");
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success("Snapshot imported successfully");
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (err: Error) => {
+      toast.error("Import failed", { description: err.message });
+    },
+  });
+
   const hasRunningSnapshots = useMemo(() => {
     return (snapshotsQuery.data || []).some((s) => s.status === "running" || s.status === "in_progress");
   }, [snapshotsQuery.data]);
@@ -142,5 +187,11 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     isRestoring: restoreMutation.isPending,
     updateSettings: updateSettingsMutation.mutate,
     isUpdatingSettings: updateSettingsMutation.isPending,
+    fullBackup: fullBackupMutation.mutate,
+    isFullBackupPending: fullBackupMutation.isPending,
+    incrementalBackup: incrementalBackupMutation.mutate,
+    isIncrementalPending: incrementalBackupMutation.isPending,
+    importSnapshot: importMutation.mutate,
+    isImporting: importMutation.isPending,
   };
 }
