@@ -2,6 +2,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -262,6 +263,16 @@ func NewServer(cfg ServerConfig) *Server {
 		server: srv,
 		config: cfg,
 	}
+}
+
+// Start begins listening for HTTP connections.
+func (s *Server) Start() error {
+	return s.server.ListenAndServe()
+}
+
+// Shutdown gracefully stops the server.
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }
 
 func resolveSpaStaticDir(dir string) string {
