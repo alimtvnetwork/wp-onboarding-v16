@@ -91,9 +91,10 @@ export default function Settings() {
   const [circuitBreakerCooldownMs, setCircuitBreakerCooldownMs] = useState(60000);
   
   // Response Debug settings (backend-persisted)
-  const [includeStackTrace, setIncludeStackTrace] = useState(true);
-  const [includeInternalErrors, setIncludeInternalErrors] = useState(false);
-  const [maxStackFrames, setMaxStackFrames] = useState(20);
+  const [includeErrors, setIncludeErrors] = useState(true);
+  const [includeStackTrace, setIncludeStackTrace] = useState(false);
+  const [includeMethodsStack, setIncludeMethodsStack] = useState(false);
+  const [defaultPerPage, setDefaultPerPage] = useState(10);
   
   // Appearance settings
   const [theme, setTheme] = useState<string>("system");
@@ -134,9 +135,12 @@ export default function Settings() {
       });
     }
     if (settings?.responseDebug) {
-      setIncludeStackTrace(settings.responseDebug.includeStackTrace ?? true);
-      setIncludeInternalErrors(settings.responseDebug.includeInternalErrors ?? false);
-      setMaxStackFrames(settings.responseDebug.maxStackFrames ?? 20);
+      setIncludeErrors(settings.responseDebug.includeErrors ?? true);
+      setIncludeStackTrace(settings.responseDebug.includeStackTrace ?? false);
+      setIncludeMethodsStack(settings.responseDebug.includeMethodsStack ?? false);
+    }
+    if (settings?.pagination) {
+      setDefaultPerPage(settings.pagination.defaultPerPage ?? 10);
     }
   }, [settings]);
   
@@ -260,11 +264,11 @@ export default function Settings() {
     });
   };
   
-  const handleResponseDebugSave = (patch: { includeStackTrace?: boolean; includeInternalErrors?: boolean; maxStackFrames?: number }) => {
+  const handleResponseDebugSave = (patch: { includeErrors?: boolean; includeStackTrace?: boolean; includeMethodsStack?: boolean }) => {
     const updated = {
+      includeErrors: patch.includeErrors ?? includeErrors,
       includeStackTrace: patch.includeStackTrace ?? includeStackTrace,
-      includeInternalErrors: patch.includeInternalErrors ?? includeInternalErrors,
-      maxStackFrames: patch.maxStackFrames ?? maxStackFrames,
+      includeMethodsStack: patch.includeMethodsStack ?? includeMethodsStack,
     };
     saveSettings.mutate(
       { responseDebug: updated },
@@ -641,14 +645,31 @@ export default function Settings() {
                 Response Debug (Backend)
               </div>
               <p className="text-xs text-muted-foreground">
-                Controls what diagnostic data the Go backend includes in API error responses. Changes are persisted to config.json.
+                Controls which diagnostic sections the Go backend includes in the response envelope. Changes are persisted to config.json.
               </p>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-sm">Include Errors</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Include the Errors block in responses when errors occur
+                  </p>
+                </div>
+                <Switch
+                  checked={includeErrors}
+                  onCheckedChange={(v) => {
+                    setIncludeErrors(v);
+                    handleResponseDebugSave({ includeErrors: v });
+                  }}
+                  className="shrink-0"
+                />
+              </div>
 
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <Label className="text-sm">Include Stack Traces</Label>
                   <p className="text-xs text-muted-foreground">
-                    Expose Go stack traces in error responses
+                    Expose Go and delegated service stack traces in the Errors block
                   </p>
                 </div>
                 <Switch
@@ -663,35 +684,49 @@ export default function Settings() {
 
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <Label className="text-sm">Include Internal Errors</Label>
+                  <Label className="text-sm">Include Methods Stack</Label>
                   <p className="text-xs text-muted-foreground">
-                    Show internal error details (file, function) in responses
+                    Include the MethodsStack traversal trace in responses
                   </p>
                 </div>
                 <Switch
-                  checked={includeInternalErrors}
+                  checked={includeMethodsStack}
                   onCheckedChange={(v) => {
-                    setIncludeInternalErrors(v);
-                    handleResponseDebugSave({ includeInternalErrors: v });
+                    setIncludeMethodsStack(v);
+                    handleResponseDebugSave({ includeMethodsStack: v });
                   }}
                   className="shrink-0"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="max-frames" className="text-xs">Max Stack Frames</Label>
+                <Label htmlFor="default-per-page" className="text-xs">Default Per Page</Label>
                 <Input
-                  id="max-frames"
+                  id="default-per-page"
                   type="number"
                   min={1}
                   max={100}
-                  value={maxStackFrames}
-                  onChange={(e) => setMaxStackFrames(parseInt(e.target.value) || 20)}
-                  onBlur={() => handleResponseDebugSave({ maxStackFrames })}
+                  value={defaultPerPage}
+                  onChange={(e) => setDefaultPerPage(parseInt(e.target.value) || 10)}
+                  onBlur={() => {
+                    saveSettings.mutate(
+                      { pagination: { defaultPerPage } },
+                      {
+                        onSuccess: () => toast.success("Pagination setting saved", {
+                          style: {
+                            background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+                            color: "white",
+                            border: "none",
+                          },
+                        }),
+                        onError: (err) => toast.error(`Failed to save: ${err.message}`),
+                      }
+                    );
+                  }}
                   className="h-9"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Limit the number of stack frames returned per error
+                  Default number of items per page for paginated responses
                 </p>
               </div>
             </div>
