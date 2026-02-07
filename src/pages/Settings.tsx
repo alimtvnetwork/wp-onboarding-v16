@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
+import { api } from "@/lib/api";
 import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
 import { useLocation } from "react-router-dom";
@@ -728,6 +729,43 @@ export default function Settings() {
                 <p className="text-xs text-muted-foreground">
                   Default number of items per page for paginated responses
                 </p>
+              </div>
+            </div>
+
+            {/* Error Log Deduplication */}
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Shield className="h-4 w-4" />
+                    Error Log Deduplication
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Identical errors are logged only once. Clear the hash map to allow previously suppressed errors to be logged again.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const res = await api.clearErrorDedup();
+                      const data = res.success ? res.data : null;
+                      toast.success(data?.message || "Dedup hashes cleared", {
+                        style: {
+                          background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+                          color: "white",
+                          border: "none",
+                        },
+                      });
+                    } catch (err: any) {
+                      toast.error(`Failed: ${err.message}`);
+                    }
+                  }}
+                  className="w-full sm:w-auto text-xs"
+                >
+                  Clear Dedup Hashes
+                </Button>
               </div>
             </div>
           </div>

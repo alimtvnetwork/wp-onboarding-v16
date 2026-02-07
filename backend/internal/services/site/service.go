@@ -75,6 +75,17 @@ type Service struct {
 	errorLogHashesMu sync.Mutex
 }
 
+// ClearErrorLogHashes resets the in-memory deduplication map so previously
+// suppressed errors will be logged again on next occurrence.
+func (s *Service) ClearErrorLogHashes() int {
+	s.errorLogHashesMu.Lock()
+	count := len(s.errorLogHashes)
+	s.errorLogHashes = make(map[string]struct{})
+	s.errorLogHashesMu.Unlock()
+	s.log.Info("Error log deduplication hashes cleared", "previousCount", count)
+	return count
+}
+
 // New creates a new site service instance
 func New(cfg Config) *Service {
 	cacheTTL := cfg.CacheTTLMinutes
