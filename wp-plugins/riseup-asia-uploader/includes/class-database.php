@@ -472,6 +472,46 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v7 applied successfully');
             }
             
+            // Migration v8: Snapshot settings key-value store
+            if ($current_version < 8) {
+                $this->file_logger->info('Applying migration v8: snapshot settings table');
+                
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    type TEXT NOT NULL DEFAULT 'string',
+                    updated_at TEXT NOT NULL
+                )");
+                
+                // Seed default settings
+                $defaults = array(
+                    array('snapshot.mode',             'per_table',    'string'),
+                    array('snapshot.backup_type',      'incremental',  'string'),
+                    array('snapshot.worker_count',     '10',           'int'),
+                    array('snapshot.storage_path',     'snapshots/',   'string'),
+                    array('snapshot.include_plugins',  '1',            'bool'),
+                    array('snapshot.plugin_selection',  'all',          'string'),
+                    array('snapshot.retention_days',   '30',           'int'),
+                    array('snapshot.retention_count',  '10',           'int'),
+                    array('snapshot.compression',      '1',            'bool'),
+                    array('snapshot.batch_size',       '1000',         'int'),
+                    array('snapshot.provider',         'auto',         'string'),
+                    array('snapshot.scope',            'wordpress',    'string'),
+                    array('snapshot.frequency',        'manual',       'string'),
+                    array('snapshot.schedule_time',    '03:00',        'string'),
+                    array('snapshot.pre_restore_backup', '1',          'bool'),
+                );
+                
+                $now = gmdate('Y-m-d\TH:i:s\Z');
+                $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO snapshot_settings (key, value, type, updated_at) VALUES (?, ?, ?, ?)");
+                foreach ($defaults as $row) {
+                    $stmt->execute(array($row[0], $row[1], $row[2], $now));
+                }
+                
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (8, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v8 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {

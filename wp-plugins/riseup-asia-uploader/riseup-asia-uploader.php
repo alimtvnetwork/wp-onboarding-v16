@@ -3360,11 +3360,11 @@ class Riseup_Asia {
             $this->file_logger->info('Updating snapshot settings', array('keys' => array_keys($body)));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
-            $result = $manager->updateSettings($body);
+            $updated = $manager->updateSettings($body);
 
             return new WP_REST_Response(array(
                 'success'  => true,
-                'settings' => $result,
+                'settings' => $updated,
             ), 200);
         }, 'update_snapshot_settings');
     }

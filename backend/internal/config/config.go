@@ -25,7 +25,22 @@ type Config struct {
 	Security      SecurityConfig      `json:"security"`
 	WordPress     WordPressConfig     `json:"wordpress"`
 	RemotePlugins RemotePluginsConfig `json:"remotePlugins"`
+	Snapshot      SnapshotConfig      `json:"snapshot"`
 	Seed          SeedConfig          `json:"seed"`
+}
+
+// SnapshotConfig holds snapshot backup system settings
+type SnapshotConfig struct {
+	Mode            string `json:"mode"`            // "per_table" | "single_db"
+	BackupType      string `json:"backupType"`      // "incremental" | "full"
+	WorkerCount     int    `json:"workerCount"`     // concurrent table exports
+	StoragePath     string `json:"storagePath"`     // relative to plugin data dir
+	IncludePlugins  bool   `json:"includePlugins"`  // include plugin ZIPs
+	PluginSelection string `json:"pluginSelection"` // "all" | "selective"
+	RetentionDays   int    `json:"retentionDays"`   // auto-cleanup after N days
+	RetentionCount  int    `json:"retentionCount"`  // max snapshots to keep
+	Compression     bool   `json:"compression"`     // ZIP compression on export
+	BatchSize       int    `json:"batchSize"`       // rows per batch during export
 }
 
 // ServerConfig holds HTTP server settings
@@ -148,8 +163,20 @@ func DefaultConfig() *Config {
 			MaxRetries:     3,
 		},
 		RemotePlugins: RemotePluginsConfig{
-			CacheEnabled:   true,
+			CacheEnabled:    true,
 			CacheTTLMinutes: 60,
+		},
+		Snapshot: SnapshotConfig{
+			Mode:            "per_table",
+			BackupType:      "incremental",
+			WorkerCount:     10,
+			StoragePath:     "snapshots/",
+			IncludePlugins:  true,
+			PluginSelection: "all",
+			RetentionDays:   30,
+			RetentionCount:  10,
+			Compression:     true,
+			BatchSize:       1000,
 		},
 		Seed: SeedConfig{
 			Enabled: false,
@@ -243,6 +270,17 @@ func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
 		"backup.autoBackupOnPublish": cfg.Backup.AutoBackupOnPublish,
 		"logging.level":              cfg.Logging.Level,
 		"logging.retentionDays":      cfg.Logging.RetentionDays,
+		// Snapshot settings
+		"snapshot.mode":            cfg.Snapshot.Mode,
+		"snapshot.backupType":      cfg.Snapshot.BackupType,
+		"snapshot.workerCount":     cfg.Snapshot.WorkerCount,
+		"snapshot.storagePath":     cfg.Snapshot.StoragePath,
+		"snapshot.includePlugins":  cfg.Snapshot.IncludePlugins,
+		"snapshot.pluginSelection": cfg.Snapshot.PluginSelection,
+		"snapshot.retentionDays":   cfg.Snapshot.RetentionDays,
+		"snapshot.retentionCount":  cfg.Snapshot.RetentionCount,
+		"snapshot.compression":     cfg.Snapshot.Compression,
+		"snapshot.batchSize":       cfg.Snapshot.BatchSize,
 	}
 
 	for key, value := range settings {
