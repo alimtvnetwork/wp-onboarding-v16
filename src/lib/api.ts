@@ -849,7 +849,33 @@ export const api = {
   getRemoteAvailableTables: (siteId: number) =>
     request<AvailableTable[]>(`/sites/${siteId}/snapshots/tables`),
 
-  // Error History (persistent error/notification storage)
+  // Full backup orchestration (Phase 5)
+  fullBackupRemoteSnapshot: (siteId: number, opts?: Record<string, unknown>) =>
+    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/full-backup`, {
+      method: "POST",
+      body: JSON.stringify(opts || {}),
+    }),
+
+  // Incremental backup (Phase 6)
+  incrementalBackupRemoteSnapshot: (siteId: number, opts?: Record<string, unknown>) =>
+    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/incremental`, {
+      method: "POST",
+      body: JSON.stringify(opts || {}),
+    }),
+
+  // Import snapshot from ZIP (Phase 8)
+  importRemoteSnapshot: async (siteId: number, file: File): Promise<ApiResponse<Record<string, unknown>>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const url = resolveApiUrl(`/sites/${siteId}/snapshots/import`);
+    const res = await fetch(url, { method: "POST", body: formData });
+    const text = await res.text();
+    if (!looksLikeJson(text)) {
+      return { success: false, error: { code: "E9005", message: "Non-JSON response", timestamp: new Date().toISOString() } };
+    }
+    return JSON.parse(text) as ApiResponse<Record<string, unknown>>;
+  },
+
   saveErrorHistory: (input: ErrorHistoryInput) =>
     request<ErrorHistoryRecord>("/error-history", { 
       method: "POST", 

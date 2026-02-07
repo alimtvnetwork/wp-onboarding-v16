@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +49,9 @@ import {
   Zap,
   Download,
   Eye,
+  Upload,
+  GitBranch,
+  ArrowRight,
 } from "lucide-react";
 import { Site, SnapshotRecord, api } from "@/lib/api";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
@@ -443,7 +446,15 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
     availableTables,
     isLoadingTables,
     fetchTables,
+    fullBackup,
+    isFullBackupPending,
+    incrementalBackup,
+    isIncrementalPending,
+    importSnapshot,
+    isImporting,
   } = useRemoteSnapshots(site.id, open);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<SnapshotRecord | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<SnapshotRecord | null>(null);
@@ -525,13 +536,17 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
           </DialogHeader>
 
           <Tabs defaultValue="snapshots" className="flex-1 flex flex-col min-h-0">
-            <TabsList className="w-full grid grid-cols-2 h-8">
+            <TabsList className="w-full grid grid-cols-3 h-8">
               <TabsTrigger value="snapshots" className="text-xs gap-1">
                 <Database className="h-3.5 w-3.5" />
                 Snapshots
                 {snapshots.length > 0 && (
                   <Badge variant="secondary" className="h-4 text-[10px] px-1 ml-1">{snapshots.length}</Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger value="timeline" className="text-xs gap-1">
+                <GitBranch className="h-3.5 w-3.5" />
+                Timeline
               </TabsTrigger>
               <TabsTrigger value="settings" className="text-xs gap-1">
                 <Settings className="h-3.5 w-3.5" />
@@ -542,7 +557,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
             <TabsContent value="snapshots" className="flex-1 flex flex-col min-h-0 mt-2">
               {/* Create Snapshot Controls */}
               <div className="space-y-2 pb-2 border-b mb-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Select value={createScope} onValueChange={handleScopeChange}>
                     <SelectTrigger className="w-[140px] h-8 text-xs">
                       <SelectValue />
@@ -579,6 +594,66 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                     className="h-8"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
+
+                {/* Advanced Backup Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fullBackup({})}
+                    disabled={isFullBackupPending || hasRunningSnapshots}
+                    className="h-7 text-xs"
+                  >
+                    {isFullBackupPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Database className="h-3 w-3 mr-1" />
+                    )}
+                    Full Backup
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => incrementalBackup({})}
+                    disabled={isIncrementalPending || hasRunningSnapshots}
+                    className="h-7 text-xs"
+                  >
+                    {isIncrementalPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <GitBranch className="h-3 w-3 mr-1" />
+                    )}
+                    Incremental
+                  </Button>
+                  <div className="flex-1" />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".zip"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        importSnapshot(file);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isImporting}
+                    className="h-7 text-xs"
+                  >
+                    {isImporting ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : (
+                      <Upload className="h-3 w-3 mr-1" />
+                    )}
+                    Import ZIP
                   </Button>
                 </div>
 
@@ -664,6 +739,117 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                         isDeleting={isDeleting}
                       />
                     ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+
+            {/* Timeline Tab - Visual chain of snapshots */}
+            <TabsContent value="timeline" className="flex-1 min-h-0 mt-2">
+              <ScrollArea className="h-full">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : snapshots.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
+                    <GitBranch className="h-10 w-10 opacity-40" />
+                    <p className="text-sm font-medium">No backup history</p>
+                    <p className="text-xs text-center max-w-[240px]">
+                      Create a full backup to start the timeline
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-0 pr-2">
+                    {snapshots
+                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .map((snapshot, index) => {
+                        const isMaster = snapshot.filename?.includes("_full_") || index === snapshots.length - 1;
+                        const isIncremental = snapshot.filename?.includes("incremental") || snapshot.filename?.includes("inc_");
+                        const isImported = snapshot.filename?.includes("imported");
+
+                        return (
+                          <div key={snapshot.id} className="flex gap-3 animate-fade-in">
+                            {/* Timeline line + dot */}
+                            <div className="flex flex-col items-center">
+                              <div
+                                className={`w-3 h-3 rounded-full border-2 shrink-0 ${
+                                  isMaster
+                                    ? "bg-primary border-primary"
+                                    : isIncremental
+                                    ? "bg-accent border-accent-foreground/30"
+                                    : isImported
+                                    ? "bg-muted-foreground border-muted-foreground"
+                                    : "bg-secondary border-secondary-foreground/30"
+                                }`}
+                              />
+                              {index < snapshots.length - 1 && (
+                                <div className="w-0.5 flex-1 min-h-[32px] bg-border" />
+                              )}
+                            </div>
+
+                            {/* Card */}
+                            <div className="flex-1 pb-4">
+                              <div className="border rounded-lg p-2.5 space-y-1.5 hover:bg-muted/30 transition-colors">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-xs font-medium truncate">
+                                      #{snapshot.sequence}
+                                    </span>
+                                    {isMaster && (
+                                      <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] h-4">
+                                        Master
+                                      </Badge>
+                                    )}
+                                    {isIncremental && (
+                                      <Badge variant="secondary" className="text-[10px] h-4">
+                                        Incremental
+                                      </Badge>
+                                    )}
+                                    {isImported && (
+                                      <Badge variant="outline" className="text-[10px] h-4">
+                                        Imported
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">
+                                    {relativeTime(snapshot.created_at)}
+                                  </span>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                                  {snapshot.total_rows > 0 && (
+                                    <span className="flex items-center gap-0.5">
+                                      <Table className="h-2.5 w-2.5" />
+                                      {snapshot.total_rows.toLocaleString()} rows
+                                    </span>
+                                  )}
+                                  {snapshot.file_size > 0 && (
+                                    <span className="flex items-center gap-0.5">
+                                      <HardDrive className="h-2.5 w-2.5" />
+                                      {formatBytes(snapshot.file_size)}
+                                    </span>
+                                  )}
+                                  <Badge
+                                    variant={snapshot.status === "complete" ? "secondary" : "destructive"}
+                                    className="text-[9px] h-3.5"
+                                  >
+                                    {snapshot.status}
+                                  </Badge>
+                                </div>
+
+                                {/* Incremental chain arrow */}
+                                {isIncremental && index < snapshots.length - 1 && (
+                                  <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                                    <ArrowRight className="h-2.5 w-2.5" />
+                                    <span>delta from master</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
               </ScrollArea>
