@@ -249,3 +249,20 @@ func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPat
 	s.log.Info("Remote snapshot imported", "siteId", siteID)
 	return result, nil
 }
+
+// CleanupRemoteSnapshots triggers cleanup on a remote site.
+func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+	client, err := s.createWPClient(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := client.CleanupSnapshots(opts)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger snapshot cleanup").
+			WithContext("siteId", siteID)
+	}
+
+	s.log.Info("Remote snapshot cleanup triggered", "siteId", siteID)
+	return result, nil
+}

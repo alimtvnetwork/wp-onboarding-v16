@@ -876,6 +876,13 @@ export const api = {
     return JSON.parse(text) as ApiResponse<Record<string, unknown>>;
   },
 
+  // Snapshot cleanup (Phase 10)
+  cleanupRemoteSnapshots: (siteId: number, opts?: Record<string, unknown>) =>
+    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/cleanup`, {
+      method: "POST",
+      body: JSON.stringify(opts || {}),
+    }),
+
   saveErrorHistory: (input: ErrorHistoryInput) =>
     request<ErrorHistoryRecord>("/error-history", { 
       method: "POST", 

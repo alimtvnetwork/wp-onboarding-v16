@@ -989,6 +989,14 @@ class Riseup_Asia {
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
+            // Snapshot cleanup endpoint (Phase 10)
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_CLEANUP);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_CLEANUP, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_snapshot_cleanup'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
             $this->file_logger->info('All REST API routes registered successfully');
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to register routes');
@@ -3673,6 +3681,39 @@ class Riseup_Asia {
                 'error'          => $result['error'] ?? null,
             ), $status);
         }, 'incremental_backup');
+    }
+
+    /**
+     * Handle snapshot cleanup (Phase 10).
+     *
+     * Runs retention-based cleanup, orphan detection, and stuck snapshot handling.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_snapshot_cleanup($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+
+            $cleanup = RiseupSnapshotCleanup::getInstance($this->file_logger, $this->db);
+
+            $result = $cleanup->execute(array(
+                'retention_type'  => $body['retention_type'] ?? null,
+                'retention_days'  => $body['retention_days'] ?? null,
+                'retention_count' => $body['retention_count'] ?? null,
+                'dry_run'         => $body['dry_run'] ?? false,
+            ));
+
+            return new WP_REST_Response(array(
+                'success'   => $result['success'],
+                'retention' => $result['retention'],
+                'orphans'   => $result['orphans'],
+                'stuck'     => $result['stuck'],
+                'duration'  => $result['duration'],
+                'dry_run'   => $result['dry_run'],
+                'errors'    => $result['errors'],
+            ), 200);
+        }, 'snapshot_cleanup');
     }
 }
 

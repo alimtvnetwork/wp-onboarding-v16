@@ -161,6 +161,27 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     },
   });
 
+  const cleanupMutation = useMutation({
+    mutationFn: async (opts?: Record<string, unknown>) => {
+      const res = await api.cleanupRemoteSnapshots(siteId, opts);
+      if (!res.success) throw new Error(res.error?.message || "Failed to run cleanup");
+      return res.data;
+    },
+    onSuccess: (data) => {
+      const d = data as Record<string, unknown> | undefined;
+      const retention = (d?.retention as Record<string, number>) || {};
+      const orphans = (d?.orphans as Record<string, number>) || {};
+      const stuck = (d?.stuck as Record<string, number>) || {};
+      toast.success("Snapshot cleanup completed", {
+        description: `${retention.deleted || 0} expired, ${orphans.removed || 0} orphans, ${stuck.cleaned || 0} stuck`,
+      });
+      queryClient.invalidateQueries({ queryKey });
+    },
+    onError: (err: Error) => {
+      toast.error("Cleanup failed", { description: err.message });
+    },
+  });
+
   const hasRunningSnapshots = useMemo(() => {
     return (snapshotsQuery.data || []).some((s) => s.status === "running" || s.status === "in_progress");
   }, [snapshotsQuery.data]);
@@ -193,5 +214,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     isIncrementalPending: incrementalBackupMutation.isPending,
     importSnapshot: importMutation.mutate,
     isImporting: importMutation.isPending,
+    cleanupSnapshots: cleanupMutation.mutate,
+    isCleaningUp: cleanupMutation.isPending,
   };
 }

@@ -311,11 +311,17 @@ CREATE TABLE IF NOT EXISTS snapshot_settings (
 - Table-level detail view with row counts, sizes (existing)
 - Restore wizard with selective table selection (existing)
 
-### Phase 10: Cleanup and Retention
-- Auto-cleanup based on `retention_days` and `retention_count`
-- Orphan file detection and removal
-- Stuck snapshot cleanup (in-progress > 1 hour)
-- Manual cleanup trigger from UI
+### Phase 10: Cleanup and Retention ✅ DONE
+- `RiseupSnapshotCleanup` class with three cleanup modes:
+  - **Retention-based**: days or count-based deletion (master snapshots exempt)
+  - **Orphan detection**: filesystem scan vs DB records, auto-remove untracked files
+  - **Stuck cleanup**: mark snapshots running > 24h as failed (preserve for diagnostics)
+- Audit trail logging via `RISEUP_ACTION_SNAPSHOT_CLEANUP`
+- Dry-run mode for preview without deletion
+- REST endpoint: `POST /snapshots/cleanup` with configurable overrides
+- Go backend proxy: `CleanupSnapshots` in WordPress client + site service
+- Frontend: "Run Cleanup Now" button in Settings tab
+- PHP plugin version bumped to 1.17.0
 
 ---
 
