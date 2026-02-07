@@ -232,3 +232,20 @@ func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID in
 	s.log.Info("Remote incremental backup triggered", "siteId", siteID)
 	return result, nil
 }
+
+// ImportRemoteSnapshot uploads a ZIP file to import as a snapshot on a remote site.
+func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (map[string]interface{}, error) {
+	client, err := s.createWPClient(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := client.ImportSnapshot(zipPath)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to import snapshot").
+			WithContext("siteId", siteID)
+	}
+
+	s.log.Info("Remote snapshot imported", "siteId", siteID)
+	return result, nil
+}

@@ -122,6 +122,9 @@ const (
 
 	// EndpointSnapshotsIncremental triggers an incremental backup against the latest master.
 	EndpointSnapshotsIncremental = "/snapshots/incremental"
+
+	// EndpointSnapshotsImport imports a snapshot from an uploaded ZIP file.
+	EndpointSnapshotsImport = "/snapshots/import"
 )
 // =============================================================================
 // ACTION TYPES (match PHP constants)

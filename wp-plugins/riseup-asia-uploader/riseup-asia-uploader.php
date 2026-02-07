@@ -292,8 +292,9 @@ require_once __DIR__ . '/includes/class-dependency-analyzer.php';
 require_once __DIR__ . '/includes/class-root-db.php';
 require_once __DIR__ . '/includes/class-snapshot-worker.php';
 require_once __DIR__ . '/includes/class-snapshot-orchestrator.php';
-require_once __DIR__ . '/includes/class-incremental-backup.php';
-require_once __DIR__ . '/includes/class-restore-engine.php';
+	require_once __DIR__ . '/includes/class-incremental-backup.php';
+	require_once __DIR__ . '/includes/class-restore-engine.php';
+	require_once __DIR__ . '/includes/class-snapshot-import.php';
 
 // Load file cache (Phase 41 - Sync System).
 require_once __DIR__ . '/includes/class-file-cache.php';
@@ -3438,8 +3439,10 @@ class Riseup_Asia {
                 'size'         => $files['file']['size'],
             ));
 
+            // Use enhanced import engine that handles both legacy and per-table formats
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
-            $result = $manager->importSnapshot($tmp_file);
+            $importer = new RiseupSnapshotImport($this->file_logger, $this->db, $manager);
+            $result = $importer->import($tmp_file);
 
             $status_code = $result['success'] ? 201 : 400;
             return new WP_REST_Response($result, $status_code);

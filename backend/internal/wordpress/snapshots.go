@@ -3,9 +3,13 @@
 package wordpress
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"wp-plugin-publish/pkg/apperror"
 )
@@ -433,6 +437,59 @@ func (c *Client) IncrementalBackup(opts map[string]interface{}) (map[string]inte
 	var result map[string]interface{}
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode incremental backup response")
+	}
+
+	return result, nil
+}
+
+// ImportSnapshot uploads a ZIP file to import as a snapshot on the remote site.
+// The zipPath is the local file path to the ZIP archive.
+func (c *Client) ImportSnapshot(zipPath string) (map[string]interface{}, error) {
+	endpoint := snapshotEndpoint(EndpointSnapshotsImport)
+
+	// Open the file
+	file, err := os.Open(zipPath)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to open import ZIP file")
+	}
+	defer file.Close()
+
+	// Create multipart form
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile("file", filepath.Base(zipPath))
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create multipart form")
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to write file to form")
+	}
+
+	writer.Close()
+
+	resp, err := c.requestMultipart("POST", endpoint, body, writer.FormDataContentType())
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to import snapshot")
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		return nil, &APIError{
+			Operation:    "import snapshot",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode import response")
 	}
 
 	return result, nil

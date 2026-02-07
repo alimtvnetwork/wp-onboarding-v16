@@ -292,12 +292,14 @@ CREATE TABLE IF NOT EXISTS snapshot_settings (
 - REST endpoint: `POST /snapshots/restore` (enhanced to route through engine)
 - PHP plugin version bumped to 1.15.0
 
-### Phase 8: Import/Export ZIP Protocol
-- Export: ZIP all snapshot files with a-root.db as manifest
-- Import: Upload ZIP → validate a-root.db → extract → verify checksums
-- `PRAGMA integrity_check` on each .sqlite file
-- Go backend streaming proxy for large ZIPs
-- Frontend upload UI with validation feedback
+### Phase 8: Import/Export ZIP Protocol ✅ DONE
+- `RiseupSnapshotImport` class with dual-format detection (per-table vs legacy)
+- Per-table import: validates a-root.db, checksums all .sqlite files, verifies incrementals & plugins
+- `PRAGMA integrity_check` on every .sqlite file during import
+- Go backend streaming proxy: multipart upload → temp file → forward to WordPress plugin
+- `requestMultipart` method added to WordPress client for file uploads
+- REST endpoint: `POST /sites/{id}/snapshots/import`
+- PHP plugin version bumped to 1.16.0
 
 ### Phase 9: Frontend Visualization
 - Snapshot history timeline with metadata cards
