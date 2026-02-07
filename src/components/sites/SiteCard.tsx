@@ -240,73 +240,73 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </p>
         )}
 
-        {/* Action buttons - responsive grid layout */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 pt-2 border-t">
+        {/* Action buttons - responsive flex wrap layout */}
+        <div className="flex flex-wrap gap-1 pt-2 border-t">
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => navigate(`/api-explorer?siteId=${site.id}`)}
             disabled={site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "Test API endpoints"}
           >
-            <FlaskConical className="h-4 w-4" />
-            <span className="text-[10px] sm:text-xs">API</span>
+            <FlaskConical className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">API</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => setShowRemotePlugins(true)}
             disabled={site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "View plugins on this site"}
           >
-            <Eye className="h-4 w-4" />
-            <span className="text-[10px] sm:text-xs">Plugins</span>
+            <Eye className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Plugins</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => setShowSnapshots(true)}
             disabled={site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "Manage database snapshots"}
           >
-            <Database className="h-4 w-4" />
-            <span className="text-[10px] sm:text-xs">Snapshots</span>
+            <Database className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Snapshots</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
           >
             {deployingUploader ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin shrink-0" />
             ) : (
-              <Upload className="h-4 w-4" />
+              <Upload className="h-4 w-4 shrink-0" />
             )}
-            <span className="text-[10px] sm:text-xs">Deploy</span>
+            <span className="text-[10px] leading-tight truncate">Deploy</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={() => onEdit(site)}
           >
-            <Edit className="h-4 w-4" />
-            <span className="text-[10px] sm:text-xs">Edit</span>
+            <Edit className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Edit</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col sm:flex-row items-center justify-center h-auto py-2 px-1 sm:px-2 gap-0.5 sm:gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={() => onDelete(site.id)}
           >
-            <Trash2 className="h-4 w-4" />
-            <span className="text-[10px] sm:text-xs">Delete</span>
+            <Trash2 className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Delete</span>
           </Button>
         </div>
       </CardContent>
