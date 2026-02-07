@@ -1479,7 +1479,7 @@
     "schemas": {
       "SuccessEnvelope": {
         "type": "object",
-        "description": "Universal Response Envelope — all API responses use this structure.",
+        "description": "Universal Response Envelope — all API responses use this structure. See spec/response-envelope/README.md.",
         "properties": {
           "Status": {
             "$ref": "#/components/schemas/EnvelopeStatus"
@@ -1493,16 +1493,19 @@
             "items": {}
           },
           "Navigation": {
+            "nullable": true,
+            "description": "Pagination links. Omitted for single items and errors.",
             "$ref": "#/components/schemas/EnvelopeNavigation"
           },
-          "Error": {
+          "Errors": {
             "nullable": true,
-            "description": "Null on success.",
-            "example": null
+            "description": "Omitted on success (null/absent).",
+            "$ref": "#/components/schemas/EnvelopeErrors"
           },
-          "Additional": {
+          "MethodsStack": {
             "nullable": true,
-            "description": "Optional metadata payload (e.g., DelegatedError)."
+            "description": "Omitted unless debug mode enabled.",
+            "$ref": "#/components/schemas/EnvelopeMethodsStack"
           }
         }
       },
@@ -1526,17 +1529,14 @@
             "nullable": true,
             "description": "Omitted on error."
           },
-          "Error": {
-            "$ref": "#/components/schemas/EnvelopeErrorDetail"
+          "Errors": {
+            "description": "Present when HasAnyErrors is true and error reporting is enabled.",
+            "$ref": "#/components/schemas/EnvelopeErrors"
           },
-          "Additional": {
+          "MethodsStack": {
             "nullable": true,
-            "description": "May contain DelegatedError for downstream failures.",
-            "properties": {
-              "DelegatedError": {
-                "$ref": "#/components/schemas/DelegatedError"
-              }
-            }
+            "description": "Present when debug/traversal mode is enabled.",
+            "$ref": "#/components/schemas/EnvelopeMethodsStack"
           }
         }
       },
@@ -1555,72 +1555,78 @@
         "type": "object",
         "description": "Describes the shape and size of the result set, plus endpoint tracking.",
         "properties": {
+          "RequestedAt": { "type": "string", "description": "The Go API endpoint that handled the request.", "example": "/api/v1/plugins" },
+          "RequestDelegatedAt": { "type": "string", "description": "The downstream endpoint (e.g., PHP/WordPress) the request was proxied to. Empty if not delegated.", "example": "/wp-json/riseup-asia-uploader/v1/upload" },
+          "HasAnyErrors": { "type": "boolean", "description": "True if any errors occurred.", "example": false },
           "IsSingle": { "type": "boolean", "example": true },
           "IsMultiple": { "type": "boolean", "example": false },
           "TotalRecords": { "type": "integer", "example": 1 },
           "PerPage": { "type": "integer", "example": 20 },
           "TotalPages": { "type": "integer", "example": 1 },
-          "CurrentPage": { "type": "integer", "example": 1 },
-          "RequestedEndpoint": { "type": "string", "description": "The Go API endpoint that received the request.", "example": "/api/v1/plugins/1/publish/3" },
-          "DelegatedEndpoint": { "type": "string", "description": "The downstream endpoint (e.g., PHP/WordPress) the request was proxied to.", "example": "/wp-json/riseup-asia-uploader/v1/upload" },
-          "TraversalSteps": {
-            "type": "array",
-            "description": "Ordered list of methods/functions invoked during request processing.",
-            "items": { "type": "string" },
-            "example": ["PublishHandler.Handle", "PublishService.Upload", "WordPressClient.UploadPlugin"]
-          }
+          "CurrentPage": { "type": "integer", "example": 1 }
         }
       },
       "EnvelopeNavigation": {
         "type": "object",
-        "description": "Pagination links for list responses. Omitted for single items.",
+        "description": "Pagination URL links for list responses. Omitted for single items. Uses pointer with omitempty in Go.",
         "properties": {
-          "NextPage": { "type": "integer", "nullable": true, "example": 3 },
-          "PrevPage": { "type": "integer", "nullable": true, "example": 1 },
-          "Pages": {
+          "NextPage": { "type": "string", "nullable": true, "description": "URL for the next page. Null if on last page.", "example": "/api/v1/plugins?page=3&perPage=10" },
+          "PrevPage": { "type": "string", "nullable": true, "description": "URL for the previous page. Null if on first page.", "example": "/api/v1/plugins?page=1&perPage=10" },
+          "CloserLinks": {
             "type": "array",
-            "description": "5-page sliding window centered on current page.",
-            "items": { "type": "integer" },
-            "example": [1, 2, 3, 4, 5]
+            "description": "Sliding window of nearby page URLs.",
+            "items": { "type": "string" },
+            "example": ["/api/v1/plugins?page=1&perPage=10", "/api/v1/plugins?page=2&perPage=10", "/api/v1/plugins?page=3&perPage=10"]
           }
         }
       },
-      "EnvelopeErrorDetail": {
+      "EnvelopeErrors": {
         "type": "object",
-        "description": "Error information. Stack traces are config-controlled via ResponseDebug.",
+        "description": "Error information. Top-level, conditionally included when HasAnyErrors is true and error reporting is enabled. Uses pointer with omitempty in Go.",
         "properties": {
-          "Code": { "type": "string", "example": "E5001" },
-          "Message": { "type": "string", "example": "Something failed" },
-          "StackTrace": { "type": "string", "description": "Full stack trace string (debug mode only)." },
-          "StackTraceFrames": {
+          "BackendMessage": { "type": "string", "description": "Primary error message from the Go backend.", "example": "[E5001] Something failed" },
+          "DelegatedServiceErrorStack": {
             "type": "array",
-            "description": "Structured stack frames (debug mode only).",
-            "items": { "$ref": "#/components/schemas/EnvelopeStackFrame" }
+            "description": "Stack trace lines from downstream PHP/other services. Only included when includeStackTrace is enabled.",
+            "items": { "type": "string" },
+            "example": ["PHP Fatal error: Class 'PDO' not found in plugin.php:42"]
+          },
+          "Backend": {
+            "type": "array",
+            "description": "Stack trace lines from the Go backend. Only included when includeStackTrace is enabled.",
+            "items": { "type": "string" },
+            "example": ["handler.go:85 HandlePluginList", "service.go:120 FetchPlugins"]
+          },
+          "Frontend": {
+            "type": "array",
+            "description": "Reserved for frontend-injected error context.",
+            "items": { "type": "string" }
           }
         }
       },
-      "EnvelopeStackFrame": {
+      "EnvelopeMethodsStack": {
         "type": "object",
+        "description": "Debug call-chain trace. Top-level, conditionally included when includeMethodsStack is enabled. Uses pointer with omitempty in Go.",
         "properties": {
-          "File": { "type": "string", "example": "publish_service.go" },
-          "Line": { "type": "integer", "example": 142 },
-          "Function": { "type": "string", "example": "Upload" },
-          "Class": { "type": "string", "example": "PublishService" }
+          "Backend": {
+            "type": "array",
+            "description": "Ordered list of method calls in the Go backend.",
+            "items": { "$ref": "#/components/schemas/EnvelopeMethodFrame" }
+          },
+          "Frontend": {
+            "type": "array",
+            "description": "Reserved for frontend-injected call chain.",
+            "items": { "$ref": "#/components/schemas/EnvelopeMethodFrame" }
+          }
         }
       },
-      "DelegatedError": {
+      "EnvelopeMethodFrame": {
         "type": "object",
-        "description": "Error from a delegated downstream call (e.g., Go → PHP). Included in Additional when a proxied call fails.",
+        "description": "A single frame in the methods stack.",
         "properties": {
-          "Endpoint": { "type": "string", "example": "/wp-json/riseup-asia-uploader/v1/upload" },
-          "StatusCode": { "type": "integer", "example": 500 },
-          "Message": { "type": "string", "example": "PHP fatal error: Class PDO not found" },
-          "StackTrace": { "type": "string", "description": "PHP stack trace (debug mode only)." },
-          "StackTraceFrames": {
-            "type": "array",
-            "description": "Structured PHP stack frames (debug mode only).",
-            "items": { "$ref": "#/components/schemas/EnvelopeStackFrame" }
-          }
+          "Method": { "type": "string", "example": "HandlePluginList" },
+          "File": { "type": "string", "example": "plugin_handlers.go" },
+          "LineNumber": { "type": "integer", "example": 85 }
         }
       },
       "Site": {
@@ -2051,6 +2057,16 @@
             "properties": {
               "port": { "type": "integer" },
               "wsReconnectDelayMs": { "type": "integer" }
+            }
+          },
+          "responseDebug": {
+            "type": "object",
+            "description": "Controls which optional envelope sections are included in API responses.",
+            "properties": {
+              "includeErrors": { "type": "boolean", "description": "Include the Errors block when HasAnyErrors is true.", "default": true },
+              "includeStackTrace": { "type": "boolean", "description": "Include Backend and DelegatedServiceErrorStack in Errors.", "default": false },
+              "includeMethodsStack": { "type": "boolean", "description": "Include the MethodsStack block for call-chain tracing.", "default": false },
+              "maxStackFrames": { "type": "integer", "description": "Max stack trace lines to include.", "default": 20 }
             }
           }
         }
