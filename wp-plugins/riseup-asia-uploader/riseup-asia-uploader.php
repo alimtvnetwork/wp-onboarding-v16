@@ -758,46 +758,22 @@ class Riseup_Asia {
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_enable_plugin'),
                 'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'slug' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) {
-                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
-                        },
-                    ),
-                ),
             ));
 
-            // Plugin disable endpoint (deactivate plugin).
+            // Plugin disable endpoint (deactivate plugin) - slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_DISABLE);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_DISABLE, array(
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_disable_plugin'),
                 'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'slug' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) {
-                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
-                        },
-                    ),
-                ),
             ));
 
-            // Plugin delete endpoint (remove plugin).
+            // Plugin delete endpoint (remove plugin) - slug in JSON body.
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_DELETE);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_DELETE, array(
-                'methods'             => 'DELETE',
+                'methods'             => 'POST',
                 'callback'            => array($this, 'handle_delete_plugin'),
                 'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'slug' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) {
-                            return is_string($param) && preg_match('/^[a-zA-Z0-9_-]+$/', $param);
-                        },
-                    ),
-                ),
             ));
 
             // Plugin export endpoint (export any plugin as base64 ZIP).
@@ -2130,7 +2106,12 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     public function handle_enable_plugin($request) {
-        $slug = $request->get_param('slug');
+        // Read slug from JSON body (fixed endpoint design)
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
         $this->file_logger->info('Enable plugin endpoint called', array('slug' => $slug));
 
         // Step 1: Load plugin functions
@@ -2246,7 +2227,12 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     public function handle_disable_plugin($request) {
-        $slug = $request->get_param('slug');
+        // Read slug from JSON body (fixed endpoint design)
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
         $this->file_logger->info('Disable plugin endpoint called', array('slug' => $slug));
 
         // Step 1: Load plugin functions
@@ -2366,7 +2352,12 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     public function handle_delete_plugin($request) {
-        $slug = $request->get_param('slug');
+        // Read slug from JSON body (fixed endpoint design)
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        if (empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
         $this->file_logger->info('Delete plugin endpoint called', array('slug' => $slug));
 
         // Step 1: Load plugin functions

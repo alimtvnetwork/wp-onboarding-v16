@@ -111,15 +111,15 @@ if (!defined('RISEUP_ENDPOINT_PLUGIN_FILES')) {
 if (!defined('RISEUP_ENDPOINT_PLUGIN_FILE')) {
     define('RISEUP_ENDPOINT_PLUGIN_FILE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/file');
 }
-// Plugin enable/disable/delete endpoints - expects slug as path parameter
+// Plugin enable/disable/delete endpoints - fixed URLs, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_PLUGIN_ENABLE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_ENABLE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/enable');
+    define('RISEUP_ENDPOINT_PLUGIN_ENABLE', 'plugins/enable');
 }
 if (!defined('RISEUP_ENDPOINT_PLUGIN_DISABLE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_DISABLE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/disable');
+    define('RISEUP_ENDPOINT_PLUGIN_DISABLE', 'plugins/disable');
 }
 if (!defined('RISEUP_ENDPOINT_PLUGIN_DELETE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/delete');
+    define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugins/delete');
 }
 // Plugin export endpoint - exports a plugin as base64-encoded ZIP (expects slug as path parameter)
 if (!defined('RISEUP_ENDPOINT_PLUGIN_EXPORT')) {
