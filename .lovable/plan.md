@@ -141,3 +141,185 @@ This change is isolated to the `log()` method in logger.go and affects only ERRO
 4. Fix site service (Phase 2) - remote plugin action logs
 5. Fix watcher (Phase 4), version (Phase 5), git (Phase 5), backup (Phase 6) - secondary services
 
+---
+---
+
+# Universal Response Envelope — Migration Plan
+
+## Goal
+Standardize ALL API responses (Go backend + PHP WordPress plugin) to a single universal envelope structure, controlled by a seedable configuration for debug verbosity.
+
+---
+
+## Envelope Structure
+
+### List Response (isMultiple: true)
+```json
+{
+  "status": {
+    "success": true,
+    "code": 200,
+    "message": "OK",
+    "timestamp": "2026-02-07T12:00:00Z"
+  },
+  "attributes": {
+    "isSingle": false,
+    "isMultiple": true,
+    "totalRecords": 150,
+    "perPage": 20,
+    "totalPages": 8,
+    "currentPage": 2
+  },
+  "results": [
+    { "id": 1, "name": "Example" }
+  ],
+  "navigation": {
+    "nextPage": 3,
+    "prevPage": 1,
+    "pages": [1, 2, 3, 4, 5]
+  },
+  "error": null,
+  "additional": {}
+}
+```
+
+### Single Item Response (isSingle: true — slim)
+```json
+{
+  "status": {
+    "success": true,
+    "code": 200,
+    "message": "OK",
+    "timestamp": "2026-02-07T12:00:00Z"
+  },
+  "attributes": {
+    "isSingle": true,
+    "isMultiple": false
+  },
+  "results": [
+    { "id": 1, "name": "Example Site" }
+  ],
+  "error": null,
+  "additional": {}
+}
+```
+> Note: `navigation` is omitted for single items. `results` is always an array (length 1 for singles).
+
+### Error Response
+```json
+{
+  "status": {
+    "success": false,
+    "code": 500,
+    "message": "Database connection failed",
+    "timestamp": "2026-02-07T12:00:00Z"
+  },
+  "attributes": {
+    "isSingle": false,
+    "isMultiple": false
+  },
+  "results": [],
+  "error": {
+    "code": "E5001",
+    "message": "Database connection failed",
+    "stackTrace": "(config-controlled)",
+    "stackTraceFrames": []
+  },
+  "navigation": null,
+  "additional": {
+    "retryable": true,
+    "referenceId": "err-uuid-123"
+  }
+}
+```
+
+---
+
+## Configuration: Stack Trace Exposure
+
+A seedable config key controls error verbosity (enable/disable via config):
+
+### Go Backend (`config.json`)
+```json
+{
+  "ResponseDebug": {
+    "IncludeStackTrace": true,
+    "IncludeInternalErrors": true,
+    "MaxStackFrames": 20
+  }
+}
+```
+
+### PHP Plugin (`wp-config.php` or plugin settings)
+```php
+define('RISEUP_RESPONSE_DEBUG', true);
+```
+
+When disabled: `error.stackTrace` = null, `error.stackTraceFrames` = [], error messages are generic.
+
+---
+
+## Phases
+
+### Phase 1: Foundation (Go Backend)
+- [ ] Create `envelope` package with `Response`, `Attributes`, `Navigation`, `Status`, `ErrorDetail` structs
+- [ ] Create `envelope.Success(data)`, `envelope.List(data, pagination)`, `envelope.Error(err)` builders
+- [ ] Add `ResponseDebug` config to `config.json` and config loader
+- [ ] Add pagination helper: `envelope.NewPagination(total, page, perPage)` → computes pages, navigation
+- [ ] Write unit tests for envelope builders
+
+### Phase 2: Migrate Go Handlers
+- [ ] Update `response.go` helpers to emit new envelope
+- [ ] Migrate all handler files: site, plugin, sync, publish, backup, error, session, settings, health
+- [ ] Ensure all list endpoints accept `page` and `perPage` from request body
+- [ ] Update service layer to return `(results, totalCount, error)` where needed for pagination
+
+### Phase 3: Migrate PHP Plugin
+- [ ] Create `RiseupResponseEnvelope` PHP class mirroring the Go envelope
+- [ ] Add `envelope_success()`, `envelope_list()`, `envelope_error()` helper functions
+- [ ] Wire stack trace inclusion to `RISEUP_RESPONSE_DEBUG` config
+- [ ] Migrate all REST endpoint handlers to use the new envelope
+- [ ] Update `safe_execute` wrapper to emit envelope-formatted errors
+
+### Phase 4: Update Frontend
+- [ ] Create `parseEnvelope(response)` utility that extracts `results`, `attributes`, `navigation`, `error`
+- [ ] Update all `apiClient` response handlers to use `parseEnvelope`
+- [ ] Update pagination components to read `navigation` and `attributes`
+- [ ] Update error modal to read `error.stackTrace` from new location
+- [ ] Update error history persistence to match new structure
+
+### Phase 5: Update OpenAPI Specs
+- [ ] Redefine `UniversalEnvelope` schema in `backend/api/openapi.json`
+- [ ] Update all endpoint response schemas to use new envelope with `allOf`
+- [ ] Update PHP plugin `api-spec.json` to match
+- [ ] Run `make validate-openapi` to confirm validity
+
+### Phase 6: Testing & Documentation
+- [ ] End-to-end test: publish flow with new envelope
+- [ ] End-to-end test: sync flow with pagination
+- [ ] End-to-end test: error flow with stack trace config on/off
+- [ ] Update CODING-GUIDELINES.md with new response standard
+- [ ] Update memory entries for the new envelope pattern
+
+---
+
+## Migration Rules
+
+1. **`results` is ALWAYS an array** — even for single items (length 1) and errors (empty)
+2. **`navigation` is ONLY present** when `attributes.isMultiple === true`
+3. **`error` is null on success**, populated on failure
+4. **`additional` is optional** — use for metadata like `retryable`, `referenceId`, `deprecationWarning`
+5. **Stack traces respect config** — never leak in production unless explicitly enabled
+6. **Default pagination**: `perPage: 20`, `page: 1` when not specified
+
+---
+
+## Risks & Mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| Frontend breaks during migration | Migrate backend + frontend handlers in lockstep per domain |
+| PHP/Go envelope drift | Shared OpenAPI spec is the contract — validate both against it |
+| Performance overhead of always computing pagination | Only compute when handler opts into list mode |
+| Breaking existing WordPress ↔ Go communication | Migrate Go consumer parsing at same time as PHP producer |
+
