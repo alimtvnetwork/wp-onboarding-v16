@@ -124,6 +124,11 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
           Downgrade
         </Badge>
       )}
+      {!versionInfo.isNewInstall && !versionInfo.isUpgrade && !versionInfo.isDowngrade && (
+        <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-muted text-muted-foreground">
+          No changes
+        </Badge>
+      )}
     </div>
   );
 }
