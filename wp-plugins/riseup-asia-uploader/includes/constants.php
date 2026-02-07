@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.25.0');
+    define('RISEUP_VERSION', '1.26.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -445,6 +445,25 @@ if (!defined('RISEUP_ENDPOINT_AGENT_ACTION')) {
 if (!defined('RISEUP_ENDPOINT_AGENT_HISTORY')) {
     define('RISEUP_ENDPOINT_AGENT_HISTORY', 'agents/history');
 }
+// Plural aliases used by register_routes (must match exactly)
+if (!defined('RISEUP_ENDPOINT_AGENTS_LIST')) {
+    define('RISEUP_ENDPOINT_AGENTS_LIST', 'agents');
+}
+if (!defined('RISEUP_ENDPOINT_AGENTS_ADD')) {
+    define('RISEUP_ENDPOINT_AGENTS_ADD', 'agents/add');
+}
+if (!defined('RISEUP_ENDPOINT_AGENTS_REMOVE')) {
+    define('RISEUP_ENDPOINT_AGENTS_REMOVE', 'agents/remove');
+}
+if (!defined('RISEUP_ENDPOINT_AGENTS_TEST')) {
+    define('RISEUP_ENDPOINT_AGENTS_TEST', 'agents/test');
+}
+if (!defined('RISEUP_ENDPOINT_AGENTS_SYNC')) {
+    define('RISEUP_ENDPOINT_AGENTS_SYNC', 'agents/sync');
+}
+if (!defined('RISEUP_ENDPOINT_AGENTS_PLUGINS')) {
+    define('RISEUP_ENDPOINT_AGENTS_PLUGINS', 'agents/plugins');
+}
 
 // =============================================================================
 // TRIGGERED_BY VALUES (for enhanced transaction logging)
@@ -549,6 +568,10 @@ if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT')) {
 // Snapshot REST endpoints - ALL fixed paths, IDs passed in JSON body
 if (!defined('RISEUP_ENDPOINT_SNAPSHOTS')) {
     define('RISEUP_ENDPOINT_SNAPSHOTS', 'snapshots/list');
+}
+// Alias used by register_routes
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_LIST')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_LIST', 'snapshots/list');
 }
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE')) {
     define('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE', 'snapshots/schedule');

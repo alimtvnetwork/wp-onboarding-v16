@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.25.0
+ * Version: 1.26.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -640,6 +640,10 @@ class Riseup_Asia {
 
         // Helper: register a single route in its own try-catch so one failure
         // cannot prevent subsequent routes from registering.
+        // CRITICAL: The $endpoint_const argument is evaluated at the CALL SITE,
+        // so undefined constants on PHP 8.0+ throw Error BEFORE this body runs.
+        // We wrap each $safe_register() call below in its own try-catch to guard
+        // against undefined constants crashing the entire register_routes method.
         $safe_register = function ($endpoint_const, $args) use (&$registered, &$failed) {
             try {
                 register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . $endpoint_const, $args);
@@ -785,49 +789,45 @@ class Riseup_Asia {
 
         // =================================================================
         // AGENT MANAGEMENT ENDPOINTS
+        // Each call wrapped in try-catch to guard against undefined
+        // constants on PHP 8.0+ (Error thrown at argument evaluation).
         // =================================================================
 
-        // List agent sites
-        $safe_register(RISEUP_ENDPOINT_AGENTS_LIST, array(
+        try { $safe_register(RISEUP_ENDPOINT_AGENTS_LIST, array(
             'methods'             => 'GET',
             'callback'            => array($this, 'handle_list_agents'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
-        ));
+        )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_LIST failed: ' . $e->getMessage()); }
 
-        // Add agent site
-        $safe_register(RISEUP_ENDPOINT_AGENTS_ADD, array(
+        try { $safe_register(RISEUP_ENDPOINT_AGENTS_ADD, array(
             'methods'             => 'POST',
             'callback'            => array($this, 'handle_add_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
-        ));
+        )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_ADD failed: ' . $e->getMessage()); }
 
-        // Remove agent site
-        $safe_register(RISEUP_ENDPOINT_AGENTS_REMOVE, array(
+        try { $safe_register(RISEUP_ENDPOINT_AGENTS_REMOVE, array(
             'methods'             => 'POST',
             'callback'            => array($this, 'handle_remove_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
-        ));
+        )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_REMOVE failed: ' . $e->getMessage()); }
 
-        // Test agent site connection
-        $safe_register(RISEUP_ENDPOINT_AGENTS_TEST, array(
+        try { $safe_register(RISEUP_ENDPOINT_AGENTS_TEST, array(
             'methods'             => 'POST',
             'callback'            => array($this, 'handle_test_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
-        ));
+        )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_TEST failed: ' . $e->getMessage()); }
 
-        // Sync plugin to agent
-        $safe_register(RISEUP_ENDPOINT_AGENTS_SYNC, array(
+        try { $safe_register(RISEUP_ENDPOINT_AGENTS_SYNC, array(
             'methods'             => 'POST',
             'callback'            => array($this, 'handle_sync_to_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
-        ));
+        )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_SYNC failed: ' . $e->getMessage()); }
 
-        // Remote plugin management via agent
-        $safe_register(RISEUP_ENDPOINT_AGENTS_PLUGINS, array(
+        try { $safe_register(RISEUP_ENDPOINT_AGENTS_PLUGINS, array(
             'methods'             => 'POST',
             'callback'            => array($this, 'handle_agent_plugin_action'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
-        ));
+        )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_PLUGINS failed: ' . $e->getMessage()); }
 
         // =================================================================
         // SNAPSHOT ENDPOINTS
