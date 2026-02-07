@@ -391,7 +391,7 @@ func (c *Client) UploadPluginViaOnboard(zipPath string, activate bool) (*Uploade
 	
 	// If activation requested, try to activate
 	if activate && result.PluginSlug != "" {
-		if err := c.ActivatePlugin(result.PluginSlug); err == nil {
+		if err := c.EnablePluginViaUploader(result.PluginSlug); err == nil {
 			uploaderResult.Activated = true
 		}
 	}

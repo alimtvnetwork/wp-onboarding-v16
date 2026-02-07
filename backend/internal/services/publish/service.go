@@ -592,7 +592,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 						"body":   truncateString(apiErr.ResponseBody, 2000),
 					}
 				}
-				s.broadcastStageLog(pluginID, siteID, sessionID, "error", "activate", errorCtx)
+			s.broadcastStageLog(pluginID, siteID, sessionID, "error", "activate", errorCtx)
 				return err
 			}
 
@@ -609,74 +609,14 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			return nil
 		}
 
-		// Fallback to WordPress Core REST API
-		resolvedIdentifier := mapping.RemoteSlug
-		if id, resolveErr := wpClient.ResolvePluginIdentifier(mapping.RemoteSlug); resolveErr == nil {
-			resolvedIdentifier = id
-			if resolvedIdentifier != mapping.RemoteSlug {
-				s.broadcastStageLog(pluginID, siteID, sessionID, "debug", "activate", StageContext{
-					What:   "Resolve plugin identifier",
-					Why:    "WordPress API requires full plugin path",
-					Where:  siteInfo.URL,
-					Result: fmt.Sprintf("Resolved %s → %s", mapping.RemoteSlug, resolvedIdentifier),
-				})
-			}
-		}
-
-		endpointURL := fmt.Sprintf("%s/wp-json%s/%s", siteInfo.URL, wordpress.WPCorePlugins, resolvedIdentifier)
-		
-		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
-			What:  "Activate plugin via WordPress Core API",
-			Why:   "Enable plugin after successful upload (fallback method)",
-			Where: endpointURL,
-			InnerData: map[string]interface{}{
-				"method":             "PUT",
-				"remoteSlug":         mapping.RemoteSlug,
-				"resolvedIdentifier": resolvedIdentifier,
-				"payload":            map[string]string{"status": "active"},
-			},
+		// Riseup Asia Uploader not available — cannot activate
+		s.broadcastStageLog(pluginID, siteID, sessionID, "error", "activate", StageContext{
+			What:   "Activate plugin failed",
+			Why:    "Riseup Asia Uploader is not available on the remote site",
+			Where:  siteInfo.URL,
+			Result: "FAILED: Install the Riseup Asia Uploader companion plugin to enable activation",
 		})
-
-		err := wpClient.ActivatePlugin(resolvedIdentifier)
-		if err != nil {
-			errorCtx := StageContext{
-				What:   "Activate plugin via WordPress Core API",
-				Why:    "Enable plugin after upload",
-				Where:  endpointURL,
-				Result: fmt.Sprintf("FAILED: %s", err.Error()),
-				InnerData: map[string]interface{}{
-					"remoteSlug":         mapping.RemoteSlug,
-					"resolvedIdentifier": resolvedIdentifier,
-					"durationMs":         time.Since(activateStartTime).Milliseconds(),
-				},
-			}
-			if apiErr, ok := err.(*wordpress.APIError); ok {
-				errorCtx.InnerData["request"] = map[string]interface{}{
-					"method":   apiErr.Method,
-					"endpoint": apiErr.Endpoint,
-					"url":      apiErr.URL,
-				}
-				errorCtx.InnerData["response"] = map[string]interface{}{
-					"status": apiErr.StatusCode,
-					"body":   truncateString(apiErr.ResponseBody, 2000),
-				}
-			}
-			s.broadcastStageLog(pluginID, siteID, sessionID, "error", "activate", errorCtx)
-			return err
-		}
-
-		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
-			What:   "Activate plugin via WordPress Core API",
-			Why:    "Enable plugin after upload",
-			Where:  endpointURL,
-			Result: "SUCCESS - plugin is now active",
-			InnerData: map[string]interface{}{
-				"remoteSlug":         mapping.RemoteSlug,
-				"resolvedIdentifier": resolvedIdentifier,
-				"durationMs":         time.Since(activateStartTime).Milliseconds(),
-			},
-		})
-		return nil
+		return fmt.Errorf("Riseup Asia Uploader not available on %s — cannot activate plugin", siteInfo.URL)
 	})
 	result.Stages = append(result.Stages, stage)
 	
@@ -703,7 +643,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 				s.broadcastStageLog(pluginID, siteID, sessionID, "info", "rollback", StageContext{
 					What: "Deactivating broken plugin to stabilize site",
 				})
-				if disableErr := wpClient.DeactivatePlugin(mapping.RemoteSlug); disableErr != nil {
+				if disableErr := wpClient.DisablePluginViaUploader(mapping.RemoteSlug); disableErr != nil {
 					s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "rollback", StageContext{
 						What:   "Deactivation during rollback",
 						Result: fmt.Sprintf("Could not deactivate: %s (site may already be safe)", disableErr.Error()),
