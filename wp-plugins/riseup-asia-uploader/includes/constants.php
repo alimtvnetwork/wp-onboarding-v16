@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.11.0');
+    define('RISEUP_VERSION', '1.12.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -713,4 +713,12 @@ if (!defined('RISEUP_SYNC_ACTION_DELETE')) {
 // Sync action for transaction logging
 if (!defined('RISEUP_ACTION_SYNC_DELETE')) {
     define('RISEUP_ACTION_SYNC_DELETE', 'sync_delete');
+}
+
+// =============================================================================
+// SNAPSHOT SETTINGS TABLE
+// =============================================================================
+
+if (!defined('RISEUP_TABLE_SNAPSHOT_SETTINGS')) {
+    define('RISEUP_TABLE_SNAPSHOT_SETTINGS', 'snapshot_settings');
 }

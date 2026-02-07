@@ -858,50 +858,103 @@ class RiseupSnapshotManager {
      * @return array Settings.
      */
     public function getSettings() {
+        // Read from SQLite snapshot_settings table (source of truth)
+        $settings = array();
+        $pdo = $this->db->get_pdo();
+        
+        if ($pdo) {
+            try {
+                $rows = $pdo->query("SELECT key, value, type FROM snapshot_settings")->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($rows as $row) {
+                    $key = str_replace('snapshot.', '', $row['key']);
+                    $settings[$key] = $this->castSettingValue($row['value'], $row['type']);
+                }
+            } catch (Exception $e) {
+                $this->log(RISEUP_LOG_LEVEL_WARN, 'Failed to read snapshot_settings from SQLite', array('error' => $e->getMessage()));
+            }
+        }
+        
+        // Fallback defaults for any missing keys
         $defaults = array(
-            'provider' => RISEUP_SNAPSHOT_PROVIDER_AUTO,
-            'scope' => RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
-            'frequency' => RISEUP_SNAPSHOT_FREQ_MANUAL,
-            'schedule_time' => '03:00',
-            'schedule_day' => 0, // Sunday
-            'schedule_date' => 1, // 1st of month
-            'retention_type' => RISEUP_RETENTION_TYPE_COUNT,
-            'retention_days' => RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT,
-            'retention_count' => RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT,
-            'custom_tables' => array(),
+            'mode'               => 'per_table',
+            'backup_type'        => 'incremental',
+            'worker_count'       => 10,
+            'storage_path'       => 'snapshots/',
+            'include_plugins'    => true,
+            'plugin_selection'   => 'all',
+            'retention_days'     => RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT,
+            'retention_count'    => RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT,
+            'compression'        => true,
+            'batch_size'         => RISEUP_SNAPSHOT_BATCH_SIZE,
+            'provider'           => RISEUP_SNAPSHOT_PROVIDER_AUTO,
+            'scope'              => RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
+            'frequency'          => RISEUP_SNAPSHOT_FREQ_MANUAL,
+            'schedule_time'      => '03:00',
+            'pre_restore_backup' => true,
+            'custom_tables'      => array(),
         );
 
-        $saved = get_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, array());
-
-        return array_merge($defaults, $saved);
+        return array_merge($defaults, $settings);
     }
 
     /**
-     * Update snapshot settings.
+     * Update snapshot settings in SQLite.
      *
      * @param array $settings New settings.
-     * @return bool Success.
+     * @return array Updated settings.
      */
     public function updateSettings($settings) {
-        $current = $this->getSettings();
-        $updated = array_merge($current, $settings);
-
-        $result = update_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, $updated);
-
-        if ($result) {
-            // Sync cron schedule if frequency changed
-            if (isset($settings['frequency'])) {
-                $scheduler = RiseupSnapshotScheduler::getInstance($this->logger, $this->db);
-                $scheduler->syncSchedule($updated);
+        $pdo = $this->db->get_pdo();
+        
+        if ($pdo) {
+            try {
+                $now = gmdate('Y-m-d\TH:i:s\Z');
+                $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_settings (key, value, type, updated_at) VALUES (?, ?, ?, ?)");
+                
+                foreach ($settings as $key => $value) {
+                    $dbKey = 'snapshot.' . $key;
+                    $type = is_bool($value) ? 'bool' : (is_int($value) ? 'int' : 'string');
+                    $dbValue = is_bool($value) ? ($value ? '1' : '0') : (string)$value;
+                    $stmt->execute(array($dbKey, $dbValue, $type, $now));
+                }
+            } catch (Exception $e) {
+                $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to update snapshot_settings', array('error' => $e->getMessage()));
             }
-
-            $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot settings updated', array(
-                'frequency' => $updated['frequency'],
-                'retention_type' => $updated['retention_type'],
-            ));
         }
 
+        // Sync cron schedule if frequency changed
+        if (isset($settings['frequency'])) {
+            $updated = $this->getSettings();
+            $scheduler = RiseupSnapshotScheduler::getInstance($this->logger, $this->db);
+            $scheduler->syncSchedule($updated);
+        }
+
+        $result = $this->getSettings();
+        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot settings updated', array(
+            'keys' => array_keys($settings),
+        ));
+
         return $result;
+    }
+
+    /**
+     * Cast a setting value to its declared type.
+     *
+     * @param string $value Raw string value.
+     * @param string $type  Type hint: 'string', 'int', 'bool', 'json'.
+     * @return mixed Typed value.
+     */
+    private function castSettingValue($value, $type) {
+        switch ($type) {
+            case 'int':
+                return (int) $value;
+            case 'bool':
+                return $value === '1' || $value === 'true';
+            case 'json':
+                return json_decode($value, true) ?: array();
+            default:
+                return $value;
+        }
     }
 
     /**

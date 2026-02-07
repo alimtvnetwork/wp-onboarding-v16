@@ -42,6 +42,18 @@
     "cacheEnabled": true,
     "cacheTTLMinutes": 60
   },
+  "snapshot": {
+    "mode": "per_table",
+    "backupType": "incremental",
+    "workerCount": 10,
+    "storagePath": "snapshots/",
+    "includePlugins": true,
+    "pluginSelection": "all",
+    "retentionDays": 30,
+    "retentionCount": 10,
+    "compression": true,
+    "batchSize": 1000
+  },
   "seed": {
     "enabled": true,
     "sites": [
