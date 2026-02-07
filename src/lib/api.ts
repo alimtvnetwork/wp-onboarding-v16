@@ -622,6 +622,11 @@ export interface Settings {
     port: number;
     wsReconnectDelayMs: number;
   };
+  responseDebug?: {
+    includeStackTrace: boolean;
+    includeInternalErrors: boolean;
+    maxStackFrames: number;
+  };
 }
 
 // API methods
