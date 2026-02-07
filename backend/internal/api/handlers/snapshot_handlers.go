@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,25 +16,11 @@ import (
 // --- Remote Snapshot Management Handlers (Phase 28) ---
 
 // GetRemoteSnapshots returns all snapshots from a remote WordPress site
-func GetRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
-		return
-	}
-
-	id, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	snapshots, err := Services.SiteService.GetRemoteSnapshots(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3020", err.Error())
-		return
-	}
-	respondSuccess(w, snapshots)
-}
+var GetRemoteSnapshots = handleSiteActionByID("E3020",
+	func(ctx context.Context, siteID int64) (interface{}, error) {
+		return Services.SiteService.GetRemoteSnapshots(ctx, siteID)
+	},
+)
 
 // GetRemoteSnapshot returns a specific snapshot from a remote WordPress site
 func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -63,36 +50,11 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateRemoteSnapshot triggers a new snapshot on a remote WordPress site
-func CreateRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
-		return
-	}
-
-	siteID, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	var opts map[string]interface{}
-	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&opts)
-	}
-	if opts == nil {
-		opts = map[string]interface{}{}
-	}
-
-	result, err := Services.SiteService.CreateRemoteSnapshot(r.Context(), siteID, opts)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3022", err.Error())
-		return
-	}
-	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"data":    result,
-	})
-}
+var CreateRemoteSnapshot = handleSiteActionByIDWithOpts("E3022",
+	func(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+		return Services.SiteService.CreateRemoteSnapshot(ctx, siteID, opts)
+	},
+)
 
 // DeleteRemoteSnapshot removes a snapshot from a remote WordPress site
 func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -139,14 +101,7 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts map[string]interface{}
-	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&opts)
-	}
-	if opts == nil {
-		opts = map[string]interface{}{}
-	}
-	// Always require confirmation
+	opts := decodeOptionalOpts(r)
 	opts["confirm"] = true
 
 	result, err := Services.SiteService.RestoreRemoteSnapshot(r.Context(), siteID, snapshotID, opts)
@@ -158,25 +113,11 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetRemoteSnapshotSettings fetches snapshot settings from a remote WordPress site
-func GetRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
-		return
-	}
-
-	siteID, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	settings, err := Services.SiteService.GetRemoteSnapshotSettings(r.Context(), siteID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3025", err.Error())
-		return
-	}
-	respondSuccess(w, settings)
-}
+var GetRemoteSnapshotSettings = handleSiteActionByID("E3025",
+	func(ctx context.Context, siteID int64) (interface{}, error) {
+		return Services.SiteService.GetRemoteSnapshotSettings(ctx, siteID)
+	},
+)
 
 // UpdateRemoteSnapshotSettings updates snapshot settings on a remote WordPress site
 func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
@@ -206,25 +147,11 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetRemoteSnapshotProviders returns available snapshot providers on a remote WordPress site
-func GetRemoteSnapshotProviders(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
-		return
-	}
-
-	siteID, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	providers, err := Services.SiteService.GetRemoteSnapshotProviders(r.Context(), siteID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3027", err.Error())
-		return
-	}
-	respondSuccess(w, providers)
-}
+var GetRemoteSnapshotProviders = handleSiteActionByID("E3027",
+	func(ctx context.Context, siteID int64) (interface{}, error) {
+		return Services.SiteService.GetRemoteSnapshotProviders(ctx, siteID)
+	},
+)
 
 // ExportRemoteSnapshot streams a snapshot ZIP file from a remote WordPress site
 func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
@@ -272,25 +199,11 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting
-func GetRemoteAvailableTables(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
-		return
-	}
-
-	siteID, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	tables, err := Services.SiteService.GetRemoteAvailableTables(r.Context(), siteID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3029", err.Error())
-		return
-	}
-	respondSuccess(w, tables)
-}
+var GetRemoteAvailableTables = handleSiteActionByID("E3029",
+	func(ctx context.Context, siteID int64) (interface{}, error) {
+		return Services.SiteService.GetRemoteAvailableTables(ctx, siteID)
+	},
+)
 
 // getSnapshotIDParam extracts the snapshot ID from URL parameters
 func getSnapshotIDParam(r *http.Request) (int64, error) {
@@ -299,72 +212,20 @@ func getSnapshotIDParam(r *http.Request) (int64, error) {
 }
 
 // FullBackupRemoteSnapshot triggers end-to-end full backup orchestration on a remote WordPress site
-func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
-		return
-	}
-
-	siteID, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	var opts map[string]interface{}
-	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&opts)
-	}
-	if opts == nil {
-		opts = map[string]interface{}{}
-	}
-
-	result, err := Services.SiteService.FullBackupRemoteSnapshot(r.Context(), siteID, opts)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3030", err.Error())
-		return
-	}
-	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"data":    result,
-	})
-}
+var FullBackupRemoteSnapshot = handleSiteActionByIDWithOpts("E3030",
+	func(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+		return Services.SiteService.FullBackupRemoteSnapshot(ctx, siteID, opts)
+	},
+)
 
 // IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote WordPress site
-func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
-		return
-	}
-
-	siteID, err := getIDParam(r, "id")
-	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
-		return
-	}
-
-	var opts map[string]interface{}
-	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&opts)
-	}
-	if opts == nil {
-		opts = map[string]interface{}{}
-	}
-
-	result, err := Services.SiteService.IncrementalBackupRemoteSnapshot(r.Context(), siteID, opts)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3031", err.Error())
-		return
-	}
-	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"data":    result,
-	})
-}
+var IncrementalBackupRemoteSnapshot = handleSiteActionByIDWithOpts("E3031",
+	func(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+		return Services.SiteService.IncrementalBackupRemoteSnapshot(ctx, siteID, opts)
+	},
+)
 
 // ImportRemoteSnapshot handles uploading a ZIP file to import as a snapshot on a remote site.
-// Accepts multipart form-data with a "file" field, streams the file to a temp location,
-// then proxies to the WordPress plugin import endpoint.
 func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
 		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
@@ -412,10 +273,7 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E3032", err.Error())
 		return
 	}
-	respondJSON(w, http.StatusCreated, map[string]interface{}{
-		"success": true,
-		"data":    result,
-	})
+	respondCreated(w, result)
 }
 
 // CleanupRemoteSnapshots triggers cleanup of old/orphan/stuck snapshots on a remote WordPress site
@@ -431,14 +289,7 @@ func CleanupRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts map[string]interface{}
-	if r.Body != nil {
-		_ = json.NewDecoder(r.Body).Decode(&opts)
-	}
-	if opts == nil {
-		opts = map[string]interface{}{}
-	}
-
+	opts := decodeOptionalOpts(r)
 	result, err := Services.SiteService.CleanupRemoteSnapshots(r.Context(), siteID, opts)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, "E3033", err.Error())

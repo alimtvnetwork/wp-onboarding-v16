@@ -2,129 +2,57 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 )
 
 // --- Sync Handlers ---
 
 // CheckSync compares local vs remote plugin files
-func CheckSync(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SyncService, "Sync service") {
-		return
-	}
-
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-	siteID, ok := parseID(w, r, "siteId", "site ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.SyncService.CheckSync(r.Context(), pluginID, siteID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E4002", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var CheckSync = handleTwoIDs(syncService, "Sync service",
+	"id", "plugin ID", "siteId", "site ID", "E4002",
+	func(ctx context.Context, pluginID, siteID int64) (interface{}, error) {
+		return Services.SyncService.CheckSync(ctx, pluginID, siteID)
+	},
+)
 
 // CheckAllSites checks sync status for all mapped sites
-func CheckAllSites(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SyncService, "Sync service") {
-		return
-	}
-
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.SyncService.CheckAllSites(r.Context(), pluginID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E4003", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var CheckAllSites = handleActionByID(syncService, "Sync service", "id", "plugin ID", "E4003",
+	func(ctx context.Context, pluginID int64) (interface{}, error) {
+		return Services.SyncService.CheckAllSites(ctx, pluginID)
+	},
+)
 
 // PushSync pushes local changes (including deletions) to the remote site
-func PushSync(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.SyncService, "Sync service") {
-		return
-	}
-
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-	siteID, ok := parseID(w, r, "siteId", "site ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.SyncService.PushSync(r.Context(), pluginID, siteID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E4004", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var PushSync = handleTwoIDs(syncService, "Sync service",
+	"id", "plugin ID", "siteId", "site ID", "E4004",
+	func(ctx context.Context, pluginID, siteID int64) (interface{}, error) {
+		return Services.SyncService.PushSync(ctx, pluginID, siteID)
+	},
+)
 
 // --- Git Handlers ---
 
 // GitPull performs git pull for a specific plugin
-func GitPull(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.GitService, "Git service") {
-		return
-	}
-
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.GitService.Pull(r.Context(), pluginID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E5001", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var GitPull = handleActionByID(gitService, "Git service", "id", "plugin ID", "E5001",
+	func(ctx context.Context, pluginID int64) (interface{}, error) {
+		return Services.GitService.Pull(ctx, pluginID)
+	},
+)
 
 // GitPullAll performs git pull for all plugins
-func GitPullAll(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.GitService, "Git service") {
-		return
-	}
-
-	result, err := Services.GitService.PullAll(r.Context())
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E5002", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var GitPullAll = handleNoArgs(gitService, "Git service", "E5002",
+	func(ctx context.Context) (interface{}, error) {
+		return Services.GitService.PullAll(ctx)
+	},
+)
 
 // GitStatus returns git status for a specific plugin
-func GitStatus(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.GitService, "Git service") {
-		return
-	}
-
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.GitService.Status(r.Context(), pluginID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E5003", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var GitStatus = handleActionByID(gitService, "Git service", "id", "plugin ID", "E5003",
+	func(ctx context.Context, pluginID int64) (interface{}, error) {
+		return Services.GitService.Status(ctx, pluginID)
+	},
+)
 
 // GitCommit commits changes for a specific plugin
 func GitCommit(w http.ResponseWriter, r *http.Request) {
@@ -158,20 +86,8 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 }
 
 // GitPush pushes commits to remote for a specific plugin
-func GitPush(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.GitService, "Git service") {
-		return
-	}
-
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.GitService.Push(r.Context(), pluginID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E5005", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var GitPush = handleActionByID(gitService, "Git service", "id", "plugin ID", "E5005",
+	func(ctx context.Context, pluginID int64) (interface{}, error) {
+		return Services.GitService.Push(ctx, pluginID)
+	},
+)

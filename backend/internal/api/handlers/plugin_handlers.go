@@ -2,23 +2,17 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 )
 
 // GetPlugins returns all registered plugins
-func GetPlugins(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PluginService == nil {
-		respondSuccess(w, []interface{}{})
-		return
-	}
-	plugins, err := Services.PluginService.List(r.Context())
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3001", err.Error())
-		return
-	}
-	respondSuccess(w, plugins)
-}
+var GetPlugins = handleListNilSafe(pluginService, "E3001",
+	func(ctx context.Context) (interface{}, error) {
+		return Services.PluginService.List(ctx)
+	},
+)
 
 // CreatePlugin registers a new local plugin directory
 func CreatePlugin(w http.ResponseWriter, r *http.Request) {
@@ -40,23 +34,11 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPlugin returns a specific plugin by ID
-func GetPlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	plugin, err := Services.PluginService.GetByID(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusNotFound, "E3003", err.Error())
-		return
-	}
-	respondSuccess(w, plugin)
-}
+var GetPlugin = handleActionByID(pluginService, "Plugin service", "id", "plugin ID", "E3003",
+	func(ctx context.Context, id int64) (interface{}, error) {
+		return Services.PluginService.GetByID(ctx, id)
+	},
+)
 
 // UpdatePlugin updates an existing plugin
 func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
@@ -83,42 +65,18 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeletePlugin removes a plugin registration
-func DeletePlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	if err := Services.PluginService.Delete(r.Context(), id); err != nil {
-		respondError(w, http.StatusBadRequest, "E3005", err.Error())
-		return
-	}
-	respondDeleted(w)
-}
+var DeletePlugin = handleDeleteByID(pluginService, "Plugin service", "id", "plugin ID", "E3005",
+	func(ctx context.Context, id int64) error {
+		return Services.PluginService.Delete(ctx, id)
+	},
+)
 
 // GetPluginMappings returns plugin-site mappings
-func GetPluginMappings(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PluginService == nil {
-		respondSuccess(w, []interface{}{})
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	mappings, err := Services.PluginService.GetMappings(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3006", err.Error())
-		return
-	}
-	respondSuccess(w, mappings)
-}
+var GetPluginMappings = handleActionByID(pluginService, "Plugin service", "id", "plugin ID", "E3006",
+	func(ctx context.Context, id int64) (interface{}, error) {
+		return Services.PluginService.GetMappings(ctx, id)
+	},
+)
 
 // CreatePluginMapping creates a new plugin-site mapping
 func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
@@ -145,22 +103,11 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeletePluginMapping removes a plugin-site mapping
-func DeletePluginMapping(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.PluginService, "Plugin service") {
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "mapping ID")
-	if !ok {
-		return
-	}
-
-	if err := Services.PluginService.DeleteMapping(r.Context(), id); err != nil {
-		respondError(w, http.StatusBadRequest, "E3008", err.Error())
-		return
-	}
-	respondDeleted(w)
-}
+var DeletePluginMapping = handleDeleteByID(pluginService, "Plugin service", "id", "mapping ID", "E3008",
+	func(ctx context.Context, id int64) error {
+		return Services.PluginService.DeleteMapping(ctx, id)
+	},
+)
 
 // UpdatePluginMappings bulk-updates all site mappings for a plugin
 func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
@@ -191,24 +138,11 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetSiteMappings returns all plugin mappings for a site
-func GetSiteMappings(w http.ResponseWriter, r *http.Request) {
-	if Services == nil || Services.PluginService == nil {
-		respondSuccess(w, []interface{}{})
-		return
-	}
-
-	id, ok := parseID(w, r, "id", "site ID")
-	if !ok {
-		return
-	}
-
-	mappings, err := Services.PluginService.GetMappingsBySite(r.Context(), id)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3010", err.Error())
-		return
-	}
-	respondSuccess(w, mappings)
-}
+var GetSiteMappings = handleActionByID(pluginService, "Plugin service", "id", "site ID", "E3010",
+	func(ctx context.Context, id int64) (interface{}, error) {
+		return Services.PluginService.GetMappingsBySite(ctx, id)
+	},
+)
 
 // UpdateSiteMappings bulk-updates all plugin mappings for a site
 func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
@@ -253,37 +187,18 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 // --- Watcher/Scan Handlers ---
 
 // ScanPlugin triggers a file scan for a specific plugin
-func ScanPlugin(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.WatcherService, "Watcher service") {
-		return
-	}
-
-	pluginID, ok := parseID(w, r, "id", "plugin ID")
-	if !ok {
-		return
-	}
-
-	result, err := Services.WatcherService.TriggerScan(r.Context(), pluginID)
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E6001", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var ScanPlugin = handleActionByID(watcherService, "Watcher service", "id", "plugin ID", "E6001",
+	func(ctx context.Context, id int64) (interface{}, error) {
+		return Services.WatcherService.TriggerScan(ctx, id)
+	},
+)
 
 // ScanAllPlugins triggers a file scan for all plugins
-func ScanAllPlugins(w http.ResponseWriter, r *http.Request) {
-	if !requireService(w, Services.WatcherService, "Watcher service") {
-		return
-	}
-
-	result, err := Services.WatcherService.ScanAll(r.Context())
-	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E6002", err.Error())
-		return
-	}
-	respondSuccess(w, result)
-}
+var ScanAllPlugins = handleNoArgs(watcherService, "Watcher service", "E6002",
+	func(ctx context.Context) (interface{}, error) {
+		return Services.WatcherService.ScanAll(ctx)
+	},
+)
 
 // ScanDirectoryPath scans a directory path for WordPress plugin and creates wp-plugin-detected.json
 func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
