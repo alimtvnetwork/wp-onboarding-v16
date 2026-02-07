@@ -855,6 +855,8 @@ class Riseup_Asia {
 
             // List snapshots
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOTS);
+            // List snapshots (fixed endpoint)
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOTS);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOTS, array(
                 'methods'             => 'GET',
                 'callback'            => array($this, 'handle_list_snapshots'),
@@ -869,22 +871,23 @@ class Riseup_Asia {
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
-            // Get single snapshot
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_BY_ID);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_BY_ID, array(
-                array(
-                    'methods'             => 'GET',
-                    'callback'            => array($this, 'handle_get_snapshot'),
-                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-                ),
-                array(
-                    'methods'             => 'DELETE',
-                    'callback'            => array($this, 'handle_delete_snapshot'),
-                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-                ),
+            // Get single snapshot (fixed endpoint, ID in JSON body)
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_INFO);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_INFO, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_get_snapshot'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
-            // Restore snapshot
+            // Delete snapshot (fixed endpoint, ID in JSON body)
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_DELETE);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_DELETE, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_delete_snapshot'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Restore snapshot (fixed endpoint, ID in JSON body)
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_RESTORE);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_RESTORE, array(
                 'methods'             => 'POST',
@@ -892,10 +895,10 @@ class Riseup_Asia {
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
-            // Export snapshot as ZIP
+            // Export snapshot as ZIP (fixed endpoint, ID in JSON body)
             $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_EXPORT);
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_EXPORT, array(
-                'methods'             => 'GET',
+                'methods'             => 'POST',
                 'callback'            => array($this, 'handle_export_snapshot'),
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
@@ -917,7 +920,7 @@ class Riseup_Asia {
                     'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
                 ),
                 array(
-                    'methods'             => 'PUT',
+                    'methods'             => 'POST',
                     'callback'            => array($this, 'handle_update_snapshot_settings'),
                     'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
                 ),
@@ -3029,7 +3032,8 @@ class Riseup_Asia {
      */
     public function handle_get_snapshot($request) {
         return $this->safe_execute(function() use ($request) {
-            $id = (int) $request->get_param('id');
+            $body = $request->get_json_params();
+            $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $provider = $manager->getProvider();
@@ -3057,7 +3061,8 @@ class Riseup_Asia {
      */
     public function handle_delete_snapshot($request) {
         return $this->safe_execute(function() use ($request) {
-            $id = (int) $request->get_param('id');
+            $body = $request->get_json_params();
+            $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $this->file_logger->info('Deleting snapshot', array('id' => $id));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
@@ -3076,7 +3081,8 @@ class Riseup_Asia {
      */
     public function handle_restore_snapshot($request) {
         return $this->safe_execute(function() use ($request) {
-            $id = (int) $request->get_param('id');
+            $body = $request->get_json_params();
+            $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $body = $request->get_json_params();
 
             $options = array(
@@ -3106,7 +3112,8 @@ class Riseup_Asia {
      */
     public function handle_export_snapshot($request) {
         return $this->safe_execute(function() use ($request) {
-            $id = (int) $request->get_param('id');
+            $body = $request->get_json_params();
+            $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $this->file_logger->info('Exporting snapshot', array('id' => $id));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);

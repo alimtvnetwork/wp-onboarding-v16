@@ -465,8 +465,8 @@ function BackendSection({
           )}
 
           {errorLogContent && (
-            <ScrollArea className="h-64 rounded-md border bg-muted">
-              <pre className="text-xs p-3 font-mono whitespace-pre-wrap">{errorLogContent}</pre>
+            <ScrollArea className="h-[400px] rounded-md border bg-muted">
+              <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">{errorLogContent}</pre>
             </ScrollArea>
           )}
 
@@ -507,7 +507,7 @@ function BackendSection({
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
-            <ScrollArea className="h-64 rounded-md border">
+            <ScrollArea className="h-[400px] rounded-md border">
               <div className="p-3 space-y-1">
                 {error.backendLogs.map((log, idx) => (
                   <BackendLogEntry key={idx} log={log} formatTs={formatTs} />
@@ -591,8 +591,8 @@ function BackendSection({
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
-            <ScrollArea className="h-48 rounded-md border bg-muted">
-              <pre className="text-xs p-3 font-mono whitespace-pre-wrap">{error.backendStackTrace}</pre>
+            <ScrollArea className="h-[300px] rounded-md border bg-muted">
+              <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">{error.backendStackTrace}</pre>
             </ScrollArea>
           </div>
         )}

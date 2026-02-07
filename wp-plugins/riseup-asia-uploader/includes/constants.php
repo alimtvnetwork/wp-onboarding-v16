@@ -429,21 +429,21 @@ if (!defined('RISEUP_AGENT_STATUS_ERROR')) {
     define('RISEUP_AGENT_STATUS_ERROR', 'error');
 }
 
-// Agent REST endpoints
+// Agent REST endpoints - ALL fixed paths, IDs passed in JSON body
 if (!defined('RISEUP_ENDPOINT_AGENTS')) {
     define('RISEUP_ENDPOINT_AGENTS', 'agents');
 }
 if (!defined('RISEUP_ENDPOINT_AGENT_TEST')) {
-    define('RISEUP_ENDPOINT_AGENT_TEST', 'agents/(?P<id>\\d+)/test');
+    define('RISEUP_ENDPOINT_AGENT_TEST', 'agents/test');
 }
 if (!defined('RISEUP_ENDPOINT_AGENT_SYNC')) {
-    define('RISEUP_ENDPOINT_AGENT_SYNC', 'agents/(?P<id>\\d+)/sync');
+    define('RISEUP_ENDPOINT_AGENT_SYNC', 'agents/sync');
 }
 if (!defined('RISEUP_ENDPOINT_AGENT_ACTION')) {
-    define('RISEUP_ENDPOINT_AGENT_ACTION', 'agents/(?P<id>\\d+)/action');
+    define('RISEUP_ENDPOINT_AGENT_ACTION', 'agents/action');
 }
 if (!defined('RISEUP_ENDPOINT_AGENT_HISTORY')) {
-    define('RISEUP_ENDPOINT_AGENT_HISTORY', 'agents/(?P<id>\\d+)/history');
+    define('RISEUP_ENDPOINT_AGENT_HISTORY', 'agents/history');
 }
 
 // =============================================================================
@@ -546,21 +546,24 @@ if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT')) {
     define('RISEUP_ACTION_SNAPSHOT_IMPORT', 'snapshot_import');
 }
 
-// Snapshot REST endpoints
+// Snapshot REST endpoints - ALL fixed paths, IDs passed in JSON body
 if (!defined('RISEUP_ENDPOINT_SNAPSHOTS')) {
-    define('RISEUP_ENDPOINT_SNAPSHOTS', 'snapshots');
+    define('RISEUP_ENDPOINT_SNAPSHOTS', 'snapshots/list');
 }
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE')) {
     define('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE', 'snapshots/schedule');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_BY_ID')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_BY_ID', 'snapshots/(?P<id>\\d+)');
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_INFO')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_INFO', 'snapshots/info');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DELETE')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_DELETE', 'snapshots/delete');
 }
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_RESTORE')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_RESTORE', 'snapshots/(?P<id>\\d+)/restore');
+    define('RISEUP_ENDPOINT_SNAPSHOT_RESTORE', 'snapshots/restore');
 }
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_EXPORT')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_EXPORT', 'snapshots/(?P<id>\\d+)/export');
+    define('RISEUP_ENDPOINT_SNAPSHOT_EXPORT', 'snapshots/export');
 }
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_IMPORT')) {
     define('RISEUP_ENDPOINT_SNAPSHOT_IMPORT', 'snapshots/import');

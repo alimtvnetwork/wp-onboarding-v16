@@ -81,6 +81,39 @@ const (
 	// EndpointSyncManifest fetches the cached file manifest for sync comparison (fixed URL, slug in JSON body).
 	EndpointSyncManifest = "/plugins/sync-manifest"
 )
+
+// =============================================================================
+// SNAPSHOT ENDPOINTS (fixed URLs, IDs in JSON body)
+// =============================================================================
+
+const (
+	// EndpointSnapshotsList lists all snapshots.
+	EndpointSnapshotsList = "/snapshots/list"
+
+	// EndpointSnapshotsSchedule creates/schedules a snapshot.
+	EndpointSnapshotsSchedule = "/snapshots/schedule"
+
+	// EndpointSnapshotsInfo gets details for a specific snapshot (ID in JSON body).
+	EndpointSnapshotsInfo = "/snapshots/info"
+
+	// EndpointSnapshotsDelete deletes a snapshot (ID in JSON body).
+	EndpointSnapshotsDelete = "/snapshots/delete"
+
+	// EndpointSnapshotsRestore restores a snapshot (ID in JSON body).
+	EndpointSnapshotsRestore = "/snapshots/restore"
+
+	// EndpointSnapshotsExport exports a snapshot as ZIP (ID in JSON body).
+	EndpointSnapshotsExport = "/snapshots/export"
+
+	// EndpointSnapshotsSettings manages snapshot settings.
+	EndpointSnapshotsSettings = "/snapshots/settings"
+
+	// EndpointSnapshotsProviders lists available snapshot providers.
+	EndpointSnapshotsProviders = "/snapshots/providers"
+
+	// EndpointSnapshotsTables lists available database tables.
+	EndpointSnapshotsTables = "/snapshots/tables"
+)
 // =============================================================================
 // ACTION TYPES (match PHP constants)
 // =============================================================================

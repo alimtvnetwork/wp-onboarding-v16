@@ -94,6 +94,8 @@ function formatEntry(entry: ExecutionLogEntry): string {
 }
 
 // Store for execution logging
+// Always captures a small buffer of recent API calls for error diagnostics,
+// even when full debug mode is disabled.
 export const useExecutionLoggerStore = create<ExecutionLoggerState>((set, get) => ({
   enabled: false,
   entries: [],
@@ -388,16 +390,27 @@ export function logHandler(handlerName: string, eventType?: string): void {
 }
 
 /**
- * Log an API call
+ * Log an API call - ALWAYS logs regardless of enabled state
+ * This ensures we always have recent API context when errors occur.
  */
 export function logApiCall(method: string, endpoint: string): string {
   const state = useExecutionLoggerStore.getState();
-  if (!state.enabled) return '';
-
-  return state.log({
+  
+  // Always log API calls to provide context for error diagnostics
+  const entryId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const fullEntry: ExecutionLogEntry = {
+    id: entryId,
+    timestamp: new Date().toISOString(),
     type: 'api',
     name: `${method} ${endpoint}`,
-  });
+    depth: 0,
+  };
+
+  useExecutionLoggerStore.setState((prev) => ({
+    entries: [...prev.entries, fullEntry].slice(-prev.maxEntries),
+  }));
+
+  return entryId;
 }
 
 /**
