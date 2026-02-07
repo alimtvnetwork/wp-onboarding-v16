@@ -39,11 +39,12 @@ type OnboardUploadResult struct {
 }
 
 // GetPluginFiles retrieves the list of files for a remote plugin.
-// This requires the plugins-onboard companion plugin to be installed.
+// Uses a fixed endpoint with slug in JSON body (legacy Onboard namespace).
 func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile, error) {
 	// Use the correct namespace: onboard-plugin/v1
-	endpoint := fmt.Sprintf("/%s/plugins/%s/files", OnboardNamespace, slug)
-	resp, err := c.request("GET", endpoint, nil)
+	endpoint := fmt.Sprintf("/%s/plugins/files", OnboardNamespace)
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin files: %w", err)
 	}
@@ -66,10 +67,11 @@ func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile,
 }
 
 // GetPluginSyncManifest retrieves the cached file manifest for a remote plugin via Riseup Asia Uploader.
-// Returns files with MD5 hashes, modification timestamps (UTC), and sizes for sync comparison.
+// Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]RemoteFile, error) {
-	endpoint := fmt.Sprintf("/%s"+EndpointSyncManifest, RiseupAsiaNamespace, slug)
-	resp, err := c.request("GET", endpoint, nil)
+	endpoint := "/" + RiseupAsiaNamespace + EndpointSyncManifest
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sync manifest: %w", err)
 	}
@@ -81,7 +83,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 	if resp.StatusCode != 200 {
 		return nil, &APIError{
 			Operation:    "get sync manifest",
-			Method:       "GET",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
@@ -112,11 +114,11 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 }
 
 // GetPluginFilesViaRiseup retrieves the list of files for a remote plugin via Riseup Asia Uploader.
-// Returns the files with their MD5 hashes for comparison.
+// Uses a fixed endpoint with slug in JSON body.
 func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]RemoteFile, error) {
-	// Use the Riseup Asia Uploader namespace
-	endpoint := fmt.Sprintf("/%s"+EndpointFiles, RiseupAsiaNamespace, slug)
-	resp, err := c.request("GET", endpoint, nil)
+	endpoint := "/" + RiseupAsiaNamespace + EndpointFiles
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get plugin files via Riseup: %w", err)
 	}
@@ -132,7 +134,7 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 	if resp.StatusCode != 200 {
 		return nil, &APIError{
 			Operation:    "get plugin files",
-			Method:       "GET",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
@@ -406,12 +408,12 @@ func truncateBody(body string, maxLen int) string {
 }
 
 // GetPluginFileContent retrieves the content of a specific file from a remote plugin.
-// This is used for diff viewing in the UI.
+// Uses a fixed endpoint with slug and path in JSON body.
 func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath string) (string, error) {
-	// Try Riseup Asia Uploader first
-	endpoint := fmt.Sprintf("/%s/plugins/%s/file", RiseupAsiaNamespace, pluginSlug)
+	// Use the Riseup Asia Uploader fixed endpoint
+	endpoint := "/" + RiseupAsiaNamespace + "/plugins/file"
 	
-	body := map[string]string{"path": filePath}
+	body := map[string]string{"plugin": pluginSlug, "path": filePath}
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return "", fmt.Errorf("marshal request body: %w", err)

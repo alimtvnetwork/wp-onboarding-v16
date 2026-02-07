@@ -516,14 +516,16 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 }
 
 // ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
+// Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
 		namespace = RiseUpUploaderNamespace
 	}
 
-	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
-	resp, err := c.request("GET", endpoint, nil)
+	endpoint := "/" + namespace + EndpointFiles
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, err
 	}
@@ -549,18 +551,20 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 }
 
 // ReplaceFileViaUploader replaces a single file in a plugin via the RiseupAsia Uploader.
+// Uses a fixed endpoint with slug and file details in JSON body.
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
 	_, namespace, _ := c.CheckRiseUpUploaderAvailable()
 	if namespace == "" {
 		namespace = RiseUpUploaderNamespace
 	}
 
-	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
+	endpoint := "/" + namespace + EndpointFiles
 
 	// Always use base64 encoding for RiseupAsia Uploader
 	contentStr := base64.StdEncoding.EncodeToString(content)
 
 	body := map[string]string{
+		"plugin":  slug,
 		"path":    relPath,
 		"content": contentStr,
 	}
@@ -603,19 +607,20 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 }
 
 // DeleteFileViaUploader deletes a single file from a plugin via the Riseup Asia Uploader.
+// Uses a fixed endpoint with slug and file path in JSON body.
 func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
 		namespace = RiseupAsiaNamespace
 	}
 
-	endpoint := fmt.Sprintf("/%s"+EndpointFiles, namespace, slug)
+	endpoint := "/" + namespace + EndpointFiles
 
-	body := map[string]string{"path": relPath}
+	body := map[string]string{"plugin": slug, "path": relPath, "action": "delete"}
 	jsonBody, _ := json.Marshal(body)
 
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
-	req, err := http.NewRequest("DELETE", url, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "create delete file request").
 			WithContext("url", url)
@@ -634,7 +639,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 		respBytes, _ := io.ReadAll(resp.Body)
 		return &APIError{
 			Operation:    "delete file via Riseup Asia Uploader",
-			Method:       "DELETE",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          url,
 			StatusCode:   resp.StatusCode,
@@ -676,6 +681,7 @@ type SyncResult struct {
 }
 
 // SyncPluginFilesViaUploader performs a delta sync of multiple files to a plugin.
+// Uses a fixed endpoint with slug in JSON body.
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
 	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
@@ -688,10 +694,11 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 		"namespace": namespace,
 	})
 
-	endpoint := fmt.Sprintf("/%s"+EndpointSync, namespace, slug)
+	endpoint := "/" + namespace + EndpointSync
 
 	body := map[string]interface{}{
-		"files": files,
+		"plugin": slug,
+		"files":  files,
 	}
 
 	jsonBody, err := json.Marshal(body)
@@ -757,16 +764,16 @@ type ExportPluginResult struct {
 }
 
 // ExportPlugin fetches an arbitrary plugin as a base64-encoded ZIP from the remote site.
-// Used for pre-publish backup to enable rollback on activation failure.
+// Uses a fixed endpoint with slug in JSON body.
 func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
-	endpoint := fmt.Sprintf("/%s"+EndpointExportPlugin, namespace, slug)
-
-	resp, err := c.request("GET", endpoint, nil)
+	endpoint := "/" + namespace + EndpointExportPlugin
+	reqBody := map[string]string{"plugin": slug}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "export-plugin request failed").
 			WithContext("slug", slug)
@@ -779,7 +786,7 @@ func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, &APIError{
 			Operation:    "export plugin for rollback",
-			Method:       "GET",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,

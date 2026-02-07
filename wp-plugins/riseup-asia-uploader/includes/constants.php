@@ -103,13 +103,13 @@ if (!defined('RISEUP_ENDPOINT_LOGS')) {
 if (!defined('RISEUP_ENDPOINT_LOGS_STATS')) {
     define('RISEUP_ENDPOINT_LOGS_STATS', 'logs/stats');
 }
-// Plugin files listing endpoint - expects slug as path parameter
+// Plugin files listing endpoint - fixed URL, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_PLUGIN_FILES')) {
-    define('RISEUP_ENDPOINT_PLUGIN_FILES', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/files');
+    define('RISEUP_ENDPOINT_PLUGIN_FILES', 'plugins/files');
 }
-// Plugin file content endpoint - expects slug as path parameter
+// Plugin file content endpoint - fixed URL, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_PLUGIN_FILE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_FILE', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/file');
+    define('RISEUP_ENDPOINT_PLUGIN_FILE', 'plugins/file');
 }
 // Plugin enable/disable/delete endpoints - fixed URLs, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_PLUGIN_ENABLE')) {
@@ -121,9 +121,9 @@ if (!defined('RISEUP_ENDPOINT_PLUGIN_DISABLE')) {
 if (!defined('RISEUP_ENDPOINT_PLUGIN_DELETE')) {
     define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugins/delete');
 }
-// Plugin export endpoint - exports a plugin as base64-encoded ZIP (expects slug as path parameter)
+// Plugin export endpoint - fixed URL, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_PLUGIN_EXPORT')) {
-    define('RISEUP_ENDPOINT_PLUGIN_EXPORT', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/export');
+    define('RISEUP_ENDPOINT_PLUGIN_EXPORT', 'plugins/export');
 }
 // OpenAPI specification endpoint
 if (!defined('RISEUP_ENDPOINT_OPENAPI')) {
@@ -689,7 +689,7 @@ if (!defined('RISEUP_TABLE_FILE_CACHE')) {
     define('RISEUP_TABLE_FILE_CACHE', 'file_cache');
 }
 
-// Sync manifest endpoint - returns cached file hashes for sync comparison
+// Sync manifest endpoint - fixed URL, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_SYNC_MANIFEST')) {
-    define('RISEUP_ENDPOINT_SYNC_MANIFEST', 'plugins/(?P<slug>[a-zA-Z0-9_-]+)/sync-manifest');
+    define('RISEUP_ENDPOINT_SYNC_MANIFEST', 'plugins/sync-manifest');
 }
