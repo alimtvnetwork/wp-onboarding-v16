@@ -290,6 +290,7 @@ require_once __DIR__ . '/includes/class-snapshot-cleaner.php';
 require_once __DIR__ . '/includes/class-snapshot-manager.php';
 require_once __DIR__ . '/includes/class-dependency-analyzer.php';
 require_once __DIR__ . '/includes/class-root-db.php';
+require_once __DIR__ . '/includes/class-snapshot-worker.php';
 
 // Load file cache (Phase 41 - Sync System).
 require_once __DIR__ . '/includes/class-file-cache.php';
@@ -957,6 +958,14 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/snapshots/dependencies', array(
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_analyze_dependencies'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Per-table snapshot export endpoint
+            $this->file_logger->debug('Registering endpoint: snapshots/export-pertable');
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/snapshots/export-pertable', array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_export_pertable'),
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
@@ -3438,6 +3447,41 @@ class Riseup_Asia {
                 'dep_count'    => $analysis['dep_count'],
             ), 200);
         }, 'analyze_dependencies');
+    }
+
+    /**
+     * Handle per-table snapshot export.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_export_pertable($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+
+            $analyzer = RiseupDependencyAnalyzer::getInstance($this->file_logger);
+            $rootDb = RiseupRootDb::getInstance($this->file_logger, $analyzer);
+            $worker = RiseupSnapshotWorker::getInstance($this->file_logger, $this->db, $rootDb, $analyzer);
+
+            $result = $worker->execute(array(
+                'title'    => $body['title'] ?? null,
+                'scope'    => $body['scope'] ?? 'wordpress',
+                'type'     => $body['type'] ?? 'full',
+                'settings' => $body['settings'] ?? null,
+            ));
+
+            $status = $result['success'] ? 200 : 500;
+
+            return new WP_REST_Response(array(
+                'success'    => $result['success'],
+                'directory'  => $result['directory'] ?? null,
+                'tables'     => $result['tables'] ?? 0,
+                'total_rows' => $result['total_rows'] ?? 0,
+                'errors'     => $result['errors'] ?? array(),
+                'duration'   => $result['duration'] ?? 0,
+                'error'      => $result['error'] ?? null,
+            ), $status);
+        }, 'export_pertable');
     }
 }
 
