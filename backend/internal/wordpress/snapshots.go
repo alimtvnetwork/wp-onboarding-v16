@@ -1,9 +1,9 @@
 // Package wordpress provides snapshot management via the Riseup Asia Uploader REST API.
+// All endpoints use fixed paths with IDs passed in JSON request bodies.
 package wordpress
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -65,14 +65,14 @@ type AvailableTable struct {
 	IsCore bool   `json:"is_core"`
 }
 
-// riseupSnapshotEndpoint builds the full endpoint path for snapshot operations.
-func riseupSnapshotEndpoint(path string) string {
-	return fmt.Sprintf("/%s/snapshots%s", RiseupAsiaNamespace, path)
+// snapshotEndpoint builds the full endpoint path for snapshot operations using fixed paths.
+func snapshotEndpoint(path string) string {
+	return "/" + RiseupAsiaNamespace + path
 }
 
 // GetSnapshots lists all snapshots on the remote site.
 func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
-	endpoint := riseupSnapshotEndpoint("")
+	endpoint := snapshotEndpoint(EndpointSnapshotsList)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshots")
@@ -110,10 +110,11 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 	return result.Snapshots, nil
 }
 
-// GetSnapshot returns details for a specific snapshot.
+// GetSnapshot returns details for a specific snapshot (ID in JSON body).
 func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
-	endpoint := riseupSnapshotEndpoint(fmt.Sprintf("/%d", snapshotID))
-	resp, err := c.request("GET", endpoint, nil)
+	endpoint := snapshotEndpoint(EndpointSnapshotsInfo)
+	reqBody := map[string]interface{}{"id": snapshotID}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot")
 	}
@@ -123,7 +124,7 @@ func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get snapshot",
-			Method:       "GET",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
@@ -141,7 +142,7 @@ func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
 
 // CreateSnapshot triggers a new snapshot on the remote site.
 func (c *Client) CreateSnapshot(opts map[string]interface{}) (map[string]interface{}, error) {
-	endpoint := riseupSnapshotEndpoint("/schedule")
+	endpoint := snapshotEndpoint(EndpointSnapshotsSchedule)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create snapshot")
@@ -168,10 +169,11 @@ func (c *Client) CreateSnapshot(opts map[string]interface{}) (map[string]interfa
 	return result, nil
 }
 
-// DeleteSnapshot removes a snapshot from the remote site.
+// DeleteSnapshot removes a snapshot from the remote site (ID in JSON body).
 func (c *Client) DeleteSnapshot(snapshotID int64) error {
-	endpoint := riseupSnapshotEndpoint(fmt.Sprintf("/%d", snapshotID))
-	resp, err := c.request("DELETE", endpoint, nil)
+	endpoint := snapshotEndpoint(EndpointSnapshotsDelete)
+	reqBody := map[string]interface{}{"id": snapshotID}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to delete snapshot")
 	}
@@ -181,7 +183,7 @@ func (c *Client) DeleteSnapshot(snapshotID int64) error {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return &APIError{
 			Operation:    "delete snapshot",
-			Method:       "DELETE",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
@@ -192,12 +194,14 @@ func (c *Client) DeleteSnapshot(snapshotID int64) error {
 	return nil
 }
 
-// RestoreSnapshot triggers a restore from a snapshot on the remote site.
+// RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
 func (c *Client) RestoreSnapshot(snapshotID int64, opts map[string]interface{}) (map[string]interface{}, error) {
-	endpoint := riseupSnapshotEndpoint(fmt.Sprintf("/%d/restore", snapshotID))
+	endpoint := snapshotEndpoint(EndpointSnapshotsRestore)
 	if opts == nil {
-		opts = map[string]interface{}{"confirm": true}
+		opts = map[string]interface{}{}
 	}
+	opts["id"] = snapshotID
+	opts["confirm"] = true
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to restore snapshot")
@@ -226,7 +230,7 @@ func (c *Client) RestoreSnapshot(snapshotID int64, opts map[string]interface{}) 
 
 // GetSnapshotSettings fetches snapshot settings from the remote site.
 func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
-	endpoint := riseupSnapshotEndpoint("/settings")
+	endpoint := snapshotEndpoint(EndpointSnapshotsSettings)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot settings")
@@ -255,8 +259,8 @@ func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
 
 // UpdateSnapshotSettings updates snapshot settings on the remote site.
 func (c *Client) UpdateSnapshotSettings(settings map[string]interface{}) (*SnapshotSettings, error) {
-	endpoint := riseupSnapshotEndpoint("/settings")
-	resp, err := c.request("PUT", endpoint, settings)
+	endpoint := snapshotEndpoint(EndpointSnapshotsSettings)
+	resp, err := c.request("POST", endpoint, settings)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to update snapshot settings")
 	}
@@ -266,7 +270,7 @@ func (c *Client) UpdateSnapshotSettings(settings map[string]interface{}) (*Snaps
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "update snapshot settings",
-			Method:       "PUT",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
@@ -285,8 +289,9 @@ func (c *Client) UpdateSnapshotSettings(settings map[string]interface{}) (*Snaps
 // ExportSnapshot returns the raw HTTP response for a snapshot export (ZIP download).
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
-	endpoint := riseupSnapshotEndpoint(fmt.Sprintf("/%d/export", snapshotID))
-	resp, err := c.request("GET", endpoint, nil)
+	endpoint := snapshotEndpoint(EndpointSnapshotsExport)
+	reqBody := map[string]interface{}{"id": snapshotID}
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to export snapshot")
 	}
@@ -296,7 +301,7 @@ func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 		resp.Body.Close()
 		return nil, &APIError{
 			Operation:    "export snapshot",
-			Method:       "GET",
+			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
@@ -309,7 +314,7 @@ func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
-	endpoint := riseupSnapshotEndpoint("/providers")
+	endpoint := snapshotEndpoint(EndpointSnapshotsProviders)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot providers")
@@ -338,7 +343,7 @@ func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 
 // GetAvailableTables returns the list of database tables available for snapshotting.
 func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
-	endpoint := riseupSnapshotEndpoint("/tables")
+	endpoint := snapshotEndpoint(EndpointSnapshotsTables)
 	resp, err := c.request("GET", endpoint, nil)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch available tables")
