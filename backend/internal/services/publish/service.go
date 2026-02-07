@@ -375,7 +375,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
 			What:  fmt.Sprintf("Uploading ZIP (%s) to WordPress", formatBytes(zipSize)),
 			Why:   fmt.Sprintf("Deploy %s plugin update to production", pluginInfo.Name),
-			Where: fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/upload", siteInfo.URL),
+			Where: fmt.Sprintf("%s/wp-json/%s%s", siteInfo.URL, wordpress.RiseupAsiaNamespace, wordpress.EndpointUpload),
 			InnerData: map[string]interface{}{
 				"zipPath":    zipPath,
 				"zipSize":    zipSize,
@@ -555,12 +555,12 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			return nil
 		}
 
-		// Try Plugin Uploader Helper first (simpler endpoint)
-		if available, _ := wpClient.CheckOnboardPluginAvailable(); available {
-			endpointURL := fmt.Sprintf("%s/wp-json/onboard-plugin/v1/plugins/%s/enable", siteInfo.URL, mapping.RemoteSlug)
+		// Try Riseup Asia Uploader first (preferred - fixed endpoints)
+		if available, _, _ := wpClient.CheckRiseupAsiaAvailable(); available {
+			endpointURL := fmt.Sprintf("%s/wp-json/%s%s", siteInfo.URL, wordpress.RiseupAsiaNamespace, wordpress.EndpointEnable)
 			
 			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
-				What:  "Activate plugin via Onboard Plugin API",
+				What:  "Activate plugin via Riseup Asia Uploader",
 				Why:   "Enable plugin after successful upload",
 				Where: endpointURL,
 				InnerData: map[string]interface{}{
@@ -569,10 +569,10 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 				},
 			})
 
-			err := wpClient.EnablePlugin(mapping.RemoteSlug)
+			err := wpClient.EnablePluginViaUploader(mapping.RemoteSlug)
 			if err != nil {
 				errorCtx := StageContext{
-					What:   "Activate plugin via Onboard Plugin",
+					What:   "Activate plugin via Riseup Asia Uploader",
 					Why:    "Enable plugin after upload",
 					Where:  endpointURL,
 					Result: fmt.Sprintf("FAILED: %s", err.Error()),
@@ -597,7 +597,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			}
 
 			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
-				What:   "Activate plugin via Onboard Plugin",
+				What:   "Activate plugin via Riseup Asia Uploader",
 				Why:    "Enable plugin after upload",
 				Where:  endpointURL,
 				Result: "SUCCESS - plugin is now active",
@@ -623,7 +623,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			}
 		}
 
-		endpointURL := fmt.Sprintf("%s/wp-json/wp/v2/plugins/%s", siteInfo.URL, resolvedIdentifier)
+		endpointURL := fmt.Sprintf("%s/wp-json%s/%s", siteInfo.URL, wordpress.WPCorePlugins, resolvedIdentifier)
 		
 		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "activate", StageContext{
 			What:  "Activate plugin via WordPress Core API",
