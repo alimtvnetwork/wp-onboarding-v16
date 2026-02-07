@@ -81,16 +81,23 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 4: Dashboard Enhancements
+### Phase 4: Dashboard Enhancements ✅ COMPLETE
 
 **Goal:** Make the Dashboard a useful operational overview with live stats.
 
-**Files to change:**
-- `src/pages/Dashboard.tsx` — Add summary cards (total sites, plugins, recent publishes, error count), recent activity feed, quick-action buttons
-- Create `src/hooks/useDashboardStats.ts` — Aggregate data from multiple endpoints
-- Create `src/components/dashboard/` — StatCard, RecentActivity, QuickActions components
+**Implementation:** Refactored the monolithic Dashboard into focused components with a dedicated aggregation hook. The dashboard now shows 5 stat cards (Connected Sites, Watching Plugins, Pending Changes, Recent Errors, Total Publishes), quick actions, and a Recent Publishes feed with publish history stats (total, success rate, avg duration). Data auto-refreshes every 30 seconds.
 
-**Backend dependency:** Existing endpoints (sites list, plugins list, publish history, error history)
+**Files created:**
+- `src/hooks/useDashboardStats.ts` — Aggregates sites, plugins, errors, publish history stats, and recent publishes in a single query
+- `src/components/dashboard/StatCard.tsx` — Reusable linked stat card
+- `src/components/dashboard/QuickActions.tsx` — Quick action buttons grid
+- `src/components/dashboard/RecentPublishes.tsx` — Recent publish entries with status icons and aggregate stats
+- `src/components/dashboard/RecentActivity.tsx` — Generic activity feed (available for future use)
+
+**Files changed:**
+- `src/pages/Dashboard.tsx` — Refactored to use new hook and components
+
+**Backend dependency:** Existing endpoints (✅ All available)
 
 ---
 
