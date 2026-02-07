@@ -198,3 +198,20 @@ func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.
 
 	return s.wpClientFactory(site.URL, site.Username, string(password), nil), nil
 }
+
+// FullBackupRemoteSnapshot triggers an end-to-end full backup on a remote site.
+func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+	client, err := s.createWPClient(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := client.FullBackup(opts)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger full backup").
+			WithContext("siteId", siteID)
+	}
+
+	s.log.Info("Remote full backup triggered", "siteId", siteID)
+	return result, nil
+}

@@ -296,3 +296,35 @@ func getSnapshotIDParam(r *http.Request) (int64, error) {
 	vars := mux.Vars(r)
 	return strconv.ParseInt(vars["snapshotId"], 10, 64)
 }
+
+// FullBackupRemoteSnapshot triggers end-to-end full backup orchestration on a remote WordPress site
+func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	var opts map[string]interface{}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&opts)
+	}
+	if opts == nil {
+		opts = map[string]interface{}{}
+	}
+
+	result, err := Services.SiteService.FullBackupRemoteSnapshot(r.Context(), siteID, opts)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3030", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"data":    result,
+	})
+}

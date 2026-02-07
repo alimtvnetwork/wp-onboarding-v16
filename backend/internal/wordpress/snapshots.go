@@ -379,3 +379,32 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 	}
 	return tables, nil
 }
+
+// FullBackup triggers an end-to-end full backup orchestration on the remote site.
+func (c *Client) FullBackup(opts map[string]interface{}) (map[string]interface{}, error) {
+	endpoint := snapshotEndpoint(EndpointSnapshotsFullBackup)
+	resp, err := c.request("POST", endpoint, opts)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger full backup")
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		return nil, &APIError{
+			Operation:    "full backup",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode full backup response")
+	}
+
+	return result, nil
+}
