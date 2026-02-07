@@ -82,6 +82,7 @@ type SiteServiceInterface interface {
 	GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (interface{}, error)
 	GetRemoteAvailableTables(ctx context.Context, siteID int64) (interface{}, error)
 	FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
+	IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error)
 }
 
 // SyncServiceInterface defines sync service methods

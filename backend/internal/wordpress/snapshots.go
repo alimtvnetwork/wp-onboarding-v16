@@ -408,3 +408,32 @@ func (c *Client) FullBackup(opts map[string]interface{}) (map[string]interface{}
 
 	return result, nil
 }
+
+// IncrementalBackup triggers an incremental backup against the latest master snapshot.
+func (c *Client) IncrementalBackup(opts map[string]interface{}) (map[string]interface{}, error) {
+	endpoint := snapshotEndpoint(EndpointSnapshotsIncremental)
+	resp, err := c.request("POST", endpoint, opts)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to trigger incremental backup")
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+		return nil, &APIError{
+			Operation:    "incremental backup",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode incremental backup response")
+	}
+
+	return result, nil
+}

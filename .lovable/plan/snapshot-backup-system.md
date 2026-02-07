@@ -272,12 +272,13 @@ CREATE TABLE IF NOT EXISTS snapshot_settings (
 - WP-Cron scheduling for automated full backups
 - Go backend proxy + frontend create/list/delete UI
 
-### Phase 6: Incremental Backup
-- Track `last_max_id` per table in `a-root.db`
+### Phase 6: Incremental Backup ✅ DONE
+- Track `last_max_id` per table from master SQLite files
 - Incremental worker: only export rows with `id > last_max_id`
 - Sequential folder naming: `01_YYYY-MM-DD/`, `02_YYYY-MM-DD/`
 - Register in `a-root.db → incremental_backups` table
 - ZIP export includes `incremental/` folder hierarchy
+- Go backend proxy + REST endpoint registered
 
 ### Phase 7: Restore Engine
 - Full restore: topological order from `a-root.db`

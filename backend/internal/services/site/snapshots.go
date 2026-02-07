@@ -215,3 +215,20 @@ func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, op
 	s.log.Info("Remote full backup triggered", "siteId", siteID)
 	return result, nil
 }
+
+// IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote site.
+func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+	client, err := s.createWPClient(ctx, siteID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := client.IncrementalBackup(opts)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to trigger incremental backup").
+			WithContext("siteId", siteID)
+	}
+
+	s.log.Info("Remote incremental backup triggered", "siteId", siteID)
+	return result, nil
+}

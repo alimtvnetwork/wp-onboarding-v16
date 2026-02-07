@@ -328,3 +328,35 @@ func FullBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		"data":    result,
 	})
 }
+
+// IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote WordPress site
+func IncrementalBackupRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	var opts map[string]interface{}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&opts)
+	}
+	if opts == nil {
+		opts = map[string]interface{}{}
+	}
+
+	result, err := Services.SiteService.IncrementalBackupRemoteSnapshot(r.Context(), siteID, opts)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3031", err.Error())
+		return
+	}
+	respondJSON(w, http.StatusCreated, map[string]interface{}{
+		"success": true,
+		"data":    result,
+	})
+}

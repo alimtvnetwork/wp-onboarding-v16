@@ -292,6 +292,7 @@ require_once __DIR__ . '/includes/class-dependency-analyzer.php';
 require_once __DIR__ . '/includes/class-root-db.php';
 require_once __DIR__ . '/includes/class-snapshot-worker.php';
 require_once __DIR__ . '/includes/class-snapshot-orchestrator.php';
+require_once __DIR__ . '/includes/class-incremental-backup.php';
 
 // Load file cache (Phase 41 - Sync System).
 require_once __DIR__ . '/includes/class-file-cache.php';
@@ -975,6 +976,14 @@ class Riseup_Asia {
             register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP, array(
                 'methods'             => 'POST',
                 'callback'            => array($this, 'handle_full_backup'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ));
+
+            // Incremental backup endpoint (Phase 6)
+            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL);
+            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL, array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_incremental_backup'),
                 'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
             ));
 
@@ -3548,6 +3557,58 @@ class Riseup_Asia {
                 'phase'       => $result['phase'] ?? null,
             ), $status);
         }, 'full_backup');
+    }
+
+    /**
+     * Handle incremental backup (Phase 6).
+     *
+     * Creates a delta snapshot relative to the latest master (full) backup.
+     * Only exports rows with ID > last_max_id from the master snapshot.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_incremental_backup($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $rootDb = RiseupRootDb::getInstance($this->file_logger, RiseupDependencyAnalyzer::getInstance($this->file_logger));
+            $incremental = RiseupIncrementalBackup::getInstance($this->file_logger, $this->db, $rootDb);
+
+            // Determine master directory
+            $master_dir = $body['master_dir'] ?? null;
+            if (!$master_dir) {
+                // Auto-detect latest full backup
+                $master_dir = $incremental->findLatestMasterSnapshot();
+            }
+
+            if (!$master_dir || !is_dir($master_dir)) {
+                return new WP_REST_Response(array(
+                    'success' => false,
+                    'error'   => 'No master (full) snapshot found. Create a full backup first.',
+                ), 400);
+            }
+
+            $result = $incremental->execute($master_dir, array(
+                'title' => $body['title'] ?? null,
+            ));
+
+            $status = $result['success'] ? 201 : 500;
+
+            return new WP_REST_Response(array(
+                'success'        => $result['success'],
+                'snapshot_id'    => $result['snapshot_id'] ?? null,
+                'sequence'       => $result['sequence'] ?? null,
+                'folder_name'    => $result['folder_name'] ?? null,
+                'tables_changed' => $result['tables_changed'] ?? 0,
+                'total_new_rows' => $result['total_new_rows'] ?? 0,
+                'tables'         => $result['tables'] ?? array(),
+                'duration'       => $result['duration'] ?? 0,
+                'errors'         => $result['errors'] ?? array(),
+                'error'          => $result['error'] ?? null,
+            ), $status);
+        }, 'incremental_backup');
     }
 }
 
