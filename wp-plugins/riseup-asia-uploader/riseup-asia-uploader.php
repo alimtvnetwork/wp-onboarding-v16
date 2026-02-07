@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.24.0
+ * Version: 1.25.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -635,383 +635,330 @@ class Riseup_Asia {
     public function register_routes() {
         $this->file_logger->info('Registering REST API routes', array('namespace' => RISEUP_API_FULL_NAMESPACE));
 
+        $registered = 0;
+        $failed = 0;
+
+        // Helper: register a single route in its own try-catch so one failure
+        // cannot prevent subsequent routes from registering.
+        $safe_register = function ($endpoint_const, $args) use (&$registered, &$failed) {
+            try {
+                register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . $endpoint_const, $args);
+                $registered++;
+            } catch (Throwable $e) {
+                $failed++;
+                $this->file_logger->error('Failed to register route: ' . $endpoint_const . ' - ' . $e->getMessage());
+            }
+        };
+
+        // Status endpoint (authenticated - requires valid credentials).
+        $safe_register(RISEUP_ENDPOINT_STATUS, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_status'),
+            'permission_callback' => $this->build_permission_callback('status', array($this, 'check_status_permission')),
+        ));
+
+        // OpenAPI specification endpoint (authenticated).
+        $safe_register(RISEUP_ENDPOINT_OPENAPI, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_openapi'),
+            'permission_callback' => $this->build_permission_callback('openapi', array($this, 'check_status_permission')),
+        ));
+
+        // Plugin upload endpoint.
+        $safe_register(RISEUP_ENDPOINT_UPLOAD, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_upload'),
+            'permission_callback' => $this->build_permission_callback('upload', array($this, 'check_plugin_permission')),
+        ));
+
+        // Plugin list endpoint.
+        $safe_register(RISEUP_ENDPOINT_PLUGINS, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_list_plugins'),
+            'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+        ));
+
+        // Export-self endpoint.
+        $safe_register(RISEUP_ENDPOINT_EXPORT_SELF, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_export_self'),
+            'permission_callback' => $this->build_permission_callback('export_self', array($this, 'check_plugin_permission')),
+        ));
+
+        // Blog post endpoints.
+        $safe_register(RISEUP_ENDPOINT_POSTS, array(
+            array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_list_posts'),
+                'permission_callback' => $this->build_permission_callback('posts', array($this, 'check_post_permission')),
+            ),
+            array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_create_post'),
+                'permission_callback' => $this->build_permission_callback('posts', array($this, 'check_post_permission')),
+            ),
+        ));
+
+        // Category endpoints.
+        $safe_register(RISEUP_ENDPOINT_CATEGORIES, array(
+            array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_list_categories'),
+                'permission_callback' => $this->build_permission_callback('categories', array($this, 'check_post_permission')),
+            ),
+            array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_create_category'),
+                'permission_callback' => $this->build_permission_callback('categories', array($this, 'check_post_permission')),
+            ),
+        ));
+
+        // Transaction log endpoints.
+        $safe_register(RISEUP_ENDPOINT_LOGS, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_query_logs'),
+            'permission_callback' => $this->build_permission_callback('logs', array($this, 'check_logs_permission')),
+        ));
+
+        // Logs stats endpoint.
+        $safe_register(RISEUP_ENDPOINT_LOGS_STATS, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_logs_stats'),
+            'permission_callback' => $this->build_permission_callback('logs_stats', array($this, 'check_logs_permission')),
+        ));
+
+        // Plugin files listing endpoint - fixed URL, slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_PLUGIN_FILES, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_plugin_files'),
+            'permission_callback' => $this->build_permission_callback('plugin_files', array($this, 'check_plugin_permission')),
+        ));
+
+        // Sync manifest endpoint - fixed URL, slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_SYNC_MANIFEST, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_sync_manifest'),
+            'permission_callback' => $this->build_permission_callback('sync_manifest', array($this, 'check_plugin_permission')),
+        ));
+
+        // Sync push endpoint - receives delta files (replacements + deletions).
+        $safe_register(RISEUP_ENDPOINT_SYNC, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_sync_push'),
+            'permission_callback' => $this->build_permission_callback('sync_push', array($this, 'check_plugin_permission')),
+        ));
+
+        // Plugin file content endpoint - fixed URL, slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_PLUGIN_FILE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_plugin_file_content'),
+            'permission_callback' => $this->build_permission_callback('plugin_file', array($this, 'check_plugin_permission')),
+        ));
+
+        // Plugin enable endpoint (activate plugin) - slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_PLUGIN_ENABLE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_enable_plugin'),
+            'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+        ));
+
+        // Plugin disable endpoint (deactivate plugin) - slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_PLUGIN_DISABLE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_disable_plugin'),
+            'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+        ));
+
+        // Plugin delete endpoint (remove plugin) - slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_PLUGIN_DELETE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_delete_plugin'),
+            'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+        ));
+
+        // Plugin export endpoint - fixed URL, slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_PLUGIN_EXPORT, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_export_plugin'),
+            'permission_callback' => $this->build_permission_callback('plugin_export', array($this, 'check_plugin_permission')),
+        ));
+
+        // =================================================================
+        // AGENT MANAGEMENT ENDPOINTS
+        // =================================================================
+
+        // List agent sites
+        $safe_register(RISEUP_ENDPOINT_AGENTS_LIST, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_list_agents'),
+            'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
+        ));
+
+        // Add agent site
+        $safe_register(RISEUP_ENDPOINT_AGENTS_ADD, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_add_agent'),
+            'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
+        ));
+
+        // Remove agent site
+        $safe_register(RISEUP_ENDPOINT_AGENTS_REMOVE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_remove_agent'),
+            'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
+        ));
+
+        // Test agent site connection
+        $safe_register(RISEUP_ENDPOINT_AGENTS_TEST, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_test_agent'),
+            'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
+        ));
+
+        // Sync plugin to agent
+        $safe_register(RISEUP_ENDPOINT_AGENTS_SYNC, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_sync_to_agent'),
+            'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
+        ));
+
+        // Remote plugin management via agent
+        $safe_register(RISEUP_ENDPOINT_AGENTS_PLUGINS, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_agent_plugin_action'),
+            'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
+        ));
+
+        // =================================================================
+        // SNAPSHOT ENDPOINTS
+        // =================================================================
+
+        // List snapshots
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_LIST, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_list_snapshots'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Schedule snapshot
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_schedule_snapshot'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Get snapshot info (fixed endpoint, ID in JSON body)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_INFO, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_snapshot_info'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Delete snapshot (fixed endpoint, ID in JSON body)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_DELETE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_delete_snapshot'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Restore snapshot (fixed endpoint, ID in JSON body)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_RESTORE, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_restore_snapshot'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Export snapshot as ZIP (fixed endpoint, ID in JSON body)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_EXPORT, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_export_snapshot'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Import snapshot from ZIP
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_IMPORT, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_import_snapshot'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Snapshot settings
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_SETTINGS, array(
+            array(
+                'methods'             => 'GET',
+                'callback'            => array($this, 'handle_get_snapshot_settings'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ),
+            array(
+                'methods'             => 'POST',
+                'callback'            => array($this, 'handle_update_snapshot_settings'),
+                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+            ),
+        ));
+
+        // Snapshot providers
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_list_snapshot_providers'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Available tables
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_TABLES, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_list_snapshot_tables'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Dependency analysis endpoint
+        $safe_register('snapshots/dependencies', array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_analyze_dependencies'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Per-table snapshot export endpoint
+        $safe_register('snapshots/export-pertable', array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_export_pertable'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Full backup endpoint (end-to-end orchestration)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_full_backup'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Incremental backup endpoint
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_incremental_backup'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Snapshot cleanup endpoint
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_CLEANUP, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_snapshot_cleanup'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Media upload endpoint
         try {
-            // Status endpoint (authenticated - requires valid credentials).
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_STATUS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_STATUS, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_status'),
-                'permission_callback' => $this->build_permission_callback('status', array($this, 'check_status_permission')),
-            ));
-
-            // OpenAPI specification endpoint (authenticated).
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_OPENAPI);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_OPENAPI, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_openapi'),
-                'permission_callback' => $this->build_permission_callback('openapi', array($this, 'check_status_permission')),
-            ));
-
-            // Plugin upload endpoint.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_UPLOAD);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_UPLOAD, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_upload'),
-                'permission_callback' => $this->build_permission_callback('upload', array($this, 'check_plugin_permission')),
-            ));
-
-            // Plugin list endpoint.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGINS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGINS, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_list_plugins'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-            ));
-
-            // Export-self endpoint.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_EXPORT_SELF);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_EXPORT_SELF, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_export_self'),
-                'permission_callback' => $this->build_permission_callback('export_self', array($this, 'check_plugin_permission')),
-            ));
-
-            // Blog post endpoints.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_POSTS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_POSTS, array(
-                array(
-                    'methods'             => 'GET',
-                    'callback'            => array($this, 'handle_list_posts'),
-                    'permission_callback' => $this->build_permission_callback('posts', array($this, 'check_post_permission')),
-                ),
-                array(
+            if (defined('RISEUP_ENDPOINT_MEDIA')) {
+                $safe_register(RISEUP_ENDPOINT_MEDIA, array(
                     'methods'             => 'POST',
-                    'callback'            => array($this, 'handle_create_post'),
-                    'permission_callback' => $this->build_permission_callback('posts', array($this, 'check_post_permission')),
-                ),
-            ));
-
-            // Category endpoints.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_CATEGORIES);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_CATEGORIES, array(
-                array(
-                    'methods'             => 'GET',
-                    'callback'            => array($this, 'handle_list_categories'),
-                    'permission_callback' => $this->build_permission_callback('categories', array($this, 'check_post_permission')),
-                ),
-                array(
-                    'methods'             => 'POST',
-                    'callback'            => array($this, 'handle_create_category'),
-                    'permission_callback' => $this->build_permission_callback('categories', array($this, 'check_post_permission')),
-                ),
-            ));
-
-            // Transaction log endpoints.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_LOGS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_LOGS, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_query_logs'),
-                'permission_callback' => $this->build_permission_callback('logs', array($this, 'check_logs_permission')),
-            ));
-
-            // Logs stats endpoint.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_LOGS_STATS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_LOGS_STATS, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_logs_stats'),
-                'permission_callback' => $this->build_permission_callback('logs_stats', array($this, 'check_logs_permission')),
-            ));
-
-            // Plugin files listing endpoint - fixed URL, slug in JSON body.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_FILES);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILES, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_plugin_files'),
-                'permission_callback' => $this->build_permission_callback('plugin_files', array($this, 'check_plugin_permission')),
-            ));
-
-            // Sync manifest endpoint - fixed URL, slug in JSON body.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SYNC_MANIFEST);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SYNC_MANIFEST, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_sync_manifest'),
-                'permission_callback' => $this->build_permission_callback('sync_manifest', array($this, 'check_plugin_permission')),
-            ));
-
-            // Sync push endpoint - receives delta files (replacements + deletions).
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SYNC);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SYNC, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_sync_push'),
-                'permission_callback' => $this->build_permission_callback('sync_push', array($this, 'check_plugin_permission')),
-            ));
-
-            // Plugin file content endpoint - fixed URL, slug in JSON body.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_FILE);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_FILE, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_plugin_file_content'),
-                'permission_callback' => $this->build_permission_callback('plugin_file', array($this, 'check_plugin_permission')),
-            ));
-
-            // Plugin enable endpoint (activate plugin) - slug in JSON body.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_ENABLE);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_ENABLE, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_enable_plugin'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-            ));
-
-            // Plugin disable endpoint (deactivate plugin) - slug in JSON body.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_DISABLE);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_DISABLE, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_disable_plugin'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-            ));
-
-            // Plugin delete endpoint (remove plugin) - slug in JSON body.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_DELETE);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_DELETE, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_delete_plugin'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-            ));
-
-            // Plugin export endpoint - fixed URL, slug in JSON body.
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_PLUGIN_EXPORT);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_PLUGIN_EXPORT, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_export_plugin'),
-                'permission_callback' => $this->build_permission_callback('plugin_export', array($this, 'check_plugin_permission')),
-            ));
-
-            // =================================================================
-            // AGENT MANAGEMENT ENDPOINTS
-            // =================================================================
-
-            // List/Add agents
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENTS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENTS, array(
-                array(
-                    'methods'             => 'GET',
-                    'callback'            => array($this, 'handle_list_agents'),
-                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                ),
-                array(
-                    'methods'             => 'POST',
-                    'callback'            => array($this, 'handle_add_agent'),
-                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                ),
-            ));
-
-            // Get/Update/Delete single agent
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENTS . '/(?P<id>\\d+)', array(
-                array(
-                    'methods'             => 'GET',
-                    'callback'            => array($this, 'handle_get_agent'),
-                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                ),
-                array(
-                    'methods'             => 'DELETE',
-                    'callback'            => array($this, 'handle_remove_agent'),
-                    'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                ),
-            ));
-
-            // Test agent connection
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_TEST);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_TEST, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_test_agent'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'id' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) { return is_numeric($param); },
-                    ),
-                ),
-            ));
-
-            // Sync plugins from agent
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_SYNC);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_SYNC, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_sync_agent'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'id' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) { return is_numeric($param); },
-                    ),
-                ),
-            ));
-
-            // Execute action on agent plugin
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_ACTION);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_ACTION, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_agent_action'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'id' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) { return is_numeric($param); },
-                    ),
-                ),
-            ));
-
-            // Get agent action history
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_AGENT_HISTORY);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_AGENT_HISTORY, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_agent_history'),
-                'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
-                'args'                => array(
-                    'id' => array(
-                        'required'          => true,
-                        'validate_callback' => function($param) { return is_numeric($param); },
-                    ),
-                ),
-            ));
-
-            // =================================================================
-            // SNAPSHOT ENDPOINTS
-            // =================================================================
-
-            // List snapshots
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOTS);
-            // List snapshots (fixed endpoint)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOTS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOTS, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_list_snapshots'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Schedule/create snapshot
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_create_snapshot'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Get single snapshot (fixed endpoint, ID in JSON body)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_INFO);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_INFO, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_get_snapshot'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Delete snapshot (fixed endpoint, ID in JSON body)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_DELETE);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_DELETE, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_delete_snapshot'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Restore snapshot (fixed endpoint, ID in JSON body)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_RESTORE);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_RESTORE, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_restore_snapshot'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Export snapshot as ZIP (fixed endpoint, ID in JSON body)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_EXPORT);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_EXPORT, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_export_snapshot'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Import snapshot from ZIP
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_IMPORT);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_IMPORT, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_import_snapshot'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Snapshot settings
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_SETTINGS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_SETTINGS, array(
-                array(
-                    'methods'             => 'GET',
-                    'callback'            => array($this, 'handle_get_snapshot_settings'),
-                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-                ),
-                array(
-                    'methods'             => 'POST',
-                    'callback'            => array($this, 'handle_update_snapshot_settings'),
-                    'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-                ),
-            ));
-
-            // Snapshot providers
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_list_snapshot_providers'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Available tables
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_TABLES);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_TABLES, array(
-                'methods'             => 'GET',
-                'callback'            => array($this, 'handle_list_snapshot_tables'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Dependency analysis endpoint
-            $this->file_logger->debug('Registering endpoint: snapshots/dependencies');
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/snapshots/dependencies', array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_analyze_dependencies'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Per-table snapshot export endpoint
-            $this->file_logger->debug('Registering endpoint: snapshots/export-pertable');
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/snapshots/export-pertable', array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_export_pertable'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Full backup endpoint (end-to-end orchestration)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_full_backup'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Incremental backup endpoint (Phase 6)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_incremental_backup'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            // Snapshot cleanup endpoint (Phase 10)
-            $this->file_logger->debug('Registering endpoint: ' . RISEUP_ENDPOINT_SNAPSHOT_CLEANUP);
-            register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . RISEUP_ENDPOINT_SNAPSHOT_CLEANUP, array(
-                'methods'             => 'POST',
-                'callback'            => array($this, 'handle_snapshot_cleanup'),
-                'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
-            ));
-
-            $this->file_logger->info('All REST API routes registered successfully');
+                    'callback'            => array($this, 'handle_media_upload'),
+                    'permission_callback' => $this->build_permission_callback('media', array($this, 'check_plugin_permission')),
+                ));
+            }
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, 'Failed to register routes');
+            // Optional endpoint, ignore
         }
+
+        $this->file_logger->info("REST API route registration complete: $registered registered, $failed failed");
     }
 
     // =========================================================================
