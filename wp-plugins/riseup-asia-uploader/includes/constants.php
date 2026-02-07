@@ -580,6 +580,9 @@ if (!defined('RISEUP_ENDPOINT_SNAPSHOT_TABLES')) {
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DEPENDENCIES')) {
     define('RISEUP_ENDPOINT_SNAPSHOT_DEPENDENCIES', 'snapshots/dependencies');
 }
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_EXPORT_PERTABLE')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_EXPORT_PERTABLE', 'snapshots/export-pertable');
+}
 
 // Snapshot table names
 if (!defined('RISEUP_TABLE_SNAPSHOTS')) {
