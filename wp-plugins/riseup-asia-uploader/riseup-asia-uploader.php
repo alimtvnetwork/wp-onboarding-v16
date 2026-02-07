@@ -268,6 +268,9 @@ register_shutdown_function('riseup_fatal_error_handler');
 // Load constants first (must be before any other includes).
 require_once __DIR__ . '/includes/constants.php';
 
+// Load boolean helpers (used by all classes for positive boolean checks).
+require_once __DIR__ . '/includes/class-boolean-helpers.php';
+
 // Load file logger second (used by all other classes).
 require_once __DIR__ . '/includes/class-file-logger.php';
 
