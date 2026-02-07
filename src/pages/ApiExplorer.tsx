@@ -6,26 +6,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Globe, Key, RefreshCw, ExternalLink, AlertCircle, CheckCircle2, Lock, History, Trash2, Clock, ChevronDown, Copy, Check, Server } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Loader2, Globe, Key, RefreshCw, ExternalLink, AlertCircle, CheckCircle2, Lock, Server, Timer, TimerOff } from "lucide-react";
 import { useSites } from "@/hooks/useSites";
 import { api, requireSuccess } from "@/lib/api";
 import { resolveApiBase } from "@/lib/endpoints";
+import { RequestHistoryPanel, type RequestHistoryItem } from "@/components/api-explorer/RequestHistoryPanel";
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 
-interface RequestHistoryItem {
-  id: string;
-  method: string;
-  url: string;
-  status: number;
-  duration: number;
-  timestamp: Date;
-  requestBody?: string;
-  responseBody?: string;
-}
+const AUTO_REFRESH_INTERVAL = 60_000; // 60 seconds
 
 type ApiMode = "wordpress" | "backend";
 
@@ -41,12 +32,19 @@ export default function ApiExplorer() {
   const [loadingCredentials, setLoadingCredentials] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [requestHistory, setRequestHistory] = useState<RequestHistoryItem[]>([]);
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const historyIdRef = useRef(0);
   const initializedFromUrl = useRef(false);
+  const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const selectedSite = sites?.find((s) => s.id.toString() === selectedSiteId);
+
+  const addHistoryItem = useCallback((item: Omit<RequestHistoryItem, "id">) => {
+    const entry: RequestHistoryItem = { ...item, id: `req-${++historyIdRef.current}` };
+    setRequestHistory(prev => [entry, ...prev].slice(0, 50));
+    return entry.id;
+  }, []);
 
   // Auto-select site from URL query param
   useEffect(() => {
@@ -106,18 +104,14 @@ export default function ApiExplorer() {
       const baseUrl = credentials.url.replace(/\/$/, "");
       const openApiUrl = `${baseUrl}/wp-json/riseup-asia-uploader/v1/openapi`;
       const authCredentials = btoa(`${credentials.username}:${credentials.appPassword}`);
-      
+
       const startTime = performance.now();
       const response = await fetch(openApiUrl, {
-        headers: {
-          "Authorization": `Basic ${authCredentials}`,
-        },
+        headers: { "Authorization": `Basic ${authCredentials}` },
       });
       const duration = Math.round(performance.now() - startTime);
 
-      // Record in history
-      const historyItem: RequestHistoryItem = {
-        id: `req-${++historyIdRef.current}`,
+      const historyBase = {
         method: "GET",
         url: openApiUrl,
         status: response.status,
@@ -127,49 +121,42 @@ export default function ApiExplorer() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        historyItem.responseBody = errorText;
-        setRequestHistory(prev => [historyItem, ...prev].slice(0, 50));
-
-        if (response.status === 401) {
-          throw new Error("Authentication failed. Check your credentials or update the site configuration.");
-        } else if (response.status === 404) {
-          throw new Error("OpenAPI endpoint not found. Ensure the Riseup Asia Uploader plugin is installed and updated to v1.4.0+.");
-        }
+        addHistoryItem({ ...historyBase, responseBody: errorText });
+        if (response.status === 401) throw new Error("Authentication failed. Check your credentials or update the site configuration.");
+        if (response.status === 404) throw new Error("OpenAPI endpoint not found. Ensure the Riseup Asia Uploader plugin is installed and updated to v1.4.0+.");
         throw new Error(`Failed to fetch API spec: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      historyItem.responseBody = JSON.stringify(data, null, 2).slice(0, 500) + "...";
-      setRequestHistory(prev => [historyItem, ...prev].slice(0, 50));
-      
-      data.servers = [
-        {
-          url: `${baseUrl}/wp-json/riseup-asia-uploader/v1`,
-          description: selectedSite?.name || "WordPress Site",
-        }
-      ];
+      addHistoryItem({ ...historyBase, responseBody: JSON.stringify(data, null, 2).slice(0, 500) + "..." });
+
+      data.servers = [{
+        url: `${baseUrl}/wp-json/riseup-asia-uploader/v1`,
+        description: selectedSite?.name || "WordPress Site",
+      }];
 
       setSpec(data);
       setAuthenticated(true);
+      setLastRefreshed(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch OpenAPI specification");
     } finally {
       setLoading(false);
     }
-  }, [credentials, selectedSite?.name]);
+  }, [credentials, selectedSite?.name, addHistoryItem]);
 
-  // Fetch backend OpenAPI spec (no auth needed)
+  // Fetch backend OpenAPI spec with server injection
   const fetchBackendSpec = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const url = `${resolveApiBase()}/openapi`;
+      const apiBase = resolveApiBase();
+      const url = `${apiBase}/openapi`;
       const startTime = performance.now();
       const response = await fetch(url);
       const duration = Math.round(performance.now() - startTime);
 
-      const historyItem: RequestHistoryItem = {
-        id: `req-${++historyIdRef.current}`,
+      const historyBase = {
         method: "GET",
         url,
         status: response.status,
@@ -178,21 +165,27 @@ export default function ApiExplorer() {
       };
 
       if (!response.ok) {
-        historyItem.responseBody = await response.text();
-        setRequestHistory(prev => [historyItem, ...prev].slice(0, 50));
+        addHistoryItem({ ...historyBase, responseBody: await response.text() });
         throw new Error(`Failed to fetch backend spec: ${response.status}`);
       }
 
       const data = await response.json();
-      historyItem.responseBody = JSON.stringify(data, null, 2).slice(0, 500) + "...";
-      setRequestHistory(prev => [historyItem, ...prev].slice(0, 50));
+      addHistoryItem({ ...historyBase, responseBody: JSON.stringify(data, null, 2).slice(0, 500) + "..." });
+
+      // Inject the correct server base URL so "Try it out" hits the right host
+      data.servers = [{
+        url: apiBase,
+        description: "Local Backend",
+      }];
+
       setBackendSpec(data);
+      setLastRefreshed(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch backend OpenAPI spec");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addHistoryItem]);
 
   // Auto-load backend spec when switching to backend mode
   useEffect(() => {
@@ -201,6 +194,23 @@ export default function ApiExplorer() {
     }
   }, [apiMode, backendSpec, fetchBackendSpec]);
 
+  // Auto-refresh interval
+  useEffect(() => {
+    if (autoRefreshRef.current) {
+      clearInterval(autoRefreshRef.current);
+      autoRefreshRef.current = null;
+    }
+
+    if (autoRefresh) {
+      const refreshFn = apiMode === "backend" ? fetchBackendSpec : fetchOpenApiSpec;
+      autoRefreshRef.current = setInterval(refreshFn, AUTO_REFRESH_INTERVAL);
+    }
+
+    return () => {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
+    };
+  }, [autoRefresh, apiMode, fetchBackendSpec, fetchOpenApiSpec]);
+
   // Request interceptor to add auth header and track requests
   const requestInterceptor = useCallback((req: { url: string; headers: Record<string, string>; body?: string; method?: string }) => {
     if (credentials) {
@@ -208,31 +218,20 @@ export default function ApiExplorer() {
       req.headers["Authorization"] = `Basic ${authCredentials}`;
     }
 
-    // Track the request
-    const startTime = performance.now();
-    const originalFetch = window.fetch;
-    
-    // We can't easily intercept the response from Swagger UI's internal fetch,
-    // but we can at least log the request
-    const historyItem: RequestHistoryItem = {
-      id: `req-${++historyIdRef.current}`,
+    addHistoryItem({
       method: req.method || "GET",
       url: req.url,
-      status: 0, // Will be updated
+      status: 0,
       duration: 0,
       timestamp: new Date(),
       requestBody: req.body,
-    };
-
-    // Add to history immediately with pending status
-    setRequestHistory(prev => [historyItem, ...prev].slice(0, 50));
+    });
 
     return req;
-  }, [credentials]);
+  }, [credentials, addHistoryItem]);
 
   // Response interceptor to track responses
   const responseInterceptor = useCallback((res: Response) => {
-    // Update the most recent request with the response
     setRequestHistory(prev => {
       if (prev.length === 0) return prev;
       const updated = [...prev];
@@ -249,42 +248,11 @@ export default function ApiExplorer() {
     return res;
   }, []);
 
-  const clearHistory = () => {
-    setRequestHistory([]);
-    setExpandedItems(new Set());
-  };
-
-  const toggleExpand = (id: string) => {
-    setExpandedItems(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const copyToClipboard = async (text: string, id: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-  const getStatusColor = (status: number) => {
-    if (status === 0) return "text-muted-foreground";
-    if (status >= 200 && status < 300) return "text-emerald-600 dark:text-emerald-400";
-    if (status >= 400 && status < 500) return "text-amber-600 dark:text-amber-400";
-    return "text-destructive";
-  };
-
-  const getMethodColor = (method: string) => {
-    switch (method.toUpperCase()) {
-      case "GET": return "bg-primary/20 text-primary";
-      case "POST": return "bg-emerald-500/20 text-emerald-700 dark:text-emerald-400";
-      case "PUT": return "bg-amber-500/20 text-amber-700 dark:text-amber-400";
-      case "DELETE": return "bg-destructive/20 text-destructive";
-      default: return "bg-muted text-muted-foreground";
+  const handleRefresh = () => {
+    if (apiMode === "backend") {
+      fetchBackendSpec();
+    } else {
+      fetchOpenApiSpec();
     }
   };
 
@@ -301,18 +269,46 @@ export default function ApiExplorer() {
               Browse and test API endpoints with Swagger UI
             </p>
           </div>
-          <Tabs value={apiMode} onValueChange={(v) => setApiMode(v as ApiMode)}>
-            <TabsList>
-              <TabsTrigger value="backend" className="gap-1.5">
-                <Server className="h-3.5 w-3.5" />
-                Backend API
-              </TabsTrigger>
-              <TabsTrigger value="wordpress" className="gap-1.5">
-                <Globe className="h-3.5 w-3.5" />
-                WordPress API
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-3">
+            {/* Auto-refresh toggle */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={autoRefresh ? "secondary" : "outline"}
+                    size="sm"
+                    onClick={() => setAutoRefresh(prev => !prev)}
+                    className="gap-1.5"
+                  >
+                    {autoRefresh ? <Timer className="h-3.5 w-3.5" /> : <TimerOff className="h-3.5 w-3.5" />}
+                    Auto
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {autoRefresh ? "Auto-refresh every 60s (on)" : "Enable auto-refresh"}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            {lastRefreshed && (
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                Updated {lastRefreshed.toLocaleTimeString()}
+              </span>
+            )}
+
+            <Tabs value={apiMode} onValueChange={(v) => setApiMode(v as ApiMode)}>
+              <TabsList>
+                <TabsTrigger value="backend" className="gap-1.5">
+                  <Server className="h-3.5 w-3.5" />
+                  Backend API
+                </TabsTrigger>
+                <TabsTrigger value="wordpress" className="gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  WordPress API
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
@@ -328,7 +324,7 @@ export default function ApiExplorer() {
                   </Alert>
                 )}
 
-                {loading && (
+                {loading && !backendSpec && (
                   <Card>
                     <CardContent className="flex items-center justify-center py-12">
                       <div className="text-center space-y-3">
@@ -339,7 +335,7 @@ export default function ApiExplorer() {
                   </Card>
                 )}
 
-                {backendSpec && !loading && (
+                {backendSpec && (
                   <Card className="swagger-card overflow-hidden">
                     <CardHeader className="bg-muted/30 border-b">
                       <div className="flex items-center justify-between">
@@ -353,12 +349,8 @@ export default function ApiExplorer() {
                           </CardDescription>
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={fetchBackendSpec}
-                          >
-                            <RefreshCw className="h-4 w-4 mr-2" />
+                          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+                            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
                           </Button>
                           <Button
@@ -544,128 +536,10 @@ export default function ApiExplorer() {
 
           {/* Request History Panel */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <History className="h-4 w-4" />
-                    Request History
-                  </CardTitle>
-                  {requestHistory.length > 0 && (
-                    <Button variant="ghost" size="sm" onClick={clearHistory}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[500px]">
-                  {requestHistory.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground text-sm">
-                      <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>No requests yet</p>
-                      <p className="text-xs mt-1">Requests will appear here as you test the API</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {requestHistory.map((item) => {
-                        const isExpanded = expandedItems.has(item.id);
-                        const hasDetails = item.requestBody || item.responseBody;
-                        
-                        return (
-                          <Collapsible
-                            key={item.id}
-                            open={isExpanded}
-                            onOpenChange={() => hasDetails && toggleExpand(item.id)}
-                          >
-                            <CollapsibleTrigger asChild disabled={!hasDetails}>
-                              <div className={`p-3 transition-colors ${hasDetails ? 'cursor-pointer hover:bg-muted/50' : ''}`}>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <Badge variant="outline" className={`text-xs font-mono ${getMethodColor(item.method)}`}>
-                                    {item.method}
-                                  </Badge>
-                                  <span className={`text-sm font-medium ${getStatusColor(item.status)}`}>
-                                    {item.status === 0 ? "..." : item.status}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {item.duration}ms
-                                  </span>
-                                  {hasDetails && (
-                                    <ChevronDown className={`h-3 w-3 ml-auto text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground truncate font-mono" title={item.url}>
-                                  {item.url.replace(/^https?:\/\/[^/]+/, "")}
-                                </p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {item.timestamp.toLocaleTimeString()}
-                                </p>
-                              </div>
-                            </CollapsibleTrigger>
-                            
-                            <CollapsibleContent>
-                              <div className="px-3 pb-3 space-y-2">
-                                {item.requestBody && (
-                                  <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs font-medium text-muted-foreground">Request Body</span>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 px-2"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          copyToClipboard(item.requestBody!, `req-${item.id}`);
-                                        }}
-                                      >
-                                        {copiedId === `req-${item.id}` ? (
-                                          <Check className="h-3 w-3" />
-                                        ) : (
-                                          <Copy className="h-3 w-3" />
-                                        )}
-                                      </Button>
-                                    </div>
-                                    <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto max-h-32 whitespace-pre-wrap break-all">
-                                      {item.requestBody}
-                                    </pre>
-                                  </div>
-                                )}
-                                {item.responseBody && (
-                                  <div className="space-y-1">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs font-medium text-muted-foreground">Response Body</span>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 px-2"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          copyToClipboard(item.responseBody!, `res-${item.id}`);
-                                        }}
-                                      >
-                                        {copiedId === `res-${item.id}` ? (
-                                          <Check className="h-3 w-3" />
-                                        ) : (
-                                          <Copy className="h-3 w-3" />
-                                        )}
-                                      </Button>
-                                    </div>
-                                    <pre className="text-xs bg-muted/50 p-2 rounded overflow-x-auto max-h-48 whitespace-pre-wrap break-all">
-                                      {item.responseBody}
-                                    </pre>
-                                  </div>
-                                )}
-                              </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        );
-                      })}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            <RequestHistoryPanel
+              history={requestHistory}
+              onClear={() => setRequestHistory([])}
+            />
           </div>
         </div>
       </div>

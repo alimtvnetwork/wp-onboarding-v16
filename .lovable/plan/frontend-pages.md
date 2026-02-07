@@ -185,12 +185,17 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
-### Phase 10: API Explorer — Auto-Refresh & Try-It
+### Phase 10: API Explorer — Auto-Refresh & Try-It ✅ COMPLETE
 
 **Goal:** Ensure the Swagger UI always loads the latest OpenAPI spec and "Try It Out" works against the local backend.
 
-**Files to change:**
-- `src/pages/ApiExplorer.tsx` — Configure swagger-ui-react with correct base URL, add refresh button
+**Implementation:** Injected `servers` with the correct `resolveApiBase()` URL into both backend and WordPress specs so Swagger UI's "Try it out" hits the right host. Added a 60-second auto-refresh toggle with last-refreshed timestamp. Extracted the Request History sidebar into a dedicated `RequestHistoryPanel` component with a `BodySection` sub-component, reducing the main page from 756 to ~470 lines. The refresh button now shows a spinning indicator during reload.
+
+**Files created:**
+- `src/components/api-explorer/RequestHistoryPanel.tsx` — Extracted request history panel with expandable body sections
+
+**Files changed:**
+- `src/pages/ApiExplorer.tsx` — Server injection, auto-refresh toggle, refactored to use RequestHistoryPanel
 
 **Backend dependency:** OpenAPI handler (✅ implemented)
 
