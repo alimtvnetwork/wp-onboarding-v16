@@ -15,6 +15,13 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// Config holds configuration for the site health service
+type Config struct {
+	DB             *database.DB
+	Logger         *logger.Logger
+	TimeoutSeconds int // HTTP client timeout; defaults to 15s
+}
+
 // Service manages site health checks
 type Service struct {
 	db     *database.DB
@@ -23,13 +30,17 @@ type Service struct {
 	mu     sync.Mutex
 }
 
-// NewService creates a new health check service
-func NewService(db *database.DB, log *logger.Logger) *Service {
+// New creates a new health check service
+func New(cfg Config) *Service {
+	timeout := 15 * time.Second
+	if cfg.TimeoutSeconds > 0 {
+		timeout = time.Duration(cfg.TimeoutSeconds) * time.Second
+	}
 	return &Service{
-		db:  db,
-		log: log,
+		db:  cfg.DB,
+		log: cfg.Logger,
 		client: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout: timeout,
 		},
 	}
 }

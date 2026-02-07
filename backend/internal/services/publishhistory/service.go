@@ -18,6 +18,12 @@ const (
 	errDBDel   = apperror.ErrDatabaseDelete
 )
 
+// Config holds configuration for the publish history service
+type Config struct {
+	DB     *database.DB
+	Logger *logger.Logger
+}
+
 // Service manages publish history records
 type Service struct {
 	db  *database.DB
@@ -25,8 +31,8 @@ type Service struct {
 }
 
 // New creates a new publish history service
-func New(db *database.DB, log *logger.Logger) *Service {
-	return &Service{db: db, log: log}
+func New(cfg Config) *Service {
+	return &Service{db: cfg.DB, log: cfg.Logger}
 }
 
 // Record saves a new publish history entry
