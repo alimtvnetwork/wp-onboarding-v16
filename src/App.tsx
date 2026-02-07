@@ -19,6 +19,7 @@ import { isApiClientError } from "@/lib/api";
 import { useErrorStore } from "@/stores/errorStore";
 import { useErrorHistorySync } from "@/hooks/useErrorHistory";
 import { useClickTracker } from "@/hooks/useClickTracker";
+import { useWsToastNotifications } from "@/hooks/useWsToastNotifications";
 
 // Pages
 import Dashboard from "@/pages/Dashboard";
@@ -96,9 +97,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// WebSocket connection wrapper
+// WebSocket connection wrapper + toast notifications
 function WebSocketProvider({ children }: { children: React.ReactNode }) {
   useWebSocket();
+  useWsToastNotifications();
   return <>{children}</>;
 }
 
