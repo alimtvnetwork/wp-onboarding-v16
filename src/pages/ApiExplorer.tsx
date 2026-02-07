@@ -258,18 +258,18 @@ export default function ApiExplorer() {
 
   return (
     <>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Globe className="h-6 w-6" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Globe className="h-5 w-5 sm:h-6 sm:w-6" />
               API Explorer
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm">
               Browse and test API endpoints with Swagger UI
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Auto-refresh toggle */}
             <TooltipProvider>
               <Tooltip>
@@ -300,11 +300,11 @@ export default function ApiExplorer() {
               <TabsList>
                 <TabsTrigger value="backend" className="gap-1.5">
                   <Server className="h-3.5 w-3.5" />
-                  Backend API
+                  <span className="hidden xs:inline">Backend</span> API
                 </TabsTrigger>
                 <TabsTrigger value="wordpress" className="gap-1.5">
                   <Globe className="h-3.5 w-3.5" />
-                  WordPress API
+                  <span className="hidden xs:inline">WordPress</span> API
                 </TabsTrigger>
               </TabsList>
             </Tabs>

@@ -1,4 +1,4 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme-provider";
 import { useLocation } from "react-router-dom";
@@ -24,31 +24,51 @@ const routeNames: Record<string, string> = {
   "/tests": "E2E Tests",
 };
 
-export function Header() {
+interface HeaderProps {
+  onMenuToggle?: () => void;
+}
+
+export function Header({ onMenuToggle }: HeaderProps) {
   const { setTheme } = useTheme();
   const location = useLocation();
   const currentRoute = routeNames[location.pathname] || "Dashboard";
 
   return (
-    <header className="h-14 border-b border-border bg-card flex items-center justify-between px-6">
-      <h1 className="text-xl font-semibold text-foreground tracking-tight">
-        {currentRoute}
-      </h1>
+    <header className="h-14 border-b border-border bg-card flex items-center justify-between px-3 sm:px-6">
+      <div className="flex items-center gap-2">
+        {/* Mobile hamburger */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden text-muted-foreground hover:text-foreground"
+          onClick={onMenuToggle}
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle menu</span>
+        </Button>
 
-      <div className="flex items-center gap-3">
-        {/* Error queue badge */}
+        <h1 className="text-lg sm:text-xl font-semibold text-foreground tracking-tight truncate">
+          {currentRoute}
+        </h1>
+      </div>
+
+      <div className="flex items-center gap-1.5 sm:gap-3">
         <ErrorQueueBadge />
-        
-        {/* Global publish progress indicator */}
         <GlobalPublishProgress />
-        
-        {/* WebSocket connection indicator */}
-        <WebSocketIndicator showLabel />
-        
-        <div className="h-4 w-px bg-border" />
-        
-        <VersionBadge className="mr-1" />
-        
+
+        {/* Hide WS indicator label on small screens */}
+        <span className="hidden sm:inline-flex">
+          <WebSocketIndicator showLabel />
+        </span>
+        <span className="sm:hidden">
+          <WebSocketIndicator />
+        </span>
+
+        <div className="hidden sm:block h-4 w-px bg-border" />
+        <span className="hidden sm:inline-flex">
+          <VersionBadge className="mr-1" />
+        </span>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-muted">
