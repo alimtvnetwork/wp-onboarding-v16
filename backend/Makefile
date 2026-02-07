@@ -1,4 +1,4 @@
-.PHONY: build run test lint clean dev
+.PHONY: build run test lint clean dev validate-openapi
 
 # Build the application
 build:
@@ -38,6 +38,11 @@ init-db:
 # Format code
 fmt:
 	go fmt ./...
+
+# Validate OpenAPI spec (CI-friendly, uses npx so no global install needed)
+validate-openapi:
+	@echo "Validating OpenAPI spec..."
+	@npx --yes @redocly/cli lint api/openapi.json --skip-rule no-unused-components && echo "✅ OpenAPI spec is valid" || (echo "❌ OpenAPI spec validation failed" && exit 1)
 
 # Generate swagger docs (if using)
 docs:
