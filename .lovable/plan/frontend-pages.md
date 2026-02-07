@@ -217,6 +217,22 @@ Ask to "complete Phase X" to implement one phase at a time.
 
 ---
 
+### Phase 13: WebSocket Toast Notifications ✅ COMPLETE
+
+**Goal:** Surface critical WebSocket events as Sonner toasts so users are notified regardless of which page they're viewing.
+
+**Implementation:** Created a `useWsToastNotifications` hook that subscribes directly to the `wsClient` for key lifecycle events: publish complete/failed, auto-publish triggered/complete/failed, sync complete/failed, connection test results, E2E test results, git pull complete/failed, remote plugin action results, and backend errors. Each event maps to an appropriate `toast.success`, `toast.error`, or `toast.info` call with contextual descriptions (plugin slug, site name, error messages). The hook is wired into the `WebSocketProvider` in `App.tsx`.
+
+**Files created:**
+- `src/hooks/useWsToastNotifications.ts` — WS event → Sonner toast mapping
+
+**Files changed:**
+- `src/App.tsx` — Added `useWsToastNotifications` to `WebSocketProvider`
+
+**Backend dependency:** None (uses existing WS events)
+
+---
+
 ## Implementation Order (Recommended)
 
 ```
@@ -226,10 +242,10 @@ Phase 2 (Error Modal Enhancements)
   ↓
 Phase 3 (Pagination)
   ↓
-Phase 4–12: Independent phases, all complete
+Phase 4–13: Independent phases, all complete
 ```
 
-All phases (1–12) are complete.
+All phases (1–13) are complete.
 
 ---
 
