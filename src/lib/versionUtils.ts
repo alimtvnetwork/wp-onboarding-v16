@@ -1,0 +1,17 @@
+/**
+ * Compare two semver-style version strings numerically.
+ * Returns  1 if a > b, -1 if a < b, 0 if equal.
+ */
+export function compareVersions(a: string, b: string): number {
+  const pa = a.replace(/^v/, "").split(".").map(Number);
+  const pb = b.replace(/^v/, "").split(".").map(Number);
+  const len = Math.max(pa.length, pb.length);
+
+  for (let i = 0; i < len; i++) {
+    const na = pa[i] ?? 0;
+    const nb = pb[i] ?? 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}

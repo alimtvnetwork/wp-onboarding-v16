@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { compareVersions } from "@/lib/versionUtils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, RefreshCw } from "lucide-react";
@@ -42,8 +43,9 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
         if (response.success && response.data) {
           const { localVersion, remoteVersion } = response.data;
           const isNewInstall = !remoteVersion;
-          const isUpgrade = !isNewInstall && localVersion > remoteVersion;
-          const isDowngrade = !isNewInstall && localVersion < remoteVersion;
+          const cmp = isNewInstall ? 0 : compareVersions(localVersion, remoteVersion);
+          const isUpgrade = !isNewInstall && cmp > 0;
+          const isDowngrade = !isNewInstall && cmp < 0;
           
           setVersionInfo({
             localVersion: localVersion || "Unknown",
