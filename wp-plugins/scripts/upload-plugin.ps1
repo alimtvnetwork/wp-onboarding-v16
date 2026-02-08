@@ -48,14 +48,45 @@ function Write-Status {
     }
 }
 
+# Strip HTML tags and decode entities to plain text
+function ConvertFrom-Html {
+    param([string]$Html)
+    if ([string]::IsNullOrWhiteSpace($Html)) { return "" }
+    # Remove style/script blocks
+    $text = $Html -replace '<style[^>]*>[\s\S]*?</style>', ''
+    $text = $text -replace '<script[^>]*>[\s\S]*?</script>', ''
+    # Replace <br>, <p>, <div>, <li> with newlines
+    $text = $text -replace '<br\s*/?>', "`n"
+    $text = $text -replace '</p>', "`n"
+    $text = $text -replace '</div>', "`n"
+    $text = $text -replace '</li>', "`n"
+    # Strip all remaining tags
+    $text = $text -replace '<[^>]+>', ''
+    # Decode common HTML entities
+    $text = $text -replace '&amp;', '&'
+    $text = $text -replace '&lt;', '<'
+    $text = $text -replace '&gt;', '>'
+    $text = $text -replace '&quot;', '"'
+    $text = $text -replace '&#039;', "'"
+    $text = $text -replace '&rsaquo;', '>'
+    $text = $text -replace '&nbsp;', ' '
+    # Collapse whitespace
+    $text = ($text -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }) -join "`n"
+    return $text.Trim()
+}
+
+# Detect if a string contains HTML
+function Test-IsHtml {
+    param([string]$Text)
+    return ($Text -match '<[a-zA-Z][^>]*>' -or $Text.Trim().StartsWith("<!"))
+}
+
 # Extract error response body from exception (works on PS 5.1 and PS 7+)
 function Get-ErrorResponseBody {
     param($ErrorRecord)
-    # PS 7+ stores parsed error body here
     if ($ErrorRecord.ErrorDetails -and $ErrorRecord.ErrorDetails.Message) {
         return $ErrorRecord.ErrorDetails.Message
     }
-    # PS 5.1 / WebException path
     if ($ErrorRecord.Exception.Response) {
         try {
             $stream = $ErrorRecord.Exception.Response.GetResponseStream()
@@ -71,7 +102,7 @@ function Get-ErrorResponseBody {
     return ""
 }
 
-# Pretty-print an error response body (JSON or raw)
+# Pretty-print an error response body (JSON or raw, with HTML stripping)
 function Write-ErrorBody {
     param([string]$Body, [string]$Label = "Response Body")
     if ($Body -eq "") { return }
@@ -79,11 +110,14 @@ function Write-ErrorBody {
     Write-Status "      ── $Label ──" -Color DarkGray
     try {
         $errJson = $Body | ConvertFrom-Json
+        # Strip HTML from message fields
         if ($errJson.message) {
-            Write-Status "      Message: $($errJson.message)" -Color Red
+            $msg = if (Test-IsHtml $errJson.message) { ConvertFrom-Html $errJson.message } else { $errJson.message }
+            Write-Status "      Message: $msg" -Color Red
         }
         if ($errJson.error -and $errJson.error.message) {
-            Write-Status "      Error:   $($errJson.error.message)" -Color Red
+            $msg = if (Test-IsHtml $errJson.error.message) { ConvertFrom-Html $errJson.error.message } else { $errJson.error.message }
+            Write-Status "      Error:   $msg" -Color Red
         }
         if ($errJson.code) {
             Write-Status "      Code:    $($errJson.code)" -Color Red
@@ -91,12 +125,10 @@ function Write-ErrorBody {
         if ($errJson.data -and $errJson.data.status) {
             Write-Status "      Status:  $($errJson.data.status)" -Color Red
         }
-        # Stack trace (string)
         if ($errJson.stackTrace) {
             Write-Status "      Stack Trace:" -Color Yellow
             Write-Status $errJson.stackTrace -Color Gray
         }
-        # Stack trace frames (array)
         if ($errJson.stackTraceFrames) {
             Write-Status "      Stack Frames:" -Color Yellow
             foreach ($frame in $errJson.stackTraceFrames) {
@@ -106,7 +138,6 @@ function Write-ErrorBody {
                 Write-Status $loc -Color Gray
             }
         }
-        # Nested error.details
         if ($errJson.error -and $errJson.error.details) {
             $d = $errJson.error.details
             if ($d.stackTrace) {
@@ -123,16 +154,57 @@ function Write-ErrorBody {
                 }
             }
         }
-        # If nothing matched, dump whole thing
         $hasKnown = $errJson.message -or $errJson.error -or $errJson.stackTrace -or $errJson.code
         if (-not $hasKnown) {
-            Write-Status $Body -Color Gray
+            # Fallback: strip HTML if present
+            if (Test-IsHtml $Body) {
+                Write-Status (ConvertFrom-Html $Body) -Color Gray
+            } else {
+                Write-Status $Body -Color Gray
+            }
         }
     } catch {
-        # Not JSON, dump raw
-        Write-Status $Body -Color Gray
+        # Not JSON — strip HTML if present
+        if (Test-IsHtml $Body) {
+            Write-Status (ConvertFrom-Html $Body) -Color Gray
+        } else {
+            Write-Status $Body -Color Gray
+        }
     }
     Write-Status "      ────────────────" -Color DarkGray
+}
+
+# Track if any response had a server-side critical error
+$script:serverCriticalError = $false
+$script:criticalErrorDetails = @()
+
+function Test-ServerCriticalError {
+    param([string]$Body)
+    if ($Body -match "critical error on this website" -or $Body -match "internal_server_error") {
+        $script:serverCriticalError = $true
+        return $true
+    }
+    return $false
+}
+
+function Write-ServerErrorBanner {
+    if (-not $script:serverCriticalError) { return }
+    Write-Host ""
+    Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
+    Write-Host "  ║          ⚠  SERVER-SIDE CRITICAL ERROR DETECTED  ⚠     ║" -ForegroundColor Red
+    Write-Host "  ╠══════════════════════════════════════════════════════════╣" -ForegroundColor Red
+    Write-Host "  ║  WordPress is returning a fatal PHP error.             ║" -ForegroundColor Yellow
+    Write-Host "  ║  This is NOT a script issue — the server is crashing.  ║" -ForegroundColor Yellow
+    Write-Host "  ║                                                        ║" -ForegroundColor Yellow
+    Write-Host "  ║  Troubleshooting steps:                                ║" -ForegroundColor Yellow
+    Write-Host "  ║  1. Check wp-content/debug.log on the server           ║" -ForegroundColor White
+    Write-Host "  ║  2. Check wp-content/uploads/riseup-asia-uploader/     ║" -ForegroundColor White
+    Write-Host "  ║     fatal-errors.log                                   ║" -ForegroundColor White
+    Write-Host "  ║  3. Verify PHP version (requires 7.4+)                 ║" -ForegroundColor White
+    Write-Host "  ║  4. Check server error logs (Apache/Nginx)             ║" -ForegroundColor White
+    Write-Host "  ║  5. Ensure WP_DEBUG is enabled in wp-config.php        ║" -ForegroundColor White
+    Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+    Write-Host ""
 }
 
 # Initialize variables
@@ -292,9 +364,47 @@ try {
 $CleanAppPassword = $AppPassword -replace '\s', ''
 $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Username}:${CleanAppPassword}"))
 
-# Step 3: Upload plugin (try Riseup Asia Uploader first, then WP Core)
+# Pre-upload health check: verify REST API is reachable
 Write-Status ""
-Write-Status "[3/5] Uploading plugin to WordPress..." -Color Yellow
+Write-Status "[3/5] Pre-upload health check..." -Color Yellow
+$healthUrl = "$WordPressSiteURL/wp-json/"
+Write-Status "      GET $healthUrl" -Color Gray
+
+$restApiHealthy = $false
+try {
+    $healthResponse = Invoke-RestMethod -Uri $healthUrl -Method Get -Headers @{ "Authorization" = "Basic $base64Auth" } -TimeoutSec 15 -ErrorAction Stop
+    if ($healthResponse.name -or $healthResponse.namespaces) {
+        $restApiHealthy = $true
+        $siteName = if ($healthResponse.name) { $healthResponse.name } else { "Unknown" }
+        Write-Status "      ✓ REST API is reachable (Site: $siteName)" -Color Green
+        if ($healthResponse.namespaces) {
+            $hasRiseup = $healthResponse.namespaces -contains "riseup-asia-uploader/v1"
+            if ($hasRiseup) {
+                Write-Status "      ✓ riseup-asia-uploader/v1 namespace registered" -Color Green
+            } else {
+                Write-Status "      ⚠ riseup-asia-uploader/v1 namespace NOT found" -Color Yellow
+                Write-Status "        Available: $($healthResponse.namespaces -join ', ')" -Color Gray
+            }
+        }
+    } else {
+        Write-Status "      ⚠ REST API responded but format unexpected" -Color Yellow
+    }
+} catch {
+    $healthErr = Get-ErrorResponseBody $_
+    Write-Status "      ✗ REST API health check failed: $($_.Exception.Message)" -Color Red
+    if ($healthErr -ne "") {
+        if (Test-IsHtml $healthErr) {
+            Write-Status "      Response: $(ConvertFrom-Html $healthErr)" -Color Gray
+        } else {
+            Write-Status "      Response: $healthErr" -Color Gray
+        }
+    }
+    Write-Status "      ⚠ Continuing anyway..." -Color Yellow
+}
+
+# Step 4: Upload plugin (try Riseup Asia Uploader first, then WP Core)
+Write-Status ""
+Write-Status "[4/5] Uploading plugin to WordPress..." -Color Yellow
 Write-Status "      Site: $WordPressSiteURL" -Color Gray
 Write-Status "      User: $Username" -Color Gray
 
@@ -340,7 +450,7 @@ foreach ($ns in $apiNamespaces) {
 
         Write-Status "      ✓ Uploaded via $($ns.display)!" -Color Green
         Write-Status ""
-        Write-Status "[4/5] Installation Complete!" -Color Yellow
+        Write-Status "[5/5] Installation Complete!" -Color Yellow
         Write-Status ""
         Write-Status "========================================" -Color Green
         Write-Status "  SUCCESS! Plugin Deployed!" -Color Green
@@ -369,6 +479,7 @@ foreach ($ns in $apiNamespaces) {
     } catch {
         $errMsg = $_.Exception.Message
         $errBody = Get-ErrorResponseBody $_
+        Test-ServerCriticalError $errBody | Out-Null
         Write-Status "      ✗ $($ns.display) failed: $errMsg" -Color Yellow
         Write-ErrorBody $errBody "$($ns.display) Error"
     }
@@ -422,7 +533,7 @@ if (-not $uploadSuccess) {
         # Activate if requested
         if ($ActivateAfterInstall) {
             Write-Status ""
-            Write-Status "[4/5] Activating plugin..." -Color Yellow
+            Write-Status "[5/5] Activating plugin..." -Color Yellow
 
             $activateUrl = "$WordPressSiteURL/wp-json/wp/v2/plugins/$pluginSlugResult"
             $activateBody = @{ status = "active" } | ConvertTo-Json
@@ -467,6 +578,7 @@ if (-not $uploadSuccess) {
             $statusCode = [int]$_.Exception.Response.StatusCode
         }
         $errorBody = Get-ErrorResponseBody $_
+        Test-ServerCriticalError $errorBody | Out-Null
 
         Write-Host ""
         Write-Host "All upload methods failed!" -ForegroundColor Red
@@ -475,6 +587,8 @@ if (-not $uploadSuccess) {
         if ($errorBody -eq "") {
             Write-Host "Error: $errorMessage" -ForegroundColor Red
         }
+
+        Write-ServerErrorBanner
         Write-Host ""
 
         if ($Quiet) {
