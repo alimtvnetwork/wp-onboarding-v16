@@ -255,6 +255,11 @@ if (!defined('ABSPATH')) {
     overflow-y: auto;
 }
 
+.riseup-admin .button .dashicons {
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 2px;
+}
 .action-btn { margin-right: 5px; }
 .action-btn .dashicons {
     font-size: 16px;
