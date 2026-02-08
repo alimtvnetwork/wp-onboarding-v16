@@ -127,21 +127,21 @@ All colors MUST be HSL.
     --toast-desc: 215 20% 65%;
     --toast-shadow: 0 10px 30px hsl(0 0% 0% / 0.4), 0 2px 8px hsl(0 0% 0% / 0.25);
 
-    --toast-success-bg: 142 35% 16%;
-    --toast-success-border: 142 40% 25%;
-    --toast-success-fg: 142 70% 75%;
+    --toast-success-bg: 142 45% 14%;
+    --toast-success-border: 142 50% 28%;
+    --toast-success-fg: 142 75% 78%;
 
-    --toast-error-bg: 0 65% 15%;
-    --toast-error-border: 0 72% 38%;
-    --toast-error-fg: 0 85% 85%;
+    --toast-error-bg: 0 45% 14%;
+    --toast-error-border: 0 55% 30%;
+    --toast-error-fg: 0 80% 80%;
 
-    --toast-warning-bg: 38 35% 16%;
-    --toast-warning-border: 38 40% 28%;
-    --toast-warning-fg: 38 80% 70%;
+    --toast-warning-bg: 38 45% 14%;
+    --toast-warning-border: 38 50% 28%;
+    --toast-warning-fg: 38 80% 75%;
 
-    --toast-info-bg: 210 35% 16%;
-    --toast-info-border: 210 40% 28%;
-    --toast-info-fg: 210 70% 75%;
+    --toast-info-bg: 210 45% 14%;
+    --toast-info-border: 210 50% 28%;
+    --toast-info-fg: 210 75% 78%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
