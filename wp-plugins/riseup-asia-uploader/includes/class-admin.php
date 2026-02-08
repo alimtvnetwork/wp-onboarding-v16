@@ -584,52 +584,80 @@ class Riseup_Admin {
      * Render the error log page.
      */
     public function render_errors_page() {
-        $db = Riseup_Database::get_instance();
-        $pdo = $db->get_pdo();
-
-        // Filters
-        $filter_level  = isset($_GET['filter_level']) ? sanitize_text_field($_GET['filter_level']) : '';
-        $filter_search = isset($_GET['filter_search']) ? sanitize_text_field($_GET['filter_search']) : '';
-        $page          = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        $per_page      = 50;
-        $offset        = ($page - 1) * $per_page;
-
-        // Build query
-        $where = array();
-        $params = array();
-
-        if (!empty($filter_level)) {
-            $where[] = 'level = ?';
-            $params[] = $filter_level;
-        }
-        if (!empty($filter_search)) {
-            $where[] = 'message LIKE ?';
-            $params[] = '%' . $filter_search . '%';
-        }
-
-        $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-
-        // Count
-        $count_sql = "SELECT COUNT(*) FROM error_sessions {$where_sql}";
-        $stmt = $pdo->prepare($count_sql);
-        $stmt->execute($params);
-        $total = (int) $stmt->fetchColumn();
-        $total_pages = max(1, ceil($total / $per_page));
-
-        // Fetch
-        $query_sql = "SELECT * FROM error_sessions {$where_sql} ORDER BY id DESC LIMIT ? OFFSET ?";
-        $stmt = $pdo->prepare($query_sql);
-        $query_params = array_merge($params, array($per_page, $offset));
-        $stmt->execute($query_params);
-        $errors = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Flash state
-        $last_seen_id = $this->get_flash_value('last_seen_error_id', 0);
-        $has_unseen   = ($this->get_flash_value('has_unseen_errors', '0') === '1');
-        $unseen_count = $this->get_unseen_error_count();
+        // Safe defaults so the template always renders
+        $errors = array();
+        $total = 0;
+        $total_pages = 1;
+        $page = 1;
+        $last_seen_id = 0;
+        $has_unseen = false;
+        $unseen_count = 0;
         $latest_error_time = '';
-        if (!empty($errors) && $has_unseen) {
-            $latest_error_time = date('Y-m-d H:i:s', strtotime($errors[0]['created_at']));
+        $filter_level = isset($_GET['filter_level']) ? sanitize_text_field($_GET['filter_level']) : '';
+        $filter_search = isset($_GET['filter_search']) ? sanitize_text_field($_GET['filter_search']) : '';
+        $db_error_message = '';
+
+        try {
+            $db = Riseup_Database::get_instance();
+            $pdo = $db->get_pdo();
+
+            if (!$pdo) {
+                $db_error_message = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
+            } else {
+                // Check if error_sessions table exists
+                $table_check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
+                $table_exists = $table_check && $table_check->fetchColumn();
+
+                if (!$table_exists) {
+                    $db_error_message = __('The error_sessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
+                } else {
+                    $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+                    $per_page = 50;
+                    $offset = ($page - 1) * $per_page;
+
+                    // Build query
+                    $where = array();
+                    $params = array();
+
+                    if (!empty($filter_level)) {
+                        $where[] = 'level = ?';
+                        $params[] = $filter_level;
+                    }
+                    if (!empty($filter_search)) {
+                        $where[] = 'message LIKE ?';
+                        $params[] = '%' . $filter_search . '%';
+                    }
+
+                    $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+                    // Count
+                    $count_sql = "SELECT COUNT(*) FROM error_sessions {$where_sql}";
+                    $stmt = $pdo->prepare($count_sql);
+                    $stmt->execute($params);
+                    $total = (int) $stmt->fetchColumn();
+                    $total_pages = max(1, ceil($total / $per_page));
+
+                    // Fetch
+                    $query_sql = "SELECT * FROM error_sessions {$where_sql} ORDER BY id DESC LIMIT ? OFFSET ?";
+                    $stmt = $pdo->prepare($query_sql);
+                    $query_params = array_merge($params, array($per_page, $offset));
+                    $stmt->execute($query_params);
+                    $errors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    // Flash state
+                    $last_seen_id = $this->get_flash_value('last_seen_error_id', 0);
+                    $has_unseen = ($this->get_flash_value('has_unseen_errors', '0') === '1');
+                    $unseen_count = $this->get_unseen_error_count();
+                    if (!empty($errors) && $has_unseen) {
+                        $latest_error_time = date('Y-m-d H:i:s', strtotime($errors[0]['created_at']));
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            $db_error_message = sprintf(
+                __('Database error: %s', 'riseup-asia-uploader'),
+                esc_html($e->getMessage())
+            );
         }
 
         include dirname(__FILE__) . '/../templates/admin-errors.php';

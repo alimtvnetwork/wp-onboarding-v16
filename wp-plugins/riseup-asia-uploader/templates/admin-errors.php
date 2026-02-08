@@ -42,6 +42,13 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
     </div>
     <?php endif; ?>
 
+    <?php if (!empty($db_error_message)): ?>
+    <div class="notice notice-warning" style="padding: 12px; margin-bottom: 16px;">
+        <p><strong><span class="dashicons dashicons-info" style="color: #dba617;"></span> <?php echo esc_html($db_error_message); ?></strong></p>
+        <p class="description"><?php esc_html_e('The file-based log tabs (Log, Error Log, Stack Trace) are still available below.', 'riseup-asia-uploader'); ?></p>
+    </div>
+    <?php endif; ?>
+
     <h1>
         <span class="dashicons dashicons-warning"></span>
         <?php esc_html_e('Error Log', 'riseup-asia-uploader'); ?>
