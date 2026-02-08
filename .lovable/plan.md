@@ -112,11 +112,13 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 - Also migrated the `Deleted` response template from `data.deleted` to `Results[{deleted: true}]`
 - Zero remaining `"data":` references in openapi.json
 
-#### Sub-phase 14.2 🔧 — Replace `"data"` with typed `Results` in operation endpoints
-Migrate Remote Plugins, Sync, Snapshots, Git, and E2E test endpoint schemas.
+#### Sub-phase 14.2 ✅ — Replace `"data"` with typed `Results` in operation endpoints
+- All operation endpoints now use typed `Results` arrays (covered in 14.1 and 14.3)
 
-#### Sub-phase 14.3 🔧 — Add missing endpoint-specific Results schemas
-Create typed result schemas for endpoints currently using bare `$ref: Success` (e.g., Remote Plugin enable/disable/delete with `{plugin_slug, activated}`, snapshot operations).
+#### Sub-phase 14.3 ✅ — Add missing endpoint-specific Results schemas
+- Created 16 new typed result schemas: `RemotePluginActionResult`, `RemotePluginInfo`, `RemoteFileInfo`, `SnapshotInfo`, `SnapshotSettings`, `SnapshotProvider`, `SnapshotTable`, `GitStatusResult`, `GitOperationResult`, `E2ESuite`, `E2ECase`, `E2ERun`, `E2ETestResult`, `BootstrapResult`, `PublishPreview`, `FileDiffResult`, `ErrorLogContent`, `ErrorHistoryStats`
+- Updated 40+ bare `$ref: Success/Created` endpoints with typed `Results` referencing the new schemas
+- Remaining bare `$ref: Success` kept intentionally for simple action endpoints (clear, delete, abort) that return no meaningful data
 
 #### Sub-phase 14.4 🔧 — Add response examples per envelope spec
 Add inline `example` blocks to key endpoints showing a complete envelope (Status + Attributes + typed Results) for both success and error cases.
