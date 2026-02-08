@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.26.0
+ * Version: 1.27.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -1256,14 +1256,49 @@ class Riseup_Asia {
     public function handle_status($request) {
         $this->file_logger->info('Status endpoint called');
 
+        // Collect all registered REST routes for our namespace
+        $registered_routes = array();
+        $rest_server = rest_get_server();
+        $all_routes = $rest_server->get_routes();
+        $ns_prefix = '/' . RISEUP_API_FULL_NAMESPACE;
+
+        foreach ($all_routes as $route => $handlers) {
+            if (strpos($route, $ns_prefix) === 0) {
+                $methods = array();
+                foreach ($handlers as $handler) {
+                    if (isset($handler['methods'])) {
+                        if (is_array($handler['methods'])) {
+                            $methods = array_merge($methods, array_keys($handler['methods']));
+                        } elseif (is_string($handler['methods'])) {
+                            $methods[] = $handler['methods'];
+                        }
+                    }
+                }
+                $registered_routes[] = array(
+                    'route'   => $route,
+                    'methods' => array_values(array_unique($methods)),
+                );
+            }
+        }
+
+        // Load endpoints.json reference
+        $endpoints_ref = null;
+        $endpoints_file = plugin_dir_path(__FILE__) . 'data/endpoints.json';
+        if (file_exists($endpoints_file)) {
+            $endpoints_content = @file_get_contents($endpoints_file);
+            if ($endpoints_content !== false) {
+                $endpoints_ref = json_decode($endpoints_content, true);
+            }
+        }
+
         return new WP_REST_Response(array(
-            'success'  => true,
-            'plugin'   => RISEUP_NAME,
-            'version'  => RISEUP_VERSION,
-            'api'      => RISEUP_API_FULL_NAMESPACE,
-            'wp'       => get_bloginfo('version'),
-            'php'      => PHP_VERSION,
-            'features' => array(
+            'success'          => true,
+            'plugin'           => RISEUP_NAME,
+            'version'          => RISEUP_VERSION,
+            'api'              => RISEUP_API_FULL_NAMESPACE,
+            'wp'               => get_bloginfo('version'),
+            'php'              => PHP_VERSION,
+            'features'         => array(
                 'plugin_upload'   => true,
                 'plugin_manage'   => true,
                 'file_operations' => true,
@@ -1273,6 +1308,8 @@ class Riseup_Asia {
                 'transaction_log' => true,
                 'export_self'     => true,
             ),
+            'registeredRoutes' => $registered_routes,
+            'endpointsRef'     => $endpoints_ref,
         ), RISEUP_HTTP_OK);
     }
 
