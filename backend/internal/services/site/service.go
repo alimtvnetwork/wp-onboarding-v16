@@ -987,6 +987,12 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 	if uploaderErr == nil {
 		result := make([]RemotePlugin, 0, len(uploaderPlugins))
 		for _, p := range uploaderPlugins {
+			// Skip plugins with no file identifier — these cannot be managed
+			if p.File == "" && p.Slug == "" {
+				s.log.Warn("Skipping remote plugin with empty file and slug", "name", p.Name, "siteId", siteID)
+				continue
+			}
+
 			slug := p.Slug
 			if slug == "" {
 				// Derive slug from file path (e.g., "akismet/akismet.php" -> "akismet")
@@ -995,12 +1001,20 @@ func (s *Service) fetchRemotePlugins(ctx context.Context, siteID int64) ([]Remot
 					slug = p.File[:idx]
 				}
 			}
+
+			pluginFile := p.File
+			if pluginFile == "" {
+				// Derive file from slug if missing (e.g., "akismet" -> "akismet/akismet.php")
+				pluginFile = slug + "/" + slug + ".php"
+				s.log.Warn("Remote plugin missing file path, derived from slug", "slug", slug, "derivedFile", pluginFile, "siteId", siteID)
+			}
+
 			status := "inactive"
 			if p.Active {
 				status = "active"
 			}
 			result = append(result, RemotePlugin{
-				Plugin:      p.File,
+				Plugin:      pluginFile,
 				Slug:        slug,
 				Name:        p.Name,
 				Version:     p.Version,
