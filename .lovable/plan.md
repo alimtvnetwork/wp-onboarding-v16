@@ -36,40 +36,30 @@ No changes needed.
 ### Phase 8 ✅ — CONFIRMED: Log Deduplication
 MD5-based dedup in `logToErrorFile()` using action, siteID, plugin, endpoint, status code, and response body. "Clear Dedup Hashes" endpoint exists. No changes needed.
 
-### Phase 9 🔧 — Configurable Go Stack Trace Depth (18-20 from config.json)
-**Current**: `captureStackTrace()` in `uploader.go` hardcodes depth to 10 frames and buffer to 32.
-**Target**: Read depth from `config.json` (`Logging.StackTraceDepth`, default 20). Apply everywhere `captureStackTrace` is called.
+### Phase 9 ✅ — Configurable Go Stack Trace Depth (18-20 from config.json)
+Added `StackTraceDepth` to `LoggingConfig` (default 20). `captureStackTraceN()` accepts configurable depth. Wired through `ClientConfig` → `Client` → all call sites.
 
-Files to change:
-- `backend/internal/config/config.go` — Add `StackTraceDepth int` to `LoggingConfig` (default 20)
-- `backend/internal/wordpress/uploader.go` — Accept depth parameter in `captureStackTrace()`
-- `backend/pkg/apperror/error.go` — Update `captureStackTrace()` to use configurable depth
+### Phase 10 ✅ — Maximize PHP Stack Trace Depth
+Changed `debug_backtrace()` from 10-frame limit to `0` (unlimited) in `error()`.
 
-### Phase 10 🔧 — Maximize PHP Stack Trace Depth
-**Current**: `debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10)` — limited to 10 frames.
-**Target**: Remove the limit (use 0 for unlimited) in `error()` and `log_exception()`.
+### Phase 11 ✅ — Upload Activation Error: Add Stack Trace + Traceability
+Added `stackTraceFrames`, `requestUrl`, `responseUrl` to activation failure response in `handle_upload()`.
 
-Files to change:
-- `wp-plugins/riseup-asia-uploader/includes/class-file-logger.php` — Change limit to 0 in `error()`
-- Version bump to 1.33.0
+### Phase 12 — Universal Response Envelope Migration (v1.34.0)
 
-### Phase 11 🔧 — Upload Activation Error: Add Stack Trace + Traceability
-**Current**: When `activate_plugin()` fails in `handle_upload()`, the response returns a plain success response without `stackTraceFrames`, `requestUrl`, or `responseUrl`.
-**Target**: Include full diagnostic metadata in activation failure responses.
+#### Sub-phase 12.1 ✅ — Create PHP EnvelopeBuilder
+Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBuilder::success()` / `::error()` with PascalCase output matching the spec.
 
-Files to change:
-- `wp-plugins/riseup-asia-uploader/riseup-asia-uploader.php` — Enrich activation failure response
+#### Sub-phase 12.2 ✅ — Migrate first endpoints (status, list-plugins, error_response)
+- `handle_status()` → Envelope with single result (PascalCase keys)
+- `handle_list_plugins()` → Envelope with Results array of plugins
+- `error_response()` → Envelope error format with `Errors.Backend` and `Errors.DelegatedServiceErrorStack`
 
-### Phase 12 📋 — Universal Response Envelope Migration Plan (PHP Plugin)
-**Current**: PHP plugin endpoints return ad-hoc JSON structures (`{success, plugins, ...}`).
-**Target**: All endpoints should follow the Universal Response Envelope spec with PascalCase keys: `Status`, `Attributes`, `Results`, `Navigation`, `Errors`, `MethodsStack`.
+#### Sub-phase 12.3 ✅ — Go backend envelope-aware parsing
+- Created `envelope.go` with `IsEnvelope()`, `UnwrapResults()`, `UnwrapSingleResult()` utilities
+- Updated `GetUploaderStatus()` and `ListPluginsViaUploader()` with backward-compatible envelope parsing
+- Updated error response parser to handle both `Errors.Backend` (envelope) and `error.details.stackTraceFrames` (legacy)
 
-Sub-phases:
-1. Create a PHP `EnvelopeBuilder` utility class
-2. Migrate read endpoints (status, list-plugins, error-logs)
-3. Migrate write endpoints (upload, enable, disable, delete)
-4. Migrate diagnostic endpoints (error-sessions)
-5. Update Go backend parsing to handle envelope format
-6. Update frontend to parse envelope from PHP responses
-
-**NOTE**: Large migration — execute incrementally to avoid breaking integration.
+#### Sub-phase 12.4 🔧 — Migrate write endpoints (upload, enable, disable, delete)
+#### Sub-phase 12.5 🔧 — Migrate diagnostic endpoints (error-logs, error-sessions)
+#### Sub-phase 12.6 🔧 — Update frontend to parse envelope from PHP responses

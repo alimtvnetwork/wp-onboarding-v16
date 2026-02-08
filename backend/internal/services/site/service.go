@@ -1395,6 +1395,26 @@ func (s *Service) extractErrorDetails(err error) map[string]interface{} {
 		// Try to parse stackTraceFrames from response body if present
 		var respData map[string]interface{}
 		if err := json.Unmarshal([]byte(apiErr.ResponseBody), &respData); err == nil {
+			// Try envelope format first: Errors.Backend and Errors.DelegatedServiceErrorStack
+			if errorsObj, ok := respData["Errors"].(map[string]interface{}); ok {
+				if backendMsg, ok := errorsObj["BackendMessage"].(string); ok {
+					details["errorMessage"] = backendMsg
+				}
+				if delegatedStack, ok := errorsObj["DelegatedServiceErrorStack"].([]interface{}); ok {
+					lines := make([]string, 0, len(delegatedStack))
+					for _, line := range delegatedStack {
+						if s, ok := line.(string); ok {
+							lines = append(lines, s)
+						}
+					}
+					details["delegatedServiceErrorStack"] = lines
+				}
+				if backendStack, ok := errorsObj["Backend"].([]interface{}); ok && len(backendStack) > 0 {
+					details["phpBackendStack"] = backendStack
+				}
+			}
+
+			// Legacy format: error.details.stackTraceFrames
 			if errObj, ok := respData["error"].(map[string]interface{}); ok {
 				if detailsObj, ok := errObj["details"].(map[string]interface{}); ok {
 					if frames, ok := detailsObj["stackTraceFrames"].([]interface{}); ok {

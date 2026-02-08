@@ -286,6 +286,7 @@ RiseupDependencyLoader::loadManifest(array(
     array('FileLogger',          $__includes . '/class-file-logger.php'),
     array('ORM',                 $__includes . '/class-orm.php'),
     array('Database',            $__includes . '/class-database.php'),
+    array('EnvelopeBuilder',     $__includes . '/class-envelope-builder.php'),
     array('TransactionLogger',   $__includes . '/class-logger.php'),
 
     // Snapshot system
@@ -1312,34 +1313,36 @@ class Riseup_Asia {
         $active_plugins = get_option('active_plugins', array());
         $is_active = in_array($plugin_file, $active_plugins, true);
 
-        return new WP_REST_Response(array(
-            'success'          => true,
-            'plugin'           => RISEUP_NAME,
-            'version'          => RISEUP_VERSION,
-            'slug'             => RISEUP_SLUG,
-            'api'              => RISEUP_API_FULL_NAMESPACE,
-            'siteUrl'          => $site_url,
-            'wp'               => get_bloginfo('version'),
-            'php'              => PHP_VERSION,
-            'isActive'         => $is_active,
-            'dbAvailable'      => $db_available,
-            'serverTime'       => gmdate('c'),
-            'timezone'         => wp_timezone_string(),
-            'features'         => array(
-                'plugin_upload'   => true,
-                'plugin_manage'   => true,
-                'file_operations' => true,
-                'delta_sync'      => true,
-                'post_publish'    => true,
-                'category_manage' => true,
-                'transaction_log' => $db_available,
-                'export_self'     => true,
-                'snapshots'       => $db_available,
-                'agents'          => $db_available,
-            ),
-            'registeredRoutes' => $registered_routes,
-            'endpointsRef'     => $endpoints_ref,
-        ), RISEUP_HTTP_OK);
+        return RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . RISEUP_ENDPOINT_STATUS)
+            ->setSingleResult(array(
+                'Plugin'           => RISEUP_NAME,
+                'Version'          => RISEUP_VERSION,
+                'Slug'             => RISEUP_SLUG,
+                'Api'              => RISEUP_API_FULL_NAMESPACE,
+                'SiteUrl'          => $site_url,
+                'Wp'               => get_bloginfo('version'),
+                'Php'              => PHP_VERSION,
+                'IsActive'         => $is_active,
+                'DbAvailable'      => $db_available,
+                'ServerTime'       => gmdate('c'),
+                'Timezone'         => wp_timezone_string(),
+                'Features'         => array(
+                    'PluginUpload'   => true,
+                    'PluginManage'   => true,
+                    'FileOperations' => true,
+                    'DeltaSync'      => true,
+                    'PostPublish'    => true,
+                    'CategoryManage' => true,
+                    'TransactionLog' => $db_available,
+                    'ExportSelf'     => true,
+                    'Snapshots'      => $db_available,
+                    'Agents'         => $db_available,
+                ),
+                'RegisteredRoutes' => $registered_routes,
+                'EndpointsRef'     => $endpoints_ref,
+            ))
+            ->toResponse();
     }
 
     /**
@@ -1652,10 +1655,10 @@ class Riseup_Asia {
 
             $this->file_logger->debug('Plugins listed', array('count' => count($plugins)));
 
-            return new WP_REST_Response(array(
-                'success' => true,
-                'plugins' => $plugins,
-            ), RISEUP_HTTP_OK);
+            return RiseupEnvelopeBuilder::success()
+                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . RISEUP_ENDPOINT_PLUGINS)
+                ->setResults($plugins)
+                ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'List plugins error');
             return $this->error_response('Failed to list plugins: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
@@ -3094,70 +3097,31 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     private function error_response($message, $status, $exception = null) {
-        // Build requestUrl and responseUrl for diagnostic traceability
-        $request_url = '';
-        $response_url = '';
-        if (function_exists('rest_url') && defined('REST_REQUEST') && REST_REQUEST) {
-            $request_url = isset($_SERVER['REQUEST_URI']) ? home_url($_SERVER['REQUEST_URI']) : '';
-            $response_url = home_url();
-        }
-
-        $error_data = array(
-            'success'     => false,
-            'requestUrl'  => $request_url,
-            'responseUrl' => $response_url,
-            'error'       => array(
-                'code'    => 'ERROR_' . $status,
-                'message' => $message,
-            ),
-        );
-
-        // Add detailed exception info if available
+        // Log the error
         if ($exception instanceof Throwable) {
-            $error_data['error']['code'] = $this->get_exception_code($exception);
-            
-            // Generate frames array using helper function
-            $frames = riseup_exception_to_frames($exception);
-            
-            $error_data['error']['details'] = array(
-                'exceptionClass'   => get_class($exception),
-                'file'             => basename($exception->getFile()),
-                'fileFull'         => $exception->getFile(),
-                'line'             => $exception->getLine(),
-                'stackTrace'       => $exception->getTraceAsString(),
-                'stackTraceFrames' => $frames,
-            );
-            
-            // Log full exception to file logger
             $this->file_logger->log_exception($exception, $message);
         } else {
-            // Generate a stack trace even without an exception
-            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-            $trace_lines = array();
-            foreach ($backtrace as $i => $frame) {
-                $file = isset($frame['file']) ? basename($frame['file']) : '[internal]';
-                $line = isset($frame['line']) ? $frame['line'] : '?';
-                $func = isset($frame['function']) ? $frame['function'] : '';
-                $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
-                $trace_lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
-            }
-            
-            // Generate frames array using helper function
-            $frames = riseup_backtrace_to_frames($backtrace);
-            
-            $error_data['error']['details'] = array(
-                'stackTrace'       => implode("\n", $trace_lines),
-                'stackTraceFrames' => $frames,
-            );
-            
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
             $this->file_logger->error('Error response', array(
                 'message'    => $message,
                 'status'     => $status,
-                'stackTrace' => implode("\n", $trace_lines),
+                'stackTrace' => implode("\n", array_map(function($i, $f) {
+                    $file = isset($f['file']) ? basename($f['file']) : '[internal]';
+                    $line = isset($f['line']) ? $f['line'] : '?';
+                    $func = isset($f['function']) ? $f['function'] : '';
+                    $class = isset($f['class']) ? $f['class'] . $f['type'] : '';
+                    return "#{$i} {$file}({$line}): {$class}{$func}()";
+                }, array_keys($backtrace), $backtrace)),
             ));
         }
 
-        return new WP_REST_Response($error_data, $status);
+        // Auto-detect requested endpoint
+        $requested_at = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+
+        return RiseupEnvelopeBuilder::error($message, $status, $exception)
+            ->setRequestedAt($requested_at)
+            ->setDelegatedAt(home_url())
+            ->toResponse();
     }
 
     /**

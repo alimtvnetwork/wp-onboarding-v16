@@ -58,13 +58,22 @@ func captureStackTraceN(skip int, maxDepth int) string {
 // Note: RiseUpUploaderNamespace is defined in constants.go
 
 // UploaderStatus represents the /status endpoint response.
+// Supports both legacy flat format and envelope Results[0] format.
 type UploaderStatus struct {
+	// Legacy flat fields
 	Status           string            `json:"status"`
 	Message          string            `json:"message"`
 	Version          string            `json:"version"`
 	WordPressVersion string            `json:"wordpress_version"`
 	PHPVersion       string            `json:"php_version"`
 	Endpoints        map[string]string `json:"endpoints,omitempty"`
+	// Envelope PascalCase fields (populated when parsing from envelope Results)
+	EnvVersion  string `json:"Version,omitempty"`
+	EnvPlugin   string `json:"Plugin,omitempty"`
+	EnvSlug     string `json:"Slug,omitempty"`
+	EnvWp       string `json:"Wp,omitempty"`
+	EnvPhp      string `json:"Php,omitempty"`
+	EnvIsActive bool   `json:"IsActive,omitempty"`
 }
 
 // UploaderUploadResult represents the /upload endpoint response.
@@ -178,8 +187,26 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 			WithContext("endpoint", endpoint)
 	}
 
+	respBody, _ := io.ReadAll(resp.Body)
+
+	// Try envelope format first
 	var status UploaderStatus
-	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
+	if UnwrapSingleResult(respBody, &status) {
+		// Normalize envelope fields to legacy fields for backward compat
+		if status.Version == "" && status.EnvVersion != "" {
+			status.Version = status.EnvVersion
+		}
+		if status.WordPressVersion == "" && status.EnvWp != "" {
+			status.WordPressVersion = status.EnvWp
+		}
+		if status.PHPVersion == "" && status.EnvPhp != "" {
+			status.PHPVersion = status.EnvPhp
+		}
+		return &status, nil
+	}
+
+	// Fall back to legacy flat format
+	if err := json.Unmarshal(respBody, &status); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode status response")
 	}
 
@@ -546,7 +573,17 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 		Count   int                  `json:"count"`
 		Plugins []UploaderPluginInfo `json:"plugins"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	// Try envelope format first — Results is the plugins array directly
+	var plugins []UploaderPluginInfo
+	if UnwrapResults(respBody, &plugins) {
+		return plugins, nil
+	}
+
+	// Fall back to legacy flat format
+	if err := json.Unmarshal(respBody, &response); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode plugins response")
 	}
 
