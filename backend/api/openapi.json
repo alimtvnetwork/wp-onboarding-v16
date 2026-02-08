@@ -116,7 +116,7 @@
           }
         },
         "responses": {
-          "201": { "$ref": "#/components/responses/Created" },
+          "201": { "description": "Site created", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Site" }, "minItems": 1, "maxItems": 1 } } }] } } } },
           "400": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -143,7 +143,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Credentials valid", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ConnectionResult" }, "minItems": 1, "maxItems": 1 } } }] } } } }
         }
       }
     },
@@ -183,7 +183,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" },
+          "200": { "description": "Site updated", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Site" }, "minItems": 1, "maxItems": 1 } } }] } } } },
           "400": { "$ref": "#/components/responses/Error" }
         }
       },
@@ -244,7 +244,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Bootstrap result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/BootstrapResult" }, "minItems": 1, "maxItems": 1 } } }] } } } }
         }
       }
     },
@@ -269,7 +269,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Bulk bootstrap results", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/BootstrapResult" } } } }] } } } }
         }
       }
     },
@@ -280,7 +280,7 @@
         "operationId": "getSiteMappings",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Site plugin mappings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PluginMapping" } } } }] } } } }
         }
       },
       "put": {
@@ -313,7 +313,7 @@
         "operationId": "getRemotePlugins",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Remote plugins list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginInfo" } } } }] } } } }
         }
       }
     },
@@ -324,7 +324,7 @@
         "operationId": "forceSyncRemotePlugins",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Synced remote plugins", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginInfo" } } } }] } } } }
         }
       }
     },
@@ -354,7 +354,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Plugin enabled", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginActionResult" }, "minItems": 1, "maxItems": 1 } } }] } } } }
         }
       }
     },
@@ -373,7 +373,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Plugin disabled", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginActionResult" }, "minItems": 1, "maxItems": 1 } } }] } } } }
         }
       }
     },
@@ -392,7 +392,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Plugin deleted", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginActionResult" }, "minItems": 1, "maxItems": 1 } } }] } } } }
         }
       }
     },
@@ -411,7 +411,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Remote plugin files", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemoteFileInfo" } } } }] } } } }
         }
       }
     },
@@ -437,7 +437,7 @@
           }
         },
         "responses": {
-          "200": { "$ref": "#/components/responses/Success" }
+          "200": { "description": "Remote file content", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "type": "object", "properties": { "content": { "type": "string" }, "path": { "type": "string" }, "size": { "type": "integer" } } }, "minItems": 1, "maxItems": 1 } } }] } } } }
         }
       }
     },
@@ -447,7 +447,7 @@
         "summary": "List remote snapshots",
         "operationId": "getRemoteSnapshots",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Snapshots list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" } } } }] } } } } }
       },
       "post": {
         "tags": ["Snapshots"],
@@ -455,7 +455,7 @@
         "operationId": "createRemoteSnapshot",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Snapshot created", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/sites/{id}/snapshots/settings": {
@@ -464,7 +464,7 @@
         "summary": "Get snapshot settings",
         "operationId": "getRemoteSnapshotSettings",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Snapshot settings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotSettings" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "put": {
         "tags": ["Snapshots"],
@@ -472,7 +472,7 @@
         "operationId": "updateRemoteSnapshotSettings",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Settings updated", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotSettings" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/sites/{id}/snapshots/providers": {
@@ -481,7 +481,7 @@
         "summary": "List available snapshot providers",
         "operationId": "getRemoteSnapshotProviders",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Snapshot providers", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotProvider" } } } }] } } } } }
       }
     },
     "/sites/{id}/snapshots/tables": {
@@ -490,7 +490,7 @@
         "summary": "List available database tables for snapshotting",
         "operationId": "getRemoteAvailableTables",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Available tables", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotTable" } } } }] } } } } }
       }
     },
     "/sites/{id}/snapshots/full-backup": {
@@ -500,7 +500,7 @@
         "operationId": "fullBackupRemoteSnapshot",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Full backup started", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/sites/{id}/snapshots/incremental": {
@@ -510,7 +510,7 @@
         "operationId": "incrementalBackupRemoteSnapshot",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "requestBody": { "content": { "application/json": { "schema": { "type": "object" } } } },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Incremental backup started", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/sites/{id}/snapshots/import": {
@@ -532,7 +532,7 @@
             }
           }
         },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Snapshot imported", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/sites/{id}/snapshots/cleanup": {
@@ -551,7 +551,7 @@
         "summary": "Get a specific snapshot",
         "operationId": "getRemoteSnapshot",
         "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/snapshotId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Snapshot details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Snapshots"],
@@ -611,7 +611,7 @@
             }
           }
         },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Plugin registered", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}": {
@@ -628,7 +628,7 @@
         "operationId": "updatePlugin",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Plugin updated", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Plugins"],
@@ -652,7 +652,7 @@
         "operationId": "createPluginMapping",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object" } } } },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Mapping created", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PluginMapping" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "put": {
         "tags": ["Plugins"],
@@ -673,7 +673,7 @@
             }
           }
         },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Mappings updated", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PluginMapping" } } } }] } } } } }
       }
     },
     "/plugins/{id}/changes": {
@@ -694,7 +694,7 @@
         "summary": "Trigger a file scan for a plugin",
         "operationId": "scanPlugin",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Scan triggered", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ScanResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/scan": {
@@ -702,7 +702,7 @@
         "tags": ["Plugins"],
         "summary": "Scan all plugins",
         "operationId": "scanAllPlugins",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "All plugins scanned", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ScanResult" } } } }] } } } } }
       }
     },
     "/plugins/scan-directory": {
@@ -725,7 +725,7 @@
             }
           }
         },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Scan result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ScanResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/scan-directories": {
@@ -748,7 +748,7 @@
             }
           }
         },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Scan results", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ScanResult" } } } }] } } } } }
       }
     },
     "/plugins/{id}/file": {
@@ -771,7 +771,7 @@
             }
           }
         },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "File content", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "type": "object", "properties": { "content": { "type": "string" }, "path": { "type": "string" } } }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/git/pull": {
@@ -780,7 +780,7 @@
         "summary": "Git pull for a plugin",
         "operationId": "gitPull",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Pull result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/GitOperationResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/git/status": {
@@ -789,7 +789,7 @@
         "summary": "Git status for a plugin",
         "operationId": "gitStatus",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Git status", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/GitStatusResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/git/commit": {
@@ -812,7 +812,7 @@
             }
           }
         },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Commit result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/GitOperationResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/git/push": {
@@ -821,7 +821,7 @@
         "summary": "Git push for a plugin",
         "operationId": "gitPush",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Push result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/GitOperationResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/git/pull": {
@@ -829,7 +829,7 @@
         "tags": ["Git"],
         "summary": "Git pull all plugins",
         "operationId": "gitPullAll",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Pull all result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/GitOperationResult" } } } }] } } } } }
       }
     },
     "/plugins/{id}/sites/{siteId}/sync": {
@@ -873,7 +873,7 @@
             }
           }
         },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Publish preview", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PublishPreview" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/sites/{siteId}/preview": {
@@ -905,7 +905,7 @@
             }
           }
         },
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "File diff", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/FileDiffResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/backups": {
@@ -1095,7 +1095,7 @@
         "parameters": [
           { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["errors", "all"], "default": "errors" } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Error log content", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorLogContent" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Error Logs"],
@@ -1158,7 +1158,7 @@
           { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["errors", "all"], "default": "all" } },
           { "name": "tail", "in": "query", "schema": { "type": "integer", "default": 100 } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Log stream", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorLogContent" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/errors/log": {
@@ -1166,7 +1166,7 @@
         "tags": ["Error Logs"],
         "summary": "Get error.log.txt content",
         "operationId": "getBackendErrorLog",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Error log content", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorLogContent" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/logs/full": {
@@ -1174,7 +1174,7 @@
         "tags": ["Error Logs"],
         "summary": "Get full log.txt content",
         "operationId": "getBackendFullLog",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Full log content", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorLogContent" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/error-history": {
@@ -1215,13 +1215,13 @@
             }
           }
         },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Error saved", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorHistory" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Error History"],
         "summary": "Clear all error history",
         "operationId": "clearErrorHistory",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Error stats", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorHistoryStats" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/error-history/stats": {
@@ -1396,7 +1396,7 @@
         "tags": ["E2E Tests"],
         "summary": "List test suites",
         "operationId": "getE2ESuites",
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Test suites", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ESuite" } } } }] } } } } }
       }
     },
     "/e2e/suites/{id}/cases": {
@@ -1405,7 +1405,7 @@
         "summary": "Get test cases for a suite",
         "operationId": "getE2ECases",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Test cases", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ECase" } } } }] } } } } }
       }
     },
     "/e2e/run": {
@@ -1427,7 +1427,7 @@
             }
           }
         },
-        "responses": { "201": { "$ref": "#/components/responses/Created" } }
+        "responses": { "201": { "description": "Test run started", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ERun" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/e2e/runs": {
@@ -1438,7 +1438,7 @@
         "parameters": [
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
         ],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Past test runs", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ERun" } } } }] } } } } }
       }
     },
     "/e2e/runs/{id}": {
@@ -1447,7 +1447,7 @@
         "summary": "Get a test run with results",
         "operationId": "getE2ERun",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
-        "responses": { "200": { "$ref": "#/components/responses/Success" } }
+        "responses": { "200": { "description": "Test run details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ERun" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["E2E Tests"],
@@ -2091,6 +2091,205 @@
           "files": { "type": "array", "items": { "type": "string" }, "description": "Files to publish (selected mode)" },
           "createBackup": { "type": "boolean", "default": false },
           "keepZipFiles": { "type": "boolean", "default": false }
+        }
+      },
+      "RemotePluginActionResult": {
+        "type": "object",
+        "description": "Result of a remote plugin lifecycle action (enable/disable/delete).",
+        "properties": {
+          "plugin_slug": { "type": "string", "example": "akismet" },
+          "activated": { "type": "boolean", "description": "Present on enable responses." },
+          "deactivated": { "type": "boolean", "description": "Present on disable responses." },
+          "deleted": { "type": "boolean", "description": "Present on delete responses." }
+        }
+      },
+      "RemotePluginInfo": {
+        "type": "object",
+        "description": "Remote plugin information from the companion uploader.",
+        "properties": {
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "version": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "inactive"] },
+          "author": { "type": "string" },
+          "description": { "type": "string" },
+          "textDomain": { "type": "string" },
+          "updateAvailable": { "type": "boolean" }
+        }
+      },
+      "RemoteFileInfo": {
+        "type": "object",
+        "description": "File metadata from a remote plugin.",
+        "properties": {
+          "path": { "type": "string" },
+          "size": { "type": "integer", "format": "int64" },
+          "hash": { "type": "string" },
+          "modifiedAt": { "type": "string" }
+        }
+      },
+      "SnapshotInfo": {
+        "type": "object",
+        "description": "Remote snapshot metadata.",
+        "properties": {
+          "id": { "type": "integer", "format": "int64" },
+          "type": { "type": "string", "enum": ["master", "incremental", "imported"] },
+          "status": { "type": "string", "enum": ["completed", "in_progress", "failed"] },
+          "rowCount": { "type": "integer" },
+          "fileSize": { "type": "integer", "format": "int64" },
+          "tables": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SnapshotSettings": {
+        "type": "object",
+        "description": "Snapshot retention and provider settings.",
+        "properties": {
+          "retentionMode": { "type": "string", "enum": ["days", "count"] },
+          "retentionDays": { "type": "integer" },
+          "retentionCount": { "type": "integer" },
+          "provider": { "type": "string" },
+          "workerThreads": { "type": "integer" }
+        }
+      },
+      "SnapshotProvider": {
+        "type": "object",
+        "description": "Available snapshot provider.",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "available": { "type": "boolean" },
+          "description": { "type": "string" }
+        }
+      },
+      "SnapshotTable": {
+        "type": "object",
+        "description": "Database table available for snapshotting.",
+        "properties": {
+          "name": { "type": "string" },
+          "rows": { "type": "integer" },
+          "size": { "type": "integer", "format": "int64" },
+          "engine": { "type": "string" }
+        }
+      },
+      "GitStatusResult": {
+        "type": "object",
+        "description": "Git status for a plugin repository.",
+        "properties": {
+          "branch": { "type": "string" },
+          "clean": { "type": "boolean" },
+          "ahead": { "type": "integer" },
+          "behind": { "type": "integer" },
+          "staged": { "type": "array", "items": { "type": "string" } },
+          "modified": { "type": "array", "items": { "type": "string" } },
+          "untracked": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "GitOperationResult": {
+        "type": "object",
+        "description": "Result of a git operation (pull/push/commit).",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "commitHash": { "type": "string" },
+          "filesChanged": { "type": "integer" }
+        }
+      },
+      "E2ESuite": {
+        "type": "object",
+        "description": "E2E test suite definition.",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "caseCount": { "type": "integer" }
+        }
+      },
+      "E2ECase": {
+        "type": "object",
+        "description": "Individual E2E test case.",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "E2ERun": {
+        "type": "object",
+        "description": "E2E test run with results.",
+        "properties": {
+          "id": { "type": "string" },
+          "suiteId": { "type": "string" },
+          "status": { "type": "string", "enum": ["running", "completed", "aborted", "failed"] },
+          "totalCases": { "type": "integer" },
+          "passed": { "type": "integer" },
+          "failed": { "type": "integer" },
+          "skipped": { "type": "integer" },
+          "durationMs": { "type": "integer", "format": "int64" },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ETestResult" } }
+        }
+      },
+      "E2ETestResult": {
+        "type": "object",
+        "description": "Result for an individual test case within a run.",
+        "properties": {
+          "caseId": { "type": "string" },
+          "caseName": { "type": "string" },
+          "status": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+          "durationMs": { "type": "integer", "format": "int64" },
+          "errorMessage": { "type": "string" }
+        }
+      },
+      "BootstrapResult": {
+        "type": "object",
+        "description": "Result of deploying the companion uploader plugin.",
+        "properties": {
+          "success": { "type": "boolean" },
+          "message": { "type": "string" },
+          "version": { "type": "string" }
+        }
+      },
+      "PublishPreview": {
+        "type": "object",
+        "description": "Preview of files that will be published.",
+        "properties": {
+          "totalFiles": { "type": "integer" },
+          "newFiles": { "type": "integer" },
+          "modifiedFiles": { "type": "integer" },
+          "deletedFiles": { "type": "integer" },
+          "files": { "type": "array", "items": { "$ref": "#/components/schemas/FileChange" } }
+        }
+      },
+      "FileDiffResult": {
+        "type": "object",
+        "description": "Local vs remote file diff.",
+        "properties": {
+          "path": { "type": "string" },
+          "localContent": { "type": "string" },
+          "remoteContent": { "type": "string" },
+          "isDifferent": { "type": "boolean" }
+        }
+      },
+      "ErrorLogContent": {
+        "type": "object",
+        "description": "Error log file content.",
+        "properties": {
+          "content": { "type": "string" },
+          "lines": { "type": "integer" },
+          "fileSize": { "type": "integer", "format": "int64" }
+        }
+      },
+      "ErrorHistoryStats": {
+        "type": "object",
+        "description": "Error history statistics.",
+        "properties": {
+          "total": { "type": "integer" },
+          "byLevel": { "type": "object", "additionalProperties": { "type": "integer" } },
+          "byCode": { "type": "object", "additionalProperties": { "type": "integer" } },
+          "last24h": { "type": "integer" },
+          "last7d": { "type": "integer" }
         }
       }
     },
