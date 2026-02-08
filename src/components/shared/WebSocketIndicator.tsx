@@ -13,10 +13,12 @@ import { cn } from "@/lib/utils";
 interface WebSocketIndicatorProps {
   className?: string;
   showLabel?: boolean;
+  /** When true, show toast notifications for connect/disconnect events */
+  showToasts?: boolean;
 }
 
-export function WebSocketIndicator({ className, showLabel = false }: WebSocketIndicatorProps) {
-  const { isConnected, reconnectAttempts, maxReconnectAttempts, isReconnectEnabled, reconnect } = useWebSocketStatus();
+export function WebSocketIndicator({ className, showLabel = false, showToasts = false }: WebSocketIndicatorProps) {
+  const { isConnected, reconnectAttempts, maxReconnectAttempts, isReconnectEnabled, reconnect } = useWebSocketStatus({ showToasts });
 
   const isMaxAttemptsReached = reconnectAttempts >= maxReconnectAttempts;
 
