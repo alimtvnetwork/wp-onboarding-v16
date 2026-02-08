@@ -1318,7 +1318,8 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		}
 		return apperror.Wrap(err, errCode, fmt.Sprintf("failed to %s plugin", action)).
 			WithContext("siteId", siteID).
-			WithContext("plugin", pluginSlug)
+			WithContext("plugin", pluginSlug).
+			WithContext("sessionId", sessionID)
 	}
 
 	// Success — save response.json

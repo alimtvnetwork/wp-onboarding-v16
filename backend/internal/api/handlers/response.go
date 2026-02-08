@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"wp-plugin-publish/internal/envelope"
+	"wp-plugin-publish/pkg/apperror"
 )
 
 // respondJSON writes a raw JSON response (used only for non-envelope responses like file downloads)
@@ -31,6 +32,18 @@ func respondCreated(w http.ResponseWriter, data interface{}) {
 // respondError writes an error envelope with auto-captured Go stack traces
 func respondError(w http.ResponseWriter, status int, code, message string) {
 	envelope.Write(w, envelope.ErrorWithStack(status, code, message))
+}
+
+// respondErrorWithSession writes an error envelope with session ID and stack traces.
+// Extracts sessionId from apperror context if available, or uses the explicit sessionId.
+func respondErrorWithSession(w http.ResponseWriter, status int, code, message string, err error) {
+	resp := envelope.ErrorWithStack(status, code, message)
+	if appErr, ok := err.(*apperror.AppError); ok {
+		if sid, ok := appErr.Context["sessionId"].(string); ok && sid != "" {
+			resp = resp.WithSessionId(sid)
+		}
+	}
+	envelope.Write(w, resp)
 }
 
 // respondDeleted writes a standard deletion success envelope

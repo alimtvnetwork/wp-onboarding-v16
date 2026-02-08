@@ -1,0 +1,6 @@
+# Memory: architecture/frontend/error-modal-session-diagnostics
+Updated: 2026-02-08
+
+The 'Session' tab in the Global Error Modal is a multi-tab diagnostic interface that visualizes the full lifecycle of a remote operation. It contains four sub-tabs: (1) 'Logs' for execution steps; (2) 'Request' for the outbound payload; (3) 'Response' for the raw remote results and status; and (4) 'Stack Trace', which features toggles to switch between Go call stacks, structured PHP frames, and raw 'PHP Log' (stacktrace.txt) content with a copy-to-clipboard action. The interface fetches data in parallel from the diagnostics and logs endpoints to minimize loading states.
+
+Additionally, the BackendSection now auto-fetches session diagnostics via the `useSessionDiagnostics` hook when `error.sessionId` is present. This data is merged into the Stack tab (showing session-level Go and PHP stack frames alongside envelope data) and the Request tab (enriching the Go→PHP sub-node with the full PHP endpoint URL, response status code, and collapsible response body from session `response.json`). The `sessionId` is extracted from the envelope `Attributes.SessionId` field or from WebSocket event data.

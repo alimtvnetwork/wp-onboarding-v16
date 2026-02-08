@@ -1,0 +1,16 @@
+# Memory: architecture/configuration/seedable-debug-config
+Updated: 2026-02-08
+
+All stack trace and response debug settings are now seedable via the CW config architecture:
+
+**Logging Config (config.json → `logging`):**
+- `stackTraceDepth` (int, default 20): Maximum Go stack frames captured in envelopes and session diagnostics
+- `phpStackTraceDepth` (int, default 0): Maximum PHP stack frames (0 = unlimited, as per requirement for full PHP visibility)
+
+**Response Debug Config (config.json → `responseDebug`):**
+- `includeStackTrace` (bool, default true): Include Go/PHP stack traces in error envelopes
+- `includeInternalErrors` (bool, default true): Include detailed error messages in Errors block
+- `includeMethodsStack` (bool, default true): Include MethodsStack call chain in responses
+- `maxStackFrames` (int, default 20): Maximum frames per stack trace section
+
+All settings are seeded to the SQLite settings table via `seedFromConfig()` on first run, keyed as `logging.stackTraceDepth`, `logging.phpStackTraceDepth`, `responseDebug.includeStackTrace`, etc.

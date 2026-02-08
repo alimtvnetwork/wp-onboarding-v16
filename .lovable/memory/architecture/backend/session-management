@@ -1,0 +1,6 @@
+# Memory: architecture/backend/session-management
+Updated: 2026-02-08
+
+The backend implements a multi-tier session logging architecture (7-day retention) with a 'GET /api/v1/sessions/{id}/diagnostics' API to aggregate data. Universal request sessions are stored as JSON in date/hour hierarchies ('data/request-sessions/'), while long-running operation sessions (publish, sync, remote plugin actions) use UUID-named folders containing 'session.log', 'error.log', 'request.json', and 'response.json'. These provide a persistent audit trail and support real-time WebSocket progress streaming and structured frontend diagnostics.
+
+Remote plugin action sessions (enable, disable, delete) now include `SessionId` in the error envelope's `Attributes` block, allowing the frontend error modal to auto-fetch diagnostics via the session endpoint. The `respondErrorWithSession` helper extracts `sessionId` from `apperror.AppError.Context` and attaches it to the envelope response.

@@ -36,15 +36,16 @@ type Status struct {
 
 // Attributes describes the shape and size of the result set.
 type Attributes struct {
-	RequestedAt      string `json:"RequestedAt,omitempty"`
+	RequestedAt        string `json:"RequestedAt,omitempty"`
 	RequestDelegatedAt string `json:"RequestDelegatedAt,omitempty"`
-	HasAnyErrors     bool   `json:"HasAnyErrors"`
-	IsSingle         bool   `json:"IsSingle"`
-	IsMultiple       bool   `json:"IsMultiple"`
-	TotalRecords     int    `json:"TotalRecords,omitempty"`
-	PerPage          int    `json:"PerPage,omitempty"`
-	TotalPages       int    `json:"TotalPages,omitempty"`
-	CurrentPage      int    `json:"CurrentPage,omitempty"`
+	SessionId          string `json:"SessionId,omitempty"`
+	HasAnyErrors       bool   `json:"HasAnyErrors"`
+	IsSingle           bool   `json:"IsSingle"`
+	IsMultiple         bool   `json:"IsMultiple"`
+	TotalRecords       int    `json:"TotalRecords,omitempty"`
+	PerPage            int    `json:"PerPage,omitempty"`
+	TotalPages         int    `json:"TotalPages,omitempty"`
+	CurrentPage        int    `json:"CurrentPage,omitempty"`
 }
 
 // Navigation provides pagination URL links for list responses.
@@ -245,6 +246,12 @@ func Error(statusCode int, code, message string) Response {
 func (r Response) WithEndpoints(requested, delegated string) Response {
 	r.Attributes.RequestedAt = requested
 	r.Attributes.RequestDelegatedAt = delegated
+	return r
+}
+
+// WithSessionId attaches a session ID to the response attributes for frontend diagnostics.
+func (r Response) WithSessionId(sessionId string) Response {
+	r.Attributes.SessionId = sessionId
 	return r
 }
 
