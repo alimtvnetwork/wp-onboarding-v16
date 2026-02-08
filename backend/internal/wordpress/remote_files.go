@@ -1,4 +1,4 @@
-// Package wordpress provides remote file/upload capabilities via the Onboard companion plugin API.
+// Package wordpress provides remote file/upload capabilities via the Riseup Asia Uploader companion plugin API.
 package wordpress
 
 import (
@@ -39,31 +39,9 @@ type OnboardUploadResult struct {
 }
 
 // GetPluginFiles retrieves the list of files for a remote plugin.
-// Uses a fixed endpoint with slug in JSON body (legacy Onboard namespace).
+// Delegates to GetPluginFilesViaRiseup (Riseup Asia Uploader).
 func (c *Client) GetPluginFiles(ctx context.Context, slug string) ([]RemoteFile, error) {
-	// Use the correct namespace: onboard-plugin/v1
-	endpoint := fmt.Sprintf("/%s/plugins/files", OnboardNamespace)
-	reqBody := map[string]string{"plugin": slug}
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get plugin files: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == 404 {
-		return nil, fmt.Errorf("plugin not found on remote: %s", slug)
-	}
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("failed to get plugin files: status %d", resp.StatusCode)
-	}
-
-	var files []RemoteFile
-	if err := json.NewDecoder(resp.Body).Decode(&files); err != nil {
-		return nil, fmt.Errorf("failed to decode plugin files: %w", err)
-	}
-
-	return files, nil
+	return c.GetPluginFilesViaRiseup(ctx, slug)
 }
 
 // GetPluginSyncManifest retrieves the cached file manifest for a remote plugin via Riseup Asia Uploader.
@@ -160,8 +138,9 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 	return result.Files, nil
 }
 
-// RequestMutationToken requests a mutation token from the companion plugin for a specific action.
-// Valid actions: upload, enable, disable, delete, restore, backup_manual, debug_enable, debug_disable
+// RequestMutationToken requests a mutation token from the legacy Onboard companion plugin.
+// Deprecated: The Riseup Asia Uploader does not use mutation tokens.
+// Kept for backward compatibility; will be removed in a future version.
 func (c *Client) RequestMutationToken(action string) (string, error) {
 	endpoint := fmt.Sprintf("/%s/request-mutation?action=%s", OnboardNamespace, action)
 	resp, err := c.request("GET", endpoint, nil)
@@ -200,8 +179,9 @@ func (c *Client) RequestMutationToken(action string) (string, error) {
 	return result.MutationToken, nil
 }
 
-// UploadPluginZip uploads a plugin ZIP file to WordPress via the companion plugin's upload endpoint.
-// It first requests a mutation token, then POSTs the ZIP as multipart form-data.
+// UploadPluginZip uploads a plugin ZIP file to WordPress via the legacy Onboard companion plugin.
+// Deprecated: Use UploadPluginViaUploader instead (Riseup Asia Uploader).
+// Kept for backward compatibility; will be removed in a future version.
 func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUploadResult, error) {
 	c.progress("upload", "running", fmt.Sprintf("Requesting upload mutation token for %s...", pluginSlug), nil)
 
@@ -308,61 +288,17 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	return &result, nil
 }
 
-// EnablePlugin activates/enables a plugin on the remote WordPress site via the companion plugin API.
-// Requires the plugins-onboard companion plugin to be installed on the remote site.
+// EnablePlugin activates/enables a plugin on the remote WordPress site.
+// Delegates to EnablePluginViaUploader (Riseup Asia Uploader).
 func (c *Client) EnablePlugin(pluginSlug string) error {
-	mutationToken, err := c.RequestMutationToken("enable")
-	if err != nil {
-		return fmt.Errorf("get enable mutation token: %w", err)
-	}
-
-	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/%s/enable", OnboardNamespace, mutationToken, pluginSlug)
-	resp, err := c.request("POST", endpoint, nil)
-	if err != nil {
-		return fmt.Errorf("enable plugin request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-	body := string(bodyBytes)
-
-	if resp.StatusCode != http.StatusOK {
-		return &APIError{
-			Operation:    "failed to enable plugin",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			ResponseBody: truncateBody(body, 8192),
-			PluginSlugIn: pluginSlug,
-			PluginIDUsed: pluginSlug,
-		}
-	}
-
-	return nil
+	return c.EnablePluginViaUploader(pluginSlug)
 }
 
 // CheckOnboardPluginAvailable checks if the companion plugin is installed and available.
+// Deprecated: Now checks for Riseup Asia Uploader availability instead.
 func (c *Client) CheckOnboardPluginAvailable() (bool, error) {
-	endpoint := fmt.Sprintf("/%s/plugins/list", OnboardNamespace)
-	resp, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	// 404 means the route doesn't exist (plugin not installed)
-	if resp.StatusCode == http.StatusNotFound {
-		return false, nil
-	}
-
-	// 401/403 means auth required - plugin exists but we need credentials
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return true, nil
-	}
-
-	// 200 means plugin is available and we're authenticated
-	return resp.StatusCode == http.StatusOK, nil
+	available, _, err := c.CheckRiseupAsiaAvailable()
+	return available, err
 }
 
 // CheckOnboardAvailable is an alias for CheckOnboardPluginAvailable
@@ -370,33 +306,11 @@ func (c *Client) CheckOnboardAvailable() (bool, error) {
 	return c.CheckOnboardPluginAvailable()
 }
 
-// UploadPluginViaOnboard uploads a plugin via the Onboard plugin and returns UploaderUploadResult
+// UploadPluginViaOnboard uploads a plugin via the Riseup Asia Uploader and returns UploaderUploadResult.
+// Deprecated: Delegates to UploadPluginViaUploader.
 func (c *Client) UploadPluginViaOnboard(zipPath string, activate bool) (*UploaderUploadResult, error) {
-	// Get the plugin slug from the ZIP filename
-	pluginSlug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
-	
-	// Use the Onboard upload method
-	result, err := c.UploadPluginZip(zipPath, pluginSlug)
-	if err != nil {
-		return nil, err
-	}
-	
-	// Convert to UploaderUploadResult
-	uploaderResult := &UploaderUploadResult{
-		Success:   result.Success,
-		Message:   result.Message,
-		Plugin:    result.PluginSlug,
-		Activated: false, // Onboard doesn't auto-activate
-	}
-	
-	// If activation requested, try to activate
-	if activate && result.PluginSlug != "" {
-		if err := c.EnablePluginViaUploader(result.PluginSlug); err == nil {
-			uploaderResult.Activated = true
-		}
-	}
-	
-	return uploaderResult, nil
+	slug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
+	return c.UploadPluginViaUploader(zipPath, slug, activate)
 }
 
 // truncateBody truncates a string to maxLen for error messages.

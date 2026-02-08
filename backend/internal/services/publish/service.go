@@ -1372,13 +1372,14 @@ func (s *Service) getZipStructure(zipPath string) []string {
 }
 
 // uploadPlugin uploads a plugin zip to WordPress via available methods.
-// Priority: 1) Plugin Uploader Helper (plugin-uploader/v1), 2) Onboard Plugin (onboard-plugin/v1), 3) Simulated
+// uploadPlugin uploads a plugin ZIP via the Riseup Asia Uploader companion plugin.
+// Priority: 1) Riseup Asia Uploader, 2) Simulated (no companion plugin)
 // Returns (performed, result, alreadyActivated, error).
 func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, zipPath, slug string) (bool, *wordpress.OnboardUploadResult, bool, error) {
-	// Check if Plugin Uploader Helper is available (preferred - simpler API)
-	uploaderAvailable, _ := wpClient.CheckUploaderHelperAvailable()
+	// Check if Riseup Asia Uploader is available
+	uploaderAvailable, _, _ := wpClient.CheckRiseupAsiaAvailable()
 	if uploaderAvailable {
-		s.log.Info("Using Plugin Uploader Helper for upload", "slug", slug)
+		s.log.Info("Using Riseup Asia Uploader for upload", "slug", slug)
 
 		result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true) // pass slug and activate=true
 		if err != nil {
@@ -1400,7 +1401,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 		// Track if activation happened during upload
 		alreadyActivated := result.Activated
 
-		s.log.Info("Plugin uploaded via Plugin Uploader Helper",
+		s.log.Info("Plugin uploaded via Riseup Asia Uploader",
 			"slug", slug,
 			"success", result.Success,
 			"message", result.Message,
@@ -1410,33 +1411,8 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 		return true, onboardResult, alreadyActivated, nil
 	}
 
-	// Check if Onboard Plugin is available (legacy companion)
-	onboardAvailable, err := wpClient.CheckOnboardPluginAvailable()
-	if err != nil {
-		s.log.Warn("Could not check for companion plugins", "error", err)
-	}
-
-	if onboardAvailable {
-		s.log.Info("Using Onboard Plugin for upload", "slug", slug)
-
-		result, err := wpClient.UploadPluginZip(zipPath, slug)
-		if err != nil {
-			return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via onboard plugin")
-		}
-
-		s.log.Info("Plugin uploaded via Onboard Plugin",
-			"slug", slug,
-			"success", result.Success,
-			"message", result.Message,
-			"filesUpdated", result.FilesUpdated,
-			"overwritten", result.Overwritten,
-		)
-
-		return true, result, false, nil // Onboard plugin doesn't auto-activate
-	}
-
 	// No companion plugin available - log simulated upload
-	s.log.Warn("No companion plugin available; upload simulated", "slug", slug)
+	s.log.Warn("Riseup Asia Uploader not available; upload simulated", "slug", slug)
 	if info, err := os.Stat(zipPath); err == nil {
 		s.log.Info("Plugin upload prepared (simulated)", "slug", slug, "size", info.Size())
 	}
