@@ -18,8 +18,10 @@ if (!defined('ABSPATH')) {
  * Class RiseupEnvelopeBuilder
  *
  * Fluent builder for the Universal Response Envelope format.
+ * Uses PHPStan/Psalm @template annotations for static analysis type safety.
  *
  * Usage:
+ *   /** @var RiseupEnvelopeBuilder<array{status: string, version: string}> $envelope {@*}
  *   return RiseupEnvelopeBuilder::success()
  *       ->setResults(array($data))
  *       ->setRequestedAt('/status')
@@ -29,6 +31,10 @@ if (!defined('ABSPATH')) {
  *       ->setRequestedAt('/plugins/enable')
  *       ->setDelegatedAt($delegated_url)
  *       ->toResponse();
+ *
+ * @template T of array
+ * @phpstan-template T of array
+ * @psalm-template T of array
  */
 class RiseupEnvelopeBuilder {
 
@@ -41,7 +47,7 @@ class RiseupEnvelopeBuilder {
     /** @var string */
     private $message = 'OK';
 
-    /** @var array */
+    /** @var array<int, T> */
     private $results = array();
 
     /** @var string */
@@ -85,7 +91,8 @@ class RiseupEnvelopeBuilder {
      * @param string $message Optional success message.
      * @param int    $code    HTTP status code (default 200).
      *
-     * @return self
+     * @return static<T>
+     * @phpstan-return static<T>
      */
     public static function success($message = 'OK', $code = 200) {
         $builder = new self();
@@ -102,7 +109,8 @@ class RiseupEnvelopeBuilder {
      * @param int            $code      HTTP status code (default 500).
      * @param Throwable|null $exception Optional exception for stack trace extraction.
      *
-     * @return self
+     * @return static<T>
+     * @phpstan-return static<T>
      */
     public static function error($message, $code = 500, $exception = null) {
         $builder = new self();
@@ -165,8 +173,9 @@ class RiseupEnvelopeBuilder {
     /**
      * Set the Results array.
      *
-     * @param array $results Array of result items (always an array, even for single).
-     * @return self
+     * @param array<int, T> $results Array of result items (always an array, even for single).
+     * @return static<T>
+     * @phpstan-return static<T>
      */
     public function setResults(array $results) {
         $this->results = $results;
@@ -176,8 +185,9 @@ class RiseupEnvelopeBuilder {
     /**
      * Set a single result item (wraps in array).
      *
-     * @param array $item Single result item.
-     * @return self
+     * @param T $item Single result item.
+     * @return static<T>
+     * @phpstan-return static<T>
      */
     public function setSingleResult(array $item) {
         $this->results = array($item);
@@ -188,7 +198,7 @@ class RiseupEnvelopeBuilder {
      * Set the RequestedAt path (the endpoint that handled this request).
      *
      * @param string $path Endpoint path.
-     * @return self
+     * @return static<T>
      */
     public function setRequestedAt($path) {
         $this->requested_at = $path;
@@ -198,7 +208,7 @@ class RiseupEnvelopeBuilder {
     /**
      * Auto-detect RequestedAt from the current REST request URI.
      *
-     * @return self
+     * @return static<T>
      */
     public function autoDetectRequestedAt() {
         if (isset($_SERVER['REQUEST_URI'])) {
@@ -211,7 +221,7 @@ class RiseupEnvelopeBuilder {
      * Set the RequestDelegatedAt URL (downstream endpoint if proxied).
      *
      * @param string $url Full downstream URL.
-     * @return self
+     * @return static<T>
      */
     public function setDelegatedAt($url) {
         $this->delegated_at = $url;
@@ -224,7 +234,7 @@ class RiseupEnvelopeBuilder {
      * @param int $total_records Total record count.
      * @param int $per_page      Records per page.
      * @param int $current_page  Current page number.
-     * @return self
+     * @return static<T>
      */
     public function setPagination($total_records, $per_page, $current_page) {
         $this->total_records = $total_records;
@@ -240,7 +250,7 @@ class RiseupEnvelopeBuilder {
      * @param string|null $next_page    URL for next page.
      * @param string|null $prev_page    URL for previous page.
      * @param array       $closer_links Array of nearby page URLs.
-     * @return self
+     * @return static<T>
      */
     public function setNavigation($next_page = null, $prev_page = null, $closer_links = array()) {
         $this->navigation = array(
@@ -256,7 +266,7 @@ class RiseupEnvelopeBuilder {
      *
      * @param array $backend_stack  Array of {Method, File, LineNumber} entries.
      * @param array $frontend_stack Array of frontend call chain entries (usually empty).
-     * @return self
+     * @return static<T>
      */
     public function setMethodsStack(array $backend_stack, array $frontend_stack = array()) {
         $this->methods_stack = array(
@@ -270,7 +280,7 @@ class RiseupEnvelopeBuilder {
      * Override or extend the Errors block.
      *
      * @param array $errors Errors data.
-     * @return self
+     * @return static<T>
      */
     public function setErrors(array $errors) {
         $this->errors = $errors;
@@ -285,7 +295,8 @@ class RiseupEnvelopeBuilder {
     /**
      * Build the envelope array.
      *
-     * @return array PascalCase envelope structure.
+     * @return array{Status: array, Attributes: array, Results: array<int, T>}
+     * @phpstan-return array{Status: array{IsSuccess: bool, IsFailed: bool, Code: int, Message: string, Timestamp: string}, Attributes: array, Results: array<int, T>}
      */
     public function build() {
         $result_count = count($this->results);
