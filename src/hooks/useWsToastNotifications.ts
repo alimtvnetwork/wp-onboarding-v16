@@ -1,27 +1,42 @@
 import { useEffect } from "react";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
 import { toast } from "sonner";
+import { useNotificationStore, type NotificationType } from "@/stores/notificationStore";
 
 /**
  * Listens to key WebSocket events and surfaces them as Sonner toasts
- * so users get notified of important operations regardless of which page they're on.
+ * AND persists them to the notification store for history.
  */
 export function useWsToastNotifications() {
+  const addNotification = useNotificationStore((s) => s.addNotification);
+
   useEffect(() => {
     const unsubs: (() => void)[] = [];
+
+    const notify = (
+      type: NotificationType,
+      title: string,
+      description: string | undefined,
+      source: string
+    ) => {
+      // Show toast
+      if (type === "success") toast.success(title, { description });
+      else if (type === "error") toast.error(title, { description });
+      else if (type === "warning") toast.warning(title, { description });
+      else toast.info(title, { description });
+
+      // Persist to store
+      addNotification({ type, title, description, source });
+    };
 
     // ── Publish ──────────────────────────────────────────────
     unsubs.push(
       wsClient.on(WS_EVENTS.PUBLISH_COMPLETE, (data: unknown) => {
         const d = data as { pluginSlug?: string; siteName?: string; success?: boolean; error?: string };
         if (d.success === false || d.error) {
-          toast.error("Publish failed", {
-            description: d.error || `${d.pluginSlug ?? "Plugin"} → ${d.siteName ?? "site"}`,
-          });
+          notify("error", "Publish failed", d.error || `${d.pluginSlug ?? "Plugin"} → ${d.siteName ?? "site"}`, "publish");
         } else {
-          toast.success("Publish complete", {
-            description: `${d.pluginSlug ?? "Plugin"} → ${d.siteName ?? "site"}`,
-          });
+          notify("success", "Publish complete", `${d.pluginSlug ?? "Plugin"} → ${d.siteName ?? "site"}`, "publish");
         }
       })
     );
@@ -30,27 +45,21 @@ export function useWsToastNotifications() {
     unsubs.push(
       wsClient.on(WS_EVENTS.AUTO_PUBLISH_TRIGGERED, (data: unknown) => {
         const d = data as { pluginSlug?: string };
-        toast.info("Auto-publish triggered", {
-          description: d.pluginSlug ?? "File changes detected",
-        });
+        notify("info", "Auto-publish triggered", d.pluginSlug ?? "File changes detected", "auto-publish");
       })
     );
 
     unsubs.push(
       wsClient.on(WS_EVENTS.AUTO_PUBLISH_COMPLETE, (data: unknown) => {
         const d = data as { pluginSlug?: string; sitesCount?: number };
-        toast.success("Auto-publish complete", {
-          description: `${d.pluginSlug ?? "Plugin"} deployed to ${d.sitesCount ?? "all"} site(s)`,
-        });
+        notify("success", "Auto-publish complete", `${d.pluginSlug ?? "Plugin"} deployed to ${d.sitesCount ?? "all"} site(s)`, "auto-publish");
       })
     );
 
     unsubs.push(
       wsClient.on(WS_EVENTS.AUTO_PUBLISH_FAILED, (data: unknown) => {
         const d = data as { pluginSlug?: string; error?: string };
-        toast.error("Auto-publish failed", {
-          description: d.error || d.pluginSlug || "An error occurred",
-        });
+        notify("error", "Auto-publish failed", d.error || d.pluginSlug || "An error occurred", "auto-publish");
       })
     );
 
@@ -59,13 +68,9 @@ export function useWsToastNotifications() {
       wsClient.on(WS_EVENTS.SYNC_COMPLETE, (data: unknown) => {
         const d = data as { pluginSlug?: string; siteName?: string; success?: boolean; error?: string };
         if (d.success === false || d.error) {
-          toast.error("Sync failed", {
-            description: d.error || `${d.pluginSlug ?? "Plugin"} ↔ ${d.siteName ?? "site"}`,
-          });
+          notify("error", "Sync failed", d.error || `${d.pluginSlug ?? "Plugin"} ↔ ${d.siteName ?? "site"}`, "sync");
         } else {
-          toast.success("Sync complete", {
-            description: `${d.pluginSlug ?? "Plugin"} ↔ ${d.siteName ?? "site"}`,
-          });
+          notify("success", "Sync complete", `${d.pluginSlug ?? "Plugin"} ↔ ${d.siteName ?? "site"}`, "sync");
         }
       })
     );
@@ -75,13 +80,9 @@ export function useWsToastNotifications() {
       wsClient.on(WS_EVENTS.CONNECTION_TEST_COMPLETE, (data: unknown) => {
         const d = data as { siteName?: string; success?: boolean; error?: string };
         if (d.success === false || d.error) {
-          toast.error("Connection test failed", {
-            description: d.error || d.siteName || "Could not reach site",
-          });
+          notify("error", "Connection test failed", d.error || d.siteName || "Could not reach site", "connection");
         } else {
-          toast.success("Connection test passed", {
-            description: d.siteName ?? "Site is reachable",
-          });
+          notify("success", "Connection test passed", d.siteName ?? "Site is reachable", "connection");
         }
       })
     );
@@ -92,13 +93,9 @@ export function useWsToastNotifications() {
         const d = data as { passed?: number; failed?: number; total?: number };
         const failed = d.failed ?? 0;
         if (failed > 0) {
-          toast.error("E2E tests finished with failures", {
-            description: `${d.passed ?? 0} passed, ${failed} failed out of ${d.total ?? "?"}`,
-          });
+          notify("error", "E2E tests finished with failures", `${d.passed ?? 0} passed, ${failed} failed out of ${d.total ?? "?"}`, "e2e");
         } else {
-          toast.success("All E2E tests passed", {
-            description: `${d.passed ?? d.total ?? "All"} test(s) passed`,
-          });
+          notify("success", "All E2E tests passed", `${d.passed ?? d.total ?? "All"} test(s) passed`, "e2e");
         }
       })
     );
@@ -107,18 +104,14 @@ export function useWsToastNotifications() {
     unsubs.push(
       wsClient.on("git_pull_complete", (data: unknown) => {
         const d = data as { pluginSlug?: string };
-        toast.success("Git pull complete", {
-          description: d.pluginSlug ?? "Repository updated",
-        });
+        notify("success", "Git pull complete", d.pluginSlug ?? "Repository updated", "git");
       })
     );
 
     unsubs.push(
       wsClient.on("git_pull_failed", (data: unknown) => {
         const d = data as { pluginSlug?: string; error?: string };
-        toast.error("Git pull failed", {
-          description: d.error || d.pluginSlug || "Pull operation failed",
-        });
+        notify("error", "Git pull failed", d.error || d.pluginSlug || "Pull operation failed", "git");
       })
     );
 
@@ -126,9 +119,7 @@ export function useWsToastNotifications() {
     unsubs.push(
       wsClient.on(WS_EVENTS.ERROR, (data: unknown) => {
         const d = data as { message?: string; code?: string };
-        toast.error(d.message || "Backend error", {
-          description: d.code ? `Error code: ${d.code}` : undefined,
-        });
+        notify("error", d.message || "Backend error", d.code ? `Error code: ${d.code}` : undefined, "error");
       })
     );
 
@@ -137,17 +128,13 @@ export function useWsToastNotifications() {
       wsClient.on(WS_EVENTS.REMOTE_PLUGIN_ACTION_COMPLETE, (data: unknown) => {
         const d = data as { action?: string; pluginSlug?: string; siteName?: string; success?: boolean; error?: string };
         if (d.success === false || d.error) {
-          toast.error(`Remote ${d.action ?? "action"} failed`, {
-            description: d.error || `${d.pluginSlug ?? "Plugin"} on ${d.siteName ?? "site"}`,
-          });
+          notify("error", `Remote ${d.action ?? "action"} failed`, d.error || `${d.pluginSlug ?? "Plugin"} on ${d.siteName ?? "site"}`, "remote-plugin");
         } else {
-          toast.success(`Remote ${d.action ?? "action"} complete`, {
-            description: `${d.pluginSlug ?? "Plugin"} on ${d.siteName ?? "site"}`,
-          });
+          notify("success", `Remote ${d.action ?? "action"} complete`, `${d.pluginSlug ?? "Plugin"} on ${d.siteName ?? "site"}`, "remote-plugin");
         }
       })
     );
 
     return () => unsubs.forEach((fn) => fn());
-  }, []);
+  }, [addNotification]);
 }

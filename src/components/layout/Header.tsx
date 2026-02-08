@@ -6,6 +6,7 @@ import { VersionBadge } from "@/components/settings/VersionBadge";
 import { WebSocketIndicator } from "@/components/shared/WebSocketIndicator";
 import { GlobalPublishProgress } from "@/components/plugins/GlobalPublishProgress";
 import { ErrorQueueBadge } from "@/components/errors/ErrorQueueBadge";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,6 +54,7 @@ export function Header({ onMenuToggle }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-3">
+        <NotificationPanel />
         <ErrorQueueBadge />
         <GlobalPublishProgress />
 
