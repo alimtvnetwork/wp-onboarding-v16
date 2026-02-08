@@ -48,6 +48,93 @@ function Write-Status {
     }
 }
 
+# Extract error response body from exception (works on PS 5.1 and PS 7+)
+function Get-ErrorResponseBody {
+    param($ErrorRecord)
+    # PS 7+ stores parsed error body here
+    if ($ErrorRecord.ErrorDetails -and $ErrorRecord.ErrorDetails.Message) {
+        return $ErrorRecord.ErrorDetails.Message
+    }
+    # PS 5.1 / WebException path
+    if ($ErrorRecord.Exception.Response) {
+        try {
+            $stream = $ErrorRecord.Exception.Response.GetResponseStream()
+            if ($stream) {
+                $reader = New-Object System.IO.StreamReader($stream)
+                try { $reader.BaseStream.Position = 0 } catch {}
+                $body = $reader.ReadToEnd()
+                $reader.Close()
+                return $body
+            }
+        } catch {}
+    }
+    return ""
+}
+
+# Pretty-print an error response body (JSON or raw)
+function Write-ErrorBody {
+    param([string]$Body, [string]$Label = "Response Body")
+    if ($Body -eq "") { return }
+    Write-Status ""
+    Write-Status "      ── $Label ──" -Color DarkGray
+    try {
+        $errJson = $Body | ConvertFrom-Json
+        if ($errJson.message) {
+            Write-Status "      Message: $($errJson.message)" -Color Red
+        }
+        if ($errJson.error -and $errJson.error.message) {
+            Write-Status "      Error:   $($errJson.error.message)" -Color Red
+        }
+        if ($errJson.code) {
+            Write-Status "      Code:    $($errJson.code)" -Color Red
+        }
+        if ($errJson.data -and $errJson.data.status) {
+            Write-Status "      Status:  $($errJson.data.status)" -Color Red
+        }
+        # Stack trace (string)
+        if ($errJson.stackTrace) {
+            Write-Status "      Stack Trace:" -Color Yellow
+            Write-Status $errJson.stackTrace -Color Gray
+        }
+        # Stack trace frames (array)
+        if ($errJson.stackTraceFrames) {
+            Write-Status "      Stack Frames:" -Color Yellow
+            foreach ($frame in $errJson.stackTraceFrames) {
+                $loc = "        $($frame.file):$($frame.line)"
+                if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
+                elseif ($frame.function) { $loc += " -> $($frame.function)" }
+                Write-Status $loc -Color Gray
+            }
+        }
+        # Nested error.details
+        if ($errJson.error -and $errJson.error.details) {
+            $d = $errJson.error.details
+            if ($d.stackTrace) {
+                Write-Status "      Stack Trace:" -Color Yellow
+                Write-Status $d.stackTrace -Color Gray
+            }
+            if ($d.stackTraceFrames) {
+                Write-Status "      Stack Frames:" -Color Yellow
+                foreach ($frame in $d.stackTraceFrames) {
+                    $loc = "        $($frame.file):$($frame.line)"
+                    if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
+                    elseif ($frame.function) { $loc += " -> $($frame.function)" }
+                    Write-Status $loc -Color Gray
+                }
+            }
+        }
+        # If nothing matched, dump whole thing
+        $hasKnown = $errJson.message -or $errJson.error -or $errJson.stackTrace -or $errJson.code
+        if (-not $hasKnown) {
+            Write-Status $Body -Color Gray
+        }
+    } catch {
+        # Not JSON, dump raw
+        Write-Status $Body -Color Gray
+    }
+    Write-Status "      ────────────────" -Color DarkGray
+}
+
 # Initialize variables
 $PluginFolderPath = ""
 $WordPressSiteURL = ""
@@ -273,50 +360,9 @@ foreach ($ns in $apiNamespaces) {
 
     } catch {
         $errMsg = $_.Exception.Message
-        $errBody = ""
-        if ($_.Exception.Response) {
-            try {
-                $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-                $reader.BaseStream.Position = 0
-                $errBody = $reader.ReadToEnd()
-            } catch {}
-        }
+        $errBody = Get-ErrorResponseBody $_
         Write-Status "      ✗ $($ns.display) failed: $errMsg" -Color Yellow
-        if ($errBody -ne "") {
-            Write-Status ""
-            Write-Status "      ── Response Body ──" -Color DarkGray
-            # Try to parse as JSON for friendly formatting
-            try {
-                $errJson = $errBody | ConvertFrom-Json
-                if ($errJson.message) {
-                    Write-Status "      Message: $($errJson.message)" -Color Red
-                }
-                if ($errJson.error -and $errJson.error.message) {
-                    Write-Status "      Error:   $($errJson.error.message)" -Color Red
-                }
-                if ($errJson.stackTrace) {
-                    Write-Status "      Stack Trace:" -Color Yellow
-                    Write-Status $errJson.stackTrace -Color Gray
-                }
-                if ($errJson.stackTraceFrames) {
-                    Write-Status "      Stack Frames:" -Color Yellow
-                    foreach ($frame in $errJson.stackTraceFrames) {
-                        $loc = "        $($frame.file):$($frame.line)"
-                        if ($frame.class) { $loc += " → $($frame.class)::$($frame.function)" }
-                        elseif ($frame.function) { $loc += " → $($frame.function)" }
-                        Write-Status $loc -Color Gray
-                    }
-                }
-                # If none of the known fields matched, dump the whole JSON
-                if (-not $errJson.message -and -not $errJson.error -and -not $errJson.stackTrace) {
-                    Write-Status ($errBody) -Color Gray
-                }
-            } catch {
-                # Not JSON, dump raw
-                Write-Status $errBody -Color Gray
-            }
-            Write-Status "      ────────────────" -Color DarkGray
-        }
+        Write-ErrorBody $errBody "$($ns.display) Error"
     }
 }
 
@@ -402,40 +448,16 @@ if (-not $uploadSuccess) {
     } catch {
         $statusCode = $null
         $errorMessage = $_.Exception.Message
-        $errorBody = ""
         if ($_.Exception.Response) {
             $statusCode = [int]$_.Exception.Response.StatusCode
-            try {
-                $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-                $reader.BaseStream.Position = 0
-                $errorBody = $reader.ReadToEnd()
-                $errorMessage = $errorBody
-            } catch {}
         }
+        $errorBody = Get-ErrorResponseBody $_
 
         Write-Host ""
         Write-Host "All upload methods failed!" -ForegroundColor Red
-        Write-Host "Status: $statusCode" -ForegroundColor Red
-        Write-Host ""
-        if ($errorBody -ne "") {
-            Write-Host "── WP Core Response Body ──" -ForegroundColor DarkGray
-            try {
-                $errJson = $errorBody | ConvertFrom-Json
-                if ($errJson.message) { Write-Host "Message: $($errJson.message)" -ForegroundColor Red }
-                if ($errJson.code) { Write-Host "Code:    $($errJson.code)" -ForegroundColor Red }
-                if ($errJson.data -and $errJson.data.status) { Write-Host "Status:  $($errJson.data.status)" -ForegroundColor Red }
-                if ($errJson.stackTrace) {
-                    Write-Host "Stack Trace:" -ForegroundColor Yellow
-                    Write-Host $errJson.stackTrace -ForegroundColor Gray
-                }
-                if (-not $errJson.message -and -not $errJson.code) {
-                    Write-Host $errorBody -ForegroundColor Gray
-                }
-            } catch {
-                Write-Host $errorBody -ForegroundColor Gray
-            }
-            Write-Host "───────────────────────────" -ForegroundColor DarkGray
-        } else {
+        if ($statusCode) { Write-Host "Status: $statusCode" -ForegroundColor Red }
+        Write-ErrorBody $errorBody "WP Core Error"
+        if ($errorBody -eq "") {
             Write-Host "Error: $errorMessage" -ForegroundColor Red
         }
         Write-Host ""

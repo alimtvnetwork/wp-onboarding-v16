@@ -49,6 +49,75 @@ function Write-Status {
     }
 }
 
+# Extract error response body from exception (works on PS 5.1 and PS 7+)
+function Get-ErrorResponseBody {
+    param($ErrorRecord)
+    if ($ErrorRecord.ErrorDetails -and $ErrorRecord.ErrorDetails.Message) {
+        return $ErrorRecord.ErrorDetails.Message
+    }
+    if ($ErrorRecord.Exception.Response) {
+        try {
+            $stream = $ErrorRecord.Exception.Response.GetResponseStream()
+            if ($stream) {
+                $reader = New-Object System.IO.StreamReader($stream)
+                try { $reader.BaseStream.Position = 0 } catch {}
+                $body = $reader.ReadToEnd()
+                $reader.Close()
+                return $body
+            }
+        } catch {}
+    }
+    return ""
+}
+
+function Write-ErrorBody {
+    param([string]$Body, [string]$Label = "Response Body")
+    if ($Body -eq "") { return }
+    Write-Host ""
+    Write-Host "  ── $Label ──" -ForegroundColor DarkGray
+    try {
+        $errJson = $Body | ConvertFrom-Json
+        if ($errJson.message) { Write-Host "  Message: $($errJson.message)" -ForegroundColor Red }
+        if ($errJson.error -and $errJson.error.message) { Write-Host "  Error:   $($errJson.error.message)" -ForegroundColor Red }
+        if ($errJson.code) { Write-Host "  Code:    $($errJson.code)" -ForegroundColor Red }
+        if ($errJson.data -and $errJson.data.status) { Write-Host "  Status:  $($errJson.data.status)" -ForegroundColor Red }
+        if ($errJson.stackTrace) {
+            Write-Host "  Stack Trace:" -ForegroundColor Yellow
+            Write-Host $errJson.stackTrace -ForegroundColor Gray
+        }
+        if ($errJson.stackTraceFrames) {
+            Write-Host "  Stack Frames:" -ForegroundColor Yellow
+            foreach ($frame in $errJson.stackTraceFrames) {
+                $loc = "    $($frame.file):$($frame.line)"
+                if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
+                elseif ($frame.function) { $loc += " -> $($frame.function)" }
+                Write-Host $loc -ForegroundColor Gray
+            }
+        }
+        if ($errJson.error -and $errJson.error.details) {
+            $d = $errJson.error.details
+            if ($d.stackTrace) {
+                Write-Host "  Stack Trace:" -ForegroundColor Yellow
+                Write-Host $d.stackTrace -ForegroundColor Gray
+            }
+            if ($d.stackTraceFrames) {
+                Write-Host "  Stack Frames:" -ForegroundColor Yellow
+                foreach ($frame in $d.stackTraceFrames) {
+                    $loc = "    $($frame.file):$($frame.line)"
+                    if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
+                    elseif ($frame.function) { $loc += " -> $($frame.function)" }
+                    Write-Host $loc -ForegroundColor Gray
+                }
+            }
+        }
+        $hasKnown = $errJson.message -or $errJson.error -or $errJson.stackTrace -or $errJson.code
+        if (-not $hasKnown) { Write-Host $Body -ForegroundColor Gray }
+    } catch {
+        Write-Host $Body -ForegroundColor Gray
+    }
+    Write-Host "  ────────────────────" -ForegroundColor DarkGray
+}
+
 # Initialize variables
 $PluginFolderPath = ""
 $WordPressSiteURL = ""
@@ -390,46 +459,11 @@ if ($activeNamespace) {
 
     } catch {
         $errorMessage = $_.Exception.Message
-        $errorBody = ""
-        if ($_.Exception.Response) {
-            try {
-                $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-                $reader.BaseStream.Position = 0
-                $errorBody = $reader.ReadToEnd()
-            } catch {}
-        }
+        $errorBody = Get-ErrorResponseBody $_
 
         Write-Host ""
         Write-Host "  ⚠ Riseup Uploader API failed: $errorMessage" -ForegroundColor Yellow
-        if ($errorBody -ne "") {
-            Write-Host ""
-            Write-Host "  ── Response Body ──" -ForegroundColor DarkGray
-            try {
-                $errJson = $errorBody | ConvertFrom-Json
-                if ($errJson.message) { Write-Host "  Message: $($errJson.message)" -ForegroundColor Red }
-                if ($errJson.error -and $errJson.error.message) { Write-Host "  Error:   $($errJson.error.message)" -ForegroundColor Red }
-                if ($errJson.error -and $errJson.error.code) { Write-Host "  Code:    $($errJson.error.code)" -ForegroundColor Red }
-                if ($errJson.stackTrace) {
-                    Write-Host "  Stack Trace:" -ForegroundColor Yellow
-                    Write-Host $errJson.stackTrace -ForegroundColor Gray
-                }
-                if ($errJson.stackTraceFrames) {
-                    Write-Host "  Stack Frames:" -ForegroundColor Yellow
-                    foreach ($frame in $errJson.stackTraceFrames) {
-                        $loc = "    $($frame.file):$($frame.line)"
-                        if ($frame.class) { $loc += " → $($frame.class)::$($frame.function)" }
-                        elseif ($frame.function) { $loc += " → $($frame.function)" }
-                        Write-Host $loc -ForegroundColor Gray
-                    }
-                }
-                if (-not $errJson.message -and -not $errJson.error -and -not $errJson.stackTrace) {
-                    Write-Host $errorBody -ForegroundColor Gray
-                }
-            } catch {
-                Write-Host $errorBody -ForegroundColor Gray
-            }
-            Write-Host "  ────────────────────" -ForegroundColor DarkGray
-        }
+        Write-ErrorBody $errorBody "Riseup API Error"
         Write-Host ""
         Write-Host "  Falling back to basic upload script..." -ForegroundColor Yellow
         Write-Host ""
