@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ApiError, EnvelopeErrors, EnvelopeMethodsStack } from '@/lib/api';
+import { ApiError, EnvelopeErrors, EnvelopeMethodsStack, isApiClientError } from '@/lib/api';
 import { getClickPathForError, ClickEvent } from '@/hooks/useClickTracker';
 import { getExecutionLogsForError, ExecutionLogEntry, CallChain } from '@/hooks/useExecutionLogger';
 
@@ -449,14 +449,26 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       ? (context as ErrorContext).parentSource
       : undefined;
     
+    // Extract envelope data from ApiClientError if available
+    const apiErrorContext = isApiClientError(error) ? error.apiError.context : undefined;
+    const apiErrorCode = isApiClientError(error) ? error.apiError.code : undefined;
+    const apiResponseStatus = isApiClientError(error) ? (error.apiError as ApiError & { status?: number }).status : undefined;
+    
     const mergedContext: Record<string, unknown> | undefined = (() => {
       const base: Record<string, unknown> = {
+        ...(apiErrorContext || {}),
         ...(context?.context || {}),
         ...(source ? { source } : {}),
         ...(triggerComponent ? { triggerComponent } : {}),
         ...(triggerAction ? { triggerAction } : {}),
         ...(context?.requestBody ? { requestData: context.requestBody } : {}),
       };
+      // Add ApiClientError meta for diagnostics
+      if (isApiClientError(error)) {
+        base.requestUrl = error.meta.requestUrl;
+        base.apiBase = error.meta.apiBase;
+        base.apiBaseAbsolute = error.meta.requestUrl;
+      }
       return Object.keys(base).length ? base : undefined;
     })();
 
@@ -466,9 +478,22 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     // Capture React execution logs at the moment of error
     const execLogs = getExecutionLogsForError();
     
+    // Extract envelope diagnostic fields (from ApiClientError context)
+    const envRequestedAt = typeof apiErrorContext?.requestedAt === 'string' ? apiErrorContext.requestedAt : undefined;
+    const envRequestDelegatedAt = typeof apiErrorContext?.requestDelegatedAt === 'string' ? apiErrorContext.requestDelegatedAt : undefined;
+    const envEnvelopeErrors: EnvelopeErrors | undefined = 
+      (apiErrorContext?.delegatedServiceErrorStack || apiErrorContext?.backendTrace)
+        ? {
+            BackendMessage: message,
+            DelegatedServiceErrorStack: Array.isArray(apiErrorContext?.delegatedServiceErrorStack) ? apiErrorContext.delegatedServiceErrorStack as string[] : undefined,
+            Backend: Array.isArray(apiErrorContext?.backendTrace) ? apiErrorContext.backendTrace as string[] : undefined,
+          }
+        : undefined;
+    const envMethodsStack = apiErrorContext?.methodsStack as EnvelopeMethodsStack | undefined;
+
     const captured: CapturedError = {
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      code: 'E9003',
+      code: apiErrorCode || 'E9003',
       level: 'error',
       message,
       details,
@@ -480,7 +505,8 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       createdAt: new Date().toISOString(),
       endpoint: context?.endpoint,
       method: context?.method,
-      requestBody: context?.requestBody,
+      requestBody: context?.requestBody || (isApiClientError(error) ? error.meta.requestBody : undefined),
+      responseStatus: apiResponseStatus,
       // Enhanced fields
       invocationChain: buildInvocationChain(parsed.invocationChain, source, parentSource),
       parsedFrames: parsed.frames.filter(f => !f.isInternal),
@@ -505,6 +531,11 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       executionChain: execLogs.chain,
       executionLogsEnabled: execLogs.enabled,
       executionLogsFormatted: execLogs.formatted || undefined,
+      // Universal Envelope diagnostic fields (from ApiClientError)
+      requestedAt: envRequestedAt,
+      requestDelegatedAt: envRequestDelegatedAt,
+      envelopeErrors: envEnvelopeErrors,
+      envelopeMethodsStack: envMethodsStack,
     };
     
     set((state) => {
