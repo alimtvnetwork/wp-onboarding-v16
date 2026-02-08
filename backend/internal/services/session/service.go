@@ -19,11 +19,11 @@ import (
 type SessionType string
 
 const (
-	SessionTypePublish           SessionType = "publish"
-	SessionTypeSync              SessionType = "sync"
-	SessionTypeBackup            SessionType = "backup"
-	SessionTypeConnect           SessionType = "connect"
-	SessionTypeBulkPublish       SessionType = "bulk_publish"
+	SessionTypePublish             SessionType = "publish"
+	SessionTypeSync                SessionType = "sync"
+	SessionTypeBackup              SessionType = "backup"
+	SessionTypeConnect             SessionType = "connect"
+	SessionTypeBulkPublish         SessionType = "bulk_publish"
 	SessionTypeRemotePluginEnable  SessionType = "remote_plugin_enable"
 	SessionTypeRemotePluginDisable SessionType = "remote_plugin_disable"
 	SessionTypeRemotePluginDelete  SessionType = "remote_plugin_delete"
@@ -31,19 +31,19 @@ const (
 
 // Session represents an active or completed operation session
 type Session struct {
-	ID          string            `json:"id"`
-	Type        SessionType       `json:"type"`
-	PluginID    int64             `json:"pluginId,omitempty"`
-	SiteID      int64             `json:"siteId,omitempty"`
-	PluginName  string            `json:"pluginName,omitempty"`
-	SiteName    string            `json:"siteName,omitempty"`
-	Status      string            `json:"status"` // running, success, error
-	StartedAt   time.Time         `json:"startedAt"`
-	EndedAt     *time.Time        `json:"endedAt,omitempty"`
-	ErrorMsg    string            `json:"errorMessage,omitempty"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	logFile     *os.File
-	mu          sync.Mutex
+	ID         string                 `json:"id"`
+	Type       SessionType            `json:"type"`
+	PluginID   int64                  `json:"pluginId,omitempty"`
+	SiteID     int64                  `json:"siteId,omitempty"`
+	PluginName string                 `json:"pluginName,omitempty"`
+	SiteName   string                 `json:"siteName,omitempty"`
+	Status     string                 `json:"status"` // running, success, error
+	StartedAt  time.Time              `json:"startedAt"`
+	EndedAt    *time.Time             `json:"endedAt,omitempty"`
+	ErrorMsg   string                 `json:"errorMessage,omitempty"`
+	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	logFile    *os.File
+	mu         sync.Mutex
 }
 
 // LogEntry represents a single log entry in a session
@@ -53,6 +53,44 @@ type LogEntry struct {
 	Step      string                 `json:"step"`   // backup, package, upload, activate, etc.
 	Message   string                 `json:"message"`
 	Details   map[string]interface{} `json:"details,omitempty"`
+}
+
+// SessionDiagnostics is the structured payload returned for error modal / session detail view
+type SessionDiagnostics struct {
+	Request    *SessionRequest    `json:"request,omitempty"`
+	Response   *SessionResponse   `json:"response,omitempty"`
+	StackTrace *SessionStackTrace `json:"stackTrace,omitempty"`
+}
+
+// SessionRequest captures the original inbound request
+type SessionRequest struct {
+	URL     string                 `json:"url"`
+	Method  string                 `json:"method"`
+	Headers map[string]string      `json:"headers,omitempty"`
+	Body    map[string]interface{} `json:"body,omitempty"`
+}
+
+// SessionResponse captures the delegated response from WordPress
+type SessionResponse struct {
+	RequestURL  string                 `json:"requestUrl"`
+	ResponseURL string                 `json:"responseUrl"`
+	StatusCode  int                    `json:"statusCode"`
+	Headers     map[string]string      `json:"headers,omitempty"`
+	Body        interface{}            `json:"body,omitempty"`
+}
+
+// SessionStackTrace holds dual Go + PHP stack traces
+type SessionStackTrace struct {
+	Golang []StackFrame `json:"golang,omitempty"`
+	PHP    []StackFrame `json:"php,omitempty"`
+}
+
+// StackFrame represents a single frame in a stack trace
+type StackFrame struct {
+	Function string `json:"function"`
+	File     string `json:"file,omitempty"`
+	Line     int    `json:"line,omitempty"`
+	Class    string `json:"class,omitempty"`
 }
 
 // Config holds session service configuration
@@ -80,7 +118,7 @@ func New(cfg Config) (*Service, error) {
 	}
 
 	sessionsDir := pathutil.MustJoin(cfg.DataDir, "sessions")
-	
+
 	// Ensure sessions directory exists
 	if err := os.MkdirAll(sessionsDir, 0755); err != nil {
 		return nil, fmt.Errorf("create sessions directory: %w", err)
@@ -100,10 +138,35 @@ func New(cfg Config) (*Service, error) {
 	return s, nil
 }
 
-// StartSession creates a new session and returns its ID
+// getSessionDir returns the directory path for a session
+func (s *Service) getSessionDir(sessionID string) string {
+	return pathutil.MustJoin(s.sessionsDir, sessionID)
+}
+
+// getLogPath returns the file path for a session's main log
+func (s *Service) getLogPath(sessionID string) string {
+	return pathutil.MustJoin(s.getSessionDir(sessionID), "session.log")
+}
+
+// getRequestPath returns the file path for request.json
+func (s *Service) getRequestPath(sessionID string) string {
+	return pathutil.MustJoin(s.getSessionDir(sessionID), "request.json")
+}
+
+// getResponsePath returns the file path for response.json
+func (s *Service) getResponsePath(sessionID string) string {
+	return pathutil.MustJoin(s.getSessionDir(sessionID), "response.json")
+}
+
+// getErrorLogPath returns the file path for error.log
+func (s *Service) getErrorLogPath(sessionID string) string {
+	return pathutil.MustJoin(s.getSessionDir(sessionID), "error.log")
+}
+
+// StartSession creates a new session directory and returns its ID
 func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error) {
 	sessionID := uuid.New().String()
-	
+
 	session := &Session{
 		ID:         sessionID,
 		Type:       sessionType,
@@ -116,7 +179,13 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 		Metadata:   make(map[string]interface{}),
 	}
 
-	// Create log file
+	// Create session directory
+	sessionDir := s.getSessionDir(sessionID)
+	if err := os.MkdirAll(sessionDir, 0755); err != nil {
+		return "", fmt.Errorf("create session directory: %w", err)
+	}
+
+	// Create session.log file
 	logPath := s.getLogPath(sessionID)
 	file, err := os.Create(logPath)
 	if err != nil {
@@ -277,6 +346,74 @@ func (s *Service) EndSession(sessionID, status, errorMsg string) {
 	}
 }
 
+// SaveRequest persists the inbound request as request.json in the session folder
+func (s *Service) SaveRequest(sessionID string, req *SessionRequest) {
+	if req == nil {
+		return
+	}
+	data, err := json.MarshalIndent(req, "", "  ")
+	if err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to marshal request JSON", "sessionId", sessionID, "error", err)
+		}
+		return
+	}
+	path := s.getRequestPath(sessionID)
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to write request.json", "sessionId", sessionID, "error", err)
+		}
+	}
+}
+
+// SaveResponse persists the delegated response as response.json in the session folder
+func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
+	if resp == nil {
+		return
+	}
+	data, err := json.MarshalIndent(resp, "", "  ")
+	if err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to marshal response JSON", "sessionId", sessionID, "error", err)
+		}
+		return
+	}
+	path := s.getResponsePath(sessionID)
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to write response.json", "sessionId", sessionID, "error", err)
+		}
+	}
+}
+
+// SaveError persists error details (including stack traces) as error.log in the session folder
+func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details map[string]interface{}) {
+	errorData := map[string]interface{}{
+		"timestamp": time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
+		"error":     errorMsg,
+	}
+	if stackTrace != nil {
+		errorData["stackTrace"] = stackTrace
+	}
+	if len(details) > 0 {
+		errorData["details"] = details
+	}
+
+	data, err := json.MarshalIndent(errorData, "", "  ")
+	if err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to marshal error data", "sessionId", sessionID, "error", err)
+		}
+		return
+	}
+	path := s.getErrorLogPath(sessionID)
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		if s.log != nil {
+			s.log.Error("Failed to write error.log", "sessionId", sessionID, "error", err)
+		}
+	}
+}
+
 // GetSession returns session info
 func (s *Service) GetSession(sessionID string) (*Session, error) {
 	s.mu.RLock()
@@ -297,11 +434,54 @@ func (s *Service) GetSessionLogs(sessionID string) (string, error) {
 	data, err := os.ReadFile(logPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", fmt.Errorf("session not found: %s", sessionID)
+			// Fallback: check for legacy flat file
+			legacyPath := pathutil.MustJoin(s.sessionsDir, sessionID+".log")
+			data, err = os.ReadFile(legacyPath)
+			if err != nil {
+				return "", fmt.Errorf("session not found: %s", sessionID)
+			}
+			return string(data), nil
 		}
 		return "", fmt.Errorf("read session log: %w", err)
 	}
 	return string(data), nil
+}
+
+// GetSessionDiagnostics returns the structured diagnostics for a session (request, response, stackTrace)
+func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, error) {
+	diag := &SessionDiagnostics{}
+
+	// Read request.json
+	if data, err := os.ReadFile(s.getRequestPath(sessionID)); err == nil {
+		var req SessionRequest
+		if json.Unmarshal(data, &req) == nil {
+			diag.Request = &req
+		}
+	}
+
+	// Read response.json
+	if data, err := os.ReadFile(s.getResponsePath(sessionID)); err == nil {
+		var resp SessionResponse
+		if json.Unmarshal(data, &resp) == nil {
+			diag.Response = &resp
+		}
+	}
+
+	// Read error.log for stack traces
+	if data, err := os.ReadFile(s.getErrorLogPath(sessionID)); err == nil {
+		var errorData map[string]interface{}
+		if json.Unmarshal(data, &errorData) == nil {
+			if stData, ok := errorData["stackTrace"]; ok {
+				stJSON, _ := json.Marshal(stData)
+				var st SessionStackTrace
+				if json.Unmarshal(stJSON, &st) == nil {
+					diag.StackTrace = &st
+				}
+			}
+		}
+	}
+
+	return diag, nil
 }
 
 // ListSessions returns recent sessions
@@ -310,47 +490,57 @@ func (s *Service) ListSessions(limit int) ([]*SessionSummary, error) {
 		limit = 100
 	}
 
-	// Get all log files
-	files, err := os.ReadDir(s.sessionsDir)
+	// Get all entries in sessions dir (now directories, not files)
+	entries, err := os.ReadDir(s.sessionsDir)
 	if err != nil {
 		return nil, fmt.Errorf("read sessions directory: %w", err)
 	}
 
-	type fileInfo struct {
+	type dirInfo struct {
 		name    string
 		modTime time.Time
 	}
-	var logFiles []fileInfo
+	var sessionDirs []dirInfo
 
-	for _, f := range files {
-		if f.IsDir() || filepath.Ext(f.Name()) != ".log" {
-			continue
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// New folder-based sessions
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			sessionDirs = append(sessionDirs, dirInfo{
+				name:    entry.Name(),
+				modTime: info.ModTime(),
+			})
+		} else if filepath.Ext(entry.Name()) == ".log" {
+			// Legacy flat file sessions
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			sessionDirs = append(sessionDirs, dirInfo{
+				name:    entry.Name()[:len(entry.Name())-4], // Remove .log extension
+				modTime: info.ModTime(),
+			})
 		}
-		info, err := f.Info()
-		if err != nil {
-			continue
-		}
-		logFiles = append(logFiles, fileInfo{
-			name:    f.Name(),
-			modTime: info.ModTime(),
-		})
 	}
 
 	// Sort by modification time (newest first)
-	sort.Slice(logFiles, func(i, j int) bool {
-		return logFiles[i].modTime.After(logFiles[j].modTime)
+	sort.Slice(sessionDirs, func(i, j int) bool {
+		return sessionDirs[i].modTime.After(sessionDirs[j].modTime)
 	})
 
 	// Limit results
-	if len(logFiles) > limit {
-		logFiles = logFiles[:limit]
+	if len(sessionDirs) > limit {
+		sessionDirs = sessionDirs[:limit]
 	}
 
 	// Build summaries
-	summaries := make([]*SessionSummary, 0, len(logFiles))
-	for _, f := range logFiles {
-		sessionID := f.name[:len(f.name)-4] // Remove .log extension
-		
+	summaries := make([]*SessionSummary, 0, len(sessionDirs))
+	for _, d := range sessionDirs {
+		sessionID := d.name
+
 		// Check if session is in memory
 		s.mu.RLock()
 		session, exists := s.sessions[sessionID]
@@ -369,11 +559,10 @@ func (s *Service) ListSessions(limit int) ([]*SessionSummary, error) {
 				EndedAt:    session.EndedAt,
 			})
 		} else {
-			// Load basic info from file header
 			summaries = append(summaries, &SessionSummary{
 				ID:        sessionID,
 				Status:    "completed",
-				StartedAt: f.modTime,
+				StartedAt: d.modTime,
 			})
 		}
 	}
@@ -394,7 +583,7 @@ type SessionSummary struct {
 	EndedAt    *time.Time  `json:"endedAt,omitempty"`
 }
 
-// DeleteSession removes a session's log file
+// DeleteSession removes a session's directory (or legacy file)
 func (s *Service) DeleteSession(sessionID string) error {
 	// Close if still open
 	s.mu.Lock()
@@ -409,31 +598,45 @@ func (s *Service) DeleteSession(sessionID string) error {
 	}
 	s.mu.Unlock()
 
-	// Delete file
-	logPath := s.getLogPath(sessionID)
-	if err := os.Remove(logPath); err != nil && !os.IsNotExist(err) {
+	// Try removing directory first (new format)
+	sessionDir := s.getSessionDir(sessionID)
+	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
+		if err := os.RemoveAll(sessionDir); err != nil {
+			return fmt.Errorf("delete session directory: %w", err)
+		}
+		return nil
+	}
+
+	// Fallback: try removing legacy flat file
+	legacyPath := pathutil.MustJoin(s.sessionsDir, sessionID+".log")
+	if err := os.Remove(legacyPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("delete session log: %w", err)
 	}
 	return nil
 }
 
-// getLogPath returns the file path for a session's log
-func (s *Service) getLogPath(sessionID string) string {
-	return pathutil.MustJoin(s.sessionsDir, sessionID+".log")
-}
-
-// loadSessionFromDisk attempts to load session info from a log file
+// loadSessionFromDisk attempts to load session info from disk
 func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
-	logPath := s.getLogPath(sessionID)
-	info, err := os.Stat(logPath)
+	// Check for folder-based session
+	sessionDir := s.getSessionDir(sessionID)
+	if info, err := os.Stat(sessionDir); err == nil && info.IsDir() {
+		return &Session{
+			ID:        sessionID,
+			Status:    "completed",
+			StartedAt: info.ModTime(),
+		}, nil
+	}
+
+	// Fallback: check for legacy flat file
+	legacyPath := pathutil.MustJoin(s.sessionsDir, sessionID+".log")
+	info, err := os.Stat(legacyPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("session not found: %s", sessionID)
 		}
-		return nil, fmt.Errorf("stat session log: %w", err)
+		return nil, fmt.Errorf("stat session: %w", err)
 	}
 
-	// Return basic session info from file metadata
 	return &Session{
 		ID:        sessionID,
 		Status:    "completed",
@@ -441,7 +644,7 @@ func (s *Service) loadSessionFromDisk(sessionID string) (*Session, error) {
 	}, nil
 }
 
-// cleanupLoop periodically removes old session files
+// cleanupLoop periodically removes old session directories
 func (s *Service) cleanupLoop() {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
@@ -455,26 +658,28 @@ func (s *Service) cleanupLoop() {
 func (s *Service) cleanupOldSessions() {
 	cutoff := time.Now().Add(-time.Duration(s.retentionDays) * 24 * time.Hour)
 
-	files, err := os.ReadDir(s.sessionsDir)
+	entries, err := os.ReadDir(s.sessionsDir)
 	if err != nil {
 		return
 	}
 
-	for _, f := range files {
-		if f.IsDir() || filepath.Ext(f.Name()) != ".log" {
-			continue
-		}
-		info, err := f.Info()
+	for _, entry := range entries {
+		info, err := entry.Info()
 		if err != nil {
 			continue
 		}
 		if info.ModTime().Before(cutoff) {
-			os.Remove(pathutil.MustJoin(s.sessionsDir, f.Name()))
+			fullPath := pathutil.MustJoin(s.sessionsDir, entry.Name())
+			if entry.IsDir() {
+				os.RemoveAll(fullPath)
+			} else {
+				os.Remove(fullPath)
+			}
 		}
 	}
 }
 
-// ClearAllSessions removes all session log files
+// ClearAllSessions removes all session directories and files
 func (s *Service) ClearAllSessions() error {
 	s.mu.Lock()
 	// Close all open sessions
@@ -489,29 +694,32 @@ func (s *Service) ClearAllSessions() error {
 	}
 	s.mu.Unlock()
 
-	// Remove all files in sessions directory
-	files, err := os.ReadDir(s.sessionsDir)
+	// Remove all entries in sessions directory
+	entries, err := os.ReadDir(s.sessionsDir)
 	if err != nil {
 		return fmt.Errorf("read sessions directory: %w", err)
 	}
 
 	var removeErrors []error
-	for _, f := range files {
-		if f.IsDir() {
-			continue
+	for _, entry := range entries {
+		fullPath := pathutil.MustJoin(s.sessionsDir, entry.Name())
+		var err error
+		if entry.IsDir() {
+			err = os.RemoveAll(fullPath)
+		} else {
+			err = os.Remove(fullPath)
 		}
-		filePath := pathutil.MustJoin(s.sessionsDir, f.Name())
-		if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
+		if err != nil && !os.IsNotExist(err) {
 			removeErrors = append(removeErrors, err)
 		}
 	}
 
 	if len(removeErrors) > 0 {
-		return fmt.Errorf("failed to remove %d session files", len(removeErrors))
+		return fmt.Errorf("failed to remove %d session entries", len(removeErrors))
 	}
 
 	if s.log != nil {
-		s.log.Info("All sessions cleared", "count", len(files))
+		s.log.Info("All sessions cleared", "count", len(entries))
 	}
 
 	return nil
