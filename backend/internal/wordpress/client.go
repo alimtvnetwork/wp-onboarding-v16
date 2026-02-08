@@ -37,6 +37,7 @@ type APIError struct {
 	Endpoint      string
 	URL           string
 	StatusCode    int
+	RequestBody   string // The JSON body sent in the request
 	ResponseBody  string
 	PluginSlugIn  string
 	PluginIDUsed  string
