@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { format, formatDistanceStrict } from "date-fns";
+import { format, isToday, isYesterday } from "date-fns";
 import {
   Activity,
   Clock,
@@ -9,14 +9,13 @@ import {
   RefreshCw,
   Search,
   AlertCircle,
-  CheckCircle2,
   XCircle,
   Filter,
   Download,
-  ChevronRight,
   ArrowUpDown,
   FileJson,
   Eraser,
+  Radio,
 } from "lucide-react";
 import { api, RequestSessionRecord, RequestSessionListResponse, requireSuccess } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -43,6 +42,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -101,12 +101,39 @@ function JsonViewer({ content, label }: { content: string; label: string }) {
   );
 }
 
+/** Groups sessions by date then hour, returning ordered entries */
+function groupByDateHour(sessions: RequestSessionRecord[]): Array<{ label: string; sessions: RequestSessionRecord[] }> {
+  const groups = new Map<string, RequestSessionRecord[]>();
+
+  for (const s of sessions) {
+    const d = new Date(s.startedAt);
+    const dateKey = format(d, "yyyy-MM-dd");
+    const hourKey = format(d, "HH:00");
+    const key = `${dateKey}|${hourKey}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(s);
+  }
+
+  return Array.from(groups.entries()).map(([key, items]) => {
+    const [dateKey, hourKey] = key.split("|");
+    const d = new Date(dateKey + "T00:00:00");
+    let dateLabel: string;
+    if (isToday(d)) dateLabel = "Today";
+    else if (isYesterday(d)) dateLabel = "Yesterday";
+    else dateLabel = format(d, "MMM d, yyyy");
+    return { label: `${dateLabel} · ${hourKey}`, sessions: items };
+  });
+}
+
+const LIVE_POLL_INTERVAL = 3000;
+
 export default function RequestSessions() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<string>("response");
+  const [liveMode, setLiveMode] = useState(false);
 
   // Fetch sessions
   const { data: sessionsData, isLoading, refetch } = useQuery({
@@ -115,12 +142,13 @@ export default function RequestSessions() {
       const response = await api.getRequestSessions({ limit: 200 });
       return requireSuccess(response, { endpoint: "/request-sessions" });
     },
+    refetchInterval: liveMode ? LIVE_POLL_INTERVAL : false,
   });
 
   const sessions = (sessionsData as RequestSessionListResponse)?.sessions || [];
 
   // Fetch single session detail
-  const { data: selectedSession, isLoading: detailLoading } = useQuery({
+  const { data: selectedSession } = useQuery({
     queryKey: ["request-session", selectedId],
     queryFn: async () => {
       if (!selectedId) return null;
@@ -175,6 +203,9 @@ export default function RequestSessions() {
     });
   }, [sessions, statusFilter, searchQuery]);
 
+  // Timeline groups
+  const timelineGroups = useMemo(() => groupByDateHour(filteredSessions), [filteredSessions]);
+
   // Stats
   const stats = useMemo(() => {
     const total = sessions.length;
@@ -198,6 +229,29 @@ export default function RequestSessions() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Live toggle */}
+            <div className="flex items-center gap-2 mr-2">
+              <Switch
+                checked={liveMode}
+                onCheckedChange={setLiveMode}
+                id="live-toggle"
+              />
+              <label
+                htmlFor="live-toggle"
+                className={cn(
+                  "flex items-center gap-1.5 text-sm font-medium cursor-pointer select-none",
+                  liveMode ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                )}
+              >
+                {liveMode && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                )}
+                Live
+              </label>
+            </div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" size="sm" disabled={sessions.length === 0}>
@@ -291,51 +345,68 @@ export default function RequestSessions() {
                   <p className="text-muted-foreground">No request sessions found</p>
                 </div>
               ) : (
-                <div className="space-y-px px-4 pb-4">
-                  {filteredSessions.map((session: RequestSessionRecord) => {
-                    const isSelected = session.id === selectedId;
-                    return (
-                      <div
-                        key={session.id}
-                        className={cn(
-                          "p-3 rounded-lg cursor-pointer transition-colors border",
-                          isSelected
-                            ? "bg-primary/10 border-primary/30"
-                            : "hover:bg-muted/50 border-transparent"
-                        )}
-                        onClick={() => {
-                          setSelectedId(session.id);
-                          setDetailTab("response");
-                        }}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {getMethodBadge(session.method)}
-                            <span className="font-mono text-sm truncate">{session.path}</span>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={cn("font-mono text-xs shrink-0", getStatusBg(session.statusCode), getStatusColor(session.statusCode))}
-                          >
-                            {session.statusCode}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {format(new Date(session.startedAt), "HH:mm:ss.SSS")}
-                          </span>
-                          <span>{session.durationMs}ms</span>
-                          {session.error && (
-                            <span className="text-destructive truncate flex items-center gap-1">
-                              <XCircle className="h-3 w-3 shrink-0" />
-                              {session.error.slice(0, 40)}
-                            </span>
-                          )}
-                        </div>
+                <div className="px-4 pb-4">
+                  {timelineGroups.map((group) => (
+                    <div key={group.label} className="mb-3">
+                      {/* Timeline group header */}
+                      <div className="sticky top-0 z-10 flex items-center gap-2 py-1.5 bg-card">
+                        <div className="h-px flex-1 bg-border" />
+                        <span className="text-[11px] font-medium text-muted-foreground whitespace-nowrap px-1">
+                          {group.label}
+                          <span className="ml-1.5 text-muted-foreground/60">({group.sessions.length})</span>
+                        </span>
+                        <div className="h-px flex-1 bg-border" />
                       </div>
-                    );
-                  })}
+
+                      {/* Sessions in this group */}
+                      <div className="space-y-px">
+                        {group.sessions.map((session) => {
+                          const isSelected = session.id === selectedId;
+                          return (
+                            <div
+                              key={session.id}
+                              className={cn(
+                                "p-3 rounded-lg cursor-pointer transition-colors border",
+                                isSelected
+                                  ? "bg-primary/10 border-primary/30"
+                                  : "hover:bg-muted/50 border-transparent"
+                              )}
+                              onClick={() => {
+                                setSelectedId(session.id);
+                                setDetailTab("response");
+                              }}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {getMethodBadge(session.method)}
+                                  <span className="font-mono text-sm truncate">{session.path}</span>
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className={cn("font-mono text-xs shrink-0", getStatusBg(session.statusCode), getStatusColor(session.statusCode))}
+                                >
+                                  {session.statusCode}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(session.startedAt), "HH:mm:ss.SSS")}
+                                </span>
+                                <span>{session.durationMs}ms</span>
+                                {session.error && (
+                                  <span className="text-destructive truncate flex items-center gap-1">
+                                    <XCircle className="h-3 w-3 shrink-0" />
+                                    {session.error.slice(0, 40)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </ScrollArea>
