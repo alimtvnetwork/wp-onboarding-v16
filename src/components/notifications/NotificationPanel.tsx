@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, X, CheckCheck, Trash2, Info } from "lucide-react";
+import { Bell, X, CheckCheck, Trash2, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,27 +11,28 @@ import {
 import { cn } from "@/lib/utils";
 import { useNotificationStore, type AppNotification, type NotificationType } from "@/stores/notificationStore";
 
-/** Emoji icons by notification type for visual appeal */
-const typeEmoji: Record<NotificationType, string> = {
-  success: "✅",
-  error: "❌",
-  warning: "⚠️",
-  info: "ℹ️",
-};
-
-/** Card background styles by type */
-const typeCardStyles: Record<NotificationType, string> = {
-  success: "bg-emerald-800/80 border-emerald-600/40 text-white",
-  error: "bg-destructive/80 border-destructive/40 text-white",
-  warning: "bg-amber-700/80 border-amber-500/40 text-white",
-  info: "bg-sky-800/80 border-sky-600/40 text-white",
-};
-
-const typeCardUnread: Record<NotificationType, string> = {
-  success: "bg-emerald-800 border-emerald-500/60",
-  error: "bg-destructive border-destructive/60",
-  warning: "bg-amber-700 border-amber-400/60",
-  info: "bg-sky-800 border-sky-500/60",
+/** Lucide icon + accent color per type — clean, semantic */
+const typeConfig: Record<NotificationType, { icon: typeof CheckCircle2; accent: string; iconClass: string }> = {
+  success: {
+    icon: CheckCircle2,
+    accent: "border-l-emerald-500",
+    iconClass: "text-emerald-500",
+  },
+  error: {
+    icon: XCircle,
+    accent: "border-l-red-500",
+    iconClass: "text-red-500",
+  },
+  warning: {
+    icon: AlertTriangle,
+    accent: "border-l-amber-500",
+    iconClass: "text-amber-500",
+  },
+  info: {
+    icon: Info,
+    accent: "border-l-sky-500",
+    iconClass: "text-sky-500",
+  },
 };
 
 function formatTimeAgo(timestamp: string): string {
@@ -52,52 +53,51 @@ function NotificationCard({ notification, onDismiss, onRead }: {
   onDismiss: (id: string) => void;
   onRead: (id: string) => void;
 }) {
-  const emoji = typeEmoji[notification.type];
-  const cardStyle = notification.read
-    ? typeCardStyles[notification.type]
-    : typeCardUnread[notification.type];
+  const config = typeConfig[notification.type];
+  const IconComponent = config.icon;
 
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-3 px-4 py-3 mx-2 my-1.5 rounded-lg border transition-colors cursor-pointer",
-        cardStyle
+        "group flex items-start gap-3 px-4 py-3 border-l-[3px] transition-colors cursor-pointer",
+        "bg-card hover:bg-muted/50",
+        config.accent,
+        !notification.read && "bg-muted/30"
       )}
       onClick={() => onRead(notification.id)}
     >
-      {/* Emoji icon */}
-      <span className="text-lg mt-0.5 shrink-0 select-none" role="img">
-        {emoji}
-      </span>
+      {/* Type icon */}
+      <IconComponent className={cn("h-5 w-5 mt-0.5 shrink-0", config.iconClass)} />
 
       {/* Content */}
       <div className="flex-1 min-w-0 space-y-0.5">
-        <p className={cn("text-sm leading-snug", !notification.read ? "font-semibold" : "font-medium opacity-90")}>
+        <p className={cn(
+          "text-sm leading-snug text-foreground",
+          !notification.read ? "font-semibold" : "font-medium"
+        )}>
           {notification.title}
         </p>
         {notification.description && (
-          <p className="text-xs opacity-75 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
             {notification.description}
           </p>
         )}
-      </div>
-
-      {/* Timestamp + Close button — right side */}
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <button
-          className="p-0.5 rounded hover:bg-white/20 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDismiss(notification.id);
-          }}
-          aria-label="Dismiss"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-        <span className="text-[10px] opacity-60 whitespace-nowrap">
+        <span className="text-[10px] text-muted-foreground/60">
           {formatTimeAgo(notification.timestamp)}
         </span>
       </div>
+
+      {/* Close button — right side, always accessible */}
+      <button
+        className="shrink-0 mt-0.5 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground hover:bg-muted"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDismiss(notification.id);
+        }}
+        aria-label="Dismiss"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
@@ -123,13 +123,13 @@ export function NotificationPanel() {
 
       <PopoverContent
         align="end"
-        className="w-[380px] p-0 overflow-hidden"
+        className="w-[380px] p-0 overflow-hidden bg-card border border-border shadow-lg z-50"
         sideOffset={8}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
           <h3 className="text-sm font-semibold text-foreground tracking-tight">
-            NOTIFICATIONS
+            Notifications
           </h3>
           <div className="flex items-center gap-1">
             {count > 0 && (
@@ -149,7 +149,7 @@ export function NotificationPanel() {
 
         {/* Notification list */}
         {notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+          <div className="flex flex-col items-center justify-center py-10 px-4 text-center bg-card">
             <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
             <p className="text-sm text-muted-foreground">No notifications yet</p>
             <p className="text-xs text-muted-foreground/60 mt-1">
@@ -158,7 +158,7 @@ export function NotificationPanel() {
           </div>
         ) : (
           <ScrollArea className="max-h-[400px]">
-            <div className="py-1">
+            <div className="divide-y divide-border/50">
               {notifications.map((notification) => (
                 <NotificationCard
                   key={notification.id}

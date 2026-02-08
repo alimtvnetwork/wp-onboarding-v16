@@ -17,7 +17,7 @@ interface StatCardProps {
 export function StatCard({ title, value, total, icon: Icon, colorClass, href, sparkline, sparklineColor }: StatCardProps) {
   return (
     <Link to={href}>
-      <Card className="transition-colors border border-transparent hover:border-primary/30 hover:bg-accent/30 cursor-pointer h-full">
+      <Card className="transition-colors border border-border hover:border-primary/40 hover:bg-secondary/50 cursor-pointer h-full">
         <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-4">
           <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate pr-2">
             {title}
