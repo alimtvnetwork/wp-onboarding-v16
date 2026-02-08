@@ -1381,7 +1381,7 @@ func (s *Service) uploadPlugin(ctx context.Context, wpClient *wordpress.Client, 
 	if uploaderAvailable {
 		s.log.Info("Using Riseup Asia Uploader for upload", "slug", slug)
 
-		result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true) // pass slug and activate=true
+		result, err := wpClient.UploadPluginViaUploader(zipPath, slug, true, wordpress.UploadSourceRestAPI) // pass slug, activate=true, source=rest_api
 		if err != nil {
 			return true, nil, false, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload plugin via uploader helper")
 		}

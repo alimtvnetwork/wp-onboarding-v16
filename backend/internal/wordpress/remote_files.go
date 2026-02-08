@@ -310,7 +310,7 @@ func (c *Client) CheckOnboardAvailable() (bool, error) {
 // Deprecated: Delegates to UploadPluginViaUploader.
 func (c *Client) UploadPluginViaOnboard(zipPath string, activate bool) (*UploaderUploadResult, error) {
 	slug := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
-	return c.UploadPluginViaUploader(zipPath, slug, activate)
+	return c.UploadPluginViaUploader(zipPath, slug, activate, UploadSourceRestAPI)
 }
 
 // truncateBody truncates a string to maxLen for error messages.

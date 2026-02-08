@@ -333,3 +333,21 @@ const (
 	// PluginStatusInactive is the inactive status for a plugin.
 	PluginStatusInactive = "inactive"
 )
+
+// =============================================================================
+// UPLOAD SOURCE ENUM
+// =============================================================================
+
+const (
+	// UploadSourceScript indicates upload via PowerShell/deployment script.
+	UploadSourceScript = "upload_script"
+
+	// UploadSourceRestAPI indicates upload via direct REST API call.
+	UploadSourceRestAPI = "rest_api"
+
+	// UploadSourceAdminUI indicates upload via WordPress admin panel.
+	UploadSourceAdminUI = "admin_ui"
+
+	// UploadSourceWPCLI indicates upload via WP-CLI command.
+	UploadSourceWPCLI = "wp_cli"
+)

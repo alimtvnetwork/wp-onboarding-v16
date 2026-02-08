@@ -183,7 +183,7 @@ func TestUploadPluginViaUploader_PostsToUploaderEndpoint(t *testing.T) {
 	defer server.Close()
 
 	c := NewClient(ClientConfig{BaseURL: server.URL, Username: "u", Password: "p", Timeout: 2 * time.Second})
-	res, err := c.UploadPluginViaUploader(zipPath, "test-plugin", true)
+	res, err := c.UploadPluginViaUploader(zipPath, "test-plugin", true, UploadSourceRestAPI)
 	if err != nil {
 		t.Fatalf("expected nil error, got: %v", err)
 	}
