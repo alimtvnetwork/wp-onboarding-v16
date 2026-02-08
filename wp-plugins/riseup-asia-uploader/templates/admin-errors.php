@@ -697,7 +697,7 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
             var lastFileSize = 0;
             var pollTimer = null;
             var isPolling = false;
-            var POLL_INTERVAL = 3000; // 3 seconds
+            var POLL_INTERVAL = 2000; // 2 seconds
 
             function formatBytes(bytes) {
                 if (bytes === 0) return '0 B';
