@@ -206,14 +206,35 @@ export default function RequestSessions() {
   // Timeline groups
   const timelineGroups = useMemo(() => groupByDateHour(filteredSessions), [filteredSessions]);
 
-  // Stats
-  const stats = useMemo(() => {
+  // Stats & histogram
+  const { stats, histogram } = useMemo(() => {
     const total = sessions.length;
     const errors = sessions.filter((s: RequestSessionRecord) => s.statusCode >= 400).length;
+    const durations = sessions.map((s: RequestSessionRecord) => s.durationMs);
     const avgDuration = total > 0
-      ? Math.round(sessions.reduce((sum: number, s: RequestSessionRecord) => sum + s.durationMs, 0) / total)
+      ? Math.round(durations.reduce((sum, d) => sum + d, 0) / total)
       : 0;
-    return { total, errors, avgDuration };
+
+    // Build histogram buckets (logarithmic-ish)
+    const bucketEdges = [0, 10, 25, 50, 100, 250, 500, 1000, 2500, Infinity];
+    const bucketLabels = ["<10", "10-25", "25-50", "50-100", "100-250", "250-500", "500-1s", "1-2.5s", ">2.5s"];
+    const counts = new Array(bucketEdges.length - 1).fill(0);
+    for (const d of durations) {
+      for (let i = 0; i < bucketEdges.length - 1; i++) {
+        if (d >= bucketEdges[i] && d < bucketEdges[i + 1]) {
+          counts[i]++;
+          break;
+        }
+      }
+    }
+    const maxCount = Math.max(...counts, 1);
+    const histogram = counts.map((count, i) => ({
+      label: bucketLabels[i],
+      count,
+      pct: count / maxCount,
+    }));
+
+    return { stats: { total, errors, avgDuration }, histogram };
   }, [sessions]);
 
   const detail = selectedSession as RequestSessionRecord | null;
@@ -284,7 +305,7 @@ export default function RequestSessions() {
           </div>
         </div>
 
-        {/* Stats bar */}
+        {/* Stats bar with histogram */}
         <div className="flex items-center gap-6 text-sm text-muted-foreground mb-4">
           <span className="flex items-center gap-1.5">
             <Activity className="h-4 w-4" />
@@ -298,6 +319,31 @@ export default function RequestSessions() {
             <Clock className="h-4 w-4" />
             {stats.avgDuration}ms avg
           </span>
+
+          {/* Duration histogram */}
+          {stats.total > 0 && (
+            <div className="flex items-end gap-[2px] h-6 ml-2 border-l border-border pl-4" title="Response time distribution">
+              {histogram.map((bucket, i) => (
+                <div key={i} className="flex flex-col items-center group relative">
+                  <div
+                    className={cn(
+                      "w-3 rounded-t-sm transition-all",
+                      bucket.count === 0
+                        ? "bg-muted/30"
+                        : bucket.label.includes("s") ? "bg-amber-500/70" : "bg-primary/60"
+                    )}
+                    style={{ height: `${Math.max(bucket.pct * 20, bucket.count > 0 ? 2 : 1)}px` }}
+                  />
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-1.5 hidden group-hover:flex flex-col items-center z-20">
+                    <div className="bg-popover text-popover-foreground border border-border rounded px-2 py-1 text-[10px] font-mono whitespace-nowrap shadow-md">
+                      {bucket.label}ms: {bucket.count}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
