@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.30.0
+ * Version: 1.34.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -1576,16 +1576,15 @@ class Riseup_Asia {
                     $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
 
                     // Plugin uploaded but activation failed — include full diagnostic metadata
-                    return new WP_REST_Response(array(
-                        'success'          => true,
-                        'plugin_slug'      => $slug,
-                        'is_update'        => $is_update,
-                        'activated'        => false,
-                        'activation_error' => $error_msg,
-                        'requestUrl'       => $this->get_current_request_url(),
-                        'responseUrl'      => home_url(),
-                        'stackTraceFrames' => riseup_backtrace_to_frames($backtrace),
-                    ), RISEUP_HTTP_OK);
+                    return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', RISEUP_HTTP_OK)
+                        ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_UPLOAD)
+                        ->setSingleResult(array(
+                            'plugin_slug'      => $slug,
+                            'is_update'        => $is_update,
+                            'activated'        => false,
+                            'activation_error' => $error_msg,
+                        ))
+                        ->toResponse();
                 }
                 $activated = true;
                 $this->file_logger->info('Plugin activated successfully');
@@ -1604,12 +1603,14 @@ class Riseup_Asia {
                 'activated' => $activated,
             ));
 
-            return new WP_REST_Response(array(
-                'success'     => true,
-                'plugin_slug' => $slug,
-                'is_update'   => $is_update,
-                'activated'   => $activated,
-            ), RISEUP_HTTP_OK);
+            return RiseupEnvelopeBuilder::success()
+                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_UPLOAD)
+                ->setSingleResult(array(
+                    'plugin_slug' => $slug,
+                    'is_update'   => $is_update,
+                    'activated'   => $activated,
+                ))
+                ->toResponse();
         } catch (Throwable $e) {
             // Catch both Exception and Error (PHP 7+) for complete coverage
             $this->file_logger->log_exception($e, 'Upload error');
@@ -2383,14 +2384,13 @@ class Riseup_Asia {
         try {
             if (is_plugin_active($plugin_file)) {
                 $this->file_logger->info('Plugin already active', array('slug' => $slug));
-                return new WP_REST_Response(array(
-                    'success'     => true,
-                    'plugin_slug' => $slug,
-                    'activated'   => true,
-                    'message'     => 'Plugin was already active',
-                    'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
-                    'responseUrl' => home_url(),
-                ), RISEUP_HTTP_OK);
+                return RiseupEnvelopeBuilder::success('Plugin was already active')
+                    ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_ENABLE)
+                    ->setSingleResult(array(
+                        'plugin_slug' => $slug,
+                        'activated'   => true,
+                    ))
+                    ->toResponse();
             }
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to check plugin status');
@@ -2443,13 +2443,13 @@ class Riseup_Asia {
 
         $this->file_logger->info('Plugin activated successfully', array('slug' => $slug));
 
-        return new WP_REST_Response(array(
-            'success'     => true,
-            'plugin_slug' => $slug,
-            'activated'   => true,
-            'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
-            'responseUrl' => home_url(),
-        ), RISEUP_HTTP_OK);
+        return RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_ENABLE)
+            ->setSingleResult(array(
+                'plugin_slug' => $slug,
+                'activated'   => true,
+            ))
+            ->toResponse();
     }
 
     /**
@@ -2508,14 +2508,13 @@ class Riseup_Asia {
         try {
             if (RiseupBooleanHelpers::is_falsy(is_plugin_active($plugin_file))) {
                 $this->file_logger->info('Plugin already inactive', array('slug' => $slug));
-                return new WP_REST_Response(array(
-                    'success'     => true,
-                    'plugin_slug' => $slug,
-                    'deactivated' => true,
-                    'message'     => 'Plugin was already inactive',
-                    'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
-                    'responseUrl' => home_url(),
-                ), RISEUP_HTTP_OK);
+                return RiseupEnvelopeBuilder::success('Plugin was already inactive')
+                    ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_DISABLE)
+                    ->setSingleResult(array(
+                        'plugin_slug'  => $slug,
+                        'deactivated'  => true,
+                    ))
+                    ->toResponse();
             }
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to check plugin status');
@@ -2572,13 +2571,13 @@ class Riseup_Asia {
 
         $this->file_logger->info('Plugin deactivated successfully', array('slug' => $slug));
 
-        return new WP_REST_Response(array(
-            'success'     => true,
-            'plugin_slug' => $slug,
-            'deactivated' => true,
-            'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
-            'responseUrl' => home_url(),
-        ), RISEUP_HTTP_OK);
+        return RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_DISABLE)
+            ->setSingleResult(array(
+                'plugin_slug'  => $slug,
+                'deactivated'  => true,
+            ))
+            ->toResponse();
     }
 
     /**
@@ -2705,13 +2704,13 @@ class Riseup_Asia {
 
         $this->file_logger->info('Plugin deleted successfully', array('slug' => $slug));
 
-        return new WP_REST_Response(array(
-            'success'     => true,
-            'plugin_slug' => $slug,
-            'deleted'     => true,
-            'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
-            'responseUrl' => home_url(),
-        ), RISEUP_HTTP_OK);
+        return RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_DELETE)
+            ->setSingleResult(array(
+                'plugin_slug' => $slug,
+                'deleted'     => true,
+            ))
+            ->toResponse();
     }
 
     // =========================================================================
