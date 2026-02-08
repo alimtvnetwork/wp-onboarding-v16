@@ -448,6 +448,12 @@ foreach ($ns in $apiNamespaces) {
         $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
         $uploadSuccess = $true
 
+        # Unwrap Universal Response Envelope: data is in Results[0]
+        $resultData = $response
+        if ($response.Results -and $response.Results.Count -gt 0) {
+            $resultData = $response.Results[0]
+        }
+
         Write-Status "      ✓ Uploaded via $($ns.display)!" -Color Green
         Write-Status ""
         Write-Status "[5/5] Installation Complete!" -Color Yellow
@@ -457,20 +463,20 @@ foreach ($ns in $apiNamespaces) {
         Write-Status "========================================" -Color Green
         Write-Status ""
         Write-Status "Plugin Details:" -Color Cyan
-        Write-Status "  - Plugin Slug: $($response.plugin_slug)" -Color White
-        Write-Status "  - Is Update: $($response.is_update)" -Color White
-        Write-Status "  - Activated: $($response.activated)" -Color White
-        if ($response.activation_error) {
-            Write-Status "  - Activation Error: $($response.activation_error)" -Color Yellow
+        Write-Status "  - Plugin Slug: $($resultData.plugin_slug)" -Color White
+        Write-Status "  - Is Update: $($resultData.is_update)" -Color White
+        Write-Status "  - Activated: $($resultData.activated)" -Color White
+        if ($resultData.activation_error) {
+            Write-Status "  - Activation Error: $($resultData.activation_error)" -Color Yellow
         }
         Write-Status ""
 
         if ($Quiet) {
             $result = @{
                 success = $true
-                plugin = $response.plugin_slug
-                activated = $response.activated
-                is_update = $response.is_update
+                plugin = $resultData.plugin_slug
+                activated = $resultData.activated
+                is_update = $resultData.is_update
                 message = "Plugin installed successfully"
             }
             Write-Output ($result | ConvertTo-Json -Compress)
