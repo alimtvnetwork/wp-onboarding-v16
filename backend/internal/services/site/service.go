@@ -1223,7 +1223,10 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			s.sessionService.LogStageEnd(sessionID, action, "error", durationMs)
 		}
 
-		// Write to error.log.txt
+		// Pull recent PHP error sessions from the remote site for deeper diagnostics
+		s.fetchAndAttachRemotePHPErrors(client, sessionID, siteID, action, pluginSlug, site.Name, site.URL, errDetails)
+
+		// Write to error.log.txt (now enriched with PHP errors)
 		s.logToErrorFile(action, siteID, pluginSlug, site.Name, site.URL, errDetails)
 
 		s.endRemoteSession(sessionID, "error", err.Error())
@@ -1397,6 +1400,63 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.EndSession(sessionID, status, errorMsg)
+}
+
+// fetchAndAttachRemotePHPErrors pulls recent PHP error sessions from the remote WordPress
+// site and enriches the error details map with them. It also logs them to the session.
+// This runs best-effort and never returns errors — failures are silently logged.
+func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessionID string, siteID int64, action, pluginSlug, siteName, siteURL string, errDetails map[string]interface{}) {
+	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
+
+	result, fetchErr := client.FetchRemoteErrorSessions("error", "", 0, 10, 0)
+	if fetchErr != nil {
+		s.logRemoteAction(sessionID, siteID, action, "warn", "fetch_php_errors",
+			fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()), nil)
+		return
+	}
+
+	if result == nil || len(result.Entries) == 0 {
+		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
+		return
+	}
+
+	// Attach to error details so they appear in error.log.txt and WebSocket broadcast
+	phpErrors := make([]map[string]interface{}, 0, len(result.Entries))
+	for _, entry := range result.Entries {
+		phpErr := map[string]interface{}{
+			"id":        entry.ID,
+			"level":     entry.Level,
+			"message":   entry.Message,
+			"file":      entry.File,
+			"line":      entry.Line,
+			"createdAt": entry.CreatedAt,
+		}
+		if len(entry.StackTraceFrames) > 0 {
+			phpErr["stackTraceFrames"] = entry.StackTraceFrames
+		}
+		phpErrors = append(phpErrors, phpErr)
+	}
+	errDetails["remotePHPErrors"] = phpErrors
+	errDetails["remotePHPErrorCount"] = len(result.Entries)
+
+	if result.Flash.HasUnseen {
+		errDetails["remotePHPFlashUnseen"] = result.Flash.UnseenCount
+	}
+
+	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
+		fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
+		map[string]interface{}{"phpErrorCount": len(result.Entries)})
+
+	// Log each PHP error to session for full traceability
+	if s.sessionService != nil && sessionID != "" {
+		for _, entry := range result.Entries {
+			s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, map[string]interface{}{
+				"phpFile":    entry.File,
+				"phpLine":    entry.Line,
+				"phpLevel":   entry.Level,
+				"phpCreated": entry.CreatedAt,
+			})
+		}
 	}
 }
 
@@ -1559,6 +1619,21 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 			}
 		}
 	}
+
+	// Remote PHP error sessions (fetched from plugin's SQLite DB)
+	if phpErrors, ok := details["remotePHPErrors"].([]map[string]interface{}); ok && len(phpErrors) > 0 {
+		logEntry += fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(phpErrors))
+		for i, phpErr := range phpErrors {
+			msg, _ := phpErr["message"].(string)
+			file, _ := phpErr["file"].(string)
+			line := phpErr["line"]
+			level, _ := phpErr["level"].(string)
+			created, _ := phpErr["createdAt"].(string)
+			logEntry += fmt.Sprintf("    [%d] [%s] %s\n", i+1, strings.ToUpper(level), msg)
+			logEntry += fmt.Sprintf("        File: %s  Line: %v  At: %s\n", file, line, created)
+		}
+	}
+
 	logEntry += "───────────────────────────────────────────────────────────────────────────────\n"
 
 	f.WriteString(logEntry)
