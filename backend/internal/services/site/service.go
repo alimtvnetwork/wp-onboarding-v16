@@ -1495,55 +1495,88 @@ func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessionID string, siteID int64, action, pluginSlug, siteName, siteURL string, errDetails map[string]interface{}) {
 	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
 
+	// Fetch error sessions
 	result, fetchErr := client.FetchRemoteErrorSessions("error", "", 0, 10, 0)
 	if fetchErr != nil {
 		s.logRemoteAction(sessionID, siteID, action, "warn", "fetch_php_errors",
 			fmt.Sprintf("Could not fetch remote PHP errors: %s", fetchErr.Error()), nil)
-		return
 	}
 
-	if result == nil || len(result.Entries) == 0 {
-		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
-		return
-	}
-
-	// Attach to error details so they appear in error.log.txt and WebSocket broadcast
-	phpErrors := make([]map[string]interface{}, 0, len(result.Entries))
-	for _, entry := range result.Entries {
-		phpErr := map[string]interface{}{
-			"id":        entry.ID,
-			"level":     entry.Level,
-			"message":   entry.Message,
-			"file":      entry.File,
-			"line":      entry.Line,
-			"createdAt": entry.CreatedAt,
-		}
-		if len(entry.StackTraceFrames) > 0 {
-			phpErr["stackTraceFrames"] = entry.StackTraceFrames
-		}
-		phpErrors = append(phpErrors, phpErr)
-	}
-	errDetails["remotePHPErrors"] = phpErrors
-	errDetails["remotePHPErrorCount"] = len(result.Entries)
-
-	if result.Flash.HasUnseen {
-		errDetails["remotePHPFlashUnseen"] = result.Flash.UnseenCount
-	}
-
-	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
-		fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
-		map[string]interface{}{"phpErrorCount": len(result.Entries)})
-
-	// Log each PHP error to session for full traceability
-	if s.sessionService != nil && sessionID != "" {
+	if result != nil && len(result.Entries) > 0 {
+		// Attach to error details so they appear in error.log.txt and WebSocket broadcast
+		phpErrors := make([]map[string]interface{}, 0, len(result.Entries))
 		for _, entry := range result.Entries {
-			s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, map[string]interface{}{
-				"phpFile":    entry.File,
-				"phpLine":    entry.Line,
-				"phpLevel":   entry.Level,
-				"phpCreated": entry.CreatedAt,
+			phpErr := map[string]interface{}{
+				"id":        entry.ID,
+				"level":     entry.Level,
+				"message":   entry.Message,
+				"file":      entry.File,
+				"line":      entry.Line,
+				"createdAt": entry.CreatedAt,
+			}
+			if len(entry.StackTraceFrames) > 0 {
+				phpErr["stackTraceFrames"] = entry.StackTraceFrames
+			}
+			phpErrors = append(phpErrors, phpErr)
+		}
+		errDetails["remotePHPErrors"] = phpErrors
+		errDetails["remotePHPErrorCount"] = len(result.Entries)
+
+		if result.Flash.HasUnseen {
+			errDetails["remotePHPFlashUnseen"] = result.Flash.UnseenCount
+		}
+
+		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
+			fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
+			map[string]interface{}{"phpErrorCount": len(result.Entries)})
+
+		// Log each PHP error to session for full traceability
+		if s.sessionService != nil && sessionID != "" {
+			for _, entry := range result.Entries {
+				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, map[string]interface{}{
+					"phpFile":    entry.File,
+					"phpLine":    entry.Line,
+					"phpLevel":   entry.Level,
+					"phpCreated": entry.CreatedAt,
+				})
+			}
+		}
+	} else if fetchErr == nil {
+		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "No recent PHP error sessions found on remote site", nil)
+	}
+
+	// Fetch stacktrace.txt via error-logs endpoint for deep PHP diagnostics
+	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace", "Pulling PHP stacktrace.txt from remote site...", nil)
+
+	logsResult, logsErr := client.FetchRemoteErrorLogs()
+	if logsErr != nil {
+		s.logRemoteAction(sessionID, siteID, action, "warn", "fetch_php_stacktrace",
+			fmt.Sprintf("Could not fetch remote error logs: %s", logsErr.Error()), nil)
+		return
+	}
+
+	if logsResult != nil && logsResult.StackTraceLog != nil && logsResult.StackTraceLog.Exists && logsResult.StackTraceLog.Content != "" {
+		errDetails["remotePHPStackTrace"] = logsResult.StackTraceLog.Content
+		errDetails["remotePHPStackTraceLines"] = logsResult.StackTraceLog.Lines
+
+		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace",
+			fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", logsResult.StackTraceLog.Lines, logsResult.StackTraceLog.TotalSize),
+			map[string]interface{}{
+				"lines":     logsResult.StackTraceLog.Lines,
+				"totalSize": logsResult.StackTraceLog.TotalSize,
+				"truncated": logsResult.StackTraceLog.Truncated,
+			})
+
+		// Persist stacktrace content to session error.log for diagnostics API
+		if s.sessionService != nil && sessionID != "" {
+			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", map[string]interface{}{
+				"content":   logsResult.StackTraceLog.Content,
+				"lines":     logsResult.StackTraceLog.Lines,
+				"truncated": logsResult.StackTraceLog.Truncated,
 			})
 		}
+	} else {
+		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace", "No stacktrace.txt content available on remote site", nil)
 	}
 }
 
