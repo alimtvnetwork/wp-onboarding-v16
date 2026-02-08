@@ -2,10 +2,12 @@
 /**
  * Admin Error Log Page Template
  *
- * Displays error sessions from the SQLite database with flash notifications.
+ * Tabbed interface showing Error Sessions, Log file, Error file, and Stack Trace file.
+ * Each file tab has Copy, Download, and Clear actions.
  *
  * @package RiseupAsiaUploader
  * @since   1.28.0
+ * @updated 1.30.0 - Added tabbed file viewer with Copy/Download/Clear
  */
 
 if (!defined('ABSPATH')) {
@@ -18,6 +20,9 @@ $level_colors = array(
     'INFO'  => '#0d6efd',
     'DEBUG' => '#6c757d',
 );
+
+$active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'sessions';
+$nonce = wp_create_nonce('riseup_admin_nonce');
 ?>
 <div class="wrap riseup-admin riseup-error-log">
 
@@ -46,137 +51,224 @@ $level_colors = array(
     </h1>
 
     <p class="description">
-        <?php esc_html_e('View all errors and warnings captured by the plugin. New errors trigger a flash notification.', 'riseup-asia-uploader'); ?>
+        <?php esc_html_e('View all errors, warnings, and log files captured by the plugin.', 'riseup-asia-uploader'); ?>
     </p>
 
-    <!-- Filters -->
-    <div class="riseup-filters">
-        <form method="get" action="">
-            <input type="hidden" name="page" value="riseup-asia-errors">
-            <div class="filter-row">
-                <label>
-                    <span><?php esc_html_e('Level:', 'riseup-asia-uploader'); ?></span>
-                    <select name="filter_level">
-                        <option value=""><?php esc_html_e('All Levels', 'riseup-asia-uploader'); ?></option>
-                        <option value="ERROR" <?php selected($filter_level, 'ERROR'); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
-                        <option value="WARN" <?php selected($filter_level, 'WARN'); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
-                    </select>
-                </label>
-
-                <label>
-                    <span><?php esc_html_e('Search:', 'riseup-asia-uploader'); ?></span>
-                    <input type="text" name="filter_search" value="<?php echo esc_attr($filter_search); ?>" placeholder="<?php esc_attr_e('Search messages...', 'riseup-asia-uploader'); ?>">
-                </label>
-
-                <button type="submit" class="button button-primary"><?php esc_html_e('Filter', 'riseup-asia-uploader'); ?></button>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-errors')); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
-
-                <button type="button" id="riseup-clear-errors" class="button button-link-delete" style="margin-left: auto;">
-                    <?php esc_html_e('Clear All Errors', 'riseup-asia-uploader'); ?>
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Stats -->
-    <div class="riseup-stats">
-        <span class="stat-item">
-            <strong><?php echo esc_html($total); ?></strong>
-            <?php esc_html_e('total errors', 'riseup-asia-uploader'); ?>
-        </span>
-        <?php if ($page > 1 || $page < $total_pages): ?>
-            <span class="stat-item">
-                <?php esc_html_e('Page', 'riseup-asia-uploader'); ?> <?php echo esc_html($page); ?>
-                <?php esc_html_e('of', 'riseup-asia-uploader'); ?> <?php echo esc_html($total_pages); ?>
-            </span>
-        <?php endif; ?>
-    </div>
-
-    <!-- Error Log Table -->
-    <table class="wp-list-table widefat fixed striped riseup-error-table">
-        <thead>
-            <tr>
-                <th class="column-id" style="width: 50px;"><?php esc_html_e('ID', 'riseup-asia-uploader'); ?></th>
-                <th class="column-timestamp" style="width: 160px;"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></th>
-                <th class="column-level" style="width: 70px;"><?php esc_html_e('Level', 'riseup-asia-uploader'); ?></th>
-                <th class="column-file" style="width: 180px;"><?php esc_html_e('Source', 'riseup-asia-uploader'); ?></th>
-                <th class="column-message"><?php esc_html_e('Message', 'riseup-asia-uploader'); ?></th>
-                <th class="column-actions" style="width: 80px;"><?php esc_html_e('Details', 'riseup-asia-uploader'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php if (empty($errors)): ?>
-                <tr>
-                    <td colspan="6" class="no-items"><?php esc_html_e('No errors found. 🎉', 'riseup-asia-uploader'); ?></td>
-                </tr>
-            <?php else: ?>
-                <?php foreach ($errors as $error): ?>
-                    <?php
-                    $is_new = ($error['id'] > $last_seen_id);
-                    $level  = strtoupper($error['level']);
-                    $color  = isset($level_colors[$level]) ? $level_colors[$level] : '#6c757d';
-                    ?>
-                    <tr class="<?php echo $is_new ? 'error-row-new' : ''; ?>">
-                        <td class="column-id">
-                            <?php echo esc_html($error['id']); ?>
-                            <?php if ($is_new): ?>
-                                <span class="new-badge">NEW</span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="column-timestamp">
-                            <span class="timestamp"><?php echo esc_html(date('Y-m-d H:i:s', strtotime($error['created_at']))); ?></span>
-                        </td>
-                        <td class="column-level">
-                            <span class="level-badge" style="background: <?php echo esc_attr($color); ?>;">
-                                <?php echo esc_html($level); ?>
-                            </span>
-                        </td>
-                        <td class="column-file">
-                            <?php if (!empty($error['file'])): ?>
-                                <code class="source-file"><?php echo esc_html(basename($error['file'])); ?>:<?php echo esc_html($error['line']); ?></code>
-                            <?php else: ?>
-                                <span class="na">—</span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="column-message">
-                            <span class="error-message"><?php echo esc_html($error['message']); ?></span>
-                        </td>
-                        <td class="column-actions">
-                            <?php if (!empty($error['context_json']) || !empty($error['stack_trace'])): ?>
-                                <button type="button" class="button button-small toggle-error-details"
-                                    data-context="<?php echo esc_attr($error['context_json'] ?: '{}'); ?>"
-                                    data-stack="<?php echo esc_attr($error['stack_trace'] ?: ''); ?>">
-                                    <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
-                                </button>
-                            <?php else: ?>
-                                <span class="na">—</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+    <!-- Tab Navigation -->
+    <nav class="nav-tab-wrapper riseup-tabs">
+        <a href="<?php echo esc_url(add_query_arg('tab', 'sessions')); ?>"
+           class="nav-tab <?php echo $active_tab === 'sessions' ? 'nav-tab-active' : ''; ?>">
+            <span class="dashicons dashicons-database"></span>
+            <?php esc_html_e('Error Sessions', 'riseup-asia-uploader'); ?>
+            <?php if ($unseen_count > 0): ?>
+                <span class="tab-badge"><?php echo esc_html($unseen_count); ?></span>
             <?php endif; ?>
-        </tbody>
-    </table>
+        </a>
+        <a href="<?php echo esc_url(add_query_arg('tab', 'log')); ?>"
+           class="nav-tab <?php echo $active_tab === 'log' ? 'nav-tab-active' : ''; ?>">
+            <span class="dashicons dashicons-text-page"></span>
+            <?php esc_html_e('Log', 'riseup-asia-uploader'); ?>
+        </a>
+        <a href="<?php echo esc_url(add_query_arg('tab', 'error')); ?>"
+           class="nav-tab <?php echo $active_tab === 'error' ? 'nav-tab-active' : ''; ?>">
+            <span class="dashicons dashicons-warning"></span>
+            <?php esc_html_e('Error Log', 'riseup-asia-uploader'); ?>
+        </a>
+        <a href="<?php echo esc_url(add_query_arg('tab', 'stacktrace')); ?>"
+           class="nav-tab <?php echo $active_tab === 'stacktrace' ? 'nav-tab-active' : ''; ?>">
+            <span class="dashicons dashicons-editor-code"></span>
+            <?php esc_html_e('Stack Trace', 'riseup-asia-uploader'); ?>
+        </a>
+    </nav>
 
-    <!-- Pagination -->
-    <?php if ($total_pages > 1): ?>
-        <div class="tablenav bottom">
-            <div class="tablenav-pages">
-                <?php
-                echo paginate_links(array(
-                    'base'      => add_query_arg('paged', '%#%'),
-                    'format'    => '',
-                    'prev_text' => '&laquo;',
-                    'next_text' => '&raquo;',
-                    'total'     => $total_pages,
-                    'current'   => $page,
-                ));
-                ?>
+    <!-- Tab Content -->
+    <div class="riseup-tab-content">
+
+    <?php if ($active_tab === 'sessions'): ?>
+        <!-- ============================================================ -->
+        <!-- ERROR SESSIONS TAB (original table view)                      -->
+        <!-- ============================================================ -->
+
+        <!-- Filters -->
+        <div class="riseup-filters">
+            <form method="get" action="">
+                <input type="hidden" name="page" value="riseup-asia-errors">
+                <input type="hidden" name="tab" value="sessions">
+                <div class="filter-row">
+                    <label>
+                        <span><?php esc_html_e('Level:', 'riseup-asia-uploader'); ?></span>
+                        <select name="filter_level">
+                            <option value=""><?php esc_html_e('All Levels', 'riseup-asia-uploader'); ?></option>
+                            <option value="ERROR" <?php selected($filter_level, 'ERROR'); ?>><?php esc_html_e('Error', 'riseup-asia-uploader'); ?></option>
+                            <option value="WARN" <?php selected($filter_level, 'WARN'); ?>><?php esc_html_e('Warning', 'riseup-asia-uploader'); ?></option>
+                        </select>
+                    </label>
+                    <label>
+                        <span><?php esc_html_e('Search:', 'riseup-asia-uploader'); ?></span>
+                        <input type="text" name="filter_search" value="<?php echo esc_attr($filter_search); ?>" placeholder="<?php esc_attr_e('Search messages...', 'riseup-asia-uploader'); ?>">
+                    </label>
+                    <button type="submit" class="button button-primary"><?php esc_html_e('Filter', 'riseup-asia-uploader'); ?></button>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-errors&tab=sessions')); ?>" class="button"><?php esc_html_e('Reset', 'riseup-asia-uploader'); ?></a>
+                    <button type="button" id="riseup-clear-errors" class="button button-link-delete" style="margin-left: auto;">
+                        <?php esc_html_e('Clear All Errors', 'riseup-asia-uploader'); ?>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Stats -->
+        <div class="riseup-stats">
+            <span class="stat-item">
+                <strong><?php echo esc_html($total); ?></strong>
+                <?php esc_html_e('total errors', 'riseup-asia-uploader'); ?>
+            </span>
+            <?php if ($page > 1 || $page < $total_pages): ?>
+                <span class="stat-item">
+                    <?php esc_html_e('Page', 'riseup-asia-uploader'); ?> <?php echo esc_html($page); ?>
+                    <?php esc_html_e('of', 'riseup-asia-uploader'); ?> <?php echo esc_html($total_pages); ?>
+                </span>
+            <?php endif; ?>
+        </div>
+
+        <!-- Error Log Table -->
+        <table class="wp-list-table widefat fixed striped riseup-error-table">
+            <thead>
+                <tr>
+                    <th class="column-id" style="width: 50px;"><?php esc_html_e('ID', 'riseup-asia-uploader'); ?></th>
+                    <th class="column-timestamp" style="width: 160px;"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></th>
+                    <th class="column-level" style="width: 70px;"><?php esc_html_e('Level', 'riseup-asia-uploader'); ?></th>
+                    <th class="column-file" style="width: 180px;"><?php esc_html_e('Source', 'riseup-asia-uploader'); ?></th>
+                    <th class="column-message"><?php esc_html_e('Message', 'riseup-asia-uploader'); ?></th>
+                    <th class="column-actions" style="width: 80px;"><?php esc_html_e('Details', 'riseup-asia-uploader'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($errors)): ?>
+                    <tr>
+                        <td colspan="6" class="no-items"><?php esc_html_e('No errors found. 🎉', 'riseup-asia-uploader'); ?></td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($errors as $error): ?>
+                        <?php
+                        $is_new = ($error['id'] > $last_seen_id);
+                        $level  = strtoupper($error['level']);
+                        $color  = isset($level_colors[$level]) ? $level_colors[$level] : '#6c757d';
+                        ?>
+                        <tr class="<?php echo $is_new ? 'error-row-new' : ''; ?>">
+                            <td class="column-id">
+                                <?php echo esc_html($error['id']); ?>
+                                <?php if ($is_new): ?>
+                                    <span class="new-badge">NEW</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="column-timestamp">
+                                <span class="timestamp"><?php echo esc_html(date('Y-m-d H:i:s', strtotime($error['created_at']))); ?></span>
+                            </td>
+                            <td class="column-level">
+                                <span class="level-badge" style="background: <?php echo esc_attr($color); ?>;">
+                                    <?php echo esc_html($level); ?>
+                                </span>
+                            </td>
+                            <td class="column-file">
+                                <?php if (!empty($error['file'])): ?>
+                                    <code class="source-file"><?php echo esc_html(basename($error['file'])); ?>:<?php echo esc_html($error['line']); ?></code>
+                                <?php else: ?>
+                                    <span class="na">—</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="column-message">
+                                <span class="error-message"><?php echo esc_html($error['message']); ?></span>
+                            </td>
+                            <td class="column-actions">
+                                <?php if (!empty($error['context_json']) || !empty($error['stack_trace'])): ?>
+                                    <button type="button" class="button button-small toggle-error-details"
+                                        data-context="<?php echo esc_attr($error['context_json'] ?: '{}'); ?>"
+                                        data-stack="<?php echo esc_attr($error['stack_trace'] ?: ''); ?>">
+                                        <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
+                                    </button>
+                                <?php else: ?>
+                                    <span class="na">—</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <?php if ($total_pages > 1): ?>
+            <div class="tablenav bottom">
+                <div class="tablenav-pages">
+                    <?php
+                    echo paginate_links(array(
+                        'base'      => add_query_arg(array('paged' => '%#%', 'tab' => 'sessions')),
+                        'format'    => '',
+                        'prev_text' => '&laquo;',
+                        'next_text' => '&raquo;',
+                        'total'     => $total_pages,
+                        'current'   => $page,
+                    ));
+                    ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+    <?php else: ?>
+        <!-- ============================================================ -->
+        <!-- FILE VIEWER TAB (log, error, stacktrace)                      -->
+        <!-- ============================================================ -->
+        <?php
+        $file_type = $active_tab; // 'log', 'error', or 'stacktrace'
+        $file_labels = array(
+            'log'        => __('General Log', 'riseup-asia-uploader') . ' (log.txt)',
+            'error'      => __('Error Log', 'riseup-asia-uploader') . ' (error.txt)',
+            'stacktrace' => __('Stack Trace', 'riseup-asia-uploader') . ' (stacktrace.txt)',
+        );
+        $file_label = isset($file_labels[$file_type]) ? $file_labels[$file_type] : $file_type;
+        ?>
+
+        <div class="riseup-file-viewer-card">
+            <div class="file-viewer-header">
+                <h2><?php echo esc_html($file_label); ?></h2>
+                <div class="file-viewer-actions">
+                    <span class="file-size-label" id="file-size-label"></span>
+                    <button type="button" class="button button-small" id="btn-refresh-log" title="<?php esc_attr_e('Refresh', 'riseup-asia-uploader'); ?>">
+                        <span class="dashicons dashicons-update"></span>
+                        <?php esc_html_e('Refresh', 'riseup-asia-uploader'); ?>
+                    </button>
+                    <button type="button" class="button button-small" id="btn-copy-log" title="<?php esc_attr_e('Copy to Clipboard', 'riseup-asia-uploader'); ?>">
+                        <span class="dashicons dashicons-clipboard"></span>
+                        <?php esc_html_e('Copy', 'riseup-asia-uploader'); ?>
+                    </button>
+                    <button type="button" class="button button-small" id="btn-download-log" title="<?php esc_attr_e('Download File', 'riseup-asia-uploader'); ?>">
+                        <span class="dashicons dashicons-download"></span>
+                        <?php esc_html_e('Download', 'riseup-asia-uploader'); ?>
+                    </button>
+                    <button type="button" class="button button-small button-link-delete" id="btn-clear-log" title="<?php esc_attr_e('Clear File', 'riseup-asia-uploader'); ?>">
+                        <span class="dashicons dashicons-trash"></span>
+                        <?php esc_html_e('Clear', 'riseup-asia-uploader'); ?>
+                    </button>
+                </div>
+            </div>
+            <div class="file-viewer-body">
+                <div id="file-loading" class="file-loading">
+                    <span class="spinner is-active"></span>
+                    <?php esc_html_e('Loading file contents...', 'riseup-asia-uploader'); ?>
+                </div>
+                <pre id="file-content" class="file-content-pre" style="display: none;"></pre>
+                <div id="file-empty" class="file-empty" style="display: none;">
+                    <span class="dashicons dashicons-yes-alt"></span>
+                    <?php esc_html_e('File is empty or does not exist yet.', 'riseup-asia-uploader'); ?>
+                </div>
             </div>
         </div>
+
     <?php endif; ?>
 
-    <!-- Details Modal -->
+    </div><!-- .riseup-tab-content -->
+
+    <!-- Details Modal (for sessions tab) -->
     <div id="riseup-error-modal" class="riseup-modal" style="display: none;">
         <div class="riseup-modal-content" style="max-width: 800px;">
             <div class="riseup-modal-header">
@@ -194,6 +286,12 @@ $level_colors = array(
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Copy success toast -->
+    <div id="riseup-toast" class="riseup-toast" style="display: none;">
+        <span class="dashicons dashicons-yes"></span>
+        <span id="riseup-toast-msg"></span>
     </div>
 
     <style>
@@ -238,6 +336,41 @@ $level_colors = array(
         border-radius: 10px;
         vertical-align: middle;
         margin-left: 6px;
+    }
+
+    /* Tab badge */
+    .tab-badge {
+        display: inline-block;
+        background: #dc3545;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 0 5px;
+        min-width: 16px;
+        height: 16px;
+        line-height: 16px;
+        text-align: center;
+        border-radius: 8px;
+        margin-left: 4px;
+        vertical-align: middle;
+    }
+
+    /* Tab navigation enhancements */
+    .riseup-tabs .nav-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .riseup-tabs .nav-tab .dashicons {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        line-height: 16px;
+    }
+
+    /* Tab content */
+    .riseup-tab-content {
+        margin-top: 15px;
     }
 
     /* New error row highlight */
@@ -313,23 +446,150 @@ $level_colors = array(
         margin-left: 5px;
         vertical-align: middle;
     }
+
+    /* ======== FILE VIEWER ======== */
+    .riseup-file-viewer-card {
+        background: #fff;
+        border: 1px solid #c3c4c7;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .file-viewer-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        border-bottom: 1px solid #dcdcde;
+        background: #f6f7f7;
+    }
+    .file-viewer-header h2 {
+        margin: 0;
+        padding: 0;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+    }
+
+    .file-viewer-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .file-viewer-actions .button {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 12px;
+    }
+    .file-viewer-actions .dashicons {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        line-height: 14px;
+    }
+
+    .file-size-label {
+        font-size: 11px;
+        color: #646970;
+        margin-right: 6px;
+    }
+
+    .file-viewer-body {
+        padding: 0;
+    }
+
+    .file-loading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 30px 20px;
+        color: #646970;
+    }
+
+    .file-content-pre {
+        background: #1e1e1e;
+        color: #d4d4d4;
+        margin: 0;
+        padding: 15px 20px;
+        font-size: 12px;
+        line-height: 1.6;
+        max-height: 600px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: none;
+        border-radius: 0;
+    }
+
+    .file-empty {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 40px 20px;
+        color: #646970;
+        justify-content: center;
+        font-size: 14px;
+    }
+    .file-empty .dashicons {
+        color: #00a32a;
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+    }
+
+    /* Toast */
+    .riseup-toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #1d2327;
+        color: #fff;
+        padding: 10px 18px;
+        border-radius: 6px;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        z-index: 100001;
+        animation: toastIn 0.3s ease;
+    }
+    @keyframes toastIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .riseup-toast .dashicons {
+        color: #00a32a;
+    }
     </style>
 
     <script>
     jQuery(document).ready(function($) {
+        var nonce = '<?php echo esc_js($nonce); ?>';
+        var activeTab = '<?php echo esc_js($active_tab); ?>';
+
+        // ====================================================================
+        // Toast helper
+        // ====================================================================
+        function showToast(msg) {
+            $('#riseup-toast-msg').text(msg);
+            $('#riseup-toast').show();
+            setTimeout(function() { $('#riseup-toast').fadeOut(300); }, 2500);
+        }
+
+        // ====================================================================
+        // SESSIONS TAB handlers
+        // ====================================================================
         // Dismiss flash banner
         $('#riseup-dismiss-flash').on('click', function() {
             var $btn = $(this);
             $btn.prop('disabled', true).text('<?php esc_html_e('Dismissing...', 'riseup-asia-uploader'); ?>');
-
-            $.post(ajaxurl, {
-                action: 'riseup_dismiss_error_flash',
-                nonce: '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>'
-            }, function(response) {
+            $.post(ajaxurl, { action: 'riseup_dismiss_error_flash', nonce: nonce }, function(response) {
                 if (response.success) {
                     $('#riseup-flash-banner').slideUp(300);
-                    // Remove menu bubble
                     $('.riseup-error-bubble').fadeOut(200);
+                    $('.tab-badge').fadeOut(200);
                 }
             }).fail(function() {
                 $btn.prop('disabled', false).text('<?php esc_html_e('Mark as Seen', 'riseup-asia-uploader'); ?>');
@@ -338,58 +598,165 @@ $level_colors = array(
 
         // Clear all errors
         $('#riseup-clear-errors').on('click', function() {
-            if (!confirm('<?php esc_html_e('Delete all error log entries? This cannot be undone.', 'riseup-asia-uploader'); ?>')) {
-                return;
-            }
+            if (!confirm('<?php esc_html_e('Delete all error log entries? This cannot be undone.', 'riseup-asia-uploader'); ?>')) return;
             var $btn = $(this);
             $btn.prop('disabled', true);
-
-            $.post(ajaxurl, {
-                action: 'riseup_clear_error_sessions',
-                nonce: '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>'
-            }, function(response) {
-                if (response.success) {
-                    location.reload();
-                }
-            }).fail(function() {
-                $btn.prop('disabled', false);
-            });
+            $.post(ajaxurl, { action: 'riseup_clear_error_sessions', nonce: nonce }, function(response) {
+                if (response.success) location.reload();
+            }).fail(function() { $btn.prop('disabled', false); });
         });
 
         // View error details
         $('.toggle-error-details').on('click', function() {
             var context = $(this).data('context');
             var stack = $(this).attr('data-stack');
-
             if (context && context !== '{}' && Object.keys(context).length > 0) {
-                var formatted = JSON.stringify(context, null, 2);
-                $('#error-context-content').text(formatted);
+                $('#error-context-content').text(JSON.stringify(context, null, 2));
                 $('#error-context-section').show();
             } else {
                 $('#error-context-section').hide();
             }
-
             if (stack && stack.length > 0) {
                 $('#error-stack-content').text(stack);
                 $('#error-stack-section').show();
             } else {
                 $('#error-stack-section').hide();
             }
-
             $('#riseup-error-modal').show();
         });
 
         // Close modal
         $('.riseup-modal-close, .riseup-modal').on('click', function(e) {
-            if (e.target === this) {
-                $('#riseup-error-modal').hide();
-            }
+            if (e.target === this) $('#riseup-error-modal').hide();
         });
         $(document).on('keydown', function(e) {
-            if (e.key === 'Escape') {
-                $('#riseup-error-modal').hide();
-            }
+            if (e.key === 'Escape') $('#riseup-error-modal').hide();
         });
+
+        // ====================================================================
+        // FILE VIEWER TAB handlers
+        // ====================================================================
+        if (activeTab === 'log' || activeTab === 'error' || activeTab === 'stacktrace') {
+            var fileContent = '';
+
+            function formatBytes(bytes) {
+                if (bytes === 0) return '0 B';
+                var k = 1024;
+                var sizes = ['B', 'KB', 'MB', 'GB'];
+                var i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+            }
+
+            function loadFileContent() {
+                $('#file-loading').show();
+                $('#file-content').hide();
+                $('#file-empty').hide();
+
+                $.post(ajaxurl, {
+                    action: 'riseup_read_log_file',
+                    nonce: nonce,
+                    file_type: activeTab
+                }, function(response) {
+                    $('#file-loading').hide();
+                    if (response.success) {
+                        fileContent = response.data.content || '';
+                        if (fileContent.length > 0) {
+                            $('#file-content').text(fileContent).show();
+                            // Auto-scroll to bottom
+                            var pre = document.getElementById('file-content');
+                            pre.scrollTop = pre.scrollHeight;
+                        } else {
+                            $('#file-empty').show();
+                        }
+                        if (response.data.size > 0) {
+                            $('#file-size-label').text(formatBytes(response.data.size));
+                        }
+                    } else {
+                        $('#file-empty').show();
+                    }
+                }).fail(function() {
+                    $('#file-loading').hide();
+                    $('#file-empty').show();
+                });
+            }
+
+            // Initial load
+            loadFileContent();
+
+            // Refresh
+            $('#btn-refresh-log').on('click', function() {
+                loadFileContent();
+                showToast('<?php esc_html_e('Refreshed', 'riseup-asia-uploader'); ?>');
+            });
+
+            // Copy
+            $('#btn-copy-log').on('click', function() {
+                if (!fileContent) {
+                    showToast('<?php esc_html_e('Nothing to copy', 'riseup-asia-uploader'); ?>');
+                    return;
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(fileContent).then(function() {
+                        showToast('<?php esc_html_e('Copied to clipboard!', 'riseup-asia-uploader'); ?>');
+                    });
+                } else {
+                    // Fallback
+                    var $temp = $('<textarea>');
+                    $('body').append($temp);
+                    $temp.val(fileContent).select();
+                    document.execCommand('copy');
+                    $temp.remove();
+                    showToast('<?php esc_html_e('Copied to clipboard!', 'riseup-asia-uploader'); ?>');
+                }
+            });
+
+            // Download
+            $('#btn-download-log').on('click', function() {
+                if (!fileContent) {
+                    showToast('<?php esc_html_e('Nothing to download', 'riseup-asia-uploader'); ?>');
+                    return;
+                }
+                var filenames = {
+                    'log': 'log.txt',
+                    'error': 'error.txt',
+                    'stacktrace': 'stacktrace.txt'
+                };
+                var blob = new Blob([fileContent], { type: 'text/plain' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filenames[activeTab] || 'log.txt';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('<?php esc_html_e('Download started', 'riseup-asia-uploader'); ?>');
+            });
+
+            // Clear
+            $('#btn-clear-log').on('click', function() {
+                if (!confirm('<?php esc_html_e('Clear this log file? This cannot be undone.', 'riseup-asia-uploader'); ?>')) return;
+                var $btn = $(this);
+                $btn.prop('disabled', true);
+
+                $.post(ajaxurl, {
+                    action: 'riseup_clear_log_file',
+                    nonce: nonce,
+                    file_type: activeTab
+                }, function(response) {
+                    $btn.prop('disabled', false);
+                    if (response.success) {
+                        fileContent = '';
+                        $('#file-content').hide();
+                        $('#file-empty').show();
+                        $('#file-size-label').text('');
+                        showToast('<?php esc_html_e('File cleared', 'riseup-asia-uploader'); ?>');
+                    }
+                }).fail(function() {
+                    $btn.prop('disabled', false);
+                });
+            });
+        }
     });
     </script>
 </div>

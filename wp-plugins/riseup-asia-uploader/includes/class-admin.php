@@ -84,6 +84,8 @@ class Riseup_Admin {
         add_action('wp_ajax_riseup_get_snapshot_storage_stats', array($this, 'ajax_get_snapshot_storage_stats'));
         add_action('wp_ajax_riseup_dismiss_error_flash', array($this, 'ajax_dismiss_error_flash'));
         add_action('wp_ajax_riseup_clear_error_sessions', array($this, 'ajax_clear_error_sessions'));
+        add_action('wp_ajax_riseup_read_log_file', array($this, 'ajax_read_log_file'));
+        add_action('wp_ajax_riseup_clear_log_file', array($this, 'ajax_clear_log_file'));
     }
 
     /**
@@ -746,5 +748,96 @@ class Riseup_Admin {
         $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
 
         wp_send_json_success(array('message' => 'All error sessions cleared'));
+    }
+
+    /**
+     * Resolve a log file type to its absolute path.
+     *
+     * @param string $type One of 'log', 'error', 'stacktrace'.
+     * @return string|false File path or false if invalid type.
+     */
+    private function resolve_log_file_path($type) {
+        $logger = Riseup_File_Logger::get_instance();
+        switch ($type) {
+            case 'log':
+                return $logger->get_log_file();
+            case 'error':
+                return $logger->get_error_file();
+            case 'stacktrace':
+                return $logger->get_stacktrace_file();
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * AJAX handler: Read a log file's contents.
+     *
+     * Expects POST params: nonce, file_type (log|error|stacktrace).
+     */
+    public function ajax_read_log_file() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+
+        $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
+        $path = $this->resolve_log_file_path($type);
+
+        if ($path === false) {
+            wp_send_json_error(array('message' => 'Invalid file type'));
+        }
+
+        $content = '';
+        $size = 0;
+        $exists = file_exists($path);
+
+        if ($exists) {
+            $size = filesize($path);
+            // Limit to last 500KB to avoid memory issues
+            $max_bytes = 512 * 1024;
+            if ($size > $max_bytes) {
+                $fp = fopen($path, 'r');
+                fseek($fp, -$max_bytes, SEEK_END);
+                fgets($fp); // skip partial line
+                $content = fread($fp, $max_bytes);
+                fclose($fp);
+                $content = '... (truncated, showing last ' . round($max_bytes / 1024) . 'KB) ...' . PHP_EOL . $content;
+            } else {
+                $content = file_get_contents($path);
+            }
+        }
+
+        wp_send_json_success(array(
+            'content'  => $content,
+            'exists'   => $exists,
+            'size'     => $size,
+            'filename' => basename($path),
+        ));
+    }
+
+    /**
+     * AJAX handler: Clear (truncate) a log file.
+     *
+     * Expects POST params: nonce, file_type (log|error|stacktrace).
+     */
+    public function ajax_clear_log_file() {
+        check_ajax_referer('riseup_admin_nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Unauthorized'));
+        }
+
+        $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
+        $path = $this->resolve_log_file_path($type);
+
+        if ($path === false) {
+            wp_send_json_error(array('message' => 'Invalid file type'));
+        }
+
+        if (file_exists($path)) {
+            file_put_contents($path, '');
+        }
+
+        wp_send_json_success(array('message' => 'File cleared', 'file_type' => $type));
     }
 }

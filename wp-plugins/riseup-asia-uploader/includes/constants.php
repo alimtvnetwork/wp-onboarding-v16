@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.29.0');
+    define('RISEUP_VERSION', '1.30.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -48,6 +48,9 @@ if (!defined('RISEUP_LOG_FILENAME')) {
 }
 if (!defined('RISEUP_ERROR_LOG_FILENAME')) {
     define('RISEUP_ERROR_LOG_FILENAME', 'error.txt');
+}
+if (!defined('RISEUP_STACKTRACE_FILENAME')) {
+    define('RISEUP_STACKTRACE_FILENAME', 'stacktrace.txt');
 }
 if (!defined('RISEUP_DB_FILENAME')) {
     define('RISEUP_DB_FILENAME', 'riseup-asia-uploader.db');

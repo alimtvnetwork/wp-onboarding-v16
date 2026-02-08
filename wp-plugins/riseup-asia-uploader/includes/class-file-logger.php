@@ -60,6 +60,13 @@ class Riseup_File_Logger {
     private $error_file = null;
 
     /**
+     * Path to stack trace file.
+     *
+     * @var string|null
+     */
+    private $stacktrace_file = null;
+
+    /**
      * Whether the logger is initialized.
      *
      * @var bool
@@ -109,9 +116,10 @@ class Riseup_File_Logger {
         // Resolve base directory via centralized helper
         $this->base_dir = RiseupInitHelpers::resolveBaseDir();
         
-        $this->logs_dir   = RiseupPathUtils::getLogsDir();
-        $this->log_file   = $this->logs_dir . '/' . RISEUP_LOG_FILENAME;
-        $this->error_file = $this->logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
+        $this->logs_dir        = RiseupPathUtils::getLogsDir();
+        $this->log_file        = $this->logs_dir . '/' . RISEUP_LOG_FILENAME;
+        $this->error_file      = $this->logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
+        $this->stacktrace_file = $this->logs_dir . '/' . RISEUP_STACKTRACE_FILENAME;
         
         // Create directories via idempotent helper
         return $this->ensure_directories();
@@ -225,6 +233,18 @@ class Riseup_File_Logger {
             $this->initialize_paths();
         }
         return $this->error_file;
+    }
+
+    /**
+     * Get the path to the stack trace file.
+     *
+     * @return string
+     */
+    public function get_stacktrace_file() {
+        if (RiseupBooleanHelpers::is_null($this->stacktrace_file)) {
+            $this->initialize_paths();
+        }
+        return $this->stacktrace_file;
     }
 
     /**
@@ -365,7 +385,7 @@ class Riseup_File_Logger {
      * @return bool
      */
     public function error($message, $context = array()) {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
@@ -376,6 +396,7 @@ class Riseup_File_Logger {
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
         $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
+        $this->write_stacktrace($message, $file, $line, $this->format_backtrace($trace));
         return $this->write($entry, true);
     }
 
@@ -422,6 +443,7 @@ class Riseup_File_Logger {
             array('trace' => $e->getTraceAsString())
         );
         $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
+        $this->write_stacktrace($message, $e->getFile(), $e->getLine(), $e->getTraceAsString());
         return $this->write($entry, true);
     }
 
@@ -472,5 +494,53 @@ class Riseup_File_Logger {
             // Silently ignore - we're in the logger, can't recurse
             // The error is already written to the file log
         }
+    }
+
+    /**
+     * Write a stack trace entry to the dedicated stacktrace.txt file.
+     *
+     * @param string $message     Error message.
+     * @param string $file        Source file.
+     * @param int    $line        Source line number.
+     * @param string $stack_trace Stack trace string.
+     */
+    private function write_stacktrace($message, $file, $line, $stack_trace) {
+        if (empty($stack_trace)) {
+            return;
+        }
+
+        if (RiseupBooleanHelpers::is_falsy($this->initialized)) {
+            if (!$this->initialize_paths()) {
+                return;
+            }
+        }
+
+        $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
+        $separator = str_repeat('=', 80);
+        $entry  = $separator . PHP_EOL;
+        $entry .= sprintf("[%s] %s (%s:%d)", $timestamp, $message, basename($file), $line) . PHP_EOL;
+        $entry .= str_repeat('-', 80) . PHP_EOL;
+        $entry .= $stack_trace . PHP_EOL;
+        $entry .= $separator . PHP_EOL . PHP_EOL;
+
+        @file_put_contents($this->stacktrace_file, $entry, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * Format a debug_backtrace array into a readable string.
+     *
+     * @param array $trace debug_backtrace result.
+     * @return string Formatted stack trace.
+     */
+    private function format_backtrace($trace) {
+        $lines = array();
+        foreach ($trace as $i => $frame) {
+            $file = isset($frame['file']) ? basename($frame['file']) : '<internal>';
+            $line = isset($frame['line']) ? $frame['line'] : 0;
+            $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
+            $func = isset($frame['function']) ? $frame['function'] : '<unknown>';
+            $lines[] = sprintf('#%d %s(%d): %s%s()', $i, $file, $line, $class, $func);
+        }
+        return implode(PHP_EOL, $lines);
     }
 }
