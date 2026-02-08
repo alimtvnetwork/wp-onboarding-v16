@@ -89,7 +89,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const { captureError, captureException, openErrorModal } = useErrorStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [pluginToDelete, setPluginToDelete] = useState<RemotePlugin | null>(null);
-  // togglingPlugins state removed — using optimistic updates instead
+  const [successPlugins, setSuccessPlugins] = useState<Set<string>>(new Set());
   const [selectedPlugins, setSelectedPlugins] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkActionPending, setBulkActionPending] = useState(false);
@@ -169,7 +169,16 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       return { previousPlugins };
     },
     onSuccess: (_, { plugin, enable }) => {
-      // No direct toast — silent success for audit trail
+      // Trigger success pulse animation
+      setSuccessPlugins((prev) => new Set(prev).add(plugin.plugin));
+      setTimeout(() => {
+        setSuccessPlugins((prev) => {
+          const next = new Set(prev);
+          next.delete(plugin.plugin);
+          return next;
+        });
+      }, 400); // Match animation duration
+      // Silent success for audit trail
       console.info(`[audit] ${plugin.name} ${enable ? "activated" : "deactivated"} successfully`);
     },
     onError: (error, { plugin, enable }, context) => {
@@ -553,6 +562,8 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
               <div className="space-y-2 pb-2">
                 {paginatedPlugins.map((plugin) => {
                   const isSelected = selectedPlugins.has(plugin.plugin);
+                  const hasSuccessPulse = successPlugins.has(plugin.plugin);
+
                   return (
                     <div
                       key={plugin.plugin}
@@ -626,6 +637,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                           <Switch
                             checked={plugin.status === "active"}
                             onCheckedChange={(checked) => handleToggle(plugin, checked)}
+                            className={hasSuccessPulse ? "animate-success-pulse" : ""}
                           />
                         </div>
 
