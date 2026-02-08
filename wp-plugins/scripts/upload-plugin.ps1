@@ -205,76 +205,47 @@ try {
 $CleanAppPassword = $AppPassword -replace '\s', ''
 $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Username}:${CleanAppPassword}"))
 
-# Step 3: Check if Riseup Asia Uploader is installed
+# Step 3: Upload plugin (try Riseup Asia Uploader first, then WP Core)
 Write-Status ""
-Write-Status "[3/5] Checking Riseup Asia Uploader..." -Color Yellow
+Write-Status "[3/5] Uploading plugin to WordPress..." -Color Yellow
+Write-Status "      Site: $WordPressSiteURL" -Color Gray
+Write-Status "      User: $Username" -Color Gray
 
-# Try the new API namespace first, then fall back to legacy
+$uploadSuccess = $false
+
+# --- Attempt 1: Riseup Asia Uploader (direct upload, no status check) ---
 $apiNamespaces = @(
     @{ name = "riseup-asia-uploader/v1"; display = "Riseup Asia Uploader" },
     @{ name = "riseup-uploader/v1"; display = "Riseup Uploader (Legacy)" }
 )
 
-$activeNamespace = $null
-$headers = @{
-    "Authorization" = "Basic $base64Auth"
-}
-
 foreach ($ns in $apiNamespaces) {
-    $statusUrl = "$WordPressSiteURL/wp-json/$($ns.name)/status"
-    try {
-        $statusResponse = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
-        if ($statusResponse.success -eq $true) {
-            Write-Status "      $($ns.display) is active! (v$($statusResponse.version))" -Color Green
-            $activeNamespace = $ns.name
-            break
-        }
-    } catch {
-        # Try next namespace
-    }
-}
+    if ($uploadSuccess) { break }
 
-if (-not $activeNamespace) {
-    Write-Status "      Riseup Asia Uploader not found." -Color Yellow
-    Write-Status "      Attempting fallback to standard WordPress REST API..." -Color Yellow
-}
+    $uploadUrl = "$WordPressSiteURL/wp-json/$($ns.name)/upload"
+    Write-Status "      Trying $($ns.display)..." -Color Gray
 
-# Step 4: Upload plugin
-Write-Status ""
-Write-Status "[4/5] Uploading plugin to WordPress..." -Color Yellow
-Write-Status "      Site: $WordPressSiteURL" -Color Gray
-Write-Status "      User: $Username" -Color Gray
-
-$fileName = Split-Path $OutputZipPath -Leaf
-
-if ($activeNamespace) {
-    # Use Riseup Asia Uploader (Base64 method - most reliable)
-    $uploadUrl = "$WordPressSiteURL/wp-json/$activeNamespace/upload"
-    
     try {
         $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
         $base64Data = [Convert]::ToBase64String($fileBytes)
-        
-        # Use the correct field names for the new API
+
         $uploadBody = @{
             plugin_zip = $base64Data
             slug = $PluginSlug
             activate = $ActivateAfterInstall
         } | ConvertTo-Json
-        
+
         $uploadHeaders = @{
             "Authorization" = "Basic $base64Auth"
             "Content-Type" = "application/json"
         }
-        
-        Write-Status "      Uploading via Riseup Asia Uploader..." -Color Gray
+
         $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
-        
-        Write-Status "      Success! Plugin installed." -Color Green
-        
+        $uploadSuccess = $true
+
+        Write-Status "      ✓ Uploaded via $($ns.display)!" -Color Green
         Write-Status ""
-        Write-Status "[5/5] Installation Complete!" -Color Yellow
-        
+        Write-Status "[4/5] Installation Complete!" -Color Yellow
         Write-Status ""
         Write-Status "========================================" -Color Green
         Write-Status "  SUCCESS! Plugin Deployed!" -Color Green
@@ -288,8 +259,7 @@ if ($activeNamespace) {
             Write-Status "  - Activation Error: $($response.activation_error)" -Color Yellow
         }
         Write-Status ""
-        
-        # Output JSON result for programmatic parsing
+
         if ($Quiet) {
             $result = @{
                 success = $true
@@ -300,94 +270,78 @@ if ($activeNamespace) {
             }
             Write-Output ($result | ConvertTo-Json -Compress)
         }
-        
+
     } catch {
-        $errorMessage = $_.Exception.Message
-        
+        $errMsg = $_.Exception.Message
         if ($_.Exception.Response) {
             try {
                 $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
                 $reader.BaseStream.Position = 0
-                $responseBody = $reader.ReadToEnd()
-                $errorData = $responseBody | ConvertFrom-Json
-                $errorMessage = $errorData.message
+                $errMsg = $reader.ReadToEnd()
             } catch {}
         }
-        
-        Write-Host ""
-        Write-Host "Upload Failed!" -ForegroundColor Red
-        Write-Host "Error: $errorMessage" -ForegroundColor Red
-        
-        if ($Quiet) {
-            $result = @{ success = $false; error = $errorMessage }
-            Write-Output ($result | ConvertTo-Json -Compress)
-        }
-        exit 1
+        Write-Status "      ✗ $($ns.display) failed: $errMsg" -Color Yellow
     }
-    
-} else {
-    # Fallback: Standard WordPress REST API
+}
+
+# --- Attempt 2: Standard WordPress REST API (fallback) ---
+if (-not $uploadSuccess) {
+    Write-Status ""
+    Write-Status "      Falling back to WordPress Core REST API..." -Color Yellow
+
+    $fileName = Split-Path $OutputZipPath -Leaf
     $uploadUrl = "$WordPressSiteURL/wp-json/wp/v2/plugins"
-    
+
     try {
         $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
-        
-        # Create multipart form data
+
         $boundary = [System.Guid]::NewGuid().ToString()
         $LF = "`r`n"
-        
+
         $bodyStart = "--$boundary$LF" +
                      "Content-Disposition: form-data; name=`"file`"; filename=`"$fileName`"$LF" +
                      "Content-Type: application/zip$LF$LF"
-        
         $bodyEnd = "$LF--$boundary--$LF"
-        
+
         $bodyStartBytes = [System.Text.Encoding]::UTF8.GetBytes($bodyStart)
         $bodyEndBytes = [System.Text.Encoding]::UTF8.GetBytes($bodyEnd)
-        
+
         $body = New-Object byte[] ($bodyStartBytes.Length + $fileBytes.Length + $bodyEndBytes.Length)
         [System.Buffer]::BlockCopy($bodyStartBytes, 0, $body, 0, $bodyStartBytes.Length)
         [System.Buffer]::BlockCopy($fileBytes, 0, $body, $bodyStartBytes.Length, $fileBytes.Length)
         [System.Buffer]::BlockCopy($bodyEndBytes, 0, $body, $bodyStartBytes.Length + $fileBytes.Length, $bodyEndBytes.Length)
-        
+
         $uploadHeaders = @{
             "Authorization" = "Basic $base64Auth"
             "Content-Type" = "multipart/form-data; boundary=$boundary"
         }
-        
+
         $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $body
-        
+        $uploadSuccess = $true
+
         $pluginSlugResult = $response.plugin
-        Write-Status "      Success! Plugin installed: $pluginSlugResult" -Color Green
-        
-        # Step 5: Activate plugin
+        Write-Status "      ✓ Uploaded via WordPress Core API!" -Color Green
+
+        # Activate if requested
         if ($ActivateAfterInstall) {
             Write-Status ""
-            Write-Status "[5/5] Activating plugin..." -Color Yellow
-            
+            Write-Status "[4/5] Activating plugin..." -Color Yellow
+
             $activateUrl = "$WordPressSiteURL/wp-json/wp/v2/plugins/$pluginSlugResult"
-            
-            $activateBody = @{
-                status = "active"
-            } | ConvertTo-Json
-            
+            $activateBody = @{ status = "active" } | ConvertTo-Json
             $activateHeaders = @{
                 "Authorization" = "Basic $base64Auth"
                 "Content-Type" = "application/json"
             }
-            
+
             try {
-                $activateResponse = Invoke-RestMethod -Uri $activateUrl -Method Post -Headers $activateHeaders -Body $activateBody
-                Write-Status "      Success! Plugin activated!" -Color Green
+                Invoke-RestMethod -Uri $activateUrl -Method Post -Headers $activateHeaders -Body $activateBody | Out-Null
+                Write-Status "      ✓ Plugin activated!" -Color Green
             } catch {
-                Write-Status "      Warning: Could not activate plugin automatically" -Color Yellow
-                Write-Status "      Please activate manually in WordPress admin" -Color Yellow
+                Write-Status "      ⚠ Could not activate plugin automatically" -Color Yellow
             }
-        } else {
-            Write-Status ""
-            Write-Status "[5/5] Skipping activation (not requested)" -Color Gray
         }
-        
+
         Write-Status ""
         Write-Status "========================================" -Color Green
         Write-Status "  SUCCESS! Plugin Deployed!" -Color Green
@@ -397,45 +351,36 @@ if ($activeNamespace) {
         Write-Status "  - Name: $($response.name)" -Color White
         Write-Status "  - Version: $($response.version)" -Color White
         Write-Status "  - Status: $($response.status)" -Color White
-        Write-Status "  - Plugin: $pluginSlugResult" -Color White
         Write-Status ""
-        
+
         if ($Quiet) {
             $result = @{
                 success = $true
                 plugin = $pluginSlugResult
                 activated = ($response.status -eq "active")
-                message = "Plugin installed"
+                message = "Plugin installed via WP Core"
             }
             Write-Output ($result | ConvertTo-Json -Compress)
         }
-        
+
     } catch {
         $statusCode = $null
         $errorMessage = $_.Exception.Message
-        
         if ($_.Exception.Response) {
             $statusCode = [int]$_.Exception.Response.StatusCode
             try {
                 $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
                 $reader.BaseStream.Position = 0
-                $responseBody = $reader.ReadToEnd()
-                $errorData = $responseBody | ConvertFrom-Json
-                $errorMessage = $errorData.message
+                $errorMessage = $reader.ReadToEnd()
             } catch {}
         }
-        
+
         Write-Host ""
-        Write-Host "Upload Failed!" -ForegroundColor Red
+        Write-Host "All upload methods failed!" -ForegroundColor Red
+        Write-Host "Last error (WP Core): $errorMessage" -ForegroundColor Red
         Write-Host "Status: $statusCode" -ForegroundColor Red
-        Write-Host "Error: $errorMessage" -ForegroundColor Red
         Write-Host ""
-        Write-Host "Please install the Riseup Asia Uploader for reliable uploads:" -ForegroundColor Yellow
-        Write-Host "  1. Copy 'riseup-asia-uploader' folder to wp-content/plugins/" -ForegroundColor White
-        Write-Host "  2. Activate in WordPress Admin" -ForegroundColor White
-        Write-Host "  3. Run this script again" -ForegroundColor White
-        Write-Host ""
-        
+
         if ($Quiet) {
             $result = @{ success = $false; error = $errorMessage; statusCode = $statusCode }
             Write-Output ($result | ConvertTo-Json -Compress)
