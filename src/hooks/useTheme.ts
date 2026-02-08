@@ -46,7 +46,7 @@ export interface ThemeConfig {
 
 const defaultThemeConfig: ThemeConfig = {
   theme: "system",
-  accentColor: "blue",
+  accentColor: "green",
   fontSize: "medium",
   borderRadius: "medium",
   compactMode: false,

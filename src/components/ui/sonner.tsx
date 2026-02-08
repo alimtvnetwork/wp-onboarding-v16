@@ -31,7 +31,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:!bg-transparent group-[.toast]:!border group-[.toast]:!border-[hsl(var(--toast-border))] group-[.toast]:!text-[hsl(var(--toast-desc))] group-[.toast]:!rounded-lg",
           // Close (×) — top-right, destructive red, compact circle
           closeButton:
-            "group-[.toast]:!bg-[hsl(var(--destructive))] group-[.toast]:!border-[hsl(var(--destructive))] group-[.toast]:!text-white hover:group-[.toast]:!brightness-110 group-[.toast]:!rounded-full group-[.toast]:!w-5 group-[.toast]:!h-5 group-[.toast]:!-right-1.5 group-[.toast]:!-top-1.5 group-[.toast]:!left-auto group-[.toast]:!shadow-md",
+            "group-[.toast]:!bg-[hsl(var(--muted))] group-[.toast]:!border-[hsl(var(--toast-border))] group-[.toast]:!text-[hsl(var(--muted-foreground))] hover:group-[.toast]:!bg-[hsl(var(--muted-foreground)/0.2)] group-[.toast]:!rounded-full group-[.toast]:!w-5 group-[.toast]:!h-5 group-[.toast]:!-right-1.5 group-[.toast]:!-top-1.5 group-[.toast]:!left-auto group-[.toast]:!shadow-sm",
           // Semantic type overrides — only bg/border/text change, structure stays identical
           success:
             "group-[.toaster]:!bg-[hsl(var(--toast-success-bg))] group-[.toaster]:!border-[hsl(var(--toast-success-border))] group-[.toaster]:!text-[hsl(var(--toast-success-fg))]",
