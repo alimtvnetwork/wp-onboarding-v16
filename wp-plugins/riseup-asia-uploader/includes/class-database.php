@@ -502,6 +502,32 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v9 applied successfully');
             }
             
+            // Migration v10: Plugin version and upload source tracking
+            if ($current_version < 10) {
+                $this->file_logger->info('Applying migration v10: plugin version and upload source columns');
+                
+                $columns = array(
+                    'plugin_version' => 'TEXT',    // Version of the plugin that was uploaded (e.g., "1.34.1")
+                    'upload_source'  => 'TEXT',    // How the upload was performed (upload_script, rest_api, admin_ui, wp_cli)
+                );
+                
+                foreach ($columns as $column => $type) {
+                    try {
+                        $this->pdo->exec("ALTER TABLE " . RISEUP_TABLE_TRANSACTIONS . " ADD COLUMN {$column} {$type}");
+                        $this->file_logger->debug("Column added: {$column}");
+                    } catch (PDOException $e) {
+                        $this->file_logger->debug("Column might exist: {$column}", array('error' => $e->getMessage()));
+                    }
+                }
+                
+                // Create indexes for new columns
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_plugin_version ON " . RISEUP_TABLE_TRANSACTIONS . "(plugin_version)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_upload_source ON " . RISEUP_TABLE_TRANSACTIONS . "(upload_source)");
+                
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (10, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v10 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {
@@ -603,6 +629,12 @@ class Riseup_Database {
             if (!empty($enhanced['source_machine'])) {
                 $record->set('source_machine', $enhanced['source_machine']);
             }
+            if (!empty($enhanced['plugin_version'])) {
+                $record->set('plugin_version', $enhanced['plugin_version']);
+            }
+            if (!empty($enhanced['upload_source'])) {
+                $record->set('upload_source', $enhanced['upload_source']);
+            }
             
             $result = $record->save();
                 
@@ -633,10 +665,12 @@ class Riseup_Database {
             $params['status'] ?? RISEUP_STATUS_SUCCESS,
             $params['error_msg'] ?? null,
             array(
-                'plugin_file'   => $params['plugin_file'] ?? null,
-                'was_active'    => $params['was_active'] ?? null,
-                'triggered_by'  => $params['triggered_by'] ?? null,
-                'agent_site_id' => $params['agent_site_id'] ?? null,
+                'plugin_file'    => $params['plugin_file'] ?? null,
+                'was_active'     => $params['was_active'] ?? null,
+                'triggered_by'   => $params['triggered_by'] ?? null,
+                'agent_site_id'  => $params['agent_site_id'] ?? null,
+                'plugin_version' => $params['plugin_version'] ?? null,
+                'upload_source'  => $params['upload_source'] ?? null,
             )
         );
     }
@@ -750,6 +784,11 @@ class Riseup_Database {
         // Filter by source_machine (hostname)
         if (!empty($filters['source_machine'])) {
             $query->where_like('source_machine', '%' . $filters['source_machine'] . '%');
+        }
+
+        // Filter by upload_source
+        if (!empty($filters['upload_source'])) {
+            $query->where('upload_source', $filters['upload_source']);
         }
     }
 

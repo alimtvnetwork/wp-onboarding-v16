@@ -150,7 +150,7 @@ class Riseup_Logger {
      *
      * @return int|false Insert ID or false.
      */
-    public function log_plugin_action($action, $plugin_slug, $status = RISEUP_STATUS_SUCCESS, $details = array(), $error_msg = null) {
+    public function log_plugin_action($action, $plugin_slug, $status = RISEUP_STATUS_SUCCESS, $details = array(), $error_msg = null, $extra_enhanced = array()) {
         $this->file_logger->info('Logging plugin action', array(
             'action' => $action,
             'plugin' => $plugin_slug,
@@ -164,6 +164,11 @@ class Riseup_Logger {
         $enhanced = array();
         if ($source_machine) {
             $enhanced['source_machine'] = $source_machine;
+        }
+        
+        // Merge any extra enhanced fields (plugin_version, upload_source, etc.)
+        if (!empty($extra_enhanced)) {
+            $enhanced = array_merge($enhanced, $extra_enhanced);
         }
         
         return $this->get_db()->log_transaction(
@@ -264,8 +269,8 @@ class Riseup_Logger {
      *
      * @return int|false Insert ID or false.
      */
-    public function log_upload($plugin_slug, $details = array()) {
-        return $this->log_plugin_action(RISEUP_ACTION_UPLOAD, $plugin_slug, RISEUP_STATUS_SUCCESS, $details);
+    public function log_upload($plugin_slug, $details = array(), $extra_enhanced = array()) {
+        return $this->log_plugin_action(RISEUP_ACTION_UPLOAD, $plugin_slug, RISEUP_STATUS_SUCCESS, $details, null, $extra_enhanced);
     }
 
     /**

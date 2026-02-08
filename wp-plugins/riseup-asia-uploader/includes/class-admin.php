@@ -306,6 +306,7 @@ class Riseup_Admin {
             'to'             => isset($_GET['filter_to']) ? sanitize_text_field($_GET['filter_to']) : '',
             'triggered_by'   => isset($_GET['filter_triggered_by']) ? sanitize_text_field($_GET['filter_triggered_by']) : '',
             'source_machine' => isset($_GET['filter_source_machine']) ? sanitize_text_field($_GET['filter_source_machine']) : '',
+            'upload_source'  => isset($_GET['filter_upload_source']) ? sanitize_text_field($_GET['filter_upload_source']) : '',
         );
 
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
