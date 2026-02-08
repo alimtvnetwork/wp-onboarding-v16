@@ -565,6 +565,33 @@ export interface SessionInfo extends SessionSummary {
   metadata?: Record<string, unknown>;
 }
 
+export interface SessionStackFrame {
+  function: string;
+  file?: string;
+  line?: number;
+  class?: string;
+}
+
+export interface SessionDiagnostics {
+  request?: {
+    url: string;
+    method: string;
+    headers?: Record<string, string>;
+    body?: Record<string, unknown>;
+  };
+  response?: {
+    requestUrl: string;
+    responseUrl: string;
+    statusCode: number;
+    headers?: Record<string, string>;
+    body?: unknown;
+  };
+  stackTrace?: {
+    golang?: SessionStackFrame[];
+    php?: SessionStackFrame[];
+  };
+}
+
 export interface FilePreview {
   path: string;
   changeType: "added" | "modified" | "deleted";
@@ -948,6 +975,8 @@ export const api = {
     request<{ sessionId: string; logs: string }>(`/sessions/${sessionId}/logs`),
   deleteSession: (sessionId: string) =>
     request<void>(`/sessions/${sessionId}`, { method: "DELETE" }),
+  getSessionDiagnostics: (sessionId: string) =>
+    request<SessionDiagnostics>(`/sessions/${sessionId}/diagnostics`),
 
   // File content for diff viewer
   getFileDiff: (pluginId: number, siteId: number, filePath: string) =>
