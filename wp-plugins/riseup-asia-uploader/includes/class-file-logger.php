@@ -204,6 +204,30 @@ class Riseup_File_Logger {
     }
 
     /**
+     * Get the path to the general log file.
+     *
+     * @return string
+     */
+    public function get_log_file() {
+        if (RiseupBooleanHelpers::is_null($this->log_file)) {
+            $this->initialize_paths();
+        }
+        return $this->log_file;
+    }
+
+    /**
+     * Get the path to the error log file.
+     *
+     * @return string
+     */
+    public function get_error_file() {
+        if (RiseupBooleanHelpers::is_null($this->error_file)) {
+            $this->initialize_paths();
+        }
+        return $this->error_file;
+    }
+
+    /**
      * Format a log entry.
      *
      * @param string $level   Log level.
