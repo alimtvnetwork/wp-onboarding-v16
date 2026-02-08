@@ -75,7 +75,7 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
       ) : (
         <div className="space-y-3">
           {errors.map((error) => (
-            <Card key={error.id}>
+            <Card key={error.id} className="transition-colors hover:border-primary/30">
               <CardHeader
                 className="pb-2 cursor-pointer"
                 onClick={() =>
