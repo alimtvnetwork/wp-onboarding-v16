@@ -205,6 +205,7 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	}
 
 	// Fall back to legacy flat format
+	var status UploaderStatus
 	if err := json.Unmarshal(respBody, &status); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode status response")
 	}
