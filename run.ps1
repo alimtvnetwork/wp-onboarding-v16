@@ -513,6 +513,62 @@ Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 Write-Host ""
 
 # ============================================================================
+# UPLOAD MODE: Upload default plugin to WordPress (early exit - no build/backend)
+# ============================================================================
+if ($upload) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Upload Mode (-u)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Resolve default uploader from powershell.json
+    $defaultUploader = $null
+    if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+        $defaultUploader = $Config.wpPlugins.defaultUploader
+    }
+
+    if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
+        Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+        exit 1
+    }
+
+    $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
+    $pluginPath = Resolve-RelativePath $pluginConfig.path
+
+    if (-not (Test-Path $pluginPath)) {
+        Write-Host "ERROR: Plugin folder not found: $pluginPath" -ForegroundColor Red
+        exit 1
+    }
+
+    # Find the upload-plugin-v2.ps1 script
+    $uploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-v2.ps1"
+    if (-not (Test-Path $uploadScript)) {
+        Write-Host "ERROR: upload-plugin-v2.ps1 not found at: $uploadScript" -ForegroundColor Red
+        exit 1
+    }
+
+    # Build config JSON from wp-plugin-config.json if it exists
+    $wpConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/wp-plugin-config.json"
+    if (Test-Path $wpConfigPath) {
+        $wpConfig = Get-Content $wpConfigPath -Raw | ConvertFrom-Json
+        $wpConfig.pluginFolderPath = $pluginPath
+        $jsonConfigStr = ($wpConfig | ConvertTo-Json -Compress)
+        Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
+        Write-Host "  Path:   $pluginPath" -ForegroundColor Gray
+        Write-Host "  Site:   $($wpConfig.wordPressSiteURL)" -ForegroundColor Gray
+        Write-Host ""
+        & $uploadScript -JsonConfig $jsonConfigStr -Activate
+    } else {
+        Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red
+        Write-Host "Create it with site URL, username, and app password." -ForegroundColor Yellow
+        exit 1
+    }
+
+    exit 0
+}
+
+# ============================================================================
 # INSTALL MODE: Install dependencies for both frontend and backend
 # ============================================================================
 if ($install) {
@@ -733,65 +789,6 @@ if (-not $skipbuild) {
 }
 Write-Host ""
 
-# ============================================================================
-# UPLOAD MODE: Upload default plugin to WordPress
-# ============================================================================
-if ($upload) {
-    Write-Host ""
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  Upload Mode (-u)" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host ""
-
-    # Resolve default uploader from powershell.json
-    $defaultUploader = $null
-    if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
-        $defaultUploader = $Config.wpPlugins.defaultUploader
-    }
-
-    if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
-        Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
-        exit 1
-    }
-
-    $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
-    $pluginPath = Resolve-RelativePath $pluginConfig.path
-
-    if (-not (Test-Path $pluginPath)) {
-        Write-Host "ERROR: Plugin folder not found: $pluginPath" -ForegroundColor Red
-        exit 1
-    }
-
-    # Find the upload-plugin-v2.ps1 script
-    $uploadScript = Join-Path $ScriptDir "wp-plugins/scripts/upload-plugin-v2.ps1"
-    if (-not (Test-Path $uploadScript)) {
-        Write-Host "ERROR: upload-plugin-v2.ps1 not found at: $uploadScript" -ForegroundColor Red
-        exit 1
-    }
-
-    # Build config JSON from wp-plugin-config.json if it exists
-    $wpConfigPath = Join-Path $ScriptDir "wp-plugins/scripts/wp-plugin-config.json"
-    if (Test-Path $wpConfigPath) {
-        $wpConfig = Get-Content $wpConfigPath -Raw | ConvertFrom-Json
-
-        # Override pluginFolderPath to use the resolved default uploader path
-        $wpConfig.pluginFolderPath = $pluginPath
-
-        $jsonConfigStr = ($wpConfig | ConvertTo-Json -Compress)
-        Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
-        Write-Host "  Path:   $pluginPath" -ForegroundColor Gray
-        Write-Host "  Site:   $($wpConfig.wordPressSiteURL)" -ForegroundColor Gray
-        Write-Host ""
-
-        & $uploadScript -JsonConfig $jsonConfigStr -Activate
-    } else {
-        Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red
-        Write-Host "Create it with site URL, username, and app password." -ForegroundColor Yellow
-        exit 1
-    }
-
-    exit 0
-}
 
 # ============================================================================
 # BUILD ONLY EXIT
