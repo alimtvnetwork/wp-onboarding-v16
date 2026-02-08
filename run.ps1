@@ -13,7 +13,8 @@ param(
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
     [Alias('h')][switch]$help,
-    [Alias('v')][switch]$verbose
+    [Alias('v')][switch]$verbose,
+    [Alias('pp')][string]$pluginpath = ""
 )
 
 # -rebuild is a convenience flag that combines -force and -install
@@ -121,6 +122,7 @@ if ($help) {
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -u,  -upload        Upload default plugin to WordPress via upload-plugin-v2"
+    Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u)"
     Write-Host "  -v,  -verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
@@ -132,6 +134,7 @@ if ($help) {
     Write-Host "  .\run.ps1 -b           # Build only, don't start server"
     Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
     Write-Host "  .\run.ps1 -u           # Upload default plugin to WordPress"
+    Write-Host "  .\run.ps1 -u -pp 'C:\path\to\plugin'  # Upload a specific plugin"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
@@ -522,23 +525,38 @@ if ($upload) {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host ""
 
-    # Resolve default uploader from powershell.json
-    $defaultUploader = $null
-    if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
-        $defaultUploader = $Config.wpPlugins.defaultUploader
-    }
+    # Determine plugin path: use -pp override or default from config
+    if ($pluginpath -ne "") {
+        # Custom plugin path provided via -pp flag
+        $pluginPath = $pluginpath
+        if (-not [System.IO.Path]::IsPathRooted($pluginPath)) {
+            $pluginPath = Join-Path $ScriptDir $pluginPath
+        }
+        if (-not (Test-Path $pluginPath)) {
+            Write-Host "ERROR: Plugin folder not found: $pluginPath" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  Using custom plugin path: $pluginPath" -ForegroundColor Cyan
+    } else {
+        # Resolve default uploader from powershell.json
+        $defaultUploader = $null
+        if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+            $defaultUploader = $Config.wpPlugins.defaultUploader
+        }
 
-    if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
-        Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
-        exit 1
-    }
+        if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
+            Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+            exit 1
+        }
 
-    $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
-    $pluginPath = Resolve-RelativePath $pluginConfig.path
+        $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
+        $pluginPath = Resolve-RelativePath $pluginConfig.path
 
-    if (-not (Test-Path $pluginPath)) {
-        Write-Host "ERROR: Plugin folder not found: $pluginPath" -ForegroundColor Red
-        exit 1
+        if (-not (Test-Path $pluginPath)) {
+            Write-Host "ERROR: Plugin folder not found: $pluginPath" -ForegroundColor Red
+            exit 1
+        }
+        Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
     }
 
     # Find the upload-plugin-v2.ps1 script
@@ -554,7 +572,6 @@ if ($upload) {
         $wpConfig = Get-Content $wpConfigPath -Raw | ConvertFrom-Json
         $wpConfig.pluginFolderPath = $pluginPath
         $jsonConfigStr = ($wpConfig | ConvertTo-Json -Compress)
-        Write-Host "  Plugin: $defaultUploader" -ForegroundColor Yellow
         Write-Host "  Path:   $pluginPath" -ForegroundColor Gray
         Write-Host "  Site:   $($wpConfig.wordPressSiteURL)" -ForegroundColor Gray
         Write-Host ""
