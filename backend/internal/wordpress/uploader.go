@@ -322,7 +322,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		// Capture stack trace for debugging
-		stackTrace := captureStackTrace(2)
+		stackTrace := captureStackTraceN(2, c.stackTraceDepth)
 		
 		// Enhanced diagnostic for empty response body
 		diagnosticBody := truncateBody(respBody, 8192)
@@ -944,7 +944,7 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 			Endpoint:     endpoint,
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(respBody), 4000),
-			StackTrace:   captureStackTrace(2),
+			StackTrace:   captureStackTraceN(2, c.stackTraceDepth),
 		}
 	}
 
@@ -1038,7 +1038,7 @@ func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID i
 			Endpoint:     endpoint,
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(respBody), 4000),
-			StackTrace:   captureStackTrace(2),
+			StackTrace:   captureStackTraceN(2, c.stackTraceDepth),
 		}
 	}
 
