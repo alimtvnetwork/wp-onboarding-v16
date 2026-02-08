@@ -45,6 +45,7 @@ type E2EConfig struct {
 type ResponseDebugConfig struct {
 	IncludeStackTrace     bool `json:"includeStackTrace"`
 	IncludeInternalErrors bool `json:"includeInternalErrors"`
+	IncludeMethodsStack   bool `json:"includeMethodsStack"`
 	MaxStackFrames        int  `json:"maxStackFrames"`
 }
 
@@ -209,8 +210,9 @@ func DefaultConfig() *Config {
 			Enabled: false,
 		},
 		ResponseDebug: ResponseDebugConfig{
-			IncludeStackTrace:     false,
-			IncludeInternalErrors: false,
+			IncludeStackTrace:     true,
+			IncludeInternalErrors: true,
+			IncludeMethodsStack:   true,
 			MaxStackFrames:        20,
 		},
 	}

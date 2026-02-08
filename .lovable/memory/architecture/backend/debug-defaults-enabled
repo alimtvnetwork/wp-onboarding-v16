@@ -1,0 +1,11 @@
+# Memory: architecture/backend/debug-defaults-enabled
+Updated: 2026-02-08
+
+Since v1.19.7, all three response debug flags default to `true`:
+- `includeInternalErrors` (config) / `includeErrors` (envelope): `true`
+- `includeStackTrace`: `true`
+- `includeMethodsStack`: `true`
+
+The `ResponseDebugConfig` struct now includes `IncludeMethodsStack` alongside `IncludeStackTrace` and `IncludeInternalErrors`. All three are wired from config to `envelope.SetDebugConfig()` in `main.go`.
+
+The `respondError()` helper uses `envelope.ErrorWithStack()` which auto-captures Go runtime stack traces (`Errors.Backend`) and structured method frames (`MethodsStack.Backend`) for every error response — including simple validation errors. Stack frames are filtered to the `wp-plugin-publish/` namespace.

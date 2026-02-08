@@ -1,0 +1,9 @@
+# Memory: architecture/frontend/request-tab-chain-visualization
+Updated: 2026-02-08
+
+The Request tab in the Global Error Modal displays a **Request Chain** visualization with sub-nodes when envelope diagnostic data is available:
+
+1. **React → Go node** (blue): Shows the HTTP method, Go endpoint URL (`requestedAt`), status code, and the JSON request body sent from React.
+2. **Go → PHP node** (orange): Shows the delegated PHP endpoint URL (`requestDelegatedAt`) and the PHP response stack trace (`DelegatedServiceErrorStack`) if available.
+
+Nodes are connected visually with a vertical connector line. When no chain data is available, it falls back to a simple API Request display with method/endpoint/status. Environment variables (VITE_API_URL, etc.) are shown in a collapsible section below the chain.
