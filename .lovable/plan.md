@@ -105,8 +105,12 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 
 **Problem:** The OpenAPI spec uses a legacy `allOf + "data"` pattern for typed responses. Runtime responses use PascalCase `Results` arrays, not `data`. This causes schema mismatches in Swagger UI.
 
-#### Sub-phase 14.1 🔧 — Replace `"data"` with typed `Results` in entity endpoints
-Migrate Sites, Plugins, Backups, Versions, PublishHistory, ErrorHistory, and Sessions endpoint schemas from `allOf + data` to proper `Results` with typed items.
+#### Sub-phase 14.1 ✅ — Replace `"data"` with typed `Results` in entity endpoints
+- Migrated 31 endpoint schemas from legacy `allOf + "data"` to `"Results"` with typed items
+- List endpoints use `Results: array of T`; single-item endpoints use `Results: array of T, minItems: 1, maxItems: 1`
+- Covers: Sites, Plugins, PluginMappings, FileChanges, Backups, PluginVersions, SiteHealthSummary, SiteHealthCheck, SiteHealthStats, PublishHistory, PublishHistoryStats, ErrorHistory, Sessions, SessionLogEntry, RequestSession, Settings, ConnectionResult, SiteCredentials, SyncResult, PushSyncResult, BatchSyncResult
+- Also migrated the `Deleted` response template from `data.deleted` to `Results[{deleted: true}]`
+- Zero remaining `"data":` references in openapi.json
 
 #### Sub-phase 14.2 🔧 — Replace `"data"` with typed `Results` in operation endpoints
 Migrate Remote Plugins, Sync, Snapshots, Git, and E2E test endpoint schemas.
@@ -119,7 +123,3 @@ Add inline `example` blocks to key endpoints showing a complete envelope (Status
 
 #### Sub-phase 14.5 🔧 — Validate spec with Swagger UI rendering
 Load the updated spec in the API Explorer, verify all endpoints render correctly, and confirm "Try it Out" responses match documented schemas.
-- `$results` typed as `array<int, T>`; all fluent setters return `static<T>`
-- `setResults()` accepts `array<int, T>`, `setSingleResult()` accepts `T`
-- `build()` returns `array{Status: array, Attributes: array, Results: array<int, T>}`
-- Factory methods `success()` and `error()` return `static<T>`
