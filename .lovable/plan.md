@@ -72,4 +72,6 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 - `handle_error_logs()` → Envelope with single result (version, settings, log tails)
 - `handle_error_sessions()` → Envelope with Results array of entries + pagination
 - Removed legacy `stackTraceFrames` from diagnostic responses (now handled by EnvelopeBuilder errors block)
-#### Sub-phase 12.6 🔧 — Update frontend to parse envelope from PHP responses
+#### Sub-phase 12.6 ✅ — Frontend envelope parsing (already complete)
+- `isEnvelope()` + `parseEnvelope<T>()` in `src/lib/api.ts` already auto-detect and convert PascalCase envelope responses from both Go backend and PHP plugin
+- No additional changes required; the transparent detection at line 270 handles all migrated endpoints
