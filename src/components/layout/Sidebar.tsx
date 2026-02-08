@@ -65,7 +65,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors border-l-2",
                     isActive
                       ? "bg-primary text-primary-foreground border-l-primary"
-                      : "text-muted-foreground border-l-transparent hover:text-foreground hover:bg-accent/30 hover:border-l-primary/50"
+                      : "text-muted-foreground border-l-transparent hover:text-foreground hover:bg-secondary/50 hover:border-l-primary/60"
                   )
                 }
               >

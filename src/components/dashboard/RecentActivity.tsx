@@ -27,7 +27,7 @@ export function RecentActivity({ items }: RecentActivityProps) {
             {items.map((activity, idx) => (
               <div
                 key={`${activity.type}-${activity.name}-${idx}`}
-                className="flex items-center gap-2 sm:gap-3 p-2 rounded-lg border-l-2 border-l-transparent transition-colors hover:bg-accent/30 hover:border-l-primary/50"
+                className="flex items-center gap-2 sm:gap-3 p-2 rounded-lg border-l-2 border-l-transparent transition-colors hover:bg-secondary/50 hover:border-l-primary/60"
               >
                 {activity.type === "site" ? (
                   <Globe className="h-4 w-4 text-primary shrink-0" />
