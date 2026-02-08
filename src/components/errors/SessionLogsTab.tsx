@@ -341,6 +341,20 @@ function StackTracePanel({ stackTrace, phpStackTraceLog }: {
             PHP Log
           </Button>
         )}
+        {view === "phplog" && hasPhpLog && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-7 gap-1 ml-auto"
+            onClick={() => {
+              navigator.clipboard.writeText(phpStackTraceLog!);
+              toast.success("PHP stacktrace.txt copied to clipboard");
+            }}
+          >
+            <Copy className="h-3 w-3" />
+            Copy
+          </Button>
+        )}
       </div>
 
       {/* Frames or raw log */}
