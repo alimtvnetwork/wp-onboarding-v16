@@ -1,0 +1,282 @@
+{
+  "namespace": "riseup-asia-uploader/v1",
+  "version": "1.27.0",
+  "description": "Complete listing of all REST API endpoints registered by the Riseup Asia Uploader plugin. This file is the single source of truth for endpoint documentation.",
+  "endpoints": [
+    {
+      "path": "status",
+      "methods": ["GET"],
+      "category": "system",
+      "description": "Plugin status, version, and registered routes",
+      "auth": true
+    },
+    {
+      "path": "openapi",
+      "methods": ["GET"],
+      "category": "system",
+      "description": "OpenAPI 3.0 specification",
+      "auth": true
+    },
+    {
+      "path": "upload",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Upload plugin via base64-encoded ZIP",
+      "auth": true,
+      "body": { "plugin_zip": "base64", "slug": "string", "activate": "boolean" }
+    },
+    {
+      "path": "plugins",
+      "methods": ["GET"],
+      "category": "plugins",
+      "description": "List all installed plugins",
+      "auth": true
+    },
+    {
+      "path": "plugins/enable",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Activate a plugin by slug",
+      "auth": true,
+      "body": { "plugin": "string (slug)" }
+    },
+    {
+      "path": "plugins/disable",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Deactivate a plugin by slug",
+      "auth": true,
+      "body": { "plugin": "string (slug)" }
+    },
+    {
+      "path": "plugins/delete",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Delete a plugin by slug",
+      "auth": true,
+      "body": { "plugin": "string (slug)" }
+    },
+    {
+      "path": "plugins/files",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "List all files in a plugin with MD5 hashes",
+      "auth": true,
+      "body": { "slug": "string" }
+    },
+    {
+      "path": "plugins/file",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Get raw content of a single plugin file",
+      "auth": true,
+      "body": { "slug": "string", "path": "string" }
+    },
+    {
+      "path": "plugins/export",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Export a plugin as base64-encoded ZIP",
+      "auth": true,
+      "body": { "slug": "string" }
+    },
+    {
+      "path": "plugins/sync-manifest",
+      "methods": ["POST"],
+      "category": "sync",
+      "description": "Get cached file manifest for delta sync comparison",
+      "auth": true,
+      "body": { "slug": "string" }
+    },
+    {
+      "path": "plugins/sync",
+      "methods": ["POST"],
+      "category": "sync",
+      "description": "Push delta file changes (replacements + deletions)",
+      "auth": true,
+      "body": { "slug": "string", "files": "array" }
+    },
+    {
+      "path": "export-self",
+      "methods": ["GET"],
+      "category": "system",
+      "description": "Export the Riseup Asia Uploader plugin itself as ZIP",
+      "auth": true
+    },
+    {
+      "path": "posts",
+      "methods": ["GET", "POST"],
+      "category": "content",
+      "description": "List or create blog posts",
+      "auth": true
+    },
+    {
+      "path": "categories",
+      "methods": ["GET", "POST"],
+      "category": "content",
+      "description": "List or create categories",
+      "auth": true
+    },
+    {
+      "path": "logs",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "Query transaction logs",
+      "auth": true
+    },
+    {
+      "path": "logs/stats",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "Get log statistics",
+      "auth": true
+    },
+    {
+      "path": "agents",
+      "methods": ["GET"],
+      "category": "agents",
+      "description": "List registered agent sites",
+      "auth": true
+    },
+    {
+      "path": "agents/add",
+      "methods": ["POST"],
+      "category": "agents",
+      "description": "Add a new agent site",
+      "auth": true
+    },
+    {
+      "path": "agents/remove",
+      "methods": ["POST"],
+      "category": "agents",
+      "description": "Remove an agent site",
+      "auth": true
+    },
+    {
+      "path": "agents/test",
+      "methods": ["POST"],
+      "category": "agents",
+      "description": "Test agent site connectivity",
+      "auth": true
+    },
+    {
+      "path": "agents/sync",
+      "methods": ["POST"],
+      "category": "agents",
+      "description": "Sync plugins to an agent site",
+      "auth": true
+    },
+    {
+      "path": "agents/plugins",
+      "methods": ["POST"],
+      "category": "agents",
+      "description": "Execute plugin action on an agent site",
+      "auth": true
+    },
+    {
+      "path": "snapshots/list",
+      "methods": ["GET"],
+      "category": "snapshots",
+      "description": "List all snapshots",
+      "auth": true
+    },
+    {
+      "path": "snapshots/schedule",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Create or schedule a snapshot",
+      "auth": true
+    },
+    {
+      "path": "snapshots/info",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Get snapshot details",
+      "auth": true
+    },
+    {
+      "path": "snapshots/delete",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Delete a snapshot",
+      "auth": true
+    },
+    {
+      "path": "snapshots/restore",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Restore a snapshot",
+      "auth": true
+    },
+    {
+      "path": "snapshots/export",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Export snapshot as ZIP",
+      "auth": true
+    },
+    {
+      "path": "snapshots/import",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Import snapshot from ZIP",
+      "auth": true
+    },
+    {
+      "path": "snapshots/settings",
+      "methods": ["GET", "POST"],
+      "category": "snapshots",
+      "description": "Get or update snapshot settings",
+      "auth": true
+    },
+    {
+      "path": "snapshots/providers",
+      "methods": ["GET"],
+      "category": "snapshots",
+      "description": "List available snapshot providers",
+      "auth": true
+    },
+    {
+      "path": "snapshots/tables",
+      "methods": ["GET"],
+      "category": "snapshots",
+      "description": "List available database tables",
+      "auth": true
+    },
+    {
+      "path": "snapshots/dependencies",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Analyze table dependencies",
+      "auth": true
+    },
+    {
+      "path": "snapshots/export-pertable",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Export snapshot per-table",
+      "auth": true
+    },
+    {
+      "path": "snapshots/full-backup",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Trigger full backup orchestration",
+      "auth": true
+    },
+    {
+      "path": "snapshots/incremental",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Trigger incremental backup",
+      "auth": true
+    },
+    {
+      "path": "snapshots/cleanup",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Cleanup old/orphan snapshots",
+      "auth": true
+    }
+  ]
+}
