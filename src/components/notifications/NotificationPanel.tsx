@@ -11,27 +11,36 @@ import {
 import { cn } from "@/lib/utils";
 import { useNotificationStore, type AppNotification, type NotificationType } from "@/stores/notificationStore";
 
-/** Lucide icon + accent color per type — clean, semantic */
-const typeConfig: Record<NotificationType, { icon: typeof CheckCircle2; accent: string; iconClass: string }> = {
+/** Lucide icon per type + CSS token keys for theme-aware colors */
+const typeConfig: Record<NotificationType, {
+  icon: typeof CheckCircle2;
+  bgVar: string;
+  borderVar: string;
+  fgVar: string;
+}> = {
   success: {
     icon: CheckCircle2,
-    accent: "border-l-emerald-500",
-    iconClass: "text-emerald-500",
+    bgVar: "--toast-success-bg",
+    borderVar: "--toast-success-border",
+    fgVar: "--toast-success-fg",
   },
   error: {
     icon: XCircle,
-    accent: "border-l-red-500",
-    iconClass: "text-red-500",
+    bgVar: "--toast-error-bg",
+    borderVar: "--toast-error-border",
+    fgVar: "--toast-error-fg",
   },
   warning: {
     icon: AlertTriangle,
-    accent: "border-l-amber-500",
-    iconClass: "text-amber-500",
+    bgVar: "--toast-warning-bg",
+    borderVar: "--toast-warning-border",
+    fgVar: "--toast-warning-fg",
   },
   info: {
     icon: Info,
-    accent: "border-l-sky-500",
-    iconClass: "text-sky-500",
+    bgVar: "--toast-info-bg",
+    borderVar: "--toast-info-border",
+    fgVar: "--toast-info-fg",
   },
 };
 
@@ -58,52 +67,38 @@ function NotificationCard({ notification, onDismiss, onRead }: {
 
   return (
     <div
-      className={cn(
-        "group relative flex items-start gap-3 px-4 py-3 pr-10 border-l-[3px] transition-colors cursor-pointer",
-        notification.type === "error"
-          ? "bg-destructive/10 hover:bg-destructive/15 border-l-destructive"
-          : "bg-card hover:bg-muted/50",
-        notification.type !== "error" && config.accent,
-        !notification.read && notification.type !== "error" && "bg-muted/30"
-      )}
+      className="group relative flex items-start gap-3 px-4 py-3 pr-10 border-l-[3px] transition-colors cursor-pointer rounded-md"
+      style={{
+        background: `hsl(var(${config.bgVar}))`,
+        borderLeftColor: `hsl(var(${config.borderVar}))`,
+        color: `hsl(var(${config.fgVar}))`,
+      }}
       onClick={() => onRead(notification.id)}
     >
       {/* Type icon */}
-      <IconComponent className={cn("h-5 w-5 mt-0.5 shrink-0", config.iconClass)} />
+      <IconComponent className="h-5 w-5 mt-0.5 shrink-0" style={{ color: `hsl(var(${config.fgVar}))` }} />
 
       {/* Content */}
       <div className="flex-1 min-w-0 space-y-0.5">
         <p className={cn(
           "text-sm leading-snug",
-          notification.type === "error" ? "text-destructive-foreground font-semibold" : "text-foreground",
-          !notification.read && notification.type !== "error" ? "font-semibold" : notification.type !== "error" ? "font-medium" : ""
-        )}>
+          !notification.read ? "font-semibold" : "font-medium"
+        )} style={{ color: `hsl(var(${config.fgVar}))` }}>
           {notification.title}
         </p>
         {notification.description && (
-          <p className={cn(
-            "text-xs line-clamp-2 leading-relaxed",
-            notification.type === "error" ? "text-destructive-foreground/70" : "text-muted-foreground"
-          )}>
+          <p className="text-xs line-clamp-2 leading-relaxed opacity-75">
             {notification.description}
           </p>
         )}
-        <span className={cn(
-          "text-[10px]",
-          notification.type === "error" ? "text-destructive-foreground/50" : "text-muted-foreground/60"
-        )}>
+        <span className="text-[10px] opacity-50">
           {formatTimeAgo(notification.timestamp)}
         </span>
       </div>
 
       {/* Dismiss — pinned top-right, always visible */}
       <button
-        className={cn(
-          "absolute top-2.5 right-2 p-1 rounded-md transition-colors",
-          notification.type === "error"
-            ? "text-destructive-foreground/60 hover:text-destructive-foreground hover:bg-destructive/20"
-            : "text-muted-foreground hover:text-foreground hover:bg-muted"
-        )}
+        className="absolute top-2.5 right-2 p-1 rounded-md transition-colors opacity-60 hover:opacity-100"
         onClick={(e) => {
           e.stopPropagation();
           onDismiss(notification.id);
