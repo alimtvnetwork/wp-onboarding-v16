@@ -2763,9 +2763,10 @@ class Riseup_Asia {
             // Get log retrieval settings
             $settings      = Riseup_Admin::get_settings();
             $log_settings  = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
-            $include_error = isset($log_settings['include_error_log']) ? (bool) $log_settings['include_error_log'] : true;
-            $include_full  = isset($log_settings['include_full_log']) ? (bool) $log_settings['include_full_log'] : false;
-            $max_lines     = isset($log_settings['max_lines']) ? (int) $log_settings['max_lines'] : 500;
+            $include_error      = isset($log_settings['include_error_log']) ? (bool) $log_settings['include_error_log'] : true;
+            $include_full       = isset($log_settings['include_full_log']) ? (bool) $log_settings['include_full_log'] : false;
+            $include_stacktrace = isset($log_settings['include_stacktrace']) ? (bool) $log_settings['include_stacktrace'] : true;
+            $max_lines          = isset($log_settings['max_lines']) ? (int) $log_settings['max_lines'] : 500;
 
             // Allow query param overrides (bounded by settings)
             if ($request->get_param('include_error_log') !== null) {
@@ -2773,6 +2774,9 @@ class Riseup_Asia {
             }
             if ($request->get_param('include_full_log') !== null) {
                 $include_full = (bool) $request->get_param('include_full_log');
+            }
+            if ($request->get_param('include_stacktrace') !== null) {
+                $include_stacktrace = (bool) $request->get_param('include_stacktrace');
             }
             if ($request->get_param('max_lines') !== null) {
                 $max_lines = max(10, min(5000, (int) $request->get_param('max_lines')));
@@ -2782,9 +2786,10 @@ class Riseup_Asia {
                 'success'  => true,
                 'version'  => RISEUP_VERSION,
                 'settings' => array(
-                    'include_error_log' => $include_error,
-                    'include_full_log'  => $include_full,
-                    'max_lines'         => $max_lines,
+                    'include_error_log'  => $include_error,
+                    'include_full_log'   => $include_full,
+                    'include_stacktrace' => $include_stacktrace,
+                    'max_lines'          => $max_lines,
                 ),
             );
 
@@ -2798,6 +2803,12 @@ class Riseup_Asia {
             if ($include_full) {
                 $log_path = $this->file_logger->get_log_file();
                 $response['full_log'] = $this->read_log_tail($log_path, $max_lines);
+            }
+
+            // Read stacktrace log
+            if ($include_stacktrace) {
+                $stacktrace_path = $this->file_logger->get_stacktrace_file();
+                $response['stacktrace_log'] = $this->read_log_tail($stacktrace_path, $max_lines);
             }
 
             // Generate stack trace of this request for diagnostics

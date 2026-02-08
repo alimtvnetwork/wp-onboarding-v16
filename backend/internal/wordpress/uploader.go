@@ -895,11 +895,12 @@ type RemoteLogFile struct {
 
 // RemoteErrorLogsResult represents the /error-logs endpoint response.
 type RemoteErrorLogsResult struct {
-	Success          bool                   `json:"success"`
-	Version          string                 `json:"version"`
-	Settings         map[string]interface{} `json:"settings"`
-	ErrorLog         *RemoteLogFile         `json:"error_log,omitempty"`
-	FullLog          *RemoteLogFile         `json:"full_log,omitempty"`
+	Success          bool                     `json:"success"`
+	Version          string                   `json:"version"`
+	Settings         map[string]interface{}   `json:"settings"`
+	ErrorLog         *RemoteLogFile           `json:"error_log,omitempty"`
+	FullLog          *RemoteLogFile           `json:"full_log,omitempty"`
+	StackTraceLog    *RemoteLogFile           `json:"stacktrace_log,omitempty"`
 	StackTraceFrames []map[string]interface{} `json:"stackTraceFrames,omitempty"`
 }
 
