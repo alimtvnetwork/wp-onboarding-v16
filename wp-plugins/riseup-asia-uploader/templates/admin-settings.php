@@ -477,6 +477,24 @@ if (!defined('ABSPATH')) {
                 </tr>
                 <tr>
                     <th scope="row">
+                        <label for="log_include_stacktrace"><?php esc_html_e('Include Stack Trace Log', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <label class="toggle-switch">
+                            <input type="checkbox" 
+                                   id="log_include_stacktrace"
+                                   name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[log_retrieval][include_stacktrace]" 
+                                   value="1" 
+                                   <?php checked(!empty($settings['log_retrieval']['include_stacktrace'])); ?>>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <p class="description">
+                            <?php esc_html_e('Include stacktrace.txt (10-frame PHP backtraces for every error). Enabled by default — essential for deep diagnostics.', 'riseup-asia-uploader'); ?>
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
                         <label for="log_max_lines"><?php esc_html_e('Max Lines', 'riseup-asia-uploader'); ?></label>
                     </th>
                     <td>
@@ -495,7 +513,7 @@ if (!defined('ABSPATH')) {
                     <th scope="row"><?php esc_html_e('Endpoint', 'riseup-asia-uploader'); ?></th>
                     <td>
                         <code><?php echo esc_html(rest_url(RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_ERROR_LOGS)); ?></code>
-                        <p class="description"><?php esc_html_e('GET request with Basic Auth. Returns JSON with error_log and/or full_log fields.', 'riseup-asia-uploader'); ?></p>
+                        <p class="description"><?php esc_html_e('GET request with Basic Auth. Returns JSON with error_log, full_log, and/or stacktrace_log fields.', 'riseup-asia-uploader'); ?></p>
                     </td>
                 </tr>
             </table>

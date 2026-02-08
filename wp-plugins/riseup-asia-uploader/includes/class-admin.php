@@ -43,9 +43,10 @@ class Riseup_Admin {
             'error_logs'   => array('enabled' => true, 'auth_required' => true),
         ),
         'log_retrieval' => array(
-            'include_error_log' => true,
-            'include_full_log'  => false,
-            'max_lines'         => 500,
+            'include_error_log'  => true,
+            'include_full_log'   => false,
+            'include_stacktrace' => true,
+            'max_lines'          => 500,
         ),
     );
 
@@ -216,8 +217,9 @@ class Riseup_Admin {
 
         // Log retrieval settings
         if (isset($input['log_retrieval']) && is_array($input['log_retrieval'])) {
-            $sanitized['log_retrieval']['include_error_log'] = !empty($input['log_retrieval']['include_error_log']);
-            $sanitized['log_retrieval']['include_full_log']  = !empty($input['log_retrieval']['include_full_log']);
+            $sanitized['log_retrieval']['include_error_log']  = !empty($input['log_retrieval']['include_error_log']);
+            $sanitized['log_retrieval']['include_full_log']   = !empty($input['log_retrieval']['include_full_log']);
+            $sanitized['log_retrieval']['include_stacktrace'] = !empty($input['log_retrieval']['include_stacktrace']);
             $sanitized['log_retrieval']['max_lines'] = isset($input['log_retrieval']['max_lines'])
                 ? max(50, min(5000, (int) $input['log_retrieval']['max_lines']))
                 : 500;
