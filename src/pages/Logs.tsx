@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { formatTime24h } from "@/lib/logText";
 import { HighlightedText } from "@/components/shared/HighlightedText";
+import { useNotificationStore, type NotificationType } from "@/stores/notificationStore";
 
 interface LogEntry {
   id: string;
@@ -273,9 +274,29 @@ export default function Logs() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { lastMessage, isConnected } = useWebSocket();
   const { data: versionInfo } = useVersionInfo();
+  const notifications = useNotificationStore((s) => s.notifications);
 
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
+
+  // Convert persisted notifications to LogEntry format
+  const notificationLevelMap: Record<NotificationType, LogEntry["level"]> = {
+    success: "info",
+    error: "error",
+    warning: "warn",
+    info: "info",
+  };
+
+  const notificationLogs = useMemo<LogEntry[]>(() => {
+    return notifications.map((n) => ({
+      id: `notif-${n.id}`,
+      timestamp: n.timestamp,
+      level: notificationLevelMap[n.type],
+      source: n.source,
+      message: `${n.title}${n.description ? ` — ${n.description}` : ""}`,
+      details: { notificationType: n.type, notificationId: n.id },
+    }));
+  }, [notifications]);
 
   // Add connection status log on mount
   useEffect(() => {
@@ -320,14 +341,29 @@ export default function Logs() {
     });
   }, []);
 
-  const filteredLogs = logs.filter((log) => {
+  // Merge live WS logs with persisted notification logs
+  const allLogs = useMemo(() => {
+    const merged = [...logs];
+    // Add notification logs that aren't already present as WS logs
+    const existingIds = new Set(logs.map(l => l.id));
+    for (const nl of notificationLogs) {
+      if (!existingIds.has(nl.id)) {
+        merged.push(nl);
+      }
+    }
+    // Sort newest first
+    merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return merged;
+  }, [logs, notificationLogs]);
+
+  const filteredLogs = allLogs.filter((log) => {
     if (!activeLevels.has(log.level)) return false;
     if (sourceFilter !== "all" && log.source !== sourceFilter) return false;
     if (filter && !log.message.toLowerCase().includes(filter.toLowerCase())) return false;
     return true;
   });
 
-  const uniqueSources = Array.from(new Set(logs.map((l) => l.source)));
+  const uniqueSources = Array.from(new Set(allLogs.map((l) => l.source)));
 
   const handleClearLogs = () => {
     setLogs([]);
@@ -513,7 +549,7 @@ export default function Logs() {
             </CardTitle>
             <div className="flex gap-2">
               {["info", "warn", "error", "debug"].map((level) => {
-                const count = logs.filter((l) => l.level === level).length;
+                const count = allLogs.filter((l) => l.level === level).length;
                 const config = levelConfig[level as keyof typeof levelConfig];
                 return (
                   <Badge
