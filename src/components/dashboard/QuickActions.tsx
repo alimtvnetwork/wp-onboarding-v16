@@ -50,7 +50,7 @@ export function QuickActions({ onAddSite }: QuickActionsProps) {
           const inner = (
             <Button
               variant="outline"
-              className="w-full justify-start h-auto py-2.5 sm:py-3 hover:bg-accent"
+              className="w-full justify-start h-auto py-2.5 sm:py-3 hover:border-primary/30 hover:bg-accent/30"
               onClick={action.actionKey === "addSite" ? onAddSite : undefined}
             >
               <action.icon className="h-4 w-4 mr-2 sm:mr-3 text-primary shrink-0" />
