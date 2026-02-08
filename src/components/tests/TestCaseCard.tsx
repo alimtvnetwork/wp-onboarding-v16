@@ -63,6 +63,7 @@ export function TestCaseCard({
           ? "border-primary ring-2 ring-primary/20"
           : "border-border hover:border-primary/50"
       )}
+      style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
       onClick={onToggle}
     >
       <CardHeader className="pb-2">
