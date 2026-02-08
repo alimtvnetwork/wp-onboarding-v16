@@ -102,6 +102,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [activateAfterInstall, setActivateAfterInstall] = useState(true);
   const [uploadPending, setUploadPending] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Subscribe to remote plugin WebSocket events for this site
@@ -545,20 +546,41 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
               {uploadFiles.length > 0 && (
                 <div className="mt-2 space-y-1">
-                  {uploadFiles.map((file, i) => (
-                    <div key={`${file.name}-${i}`} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/50">
-                      <FileArchive className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="truncate flex-1">{file.name}</span>
-                      <span className="text-muted-foreground shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-destructive shrink-0"
-                        onClick={() => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                  {uploadFiles.map((file, i) => {
+                    const fileKey = `${file.name}-${i}`;
+                    const progress = uploadProgress[fileKey];
+                    const isUploading = uploadPending && progress !== undefined;
+                    const isDone = progress === 100;
+                    return (
+                      <div key={fileKey} className="space-y-0.5">
+                        <div className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/50">
+                          <FileArchive className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate flex-1">{file.name}</span>
+                          {isUploading && (
+                            <span className="text-primary shrink-0 font-medium tabular-nums">{progress}%</span>
+                          )}
+                          <span className="text-muted-foreground shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                          {!uploadPending && (
+                            <button
+                              type="button"
+                              className="text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {isUploading && (
+                          <div className="h-1 rounded-full bg-muted overflow-hidden mx-1.5">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ease-out ${isDone ? "bg-success" : "bg-primary"}`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   <div className="flex items-center justify-between mt-2">
                     <label className="flex items-center gap-2 text-xs cursor-pointer">
@@ -574,15 +596,30 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                       disabled={uploadPending}
                       onClick={async () => {
                         setUploadPending(true);
+                        const progressMap: Record<string, number> = {};
+                        uploadFiles.forEach((f, i) => { progressMap[`${f.name}-${i}`] = 0; });
+                        setUploadProgress({ ...progressMap });
+
                         const results = await Promise.allSettled(
-                          uploadFiles.map((file) => api.uploadRemotePlugin(site.id, file, activateAfterInstall))
+                          uploadFiles.map((file, i) => {
+                            const fileKey = `${file.name}-${i}`;
+                            return api.uploadRemotePluginWithProgress(
+                              site.id,
+                              file,
+                              activateAfterInstall,
+                              (percent) => {
+                                setUploadProgress((prev) => ({ ...prev, [fileKey]: percent }));
+                              }
+                            );
+                          })
                         );
-                        const succeeded = results.filter((r) => r.status === "fulfilled").length;
-                        const failed = results.filter((r) => r.status === "rejected").length;
+                        const succeeded = results.filter((r) => r.status === "fulfilled" && r.value.success).length;
+                        const failed = results.length - succeeded;
                         if (succeeded > 0) toast.success(`Uploaded ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
                         if (failed > 0) toast.error(`Failed to upload ${failed} plugin${failed !== 1 ? "s" : ""}`);
                         setUploadFiles([]);
                         setUploadPending(false);
+                        setUploadProgress({});
                         queryClient.invalidateQueries({ queryKey });
                       }}
                     >

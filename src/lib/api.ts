@@ -774,6 +774,92 @@ export const api = {
       }
     );
   },
+
+  /**
+   * Upload a remote plugin ZIP with progress callback (uses XMLHttpRequest).
+   * Returns a promise that resolves with the parsed API response and provides
+   * progress updates via the onProgress callback (0-100).
+   */
+  uploadRemotePluginWithProgress: (
+    siteId: number,
+    file: File,
+    activate: boolean,
+    onProgress: (percent: number) => void
+  ): Promise<ApiResponse<{ installed: boolean; plugin: string; activated: boolean }>> => {
+    return new Promise((resolve) => {
+      const formData = new FormData();
+      formData.append("plugin_zip", file);
+      formData.append("activate", String(activate));
+
+      const url = toAbsoluteUrl(resolveApiUrl(`/sites/${siteId}/remote-plugins/upload`));
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url, true);
+      xhr.setRequestHeader("Accept", "application/json");
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        try {
+          const json = JSON.parse(xhr.responseText);
+          // Handle envelope format
+          if (json.Status) {
+            if (json.Status.IsSuccess) {
+              const data = json.Attributes?.IsSingle && Array.isArray(json.Results) && json.Results.length > 0
+                ? json.Results[0]
+                : json.Results;
+              resolve({ success: true, data });
+            } else {
+              resolve({
+                success: false,
+                error: {
+                  code: "E_UPLOAD",
+                  message: json.Status.Message || "Upload failed",
+                  timestamp: json.Status.Timestamp || new Date().toISOString(),
+                },
+              });
+            }
+          } else if (xhr.status >= 200 && xhr.status < 300) {
+            resolve({ success: true, data: json });
+          } else {
+            resolve({
+              success: false,
+              error: {
+                code: "E_UPLOAD",
+                message: json.error || json.message || `HTTP ${xhr.status}`,
+                timestamp: new Date().toISOString(),
+              },
+            });
+          }
+        } catch {
+          resolve({
+            success: false,
+            error: {
+              code: "E_UPLOAD",
+              message: `Upload failed with status ${xhr.status}`,
+              timestamp: new Date().toISOString(),
+            },
+          });
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        resolve({
+          success: false,
+          error: {
+            code: "E_NETWORK",
+            message: "Network error during upload",
+            timestamp: new Date().toISOString(),
+          },
+        });
+      });
+
+      xhr.send(formData);
+    });
+  },
   // Remote plugin file browser (Phase 10)
   getRemotePluginFiles: (siteId: number, pluginSlug: string) =>
     request<RemotePluginFilesResult>(
