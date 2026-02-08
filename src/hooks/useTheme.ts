@@ -32,6 +32,8 @@ export type FontSize = "x-small" | "small" | "medium" | "large" | "x-large";
 
 export type BorderRadius = "none" | "small" | "medium" | "large" | "full";
 
+export type SidebarTheme = "night-blue" | "midnight-purple" | "emerald-dark" | "solar-white";
+
 export interface ThemeConfig {
   theme: Theme;
   accentColor: AccentColor;
@@ -39,6 +41,7 @@ export interface ThemeConfig {
   borderRadius: BorderRadius;
   compactMode: boolean;
   animationsEnabled: boolean;
+  sidebarTheme: SidebarTheme;
 }
 
 const defaultThemeConfig: ThemeConfig = {
@@ -48,6 +51,7 @@ const defaultThemeConfig: ThemeConfig = {
   borderRadius: "medium",
   compactMode: false,
   animationsEnabled: true,
+  sidebarTheme: "night-blue",
 };
 
 // Get system preference for dark mode
@@ -84,6 +88,7 @@ export function useTheme() {
         borderRadius: (appearance.borderRadius as BorderRadius) || defaultThemeConfig.borderRadius,
         compactMode: appearance.compactMode ?? defaultThemeConfig.compactMode,
         animationsEnabled: appearance.animationsEnabled ?? defaultThemeConfig.animationsEnabled,
+        sidebarTheme: ((appearance as any).sidebarTheme as SidebarTheme) || defaultThemeConfig.sidebarTheme,
       });
     }
   }, [settings]);
@@ -104,7 +109,7 @@ export function useTheme() {
     root.setAttribute("data-accent", localConfig.accentColor);
     root.setAttribute("data-font-size", localConfig.fontSize);
     root.setAttribute("data-radius", localConfig.borderRadius);
-    
+    root.setAttribute("data-sidebar-theme", localConfig.sidebarTheme);
     if (localConfig.compactMode) {
       root.setAttribute("data-compact", "true");
     } else {
@@ -179,6 +184,11 @@ export function useTheme() {
     updateSettingMutation.mutate({ key: "appearance.animationsEnabled", value: String(animationsEnabled) });
   }, [updateSettingMutation]);
 
+  const setSidebarTheme = useCallback((sidebarTheme: SidebarTheme) => {
+    setLocalConfig((prev) => ({ ...prev, sidebarTheme }));
+    updateSettingMutation.mutate({ key: "appearance.sidebarTheme", value: sidebarTheme });
+  }, [updateSettingMutation]);
+
   return {
     // Current config
     ...localConfig,
@@ -193,5 +203,6 @@ export function useTheme() {
     setBorderRadius,
     setCompactMode,
     setAnimationsEnabled,
+    setSidebarTheme,
   };
 }

@@ -112,6 +112,80 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  /* ================================================================
+     SIDEBAR THEMES — applied via [data-sidebar-theme="..."] on <html>
+     Each theme overrides --sb-* variables consumed by the Sidebar.
+     ================================================================ */
+
+  /* Theme 1: Dark Night Blue (default dark sidebar) */
+  :root,
+  [data-sidebar-theme="night-blue"] {
+    --sb-bg: 216 40% 7%;
+    --sb-divider: 217 33% 12%;
+    --sb-hover-from: 217 33% 12%;
+    --sb-hover-to: 217 33% 17%;
+    --sb-hover-border: 216 20% 17%;
+    --sb-accent: 217 91% 60%;
+    --sb-text: 218 11% 65%;
+    --sb-text-hover: 210 20% 98%;
+  }
+
+  /* Theme 2: Midnight Purple */
+  [data-sidebar-theme="midnight-purple"] {
+    --sb-bg: 270 48% 8%;
+    --sb-divider: 270 40% 12%;
+    --sb-hover-from: 270 40% 12%;
+    --sb-hover-to: 270 40% 19%;
+    --sb-hover-border: 270 40% 25%;
+    --sb-accent: 271 81% 56%;
+    --sb-text: 263 70% 85%;
+    --sb-text-hover: 270 20% 98%;
+  }
+
+  /* Theme 3: Emerald Dark */
+  [data-sidebar-theme="emerald-dark"] {
+    --sb-bg: 152 56% 5%;
+    --sb-divider: 152 56% 9%;
+    --sb-hover-from: 152 56% 9%;
+    --sb-hover-to: 152 56% 14%;
+    --sb-hover-border: 175 42% 26%;
+    --sb-accent: 142 71% 45%;
+    --sb-text: 142 77% 73%;
+    --sb-text-hover: 152 76% 97%;
+  }
+
+  /* Theme 4: Solar White Colorful */
+  [data-sidebar-theme="solar-white"] {
+    --sb-bg: 0 0% 100%;
+    --sb-divider: 220 13% 91%;
+    --sb-hover-from: 33 100% 96%;
+    --sb-hover-to: 188 78% 96%;
+    --sb-hover-border: 48 96% 89%;
+    --sb-accent: 24 95% 53%;
+    --sb-text: 220 13% 28%;
+    --sb-text-hover: 221 39% 11%;
+  }
+}
+
+/* Sidebar nav item styles using --sb-* tokens */
+.sb-nav-idle {
+  color: hsl(var(--sb-text));
+  border-left-color: transparent;
+}
+
+.sb-nav-idle:hover {
+  color: hsl(var(--sb-text-hover));
+  background: linear-gradient(135deg, hsl(var(--sb-hover-from)), hsl(var(--sb-hover-to)));
+  border-left-color: hsl(var(--sb-accent) / 0.6);
+  box-shadow: inset 0 0 0 1px hsl(var(--sb-hover-border) / 0.3);
+}
+
+.sb-nav-active {
+  color: hsl(var(--sb-text-hover));
+  background: linear-gradient(135deg, hsl(var(--sb-hover-from)), hsl(var(--sb-hover-to)));
+  border-left-color: hsl(var(--sb-accent));
+  box-shadow: inset 0 0 0 1px hsl(var(--sb-hover-border) / 0.5);
 }
 
 @layer base {
