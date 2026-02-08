@@ -48,13 +48,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <div className="p-4 sm:p-6">
         <div className="flex items-center gap-2">
-          <Plug className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">WP Publish</span>
+          <Plug className="h-6 w-6" style={{ color: "hsl(var(--sb-accent))" }} />
+          <span className="font-bold text-lg" style={{ color: "hsl(var(--sb-text-hover))" }}>
+            WP Publish
+          </span>
         </div>
       </div>
 
       <nav className="px-3 sm:px-4 pb-4 flex-1 overflow-y-auto">
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {navItems.map((item) => (
             <li key={item.to}>
               <NavLink
@@ -62,10 +64,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors border-l-2",
+                    "sb-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium border-l-[3px] transition-colors duration-150",
                     isActive
-                      ? "bg-primary text-primary-foreground border-l-primary"
-                      : "text-muted-foreground border-l-transparent hover:text-foreground hover:bg-secondary/50 hover:border-l-primary/60"
+                      ? "sb-nav-active"
+                      : "sb-nav-idle"
                   )
                 }
               >
@@ -77,21 +79,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </ul>
       </nav>
 
-      <div className="px-3 sm:px-4 py-3 border-t border-border">
+      <div className="px-3 sm:px-4 py-3" style={{ borderTop: "1px solid hsl(var(--sb-divider))" }}>
         <NavLink
           to="/settings#about"
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              "flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium transition-colors",
+              "sb-nav-item flex items-center justify-between px-3 py-2 rounded-md text-sm font-medium border-l-[3px] transition-colors duration-150",
               isActive
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "sb-nav-active"
+                : "sb-nav-idle"
             )
           }
         >
           <span>About</span>
-          <Badge variant="outline" className="font-mono text-xs">
+          <Badge variant="outline" className="font-mono text-xs border-current/30">
             {versionLabel}
           </Badge>
         </NavLink>
@@ -104,13 +106,23 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar — hidden on mobile */}
-      <aside className="hidden md:flex w-64 border-r border-border bg-card flex-col shrink-0">
+      <aside
+        className="hidden md:flex w-64 flex-col shrink-0"
+        style={{
+          background: "hsl(var(--sb-bg))",
+          borderRight: "1px solid hsl(var(--sb-divider))",
+        }}
+      >
         <SidebarContent />
       </aside>
 
       {/* Mobile sidebar — sheet overlay */}
       <Sheet open={mobileOpen} onOpenChange={(open) => !open && onMobileClose?.()}>
-        <SheetContent side="left" className="w-64 p-0 bg-card flex flex-col">
+        <SheetContent
+          side="left"
+          className="w-64 p-0 flex flex-col"
+          style={{ background: "hsl(var(--sb-bg))" }}
+        >
           <VisuallyHidden>
             <SheetTitle>Navigation</SheetTitle>
           </VisuallyHidden>

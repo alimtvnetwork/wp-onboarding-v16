@@ -1,4 +1,4 @@
-import { useTheme, Theme, AccentColor } from "@/hooks/useTheme";
+import { useTheme, Theme, AccentColor, type SidebarTheme } from "@/hooks/useTheme";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Monitor, Moon, Sun, Palette, Type, Square, Zap } from "lucide-react";
+import { Monitor, Moon, Sun, Palette, Type, Square, Zap, PanelLeft } from "lucide-react";
 
 const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
   { value: "light", label: "Light", icon: <Sun className="h-4 w-4" /> },
@@ -38,16 +38,25 @@ const accentColors: { value: AccentColor; label: string; color: string }[] = [
   { value: "sky", label: "Sky", color: "bg-sky-500" },
 ];
 
+const sidebarThemes: { value: SidebarTheme; label: string; preview: string }[] = [
+  { value: "night-blue", label: "Night Blue", preview: "bg-[#0B1220] border-blue-500" },
+  { value: "midnight-purple", label: "Midnight Purple", preview: "bg-[#120A1F] border-purple-500" },
+  { value: "emerald-dark", label: "Emerald Dark", preview: "bg-[#04140E] border-emerald-500" },
+  { value: "solar-white", label: "Solar White", preview: "bg-white border-orange-400" },
+];
+
 export function ThemeSelector() {
   const {
     theme,
     accentColor,
+    sidebarTheme,
     fontSize,
     borderRadius,
     compactMode,
     animationsEnabled,
     setTheme,
     setAccentColor,
+    setSidebarTheme,
     setFontSize,
     setBorderRadius,
     setCompactMode,
@@ -107,7 +116,31 @@ export function ThemeSelector() {
           </div>
         </div>
 
-        {/* Font Size */}
+        {/* Sidebar Theme */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <PanelLeft className="h-4 w-4" />
+            Sidebar Theme
+          </Label>
+          <div className="grid grid-cols-2 gap-2">
+            {sidebarThemes.map((st) => (
+              <button
+                key={st.value}
+                onClick={() => setSidebarTheme(st.value)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors text-left ${
+                  sidebarTheme === st.value
+                    ? "ring-2 ring-primary border-primary"
+                    : "border-border hover:border-muted-foreground/40"
+                }`}
+                disabled={isSaving}
+              >
+                <div className={`h-6 w-3 rounded-sm border-l-[3px] ${st.preview}`} />
+                <span className="text-xs font-medium">{st.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="fontSize" className="flex items-center gap-2">
             <Type className="h-4 w-4" />
