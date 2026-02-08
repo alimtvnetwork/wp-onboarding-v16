@@ -385,7 +385,7 @@ class Riseup_File_Logger {
      * @return bool
      */
     public function error($message, $context = array()) {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0); // 0 = unlimited depth
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
