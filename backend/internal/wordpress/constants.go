@@ -83,6 +83,9 @@ const (
 
 	// EndpointSyncManifest fetches the cached file manifest for sync comparison (fixed URL, slug in JSON body).
 	EndpointSyncManifest = "/plugins/sync-manifest"
+
+	// EndpointErrorLogs retrieves PHP error and log files as JSON.
+	EndpointErrorLogs = "/error-logs"
 )
 
 // =============================================================================

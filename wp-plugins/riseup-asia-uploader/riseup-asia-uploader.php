@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.28.0
+ * Version: 1.29.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -957,6 +957,13 @@ class Riseup_Asia {
         } catch (Throwable $e) {
             // Optional endpoint, ignore
         }
+
+        // Error logs retrieval endpoint - returns error.txt and log.txt as JSON
+        $safe_register(RISEUP_ENDPOINT_ERROR_LOGS, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_error_logs'),
+            'permission_callback' => $this->build_permission_callback('error_logs', array($this, 'check_logs_permission')),
+        ));
 
         $this->file_logger->info("REST API route registration complete: $registered registered, $failed failed");
     }
@@ -2718,6 +2725,119 @@ class Riseup_Asia {
         }
     }
 
+    // =========================================================================
+    // ERROR LOGS RETRIEVAL
+    // =========================================================================
+
+    /**
+     * Handle error-logs endpoint.
+     *
+     * Returns the content of error.txt and/or log.txt as JSON,
+     * controlled by the log_retrieval settings in the admin panel.
+     * Includes stackTraceFrames for structured parsing.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function handle_error_logs($request) {
+        return $this->safe_execute(function() use ($request) {
+            $this->file_logger->info('Error logs endpoint called');
+
+            // Get log retrieval settings
+            $settings      = Riseup_Admin::get_settings();
+            $log_settings  = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
+            $include_error = isset($log_settings['include_error_log']) ? (bool) $log_settings['include_error_log'] : true;
+            $include_full  = isset($log_settings['include_full_log']) ? (bool) $log_settings['include_full_log'] : false;
+            $max_lines     = isset($log_settings['max_lines']) ? (int) $log_settings['max_lines'] : 500;
+
+            // Allow query param overrides (bounded by settings)
+            if ($request->get_param('include_error_log') !== null) {
+                $include_error = (bool) $request->get_param('include_error_log');
+            }
+            if ($request->get_param('include_full_log') !== null) {
+                $include_full = (bool) $request->get_param('include_full_log');
+            }
+            if ($request->get_param('max_lines') !== null) {
+                $max_lines = max(10, min(5000, (int) $request->get_param('max_lines')));
+            }
+
+            $response = array(
+                'success'  => true,
+                'version'  => RISEUP_VERSION,
+                'settings' => array(
+                    'include_error_log' => $include_error,
+                    'include_full_log'  => $include_full,
+                    'max_lines'         => $max_lines,
+                ),
+            );
+
+            // Read error log
+            if ($include_error) {
+                $error_path = $this->file_logger->get_error_file();
+                $response['error_log'] = $this->read_log_tail($error_path, $max_lines);
+            }
+
+            // Read full log
+            if ($include_full) {
+                $log_path = $this->file_logger->get_log_file();
+                $response['full_log'] = $this->read_log_tail($log_path, $max_lines);
+            }
+
+            // Generate stack trace of this request for diagnostics
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+            $response['stackTraceFrames'] = riseup_backtrace_to_frames($backtrace);
+
+            return new WP_REST_Response($response, 200);
+        }, 'error_logs');
+    }
+
+    /**
+     * Read the last N lines of a log file.
+     *
+     * @param string $file_path Path to the log file.
+     * @param int    $max_lines Maximum number of lines to return.
+     * @return array Log data with content, line count, file size, and path info.
+     */
+    private function read_log_tail($file_path, $max_lines) {
+        $result = array(
+            'exists'     => false,
+            'file'       => basename($file_path),
+            'path'       => $file_path,
+            'content'    => '',
+            'lines'      => 0,
+            'total_size' => 0,
+            'truncated'  => false,
+        );
+
+        if (!file_exists($file_path) || !is_readable($file_path)) {
+            return $result;
+        }
+
+        $result['exists']     = true;
+        $result['total_size'] = filesize($file_path);
+
+        // Read file and get last N lines
+        $all_lines = file($file_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($all_lines === false) {
+            $result['content'] = 'Failed to read file';
+            return $result;
+        }
+
+        $total_lines = count($all_lines);
+        $result['truncated'] = ($total_lines > $max_lines);
+
+        if ($total_lines > $max_lines) {
+            $lines = array_slice($all_lines, -$max_lines);
+        } else {
+            $lines = $all_lines;
+        }
+
+        $result['lines']       = count($lines);
+        $result['total_lines'] = $total_lines;
+        $result['content']     = implode("\n", $lines);
+
+        return $result;
+    }
 
     /**
      * Create an error response with optional exception details.

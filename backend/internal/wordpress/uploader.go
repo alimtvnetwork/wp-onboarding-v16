@@ -880,3 +880,65 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 
 	return &result, nil
 }
+
+// RemoteLogFile represents a single log file returned by the error-logs endpoint.
+type RemoteLogFile struct {
+	Exists     bool   `json:"exists"`
+	File       string `json:"file"`
+	Path       string `json:"path"`
+	Content    string `json:"content"`
+	Lines      int    `json:"lines"`
+	TotalLines int    `json:"total_lines"`
+	TotalSize  int64  `json:"total_size"`
+	Truncated  bool   `json:"truncated"`
+}
+
+// RemoteErrorLogsResult represents the /error-logs endpoint response.
+type RemoteErrorLogsResult struct {
+	Success          bool                   `json:"success"`
+	Version          string                 `json:"version"`
+	Settings         map[string]interface{} `json:"settings"`
+	ErrorLog         *RemoteLogFile         `json:"error_log,omitempty"`
+	FullLog          *RemoteLogFile         `json:"full_log,omitempty"`
+	StackTraceFrames []map[string]interface{} `json:"stackTraceFrames,omitempty"`
+}
+
+// FetchRemoteErrorLogs retrieves the PHP error and log files from the WordPress plugin.
+// Uses GET /error-logs with Basic Auth. The response is controlled by the plugin's
+// log_retrieval settings (which logs to include, max lines).
+func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
+	_, namespace, err := c.CheckRiseupAsiaAvailable()
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "check uploader availability for error-logs")
+	}
+	if namespace == "" {
+		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
+	}
+
+	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointErrorLogs)
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "fetch remote error logs")
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &APIError{
+			Operation:    "fetch remote error logs",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(respBody), 4000),
+			StackTrace:   captureStackTrace(2),
+		}
+	}
+
+	var result RemoteErrorLogsResult
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode remote error logs response")
+	}
+
+	return &result, nil
+}

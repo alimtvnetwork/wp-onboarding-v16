@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.28.0');
+    define('RISEUP_VERSION', '1.29.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -785,4 +785,23 @@ if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT_PERTABLE')) {
 // Cleanup endpoint (Phase 10)
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP')) {
     define('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP', 'snapshots/cleanup');
+}
+
+// =============================================================================
+// PHP LOG RETRIEVAL ENDPOINT
+// =============================================================================
+
+// Error logs endpoint - returns error.txt and log.txt content as JSON
+if (!defined('RISEUP_ENDPOINT_ERROR_LOGS')) {
+    define('RISEUP_ENDPOINT_ERROR_LOGS', 'error-logs');
+}
+
+// Log retrieval settings option name
+if (!defined('RISEUP_OPTION_LOG_RETRIEVAL')) {
+    define('RISEUP_OPTION_LOG_RETRIEVAL', 'riseup_log_retrieval_settings');
+}
+
+// Default max lines to return from log files
+if (!defined('RISEUP_LOG_RETRIEVAL_MAX_LINES')) {
+    define('RISEUP_LOG_RETRIEVAL_MAX_LINES', 500);
 }
