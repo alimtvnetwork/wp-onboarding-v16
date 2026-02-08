@@ -52,7 +52,7 @@ export function RecentPublishes({ entries, stats }: RecentPublishesProps) {
               return (
                 <div
                   key={entry.id}
-                  className="flex items-center gap-2 sm:gap-3 p-2 rounded-lg transition-colors hover:bg-accent/30 hover:border-l-2 hover:border-l-primary/50 hover:pl-1.5"
+                  className="flex items-center gap-2 sm:gap-3 p-2 rounded-lg border-l-2 border-l-transparent transition-colors hover:bg-accent/30 hover:border-l-primary/50"
                 >
                   <StatusIcon className={`h-4 w-4 shrink-0 ${
                     entry.status === "success" ? "text-emerald-600" :

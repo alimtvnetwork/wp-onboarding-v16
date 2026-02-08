@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, X, CheckCheck, Trash2, Rocket, GitBranch, Globe, AlertCircle, Info, RefreshCw, FlaskConical, Plug } from "lucide-react";
+import { Bell, X, CheckCheck, Trash2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,38 +11,27 @@ import {
 import { cn } from "@/lib/utils";
 import { useNotificationStore, type AppNotification, type NotificationType } from "@/stores/notificationStore";
 
-const sourceIcons: Record<string, typeof Rocket> = {
-  publish: Rocket,
-  "auto-publish": Rocket,
-  sync: RefreshCw,
-  git: GitBranch,
-  connection: Globe,
-  "remote-plugin": Plug,
-  e2e: FlaskConical,
-  error: AlertCircle,
+/** Emoji icons by notification type for visual appeal */
+const typeEmoji: Record<NotificationType, string> = {
+  success: "✅",
+  error: "❌",
+  warning: "⚠️",
+  info: "ℹ️",
 };
 
-const typeStyles: Record<NotificationType, { dot: string; iconBg: string; icon: string }> = {
-  success: {
-    dot: "bg-success",
-    iconBg: "bg-success/15",
-    icon: "text-success",
-  },
-  error: {
-    dot: "bg-destructive",
-    iconBg: "bg-destructive/15",
-    icon: "text-destructive",
-  },
-  warning: {
-    dot: "bg-warning",
-    iconBg: "bg-warning/15",
-    icon: "text-warning",
-  },
-  info: {
-    dot: "bg-info",
-    iconBg: "bg-info/15",
-    icon: "text-info",
-  },
+/** Card background styles by type */
+const typeCardStyles: Record<NotificationType, string> = {
+  success: "bg-emerald-800/80 border-emerald-600/40 text-white",
+  error: "bg-destructive/80 border-destructive/40 text-white",
+  warning: "bg-amber-700/80 border-amber-500/40 text-white",
+  info: "bg-sky-800/80 border-sky-600/40 text-white",
+};
+
+const typeCardUnread: Record<NotificationType, string> = {
+  success: "bg-emerald-800 border-emerald-500/60",
+  error: "bg-destructive border-destructive/60",
+  warning: "bg-amber-700 border-amber-400/60",
+  info: "bg-sky-800 border-sky-500/60",
 };
 
 function formatTimeAgo(timestamp: string): string {
@@ -63,55 +52,52 @@ function NotificationCard({ notification, onDismiss, onRead }: {
   onDismiss: (id: string) => void;
   onRead: (id: string) => void;
 }) {
-  const style = typeStyles[notification.type];
-  const IconComponent = sourceIcons[notification.source] || Info;
+  const emoji = typeEmoji[notification.type];
+  const cardStyle = notification.read
+    ? typeCardStyles[notification.type]
+    : typeCardUnread[notification.type];
 
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-3 px-4 py-3 transition-colors cursor-pointer",
-        "hover:bg-accent/50",
-        !notification.read && "bg-accent/30"
+        "group relative flex items-start gap-3 px-4 py-3 mx-2 my-1.5 rounded-lg border transition-colors cursor-pointer",
+        cardStyle
       )}
       onClick={() => onRead(notification.id)}
     >
-      {/* Icon */}
-      <div className={cn("mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full", style.iconBg)}>
-        <IconComponent className={cn("h-4 w-4", style.icon)} />
-      </div>
+      {/* Emoji icon */}
+      <span className="text-lg mt-0.5 shrink-0 select-none" role="img">
+        {emoji}
+      </span>
 
       {/* Content */}
       <div className="flex-1 min-w-0 space-y-0.5">
-        <div className="flex items-start justify-between gap-2">
-          <p className={cn("text-sm leading-snug", !notification.read ? "font-semibold text-foreground" : "font-medium text-foreground/80")}>
-            {notification.title}
-          </p>
-          <span className="shrink-0 text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
-            {formatTimeAgo(notification.timestamp)}
-          </span>
-        </div>
+        <p className={cn("text-sm leading-snug", !notification.read ? "font-semibold" : "font-medium opacity-90")}>
+          {notification.title}
+        </p>
         {notification.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className="text-xs opacity-75 line-clamp-2 leading-relaxed">
             {notification.description}
           </p>
         )}
       </div>
 
-      {/* Unread dot */}
-      {!notification.read && (
-        <div className={cn("absolute left-1.5 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full", style.dot)} />
-      )}
-
-      {/* Dismiss */}
-      <button
-        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5 p-0.5 rounded hover:bg-muted"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDismiss(notification.id);
-        }}
-      >
-        <X className="h-3.5 w-3.5 text-muted-foreground" />
-      </button>
+      {/* Timestamp + Close button — right side */}
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <button
+          className="p-0.5 rounded hover:bg-white/20 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDismiss(notification.id);
+          }}
+          aria-label="Dismiss"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+        <span className="text-[10px] opacity-60 whitespace-nowrap">
+          {formatTimeAgo(notification.timestamp)}
+        </span>
+      </div>
     </div>
   );
 }
@@ -172,7 +158,7 @@ export function NotificationPanel() {
           </div>
         ) : (
           <ScrollArea className="max-h-[400px]">
-            <div className="divide-y divide-border/50">
+            <div className="py-1">
               {notifications.map((notification) => (
                 <NotificationCard
                   key={notification.id}
