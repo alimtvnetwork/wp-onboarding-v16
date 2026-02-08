@@ -75,3 +75,24 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 #### Sub-phase 12.6 ✅ — Frontend envelope parsing (already complete)
 - `isEnvelope()` + `parseEnvelope<T>()` in `src/lib/api.ts` already auto-detect and convert PascalCase envelope responses from both Go backend and PHP plugin
 - No additional changes required; the transparent detection at line 270 handles all migrated endpoints
+
+### Phase 13 ✅ — Go Generics Migration for Envelope
+
+#### Sub-phase 13.1 ✅ — Bump Go version
+- Updated `go.mod` from Go 1.21 → Go 1.22
+
+#### Sub-phase 13.2 ✅ — Generic envelope types
+- Added `TypedEnvelope[T any]` struct with `Results []T` (typed slice instead of `json.RawMessage`)
+- Added `ParseTypedEnvelope[T any]()` for fully typed envelope parsing
+
+#### Sub-phase 13.3 ✅ — Generic unwrap functions
+- `UnwrapResults[T any](data []byte) ([]T, bool)` — returns typed slice directly
+- `UnwrapSingleResult[T any](data []byte) (*T, bool)` — returns typed pointer directly
+- No more `interface{}` parameters; callers get compile-time type safety
+
+#### Sub-phase 13.4 ✅ — Migrate call sites
+- `GetUploaderStatus()`: `UnwrapSingleResult[UploaderStatus](respBody)` returns `*UploaderStatus` directly
+- `ListPluginsViaUploader()`: `UnwrapResults[UploaderPluginInfo](respBody)` returns `[]UploaderPluginInfo` directly
+
+#### Sub-phase 13.5 🔧 — PHP PHPStan @template annotations (optional)
+- PHP has no native generics; `@template` docblock annotations for static analysis only
