@@ -29,6 +29,7 @@ export interface EnvelopeStatus {
 export interface EnvelopeAttributes {
   RequestedAt?: string;
   RequestDelegatedAt?: string;
+  SessionId?: string;
   HasAnyErrors: boolean;
   IsSingle: boolean;
   IsMultiple: boolean;
@@ -131,9 +132,10 @@ function parseEnvelope<T>(env: RawEnvelope): ApiResponse<T> {
         details: errBlock?.Backend?.length
           ? `Backend trace available (${errBlock.Backend.length} lines)`
           : undefined,
-        context: {
+      context: {
           ...(env.Attributes.RequestedAt ? { requestedAt: env.Attributes.RequestedAt } : {}),
           ...(env.Attributes.RequestDelegatedAt ? { requestDelegatedAt: env.Attributes.RequestDelegatedAt } : {}),
+          ...(env.Attributes.SessionId ? { sessionId: env.Attributes.SessionId } : {}),
           ...(errBlock?.Backend?.length ? { backendTrace: errBlock.Backend } : {}),
           ...(errBlock?.DelegatedServiceErrorStack?.length ? { delegatedServiceErrorStack: errBlock.DelegatedServiceErrorStack } : {}),
           ...(env.MethodsStack ? { methodsStack: env.MethodsStack } : {}),

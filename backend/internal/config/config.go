@@ -101,6 +101,8 @@ type LoggingConfig struct {
 	SessionLoggingEnabled  bool   `json:"sessionLoggingEnabled"`
 	// StackTraceDepth controls the maximum number of Go stack frames captured (default 20)
 	StackTraceDepth        int    `json:"stackTraceDepth"`
+	// PhpStackTraceDepth controls the maximum PHP stack frames captured (0 = unlimited)
+	PhpStackTraceDepth     int    `json:"phpStackTraceDepth"`
 }
 
 // SecurityConfig holds security settings
@@ -177,6 +179,7 @@ func DefaultConfig() *Config {
 			ClearSessionsOnStartup: false,
 			SessionLoggingEnabled:  true,
 			StackTraceDepth:        20,
+			PhpStackTraceDepth:     0, // 0 = unlimited
 		},
 		Security: SecurityConfig{
 			EncryptionKey: "", // Must be set via environment or config
@@ -302,6 +305,13 @@ func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
 		"backup.autoBackupOnPublish": cfg.Backup.AutoBackupOnPublish,
 		"logging.level":              cfg.Logging.Level,
 		"logging.retentionDays":      cfg.Logging.RetentionDays,
+		"logging.stackTraceDepth":    cfg.Logging.StackTraceDepth,
+		"logging.phpStackTraceDepth": cfg.Logging.PhpStackTraceDepth,
+		// Response debug settings (seedable)
+		"responseDebug.includeStackTrace":     cfg.ResponseDebug.IncludeStackTrace,
+		"responseDebug.includeInternalErrors": cfg.ResponseDebug.IncludeInternalErrors,
+		"responseDebug.includeMethodsStack":   cfg.ResponseDebug.IncludeMethodsStack,
+		"responseDebug.maxStackFrames":        cfg.ResponseDebug.MaxStackFrames,
 		// Snapshot settings
 		"snapshot.mode":            cfg.Snapshot.Mode,
 		"snapshot.backupType":      cfg.Snapshot.BackupType,

@@ -20,6 +20,9 @@ Session management provides isolated, auditable logging for every backend operat
 | `backup` | Backup creation or restore operation |
 | `connect` | Connection testing to WordPress site |
 | `bulk_publish` | Publishing to multiple sites in one operation |
+| `remote_plugin_enable` | Enabling a plugin on a remote WordPress site |
+| `remote_plugin_disable` | Disabling a plugin on a remote WordPress site |
+| `remote_plugin_delete` | Deleting a plugin from a remote WordPress site |
 
 ---
 
@@ -152,6 +155,7 @@ sessionService.SetMetadata(sessionID, key string, value interface{})
 | `GET` | `/api/v1/sessions` | List recent sessions (default 100) |
 | `GET` | `/api/v1/sessions/{id}` | Get session details |
 | `GET` | `/api/v1/sessions/{id}/logs` | Get full session logs (text or JSON) |
+| `GET` | `/api/v1/sessions/{id}/diagnostics` | Get structured diagnostics (request, response, stack traces) |
 | `DELETE` | `/api/v1/sessions/{id}` | Delete a session |
 
 ### Query Parameters
@@ -161,6 +165,42 @@ sessionService.SetMetadata(sessionID, key string, value interface{})
 
 **GET /api/v1/sessions/{id}/logs**
 - `format` (string): Response format - `text` (default) or `json`
+
+### Diagnostics Endpoint
+
+`GET /api/v1/sessions/{id}/diagnostics` returns a `SessionDiagnostics` struct:
+
+```json
+{
+  "request": {
+    "url": "/api/v1/sites/1/remote-plugins/disable",
+    "method": "POST",
+    "body": { "siteId": 1, "pluginSlug": "akismet/akismet.php", "action": "disable" }
+  },
+  "response": {
+    "requestUrl": "https://example.com/wp-json/riseup-asia-uploader/v1/plugins/disable",
+    "responseUrl": "https://example.com",
+    "statusCode": 500,
+    "body": { "Status": { "IsFailed": true }, "Errors": { "BackendMessage": "..." } }
+  },
+  "stackTrace": {
+    "golang": [{ "function": "DisableRemotePlugin", "file": "site_handlers.go", "line": 350 }],
+    "php": [{ "function": "handle_disable", "file": "class-plugin-manager.php", "line": 120, "class": "RiseupPluginManager" }]
+  },
+  "phpStackTraceLog": "Full stacktrace.txt content..."
+}
+```
+
+### Session Folder Structure
+
+Each session stores artifacts in `data/sessions/{uuid}/`:
+
+| File | Purpose |
+|------|---------|
+| `session.log` | Human-readable execution log with stage headers |
+| `request.json` | Inbound request from frontend (URL, method, body) |
+| `response.json` | Outbound response from PHP (requestUrl, responseUrl, statusCode, body) |
+| `error.log` | Go + PHP stack traces when errors occur |
 
 ---
 

@@ -1,0 +1,12 @@
+# Memory: architecture/frontend/error-modal-request-chain
+Updated: 2026-02-08
+
+The Request tab in the Global Error Modal visualizes the full delegation chain using a nested node structure: React → Go Backend (Blue) → PHP WordPress (Orange). This visualization leverages 'RequestedAt' and 'RequestDelegatedAt' timestamps from the response envelope to trace requests through the entire stack.
+
+The Go→PHP sub-node is now enriched with session diagnostics data when available:
+- **Full PHP endpoint URL** from `response.requestUrl` (e.g., `https://example.com/wp-json/riseup-asia-uploader/v1/plugins/disable`)
+- **PHP response status code** badge (color-coded for errors)
+- **PHP response body** in a collapsible `<details>` section
+- **PHP error stack** from `DelegatedServiceErrorStack` when errors occur
+
+Non-delegated errors show only the React→Go node. The `sessionDiagnostics` prop is passed from `BackendSection` which auto-fetches via `useSessionDiagnostics(error.sessionId)`.

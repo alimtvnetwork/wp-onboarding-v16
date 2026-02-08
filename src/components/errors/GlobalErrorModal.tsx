@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useErrorStore, CapturedError, StackFrame } from '@/stores/errorStore';
-import { EnvelopeErrors, EnvelopeMethodsStack } from '@/lib/api';
+import { EnvelopeErrors, EnvelopeMethodsStack, SessionDiagnostics } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { JsonHighlighter } from "@/components/shared/JsonHighlighter";
+import { useSessionDiagnostics } from "@/hooks/useSessionDiagnostics";
 import { SessionLogsTab } from "@/components/errors/SessionLogsTab";
 import { formatDateTimeUtc, toClipboardText, unescapeEmbeddedNewlines } from "@/lib/logText";
 import { api } from "@/lib/api";
@@ -362,16 +363,26 @@ function BackendSection({
   copySection,
   formatTs,
 }: BackendSectionProps) {
+  // Auto-fetch session diagnostics when sessionId is present
+  const { diagnostics: sessionDiag, loading: sessionLoading } = useSessionDiagnostics(error.sessionId);
+
   // Derive envelope stacks for display
   const envelopeBackendStack = error.envelopeErrors?.Backend;
   const envelopeDelegatedStack = error.envelopeErrors?.DelegatedServiceErrorStack;
   const envelopeMethodsBackend = error.envelopeMethodsStack?.Backend;
 
-  // Determine if stack tab has any content
+  // Merge session diagnostics stack traces with envelope data
+  const sessionGoFrames = sessionDiag?.stackTrace?.golang;
+  const sessionPhpFrames = sessionDiag?.stackTrace?.php;
+
+  // Determine if stack tab has any content (including session data)
   const hasStackContent = phpStackFrames.length > 0 
     || !!error.backendStackTrace 
     || (envelopeBackendStack && envelopeBackendStack.length > 0)
-    || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0);
+    || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0)
+    || (sessionGoFrames && sessionGoFrames.length > 0)
+    || (sessionPhpFrames && sessionPhpFrames.length > 0)
+    || !!sessionDiag?.phpStackTraceLog;
 
   // Determine if execution tab has content
   const hasExecutionContent = (error.backendLogs && error.backendLogs.length > 0)
@@ -819,7 +830,104 @@ function BackendSection({
           </div>
         )}
 
-        {!hasStackContent && (
+        {/* Session Diagnostics: Go Stack Frames */}
+        {sessionGoFrames && sessionGoFrames.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Server className="h-4 w-4" />
+                Go Stack (Session) ({sessionGoFrames.length} frames)
+              </h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const text = sessionGoFrames.map((f, i) => 
+                    `#${i} ${f.class ? `${f.class}::` : ''}${f.function} at ${f.file || 'unknown'}:${f.line || '?'}`
+                  ).join('\n');
+                  copySection("Session Go stack", text);
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <ScrollArea className="h-[200px] rounded-md border bg-muted">
+              <div className="p-3 space-y-1">
+                {sessionGoFrames.map((frame, i) => (
+                  <div key={i} className="text-xs font-mono leading-relaxed">
+                    <span className="text-muted-foreground mr-1">#{i}</span>
+                    <span className="font-semibold text-blue-500 dark:text-blue-400">
+                      {frame.class ? `${frame.class}::${frame.function}` : frame.function}
+                    </span>
+                    {frame.file && (
+                      <span className="text-muted-foreground ml-1">
+                        at {frame.file}{frame.line ? `:${frame.line}` : ''}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* Session Diagnostics: PHP Stack Frames */}
+        {sessionPhpFrames && sessionPhpFrames.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                PHP Stack (Session) ({sessionPhpFrames.length} frames)
+              </h4>
+            </div>
+            <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
+              <div className="p-3 space-y-1">
+                {sessionPhpFrames.map((frame, i) => (
+                  <div key={i} className="text-xs font-mono leading-relaxed">
+                    <span className="text-muted-foreground mr-1">#{i}</span>
+                    <span className="font-semibold text-orange-500 dark:text-orange-400">
+                      {frame.class ? `${frame.class}::${frame.function}` : frame.function}()
+                    </span>
+                    {frame.file && (
+                      <span className="text-muted-foreground ml-1">
+                        at {frame.file}{frame.line ? `:${frame.line}` : ''}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* Session Diagnostics: PHP Log (stacktrace.txt) */}
+        {sessionDiag?.phpStackTraceLog && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                PHP Log (stacktrace.txt)
+              </h4>
+              <Button variant="ghost" size="sm" onClick={() => copySection("PHP stacktrace.txt", sessionDiag.phpStackTraceLog!)}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
+              <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+                {sessionDiag.phpStackTraceLog}
+              </pre>
+            </ScrollArea>
+          </div>
+        )}
+
+        {sessionLoading && !hasStackContent && (
+          <div className="text-center py-4 text-muted-foreground">
+            <RefreshCw className="h-5 w-5 mx-auto mb-1 animate-spin" />
+            <p className="text-xs">Loading session stack traces...</p>
+          </div>
+        )}
+
+        {!hasStackContent && !sessionLoading && (
           <div className="text-center py-8 text-muted-foreground">
             <Code2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No backend stack traces available</p>
@@ -837,7 +945,7 @@ function BackendSection({
 
       {/* Request Tab */}
       <TabsContent value="request" className="space-y-4 m-0">
-        <RequestDetails error={error} copySection={copySection} />
+        <RequestDetails error={error} copySection={copySection} sessionDiagnostics={sessionDiag} />
       </TabsContent>
 
       {/* Traversal Tab — Request flow diagnostics */}
@@ -1309,7 +1417,11 @@ function BackendLogEntry({ log, formatTs }: { log: CapturedError['backendLogs'][
   );
 }
 
-function RequestDetails({ error, copySection }: { error: CapturedError; copySection: (label: string, content: string) => void }) {
+function RequestDetails({ error, copySection, sessionDiagnostics }: { 
+  error: CapturedError; 
+  copySection: (label: string, content: string) => void;
+  sessionDiagnostics?: SessionDiagnostics | null;
+}) {
   const ctx = (error.context || {}) as Record<string, unknown>;
   const requestUrl = typeof ctx.requestUrl === "string" ? ctx.requestUrl : undefined;
   const apiBase = typeof ctx.apiBase === "string" ? ctx.apiBase : undefined;
@@ -1319,12 +1431,18 @@ function RequestDetails({ error, copySection }: { error: CapturedError; copySect
   const resolvedApiOrigin = typeof ctx.resolvedApiOrigin === "string" ? ctx.resolvedApiOrigin : undefined;
   const uiOrigin = typeof ctx.uiOrigin === "string" ? ctx.uiOrigin : undefined;
 
+  // Session diagnostics provide the full PHP endpoint and response
+  const phpEndpointUrl = sessionDiagnostics?.response?.requestUrl;
+  const phpResponseStatus = sessionDiagnostics?.response?.statusCode;
+  const phpResponseBody = sessionDiagnostics?.response?.body;
+
   const hasRequestChain = error.requestedAt || error.requestDelegatedAt;
+  const hasDelegation = error.requestDelegatedAt || phpEndpointUrl;
 
   return (
     <div className="space-y-4">
       {/* Request Chain Visualization */}
-      {hasRequestChain && (
+      {(hasRequestChain || hasDelegation) && (
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
             <Route className="h-4 w-4" />
@@ -1332,7 +1450,7 @@ function RequestDetails({ error, copySection }: { error: CapturedError; copySect
           </h4>
           <div className="space-y-0">
             {/* Node 1: React → Go */}
-            <div className="border rounded-t-md bg-muted/50 p-3">
+            <div className={cn("border p-3", hasDelegation ? "rounded-t-md" : "rounded-md", "bg-muted/50")}>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
                 <Badge variant="outline" className="text-xs font-mono bg-blue-500/10 border-blue-500/30">React → Go</Badge>
@@ -1364,27 +1482,55 @@ function RequestDetails({ error, copySection }: { error: CapturedError; copySect
             </div>
 
             {/* Connector line */}
-            {error.requestDelegatedAt && (
+            {hasDelegation && (
               <div className="flex items-center pl-4">
                 <div className="w-0.5 h-4 bg-border ml-[3px]" />
               </div>
             )}
 
-            {/* Node 2: Go → PHP (Delegated) */}
-            {error.requestDelegatedAt && (
+            {/* Node 2: Go → PHP (Delegated) — enriched with session diagnostics */}
+            {hasDelegation && (
               <div className="border rounded-b-md bg-muted/50 p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
                   <Badge variant="outline" className="text-xs font-mono bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400">Go → PHP</Badge>
+                  {phpResponseStatus && (
+                    <Badge variant={phpResponseStatus >= 400 ? "destructive" : "secondary"} className="text-xs font-mono">
+                      {phpResponseStatus}
+                    </Badge>
+                  )}
                 </div>
-                <div className="ml-4 space-y-1">
-                  <p className="text-xs font-mono text-muted-foreground break-all">
-                    {error.requestDelegatedAt}
-                  </p>
+                <div className="ml-4 space-y-2">
+                  {/* Full PHP endpoint URL from session diagnostics */}
+                  {phpEndpointUrl && (
+                    <p className="text-xs font-mono text-orange-600 dark:text-orange-400 break-all">
+                      {phpEndpointUrl}
+                    </p>
+                  )}
+                  {/* Fallback: requestDelegatedAt timestamp */}
+                  {!phpEndpointUrl && error.requestDelegatedAt && (
+                    <p className="text-xs font-mono text-muted-foreground break-all">
+                      {error.requestDelegatedAt}
+                    </p>
+                  )}
+
+                  {/* PHP Response Body (collapsible) */}
+                  {phpResponseBody && (
+                    <details className="group">
+                      <summary className="text-xs text-muted-foreground font-medium cursor-pointer hover:text-foreground flex items-center gap-1">
+                        <ChevronRight className="h-3 w-3 group-open:rotate-90 transition-transform" />
+                        PHP Response Body
+                      </summary>
+                      <pre className="text-xs bg-background/60 p-2 rounded mt-1 overflow-x-auto font-mono max-h-48 whitespace-pre-wrap break-all">
+                        {typeof phpResponseBody === "string" ? phpResponseBody : JSON.stringify(phpResponseBody, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+
                   {/* Show delegated error stack as PHP response if available */}
                   {error.envelopeErrors?.DelegatedServiceErrorStack && error.envelopeErrors.DelegatedServiceErrorStack.length > 0 && (
-                    <div className="mt-2">
-                      <span className="text-xs text-muted-foreground font-medium">PHP Response Stack</span>
+                    <div>
+                      <span className="text-xs text-muted-foreground font-medium">PHP Error Stack</span>
                       <pre className="text-xs bg-background/60 p-2 rounded mt-1 overflow-x-auto font-mono max-h-32 text-orange-600 dark:text-orange-400 whitespace-pre-wrap">
                         {error.envelopeErrors.DelegatedServiceErrorStack.join('\n')}
                       </pre>

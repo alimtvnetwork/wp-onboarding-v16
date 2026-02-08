@@ -32,7 +32,15 @@
     "retryMaxAttempts": 3,
     "retryInitialDelayMs": 1000,
     "circuitBreakerThreshold": 5,
-    "circuitBreakerCooldownMs": 60000
+    "circuitBreakerCooldownMs": 60000,
+    "stackTraceDepth": 20,
+    "phpStackTraceDepth": 0
+  },
+  "responseDebug": {
+    "includeStackTrace": true,
+    "includeInternalErrors": true,
+    "includeMethodsStack": true,
+    "maxStackFrames": 20
   },
   "wordpress": {
     "timeoutSeconds": 30,

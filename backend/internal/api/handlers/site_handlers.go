@@ -329,7 +329,7 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.SiteService.EnableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
-		respondError(w, http.StatusInternalServerError, "E3007", err.Error())
+		respondErrorWithSession(w, http.StatusInternalServerError, "E3007", err.Error(), err)
 		return
 	}
 	respondSuccess(w, map[string]interface{}{"enabled": true, "plugin": pluginSlug})
@@ -352,7 +352,7 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.SiteService.DisableRemotePlugin(r.Context(), id, pluginSlug); err != nil {
-		respondError(w, http.StatusInternalServerError, "E3007", err.Error())
+		respondErrorWithSession(w, http.StatusInternalServerError, "E3007", err.Error(), err)
 		return
 	}
 	respondSuccess(w, map[string]interface{}{"disabled": true, "plugin": pluginSlug})
@@ -375,7 +375,7 @@ func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.SiteService.DeleteRemotePlugin(r.Context(), id, pluginSlug); err != nil {
-		respondError(w, http.StatusInternalServerError, "E3010", err.Error())
+		respondErrorWithSession(w, http.StatusInternalServerError, "E3010", err.Error(), err)
 		return
 	}
 	respondSuccess(w, map[string]interface{}{"deleted": true, "plugin": pluginSlug})

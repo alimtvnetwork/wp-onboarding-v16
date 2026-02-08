@@ -517,7 +517,8 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       backendStackTrace: 'backendStackTrace' in (context || {}) ? (context as { backendStackTrace?: string }).backendStackTrace : undefined,
       siteUrl: 'siteUrl' in (context || {}) ? (context as { siteUrl?: string }).siteUrl : undefined,
       // Session-based logging
-      sessionId: 'sessionId' in (context || {}) ? (context as { sessionId?: string }).sessionId : undefined,
+      sessionId: 'sessionId' in (context || {}) ? (context as { sessionId?: string }).sessionId 
+        : (typeof apiErrorContext?.sessionId === 'string' ? apiErrorContext.sessionId : undefined),
       sessionType: 'sessionType' in (context || {}) ? (context as { sessionType?: string }).sessionType : undefined,
       // PHP/WordPress error details
       phpStackFrames: 'phpStackFrames' in (context || {}) ? (context as { phpStackFrames?: PHPStackFrame[] }).phpStackFrames : undefined,
