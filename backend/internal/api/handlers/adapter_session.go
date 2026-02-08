@@ -12,6 +12,7 @@ type SessionServiceInterface interface {
 	ListSessions(limit int) (interface{}, error)
 	GetSession(sessionID string) (interface{}, error)
 	GetSessionLogs(sessionID string) (string, error)
+	GetSessionDiagnostics(sessionID string) (interface{}, error)
 	DeleteSession(sessionID string) error
 }
 
@@ -42,6 +43,10 @@ func (a *SessionServiceAdapter) GetSession(sessionID string) (interface{}, error
 
 func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, error) {
 	return a.Service.GetSessionLogs(sessionID)
+}
+
+func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (interface{}, error) {
+	return a.Service.GetSessionDiagnostics(sessionID)
 }
 
 func (a *SessionServiceAdapter) DeleteSession(sessionID string) error {

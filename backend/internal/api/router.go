@@ -222,6 +222,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sessions", handlers.GetSessions).Methods("GET")
 	api.HandleFunc("/sessions/{id}", handlers.GetSession).Methods("GET")
 	api.HandleFunc("/sessions/{id}/logs", handlers.GetSessionLogs).Methods("GET")
+	api.HandleFunc("/sessions/{id}/diagnostics", handlers.GetSessionDiagnostics).Methods("GET")
 	api.HandleFunc("/sessions/{id}", handlers.DeleteSession).Methods("DELETE")
 
 	// Request session endpoints (per-API-call logging)
