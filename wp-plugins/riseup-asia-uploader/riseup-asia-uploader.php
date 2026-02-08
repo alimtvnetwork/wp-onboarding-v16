@@ -1424,12 +1424,12 @@ class Riseup_Asia {
             // Get optional parameters.
             $slug     = sanitize_file_name($data['slug'] ?? '');
             $activate = RiseupBooleanHelpers::has_content($data['activate']);
-            $upload_source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : RISEUP_UPLOAD_SOURCE_REST_API;
+            $upload_source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UPLOAD_SOURCE_REST_API;
             
             // Validate upload_source against allowed enum values
-            $valid_sources = json_decode(RISEUP_UPLOAD_SOURCES_VALID, true);
+            $valid_sources = json_decode(UPLOAD_SOURCES_VALID, true);
             if (!in_array($upload_source, $valid_sources, true)) {
-                $upload_source = RISEUP_UPLOAD_SOURCE_REST_API;
+                $upload_source = UPLOAD_SOURCE_REST_API;
             }
             
             $this->file_logger->debug('Upload parameters', array('slug' => $slug, 'activate' => $activate, 'upload_source' => $upload_source));
