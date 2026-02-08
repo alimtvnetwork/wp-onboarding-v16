@@ -395,8 +395,9 @@ class Riseup_File_Logger {
         }
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
-        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
-        $this->write_stacktrace($message, $file, $line, $this->format_backtrace($trace));
+        $formatted_trace = $this->format_backtrace($trace);
+        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context, $formatted_trace);
+        $this->write_stacktrace($message, $file, $line, $formatted_trace);
         return $this->write($entry, true);
     }
 
