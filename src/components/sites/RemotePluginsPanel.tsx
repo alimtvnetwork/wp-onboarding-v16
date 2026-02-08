@@ -89,7 +89,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const { captureError, captureException, openErrorModal } = useErrorStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [pluginToDelete, setPluginToDelete] = useState<RemotePlugin | null>(null);
-  const [togglingPlugins, setTogglingPlugins] = useState<Set<string>>(new Set());
+  // togglingPlugins state removed — using optimistic updates instead
   const [selectedPlugins, setSelectedPlugins] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkActionPending, setBulkActionPending] = useState(false);
@@ -150,14 +150,33 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         return requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
       }
     },
-    onMutate: ({ plugin }) => {
-      setTogglingPlugins((prev) => new Set(prev).add(plugin.plugin));
+    onMutate: async ({ plugin, enable }) => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey });
+
+      // Snapshot current data for rollback
+      const previousPlugins = queryClient.getQueryData<RemotePlugin[]>(queryKey);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
+        old?.map((p) =>
+          p.plugin === plugin.plugin
+            ? { ...p, status: enable ? "active" : "inactive" }
+            : p
+        )
+      );
+
+      return { previousPlugins };
     },
     onSuccess: (_, { plugin, enable }) => {
-      toast.success(`${plugin.name} ${enable ? "activated" : "deactivated"}`);
-      queryClient.invalidateQueries({ queryKey });
+      // No direct toast — silent success for audit trail
+      console.info(`[audit] ${plugin.name} ${enable ? "activated" : "deactivated"} successfully`);
     },
-    onError: (error, { plugin, enable }) => {
+    onError: (error, { plugin, enable }, context) => {
+      // Rollback to previous state
+      if (context?.previousPlugins) {
+        queryClient.setQueryData(queryKey, context.previousPlugins);
+      }
       const captured = captureException(error, {
         endpoint: `/sites/${site.id}/remote-plugins/${enable ? "enable" : "disable"}`,
         method: "POST",
@@ -168,12 +187,9 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         duration: 10000,
       });
     },
-    onSettled: (_, __, { plugin }) => {
-      setTogglingPlugins((prev) => {
-        const next = new Set(prev);
-        next.delete(plugin.plugin);
-        return next;
-      });
+    onSettled: () => {
+      // Refetch to ensure server state consistency
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -537,8 +553,6 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
               <div className="space-y-2 pb-2">
                 {paginatedPlugins.map((plugin) => {
                   const isSelected = selectedPlugins.has(plugin.plugin);
-                  const isToggling = togglingPlugins.has(plugin.plugin);
-                  
                   return (
                     <div
                       key={plugin.plugin}
@@ -609,14 +623,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                         )}
 
                         <div className="flex items-center gap-1 px-1">
-                          {isToggling ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Switch
-                              checked={plugin.status === "active"}
-                              onCheckedChange={(checked) => handleToggle(plugin, checked)}
-                            />
-                          )}
+                          <Switch
+                            checked={plugin.status === "active"}
+                            onCheckedChange={(checked) => handleToggle(plugin, checked)}
+                          />
                         </div>
 
                         <DropdownMenu>
@@ -628,7 +638,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
                               onClick={() => handleToggle(plugin, plugin.status !== "active")}
-                              disabled={isToggling}
+                              disabled={toggleMutation.isPending}
                             >
                               {plugin.status === "active" ? (
                                 <>
