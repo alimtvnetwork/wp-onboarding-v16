@@ -215,7 +215,8 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // This uses base64-encoded upload for reliability (like the PowerShell script).
-func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool) (*UploaderUploadResult, error) {
+// uploadSource should be one of the UploadSource* constants (e.g., UploadSourceRestAPI).
+func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource string) (*UploaderUploadResult, error) {
 	// CRITICAL: Always resolve to absolute path before any file operations
 	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
@@ -307,9 +308,10 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	// Build request body (JSON with base64-encoded ZIP) - match PowerShell script format
 	// PowerShell sends: plugin_zip (base64), slug (folder name, no .zip), activate (bool)
 	body := map[string]interface{}{
-		"plugin_zip": base64Data,
-		"slug":       slug,
-		"activate":   activate,
+		"plugin_zip":    base64Data,
+		"slug":          slug,
+		"activate":      activate,
+		"upload_source": uploadSource,
 	}
 
 	c.progress(ActionUpload, "running", fmt.Sprintf("Upload request body: slug=%s, activate=%v, zipSize=%d bytes", slug, activate, len(fileBytes)), map[string]interface{}{

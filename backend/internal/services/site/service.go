@@ -729,7 +729,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 		if s.wsHub != nil {
 			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), map[string]interface{}{"siteId": id})
 		}
-		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true)
+		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, wordpress.UploadSourceRestAPI)
 	} else {
 		// First-time installation - use Onboard plugin or standard upload
 		if s.wsHub != nil {
