@@ -1,7 +1,7 @@
 # PowerShell Script Reference
 
 > **Spec Version:** 2.1.0  
-> **Script Version:** 1.1.0  
+> **Script Version:** 1.2.0  
 > **Updated:** 2026-02-04  
 > **Status:** Active
 
@@ -17,7 +17,7 @@
 | `-p` | `-skippull` | Switch | Skip git pull step |
 | `-f` | `-force` | Switch | Force-clean build artifacts and pnpm folders before building; a fresh install will run if needed |
 | `-i` | `-install` | Switch | Install/update dependencies for frontend (pnpm) and backend (go mod), then exit |
-| `-r` | `-rebuild` | Switch | Full reset: clean first, then install, then build/run (frontend install happens after the clean) |
+| `-r` | `-rebuild` | Switch | Full reset: clean build artifacts, sessions, logs, and error data first, then install, then build/run (frontend install happens after the clean) |
 | `-fw` | `-openfirewall` | Switch | Add Windows Firewall rules (requires Admin) |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
@@ -266,6 +266,15 @@ if ($Force) {
     Remove-Item -Recurse -Force ".pnp.loader.mjs" -ErrorAction SilentlyContinue
     Remove-Item -Recurse -Force ".pnp.data.json" -ErrorAction SilentlyContinue
     pnpm store prune
+
+    # Backend runtime data cleanup (sessions, request-sessions, error logs)
+    if ($DataDir) {
+        Remove-Item -Recurse -Force "$DataDir/sessions" -ErrorAction SilentlyContinue
+        Remove-Item -Recurse -Force "$DataDir/request-sessions" -ErrorAction SilentlyContinue
+        Remove-Item -Recurse -Force "$DataDir/errors" -ErrorAction SilentlyContinue
+        Remove-Item -Force "$DataDir/log.txt" -ErrorAction SilentlyContinue
+        Remove-Item -Force "$DataDir/error.log.txt" -ErrorAction SilentlyContinue
+    }
 }
 
 # Install dependencies

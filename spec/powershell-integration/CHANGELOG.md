@@ -24,6 +24,21 @@ Use this template whenever you change `run.ps1` or make a functional/config-sche
 
 ---
 
+## [1.2.0] - 2026-02-08
+
+### Added
+- **Runtime data cleanup**: Force mode (`-f`, `-r`) now cleans backend sessions, request-sessions, error logs, and standalone log files from `backend/data/`
+- **cleanPaths expanded**: `powershell.json` now includes `backend/data/sessions`, `backend/data/request-sessions`, and `backend/data/errors`
+
+### Changed
+- `-r` flag description updated to reflect session/log cleanup behavior
+
+### Notes
+- Directories cleaned: `data/sessions/`, `data/request-sessions/`, `data/errors/`, `data/log.txt`, `data/error.log.txt`
+- Cleanup only runs when `dataDir` is configured in `powershell.json`
+
+---
+
 ## [1.1.0] - 2026-02-04
 
 ### Added
