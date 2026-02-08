@@ -419,7 +419,7 @@ if (!defined('ABSPATH')) {
                             <?php esc_html_e('Save Snapshot Settings', 'riseup-asia-uploader'); ?>
                         </button>
                         <button type="button" id="btn_run_cleanup" class="button button-secondary">
-                            <span class="dashicons dashicons-trash"></span>
+                            <span class="dashicons dashicons-update"></span>
                             <?php esc_html_e('Run Cleanup Now', 'riseup-asia-uploader'); ?>
                         </button>
                         <span id="snap_action_status" style="margin-left: 10px;"></span>
