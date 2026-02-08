@@ -21,7 +21,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           description:
             "group-[.toast]:!text-[hsl(var(--toast-desc))] group-[.toast]:!text-sm group-[.toast]:!font-['Poppins',system-ui,sans-serif]",
           actionButton:
-            "group-[.toast]:!bg-white group-[.toast]:!text-[hsl(var(--destructive))] group-[.toast]:!border group-[.toast]:!border-[hsl(var(--destructive)/0.3)] group-[.toast]:!rounded-lg group-[.toast]:!font-medium group-[.toast]:!px-3 group-[.toast]:!py-1.5 hover:group-[.toast]:!bg-[hsl(var(--destructive)/0.08)]",
+            "group-[.toast]:!bg-white group-[.toast]:!text-[hsl(var(--destructive))] group-[.toast]:!border group-[.toast]:!border-[hsl(var(--destructive)/0.3)] group-[.toast]:!rounded-lg group-[.toast]:!font-medium group-[.toast]:!px-3 group-[.toast]:!py-1.5 hover:group-[.toast]:!bg-[hsl(var(--destructive))] hover:group-[.toast]:!text-white hover:group-[.toast]:!border-[hsl(var(--destructive))]",
           cancelButton:
             "group-[.toast]:!bg-transparent group-[.toast]:!border group-[.toast]:!border-[hsl(var(--toast-border))] group-[.toast]:!text-[hsl(var(--toast-desc))] group-[.toast]:!rounded-lg",
           // Close button — positioned top-right, uses destructive red
