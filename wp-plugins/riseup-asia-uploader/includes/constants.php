@@ -818,25 +818,25 @@ if (!defined('RISEUP_ENDPOINT_ERROR_SESSIONS')) {
 // UPLOAD SOURCE ENUM
 // =============================================================================
 
-if (!defined('RISEUP_UPLOAD_SOURCE_SCRIPT')) {
-    define('RISEUP_UPLOAD_SOURCE_SCRIPT', 'upload_script');
+if (!defined('UPLOAD_SOURCE_SCRIPT')) {
+    define('UPLOAD_SOURCE_SCRIPT', 'upload_script');
 }
-if (!defined('RISEUP_UPLOAD_SOURCE_REST_API')) {
-    define('RISEUP_UPLOAD_SOURCE_REST_API', 'rest_api');
+if (!defined('UPLOAD_SOURCE_REST_API')) {
+    define('UPLOAD_SOURCE_REST_API', 'rest_api');
 }
-if (!defined('RISEUP_UPLOAD_SOURCE_ADMIN_UI')) {
-    define('RISEUP_UPLOAD_SOURCE_ADMIN_UI', 'admin_ui');
+if (!defined('UPLOAD_SOURCE_ADMIN_UI')) {
+    define('UPLOAD_SOURCE_ADMIN_UI', 'admin_ui');
 }
-if (!defined('RISEUP_UPLOAD_SOURCE_WP_CLI')) {
-    define('RISEUP_UPLOAD_SOURCE_WP_CLI', 'wp_cli');
+if (!defined('UPLOAD_SOURCE_WP_CLI')) {
+    define('UPLOAD_SOURCE_WP_CLI', 'wp_cli');
 }
 
 // Valid upload sources for validation
-if (!defined('RISEUP_UPLOAD_SOURCES_VALID')) {
-    define('RISEUP_UPLOAD_SOURCES_VALID', json_encode(array(
-        RISEUP_UPLOAD_SOURCE_SCRIPT,
-        RISEUP_UPLOAD_SOURCE_REST_API,
-        RISEUP_UPLOAD_SOURCE_ADMIN_UI,
-        RISEUP_UPLOAD_SOURCE_WP_CLI,
+if (!defined('UPLOAD_SOURCES_VALID')) {
+    define('UPLOAD_SOURCES_VALID', json_encode(array(
+        UPLOAD_SOURCE_SCRIPT,
+        UPLOAD_SOURCE_REST_API,
+        UPLOAD_SOURCE_ADMIN_UI,
+        UPLOAD_SOURCE_WP_CLI,
     )));
 }
