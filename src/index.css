@@ -56,21 +56,21 @@ All colors MUST be HSL.
     --toast-desc: 215 16% 47%;
     --toast-shadow: 0 10px 30px hsl(0 0% 0% / 0.12), 0 2px 8px hsl(0 0% 0% / 0.08);
 
-    --toast-success-bg: 142 40% 94%;
-    --toast-success-border: 142 40% 82%;
-    --toast-success-fg: 142 60% 28%;
+    --toast-success-bg: 142 76% 95%;
+    --toast-success-border: 142 76% 80%;
+    --toast-success-fg: 142 76% 25%;
 
-    --toast-error-bg: 0 70% 96%;
-    --toast-error-border: 0 84% 60%;
-    --toast-error-fg: 0 84% 42%;
+    --toast-error-bg: 0 72% 96%;
+    --toast-error-border: 0 72% 60%;
+    --toast-error-fg: 0 72% 38%;
 
-    --toast-warning-bg: 38 60% 94%;
-    --toast-warning-border: 38 55% 78%;
-    --toast-warning-fg: 30 70% 32%;
+    --toast-warning-bg: 38 92% 95%;
+    --toast-warning-border: 38 92% 75%;
+    --toast-warning-fg: 38 92% 28%;
 
-    --toast-info-bg: 210 50% 94%;
-    --toast-info-border: 210 45% 82%;
-    --toast-info-fg: 210 60% 35%;
+    --toast-info-bg: 217 91% 96%;
+    --toast-info-border: 217 91% 78%;
+    --toast-info-fg: 217 91% 32%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -127,21 +127,21 @@ All colors MUST be HSL.
     --toast-desc: 215 20% 65%;
     --toast-shadow: 0 10px 30px hsl(0 0% 0% / 0.4), 0 2px 8px hsl(0 0% 0% / 0.25);
 
-    --toast-success-bg: 142 45% 14%;
-    --toast-success-border: 142 50% 28%;
-    --toast-success-fg: 142 75% 78%;
+    --toast-success-bg: 142 76% 12%;
+    --toast-success-border: 142 76% 26%;
+    --toast-success-fg: 142 76% 80%;
 
-    --toast-error-bg: 0 45% 14%;
-    --toast-error-border: 0 55% 30%;
-    --toast-error-fg: 0 80% 80%;
+    --toast-error-bg: 0 72% 15%;
+    --toast-error-border: 0 72% 30%;
+    --toast-error-fg: 0 72% 82%;
 
-    --toast-warning-bg: 38 45% 14%;
-    --toast-warning-border: 38 50% 28%;
-    --toast-warning-fg: 38 80% 75%;
+    --toast-warning-bg: 38 92% 13%;
+    --toast-warning-border: 38 92% 26%;
+    --toast-warning-fg: 38 92% 78%;
 
-    --toast-info-bg: 210 45% 14%;
-    --toast-info-border: 210 50% 28%;
-    --toast-info-fg: 210 75% 78%;
+    --toast-info-bg: 217 91% 13%;
+    --toast-info-border: 217 91% 26%;
+    --toast-info-fg: 217 91% 80%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
