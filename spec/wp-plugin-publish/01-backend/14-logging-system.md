@@ -123,24 +123,105 @@ Example:
 ## Request Logging Middleware
 
 ```go
-// internal/api/middleware/logging.go
+// internal/api/middleware/middleware.go
 func Logging(log *logger.Logger) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             start := time.Now()
-            rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+            rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
             next.ServeHTTP(rw, r)
-            
+
+            duration := time.Since(start)
             log.Info("HTTP request",
                 "method", r.Method,
                 "path", r.URL.Path,
-                "status", rw.status,
-                "duration", time.Since(start),
+                "status", rw.statusCode,
+                "duration", duration.String(),
             )
+
+            // Persist error responses (>= 400) to error.log.txt
+            if rw.statusCode >= 400 && ErrorLogDir != "" {
+                appendToErrorLog(r, rw, duration)
+            }
         })
     }
 }
 ```
+
+---
+
+## Middleware Error Log Persistence
+
+> **Added:** v1.19.5
+
+All HTTP error responses (status ≥ 400) are automatically appended to `data/errors/error.log.txt` by the `Logging` middleware. This ensures the Global Error Modal's **Log** tab always has diagnostic content — not just for remote plugin action failures.
+
+### Initialization
+
+The `ErrorLogDir` package-level variable must be set in `main.go` after the errors directory is created:
+
+```go
+// backend/cmd/server/main.go
+import "wp-plugin-publish/internal/api/middleware"
+
+errorsDir := filepath.Join(filepath.Dir(cfg.DatabasePath), "errors")
+os.MkdirAll(errorsDir, 0755)
+
+// Enable middleware-level error logging to error.log.txt
+middleware.ErrorLogDir = errorsDir
+```
+
+When `ErrorLogDir` is empty (zero value), error-log persistence is disabled.
+
+### Response Body Capture
+
+The `responseWriter` wrapper intercepts `Write()` calls to capture the response body **only** for error responses (status ≥ 400). Successful responses are not buffered, avoiding unnecessary memory overhead.
+
+```go
+func (rw *responseWriter) Write(b []byte) (int, error) {
+    if rw.statusCode >= 400 {
+        rw.body.Write(b) // capture for error.log.txt
+    }
+    return rw.ResponseWriter.Write(b)
+}
+```
+
+### Log Entry Format
+
+Each error entry is appended to `error.log.txt` with the following structure:
+
+```
+[2026-02-08 17:20:26] HTTP 500 POST /api/v1/sites/1/plugins/disable
+  Query: slug=my-plugin
+  Duration: 1.234s
+  Response: {"Status":{"IsSuccess":false,"IsFailed":true,"Code":500,...},...}
+───────────────────────────────────────────────────────────────────────────────
+```
+
+| Field | Description |
+|-------|-------------|
+| Timestamp | `YYYY-MM-DD HH:MM:SS` local time |
+| HTTP status | The numeric status code returned to the client |
+| Method + Path | The HTTP method and URL path |
+| Query | URL query string (omitted if empty) |
+| Duration | Total request processing time |
+| Response | The JSON response body, truncated to **2 KB** for large payloads |
+| Separator | Visual `───` divider between entries |
+
+### Relationship to Site Service Error Logging
+
+The middleware error log is **complementary** to the existing `logToErrorFile()` in `site/service.go`:
+
+| Source | Scope | Deduplication | Format |
+|--------|-------|---------------|--------|
+| `middleware.Logging` | **All** HTTP errors (≥ 400) | None (every error logged) | Generic HTTP request/response |
+| `site.logToErrorFile` | Remote plugin action failures only | MD5-based hash suppression | Redefined Log Format with delegated request/response blocks |
+
+Both write to the same file (`data/errors/error.log.txt`) via append. The middleware provides baseline coverage so that **no error goes unrecorded**, while the site service provides enriched diagnostics for remote operations.
+
+### Truncation
+
+Response bodies exceeding **2,048 bytes** are truncated with a `... (truncated)` suffix to prevent the log file from growing excessively due to large error payloads (e.g., full HTML error pages from WordPress).
 
 ---
 
