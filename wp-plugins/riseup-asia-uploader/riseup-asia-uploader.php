@@ -1291,13 +1291,26 @@ class Riseup_Asia {
             }
         }
 
+        // Gather additional diagnostic details
+        $db_available = RiseupBooleanHelpers::is_set($this->db);
+        $site_url = get_site_url();
+        $plugin_file = plugin_basename(__FILE__);
+        $active_plugins = get_option('active_plugins', array());
+        $is_active = in_array($plugin_file, $active_plugins, true);
+
         return new WP_REST_Response(array(
             'success'          => true,
             'plugin'           => RISEUP_NAME,
             'version'          => RISEUP_VERSION,
+            'slug'             => RISEUP_SLUG,
             'api'              => RISEUP_API_FULL_NAMESPACE,
+            'siteUrl'          => $site_url,
             'wp'               => get_bloginfo('version'),
             'php'              => PHP_VERSION,
+            'isActive'         => $is_active,
+            'dbAvailable'      => $db_available,
+            'serverTime'       => gmdate('c'),
+            'timezone'         => wp_timezone_string(),
             'features'         => array(
                 'plugin_upload'   => true,
                 'plugin_manage'   => true,
@@ -1305,8 +1318,10 @@ class Riseup_Asia {
                 'delta_sync'      => true,
                 'post_publish'    => true,
                 'category_manage' => true,
-                'transaction_log' => true,
+                'transaction_log' => $db_available,
                 'export_self'     => true,
+                'snapshots'       => $db_available,
+                'agents'          => $db_available,
             ),
             'registeredRoutes' => $registered_routes,
             'endpointsRef'     => $endpoints_ref,
