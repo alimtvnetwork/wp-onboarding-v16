@@ -100,3 +100,26 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 - `setResults()` accepts `array<int, T>`, `setSingleResult()` accepts `T`
 - `build()` returns `array{Status: array, Attributes: array, Results: array<int, T>}`
 - Factory methods `success()` and `error()` return `static<T>`
+
+### Phase 14 — OpenAPI Spec Alignment with Universal Response Envelope
+
+**Problem:** The OpenAPI spec uses a legacy `allOf + "data"` pattern for typed responses. Runtime responses use PascalCase `Results` arrays, not `data`. This causes schema mismatches in Swagger UI.
+
+#### Sub-phase 14.1 🔧 — Replace `"data"` with typed `Results` in entity endpoints
+Migrate Sites, Plugins, Backups, Versions, PublishHistory, ErrorHistory, and Sessions endpoint schemas from `allOf + data` to proper `Results` with typed items.
+
+#### Sub-phase 14.2 🔧 — Replace `"data"` with typed `Results` in operation endpoints
+Migrate Remote Plugins, Sync, Snapshots, Git, and E2E test endpoint schemas.
+
+#### Sub-phase 14.3 🔧 — Add missing endpoint-specific Results schemas
+Create typed result schemas for endpoints currently using bare `$ref: Success` (e.g., Remote Plugin enable/disable/delete with `{plugin_slug, activated}`, snapshot operations).
+
+#### Sub-phase 14.4 🔧 — Add response examples per envelope spec
+Add inline `example` blocks to key endpoints showing a complete envelope (Status + Attributes + typed Results) for both success and error cases.
+
+#### Sub-phase 14.5 🔧 — Validate spec with Swagger UI rendering
+Load the updated spec in the API Explorer, verify all endpoints render correctly, and confirm "Try it Out" responses match documented schemas.
+- `$results` typed as `array<int, T>`; all fluent setters return `static<T>`
+- `setResults()` accepts `array<int, T>`, `setSingleResult()` accepts `T`
+- `build()` returns `array{Status: array, Attributes: array, Results: array<int, T>}`
+- Factory methods `success()` and `error()` return `static<T>`
