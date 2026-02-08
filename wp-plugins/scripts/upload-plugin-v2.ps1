@@ -368,8 +368,19 @@ foreach ($ns in $apiNamespaces) {
     $statusUrl = "$WordPressSiteURL/wp-json/$($ns.name)/status"
     try {
         $statusResponse = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
-        if ($statusResponse.success -eq $true -or $statusResponse.version) {
-            $RemoteVersion = $statusResponse.version
+
+        # Unwrap Universal Response Envelope: data is in Results[0]
+        $statusData = $statusResponse
+        if ($statusResponse.Results -and $statusResponse.Results.Count -gt 0) {
+            $statusData = $statusResponse.Results[0]
+        }
+
+        # Support both PascalCase (envelope) and lowercase (legacy) field names
+        $detectedVersion = if ($statusData.Version) { $statusData.Version } elseif ($statusData.version) { $statusData.version } else { $null }
+        $isSuccess = ($statusResponse.Status -and $statusResponse.Status.IsSuccess -eq $true) -or ($statusResponse.success -eq $true) -or $detectedVersion
+
+        if ($isSuccess -or $detectedVersion) {
+            $RemoteVersion = $detectedVersion
             $activeNamespace = $ns.name
             Write-Status "      $($ns.display) is active!" -Color Green
             break
@@ -548,6 +559,12 @@ if ($activeNamespace) {
         $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
         $uploadSuccess = $true
 
+        # Unwrap Universal Response Envelope: data is in Results[0]
+        $resultData = $response
+        if ($response.Results -and $response.Results.Count -gt 0) {
+            $resultData = $response.Results[0]
+        }
+
         Write-Status ""
         Write-Status "===============================================" -Color Green
         Write-Status "  ✓ PUBLISH COMPLETE!" -Color Green
@@ -556,10 +573,10 @@ if ($activeNamespace) {
         Write-Status "  Plugin:     $PluginSlug" -Color White
         Write-Status "  Version:    $LocalVersion" -Color White
         Write-Status "  Action:     $VersionAction" -Color White
-        Write-Status "  Is Update:  $($response.is_update)" -Color White
-        Write-Status "  Activated:  $($response.activated)" -Color White
-        if ($response.activation_error) {
-            Write-Status "  Activation Error: $($response.activation_error)" -Color Yellow
+        Write-Status "  Is Update:  $($resultData.is_update)" -Color White
+        Write-Status "  Activated:  $($resultData.activated)" -Color White
+        if ($resultData.activation_error) {
+            Write-Status "  Activation Error: $($resultData.activation_error)" -Color Yellow
         }
         Write-Status ""
 
@@ -570,7 +587,7 @@ if ($activeNamespace) {
                 localVersion = $LocalVersion
                 remoteVersion = $RemoteVersion
                 action = $VersionAction
-                activated = $response.activated
+                activated = $resultData.activated
             }
             Write-Output ($result | ConvertTo-Json -Compress)
         }
