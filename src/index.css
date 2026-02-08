@@ -60,9 +60,9 @@ All colors MUST be HSL.
     --toast-success-border: 142 40% 82%;
     --toast-success-fg: 142 60% 28%;
 
-    --toast-error-bg: 0 40% 95%;
+    --toast-error-bg: 0 70% 96%;
     --toast-error-border: 0 84% 60%;
-    --toast-error-fg: 0 84% 45%;
+    --toast-error-fg: 0 84% 42%;
 
     --toast-warning-bg: 38 60% 94%;
     --toast-warning-border: 38 55% 78%;
@@ -131,9 +131,9 @@ All colors MUST be HSL.
     --toast-success-border: 142 40% 25%;
     --toast-success-fg: 142 70% 75%;
 
-    --toast-error-bg: 0 45% 13%;
-    --toast-error-border: 0 72% 35%;
-    --toast-error-fg: 0 80% 80%;
+    --toast-error-bg: 0 65% 15%;
+    --toast-error-border: 0 72% 38%;
+    --toast-error-fg: 0 85% 85%;
 
     --toast-warning-bg: 38 35% 16%;
     --toast-warning-border: 38 40% 28%;
