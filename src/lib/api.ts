@@ -761,6 +761,19 @@ export const api = {
       `/sites/${siteId}/remote-plugins/delete`,
       { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
     ),
+  uploadRemotePlugin: (siteId: number, file: File, activate: boolean) => {
+    const formData = new FormData();
+    formData.append("plugin_zip", file);
+    formData.append("activate", String(activate));
+    return request<{ installed: boolean; plugin: string; activated: boolean }>(
+      `/sites/${siteId}/remote-plugins/upload`,
+      {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      }
+    );
+  },
   // Remote plugin file browser (Phase 10)
   getRemotePluginFiles: (siteId: number, pluginSlug: string) =>
     request<RemotePluginFilesResult>(

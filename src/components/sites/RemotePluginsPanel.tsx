@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -47,6 +47,9 @@ import {
   Clock,
   Database,
   Zap,
+  Upload,
+  FileArchive,
+  X,
 } from "lucide-react";
 import { api, Site, RemotePlugin, requireSuccess } from "@/lib/api";
 import { toast } from "sonner";
@@ -55,6 +58,7 @@ import { useRemotePluginEvents } from "@/hooks/useRemotePluginEvents";
 import { RemotePluginFileBrowser } from "./RemotePluginFileBrowser";
 import { FolderOpen, AlertTriangle } from "lucide-react";
 import { compareVersions } from "@/lib/versionUtils";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface RemotePluginsPanelProps {
   site: Site;
@@ -94,6 +98,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   const [currentPage, setCurrentPage] = useState(1);
   const [bulkActionPending, setBulkActionPending] = useState(false);
   const [fileBrowserPlugin, setFileBrowserPlugin] = useState<RemotePlugin | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [activateAfterInstall, setActivateAfterInstall] = useState(true);
+  const [uploadPending, setUploadPending] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Subscribe to remote plugin WebSocket events for this site
   useRemotePluginEvents(site.id);
@@ -307,21 +316,30 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   };
 
   // Bulk actions
+  // Parallel bulk actions using Promise.allSettled
   const handleBulkActivate = async () => {
     if (selectedPlugins.size === 0) return;
     setBulkActionPending(true);
     const selectedList = filteredPlugins.filter((p) => selectedPlugins.has(p.plugin) && p.status !== "active");
-    let successCount = 0;
-    for (const plugin of selectedList) {
-      try {
+    if (selectedList.length === 0) { setBulkActionPending(false); return; }
+
+    // Optimistic update
+    queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
+      old?.map((p) => selectedPlugins.has(p.plugin) ? { ...p, status: "active" } : p)
+    );
+
+    const results = await Promise.allSettled(
+      selectedList.map(async (plugin) => {
         const response = await api.enableRemotePlugin(site.id, plugin.plugin);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to activate ${plugin.name}`, error);
-      }
-    }
-    toast.success(`Activated ${successCount} plugin${successCount !== 1 ? "s" : ""}`);
+        return plugin.name;
+      })
+    );
+
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (succeeded > 0) toast.success(`Activated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
+    if (failed > 0) toast.error(`Failed to activate ${failed} plugin${failed !== 1 ? "s" : ""}`);
     queryClient.invalidateQueries({ queryKey });
     setBulkActionPending(false);
     setSelectedPlugins(new Set());
@@ -331,17 +349,25 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     if (selectedPlugins.size === 0) return;
     setBulkActionPending(true);
     const selectedList = filteredPlugins.filter((p) => selectedPlugins.has(p.plugin) && p.status === "active");
-    let successCount = 0;
-    for (const plugin of selectedList) {
-      try {
+    if (selectedList.length === 0) { setBulkActionPending(false); return; }
+
+    // Optimistic update
+    queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
+      old?.map((p) => selectedPlugins.has(p.plugin) ? { ...p, status: "inactive" } : p)
+    );
+
+    const results = await Promise.allSettled(
+      selectedList.map(async (plugin) => {
         const response = await api.disableRemotePlugin(site.id, plugin.plugin);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to deactivate ${plugin.name}`, error);
-      }
-    }
-    toast.success(`Deactivated ${successCount} plugin${successCount !== 1 ? "s" : ""}`);
+        return plugin.name;
+      })
+    );
+
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (succeeded > 0) toast.success(`Deactivated ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
+    if (failed > 0) toast.error(`Failed to deactivate ${failed} plugin${failed !== 1 ? "s" : ""}`);
     queryClient.invalidateQueries({ queryKey });
     setBulkActionPending(false);
     setSelectedPlugins(new Set());
@@ -351,22 +377,29 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     if (selectedPlugins.size === 0) return;
     setBulkActionPending(true);
     const selectedList = filteredPlugins.filter((p) => selectedPlugins.has(p.plugin));
-    let successCount = 0;
-    for (const plugin of selectedList) {
-      try {
-        // Deactivate first if active
+    if (selectedList.length === 0) { setBulkActionPending(false); return; }
+
+    // Optimistic update — remove from list
+    queryClient.setQueryData<RemotePlugin[]>(queryKey, (old) =>
+      old?.filter((p) => !selectedPlugins.has(p.plugin))
+    );
+
+    const results = await Promise.allSettled(
+      selectedList.map(async (plugin) => {
         if (plugin.status === "active") {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin);
           requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
         }
         const response = await api.deleteRemotePlugin(site.id, plugin.plugin);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/delete`, method: "POST" });
-        successCount++;
-      } catch (error) {
-        console.error(`Failed to delete ${plugin.name}`, error);
-      }
-    }
-    toast.success(`Deleted ${successCount} plugin${successCount !== 1 ? "s" : ""}`);
+        return plugin.name;
+      })
+    );
+
+    const succeeded = results.filter((r) => r.status === "fulfilled").length;
+    const failed = results.filter((r) => r.status === "rejected").length;
+    if (succeeded > 0) toast.success(`Deleted ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
+    if (failed > 0) toast.error(`Failed to delete ${failed} plugin${failed !== 1 ? "s" : ""}`);
     queryClient.invalidateQueries({ queryKey });
     setBulkActionPending(false);
     setSelectedPlugins(new Set());
@@ -391,7 +424,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[95vw] max-w-4xl h-[95vh] max-h-[95vh] flex flex-col bg-background/95 backdrop-blur-sm border-border/50 p-4 sm:p-6">
+        <DialogContent className="w-screen h-screen max-w-none max-h-none rounded-none flex flex-col bg-background/95 backdrop-blur-sm border-border/50 p-4 sm:p-6">
           <DialogHeader className="pb-2 shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
               <Package className="h-5 w-5 sm:h-6 sm:w-6 text-primary shrink-0" />
@@ -430,11 +463,11 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                 className="shrink-0 gap-1.5 text-xs sm:text-sm h-8 sm:h-9"
                 title="Force refresh from site (bypass cache)"
               >
-                <Zap className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${forceSyncMutation.isPending ? "animate-pulse" : ""}`} />
+                <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 will-change-transform" />
                 <span className="hidden xs:inline">Force</span> Sync
               </Button>
               <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading || isFetching} className="shrink-0 h-8 w-8 sm:h-9 sm:w-9" title="Refresh (may use cache)">
-                <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-4 w-4 shrink-0 will-change-transform ${isFetching ? "animate-spin" : ""}`} />
               </Button>
             </div>
           </div>
@@ -464,6 +497,103 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
               </div>
             </div>
           )}
+
+          {/* ZIP Upload Zone */}
+          <Collapsible open={uploadOpen} onOpenChange={setUploadOpen} className="shrink-0">
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full justify-start">
+                <Upload className="h-3.5 w-3.5 shrink-0" />
+                Upload Plugins (.zip)
+                <ChevronDown className={`h-3.5 w-3.5 ml-auto transition-transform shrink-0 ${uploadOpen ? "rotate-180" : ""}`} />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <div
+                className="border-2 border-dashed border-border/60 rounded-lg p-4 text-center hover:border-primary/40 transition-colors"
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const files = Array.from(e.dataTransfer.files).filter((f) => f.name.endsWith(".zip"));
+                  if (files.length) setUploadFiles((prev) => [...prev, ...files]);
+                }}
+              >
+                <FileArchive className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground mb-2">
+                  Drag & drop .zip files here, or{" "}
+                  <button
+                    type="button"
+                    className="text-primary underline underline-offset-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    browse
+                  </button>
+                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".zip"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length) setUploadFiles((prev) => [...prev, ...files]);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+
+              {uploadFiles.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {uploadFiles.map((file, i) => (
+                    <div key={`${file.name}-${i}`} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/50">
+                      <FileArchive className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate flex-1">{file.name}</span>
+                      <span className="text-muted-foreground shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-destructive shrink-0"
+                        onClick={() => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center justify-between mt-2">
+                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                      <Checkbox
+                        checked={activateAfterInstall}
+                        onCheckedChange={(v) => setActivateAfterInstall(!!v)}
+                      />
+                      Activate after install
+                    </label>
+                    <Button
+                      size="sm"
+                      className="gap-1.5 text-xs h-7"
+                      disabled={uploadPending}
+                      onClick={async () => {
+                        setUploadPending(true);
+                        const results = await Promise.allSettled(
+                          uploadFiles.map((file) => api.uploadRemotePlugin(site.id, file, activateAfterInstall))
+                        );
+                        const succeeded = results.filter((r) => r.status === "fulfilled").length;
+                        const failed = results.filter((r) => r.status === "rejected").length;
+                        if (succeeded > 0) toast.success(`Uploaded ${succeeded} plugin${succeeded !== 1 ? "s" : ""}`);
+                        if (failed > 0) toast.error(`Failed to upload ${failed} plugin${failed !== 1 ? "s" : ""}`);
+                        setUploadFiles([]);
+                        setUploadPending(false);
+                        queryClient.invalidateQueries({ queryKey });
+                      }}
+                    >
+                      {uploadPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                      Upload {uploadFiles.length} file{uploadFiles.length !== 1 ? "s" : ""}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
 
           {/* Bulk Actions Bar - responsive layout */}
           {selectedPlugins.size > 0 && (
