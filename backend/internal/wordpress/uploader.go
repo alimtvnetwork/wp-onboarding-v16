@@ -382,6 +382,23 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	return &result, nil
 }
 
+// normalizePluginSlug extracts the folder-level slug from a full WordPress plugin
+// identifier like "broken-link-checker/broken-link-checker.php".
+// The Riseup Asia Uploader's find_plugin_file() expects just the folder name
+// (e.g. "broken-link-checker"), not the full path.
+func normalizePluginSlug(slug string) string {
+	// If it contains a slash, extract just the directory part
+	if strings.Contains(slug, "/") {
+		dir := filepath.Dir(slug)
+		if dir != "." && dir != "" {
+			return dir
+		}
+	}
+	// Strip .php extension if present
+	slug = strings.TrimSuffix(slug, ".php")
+	return slug
+}
+
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) EnablePluginViaUploader(slug string) error {
@@ -390,12 +407,13 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 		namespace = RiseupAsiaNamespace
 	}
 
+	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + EndpointEnable
-	reqBody := map[string]string{"plugin": slug}
+	reqBody := map[string]string{"plugin": normalizedSlug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "enable plugin request failed").
-			WithContext("slug", slug)
+			WithContext("slug", normalizedSlug)
 	}
 	defer resp.Body.Close()
 
@@ -409,7 +427,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
-			PluginSlugIn: slug,
+			PluginSlugIn: normalizedSlug,
 		}
 	}
 
@@ -424,12 +442,13 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 		namespace = RiseupAsiaNamespace
 	}
 
+	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + EndpointDisable
-	reqBody := map[string]string{"plugin": slug}
+	reqBody := map[string]string{"plugin": normalizedSlug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "disable plugin request failed").
-			WithContext("slug", slug)
+			WithContext("slug", normalizedSlug)
 	}
 	defer resp.Body.Close()
 
@@ -443,7 +462,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
-			PluginSlugIn: slug,
+			PluginSlugIn: normalizedSlug,
 		}
 	}
 
@@ -458,12 +477,13 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 		namespace = RiseupAsiaNamespace
 	}
 
+	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + EndpointDelete
-	reqBody := map[string]string{"plugin": slug}
+	reqBody := map[string]string{"plugin": normalizedSlug}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "delete plugin request failed").
-			WithContext("slug", slug)
+			WithContext("slug", normalizedSlug)
 	}
 	defer resp.Body.Close()
 
@@ -477,7 +497,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
-			PluginSlugIn: slug,
+			PluginSlugIn: normalizedSlug,
 		}
 	}
 
