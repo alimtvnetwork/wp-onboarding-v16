@@ -95,6 +95,9 @@ export default function Settings() {
   const [includeErrors, setIncludeErrors] = useState(true);
   const [includeStackTrace, setIncludeStackTrace] = useState(true);
   const [includeMethodsStack, setIncludeMethodsStack] = useState(true);
+  const [stackTraceDepth, setStackTraceDepth] = useState(20);
+  const [phpStackTraceDepth, setPhpStackTraceDepth] = useState(0);
+  const [maxStackFrames, setMaxStackFrames] = useState(20);
   const [defaultPerPage, setDefaultPerPage] = useState(10);
   
   // Appearance settings
@@ -139,6 +142,11 @@ export default function Settings() {
       setIncludeErrors(settings.responseDebug.includeErrors ?? true);
       setIncludeStackTrace(settings.responseDebug.includeStackTrace ?? true);
       setIncludeMethodsStack(settings.responseDebug.includeMethodsStack ?? true);
+      setMaxStackFrames(settings.responseDebug.maxStackFrames ?? 20);
+    }
+    if (settings?.logging) {
+      setStackTraceDepth(settings.logging.stackTraceDepth ?? 20);
+      setPhpStackTraceDepth(settings.logging.phpStackTraceDepth ?? 0);
     }
     if (settings?.pagination) {
       setDefaultPerPage(settings.pagination.defaultPerPage ?? 10);
@@ -265,11 +273,12 @@ export default function Settings() {
     });
   };
   
-  const handleResponseDebugSave = (patch: { includeErrors?: boolean; includeStackTrace?: boolean; includeMethodsStack?: boolean }) => {
+  const handleResponseDebugSave = (patch: { includeErrors?: boolean; includeStackTrace?: boolean; includeMethodsStack?: boolean; maxStackFrames?: number }) => {
     const updated = {
       includeErrors: patch.includeErrors ?? includeErrors,
       includeStackTrace: patch.includeStackTrace ?? includeStackTrace,
       includeMethodsStack: patch.includeMethodsStack ?? includeMethodsStack,
+      maxStackFrames: patch.maxStackFrames ?? maxStackFrames,
     };
     saveSettings.mutate(
       { responseDebug: updated },
@@ -698,6 +707,86 @@ export default function Settings() {
                   }}
                   className="shrink-0"
                 />
+              </div>
+
+              {/* Stack Trace Depth Settings */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="stack-trace-depth" className="text-xs">Go Stack Trace Depth</Label>
+                  <Input
+                    id="stack-trace-depth"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={stackTraceDepth}
+                    onChange={(e) => setStackTraceDepth(parseInt(e.target.value) || 20)}
+                    onBlur={() => {
+                      saveSettings.mutate(
+                        { logging: { stackTraceDepth } },
+                        {
+                          onSuccess: () => toast.success("Stack trace depth saved", {
+                            style: {
+                              background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+                              color: "white",
+                              border: "none",
+                            },
+                          }),
+                          onError: (err) => toast.error(`Failed to save: ${err.message}`),
+                        }
+                      );
+                    }}
+                    className="h-9"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max Go stack frames (default 20)
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="php-stack-trace-depth" className="text-xs">PHP Stack Trace Depth</Label>
+                  <Input
+                    id="php-stack-trace-depth"
+                    type="number"
+                    min={0}
+                    max={500}
+                    value={phpStackTraceDepth}
+                    onChange={(e) => setPhpStackTraceDepth(parseInt(e.target.value) || 0)}
+                    onBlur={() => {
+                      saveSettings.mutate(
+                        { logging: { phpStackTraceDepth } },
+                        {
+                          onSuccess: () => toast.success("PHP stack trace depth saved", {
+                            style: {
+                              background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+                              color: "white",
+                              border: "none",
+                            },
+                          }),
+                          onError: (err) => toast.error(`Failed to save: ${err.message}`),
+                        }
+                      );
+                    }}
+                    className="h-9"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max PHP frames (0 = unlimited)
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="max-stack-frames" className="text-xs">Max Response Frames</Label>
+                  <Input
+                    id="max-stack-frames"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={maxStackFrames}
+                    onChange={(e) => setMaxStackFrames(parseInt(e.target.value) || 20)}
+                    onBlur={() => handleResponseDebugSave({ maxStackFrames })}
+                    className="h-9"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Max frames in envelope (default 20)
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-1.5">
