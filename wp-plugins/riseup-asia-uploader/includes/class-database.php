@@ -137,7 +137,7 @@ class Riseup_Database {
             $this->pdo = RiseupInitHelpers::initSqliteConnection($this->db_path, $this->file_logger);
             
             if (RiseupBooleanHelpers::is_null($this->pdo)) {
-                $this->file_logger->error('SQLite connection returned null - check PDO/pdo_sqlite availability');
+                // Warning already logged once by initSqliteConnection; no need to repeat
                 return false;
             }
 

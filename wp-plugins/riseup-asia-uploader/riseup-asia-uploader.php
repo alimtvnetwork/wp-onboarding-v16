@@ -400,7 +400,8 @@ class Riseup_Asia {
             $db = Riseup_Database::get_instance();
             $db_ready = $db->init();
             if (RiseupBooleanHelpers::is_falsy($db_ready)) {
-                $this->file_logger->error('Database initialization failed - some features may not work');
+                // PDO/pdo_sqlite unavailable — warning already logged once by initSqliteConnection.
+                // Return null gracefully; database-dependent features will be skipped.
                 return null;
             }
             return $db;
