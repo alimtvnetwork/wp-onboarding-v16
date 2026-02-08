@@ -273,14 +273,50 @@ foreach ($ns in $apiNamespaces) {
 
     } catch {
         $errMsg = $_.Exception.Message
+        $errBody = ""
         if ($_.Exception.Response) {
             try {
                 $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
                 $reader.BaseStream.Position = 0
-                $errMsg = $reader.ReadToEnd()
+                $errBody = $reader.ReadToEnd()
             } catch {}
         }
         Write-Status "      ✗ $($ns.display) failed: $errMsg" -Color Yellow
+        if ($errBody -ne "") {
+            Write-Status ""
+            Write-Status "      ── Response Body ──" -Color DarkGray
+            # Try to parse as JSON for friendly formatting
+            try {
+                $errJson = $errBody | ConvertFrom-Json
+                if ($errJson.message) {
+                    Write-Status "      Message: $($errJson.message)" -Color Red
+                }
+                if ($errJson.error -and $errJson.error.message) {
+                    Write-Status "      Error:   $($errJson.error.message)" -Color Red
+                }
+                if ($errJson.stackTrace) {
+                    Write-Status "      Stack Trace:" -Color Yellow
+                    Write-Status $errJson.stackTrace -Color Gray
+                }
+                if ($errJson.stackTraceFrames) {
+                    Write-Status "      Stack Frames:" -Color Yellow
+                    foreach ($frame in $errJson.stackTraceFrames) {
+                        $loc = "        $($frame.file):$($frame.line)"
+                        if ($frame.class) { $loc += " → $($frame.class)::$($frame.function)" }
+                        elseif ($frame.function) { $loc += " → $($frame.function)" }
+                        Write-Status $loc -Color Gray
+                    }
+                }
+                # If none of the known fields matched, dump the whole JSON
+                if (-not $errJson.message -and -not $errJson.error -and -not $errJson.stackTrace) {
+                    Write-Status ($errBody) -Color Gray
+                }
+            } catch {
+                # Not JSON, dump raw
+                Write-Status $errBody -Color Gray
+            }
+            Write-Status "      ────────────────" -Color DarkGray
+        }
     }
 }
 
@@ -366,19 +402,42 @@ if (-not $uploadSuccess) {
     } catch {
         $statusCode = $null
         $errorMessage = $_.Exception.Message
+        $errorBody = ""
         if ($_.Exception.Response) {
             $statusCode = [int]$_.Exception.Response.StatusCode
             try {
                 $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
                 $reader.BaseStream.Position = 0
-                $errorMessage = $reader.ReadToEnd()
+                $errorBody = $reader.ReadToEnd()
+                $errorMessage = $errorBody
             } catch {}
         }
 
         Write-Host ""
         Write-Host "All upload methods failed!" -ForegroundColor Red
-        Write-Host "Last error (WP Core): $errorMessage" -ForegroundColor Red
         Write-Host "Status: $statusCode" -ForegroundColor Red
+        Write-Host ""
+        if ($errorBody -ne "") {
+            Write-Host "── WP Core Response Body ──" -ForegroundColor DarkGray
+            try {
+                $errJson = $errorBody | ConvertFrom-Json
+                if ($errJson.message) { Write-Host "Message: $($errJson.message)" -ForegroundColor Red }
+                if ($errJson.code) { Write-Host "Code:    $($errJson.code)" -ForegroundColor Red }
+                if ($errJson.data -and $errJson.data.status) { Write-Host "Status:  $($errJson.data.status)" -ForegroundColor Red }
+                if ($errJson.stackTrace) {
+                    Write-Host "Stack Trace:" -ForegroundColor Yellow
+                    Write-Host $errJson.stackTrace -ForegroundColor Gray
+                }
+                if (-not $errJson.message -and -not $errJson.code) {
+                    Write-Host $errorBody -ForegroundColor Gray
+                }
+            } catch {
+                Write-Host $errorBody -ForegroundColor Gray
+            }
+            Write-Host "───────────────────────────" -ForegroundColor DarkGray
+        } else {
+            Write-Host "Error: $errorMessage" -ForegroundColor Red
+        }
         Write-Host ""
 
         if ($Quiet) {
