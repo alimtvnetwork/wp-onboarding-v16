@@ -58,7 +58,7 @@ export function TestCaseCard({
   return (
     <Card
       className={cn(
-        "cursor-pointer transition-all hover:shadow-md relative",
+        "cursor-pointer transition-colors hover:bg-secondary/30 relative",
         selected
           ? "border-primary ring-2 ring-primary/20"
           : "border-border hover:border-primary/50"
