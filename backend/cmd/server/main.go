@@ -16,6 +16,7 @@ import (
 
 	"wp-plugin-publish/internal/api"
 	"wp-plugin-publish/internal/api/handlers"
+	"wp-plugin-publish/internal/api/middleware"
 	"wp-plugin-publish/internal/config"
 	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/logger"
@@ -91,6 +92,9 @@ func main() {
 	if err := os.MkdirAll(errorsDir, 0755); err != nil {
 		bootstrapLog.Error("Failed to create errors dir", "path", errorsDir, "error", err)
 	}
+
+	// Enable middleware-level error logging to error.log.txt
+	middleware.ErrorLogDir = errorsDir
 
 	allLogPath := filepath.Join(errorsDir, "log.txt")
 	errLogPath := filepath.Join(errorsDir, "error.log.txt")
