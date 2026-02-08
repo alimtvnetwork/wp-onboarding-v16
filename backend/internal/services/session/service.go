@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -57,9 +58,10 @@ type LogEntry struct {
 
 // SessionDiagnostics is the structured payload returned for error modal / session detail view
 type SessionDiagnostics struct {
-	Request    *SessionRequest    `json:"request,omitempty"`
-	Response   *SessionResponse   `json:"response,omitempty"`
-	StackTrace *SessionStackTrace `json:"stackTrace,omitempty"`
+	Request           *SessionRequest    `json:"request,omitempty"`
+	Response          *SessionResponse   `json:"response,omitempty"`
+	StackTrace        *SessionStackTrace `json:"stackTrace,omitempty"`
+	PHPStackTraceLog  string             `json:"phpStackTraceLog,omitempty"`
 }
 
 // SessionRequest captures the original inbound request
@@ -481,7 +483,36 @@ func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, 
 		}
 	}
 
+	// Extract PHP stacktrace.txt content from session logs
+	if logsContent, err := s.GetSessionLogs(sessionID); err == nil {
+		diag.PHPStackTraceLog = extractPHPStackTraceFromLogs(logsContent)
+	}
+
 	return diag, nil
+}
+
+// extractPHPStackTraceFromLogs scans session log lines for the remote_php_stacktrace
+// entry and extracts the embedded stacktrace.txt content from its JSON context.
+func extractPHPStackTraceFromLogs(logs string) string {
+	// Session logs are line-delimited; look for lines containing "remote_php_stacktrace"
+	for _, line := range strings.Split(logs, "\n") {
+		if !strings.Contains(line, "remote_php_stacktrace") {
+			continue
+		}
+		// The log line has a JSON context block; extract "content" field
+		// Find the JSON object in the line (after the log prefix)
+		braceIdx := strings.Index(line, "{")
+		if braceIdx < 0 {
+			continue
+		}
+		var ctx map[string]interface{}
+		if json.Unmarshal([]byte(line[braceIdx:]), &ctx) == nil {
+			if content, ok := ctx["content"].(string); ok && content != "" {
+				return content
+			}
+		}
+	}
+	return ""
 }
 
 // ListSessions returns recent sessions

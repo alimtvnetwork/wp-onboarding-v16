@@ -119,7 +119,7 @@ export function SessionLogsTab({ sessionId, sessionType }: SessionLogsTabProps) 
   const diag = state.diagnostics;
   const hasRequest = !!diag?.request;
   const hasResponse = !!diag?.response;
-  const hasStackTrace = !!(diag?.stackTrace?.golang?.length || diag?.stackTrace?.php?.length);
+  const hasStackTrace = !!(diag?.stackTrace?.golang?.length || diag?.stackTrace?.php?.length || diag?.phpStackTraceLog);
 
   return (
     <div className="space-y-3">
@@ -208,7 +208,7 @@ export function SessionLogsTab({ sessionId, sessionType }: SessionLogsTabProps) 
         {/* Stack Trace sub-tab */}
         <TabsContent value="stacktrace" className="mt-2">
           {hasStackTrace ? (
-            <StackTracePanel stackTrace={diag!.stackTrace!} />
+            <StackTracePanel stackTrace={diag!.stackTrace} phpStackTraceLog={diag!.phpStackTraceLog} />
           ) : (
             <EmptyPanel label="No stack traces captured" />
           )}
@@ -292,18 +292,22 @@ function ResponsePanel({ response }: { response: NonNullable<SessionDiagnostics[
   );
 }
 
-function StackTracePanel({ stackTrace }: { stackTrace: NonNullable<SessionDiagnostics["stackTrace"]> }) {
-  const [view, setView] = useState<"golang" | "php">(
-    stackTrace.golang?.length ? "golang" : "php"
-  );
+function StackTracePanel({ stackTrace, phpStackTraceLog }: {
+  stackTrace?: SessionDiagnostics["stackTrace"];
+  phpStackTraceLog?: string;
+}) {
+  type ViewType = "golang" | "php" | "phplog";
+  const defaultView: ViewType = stackTrace?.golang?.length ? "golang" : stackTrace?.php?.length ? "php" : "phplog";
+  const [view, setView] = useState<ViewType>(defaultView);
 
-  const goCount = stackTrace.golang?.length ?? 0;
-  const phpCount = stackTrace.php?.length ?? 0;
+  const goCount = stackTrace?.golang?.length ?? 0;
+  const phpCount = stackTrace?.php?.length ?? 0;
+  const hasPhpLog = !!phpStackTraceLog;
 
   return (
     <div className="space-y-2">
       {/* Toggle */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-wrap">
         {goCount > 0 && (
           <Button
             variant={view === "golang" ? "default" : "outline"}
@@ -326,15 +330,32 @@ function StackTracePanel({ stackTrace }: { stackTrace: NonNullable<SessionDiagno
             PHP ({phpCount})
           </Button>
         )}
+        {hasPhpLog && (
+          <Button
+            variant={view === "phplog" ? "default" : "outline"}
+            size="sm"
+            className="text-xs h-7 gap-1"
+            onClick={() => setView("phplog")}
+          >
+            <FileText className="h-3 w-3" />
+            PHP Log
+          </Button>
+        )}
       </div>
 
-      {/* Frames */}
+      {/* Frames or raw log */}
       <ScrollArea className="h-56 rounded-md border bg-muted">
-        <div className="p-3 space-y-1">
-          {(view === "golang" ? stackTrace.golang : stackTrace.php)?.map((frame, i) => (
-            <StackFrameRow key={i} index={i} frame={frame} variant={view} />
-          ))}
-        </div>
+        {view === "phplog" ? (
+          <pre className="p-3 text-xs font-mono whitespace-pre-wrap break-words text-orange-600 dark:text-orange-400">
+            {phpStackTraceLog}
+          </pre>
+        ) : (
+          <div className="p-3 space-y-1">
+            {(view === "golang" ? stackTrace?.golang : stackTrace?.php)?.map((frame, i) => (
+              <StackFrameRow key={i} index={i} frame={frame} variant={view as "golang" | "php"} />
+            ))}
+          </div>
+        )}
       </ScrollArea>
     </div>
   );
