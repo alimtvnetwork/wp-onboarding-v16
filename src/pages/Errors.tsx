@@ -3,25 +3,111 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Trash2, Copy, Loader2, CheckCircle } from "lucide-react";
+import { AlertCircle, Trash2, Copy, Loader2, CheckCircle, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
+import { useErrorStore, type CapturedError } from "@/stores/errorStore";
+import { useNotificationStore } from "@/stores/notificationStore";
+
+// Unified error shape for display
+interface DisplayError {
+  id: number | string;
+  code: string;
+  level: string;
+  message: string;
+  details?: string;
+  file?: string;
+  line?: number;
+  function?: string;
+  stackTrace?: string;
+  createdAt: string;
+  source: "api" | "store" | "notification";
+  original?: CapturedError;
+}
 
 export default function Errors() {
   const [currentPage, setCurrentPage] = useState(1);
   const { data: paginatedResult, isLoading } = useErrorsPaginated(currentPage);
-  const errors = paginatedResult?.data;
+  const apiErrors = paginatedResult?.data;
   const envelopeMeta = paginatedResult?.envelope;
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | string | null>(null);
   const { data: versionInfo } = useVersionInfo();
+
+  // Zustand stores as fallback sources
+  const recentErrors = useErrorStore((s) => s.recentErrors);
+  const openErrorModal = useErrorStore((s) => s.openErrorModal);
+  const notifications = useNotificationStore((s) => s.notifications);
 
   const appName = versionInfo?.appName || "WP Plugin Publish";
   const appVersion = versionInfo?.version || "0.0.0";
 
-  const copyToClipboard = (error: typeof errors extends (infer T)[] ? T : never) => {
+  // Merge all error sources into a unified list
+  const displayErrors = useMemo<DisplayError[]>(() => {
+    // 1. API errors (primary)
+    if (apiErrors && apiErrors.length > 0) {
+      return apiErrors.map((e) => ({
+        ...e,
+        source: "api" as const,
+      }));
+    }
+
+    // 2. Fallback: Zustand error store + error notifications
+    const storeErrors: DisplayError[] = recentErrors.map((e) => ({
+      id: e.id,
+      code: e.code,
+      level: e.level,
+      message: e.message,
+      details: e.details,
+      file: e.file,
+      line: e.line,
+      function: e.function,
+      stackTrace: e.stackTrace,
+      createdAt: e.createdAt,
+      source: "store" as const,
+      original: e,
+    }));
+
+    const errorNotifications: DisplayError[] = notifications
+      .filter((n) => n.type === "error")
+      .map((n) => ({
+        id: n.id,
+        code: "NOTIF",
+        level: "error",
+        message: n.title,
+        details: n.description,
+        createdAt: n.timestamp,
+        source: "notification" as const,
+      }));
+
+    // Deduplicate by message+timestamp proximity
+    const all = [...storeErrors, ...errorNotifications];
+    const seen = new Set<string>();
+    return all.filter((e) => {
+      const key = `${e.message}-${e.createdAt.slice(0, 16)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [apiErrors, recentErrors, notifications]);
+
+  const hasApiErrors = apiErrors && apiErrors.length > 0;
+
+  const levelColors: Record<string, string> = {
+    error: "bg-destructive/10 text-destructive border-destructive/20",
+    warn: "bg-warning/10 text-warning border-warning/20",
+    info: "bg-info/10 text-info border-info/20",
+  };
+
+  const levelIconColors: Record<string, string> = {
+    error: "text-destructive",
+    warn: "text-warning",
+    info: "text-info",
+  };
+
+  const copyToClipboard = (error: DisplayError) => {
     const text = `## Error Report
 
 **App:** ${appName} v${appVersion}
@@ -45,12 +131,6 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
     );
   }
 
-  const levelColors = {
-    error: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-    warn: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-    info: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -60,13 +140,21 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
             View and debug application errors
           </p>
         </div>
-        <Button variant="outline" disabled={!errors?.length}>
+        <Button variant="outline" disabled={!displayErrors.length}>
           <Trash2 className="h-4 w-4 mr-2" />
           Clear All
         </Button>
       </div>
 
-      {!errors?.length ? (
+      {/* Source indicator when using fallback */}
+      {!hasApiErrors && displayErrors.length > 0 && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-md">
+          <AlertCircle className="h-3.5 w-3.5" />
+          Showing {displayErrors.length} error(s) from local session — backend API unavailable
+        </div>
+      )}
+
+      {displayErrors.length === 0 ? (
         <EmptyState
           icon={CheckCircle}
           title="No errors"
@@ -74,7 +162,7 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
         />
       ) : (
         <div className="space-y-3">
-          {errors.map((error) => (
+          {displayErrors.map((error) => (
             <Card key={error.id} className="transition-colors hover:border-primary/30">
               <CardHeader
                 className="pb-2 cursor-pointer"
@@ -87,25 +175,22 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
                     <AlertCircle
                       className={cn(
                         "h-5 w-5",
-                        error.level === "error"
-                          ? "text-red-500"
-                          : error.level === "warn"
-                          ? "text-yellow-500"
-                          : "text-blue-500"
+                        levelIconColors[error.level] || "text-muted-foreground"
                       )}
                     />
                     <div>
                       <div className="flex items-center gap-2">
                         <Badge
-                          variant="secondary"
-                          className={
-                            levelColors[
-                              error.level as keyof typeof levelColors
-                            ] || ""
-                          }
+                          variant="outline"
+                          className={levelColors[error.level] || ""}
                         >
                           {error.code}
                         </Badge>
+                        {error.source !== "api" && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground border-muted-foreground/30">
+                            {error.source === "store" ? "captured" : "notification"}
+                          </Badge>
+                        )}
                         <span className="text-sm text-muted-foreground">
                           {new Date(error.createdAt).toLocaleString()}
                         </span>
@@ -115,16 +200,31 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
                       </CardTitle>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      copyToClipboard(error);
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {error.original && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openErrorModal(error.original!);
+                        }}
+                        title="Open in Error Modal"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyToClipboard(error);
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
 
@@ -155,7 +255,7 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
                       <p className="text-xs font-medium text-muted-foreground mb-1">
                         Stack Trace
                       </p>
-                      <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
+                      <pre className="text-xs bg-muted p-3 rounded overflow-x-auto whitespace-pre-wrap">
                         {error.stackTrace}
                       </pre>
                     </div>
@@ -167,11 +267,13 @@ ${error.stackTrace ? `\n**Stack Trace:**\n\`\`\`\n${error.stackTrace}\n\`\`\`` :
         </div>
       )}
 
-      {/* Envelope Pagination */}
-      <EnvelopePagination
-        meta={envelopeMeta ? { attributes: envelopeMeta.attributes, navigation: envelopeMeta.navigation } : null}
-        onPageChange={setCurrentPage}
-      />
+      {/* Envelope Pagination — only when API data is available */}
+      {hasApiErrors && (
+        <EnvelopePagination
+          meta={envelopeMeta ? { attributes: envelopeMeta.attributes, navigation: envelopeMeta.navigation } : null}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 }
