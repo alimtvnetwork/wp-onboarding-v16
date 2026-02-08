@@ -1400,6 +1400,7 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.EndSession(sessionID, status, errorMsg)
+	}
 }
 
 // fetchAndAttachRemotePHPErrors pulls recent PHP error sessions from the remote WordPress
