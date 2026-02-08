@@ -56,6 +56,9 @@ type SessionService interface {
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
 	EndSession(sessionID, status, errorMsg string)
+	SaveRequest(sessionID string, req *session.SessionRequest)
+	SaveResponse(sessionID string, resp *session.SessionResponse)
+	SaveError(sessionID string, stackTrace *session.SessionStackTrace, errorMsg string, details map[string]interface{})
 }
 
 // Service provides site management operations
@@ -1178,6 +1181,19 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		"pluginSlug": pluginSlug,
 	})
 
+	// Save request.json — the inbound request from frontend
+	if s.sessionService != nil && sessionID != "" {
+		s.sessionService.SaveRequest(sessionID, &session.SessionRequest{
+			URL:    fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", siteID, pluginSlug, action),
+			Method: "POST",
+			Body: map[string]interface{}{
+				"siteId":     siteID,
+				"pluginSlug": pluginSlug,
+				"action":     action,
+			},
+		})
+	}
+
 	// Broadcast start event
 	if s.wsHub != nil {
 		s.wsHub.BroadcastWithSession("remote_plugin_action_started", map[string]interface{}{
@@ -1217,6 +1233,41 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	if err != nil {
 		// Capture PHP stack trace from API error if available
 		errDetails := s.extractErrorDetails(err)
+
+		// Save response.json with error data
+		if s.sessionService != nil && sessionID != "" {
+			statusCode := 0
+			if sc, ok := errDetails["statusCode"].(int); ok {
+				statusCode = sc
+			}
+			requestURL := ""
+			if u, ok := errDetails["url"].(string); ok {
+				requestURL = u
+			}
+			responseBody := ""
+			if rb, ok := errDetails["responseBody"].(string); ok {
+				responseBody = rb
+			}
+			// Parse response body for structured storage
+			var parsedBody interface{} = responseBody
+			var bodyMap map[string]interface{}
+			if json.Unmarshal([]byte(responseBody), &bodyMap) == nil {
+				parsedBody = bodyMap
+			}
+			s.sessionService.SaveResponse(sessionID, &session.SessionResponse{
+				RequestURL:  requestURL,
+				ResponseURL: requestURL,
+				StatusCode:  statusCode,
+				Body:        parsedBody,
+			})
+
+			// Build PHP stack frames for error.log
+			phpFrames := s.buildPHPStackFrames(errDetails)
+			s.sessionService.SaveError(sessionID, &session.SessionStackTrace{
+				PHP: phpFrames,
+			}, err.Error(), errDetails)
+		}
+
 		s.logRemoteAction(sessionID, siteID, action, "error", action, fmt.Sprintf("Failed to %s plugin: %s", action, pluginSlug), errDetails)
 
 		if s.sessionService != nil && sessionID != "" {
@@ -1234,13 +1285,13 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		// Broadcast failure
 		if s.wsHub != nil {
 			s.wsHub.BroadcastWithSession("remote_plugin_action_complete", map[string]interface{}{
-				"siteId":     siteID,
-				"action":     action,
-				"pluginSlug": pluginSlug,
-				"success":    false,
-				"error":      err.Error(),
+				"siteId":       siteID,
+				"action":       action,
+				"pluginSlug":   pluginSlug,
+				"success":      false,
+				"error":        err.Error(),
 				"errorDetails": errDetails,
-				"durationMs": durationMs,
+				"durationMs":   durationMs,
 			}, sessionID)
 		}
 
@@ -1253,8 +1304,14 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			WithContext("plugin", pluginSlug)
 	}
 
-	// Success
+	// Success — save response.json
 	if s.sessionService != nil && sessionID != "" {
+		s.sessionService.SaveResponse(sessionID, &session.SessionResponse{
+			RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.URL, action),
+			ResponseURL: site.URL,
+			StatusCode:  200,
+			Body:        map[string]interface{}{"success": true, "action": action, "plugin": pluginSlug},
+		})
 		s.sessionService.LogStageEnd(sessionID, action, "success", durationMs)
 	}
 	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), map[string]interface{}{
@@ -1280,6 +1337,32 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 	s.log.Info(fmt.Sprintf("Remote plugin %sd", action), "siteId", siteID, "plugin", pluginSlug)
 	return nil
+}
+
+// buildPHPStackFrames extracts PHP stack trace frames from error details into typed structs
+func (s *Service) buildPHPStackFrames(details map[string]interface{}) []session.StackFrame {
+	var frames []session.StackFrame
+	if rawFrames, ok := details["stackTraceFrames"].([]interface{}); ok {
+		for _, f := range rawFrames {
+			if fm, ok := f.(map[string]interface{}); ok {
+				frame := session.StackFrame{}
+				if fn, ok := fm["function"].(string); ok {
+					frame.Function = fn
+				}
+				if file, ok := fm["file"].(string); ok {
+					frame.File = file
+				}
+				if line, ok := fm["line"].(float64); ok {
+					frame.Line = int(line)
+				}
+				if class, ok := fm["class"].(string); ok {
+					frame.Class = class
+				}
+				frames = append(frames, frame)
+			}
+		}
+	}
+	return frames
 }
 
 // extractErrorDetails extracts PHP stack trace frames and other details from WordPress API errors

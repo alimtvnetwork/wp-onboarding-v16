@@ -24,6 +24,9 @@ type ServiceInterface interface {
 	// GetSessionLogs returns the full log content for a session
 	GetSessionLogs(sessionID string) (string, error)
 	
+	// GetSessionDiagnostics returns structured request/response/stackTrace for a session
+	GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, error)
+	
 	// ListSessions returns recent sessions
 	ListSessions(limit int) ([]*SessionSummary, error)
 	
@@ -32,4 +35,13 @@ type ServiceInterface interface {
 	
 	// SetMetadata sets metadata on a session
 	SetMetadata(sessionID, key string, value interface{})
+	
+	// SaveRequest persists the inbound request as request.json
+	SaveRequest(sessionID string, req *SessionRequest)
+	
+	// SaveResponse persists the delegated response as response.json
+	SaveResponse(sessionID string, resp *SessionResponse)
+	
+	// SaveError persists error details and stack traces as error.log
+	SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details map[string]interface{})
 }
