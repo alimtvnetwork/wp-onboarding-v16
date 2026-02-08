@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.29.0
+ * Version: 1.30.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -2378,6 +2378,8 @@ class Riseup_Asia {
                     'plugin_slug' => $slug,
                     'activated'   => true,
                     'message'     => 'Plugin was already active',
+                    'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
+                    'responseUrl' => home_url(),
                 ), RISEUP_HTTP_OK);
             }
         } catch (Throwable $e) {
@@ -2435,6 +2437,8 @@ class Riseup_Asia {
             'success'     => true,
             'plugin_slug' => $slug,
             'activated'   => true,
+            'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
+            'responseUrl' => home_url(),
         ), RISEUP_HTTP_OK);
     }
 
@@ -2499,6 +2503,8 @@ class Riseup_Asia {
                     'plugin_slug' => $slug,
                     'deactivated' => true,
                     'message'     => 'Plugin was already inactive',
+                    'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
+                    'responseUrl' => home_url(),
                 ), RISEUP_HTTP_OK);
             }
         } catch (Throwable $e) {
@@ -2560,6 +2566,8 @@ class Riseup_Asia {
             'success'     => true,
             'plugin_slug' => $slug,
             'deactivated' => true,
+            'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
+            'responseUrl' => home_url(),
         ), RISEUP_HTTP_OK);
     }
 
@@ -2691,6 +2699,8 @@ class Riseup_Asia {
             'success'     => true,
             'plugin_slug' => $slug,
             'deleted'     => true,
+            'requestUrl'  => home_url(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : ''),
+            'responseUrl' => home_url(),
         ), RISEUP_HTTP_OK);
     }
 
@@ -3066,9 +3076,19 @@ class Riseup_Asia {
      * @return WP_REST_Response
      */
     private function error_response($message, $status, $exception = null) {
+        // Build requestUrl and responseUrl for diagnostic traceability
+        $request_url = '';
+        $response_url = '';
+        if (function_exists('rest_url') && defined('REST_REQUEST') && REST_REQUEST) {
+            $request_url = isset($_SERVER['REQUEST_URI']) ? home_url($_SERVER['REQUEST_URI']) : '';
+            $response_url = home_url();
+        }
+
         $error_data = array(
-            'success' => false,
-            'error'   => array(
+            'success'     => false,
+            'requestUrl'  => $request_url,
+            'responseUrl' => $response_url,
+            'error'       => array(
                 'code'    => 'ERROR_' . $status,
                 'message' => $message,
             ),
