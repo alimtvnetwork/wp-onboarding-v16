@@ -49,20 +49,36 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
+    /* Toast semantic tokens — light theme */
+    --toast-bg: 220 13% 95%;
+    --toast-fg: 222 84% 5%;
+    --toast-border: 220 13% 88%;
+    --toast-desc: 215 16% 47%;
+    --toast-shadow: 0 8px 24px hsl(0 0% 0% / 0.1), 0 2px 6px hsl(0 0% 0% / 0.06);
+
+    --toast-success-bg: 142 40% 94%;
+    --toast-success-border: 142 40% 82%;
+    --toast-success-fg: 142 60% 28%;
+
+    --toast-error-bg: 0 50% 95%;
+    --toast-error-border: 0 50% 82%;
+    --toast-error-fg: 0 65% 40%;
+
+    --toast-warning-bg: 38 60% 94%;
+    --toast-warning-border: 38 55% 78%;
+    --toast-warning-fg: 30 70% 32%;
+
+    --toast-info-bg: 210 50% 94%;
+    --toast-info-border: 210 45% 82%;
+    --toast-info-fg: 210 60% 35%;
+
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
@@ -103,6 +119,30 @@ All colors MUST be HSL.
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    /* Toast semantic tokens — dark theme */
+    --toast-bg: 220 13% 14%;
+    --toast-fg: 210 40% 98%;
+    --toast-border: 220 13% 22%;
+    --toast-desc: 215 20% 65%;
+    --toast-shadow: 0 8px 24px hsl(0 0% 0% / 0.35), 0 2px 6px hsl(0 0% 0% / 0.25);
+
+    --toast-success-bg: 142 35% 16%;
+    --toast-success-border: 142 40% 25%;
+    --toast-success-fg: 142 70% 75%;
+
+    --toast-error-bg: 0 35% 16%;
+    --toast-error-border: 0 40% 30%;
+    --toast-error-fg: 0 70% 75%;
+
+    --toast-warning-bg: 38 35% 16%;
+    --toast-warning-border: 38 40% 28%;
+    --toast-warning-fg: 38 80% 70%;
+
+    --toast-info-bg: 210 35% 16%;
+    --toast-info-border: 210 40% 28%;
+    --toast-info-fg: 210 70% 75%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
