@@ -942,3 +942,97 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 
 	return &result, nil
 }
+
+// RemoteErrorSessionEntry represents a single structured error from the plugin's SQLite DB.
+type RemoteErrorSessionEntry struct {
+	ID               int                      `json:"id"`
+	Level            string                   `json:"level"`
+	Message          string                   `json:"message"`
+	File             string                   `json:"file"`
+	FileBase         string                   `json:"fileBase"`
+	Line             *int                     `json:"line"`
+	StackTrace       string                   `json:"stackTrace,omitempty"`
+	StackTraceFrames []map[string]interface{} `json:"stackTraceFrames,omitempty"`
+	Context          interface{}              `json:"context,omitempty"`
+	CreatedAt        string                   `json:"created_at"`
+}
+
+// RemoteFlashState represents the flash notification state from the plugin.
+type RemoteFlashState struct {
+	LastSeenID  int  `json:"last_seen_id"`
+	HasUnseen   bool `json:"has_unseen"`
+	UnseenCount int  `json:"unseen_count"`
+}
+
+// RemoteErrorSessionsResult represents the /error-sessions endpoint response.
+type RemoteErrorSessionsResult struct {
+	Success          bool                      `json:"success"`
+	Version          string                    `json:"version"`
+	Message          string                    `json:"message,omitempty"`
+	Entries          []RemoteErrorSessionEntry `json:"entries"`
+	Total            int                       `json:"total"`
+	Limit            int                       `json:"limit"`
+	Offset           int                       `json:"offset"`
+	Flash            RemoteFlashState          `json:"flash"`
+	StackTraceFrames []map[string]interface{}  `json:"stackTraceFrames,omitempty"`
+}
+
+// FetchRemoteErrorSessions retrieves structured error entries from the WordPress plugin's
+// error_sessions SQLite table. Supports filtering by level, search, since_id, and pagination.
+func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID int, limit int, offset int) (*RemoteErrorSessionsResult, error) {
+	_, namespace, err := c.CheckRiseupAsiaAvailable()
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "check uploader availability for error-sessions")
+	}
+	if namespace == "" {
+		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
+	}
+
+	// Build query string
+	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointErrorSessions)
+	params := []string{}
+	if level != "" {
+		params = append(params, fmt.Sprintf("level=%s", level))
+	}
+	if search != "" {
+		params = append(params, fmt.Sprintf("search=%s", search))
+	}
+	if sinceID > 0 {
+		params = append(params, fmt.Sprintf("since_id=%d", sinceID))
+	}
+	if limit > 0 {
+		params = append(params, fmt.Sprintf("limit=%d", limit))
+	}
+	if offset > 0 {
+		params = append(params, fmt.Sprintf("offset=%d", offset))
+	}
+	if len(params) > 0 {
+		endpoint += "?" + strings.Join(params, "&")
+	}
+
+	resp, err := c.request("GET", endpoint, nil)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "fetch remote error sessions")
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &APIError{
+			Operation:    "fetch remote error sessions",
+			Method:       "GET",
+			Endpoint:     endpoint,
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(respBody), 4000),
+			StackTrace:   captureStackTrace(2),
+		}
+	}
+
+	var result RemoteErrorSessionsResult
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode remote error sessions response")
+	}
+
+	return &result, nil
+}

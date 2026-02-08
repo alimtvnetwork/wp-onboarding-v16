@@ -965,6 +965,13 @@ class Riseup_Asia {
             'permission_callback' => $this->build_permission_callback('error_logs', array($this, 'check_logs_permission')),
         ));
 
+        // Error sessions endpoint - returns structured error entries from SQLite DB
+        $safe_register(RISEUP_ENDPOINT_ERROR_SESSIONS, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_error_sessions'),
+            'permission_callback' => $this->build_permission_callback('error_logs', array($this, 'check_logs_permission')),
+        ));
+
         $this->file_logger->info("REST API route registration complete: $registered registered, $failed failed");
     }
 
@@ -2789,6 +2796,216 @@ class Riseup_Asia {
 
             return new WP_REST_Response($response, 200);
         }, 'error_logs');
+    }
+
+    /**
+     * Handle error-sessions endpoint.
+     *
+     * Returns structured error entries from the error_sessions SQLite table.
+     * Supports filtering by level, search, pagination, and since_id.
+     * Each entry includes stackTraceFrames when available.
+     *
+     * Query params:
+     *   - level: Filter by level (ERROR, WARN)
+     *   - search: Full-text search on message
+     *   - since_id: Only return entries with id > since_id (for incremental polling)
+     *   - limit: Max entries to return (default 100, max 1000)
+     *   - offset: Pagination offset
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function handle_error_sessions($request) {
+        return $this->safe_execute(function() use ($request) {
+            $this->file_logger->info('Error sessions endpoint called');
+
+            $db = Riseup_Database::get_instance();
+            $pdo = $db->get_pdo();
+
+            if (!$pdo) {
+                return $this->error_response(
+                    'Database not available (PDO/pdo_sqlite extension may not be installed)',
+                    RISEUP_HTTP_SERVER_ERROR
+                );
+            }
+
+            // Check if error_sessions table exists
+            $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
+            if (!$check->fetchColumn()) {
+                return new WP_REST_Response(array(
+                    'success' => true,
+                    'version' => RISEUP_VERSION,
+                    'message' => 'error_sessions table does not exist yet (migration v9 not applied)',
+                    'entries' => array(),
+                    'total'   => 0,
+                    'stackTraceFrames' => riseup_backtrace_to_frames(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)),
+                ), 200);
+            }
+
+            // Parse query params
+            $level    = sanitize_text_field($request->get_param('level') ?: '');
+            $search   = sanitize_text_field($request->get_param('search') ?: '');
+            $since_id = (int) ($request->get_param('since_id') ?: 0);
+            $limit    = max(1, min(1000, (int) ($request->get_param('limit') ?: 100)));
+            $offset   = max(0, (int) ($request->get_param('offset') ?: 0));
+
+            // Build query
+            $where  = array();
+            $params = array();
+
+            if (!empty($level)) {
+                $where[]  = 'level = ?';
+                $params[] = strtoupper($level);
+            }
+            if (!empty($search)) {
+                $where[]  = 'message LIKE ?';
+                $params[] = '%' . $search . '%';
+            }
+            if ($since_id > 0) {
+                $where[]  = 'id > ?';
+                $params[] = $since_id;
+            }
+
+            $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+            // Count total
+            $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$where_sql}");
+            $count_stmt->execute($params);
+            $total = (int) $count_stmt->fetchColumn();
+
+            // Fetch entries
+            $query_sql = "SELECT * FROM error_sessions {$where_sql} ORDER BY id DESC LIMIT ? OFFSET ?";
+            $stmt = $pdo->prepare($query_sql);
+            $query_params = array_merge($params, array($limit, $offset));
+            $stmt->execute($query_params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Enrich entries: parse context_json back to object
+            $entries = array();
+            foreach ($rows as $row) {
+                $entry = array(
+                    'id'          => (int) $row['id'],
+                    'level'       => $row['level'],
+                    'message'     => $row['message'],
+                    'file'        => $row['file'],
+                    'fileBase'    => $row['file'] ? basename($row['file']) : null,
+                    'line'        => $row['line'] ? (int) $row['line'] : null,
+                    'stackTrace'  => $row['stack_trace'],
+                    'context'     => null,
+                    'created_at'  => $row['created_at'],
+                );
+
+                // Parse context JSON
+                if (!empty($row['context_json'])) {
+                    $decoded = json_decode($row['context_json'], true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $entry['context'] = $decoded;
+                    } else {
+                        $entry['context'] = $row['context_json'];
+                    }
+                }
+
+                // Generate stackTraceFrames from stack trace string if available
+                if (!empty($row['stack_trace'])) {
+                    $entry['stackTraceFrames'] = $this->parse_stack_trace_string($row['stack_trace']);
+                }
+
+                $entries[] = $entry;
+            }
+
+            // Flash state
+            $last_seen_id = 0;
+            $has_unseen   = false;
+            try {
+                $fs = $pdo->query("SELECT key, value FROM flash_state");
+                if ($fs) {
+                    while ($frow = $fs->fetch(PDO::FETCH_ASSOC)) {
+                        if ($frow['key'] === 'last_seen_error_id') {
+                            $last_seen_id = (int) $frow['value'];
+                        }
+                        if ($frow['key'] === 'has_unseen_errors') {
+                            $has_unseen = ($frow['value'] === '1');
+                        }
+                    }
+                }
+            } catch (Throwable $e) {
+                // flash_state table may not exist
+            }
+
+            $response = array(
+                'success'    => true,
+                'version'    => RISEUP_VERSION,
+                'entries'    => $entries,
+                'total'      => $total,
+                'limit'      => $limit,
+                'offset'     => $offset,
+                'flash'      => array(
+                    'last_seen_id'    => $last_seen_id,
+                    'has_unseen'      => $has_unseen,
+                    'unseen_count'    => $since_id > 0 ? $total : max(0, $this->count_unseen_errors($pdo, $last_seen_id)),
+                ),
+                'stackTraceFrames' => riseup_backtrace_to_frames(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)),
+            );
+
+            return new WP_REST_Response($response, 200);
+        }, 'error_sessions');
+    }
+
+    /**
+     * Count errors with id > last_seen_id.
+     *
+     * @param PDO $pdo         Database connection.
+     * @param int $last_seen_id Last seen error ID.
+     * @return int
+     */
+    private function count_unseen_errors($pdo, $last_seen_id) {
+        try {
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
+            $stmt->execute(array($last_seen_id));
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Parse a PHP stack trace string into structured frames.
+     *
+     * @param string $trace_string Stack trace as a string (from getTraceAsString()).
+     * @return array Array of frame objects.
+     */
+    private function parse_stack_trace_string($trace_string) {
+        $frames = array();
+        $lines  = explode("\n", $trace_string);
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) {
+                continue;
+            }
+            // Match: #0 /path/to/file.php(123): ClassName->method()
+            if (preg_match('/^#\d+\s+(.+?)\((\d+)\):\s*(.*)$/', $line, $m)) {
+                $func_part = $m[3];
+                $class    = '';
+                $function = $func_part;
+                if (strpos($func_part, '->') !== false) {
+                    list($class, $function) = explode('->', $func_part, 2);
+                } elseif (strpos($func_part, '::') !== false) {
+                    list($class, $function) = explode('::', $func_part, 2);
+                }
+                $function = rtrim($function, '()');
+
+                $frames[] = array(
+                    'file'     => $m[1],
+                    'fileBase' => basename($m[1]),
+                    'line'     => (int) $m[2],
+                    'function' => $function,
+                    'class'    => $class,
+                );
+            }
+        }
+
+        return $frames;
     }
 
     /**

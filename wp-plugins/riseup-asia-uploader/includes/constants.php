@@ -805,3 +805,8 @@ if (!defined('RISEUP_OPTION_LOG_RETRIEVAL')) {
 if (!defined('RISEUP_LOG_RETRIEVAL_MAX_LINES')) {
     define('RISEUP_LOG_RETRIEVAL_MAX_LINES', 500);
 }
+
+// Error sessions endpoint - returns structured error entries from SQLite
+if (!defined('RISEUP_ENDPOINT_ERROR_SESSIONS')) {
+    define('RISEUP_ENDPOINT_ERROR_SESSIONS', 'error-sessions');
+}

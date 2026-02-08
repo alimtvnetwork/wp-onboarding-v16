@@ -86,6 +86,9 @@ const (
 
 	// EndpointErrorLogs retrieves PHP error and log files as JSON.
 	EndpointErrorLogs = "/error-logs"
+
+	// EndpointErrorSessions retrieves structured error entries from the plugin's SQLite DB.
+	EndpointErrorSessions = "/error-sessions"
 )
 
 // =============================================================================
