@@ -31,7 +31,7 @@ The PowerShell runner script (`run.ps1`) and its configuration (`powershell.json
 
 ## Current Version
 
-- **Script Version**: 1.1.0
+- **Script Version**: 1.2.0
 - **Spec Version**: 2.1.0
 
 ---

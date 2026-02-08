@@ -1,5 +1,5 @@
 # WP Plugin Publish - PowerShell Build & Run Script
-# Version: 1.1.0
+# Version: 1.2.0
 # Supports pnpm with PnP for disk-efficient Node.js dependency management
 # All paths are relative to script location (working directory)
 
@@ -689,6 +689,30 @@ if (-not $skipbuild) {
             if ($CheckPnpm) {
                 Write-Host "  Clearing pnpm cache..." -ForegroundColor Gray
                 pnpm store prune 2>&1 | Out-Null
+            }
+
+            # Clean backend runtime data (sessions, request-sessions, error logs)
+            if ($DataDir) {
+                $runtimePaths = @(
+                    (Join-Path $DataDir "sessions"),
+                    (Join-Path $DataDir "request-sessions"),
+                    (Join-Path $DataDir "errors")
+                )
+                foreach ($rtPath in $runtimePaths) {
+                    if (Test-Path $rtPath) {
+                        Write-Host "  Removing: $rtPath..." -ForegroundColor Gray
+                        Remove-Item -Recurse -Force $rtPath -ErrorAction SilentlyContinue
+                    }
+                }
+                # Also clean standalone log files in data dir
+                foreach ($logFile in @("log.txt", "error.log.txt")) {
+                    $logPath = Join-Path $DataDir $logFile
+                    if (Test-Path $logPath) {
+                        Write-Host "  Removing: $logFile..." -ForegroundColor Gray
+                        Remove-Item -Force $logPath -ErrorAction SilentlyContinue
+                    }
+                }
+                Write-Host "  ✓ Backend runtime data cleaned" -ForegroundColor Magenta
             }
             
             Write-Host "  ✓ Clean complete" -ForegroundColor Magenta
