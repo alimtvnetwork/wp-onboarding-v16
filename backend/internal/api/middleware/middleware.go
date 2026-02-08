@@ -4,7 +4,9 @@ package middleware
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -50,6 +52,13 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 
+			// Capture request body before it's consumed by the handler
+			var requestBodyBytes []byte
+			if r.Body != nil {
+				requestBodyBytes, _ = io.ReadAll(r.Body)
+				r.Body = io.NopCloser(bytes.NewBuffer(requestBodyBytes))
+			}
+
 			// Create response wrapper to capture status code and body for errors
 			wrapped := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 
@@ -67,14 +76,40 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 
 			// Persist error responses (>= 400) to error.log.txt
 			if wrapped.statusCode >= 400 && ErrorLogDir != "" {
-				appendToErrorLog(r, wrapped, duration)
+				appendToErrorLog(r, wrapped, duration, requestBodyBytes)
 			}
 		})
 	}
 }
 
+// envelopeForParsing mirrors the envelope structure for JSON unmarshalling.
+// Only the fields needed for error log enrichment are included.
+type envelopeForParsing struct {
+	Status struct {
+		Code    int    `json:"Code"`
+		Message string `json:"Message"`
+	} `json:"Status"`
+	Errors *struct {
+		BackendMessage             string   `json:"BackendMessage"`
+		DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack"`
+		Backend                    []string `json:"Backend"`
+	} `json:"Errors"`
+	MethodsStack *struct {
+		Backend []struct {
+			Method     string `json:"Method"`
+			File       string `json:"File"`
+			LineNumber int    `json:"LineNumber"`
+		} `json:"Backend"`
+	} `json:"MethodsStack"`
+	Attributes *struct {
+		RequestedAt      string `json:"RequestedAt"`
+		RequestDelegatedAt string `json:"RequestDelegatedAt"`
+	} `json:"Attributes"`
+}
+
 // appendToErrorLog writes a structured error entry to data/errors/error.log.txt
-func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duration) {
+// with full request/response context, envelope error blocks, and stack traces.
+func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duration, requestBody []byte) {
 	logPath := filepath.Join(ErrorLogDir, "error.log.txt")
 
 	_ = os.MkdirAll(ErrorLogDir, 0755)
@@ -88,19 +123,104 @@ func appendToErrorLog(r *http.Request, rw *responseWriter, duration time.Duratio
 	now := time.Now().Format("2006-01-02 15:04:05")
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("[%s] HTTP %d %s %s\n", now, rw.statusCode, r.Method, r.URL.Path))
+
+	// ── Header ──
+	sb.WriteString(fmt.Sprintf("[%s] HTTP %d %s FAILED\n", now, rw.statusCode, r.Method))
+
+	// ── Requested To (Go endpoint) ──
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	host := r.Host
+	if host == "" {
+		host = r.URL.Host
+	}
+	fullURL := fmt.Sprintf("%s://%s%s", scheme, host, r.URL.RequestURI())
+	sb.WriteString(fmt.Sprintf("  Requested To: %s %s\n", r.Method, fullURL))
+
+	// ── Request Body & Params from React ──
 	if r.URL.RawQuery != "" {
-		sb.WriteString(fmt.Sprintf("  Query: %s\n", r.URL.RawQuery))
+		sb.WriteString(fmt.Sprintf("  Query Params: %s\n", r.URL.RawQuery))
 	}
-	sb.WriteString(fmt.Sprintf("  Duration: %s\n", duration.String()))
-	if rw.body.Len() > 0 {
-		// Truncate very large bodies to 2KB
-		body := rw.body.String()
-		if len(body) > 2048 {
-			body = body[:2048] + "... (truncated)"
+	if len(requestBody) > 0 {
+		bodyStr := string(requestBody)
+		if len(bodyStr) > 4096 {
+			bodyStr = bodyStr[:4096] + "... (truncated)"
 		}
-		sb.WriteString(fmt.Sprintf("  Response: %s\n", body))
+		// Pretty-print JSON if possible
+		var prettyBuf bytes.Buffer
+		if json.Indent(&prettyBuf, requestBody, "    ", "  ") == nil && prettyBuf.Len() > 0 {
+			sb.WriteString("  Request Body:\n")
+			sb.WriteString(fmt.Sprintf("    %s\n", prettyBuf.String()))
+		} else {
+			sb.WriteString(fmt.Sprintf("  Request Body: %s\n", bodyStr))
+		}
 	}
+
+	sb.WriteString(fmt.Sprintf("  Duration: %s\n", duration.String()))
+
+	// ── Parse envelope from response body ──
+	var env envelopeForParsing
+	envelopeParsed := false
+	if rw.body.Len() > 0 {
+		if json.Unmarshal(rw.body.Bytes(), &env) == nil && env.Status.Message != "" {
+			envelopeParsed = true
+		}
+	}
+
+	// ── Envelope Status ──
+	if envelopeParsed {
+		sb.WriteString(fmt.Sprintf("  Error Code: %d\n", env.Status.Code))
+		sb.WriteString(fmt.Sprintf("  Error Message: %s\n", env.Status.Message))
+	}
+
+	// ── Request Delegation Context ──
+	if envelopeParsed && env.Attributes != nil {
+		if env.Attributes.RequestedAt != "" {
+			sb.WriteString(fmt.Sprintf("  RequestedAt: %s\n", env.Attributes.RequestedAt))
+		}
+		if env.Attributes.RequestDelegatedAt != "" {
+			sb.WriteString(fmt.Sprintf("  RequestDelegatedAt: %s\n", env.Attributes.RequestDelegatedAt))
+		}
+	}
+
+	// ── Delegated Service Error Stack (PHP errors/stack from remote) ──
+	if envelopeParsed && env.Errors != nil {
+		if env.Errors.BackendMessage != "" {
+			sb.WriteString(fmt.Sprintf("  Backend Error: %s\n", env.Errors.BackendMessage))
+		}
+		if len(env.Errors.DelegatedServiceErrorStack) > 0 {
+			sb.WriteString("  Delegated Service Error Stack (PHP):\n")
+			for _, line := range env.Errors.DelegatedServiceErrorStack {
+				sb.WriteString(fmt.Sprintf("    %s\n", line))
+			}
+		}
+		if len(env.Errors.Backend) > 0 {
+			sb.WriteString("  Go Backend Stack:\n")
+			for _, line := range env.Errors.Backend {
+				sb.WriteString(fmt.Sprintf("    %s\n", line))
+			}
+		}
+	}
+
+	// ── Methods Stack (Go call chain) ──
+	if envelopeParsed && env.MethodsStack != nil && len(env.MethodsStack.Backend) > 0 {
+		sb.WriteString("  Go Methods Stack:\n")
+		for i, frame := range env.MethodsStack.Backend {
+			sb.WriteString(fmt.Sprintf("    #%d %s at %s:%d\n", i, frame.Method, frame.File, frame.LineNumber))
+		}
+	}
+
+	// ── Raw Response Body (always include for full transparency) ──
+	if rw.body.Len() > 0 {
+		body := rw.body.String()
+		if len(body) > 4096 {
+			body = body[:4096] + "... (truncated)"
+		}
+		sb.WriteString(fmt.Sprintf("  Response Body:\n    %s\n", body))
+	}
+
 	sb.WriteString("───────────────────────────────────────────────────────────────────────────────\n")
 
 	f.WriteString(sb.String())
@@ -130,8 +250,8 @@ func Recovery(log *logger.Logger) func(http.Handler) http.Handler {
 // responseWriter wraps http.ResponseWriter to capture status code and response body for errors
 type responseWriter struct {
 	http.ResponseWriter
-	statusCode int
-	body       bytes.Buffer
+	statusCode  int
+	body        bytes.Buffer
 	wroteHeader bool
 }
 

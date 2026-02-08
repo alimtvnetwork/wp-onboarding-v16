@@ -122,12 +122,22 @@ Example:
 
 ## Request Logging Middleware
 
+The `Logging` middleware captures **both** the inbound request body (from React) and the outbound response body (from the handler), then persists a rich diagnostic entry to `error.log.txt` for every error response (status ≥ 400).
+
 ```go
 // internal/api/middleware/middleware.go
 func Logging(log *logger.Logger) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
             start := time.Now()
+
+            // Capture request body before handler consumes it
+            var requestBodyBytes []byte
+            if r.Body != nil {
+                requestBodyBytes, _ = io.ReadAll(r.Body)
+                r.Body = io.NopCloser(bytes.NewBuffer(requestBodyBytes))
+            }
+
             rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
             next.ServeHTTP(rw, r)
 
@@ -141,10 +151,27 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 
             // Persist error responses (>= 400) to error.log.txt
             if rw.statusCode >= 400 && ErrorLogDir != "" {
-                appendToErrorLog(r, rw, duration)
+                appendToErrorLog(r, rw, duration, requestBodyBytes)
             }
         })
     }
+}
+```
+
+### Request Body Capture
+
+The middleware reads `r.Body` into a byte slice **before** the handler runs, then restores it via `io.NopCloser(bytes.NewBuffer(...))` so the handler can read it normally. This ensures the full JSON body sent from React is available for logging without interfering with handler logic.
+
+### Response Body Capture
+
+The `responseWriter` wrapper intercepts `Write()` calls to buffer the response body **only** for error responses (status ≥ 400). Successful responses are not buffered, avoiding unnecessary memory overhead.
+
+```go
+func (rw *responseWriter) Write(b []byte) (int, error) {
+    if rw.statusCode >= 400 {
+        rw.body.Write(b) // capture for error.log.txt
+    }
+    return rw.ResponseWriter.Write(b)
 }
 ```
 
@@ -152,7 +179,8 @@ func Logging(log *logger.Logger) func(http.Handler) http.Handler {
 
 ## Middleware Error Log Persistence
 
-> **Added:** v1.19.5
+> **Added:** v1.19.5 — Basic format  
+> **Updated:** v1.19.6 — Full diagnostic format with envelope parsing
 
 All HTTP error responses (status ≥ 400) are automatically appended to `data/errors/error.log.txt` by the `Logging` middleware. This ensures the Global Error Modal's **Log** tab always has diagnostic content — not just for remote plugin action failures.
 
@@ -173,40 +201,95 @@ middleware.ErrorLogDir = errorsDir
 
 When `ErrorLogDir` is empty (zero value), error-log persistence is disabled.
 
-### Response Body Capture
+### Envelope Parsing
 
-The `responseWriter` wrapper intercepts `Write()` calls to capture the response body **only** for error responses (status ≥ 400). Successful responses are not buffered, avoiding unnecessary memory overhead.
+The middleware parses the response body as a Universal Response Envelope to extract structured diagnostic data. A lightweight `envelopeForParsing` struct is used to avoid importing the full envelope package:
 
 ```go
-func (rw *responseWriter) Write(b []byte) (int, error) {
-    if rw.statusCode >= 400 {
-        rw.body.Write(b) // capture for error.log.txt
-    }
-    return rw.ResponseWriter.Write(b)
+type envelopeForParsing struct {
+    Status struct {
+        Code    int    `json:"Code"`
+        Message string `json:"Message"`
+    } `json:"Status"`
+    Errors *struct {
+        BackendMessage             string   `json:"BackendMessage"`
+        DelegatedServiceErrorStack []string `json:"DelegatedServiceErrorStack"`
+        Backend                    []string `json:"Backend"`
+    } `json:"Errors"`
+    MethodsStack *struct {
+        Backend []struct {
+            Method     string `json:"Method"`
+            File       string `json:"File"`
+            LineNumber int    `json:"LineNumber"`
+        } `json:"Backend"`
+    } `json:"MethodsStack"`
+    Attributes *struct {
+        RequestedAt        string `json:"RequestedAt"`
+        RequestDelegatedAt string `json:"RequestDelegatedAt"`
+    } `json:"Attributes"`
 }
 ```
 
-### Log Entry Format
+### Log Entry Format (Full Diagnostic)
 
 Each error entry is appended to `error.log.txt` with the following structure:
 
 ```
-[2026-02-08 17:20:26] HTTP 500 POST /api/v1/sites/1/plugins/disable
-  Query: slug=my-plugin
-  Duration: 1.234s
-  Response: {"Status":{"IsSuccess":false,"IsFailed":true,"Code":500,...},...}
+[2026-02-09 01:25:31] HTTP 400 POST FAILED
+  Requested To: POST http://localhost:9400/api/v1/sites/1/remote-plugins/disable
+  Request Body:
+    {
+      "slug": "my-plugin"
+    }
+  Duration: 732.1µs
+  Error Code: 400
+  Error Message: Plugin slug is required in JSON body
+  RequestedAt: 2026-02-09T01:25:31Z
+  RequestDelegatedAt: 2026-02-09T01:25:31Z
+  Backend Error: [E3004] Plugin operation failed
+  Delegated Service Error Stack (PHP):
+    #0 RiseupUploader::disable() at /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/class-plugin-manager.php:145
+    #1 RestController::handle_disable() at /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/class-rest-controller.php:89
+  Go Backend Stack:
+    at executeRemotePluginAction service.go:1245
+    at DisablePlugin service.go:1180
+  Go Methods Stack:
+    #0 HandleDisablePlugin at site_handlers.go:234
+    #1 executeRemotePluginAction at service.go:1245
+  Response Body:
+    {"Status":{"IsSuccess":false,"IsFailed":true,"Code":400,...},...}
 ───────────────────────────────────────────────────────────────────────────────
 ```
 
-| Field | Description |
-|-------|-------------|
-| Timestamp | `YYYY-MM-DD HH:MM:SS` local time |
-| HTTP status | The numeric status code returned to the client |
-| Method + Path | The HTTP method and URL path |
-| Query | URL query string (omitted if empty) |
-| Duration | Total request processing time |
-| Response | The JSON response body, truncated to **2 KB** for large payloads |
-| Separator | Visual `───` divider between entries |
+### Field Reference
+
+| Block | Field | Source | Description |
+|-------|-------|--------|-------------|
+| **Request** | `Requested To` | `r.Method` + `r.Host` + `r.URL.RequestURI()` | Full Go endpoint URL that React called |
+| | `Query Params` | `r.URL.RawQuery` | URL query string (omitted if empty) |
+| | `Request Body` | `r.Body` (captured pre-handler) | Pretty-printed JSON body from React |
+| **Timing** | `Duration` | `time.Since(start)` | Total request processing time |
+| **Envelope** | `Error Code` | `Status.Code` | HTTP status from envelope |
+| | `Error Message` | `Status.Message` | Human-readable error from envelope |
+| | `RequestedAt` | `Attributes.RequestedAt` | When Go received the request |
+| | `RequestDelegatedAt` | `Attributes.RequestDelegatedAt` | When Go forwarded to PHP |
+| **Errors** | `Backend Error` | `Errors.BackendMessage` | Go-side error message with code |
+| | `Delegated Service Error Stack (PHP)` | `Errors.DelegatedServiceErrorStack` | PHP stack trace frames from remote |
+| | `Go Backend Stack` | `Errors.Backend` | Go runtime stack trace lines |
+| **Debug** | `Go Methods Stack` | `MethodsStack.Backend` | Call chain: Method, File, LineNumber |
+| **Response** | `Response Body` | `rw.body` | Full envelope JSON response |
+
+### Conditional Sections
+
+- **Errors block**: Only present if the envelope's `Errors` field is non-nil (i.e., `includeErrors` is enabled in backend debug config)
+- **MethodsStack block**: Only present if `includeMethodsStack` is enabled
+- **RequestDelegatedAt**: Only present for operations that delegate to a remote service (e.g., PHP)
+- **Query Params**: Omitted when empty
+- **Request Body**: Omitted for GET/DELETE requests with no body
+
+### Truncation
+
+Both request and response bodies exceeding **4,096 bytes** are truncated with a `... (truncated)` suffix to prevent the log file from growing excessively due to large payloads.
 
 ### Relationship to Site Service Error Logging
 
@@ -214,14 +297,10 @@ The middleware error log is **complementary** to the existing `logToErrorFile()`
 
 | Source | Scope | Deduplication | Format |
 |--------|-------|---------------|--------|
-| `middleware.Logging` | **All** HTTP errors (≥ 400) | None (every error logged) | Generic HTTP request/response |
-| `site.logToErrorFile` | Remote plugin action failures only | MD5-based hash suppression | Redefined Log Format with delegated request/response blocks |
+| `middleware.Logging` | **All** HTTP errors (≥ 400) | None (every error logged) | Full diagnostic with envelope parsing |
+| `site.logToErrorFile` | Remote plugin action failures only | MD5-based hash suppression | Redefined Log Format with PHP error sessions |
 
-Both write to the same file (`data/errors/error.log.txt`) via append. The middleware provides baseline coverage so that **no error goes unrecorded**, while the site service provides enriched diagnostics for remote operations.
-
-### Truncation
-
-Response bodies exceeding **2,048 bytes** are truncated with a `... (truncated)` suffix to prevent the log file from growing excessively due to large error payloads (e.g., full HTML error pages from WordPress).
+Both write to the same file (`data/errors/error.log.txt`) via append. The middleware provides baseline coverage so that **no error goes unrecorded**, while the site service provides enriched diagnostics for remote operations (PHP error sessions from SQLite, guard rail detection).
 
 ---
 
