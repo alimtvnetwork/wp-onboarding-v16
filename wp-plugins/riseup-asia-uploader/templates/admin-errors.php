@@ -342,7 +342,14 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
                 <!-- Tab panes -->
                 <div id="modal-pane-context" class="modal-tab-pane active">
                     <div id="error-context-section">
-                        <pre id="error-context-content" class="error-detail-pre"></pre>
+                        <div id="error-context-cards" class="context-cards-grid"></div>
+                        <div id="error-context-raw-toggle" class="context-raw-toggle" style="display:none;">
+                            <button type="button" class="button button-small" id="btn-toggle-raw-json">
+                                <span class="dashicons dashicons-editor-code"></span>
+                                <?php esc_html_e('Show Raw JSON', 'riseup-asia-uploader'); ?>
+                            </button>
+                        </div>
+                        <pre id="error-context-content" class="error-detail-pre" style="display:none;"></pre>
                     </div>
                     <div id="error-no-context" class="modal-empty-state" style="display:none;">
                         <span class="dashicons dashicons-info-outline"></span>
@@ -687,6 +694,104 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
         height: 20px;
     }
 
+    /* Context cards grid */
+    .context-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .context-card {
+        background: #f9fafb;
+        border: 1px solid #e2e4e7;
+        border-radius: 6px;
+        padding: 12px 14px;
+        transition: border-color 0.15s;
+    }
+    .context-card:hover {
+        border-color: #2271b1;
+    }
+    .context-card.card-full-width {
+        grid-column: 1 / -1;
+    }
+    .context-card-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #646970;
+        margin-bottom: 6px;
+    }
+    .context-card-label .dashicons {
+        font-size: 13px;
+        width: 13px;
+        height: 13px;
+        color: #a0a5aa;
+    }
+    .context-card-value {
+        font-size: 13px;
+        color: #1d2327;
+        word-break: break-word;
+        line-height: 1.5;
+    }
+    .context-card-value code {
+        background: #e8eaed;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+    .context-card-value.value-url {
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 12px;
+        color: #2271b1;
+    }
+    .context-card-value.value-error {
+        color: #dc3545;
+        font-weight: 500;
+    }
+    .context-card-value.value-number {
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    .context-card-value.value-bool-true {
+        color: #00a32a;
+        font-weight: 600;
+    }
+    .context-card-value.value-bool-false {
+        color: #dc3545;
+        font-weight: 600;
+    }
+    .context-card-value.value-object {
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        font-size: 11px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        padding: 8px 10px;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 200px;
+        overflow: auto;
+    }
+    .context-raw-toggle {
+        text-align: right;
+        padding-top: 4px;
+        border-top: 1px solid #e2e4e7;
+        margin-top: 4px;
+    }
+    .context-raw-toggle .button {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #646970;
+    }
+
     /* Invocation chain visualization */
     .invocation-chain {
         display: flex;
@@ -1010,9 +1115,65 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
             // Store for copy
             currentModalData = { context: contextObj, stack: stack || '', invocation: invocationChain, message: message, source: source, timestamp: timestamp, level: level };
 
-            // Context tab
+            // Context tab — render as structured cards
             if (Object.keys(contextObj).length > 0) {
+                var cardsHtml = '';
+                var iconMap = {
+                    'reason': 'dashicons-warning', 'error': 'dashicons-warning', 'message': 'dashicons-format-chat',
+                    'url': 'dashicons-admin-links', 'endpoint': 'dashicons-admin-links', 'path': 'dashicons-admin-links',
+                    'requestUrl': 'dashicons-admin-links', 'responseUrl': 'dashicons-admin-links',
+                    'method': 'dashicons-randomize', 'statusCode': 'dashicons-info',
+                    'ip': 'dashicons-desktop', 'user_agent': 'dashicons-smartphone', 'userAgent': 'dashicons-smartphone',
+                    'file': 'dashicons-media-code', 'line': 'dashicons-editor-ol', 'class': 'dashicons-editor-code',
+                    'function': 'dashicons-editor-code', 'slug': 'dashicons-tag', 'plugin': 'dashicons-admin-plugins',
+                    'action': 'dashicons-hammer', 'site': 'dashicons-admin-site-alt3',
+                };
+                var errorKeys = ['reason', 'error', 'message', 'errorMessage'];
+                var urlKeys = ['url', 'endpoint', 'path', 'requestUrl', 'responseUrl', 'site_url', 'siteUrl'];
+
+                Object.keys(contextObj).forEach(function(key) {
+                    var val = contextObj[key];
+                    var icon = iconMap[key] || 'dashicons-marker';
+                    var label = key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim();
+                    label = label.charAt(0).toUpperCase() + label.slice(1);
+                    var isFullWidth = false;
+                    var valueClass = 'context-card-value';
+                    var displayVal = '';
+
+                    if (val === null || val === undefined) {
+                        displayVal = '<em style="color:#a0a5aa;">null</em>';
+                    } else if (typeof val === 'boolean') {
+                        valueClass += val ? ' value-bool-true' : ' value-bool-false';
+                        displayVal = val ? '✓ true' : '✗ false';
+                    } else if (typeof val === 'number') {
+                        valueClass += ' value-number';
+                        displayVal = String(val);
+                    } else if (typeof val === 'object') {
+                        isFullWidth = true;
+                        valueClass += ' value-object';
+                        displayVal = JSON.stringify(val, null, 2);
+                    } else {
+                        var strVal = String(val);
+                        if (errorKeys.indexOf(key) !== -1) {
+                            valueClass += ' value-error';
+                            icon = 'dashicons-warning';
+                        } else if (urlKeys.indexOf(key) !== -1 || strVal.match(/^https?:\/\//)) {
+                            valueClass += ' value-url';
+                            icon = iconMap[key] || 'dashicons-admin-links';
+                        }
+                        displayVal = $('<span>').text(strVal).html();
+                        if (strVal.length > 120) isFullWidth = true;
+                    }
+
+                    cardsHtml += '<div class="context-card' + (isFullWidth ? ' card-full-width' : '') + '">';
+                    cardsHtml += '<div class="context-card-label"><span class="dashicons ' + icon + '"></span>' + $('<span>').text(label).html() + '</div>';
+                    cardsHtml += '<div class="' + valueClass + '">' + displayVal + '</div>';
+                    cardsHtml += '</div>';
+                });
+
+                $('#error-context-cards').html(cardsHtml);
                 $('#error-context-content').text(JSON.stringify(contextObj, null, 2));
+                $('#error-context-raw-toggle').show();
                 $('#error-context-section').show();
                 $('#error-no-context').hide();
             } else {
@@ -1077,6 +1238,23 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
             $(this).addClass('active');
             $('.modal-tab-pane').hide();
             $('#modal-pane-' + tab).show();
+        });
+
+        // Toggle raw JSON view in context tab
+        var rawJsonVisible = false;
+        $(document).on('click', '#btn-toggle-raw-json', function() {
+            rawJsonVisible = !rawJsonVisible;
+            if (rawJsonVisible) {
+                $('#error-context-content').show();
+                $('#error-context-cards').hide();
+                $(this).find('.dashicons').removeClass('dashicons-editor-code').addClass('dashicons-grid-view');
+                $(this).contents().last()[0].textContent = ' Structured View';
+            } else {
+                $('#error-context-content').hide();
+                $('#error-context-cards').show();
+                $(this).find('.dashicons').removeClass('dashicons-grid-view').addClass('dashicons-editor-code');
+                $(this).contents().last()[0].textContent = ' Show Raw JSON';
+            }
         });
 
         // Copy all modal content
