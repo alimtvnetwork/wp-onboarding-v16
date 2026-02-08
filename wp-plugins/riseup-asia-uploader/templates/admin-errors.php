@@ -233,6 +233,16 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
                 <h2><?php echo esc_html($file_label); ?></h2>
                 <div class="file-viewer-actions">
                     <span class="file-size-label" id="file-size-label"></span>
+
+                    <!-- Auto-refresh toggle -->
+                    <label class="auto-refresh-toggle" title="<?php esc_attr_e('Auto-refresh every 3 seconds', 'riseup-asia-uploader'); ?>">
+                        <input type="checkbox" id="chk-auto-refresh">
+                        <span class="auto-refresh-label">
+                            <span class="live-dot" id="live-dot"></span>
+                            <?php esc_html_e('Live', 'riseup-asia-uploader'); ?>
+                        </span>
+                    </label>
+
                     <button type="button" class="button button-small" id="btn-refresh-log" title="<?php esc_attr_e('Refresh', 'riseup-asia-uploader'); ?>">
                         <span class="dashicons dashicons-update"></span>
                         <?php esc_html_e('Refresh', 'riseup-asia-uploader'); ?>
@@ -495,6 +505,52 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
         margin-right: 6px;
     }
 
+    /* Auto-refresh toggle */
+    .auto-refresh-toggle {
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        margin-right: 4px;
+    }
+    .auto-refresh-toggle input[type="checkbox"] {
+        display: none;
+    }
+    .auto-refresh-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: #e2e3e5;
+        color: #646970;
+        transition: all 0.25s ease;
+        user-select: none;
+    }
+    .auto-refresh-toggle input:checked + .auto-refresh-label {
+        background: #d1e4dd;
+        color: #0a7a4d;
+    }
+    .live-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #a7aaad;
+        transition: background 0.25s ease;
+    }
+    .auto-refresh-toggle input:checked + .auto-refresh-label .live-dot {
+        background: #00a32a;
+        animation: livePulse 1.5s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(0, 163, 42, 0.5); }
+        50% { box-shadow: 0 0 0 4px rgba(0, 163, 42, 0); }
+    }
+
     .file-viewer-body {
         padding: 0;
     }
@@ -638,6 +694,10 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
         // ====================================================================
         if (activeTab === 'log' || activeTab === 'error' || activeTab === 'stacktrace') {
             var fileContent = '';
+            var lastFileSize = 0;
+            var pollTimer = null;
+            var isPolling = false;
+            var POLL_INTERVAL = 3000; // 3 seconds
 
             function formatBytes(bytes) {
                 if (bytes === 0) return '0 B';
@@ -647,45 +707,94 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
             }
 
-            function loadFileContent() {
-                $('#file-loading').show();
-                $('#file-content').hide();
-                $('#file-empty').hide();
+            function loadFileContent(silent) {
+                if (!silent) {
+                    $('#file-loading').show();
+                    $('#file-content').hide();
+                    $('#file-empty').hide();
+                }
 
                 $.post(ajaxurl, {
                     action: 'riseup_read_log_file',
                     nonce: nonce,
                     file_type: activeTab
                 }, function(response) {
-                    $('#file-loading').hide();
+                    if (!silent) $('#file-loading').hide();
                     if (response.success) {
-                        fileContent = response.data.content || '';
-                        if (fileContent.length > 0) {
-                            $('#file-content').text(fileContent).show();
-                            // Auto-scroll to bottom
-                            var pre = document.getElementById('file-content');
-                            pre.scrollTop = pre.scrollHeight;
-                        } else {
-                            $('#file-empty').show();
+                        var newContent = response.data.content || '';
+                        var newSize = response.data.size || 0;
+
+                        // Only update DOM if content actually changed
+                        if (newSize !== lastFileSize || newContent !== fileContent) {
+                            fileContent = newContent;
+                            lastFileSize = newSize;
+
+                            if (fileContent.length > 0) {
+                                var pre = document.getElementById('file-content');
+                                var wasAtBottom = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 20;
+                                $('#file-content').text(fileContent).show();
+                                $('#file-empty').hide();
+                                // Auto-scroll to bottom only if user was already near bottom
+                                if (wasAtBottom || !silent) {
+                                    pre.scrollTop = pre.scrollHeight;
+                                }
+                            } else {
+                                $('#file-content').hide();
+                                $('#file-empty').show();
+                            }
+                            if (newSize > 0) {
+                                $('#file-size-label').text(formatBytes(newSize));
+                            } else {
+                                $('#file-size-label').text('');
+                            }
                         }
-                        if (response.data.size > 0) {
-                            $('#file-size-label').text(formatBytes(response.data.size));
-                        }
-                    } else {
+                    } else if (!silent) {
                         $('#file-empty').show();
                     }
                 }).fail(function() {
-                    $('#file-loading').hide();
-                    $('#file-empty').show();
+                    if (!silent) {
+                        $('#file-loading').hide();
+                        $('#file-empty').show();
+                    }
                 });
             }
 
+            // Auto-refresh polling
+            function startPolling() {
+                if (pollTimer) return;
+                isPolling = true;
+                pollTimer = setInterval(function() {
+                    loadFileContent(true); // silent refresh
+                }, POLL_INTERVAL);
+            }
+
+            function stopPolling() {
+                isPolling = false;
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            }
+
+            $('#chk-auto-refresh').on('change', function() {
+                if (this.checked) {
+                    startPolling();
+                } else {
+                    stopPolling();
+                }
+            });
+
+            // Stop polling when user leaves page
+            $(window).on('beforeunload', function() {
+                stopPolling();
+            });
+
             // Initial load
-            loadFileContent();
+            loadFileContent(false);
 
             // Refresh
             $('#btn-refresh-log').on('click', function() {
-                loadFileContent();
+                loadFileContent(false);
                 showToast('<?php esc_html_e('Refreshed', 'riseup-asia-uploader'); ?>');
             });
 
@@ -747,6 +856,7 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
                     $btn.prop('disabled', false);
                     if (response.success) {
                         fileContent = '';
+                        lastFileSize = 0;
                         $('#file-content').hide();
                         $('#file-empty').show();
                         $('#file-size-label').text('');
