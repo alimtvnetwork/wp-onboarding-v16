@@ -108,3 +108,25 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 	}
 	respondSuccess(w, map[string]interface{}{"deleted": true})
 }
+
+// GetSessionDiagnostics returns structured request/response/stackTrace for a session
+func GetSessionDiagnostics(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SessionService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Session service not available")
+		return
+	}
+
+	vars := mux.Vars(r)
+	sessionID := vars["id"]
+	if sessionID == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Session ID is required")
+		return
+	}
+
+	diag, err := Services.SessionService.GetSessionDiagnostics(sessionID)
+	if err != nil {
+		respondError(w, http.StatusNotFound, "E8002", err.Error())
+		return
+	}
+	respondSuccess(w, diag)
+}
