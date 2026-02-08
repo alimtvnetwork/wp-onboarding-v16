@@ -410,6 +410,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + EndpointEnable
 	reqBody := map[string]string{"plugin": normalizedSlug}
+	reqBodyJSON, _ := json.Marshal(reqBody)
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "enable plugin request failed").
@@ -426,6 +427,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
+			RequestBody:  string(reqBodyJSON),
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 			PluginSlugIn: normalizedSlug,
 		}
@@ -445,6 +447,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + EndpointDisable
 	reqBody := map[string]string{"plugin": normalizedSlug}
+	reqBodyJSON, _ := json.Marshal(reqBody)
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "disable plugin request failed").
@@ -461,6 +464,7 @@ func (c *Client) DisablePluginViaUploader(slug string) error {
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
+			RequestBody:  string(reqBodyJSON),
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 			PluginSlugIn: normalizedSlug,
 		}
@@ -480,6 +484,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 	normalizedSlug := normalizePluginSlug(slug)
 	endpoint := "/" + namespace + EndpointDelete
 	reqBody := map[string]string{"plugin": normalizedSlug}
+	reqBodyJSON, _ := json.Marshal(reqBody)
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrWPConnection, "delete plugin request failed").
@@ -496,6 +501,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
 			StatusCode:   resp.StatusCode,
+			RequestBody:  string(reqBodyJSON),
 			ResponseBody: truncateBody(string(bodyBytes), 8192),
 			PluginSlugIn: normalizedSlug,
 		}

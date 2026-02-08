@@ -1291,6 +1291,7 @@ func (s *Service) extractErrorDetails(err error) map[string]interface{} {
 		details["endpoint"] = apiErr.Endpoint
 		details["url"] = apiErr.URL
 		details["statusCode"] = apiErr.StatusCode
+		details["requestBody"] = apiErr.RequestBody
 		details["responseBody"] = apiErr.ResponseBody
 		if apiErr.StackTrace != "" {
 			details["stackTrace"] = apiErr.StackTrace
@@ -1490,8 +1491,13 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 		pluginIdentifier = psi
 	}
 
-	// Request body reconstruction
-	requestBody := fmt.Sprintf(`{"plugin":"%s"}`, pluginIdentifier)
+	// Request body - use actual request body from APIError, fall back to reconstruction
+	requestBody := ""
+	if rb, ok := details["requestBody"].(string); ok && rb != "" {
+		requestBody = rb
+	} else {
+		requestBody = fmt.Sprintf(`{"plugin":"%s"}`, pluginIdentifier)
+	}
 
 	// Build log entry in the redefined format
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
