@@ -17,6 +17,7 @@ import {
   Code2,
   BarChart3,
   HeartPulse,
+  Radio,
 } from "lucide-react";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/tests", label: "E2E Tests", icon: FlaskConical },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/sessions", label: "Sessions", icon: History },
+  { to: "/request-sessions", label: "Request Log", icon: Radio },
   { to: "/api-explorer", label: "API Explorer", icon: Code2 },
   { to: "/errors", label: "Errors", icon: AlertCircle },
   { to: "/settings", label: "Settings", icon: Settings },
