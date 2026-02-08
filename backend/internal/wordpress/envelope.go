@@ -13,6 +13,14 @@ type Envelope struct {
 	Errors     *EnvelopeErrors     `json:"Errors,omitempty"`
 }
 
+// TypedEnvelope is the generic version of Envelope where Results is a typed slice.
+type TypedEnvelope[T any] struct {
+	Status     *EnvelopeStatus     `json:"Status,omitempty"`
+	Attributes *EnvelopeAttributes `json:"Attributes,omitempty"`
+	Results    []T                 `json:"Results,omitempty"`
+	Errors     *EnvelopeErrors     `json:"Errors,omitempty"`
+}
+
 // EnvelopeStatus represents the Status block.
 type EnvelopeStatus struct {
 	IsSuccess bool   `json:"IsSuccess"`
@@ -24,15 +32,15 @@ type EnvelopeStatus struct {
 
 // EnvelopeAttributes represents the Attributes block.
 type EnvelopeAttributes struct {
-	RequestedAt      string `json:"RequestedAt"`
+	RequestedAt        string `json:"RequestedAt"`
 	RequestDelegatedAt string `json:"RequestDelegatedAt"`
-	HasAnyErrors     bool   `json:"HasAnyErrors"`
-	IsSingle         bool   `json:"IsSingle"`
-	IsMultiple       bool   `json:"IsMultiple"`
-	TotalRecords     int    `json:"TotalRecords"`
-	PerPage          int    `json:"PerPage"`
-	TotalPages       int    `json:"TotalPages"`
-	CurrentPage      int    `json:"CurrentPage"`
+	HasAnyErrors       bool   `json:"HasAnyErrors"`
+	IsSingle           bool   `json:"IsSingle"`
+	IsMultiple         bool   `json:"IsMultiple"`
+	TotalRecords       int    `json:"TotalRecords"`
+	PerPage            int    `json:"PerPage"`
+	TotalPages         int    `json:"TotalPages"`
+	CurrentPage        int    `json:"CurrentPage"`
 }
 
 // EnvelopeErrors represents the Errors block.
@@ -55,7 +63,7 @@ func IsEnvelope(data []byte) bool {
 	return false
 }
 
-// ParseEnvelope attempts to parse the body as an envelope.
+// ParseEnvelope attempts to parse the body as an untyped envelope.
 // Returns nil if it's not in envelope format.
 func ParseEnvelope(data []byte) *Envelope {
 	if !IsEnvelope(data) {
@@ -68,27 +76,37 @@ func ParseEnvelope(data []byte) *Envelope {
 	return &env
 }
 
-// UnwrapResults extracts the Results array and unmarshals into the target.
-// If the data is in legacy format (no envelope), it returns false so the
-// caller can fall back to legacy parsing.
-func UnwrapResults(data []byte, target interface{}) bool {
-	env := ParseEnvelope(data)
-	if env == nil || env.Results == nil {
-		return false
+// ParseTypedEnvelope parses the body as a fully typed envelope with Results []T.
+// Returns nil if it's not in envelope format or if Results cannot be decoded into []T.
+func ParseTypedEnvelope[T any](data []byte) *TypedEnvelope[T] {
+	if !IsEnvelope(data) {
+		return nil
 	}
-	return json.Unmarshal(env.Results, target) == nil
+	var env TypedEnvelope[T]
+	if json.Unmarshal(data, &env) != nil {
+		return nil
+	}
+	return &env
 }
 
-// UnwrapSingleResult extracts the first item from Results into target.
-// Returns false if not envelope format or Results is empty.
-func UnwrapSingleResult(data []byte, target interface{}) bool {
-	env := ParseEnvelope(data)
-	if env == nil || env.Results == nil {
-		return false
+// UnwrapResults extracts the Results array from an envelope into a typed slice.
+// Returns the slice and true on success; returns nil and false if the data is
+// not in envelope format, enabling the caller to fall back to legacy parsing.
+func UnwrapResults[T any](data []byte) ([]T, bool) {
+	env := ParseTypedEnvelope[T](data)
+	if env == nil {
+		return nil, false
 	}
-	var items []json.RawMessage
-	if json.Unmarshal(env.Results, &items) != nil || len(items) == 0 {
-		return false
+	return env.Results, true
+}
+
+// UnwrapSingleResult extracts the first item from the Results array.
+// Returns a pointer to the item and true on success; returns nil and false
+// if the data is not in envelope format or Results is empty.
+func UnwrapSingleResult[T any](data []byte) (*T, bool) {
+	env := ParseTypedEnvelope[T](data)
+	if env == nil || len(env.Results) == 0 {
+		return nil, false
 	}
-	return json.Unmarshal(items[0], target) == nil
+	return &env.Results[0], true
 }

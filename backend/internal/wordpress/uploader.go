@@ -190,8 +190,7 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	respBody, _ := io.ReadAll(resp.Body)
 
 	// Try envelope format first
-	var status UploaderStatus
-	if UnwrapSingleResult(respBody, &status) {
+	if status, ok := UnwrapSingleResult[UploaderStatus](respBody); ok {
 		// Normalize envelope fields to legacy fields for backward compat
 		if status.Version == "" && status.EnvVersion != "" {
 			status.Version = status.EnvVersion
@@ -202,7 +201,7 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 		if status.PHPVersion == "" && status.EnvPhp != "" {
 			status.PHPVersion = status.EnvPhp
 		}
-		return &status, nil
+		return status, nil
 	}
 
 	// Fall back to legacy flat format
@@ -577,8 +576,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 	respBody, _ := io.ReadAll(resp.Body)
 
 	// Try envelope format first — Results is the plugins array directly
-	var plugins []UploaderPluginInfo
-	if UnwrapResults(respBody, &plugins) {
+	if plugins, ok := UnwrapResults[UploaderPluginInfo](respBody); ok {
 		return plugins, nil
 	}
 
