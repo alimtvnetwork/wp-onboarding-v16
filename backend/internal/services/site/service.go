@@ -1452,7 +1452,7 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	}
 	defer f.Close()
 
-	// Build delegated URL (the WordPress endpoint that was actually called)
+	// Build delegated URL (the full WordPress endpoint that was actually called)
 	method := "POST"
 	if m, ok := details["method"].(string); ok && m != "" {
 		method = m
@@ -1464,20 +1464,51 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 		delegatedURL = fmt.Sprintf("%s/wp-json%s", siteURL, endpoint)
 	}
 
-	// Go backend endpoint that initiated the request
-	goEndpoint := fmt.Sprintf("POST /api/v1/sites/%d/remote-plugins/%s", siteID, action)
+	// Detect if a WP Core mutation endpoint was used (guard rail)
+	isWPCoreMutation := false
+	blockedEndpoint := ""
+	requiredEndpoint := ""
+	if strings.Contains(endpoint, "/wp/v2/plugins") && method != "GET" {
+		isWPCoreMutation = true
+		blockedEndpoint = endpoint
+		// Determine the correct Riseup Uploader endpoint
+		switch action {
+		case "disable":
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, wordpress.EndpointDisable)
+		case "enable":
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, wordpress.EndpointEnable)
+		case "delete":
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s%s", siteURL, wordpress.RiseupAsiaNamespace, wordpress.EndpointDelete)
+		default:
+			requiredEndpoint = fmt.Sprintf("%s/wp-json/%s/plugins/%s", siteURL, wordpress.RiseupAsiaNamespace, action)
+		}
+	}
 
-	// Build log entry in the standardized format
+	// Plugin identifier from request body (pluginSlugIn from APIError)
+	pluginIdentifier := pluginSlug
+	if psi, ok := details["pluginSlugIn"].(string); ok && psi != "" {
+		pluginIdentifier = psi
+	}
+
+	// Request body reconstruction
+	requestBody := fmt.Sprintf(`{"plugin":"%s"}`, pluginIdentifier)
+
+	// Build log entry in the redefined format
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("\n[%s] REMOTE PLUGIN %s FAILED\n", timestamp, strings.ToUpper(action))
+	logEntry += fmt.Sprintf("  Site Request URL: %s\n", delegatedURL)
 	logEntry += fmt.Sprintf("  Site ID: %d\n", siteID)
 	logEntry += fmt.Sprintf("  Site Name: %s\n", siteName)
-	logEntry += fmt.Sprintf("  Site URL: %s\n", siteURL)
-	logEntry += fmt.Sprintf("  Delegated URL: %s %s\n", method, delegatedURL)
-	logEntry += fmt.Sprintf("  Plugin: %s\n", pluginSlug)
-	logEntry += fmt.Sprintf("  Error: %s\n", errMsg)
-	logEntry += fmt.Sprintf("  Status Code: %d\n", statusCode)
-	logEntry += fmt.Sprintf("  Endpoint: \"%s\"\n", goEndpoint)
+	logEntry += fmt.Sprintf("  Site Base URL: %s\n", siteURL)
+	logEntry += fmt.Sprintf("  Plugin Identifier: %s\n", pluginIdentifier)
+	logEntry += fmt.Sprintf("  Requested Action: %s\n", action)
+	logEntry += "  Delegated Request:\n"
+	logEntry += fmt.Sprintf("    Method: %s\n", method)
+	logEntry += fmt.Sprintf("    Endpoint: %s\n", endpoint)
+	logEntry += fmt.Sprintf("    Request Body:\n")
+	logEntry += fmt.Sprintf("      %s\n", requestBody)
+	logEntry += "  Delegated Response:\n"
+	logEntry += fmt.Sprintf("    Status Code: %d\n", statusCode)
 
 	// Response body
 	if len(responseBody) > 0 {
@@ -1485,7 +1516,24 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 		if len(displayBody) > 2000 {
 			displayBody = displayBody[:2000] + "... (truncated)"
 		}
-		logEntry += fmt.Sprintf("  Response Body:\n    %s\n", displayBody)
+		logEntry += fmt.Sprintf("    Response Body:\n      %s\n", displayBody)
+	}
+
+	// Error summary
+	logEntry += "  Error Summary:\n"
+	logEntry += fmt.Sprintf("    %s\n", errMsg)
+	if isWPCoreMutation {
+		logEntry += "    WARNING: This request was sent to a WordPress Core endpoint instead of the Riseup Uploader.\n"
+	} else {
+		logEntry += "    This request was correctly delegated through the Riseup Uploader endpoint.\n"
+	}
+
+	// Guard rail section
+	if isWPCoreMutation {
+		logEntry += "  Guard Rail:\n"
+		logEntry += "    Blocked Direct WP Core Mutation: true\n"
+		logEntry += fmt.Sprintf("    Blocked Endpoint: %s\n", blockedEndpoint)
+		logEntry += fmt.Sprintf("    Required Delegation Endpoint: %s\n", requiredEndpoint)
 	}
 
 	// PHP stack trace frames
