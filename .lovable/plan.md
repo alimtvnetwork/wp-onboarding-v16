@@ -94,5 +94,9 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 - `GetUploaderStatus()`: `UnwrapSingleResult[UploaderStatus](respBody)` returns `*UploaderStatus` directly
 - `ListPluginsViaUploader()`: `UnwrapResults[UploaderPluginInfo](respBody)` returns `[]UploaderPluginInfo` directly
 
-#### Sub-phase 13.5 🔧 — PHP PHPStan @template annotations (optional)
-- PHP has no native generics; `@template` docblock annotations for static analysis only
+#### Sub-phase 13.5 ✅ — PHP PHPStan @template annotations
+- Added `@template T of array`, `@phpstan-template`, and `@psalm-template` to `RiseupEnvelopeBuilder`
+- `$results` typed as `array<int, T>`; all fluent setters return `static<T>`
+- `setResults()` accepts `array<int, T>`, `setSingleResult()` accepts `T`
+- `build()` returns `array{Status: array, Attributes: array, Results: array<int, T>}`
+- Factory methods `success()` and `error()` return `static<T>`
