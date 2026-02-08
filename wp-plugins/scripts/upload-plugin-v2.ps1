@@ -390,18 +390,47 @@ if ($activeNamespace) {
 
     } catch {
         $errorMessage = $_.Exception.Message
+        $errorBody = ""
         if ($_.Exception.Response) {
             try {
                 $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
                 $reader.BaseStream.Position = 0
-                $responseBody = $reader.ReadToEnd()
-                $errorData = $responseBody | ConvertFrom-Json
-                $errorMessage = $errorData.message
+                $errorBody = $reader.ReadToEnd()
             } catch {}
         }
 
         Write-Host ""
         Write-Host "  ⚠ Riseup Uploader API failed: $errorMessage" -ForegroundColor Yellow
+        if ($errorBody -ne "") {
+            Write-Host ""
+            Write-Host "  ── Response Body ──" -ForegroundColor DarkGray
+            try {
+                $errJson = $errorBody | ConvertFrom-Json
+                if ($errJson.message) { Write-Host "  Message: $($errJson.message)" -ForegroundColor Red }
+                if ($errJson.error -and $errJson.error.message) { Write-Host "  Error:   $($errJson.error.message)" -ForegroundColor Red }
+                if ($errJson.error -and $errJson.error.code) { Write-Host "  Code:    $($errJson.error.code)" -ForegroundColor Red }
+                if ($errJson.stackTrace) {
+                    Write-Host "  Stack Trace:" -ForegroundColor Yellow
+                    Write-Host $errJson.stackTrace -ForegroundColor Gray
+                }
+                if ($errJson.stackTraceFrames) {
+                    Write-Host "  Stack Frames:" -ForegroundColor Yellow
+                    foreach ($frame in $errJson.stackTraceFrames) {
+                        $loc = "    $($frame.file):$($frame.line)"
+                        if ($frame.class) { $loc += " → $($frame.class)::$($frame.function)" }
+                        elseif ($frame.function) { $loc += " → $($frame.function)" }
+                        Write-Host $loc -ForegroundColor Gray
+                    }
+                }
+                if (-not $errJson.message -and -not $errJson.error -and -not $errJson.stackTrace) {
+                    Write-Host $errorBody -ForegroundColor Gray
+                }
+            } catch {
+                Write-Host $errorBody -ForegroundColor Gray
+            }
+            Write-Host "  ────────────────────" -ForegroundColor DarkGray
+        }
+        Write-Host ""
         Write-Host "  Falling back to basic upload script..." -ForegroundColor Yellow
         Write-Host ""
     }
