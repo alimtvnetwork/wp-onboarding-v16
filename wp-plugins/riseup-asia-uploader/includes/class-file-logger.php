@@ -328,6 +328,7 @@ class Riseup_File_Logger {
         }
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context);
+        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context);
         return $this->write($entry, false);
     }
 
@@ -350,6 +351,7 @@ class Riseup_File_Logger {
         }
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
+        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
         return $this->write($entry, true);
     }
 
@@ -395,6 +397,56 @@ class Riseup_File_Logger {
             $e->getLine(),
             array('trace' => $e->getTraceAsString())
         );
+        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
         return $this->write($entry, true);
+    }
+
+    /**
+     * Persist an error/warn entry to the error_sessions SQLite table
+     * and mark flash state as having unseen errors.
+     *
+     * Uses defensive coding: if the DB is unavailable (e.g., during early
+     * bootstrap), the error is silently skipped (already written to file).
+     *
+     * @param string $level       Log level (ERROR or WARN).
+     * @param string $message     Error message.
+     * @param string $file        Source file path.
+     * @param int    $line        Source line number.
+     * @param array  $context     Additional context data.
+     * @param string $stack_trace Optional stack trace string.
+     */
+    private function persist_to_error_sessions($level, $message, $file, $line, $context = array(), $stack_trace = '') {
+        try {
+            // Guard: Riseup_Database may not be loaded yet during early bootstrap
+            if (!class_exists('Riseup_Database', false)) {
+                return;
+            }
+
+            $db = Riseup_Database::get_instance();
+            $pdo = $db->get_pdo();
+            if (!$pdo) {
+                return;
+            }
+
+            // Check if error_sessions table exists (migration may not have run yet)
+            $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
+            if (!$check->fetchColumn()) {
+                return;
+            }
+
+            $now = gmdate('Y-m-d\TH:i:s\Z');
+            $context_json = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO error_sessions (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute(array($level, $message, $file, $line, $context_json, $stack_trace ?: null, $now));
+
+            // Update flash state: mark as having unseen errors
+            $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '1', '{$now}')");
+        } catch (Throwable $e) {
+            // Silently ignore - we're in the logger, can't recurse
+            // The error is already written to the file log
+        }
     }
 }
