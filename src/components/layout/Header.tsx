@@ -58,13 +58,21 @@ export function Header({ onMenuToggle }: HeaderProps) {
         <ErrorQueueBadge />
         <GlobalPublishProgress />
 
-        {/* Hide WS indicator label on small screens */}
-        <span className="hidden sm:inline-flex">
-          <WebSocketIndicator showLabel />
-        </span>
-        <span className="sm:hidden">
-          <WebSocketIndicator />
-        </span>
+        {/* Only show WS toasts on pages that actively use WebSocket */}
+        {(() => {
+          const wsRoutes = ["/", "/logs", "/sites", "/sync", "/errors"];
+          const showWsToasts = wsRoutes.includes(location.pathname);
+          return (
+            <>
+              <span className="hidden sm:inline-flex">
+                <WebSocketIndicator showLabel showToasts={showWsToasts} />
+              </span>
+              <span className="sm:hidden">
+                <WebSocketIndicator showToasts={showWsToasts} />
+              </span>
+            </>
+          );
+        })()}
 
         <div className="hidden sm:block h-4 w-px bg-border" />
         <span className="hidden sm:inline-flex">

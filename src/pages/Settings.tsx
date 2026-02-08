@@ -15,6 +15,7 @@ import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/api";
 import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
+import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { useLocation } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { logger } from "@/lib/logger";
@@ -496,44 +497,7 @@ export default function Settings() {
         );
         
       case "appearance":
-        return (
-          <div className="space-y-4 sm:space-y-6">
-            <div>
-              <h2 className="text-base sm:text-lg font-semibold mb-1">Appearance</h2>
-              <p className="text-xs sm:text-sm text-muted-foreground">Customize the look and feel</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="text-sm">Theme</Label>
-                <Select value={theme} onValueChange={handleThemeChange}>
-                  <SelectTrigger className="h-9 sm:h-10">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <Label className="text-sm">Compact Mode</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Reduce spacing for more content density
-                  </p>
-                </div>
-                <Switch 
-                  checked={compactMode}
-                  onCheckedChange={handleCompactModeChange}
-                  className="shrink-0"
-                />
-              </div>
-            </div>
-          </div>
-        );
+        return <ThemeSelector />;
         
       case "developer":
         return (
