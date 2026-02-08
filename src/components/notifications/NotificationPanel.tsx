@@ -59,10 +59,12 @@ function NotificationCard({ notification, onDismiss, onRead }: {
   return (
     <div
       className={cn(
-        "group flex items-start gap-3 px-4 py-3 border-l-[3px] transition-colors cursor-pointer",
-        "bg-card hover:bg-muted/50",
-        config.accent,
-        !notification.read && "bg-muted/30"
+        "group relative flex items-start gap-3 px-4 py-3 pr-10 border-l-[3px] transition-colors cursor-pointer",
+        notification.type === "error"
+          ? "bg-destructive/10 hover:bg-destructive/15 border-l-destructive"
+          : "bg-card hover:bg-muted/50",
+        notification.type !== "error" && config.accent,
+        !notification.read && notification.type !== "error" && "bg-muted/30"
       )}
       onClick={() => onRead(notification.id)}
     >
@@ -72,24 +74,36 @@ function NotificationCard({ notification, onDismiss, onRead }: {
       {/* Content */}
       <div className="flex-1 min-w-0 space-y-0.5">
         <p className={cn(
-          "text-sm leading-snug text-foreground",
-          !notification.read ? "font-semibold" : "font-medium"
+          "text-sm leading-snug",
+          notification.type === "error" ? "text-destructive-foreground font-semibold" : "text-foreground",
+          !notification.read && notification.type !== "error" ? "font-semibold" : notification.type !== "error" ? "font-medium" : ""
         )}>
           {notification.title}
         </p>
         {notification.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          <p className={cn(
+            "text-xs line-clamp-2 leading-relaxed",
+            notification.type === "error" ? "text-destructive-foreground/70" : "text-muted-foreground"
+          )}>
             {notification.description}
           </p>
         )}
-        <span className="text-[10px] text-muted-foreground/60">
+        <span className={cn(
+          "text-[10px]",
+          notification.type === "error" ? "text-destructive-foreground/50" : "text-muted-foreground/60"
+        )}>
           {formatTimeAgo(notification.timestamp)}
         </span>
       </div>
 
-      {/* Close button — right side, always accessible */}
+      {/* Dismiss — pinned top-right, always visible */}
       <button
-        className="shrink-0 mt-0.5 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground hover:bg-muted"
+        className={cn(
+          "absolute top-2.5 right-2 p-1 rounded-md transition-colors",
+          notification.type === "error"
+            ? "text-destructive-foreground/60 hover:text-destructive-foreground hover:bg-destructive/20"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+        )}
         onClick={(e) => {
           e.stopPropagation();
           onDismiss(notification.id);
