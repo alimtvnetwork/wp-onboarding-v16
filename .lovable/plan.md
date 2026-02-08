@@ -60,6 +60,11 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 - Updated `GetUploaderStatus()` and `ListPluginsViaUploader()` with backward-compatible envelope parsing
 - Updated error response parser to handle both `Errors.Backend` (envelope) and `error.details.stackTraceFrames` (legacy)
 
-#### Sub-phase 12.4 🔧 — Migrate write endpoints (upload, enable, disable, delete)
+#### Sub-phase 12.4 ✅ — Migrate write endpoints (upload, enable, disable, delete)
+- `handle_upload()` → Envelope with single result (plugin_slug, is_update, activated, activation_error)
+- `handle_enable_plugin()` → Envelope with single result (plugin_slug, activated)
+- `handle_disable_plugin()` → Envelope with single result (plugin_slug, deactivated)
+- `handle_delete_plugin()` → Envelope with single result (plugin_slug, deleted)
+- Bumped plugin version to 1.34.0
 #### Sub-phase 12.5 🔧 — Migrate diagnostic endpoints (error-logs, error-sessions)
 #### Sub-phase 12.6 🔧 — Update frontend to parse envelope from PHP responses
