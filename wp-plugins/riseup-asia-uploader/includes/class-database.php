@@ -468,6 +468,40 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v8 applied successfully');
             }
             
+            // Migration v9: Error sessions table + flash state for admin notifications
+            if ($current_version < 9) {
+                $this->file_logger->info('Applying migration v9: error sessions and flash state');
+                
+                // Error sessions table - persists every error/warn from the file logger
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS error_sessions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    level TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    file TEXT,
+                    line INTEGER,
+                    context_json TEXT,
+                    stack_trace TEXT,
+                    created_at TEXT NOT NULL
+                )");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_error_sessions_level ON error_sessions(level)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_error_sessions_created ON error_sessions(created_at DESC)");
+                
+                // Flash state table - tracks whether admin has seen latest errors
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS flash_state (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )");
+                
+                // Seed initial flash state
+                $now = gmdate('Y-m-d\TH:i:s\Z');
+                $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '0', '{$now}')");
+                $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
+                
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (9, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v9 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {
