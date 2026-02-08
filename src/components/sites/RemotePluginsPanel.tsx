@@ -543,10 +543,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
                     <div
                       key={plugin.plugin}
                       className={`
-                        group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200
+                        group flex items-center gap-3 p-3 rounded-xl border transition-colors duration-200
                         ${isSelected 
-                          ? "bg-primary/10 border-primary/30 shadow-sm" 
-                          : "bg-card/50 border-border/50 hover:bg-accent/80 hover:border-accent hover:shadow-md"
+                          ? "bg-primary/10 border-primary/30" 
+                          : "bg-card/50 border-border/50 hover:bg-secondary/50 hover:border-primary/30"
                         }
                       `}
                     >

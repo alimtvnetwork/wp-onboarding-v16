@@ -95,7 +95,7 @@ export function ThemeSelector() {
               <button
                 key={color.value}
                 onClick={() => setAccentColor(color.value)}
-                className={`h-8 w-8 rounded-full ${color.color} transition-all hover:scale-110 ${
+                className={`h-8 w-8 rounded-full ${color.color} transition-colors ring-offset-background ${
                   accentColor === color.value
                     ? "ring-2 ring-offset-2 ring-offset-background ring-primary"
                     : ""
