@@ -336,6 +336,8 @@ Write-Status "[6/6] Publishing to WordPress..." -Color Yellow
 Write-Status "      Site: $WordPressSiteURL" -Color Gray
 Write-Status "      User: $Username" -Color Gray
 
+$uploadSuccess = $false
+
 if ($activeNamespace) {
     # Use Riseup Asia Uploader
     $uploadUrl = "$WordPressSiteURL/wp-json/$activeNamespace/upload"
@@ -357,6 +359,7 @@ if ($activeNamespace) {
 
         Write-Status "      Uploading via Riseup Asia Uploader..." -Color Gray
         $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
+        $uploadSuccess = $true
 
         Write-Status ""
         Write-Status "===============================================" -Color Green
@@ -398,19 +401,47 @@ if ($activeNamespace) {
         }
 
         Write-Host ""
-        Write-Host "Publish Failed!" -ForegroundColor Red
-        Write-Host "Error: $errorMessage" -ForegroundColor Red
+        Write-Host "  ⚠ Riseup Uploader API failed: $errorMessage" -ForegroundColor Yellow
+        Write-Host "  Falling back to basic upload script..." -ForegroundColor Yellow
+        Write-Host ""
+    }
+}
 
-        if ($Quiet) {
-            $result = @{ success = $false; error = $errorMessage }
-            Write-Output ($result | ConvertTo-Json -Compress)
-        }
+# ============================================================================
+# FALLBACK: Use basic upload-plugin.ps1 if V2 API failed or was not found
+# ============================================================================
+if (-not $uploadSuccess) {
+    $basicScript = Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "upload-plugin.ps1"
+
+    if (-not (Test-Path $basicScript)) {
+        Write-Host "Error: Basic upload script not found at: $basicScript" -ForegroundColor Red
         exit 1
     }
-} else {
-    Write-Host "Error: Riseup Asia Uploader not found on the target site." -ForegroundColor Red
-    Write-Host "Please install the companion plugin first." -ForegroundColor Yellow
-    exit 1
+
+    Write-Status "      Using basic upload script (upload-plugin.ps1)..." -Color Yellow
+
+    # Build a JSON config for the basic script
+    $fallbackConfig = @{
+        pluginFolderPath     = $PluginFolderPath
+        wordPressSiteURL     = $WordPressSiteURL
+        username             = $Username
+        appPassword          = $AppPassword
+        outputZipPath        = $OutputZipPath
+        activateAfterInstall = $ActivateAfterInstall
+        deleteZipAfterUpload = $DeleteZipAfterUpload
+    } | ConvertTo-Json -Compress
+
+    try {
+        & $basicScript -JsonConfig $fallbackConfig
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Error: Basic upload script failed with exit code $LASTEXITCODE" -ForegroundColor Red
+            exit 1
+        }
+        $uploadSuccess = $true
+    } catch {
+        Write-Host "Error: Basic upload script failed: $_" -ForegroundColor Red
+        exit 1
+    }
 }
 
 # Cleanup ZIP
