@@ -66,5 +66,10 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 - `handle_disable_plugin()` → Envelope with single result (plugin_slug, deactivated)
 - `handle_delete_plugin()` → Envelope with single result (plugin_slug, deleted)
 - Bumped plugin version to 1.34.0
-#### Sub-phase 12.5 🔧 — Migrate diagnostic endpoints (error-logs, error-sessions)
+#### Sub-phase 12.5 ✅ — Migrate diagnostic endpoints (query-logs, logs-stats, error-logs, error-sessions)
+- `handle_query_logs()` → Envelope with Results array + pagination metadata
+- `handle_logs_stats()` → Envelope with single result (stats object)
+- `handle_error_logs()` → Envelope with single result (version, settings, log tails)
+- `handle_error_sessions()` → Envelope with Results array of entries + pagination
+- Removed legacy `stackTraceFrames` from diagnostic responses (now handled by EnvelopeBuilder errors block)
 #### Sub-phase 12.6 🔧 — Update frontend to parse envelope from PHP responses
