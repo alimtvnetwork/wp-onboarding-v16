@@ -1263,8 +1263,11 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 			// Build PHP stack frames for error.log
 			phpFrames := s.buildPHPStackFrames(errDetails)
+			// Capture Go runtime stack trace (skip 2: CaptureGoStack + this closure)
+			goFrames := session.CaptureGoStack(2)
 			s.sessionService.SaveError(sessionID, &session.SessionStackTrace{
-				PHP: phpFrames,
+				Golang: goFrames,
+				PHP:    phpFrames,
 			}, err.Error(), errDetails)
 		}
 
