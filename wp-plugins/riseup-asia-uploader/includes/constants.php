@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.34.1');
+    define('RISEUP_VERSION', '1.35.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -812,4 +812,31 @@ if (!defined('RISEUP_LOG_RETRIEVAL_MAX_LINES')) {
 // Error sessions endpoint - returns structured error entries from SQLite
 if (!defined('RISEUP_ENDPOINT_ERROR_SESSIONS')) {
     define('RISEUP_ENDPOINT_ERROR_SESSIONS', 'error-sessions');
+}
+
+// =============================================================================
+// UPLOAD SOURCE ENUM
+// =============================================================================
+
+if (!defined('RISEUP_UPLOAD_SOURCE_SCRIPT')) {
+    define('RISEUP_UPLOAD_SOURCE_SCRIPT', 'upload_script');
+}
+if (!defined('RISEUP_UPLOAD_SOURCE_REST_API')) {
+    define('RISEUP_UPLOAD_SOURCE_REST_API', 'rest_api');
+}
+if (!defined('RISEUP_UPLOAD_SOURCE_ADMIN_UI')) {
+    define('RISEUP_UPLOAD_SOURCE_ADMIN_UI', 'admin_ui');
+}
+if (!defined('RISEUP_UPLOAD_SOURCE_WP_CLI')) {
+    define('RISEUP_UPLOAD_SOURCE_WP_CLI', 'wp_cli');
+}
+
+// Valid upload sources for validation
+if (!defined('RISEUP_UPLOAD_SOURCES_VALID')) {
+    define('RISEUP_UPLOAD_SOURCES_VALID', json_encode(array(
+        RISEUP_UPLOAD_SOURCE_SCRIPT,
+        RISEUP_UPLOAD_SOURCE_REST_API,
+        RISEUP_UPLOAD_SOURCE_ADMIN_UI,
+        RISEUP_UPLOAD_SOURCE_WP_CLI,
+    )));
 }

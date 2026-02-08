@@ -28,6 +28,22 @@ $trigger_classes = array(
     'cron'       => 'trigger-cron',
     'cli'        => 'trigger-cli',
 );
+
+// Upload source labels for display
+$upload_source_labels = array(
+    'upload_script' => __('Upload Script', 'riseup-asia-uploader'),
+    'rest_api'      => __('REST API', 'riseup-asia-uploader'),
+    'admin_ui'      => __('Admin UI', 'riseup-asia-uploader'),
+    'wp_cli'        => __('WP-CLI', 'riseup-asia-uploader'),
+);
+
+// Upload source CSS classes for color coding
+$upload_source_classes = array(
+    'upload_script' => 'source-script',
+    'rest_api'      => 'source-api',
+    'admin_ui'      => 'source-admin',
+    'wp_cli'        => 'source-cli',
+);
 ?>
 <div class="wrap riseup-admin">
     <h1>
@@ -72,6 +88,18 @@ $trigger_classes = array(
                         <option value=""><?php esc_html_e('All Sources', 'riseup-asia-uploader'); ?></option>
                         <?php foreach ($trigger_labels as $key => $label): ?>
                             <option value="<?php echo esc_attr($key); ?>" <?php selected(isset($filters['triggered_by']) ? $filters['triggered_by'] : '', $key); ?>>
+                                <?php echo esc_html($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label>
+                    <span><?php esc_html_e('Upload Via:', 'riseup-asia-uploader'); ?></span>
+                    <select name="filter_upload_source">
+                        <option value=""><?php esc_html_e('All Methods', 'riseup-asia-uploader'); ?></option>
+                        <?php foreach ($upload_source_labels as $key => $label): ?>
+                            <option value="<?php echo esc_attr($key); ?>" <?php selected(isset($filters['upload_source']) ? $filters['upload_source'] : '', $key); ?>>
                                 <?php echo esc_html($label); ?>
                             </option>
                         <?php endforeach; ?>
@@ -133,7 +161,9 @@ $trigger_classes = array(
                 <th class="column-timestamp"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></th>
                 <th class="column-action"><?php esc_html_e('Action', 'riseup-asia-uploader'); ?></th>
                 <th class="column-plugin"><?php esc_html_e('Plugin/Target', 'riseup-asia-uploader'); ?></th>
+                <th class="column-version"><?php esc_html_e('Version', 'riseup-asia-uploader'); ?></th>
                 <th class="column-trigger"><?php esc_html_e('Trigger', 'riseup-asia-uploader'); ?></th>
+                <th class="column-upload-source"><?php esc_html_e('Upload Via', 'riseup-asia-uploader'); ?></th>
                 <th class="column-source"><?php esc_html_e('Source', 'riseup-asia-uploader'); ?></th>
                 <th class="column-user"><?php esc_html_e('User', 'riseup-asia-uploader'); ?></th>
                 <th class="column-status"><?php esc_html_e('Status', 'riseup-asia-uploader'); ?></th>
@@ -143,15 +173,19 @@ $trigger_classes = array(
         <tbody>
             <?php if (empty($logs)): ?>
                 <tr>
-                    <td colspan="9" class="no-items"><?php esc_html_e('No activity logs found.', 'riseup-asia-uploader'); ?></td>
+                    <td colspan="11" class="no-items"><?php esc_html_e('No activity logs found.', 'riseup-asia-uploader'); ?></td>
                 </tr>
             <?php else: ?>
                 <?php foreach ($logs as $log): ?>
                     <?php 
                     $triggered_by = isset($log['triggered_by']) ? $log['triggered_by'] : '';
                     $source_machine = isset($log['source_machine']) ? $log['source_machine'] : '';
+                    $plugin_version = isset($log['plugin_version']) ? $log['plugin_version'] : '';
+                    $upload_source = isset($log['upload_source']) ? $log['upload_source'] : '';
                     $trigger_class = isset($trigger_classes[$triggered_by]) ? $trigger_classes[$triggered_by] : 'trigger-unknown';
                     $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
+                    $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';
+                    $upload_source_label = isset($upload_source_labels[$upload_source]) ? $upload_source_labels[$upload_source] : ($upload_source ?: '—');
                     ?>
                     <tr>
                         <td class="column-id"><?php echo esc_html($log['id']); ?></td>
@@ -177,10 +211,26 @@ $trigger_classes = array(
                                 <span class="na">—</span>
                             <?php endif; ?>
                         </td>
+                        <td class="column-version">
+                            <?php if (!empty($plugin_version)): ?>
+                                <code class="version-badge">v<?php echo esc_html($plugin_version); ?></code>
+                            <?php else: ?>
+                                <span class="na">—</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="column-trigger">
                             <?php if (!empty($triggered_by)): ?>
                                 <span class="trigger-badge <?php echo esc_attr($trigger_class); ?>" title="<?php echo esc_attr($triggered_by); ?>">
                                     <?php echo esc_html($trigger_label); ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="na">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="column-upload-source">
+                            <?php if (!empty($upload_source)): ?>
+                                <span class="upload-source-badge <?php echo esc_attr($upload_source_class); ?>" title="<?php echo esc_attr($upload_source); ?>">
+                                    <?php echo esc_html($upload_source_label); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="na">—</span>
@@ -334,16 +384,58 @@ $trigger_classes = array(
         margin-bottom: 3px;
     }
 
+    /* Version badge */
+    .version-badge {
+        background: #e8eaf6;
+        color: #283593;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* Upload source badge */
+    .upload-source-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: uppercase;
+    }
+    .source-script {
+        background: #fff8e1;
+        color: #f57f17;
+    }
+    .source-api {
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+    .source-admin {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+    .source-cli {
+        background: #eceff1;
+        color: #455a64;
+    }
+    .source-unknown {
+        background: #fafafa;
+        color: #9e9e9e;
+    }
+
     /* Column widths */
     .column-id { width: 50px; }
-    .column-timestamp { width: 140px; }
-    .column-action { width: 100px; }
-    .column-plugin { width: 150px; }
-    .column-trigger { width: 90px; }
-    .column-source { width: 140px; }
-    .column-user { width: 100px; }
-    .column-status { width: 70px; }
-    .column-details { width: 80px; }
+    .column-timestamp { width: 130px; }
+    .column-action { width: 95px; }
+    .column-plugin { width: 130px; }
+    .column-version { width: 70px; }
+    .column-trigger { width: 80px; }
+    .column-upload-source { width: 95px; }
+    .column-source { width: 120px; }
+    .column-user { width: 90px; }
+    .column-status { width: 65px; }
+    .column-details { width: 60px; }
     </style>
 
     <script>

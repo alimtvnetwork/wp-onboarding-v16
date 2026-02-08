@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.34.1
+ * Version: 1.35.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -1424,7 +1424,15 @@ class Riseup_Asia {
             // Get optional parameters.
             $slug     = sanitize_file_name($data['slug'] ?? '');
             $activate = RiseupBooleanHelpers::has_content($data['activate']);
-            $this->file_logger->debug('Upload parameters', array('slug' => $slug, 'activate' => $activate));
+            $upload_source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : RISEUP_UPLOAD_SOURCE_REST_API;
+            
+            // Validate upload_source against allowed enum values
+            $valid_sources = json_decode(RISEUP_UPLOAD_SOURCES_VALID, true);
+            if (!in_array($upload_source, $valid_sources, true)) {
+                $upload_source = RISEUP_UPLOAD_SOURCE_REST_API;
+            }
+            
+            $this->file_logger->debug('Upload parameters', array('slug' => $slug, 'activate' => $activate, 'upload_source' => $upload_source));
 
             // Create temp file.
             $temp_dir  = $this->get_temp_dir();
@@ -1591,25 +1599,43 @@ class Riseup_Asia {
                 $this->file_logger->info('Plugin activated successfully');
             }
 
-            // Log success.
+            // Detect plugin version from installed plugin headers.
+            $plugin_version = '';
+            if (RiseupBooleanHelpers::has_content($plugin_file)) {
+                $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin_file, false, false);
+                if (!empty($plugin_data['Version'])) {
+                    $plugin_version = $plugin_data['Version'];
+                }
+            }
+            $this->file_logger->info('Plugin version detected', array('version' => $plugin_version));
+
+            // Log success with version and upload source.
             $this->logger->log_upload($slug, array(
                 'is_update' => $is_update,
                 'activated' => $activated,
                 'file_size' => strlen($zip_content),
+                'plugin_version' => $plugin_version,
+            ), array(
+                'plugin_version' => $plugin_version,
+                'upload_source'  => $upload_source,
             ));
 
             $this->file_logger->info('Upload complete', array(
-                'slug'      => $slug,
-                'is_update' => $is_update,
-                'activated' => $activated,
+                'slug'           => $slug,
+                'is_update'      => $is_update,
+                'activated'      => $activated,
+                'plugin_version' => $plugin_version,
+                'upload_source'  => $upload_source,
             ));
 
             return RiseupEnvelopeBuilder::success()
                 ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_UPLOAD)
                 ->setSingleResult(array(
-                    'plugin_slug' => $slug,
-                    'is_update'   => $is_update,
-                    'activated'   => $activated,
+                    'plugin_slug'    => $slug,
+                    'is_update'      => $is_update,
+                    'activated'      => $activated,
+                    'plugin_version' => $plugin_version,
+                    'upload_source'  => $upload_source,
                 ))
                 ->toResponse();
         } catch (Throwable $e) {
