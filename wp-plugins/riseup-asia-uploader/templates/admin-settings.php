@@ -10,6 +10,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 ?>
+<style>
+.riseup-admin .button .dashicons {
+    vertical-align: middle;
+    margin-top: -2px;
+    margin-right: 2px;
+}
+</style>
 <div class="wrap riseup-admin">
     <h1>
         <span class="dashicons dashicons-admin-settings"></span>
