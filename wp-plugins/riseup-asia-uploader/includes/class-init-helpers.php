@@ -37,6 +37,13 @@ class RiseupInitHelpers {
     private static $ensured_dirs = array();
 
     /**
+     * Whether the PDO-unavailable warning has already been logged this request.
+     *
+     * @var bool
+     */
+    private static $pdo_unavailable_warned = false;
+
+    /**
      * Component startup results for structured dependency loading.
      * Each entry: array('name' => string, 'success' => bool, 'error' => string|null, 'time_ms' => float)
      *
@@ -199,15 +206,21 @@ class RiseupInitHelpers {
      * @return PDO|null PDO instance on success, null on failure.
      */
     public static function initSqliteConnection($db_path, $logger) {
-        // Check PDO availability
+        // Check PDO availability (warn only once per request to avoid log spam)
         if (RiseupBooleanHelpers::is_class_missing('PDO')) {
-            $logger->error('[INIT] PDO class not found - PHP PDO extension not installed');
+            if (RiseupBooleanHelpers::is_falsy(self::$pdo_unavailable_warned)) {
+                $logger->warn('[INIT] PDO class not found - PHP PDO extension not installed. Database features will be skipped.');
+                self::$pdo_unavailable_warned = true;
+            }
             return null;
         }
 
-        // Check SQLite driver
+        // Check SQLite driver (warn only once)
         if (RiseupBooleanHelpers::is_extension_missing('pdo_sqlite')) {
-            $logger->error('[INIT] PDO SQLite extension not loaded');
+            if (RiseupBooleanHelpers::is_falsy(self::$pdo_unavailable_warned)) {
+                $logger->warn('[INIT] PDO SQLite extension not loaded. Database features will be skipped.');
+                self::$pdo_unavailable_warned = true;
+            }
             return null;
         }
 
@@ -352,5 +365,6 @@ class RiseupInitHelpers {
     public static function reset() {
         self::$ensured_dirs = array();
         self::$startup_results = array();
+        self::$pdo_unavailable_warned = false;
     }
 }
