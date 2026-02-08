@@ -55,17 +55,22 @@
             "description": "Server health status",
             "content": {
               "application/json": {
-                "schema": {
+              "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessEnvelope" },
                     {
                       "properties": {
-                        "data": {
-                          "type": "object",
-                          "properties": {
-                            "status": { "type": "string", "example": "ok" },
-                            "timestamp": { "type": "string", "format": "date-time" }
-                          }
+                        "Results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "status": { "type": "string", "example": "ok" },
+                              "timestamp": { "type": "string", "format": "date-time" }
+                            }
+                          },
+                          "minItems": 1,
+                          "maxItems": 1
                         }
                       }
                     }
@@ -90,7 +95,7 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessEnvelope" },
-                    { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Site" } } } }
+                    { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Site" } } } }
                   ]
                 }
               }
@@ -156,7 +161,7 @@
                 "schema": {
                   "allOf": [
                     { "$ref": "#/components/schemas/SuccessEnvelope" },
-                    { "properties": { "data": { "$ref": "#/components/schemas/Site" } } }
+                    { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Site" }, "minItems": 1, "maxItems": 1 } } }
                   ]
                 }
               }
@@ -201,7 +206,7 @@
         "responses": {
           "200": {
             "description": "Connection test result",
-            "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/ConnectionResult" } } }] } } }
+            "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ConnectionResult" }, "minItems": 1, "maxItems": 1 } } }] } } }
           }
         }
       }
@@ -215,7 +220,7 @@
         "responses": {
           "200": {
             "description": "Decrypted credentials",
-            "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SiteCredentials" } } }] } } }
+            "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SiteCredentials" }, "minItems": 1, "maxItems": 1 } } }] } } }
           }
         }
       }
@@ -585,7 +590,7 @@
         "tags": ["Plugins"],
         "summary": "List all registered plugins",
         "operationId": "listPlugins",
-        "responses": { "200": { "description": "Array of plugins", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" } } } }] } } } } }
+        "responses": { "200": { "description": "Array of plugins", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" } } } }] } } } } }
       },
       "post": {
         "tags": ["Plugins"],
@@ -615,7 +620,7 @@
         "summary": "Get a plugin by ID",
         "operationId": "getPlugin",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Plugin details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/Plugin" } } }] } } } } }
+        "responses": { "200": { "description": "Plugin details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "put": {
         "tags": ["Plugins"],
@@ -639,7 +644,7 @@
         "summary": "Get site mappings for a plugin",
         "operationId": "getPluginMappings",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Plugin mappings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PluginMapping" } } } }] } } } } }
+        "responses": { "200": { "description": "Plugin mappings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PluginMapping" } } } }] } } } } }
       },
       "post": {
         "tags": ["Plugins"],
@@ -680,7 +685,7 @@
           { "$ref": "#/components/parameters/id" },
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } }
         ],
-        "responses": { "200": { "description": "File changes", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/FileChange" } } } }] } } } } }
+        "responses": { "200": { "description": "File changes", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/FileChange" } } } }] } } } } }
       }
     },
     "/plugins/{id}/scan": {
@@ -833,7 +838,7 @@
         "summary": "Check sync status between local and remote",
         "operationId": "checkSync",
         "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
-        "responses": { "200": { "description": "Sync check result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SyncResult" } } }] } } } } }
+        "responses": { "200": { "description": "Sync check result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SyncResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/sites/{siteId}/sync/push": {
@@ -842,7 +847,7 @@
         "summary": "Push local changes to remote site",
         "operationId": "pushSync",
         "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/siteId" }],
-        "responses": { "200": { "description": "Push sync result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PushSyncResult" } } }] } } } } }
+        "responses": { "200": { "description": "Push sync result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PushSyncResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/sync/check-all": {
@@ -851,7 +856,7 @@
         "summary": "Check sync status for all mapped sites",
         "operationId": "checkAllSites",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Batch sync result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/BatchSyncResult" } } }] } } } } }
+        "responses": { "200": { "description": "Batch sync result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/BatchSyncResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/plugins/{id}/sites/{siteId}/publish": {
@@ -909,7 +914,7 @@
         "summary": "List backups for a plugin",
         "operationId": "getBackups",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Backups list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Backup" } } } }] } } } } }
+        "responses": { "200": { "description": "Backups list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Backup" } } } }] } } } } }
       }
     },
     "/backups/{id}/restore": {
@@ -940,7 +945,7 @@
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
         ],
-        "responses": { "200": { "description": "Version history", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PluginVersion" } } } }] } } } } }
+        "responses": { "200": { "description": "Version history", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PluginVersion" } } } }] } } } } }
       }
     },
     "/plugins/{id}/versions/{versionId}": {
@@ -949,7 +954,7 @@
         "summary": "Get a specific version entry",
         "operationId": "getPluginVersion",
         "parameters": [{ "$ref": "#/components/parameters/id" }, { "$ref": "#/components/parameters/versionId" }],
-        "responses": { "200": { "description": "Version details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PluginVersion" } } }] } } } } }
+        "responses": { "200": { "description": "Version details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PluginVersion" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Versions"],
@@ -981,7 +986,7 @@
         "tags": ["Site Health"],
         "summary": "Get health summaries for all sites",
         "operationId": "getSiteHealthSummaries",
-        "responses": { "200": { "description": "Health summaries", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthSummary" } } } }] } } } } }
+        "responses": { "200": { "description": "Health summaries", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthSummary" } } } }] } } } } }
       }
     },
     "/site-health/stats": {
@@ -989,7 +994,7 @@
         "tags": ["Site Health"],
         "summary": "Get overall health statistics",
         "operationId": "getSiteHealthStats",
-        "responses": { "200": { "description": "Health stats", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SiteHealthStats" } } }] } } } } }
+        "responses": { "200": { "description": "Health stats", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthStats" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/site-health/history": {
@@ -1001,7 +1006,7 @@
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
           { "name": "limit", "in": "query", "schema": { "type": "integer" } }
         ],
-        "responses": { "200": { "description": "Health check history", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthCheck" } } } }] } } } } }
+        "responses": { "200": { "description": "Health check history", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthCheck" } } } }] } } } } }
       },
       "delete": {
         "tags": ["Site Health"],
@@ -1019,7 +1024,7 @@
         "summary": "Check health of a single site",
         "operationId": "checkSiteHealth",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Health check result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/SiteHealthCheck" } } }] } } } } }
+        "responses": { "200": { "description": "Health check result", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SiteHealthCheck" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/publish-history": {
@@ -1035,7 +1040,7 @@
           { "name": "siteId", "in": "query", "schema": { "type": "integer", "format": "int64" } },
           { "name": "search", "in": "query", "schema": { "type": "string" } }
         ],
-        "responses": { "200": { "description": "Publish history list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/PublishHistory" } } } }] } } } } }
+        "responses": { "200": { "description": "Publish history list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PublishHistory" } } } }] } } } } }
       },
       "delete": {
         "tags": ["Publish History"],
@@ -1063,7 +1068,7 @@
         "tags": ["Publish History"],
         "summary": "Get publish statistics",
         "operationId": "getPublishHistoryStats",
-        "responses": { "200": { "description": "Publish stats", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PublishHistoryStats" } } }] } } } } }
+        "responses": { "200": { "description": "Publish stats", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PublishHistoryStats" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       }
     },
     "/publish-history/{id}": {
@@ -1072,7 +1077,7 @@
         "summary": "Get a publish history entry",
         "operationId": "getPublishHistoryById",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Publish history entry", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/PublishHistory" } } }] } } } } }
+        "responses": { "200": { "description": "Publish history entry", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/PublishHistory" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Publish History"],
@@ -1186,7 +1191,7 @@
           { "name": "endDate", "in": "query", "schema": { "type": "string" } },
           { "name": "search", "in": "query", "schema": { "type": "string" } }
         ],
-        "responses": { "200": { "description": "Error history list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorHistory" } } } }] } } } } }
+        "responses": { "200": { "description": "Error history list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorHistory" } } } }] } } } } }
       },
       "post": {
         "tags": ["Error History"],
@@ -1255,7 +1260,7 @@
         "summary": "Get error by ID",
         "operationId": "getErrorHistoryById",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Error details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/ErrorHistory" } } }] } } } } }
+        "responses": { "200": { "description": "Error details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorHistory" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Error History"],
@@ -1270,7 +1275,7 @@
         "tags": ["Settings"],
         "summary": "Get application settings",
         "operationId": "getSettings",
-        "responses": { "200": { "description": "Application settings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/Settings" } } }] } } } } }
+        "responses": { "200": { "description": "Application settings", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Settings" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "put": {
         "tags": ["Settings"],
@@ -1297,7 +1302,7 @@
         "parameters": [
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 100 } }
         ],
-        "responses": { "200": { "description": "Sessions list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Session" } } } }] } } } } }
+        "responses": { "200": { "description": "Sessions list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Session" } } } }] } } } } }
       }
     },
     "/sessions/{id}": {
@@ -1306,7 +1311,7 @@
         "summary": "Get session details",
         "operationId": "getSession",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
-        "responses": { "200": { "description": "Session details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/Session" } } }] } } } } }
+        "responses": { "200": { "description": "Session details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Session" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Sessions"],
@@ -1323,7 +1328,7 @@
         "operationId": "getSessionLogs",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
         "responses": {
-          "200": { "description": "Session log entries", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/SessionLogEntry" } } } }] } } } }
+          "200": { "description": "Session log entries", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SessionLogEntry" } } } }] } } } }
         }
       }
     },
@@ -1336,7 +1341,7 @@
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
           { "name": "offset", "in": "query", "schema": { "type": "integer" } }
         ],
-        "responses": { "200": { "description": "Request sessions", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSession" } } } }] } } } } }
+        "responses": { "200": { "description": "Request sessions", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSession" } } } }] } } } } }
       },
       "delete": {
         "tags": ["Request Sessions"],
@@ -1353,7 +1358,7 @@
         "parameters": [
           { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } }
         ],
-        "responses": { "200": { "description": "Error request sessions", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSession" } } } }] } } } } }
+        "responses": { "200": { "description": "Error request sessions", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSession" } } } }] } } } } }
       }
     },
     "/request-sessions/{id}": {
@@ -1362,7 +1367,7 @@
         "summary": "Get a request session",
         "operationId": "getRequestSession",
         "parameters": [{ "$ref": "#/components/parameters/stringId" }],
-        "responses": { "200": { "description": "Request session details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "data": { "$ref": "#/components/schemas/RequestSession" } } }] } } } } }
+        "responses": { "200": { "description": "Request session details", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RequestSession" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
       },
       "delete": {
         "tags": ["Request Sessions"],
@@ -2147,11 +2152,16 @@
                 { "$ref": "#/components/schemas/SuccessEnvelope" },
                 {
                   "properties": {
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "deleted": { "type": "boolean", "example": true }
-                      }
+                    "Results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "deleted": { "type": "boolean", "example": true }
+                        }
+                      },
+                      "minItems": 1,
+                      "maxItems": 1
                     }
                   }
                 }
