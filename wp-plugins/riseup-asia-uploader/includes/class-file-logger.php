@@ -362,7 +362,7 @@ class Riseup_File_Logger {
      * @return bool
      */
     public function warn($message, $context = array()) {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
@@ -370,9 +370,37 @@ class Riseup_File_Logger {
         if ($this->is_duplicate(RISEUP_LOG_LEVEL_WARN, $message, $file, $line)) {
             return true;
         }
-        
+
+        // Enrich context with invocation chain for diagnostics
+        if (!isset($context['_invocation_chain'])) {
+            $chain = array();
+            foreach ($trace as $i => $frame) {
+                if ($i === 0) continue; // skip self
+                $entry = array();
+                if (isset($frame['class'])) {
+                    $entry['class'] = $frame['class'];
+                }
+                if (isset($frame['function'])) {
+                    $entry['function'] = $frame['function'];
+                }
+                if (isset($frame['file'])) {
+                    $entry['file'] = basename($frame['file']);
+                    $entry['line'] = isset($frame['line']) ? $frame['line'] : 0;
+                }
+                if (!empty($entry)) {
+                    $chain[] = $entry;
+                }
+            }
+            if (!empty($chain)) {
+                $context['_invocation_chain'] = $chain;
+            }
+        }
+
+        // Capture abbreviated stack trace for warn-level too
+        $formatted_trace = $this->format_backtrace($trace);
+
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context);
-        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context);
+        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context, $formatted_trace);
         return $this->write($entry, false);
     }
 

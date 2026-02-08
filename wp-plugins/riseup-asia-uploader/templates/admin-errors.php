@@ -190,7 +190,11 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
                                 <?php if (!empty($error['context_json']) || !empty($error['stack_trace'])): ?>
                                     <button type="button" class="button button-small toggle-error-details"
                                         data-context="<?php echo esc_attr($error['context_json'] ?: '{}'); ?>"
-                                        data-stack="<?php echo esc_attr($error['stack_trace'] ?: ''); ?>">
+                                        data-stack="<?php echo esc_attr($error['stack_trace'] ?: ''); ?>"
+                                        data-level="<?php echo esc_attr($level); ?>"
+                                        data-message="<?php echo esc_attr($error['message']); ?>"
+                                        data-source="<?php echo esc_attr(!empty($error['file']) ? basename($error['file']) . ':' . $error['line'] : '—'); ?>"
+                                        data-timestamp="<?php echo esc_attr(date('Y-m-d H:i:s', strtotime($error['created_at']))); ?>">
                                         <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
                                     </button>
                                 <?php else: ?>
@@ -287,19 +291,81 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
 
     <!-- Details Modal (for sessions tab) -->
     <div id="riseup-error-modal" class="riseup-modal" style="display: none;">
-        <div class="riseup-modal-content" style="max-width: 800px;">
+        <div class="riseup-modal-content riseup-modal-fullscreen">
             <div class="riseup-modal-header">
-                <h3><?php esc_html_e('Error Details', 'riseup-asia-uploader'); ?></h3>
-                <button type="button" class="riseup-modal-close">&times;</button>
+                <div class="modal-header-left">
+                    <span class="dashicons dashicons-warning modal-header-icon"></span>
+                    <h3><?php esc_html_e('Error Details', 'riseup-asia-uploader'); ?></h3>
+                    <span id="modal-error-level" class="level-badge modal-level-badge"></span>
+                </div>
+                <div class="modal-header-right">
+                    <button type="button" class="button button-small modal-copy-btn" id="modal-copy-all" title="<?php esc_attr_e('Copy All', 'riseup-asia-uploader'); ?>">
+                        <span class="dashicons dashicons-clipboard"></span>
+                        <?php esc_html_e('Copy All', 'riseup-asia-uploader'); ?>
+                    </button>
+                    <button type="button" class="riseup-modal-close">&times;</button>
+                </div>
             </div>
             <div class="riseup-modal-body">
-                <div id="error-context-section" style="display:none;">
-                    <h4><?php esc_html_e('Context', 'riseup-asia-uploader'); ?></h4>
-                    <pre id="error-context-content" class="error-detail-pre"></pre>
+                <!-- Error summary bar -->
+                <div id="error-summary-bar" class="error-summary-bar">
+                    <div class="summary-item">
+                        <span class="summary-label"><?php esc_html_e('Message', 'riseup-asia-uploader'); ?></span>
+                        <span id="summary-message" class="summary-value"></span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label"><?php esc_html_e('Source', 'riseup-asia-uploader'); ?></span>
+                        <code id="summary-source" class="summary-value source-file"></code>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></span>
+                        <span id="summary-timestamp" class="summary-value"></span>
+                    </div>
                 </div>
-                <div id="error-stack-section" style="display:none;">
-                    <h4><?php esc_html_e('Stack Trace', 'riseup-asia-uploader'); ?></h4>
-                    <pre id="error-stack-content" class="error-detail-pre"></pre>
+
+                <!-- Modal tabs -->
+                <div class="modal-tabs">
+                    <button type="button" class="modal-tab active" data-modal-tab="context">
+                        <span class="dashicons dashicons-admin-generic"></span>
+                        <?php esc_html_e('Context', 'riseup-asia-uploader'); ?>
+                    </button>
+                    <button type="button" class="modal-tab" data-modal-tab="stack">
+                        <span class="dashicons dashicons-editor-code"></span>
+                        <?php esc_html_e('Stack Trace', 'riseup-asia-uploader'); ?>
+                    </button>
+                    <button type="button" class="modal-tab" data-modal-tab="invocation">
+                        <span class="dashicons dashicons-networking"></span>
+                        <?php esc_html_e('Invocation Chain', 'riseup-asia-uploader'); ?>
+                    </button>
+                </div>
+
+                <!-- Tab panes -->
+                <div id="modal-pane-context" class="modal-tab-pane active">
+                    <div id="error-context-section">
+                        <pre id="error-context-content" class="error-detail-pre"></pre>
+                    </div>
+                    <div id="error-no-context" class="modal-empty-state" style="display:none;">
+                        <span class="dashicons dashicons-info-outline"></span>
+                        <?php esc_html_e('No context data available for this error.', 'riseup-asia-uploader'); ?>
+                    </div>
+                </div>
+                <div id="modal-pane-stack" class="modal-tab-pane" style="display:none;">
+                    <div id="error-stack-section">
+                        <pre id="error-stack-content" class="error-detail-pre stack-trace-pre"></pre>
+                    </div>
+                    <div id="error-no-stack" class="modal-empty-state" style="display:none;">
+                        <span class="dashicons dashicons-info-outline"></span>
+                        <?php esc_html_e('No stack trace captured for this error. Stack traces are recorded for ERROR-level entries.', 'riseup-asia-uploader'); ?>
+                    </div>
+                </div>
+                <div id="modal-pane-invocation" class="modal-tab-pane" style="display:none;">
+                    <div id="error-invocation-section">
+                        <div id="invocation-chain" class="invocation-chain"></div>
+                    </div>
+                    <div id="error-no-invocation" class="modal-empty-state" style="display:none;">
+                        <span class="dashicons dashicons-info-outline"></span>
+                        <?php esc_html_e('No invocation chain available. Enrich error context with caller/invoker info to see this view.', 'riseup-asia-uploader'); ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -438,13 +504,247 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
     .error-detail-pre {
         background: #1e1e1e;
         color: #d4d4d4;
-        padding: 15px;
-        border-radius: 4px;
+        padding: 16px 20px;
+        border-radius: 6px;
         font-size: 12px;
-        max-height: 400px;
+        line-height: 1.7;
+        max-height: 500px;
         overflow: auto;
         white-space: pre-wrap;
         word-break: break-word;
+        font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Monaco', monospace;
+        border: 1px solid #333;
+    }
+    .stack-trace-pre {
+        color: #ce9178;
+    }
+
+    /* Fullscreen modal */
+    .riseup-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 100002;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(2px);
+    }
+    .riseup-modal-fullscreen {
+        width: 90vw;
+        max-width: 1200px;
+        max-height: 90vh;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .riseup-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 24px;
+        border-bottom: 1px solid #dcdcde;
+        background: #f6f7f7;
+    }
+    .modal-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .modal-header-left h3 {
+        margin: 0;
+        padding: 0;
+        font-size: 15px;
+        font-weight: 600;
+    }
+    .modal-header-icon {
+        color: #dba617;
+        font-size: 20px;
+    }
+    .modal-level-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+    .modal-header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .modal-copy-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+    }
+    .riseup-modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #646970;
+        padding: 4px 8px;
+        line-height: 1;
+        border-radius: 4px;
+        transition: all 0.15s;
+    }
+    .riseup-modal-close:hover {
+        background: #dcdcde;
+        color: #1d2327;
+    }
+    .riseup-modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+    }
+
+    /* Error summary bar */
+    .error-summary-bar {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 16px;
+        padding: 14px 24px;
+        background: #f9f9f9;
+        border-bottom: 1px solid #e2e4e7;
+        font-size: 13px;
+    }
+    .summary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .summary-label {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #646970;
+    }
+    .summary-value {
+        font-size: 13px;
+        color: #1d2327;
+        word-break: break-word;
+    }
+
+    /* Modal tabs */
+    .modal-tabs {
+        display: flex;
+        border-bottom: 2px solid #dcdcde;
+        padding: 0 24px;
+        background: #fff;
+    }
+    .modal-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 10px 16px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        color: #646970;
+        transition: all 0.15s;
+    }
+    .modal-tab:hover {
+        color: #1d2327;
+        background: #f6f7f7;
+    }
+    .modal-tab.active {
+        color: #2271b1;
+        border-bottom-color: #2271b1;
+    }
+    .modal-tab .dashicons {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Tab panes */
+    .modal-tab-pane {
+        padding: 20px 24px;
+    }
+    .modal-empty-state {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 30px 20px;
+        color: #646970;
+        font-size: 13px;
+        justify-content: center;
+    }
+    .modal-empty-state .dashicons {
+        color: #a7aaad;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Invocation chain visualization */
+    .invocation-chain {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+    .invocation-node {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 10px 0;
+    }
+    .invocation-connector {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 24px;
+        flex-shrink: 0;
+    }
+    .invocation-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #2271b1;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #2271b1;
+        flex-shrink: 0;
+    }
+    .invocation-dot.origin {
+        background: #00a32a;
+        box-shadow: 0 0 0 2px #00a32a;
+    }
+    .invocation-line {
+        width: 2px;
+        flex: 1;
+        background: #dcdcde;
+        min-height: 20px;
+    }
+    .invocation-detail {
+        flex: 1;
+        min-width: 0;
+    }
+    .invocation-method {
+        font-weight: 600;
+        font-size: 13px;
+        color: #1d2327;
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+    .invocation-method .class-name {
+        color: #2271b1;
+    }
+    .invocation-method .func-name {
+        color: #d63638;
+    }
+    .invocation-file {
+        font-size: 11px;
+        color: #646970;
+        margin-top: 2px;
     }
 
     /* Menu notification bubble */
@@ -669,27 +969,146 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
             }).fail(function() { $btn.prop('disabled', false); });
         });
 
-        // View error details
+        // View error details — enhanced modal
+        var currentModalData = {};
         $('.toggle-error-details').on('click', function() {
-            var context = $(this).data('context');
-            var stack = $(this).attr('data-stack');
-            if (context && context !== '{}' && Object.keys(context).length > 0) {
-                $('#error-context-content').text(JSON.stringify(context, null, 2));
+            var $btn = $(this);
+            var context = $btn.data('context');
+            var stack = $btn.attr('data-stack');
+            var level = $btn.attr('data-level') || 'WARN';
+            var message = $btn.attr('data-message') || '';
+            var source = $btn.attr('data-source') || '';
+            var timestamp = $btn.attr('data-timestamp') || '';
+
+            // Populate summary bar
+            $('#summary-message').text(message);
+            $('#summary-source').text(source);
+            $('#summary-timestamp').text(timestamp);
+
+            // Set level badge
+            var levelColors = { 'ERROR': '#dc3545', 'WARN': '#fd7e14', 'INFO': '#0d6efd', 'DEBUG': '#6c757d' };
+            $('#modal-error-level').text(level).css('background', levelColors[level] || '#6c757d');
+
+            // Parse context and extract invocation chain if present
+            var contextObj = {};
+            var invocationChain = null;
+            if (context && typeof context === 'object') {
+                contextObj = context;
+            } else if (context && context !== '{}') {
+                try { contextObj = JSON.parse(context); } catch(e) { contextObj = {}; }
+            }
+
+            // Extract invocation chain from context
+            if (contextObj._invocation_chain) {
+                invocationChain = contextObj._invocation_chain;
+                // Remove from display context
+                var displayContext = Object.assign({}, contextObj);
+                delete displayContext._invocation_chain;
+                contextObj = displayContext;
+            }
+
+            // Store for copy
+            currentModalData = { context: contextObj, stack: stack || '', invocation: invocationChain, message: message, source: source, timestamp: timestamp, level: level };
+
+            // Context tab
+            if (Object.keys(contextObj).length > 0) {
+                $('#error-context-content').text(JSON.stringify(contextObj, null, 2));
                 $('#error-context-section').show();
+                $('#error-no-context').hide();
             } else {
                 $('#error-context-section').hide();
+                $('#error-no-context').show();
             }
+
+            // Stack trace tab
             if (stack && stack.length > 0) {
                 $('#error-stack-content').text(stack);
                 $('#error-stack-section').show();
+                $('#error-no-stack').hide();
             } else {
                 $('#error-stack-section').hide();
+                $('#error-no-stack').show();
             }
+
+            // Invocation chain tab
+            if (invocationChain && invocationChain.length > 0) {
+                var html = '';
+                for (var i = 0; i < invocationChain.length; i++) {
+                    var node = invocationChain[i];
+                    var isFirst = (i === 0);
+                    var isLast = (i === invocationChain.length - 1);
+                    var dotClass = isLast ? 'invocation-dot origin' : 'invocation-dot';
+                    var methodHtml = '';
+                    if (node['class']) {
+                        methodHtml = '<span class="class-name">' + node['class'] + '</span>::<span class="func-name">' + (node['function'] || '') + '</span>';
+                    } else {
+                        methodHtml = '<span class="func-name">' + (node['function'] || 'anonymous') + '</span>';
+                    }
+                    var fileHtml = node.file ? node.file + (node.line ? ':' + node.line : '') : '';
+
+                    html += '<div class="invocation-node">';
+                    html += '<div class="invocation-connector"><div class="' + dotClass + '"></div>';
+                    if (!isLast) html += '<div class="invocation-line"></div>';
+                    html += '</div>';
+                    html += '<div class="invocation-detail">';
+                    html += '<div class="invocation-method">' + methodHtml + '</div>';
+                    if (fileHtml) html += '<div class="invocation-file">' + fileHtml + '</div>';
+                    html += '</div></div>';
+                }
+                $('#invocation-chain').html(html);
+                $('#error-invocation-section').show();
+                $('#error-no-invocation').hide();
+            } else {
+                $('#error-invocation-section').hide();
+                $('#error-no-invocation').show();
+            }
+
+            // Reset to first tab
+            $('.modal-tab').removeClass('active').first().addClass('active');
+            $('.modal-tab-pane').hide().first().show();
+
             $('#riseup-error-modal').show();
         });
 
+        // Modal tab switching
+        $(document).on('click', '.modal-tab', function() {
+            var tab = $(this).data('modal-tab');
+            $('.modal-tab').removeClass('active');
+            $(this).addClass('active');
+            $('.modal-tab-pane').hide();
+            $('#modal-pane-' + tab).show();
+        });
+
+        // Copy all modal content
+        $('#modal-copy-all').on('click', function() {
+            var text = '=== Error Details ===\n';
+            text += 'Level: ' + currentModalData.level + '\n';
+            text += 'Message: ' + currentModalData.message + '\n';
+            text += 'Source: ' + currentModalData.source + '\n';
+            text += 'Timestamp: ' + currentModalData.timestamp + '\n\n';
+            if (Object.keys(currentModalData.context).length > 0) {
+                text += '--- Context ---\n' + JSON.stringify(currentModalData.context, null, 2) + '\n\n';
+            }
+            if (currentModalData.stack) {
+                text += '--- Stack Trace ---\n' + currentModalData.stack + '\n\n';
+            }
+            if (currentModalData.invocation) {
+                text += '--- Invocation Chain ---\n';
+                currentModalData.invocation.forEach(function(node, i) {
+                    var method = node['class'] ? node['class'] + '::' + node['function'] : node['function'];
+                    text += (i + 1) + '. ' + method + (node.file ? ' (' + node.file + ':' + node.line + ')' : '') + '\n';
+                });
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() { showToast('Copied to clipboard!'); });
+            }
+        });
+
         // Close modal
-        $('.riseup-modal-close, .riseup-modal').on('click', function(e) {
+        $('.riseup-modal-close').on('click', function() {
+            $('#riseup-error-modal').hide();
+        });
+        $('.riseup-modal').on('click', function(e) {
             if (e.target === this) $('#riseup-error-modal').hide();
         });
         $(document).on('keydown', function(e) {
