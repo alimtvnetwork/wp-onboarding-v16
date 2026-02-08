@@ -362,14 +362,33 @@ function BackendSection({
   copySection,
   formatTs,
 }: BackendSectionProps) {
+  // Derive envelope stacks for display
+  const envelopeBackendStack = error.envelopeErrors?.Backend;
+  const envelopeDelegatedStack = error.envelopeErrors?.DelegatedServiceErrorStack;
+  const envelopeMethodsBackend = error.envelopeMethodsStack?.Backend;
+
+  // Determine if stack tab has any content
+  const hasStackContent = phpStackFrames.length > 0 
+    || !!error.backendStackTrace 
+    || (envelopeBackendStack && envelopeBackendStack.length > 0)
+    || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0);
+
+  // Determine if execution tab has content
+  const hasExecutionContent = (error.backendLogs && error.backendLogs.length > 0)
+    || (envelopeMethodsBackend && envelopeMethodsBackend.length > 0);
+
   return (
-    <Tabs defaultValue="logs" className="w-full">
+    <Tabs defaultValue="overview" className="w-full">
       {/* Horizontally scrollable tabs on mobile */}
       <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         <TabsList className="mb-4 inline-flex h-auto gap-1 min-w-max sm:flex sm:flex-wrap">
+          <TabsTrigger value="overview" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
+            <AlertCircle className="h-3 w-3" />
+            Overview
+          </TabsTrigger>
           <TabsTrigger value="logs" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
             <Terminal className="h-3 w-3" />
-            <span className="hidden xs:inline">Error</span> Log
+            Log
           </TabsTrigger>
           <TabsTrigger value="execution" className="gap-1 text-xs sm:text-sm px-2 sm:px-3">
             <Activity className="h-3 w-3" />
@@ -398,6 +417,106 @@ function BackendSection({
           )}
         </TabsList>
       </div>
+
+      {/* Overview Tab */}
+      <TabsContent value="overview" className="space-y-4 m-0">
+        {/* Error Summary */}
+        <div className="rounded-md border p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="text-sm font-medium">{error.message}</p>
+              <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary" className="text-xs">{error.code}</Badge>
+                <span>{formatTs(error.createdAt)}</span>
+                {error.responseStatus && (
+                  <Badge variant="outline" className="text-xs">HTTP {error.responseStatus}</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Site URL if available */}
+        {error.siteUrl && (
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Target Site:</span>
+            <a 
+              href={error.siteUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-sm text-primary hover:underline flex items-center gap-1"
+            >
+              {error.siteUrl}
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
+
+        {/* Request Info */}
+        {(error.endpoint || error.method) && (
+          <div className="rounded-md border p-3 space-y-2">
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Request</h4>
+            <div className="font-mono text-xs break-all">
+              <span className="text-primary font-semibold">{error.method || 'GET'}</span>{' '}
+              <span>{error.endpoint || 'unknown'}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Envelope Error Details */}
+        {error.envelopeErrors?.BackendMessage && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+            <h4 className="text-xs font-medium text-destructive uppercase tracking-wider flex items-center gap-1.5">
+              <Server className="h-3 w-3" />
+              Backend Error
+            </h4>
+            <p className="text-sm font-mono break-all">{error.envelopeErrors.BackendMessage}</p>
+          </div>
+        )}
+
+        {/* Timing */}
+        {(error.requestedAt || error.requestDelegatedAt) && (
+          <div className="rounded-md border p-3 space-y-1">
+            <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Timing</h4>
+            {error.requestedAt && (
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Requested At</span>
+                <span className="font-mono">{formatTs(error.requestedAt)}</span>
+              </div>
+            )}
+            {error.requestDelegatedAt && (
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Delegated At</span>
+                <span className="font-mono">{formatTs(error.requestDelegatedAt)}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick status badges */}
+        <div className="flex flex-wrap gap-2">
+          {error.sessionId && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <FileText className="h-3 w-3" />
+              Session: {error.sessionId.slice(0, 8)}…
+            </Badge>
+          )}
+          {hasStackContent && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Code2 className="h-3 w-3" />
+              Stack traces available
+            </Badge>
+          )}
+          {hasExecutionContent && (
+            <Badge variant="outline" className="text-xs gap-1">
+              <Activity className="h-3 w-3" />
+              Execution logs available
+            </Badge>
+          )}
+        </div>
+      </TabsContent>
 
       {/* Error Log Tab */}
       <TabsContent value="logs" className="space-y-4 m-0">
@@ -486,14 +605,61 @@ function BackendSection({
         </div>
       </TabsContent>
 
-      {/* Execution Logs Tab */}
+      {/* Execution Logs Tab — Session logs + Envelope MethodsStack */}
       <TabsContent value="execution" className="space-y-4 m-0">
-        {error.backendLogs && error.backendLogs.length > 0 ? (
+        {/* Envelope Methods Stack (always available if envelope had it) */}
+        {envelopeMethodsBackend && envelopeMethodsBackend.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Route className="h-4 w-4" />
+                Go Call Chain ({envelopeMethodsBackend.length} frames)
+              </h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const text = envelopeMethodsBackend.map((f, i) => 
+                    `#${i} ${f.Method} at ${f.File}:${f.LineNumber}`
+                  ).join('\n');
+                  copySection("Go call chain", text);
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-left p-2 font-medium text-muted-foreground w-8">#</th>
+                    <th className="text-left p-2 font-medium text-muted-foreground">Method</th>
+                    <th className="text-left p-2 font-medium text-muted-foreground">File</th>
+                    <th className="text-right p-2 font-medium text-muted-foreground">Line</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {envelopeMethodsBackend.map((frame, index) => (
+                    <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-primary/5")}>
+                      <td className="p-2 font-mono text-muted-foreground">{index}</td>
+                      <td className="p-2 font-mono font-semibold">{frame.Method}</td>
+                      <td className="p-2 font-mono text-muted-foreground truncate max-w-[200px]">{frame.File}</td>
+                      <td className="p-2 font-mono text-right">{frame.LineNumber}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Session-based execution logs */}
+        {error.backendLogs && error.backendLogs.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Activity className="h-4 w-4" />
-                Execution Logs ({error.backendLogs.length} entries)
+                Session Execution Logs ({error.backendLogs.length} entries)
               </h4>
               <Button
                 variant="ghost"
@@ -522,18 +688,45 @@ function BackendSection({
               </div>
             </ScrollArea>
           </div>
-        ) : (
+        )}
+
+        {!hasExecutionContent && (
           <div className="text-center py-8 text-muted-foreground">
             <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No execution logs captured</p>
-            <p className="text-xs mt-1">Logs are captured during publish, sync, and test operations</p>
+            <p className="text-xs mt-1">Enable <strong>includeMethodsStack</strong> in Settings → Developer for Go call chains</p>
+            <p className="text-xs">Session logs appear during publish, sync, and test operations</p>
           </div>
         )}
       </TabsContent>
 
       {/* Stack Traces Tab */}
       <TabsContent value="stack" className="space-y-4 m-0">
-        {/* PHP Stack Trace */}
+        {/* Envelope Delegated Service Error Stack (PHP from envelope) */}
+        {envelopeDelegatedStack && envelopeDelegatedStack.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                PHP Delegated Error Stack ({envelopeDelegatedStack.length} lines)
+              </h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copySection("PHP delegated stack", envelopeDelegatedStack.join('\n'))}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
+              <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+                {envelopeDelegatedStack.join('\n')}
+              </pre>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* PHP Stack Trace (from context) */}
         {phpStackFrames.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -586,13 +779,35 @@ function BackendSection({
           </div>
         )}
 
-        {/* Go Stack Trace */}
+        {/* Envelope Go Backend Stack */}
+        {envelopeBackendStack && envelopeBackendStack.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Server className="h-4 w-4" />
+                Go Backend Stack ({envelopeBackendStack.length} lines)
+              </h4>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => copySection("Go backend stack", envelopeBackendStack.join('\n'))}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <ScrollArea className="h-[200px] rounded-md border bg-muted">
+              <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all">{envelopeBackendStack.join('\n')}</pre>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* Go Stack Trace (raw from context) */}
         {error.backendStackTrace && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Server className="h-4 w-4" />
-                Go Stack Trace
+                Go Stack Trace (raw)
               </h4>
               <Button variant="ghost" size="sm" onClick={() => copySection("Go stack trace", error.backendStackTrace!)}>
                 <Copy className="h-4 w-4" />
@@ -604,10 +819,11 @@ function BackendSection({
           </div>
         )}
 
-        {phpStackFrames.length === 0 && !error.backendStackTrace && (
+        {!hasStackContent && (
           <div className="text-center py-8 text-muted-foreground">
-            <Server className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <Code2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm">No backend stack traces available</p>
+            <p className="text-xs mt-1">Enable <strong>includeStackTrace</strong> in Settings → Developer for Go/PHP stacks</p>
           </div>
         )}
       </TabsContent>
