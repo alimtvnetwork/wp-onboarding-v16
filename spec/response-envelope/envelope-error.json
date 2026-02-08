@@ -27,9 +27,29 @@
       "#1 {main}"
     ],
     "Backend": [
-      "plugin_handlers.go:85 HandlePluginDetails",
-      "plugin_service.go:120 FetchPluginFromSite",
-      "http_client.go:45 doRequest"
+      "internal/api/handlers/site_handlers.go:327 handlers.EnableRemotePlugin",
+      "internal/services/site/service.go:1245 site.(*Service).EnableRemotePlugin",
+      "internal/wordpress/uploader.go:350 wordpress.(*Client).doRequest"
+    ],
+    "Frontend": []
+  },
+  "MethodsStack": {
+    "Backend": [
+      {
+        "Method": "handlers.EnableRemotePlugin",
+        "File": "internal/api/handlers/site_handlers.go",
+        "LineNumber": 327
+      },
+      {
+        "Method": "site.(*Service).EnableRemotePlugin",
+        "File": "internal/services/site/service.go",
+        "LineNumber": 1245
+      },
+      {
+        "Method": "wordpress.(*Client).doRequest",
+        "File": "internal/wordpress/uploader.go",
+        "LineNumber": 350
+      }
     ],
     "Frontend": []
   }
