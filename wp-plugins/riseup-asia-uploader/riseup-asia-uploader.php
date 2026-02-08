@@ -1568,13 +1568,20 @@ class Riseup_Asia {
                     $error_msg = $result->get_error_message();
                     $this->file_logger->warn('Activation failed', array('error' => $error_msg));
                     $this->logger->log_upload_failed($slug, RISEUP_MSG_ACTIVATION_FAILED . ': ' . $error_msg);
-                    // Plugin uploaded but activation failed.
+
+                    // Capture backtrace for activation failure diagnostics
+                    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
+
+                    // Plugin uploaded but activation failed — include full diagnostic metadata
                     return new WP_REST_Response(array(
                         'success'          => true,
                         'plugin_slug'      => $slug,
                         'is_update'        => $is_update,
                         'activated'        => false,
                         'activation_error' => $error_msg,
+                        'requestUrl'       => $this->get_current_request_url(),
+                        'responseUrl'      => home_url(),
+                        'stackTraceFrames' => riseup_backtrace_to_frames($backtrace),
                     ), RISEUP_HTTP_OK);
                 }
                 $activated = true;

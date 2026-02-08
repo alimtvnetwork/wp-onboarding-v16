@@ -98,6 +98,8 @@ type LoggingConfig struct {
 	ClearSessionsOnStartup bool   `json:"clearSessionsOnStartup"`
 	// SessionLoggingEnabled enables per-request session logging for all API calls
 	SessionLoggingEnabled  bool   `json:"sessionLoggingEnabled"`
+	// StackTraceDepth controls the maximum number of Go stack frames captured (default 20)
+	StackTraceDepth        int    `json:"stackTraceDepth"`
 }
 
 // SecurityConfig holds security settings
@@ -172,7 +174,8 @@ func DefaultConfig() *Config {
 			TimeFormat:             "2006-01-02 03:04:05 PM",
 			ClearLogsOnStartup:     false,
 			ClearSessionsOnStartup: false,
-			SessionLoggingEnabled:  true, // Enable per-request session logging by default
+			SessionLoggingEnabled:  true,
+			StackTraceDepth:        20,
 		},
 		Security: SecurityConfig{
 			EncryptionKey: "", // Must be set via environment or config
