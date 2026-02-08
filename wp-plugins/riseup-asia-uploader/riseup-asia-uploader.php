@@ -1088,11 +1088,35 @@ class Riseup_Asia {
         $this->file_logger->debug('Authenticating request (any user)');
 
         try {
-            // Get Authorization header.
+            // Get Authorization header — try multiple sources for compatibility
+            // with CGI/FastCGI and proxy configurations.
             $auth_header = $request->get_header('Authorization');
 
+            // Fallback: check $_SERVER for CGI/FastCGI environments
             if (RiseupBooleanHelpers::is_empty($auth_header)) {
-                $this->file_logger->warn('Missing Authorization header');
+                if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+                    $auth_header = $_SERVER['HTTP_AUTHORIZATION'];
+                } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+                    $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+                } elseif (function_exists('getallheaders')) {
+                    $headers = getallheaders();
+                    if (isset($headers['Authorization'])) {
+                        $auth_header = $headers['Authorization'];
+                    } elseif (isset($headers['authorization'])) {
+                        $auth_header = $headers['authorization'];
+                    }
+                }
+            }
+
+            if (RiseupBooleanHelpers::is_empty($auth_header)) {
+                $this->file_logger->warn('Missing Authorization header', array(
+                    'reason'     => 'Missing Authorization header',
+                    'method'     => $request->get_method(),
+                    'endpoint'   => $request->get_route(),
+                    'ip'         => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown',
+                    'user_agent' => $request->get_header('user-agent') ?: 'unknown',
+                    'server_software' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'unknown',
+                ));
                 $this->logger->log_auth_failure('Missing Authorization header');
                 return new WP_Error(
                     'rest_forbidden',
@@ -1171,11 +1195,34 @@ class Riseup_Asia {
         $this->file_logger->debug('Authenticating request', array('capability' => $capability));
 
         try {
-            // Get Authorization header.
+            // Get Authorization header — try multiple sources for compatibility
             $auth_header = $request->get_header('Authorization');
 
+            // Fallback: check $_SERVER for CGI/FastCGI environments
             if (RiseupBooleanHelpers::is_empty($auth_header)) {
-                $this->file_logger->warn('Missing Authorization header');
+                if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+                    $auth_header = $_SERVER['HTTP_AUTHORIZATION'];
+                } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+                    $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+                } elseif (function_exists('getallheaders')) {
+                    $headers = getallheaders();
+                    if (isset($headers['Authorization'])) {
+                        $auth_header = $headers['Authorization'];
+                    } elseif (isset($headers['authorization'])) {
+                        $auth_header = $headers['authorization'];
+                    }
+                }
+            }
+
+            if (RiseupBooleanHelpers::is_empty($auth_header)) {
+                $this->file_logger->warn('Missing Authorization header', array(
+                    'reason'     => 'Missing Authorization header',
+                    'method'     => $request->get_method(),
+                    'endpoint'   => $request->get_route(),
+                    'ip'         => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown',
+                    'user_agent' => $request->get_header('user-agent') ?: 'unknown',
+                    'server_software' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'unknown',
+                ));
                 $this->logger->log_auth_failure('Missing Authorization header');
                 return new WP_Error(
                     'rest_forbidden',
