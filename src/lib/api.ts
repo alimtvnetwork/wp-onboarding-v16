@@ -590,6 +590,7 @@ export interface SessionDiagnostics {
     golang?: SessionStackFrame[];
     php?: SessionStackFrame[];
   };
+  phpStackTraceLog?: string;
 }
 
 export interface FilePreview {
