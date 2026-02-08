@@ -640,12 +640,13 @@ export interface Settings {
     level: string;
     retentionDays: number;
     debugMode: boolean;
-    // Frontend resilience settings
     frontendDebugMode?: boolean;
     retryMaxAttempts?: number;
     retryInitialDelayMs?: number;
     circuitBreakerThreshold?: number;
     circuitBreakerCooldownMs?: number;
+    stackTraceDepth?: number;
+    phpStackTraceDepth?: number;
   };
   appearance: {
     theme: string;
@@ -663,6 +664,7 @@ export interface Settings {
     includeErrors: boolean;
     includeStackTrace: boolean;
     includeMethodsStack: boolean;
+    maxStackFrames?: number;
   };
   pagination?: {
     defaultPerPage: number;
