@@ -120,8 +120,10 @@ Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBui
 - Updated 40+ bare `$ref: Success/Created` endpoints with typed `Results` referencing the new schemas
 - Remaining bare `$ref: Success` kept intentionally for simple action endpoints (clear, delete, abort) that return no meaningful data
 
-#### Sub-phase 14.4 🔧 — Add response examples per envelope spec
-Add inline `example` blocks to key endpoints showing a complete envelope (Status + Attributes + typed Results) for both success and error cases.
+#### Sub-phase 14.4 ✅ — Add response examples
+- Added complete envelope examples (Status + Attributes + Results) to 7 key endpoints: list sites, create site, remote plugins list, enable remote plugin, snapshots list, git status, E2E run
+- Added error envelope example to the Error response component
+- Examples cover all patterns: list (multiple), single-item, delegated, create (201), action, and error
 
 #### Sub-phase 14.5 🔧 — Validate spec with Swagger UI rendering
 Load the updated spec in the API Explorer, verify all endpoints render correctly, and confirm "Try it Out" responses match documented schemas.
