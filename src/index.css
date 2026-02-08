@@ -50,11 +50,11 @@ All colors MUST be HSL.
     --radius: 0.5rem;
 
     /* Toast semantic tokens — light theme */
-    --toast-bg: 220 13% 95%;
-    --toast-fg: 222 84% 5%;
-    --toast-border: 220 13% 88%;
-    --toast-desc: 215 16% 47%;
-    --toast-shadow: 0 10px 30px hsl(0 0% 0% / 0.12), 0 2px 8px hsl(0 0% 0% / 0.08);
+    --toast-bg: 220 13% 18%;
+    --toast-fg: 0 0% 98%;
+    --toast-border: 220 13% 25%;
+    --toast-desc: 215 15% 72%;
+    --toast-shadow: 0px 10px 28px rgba(0, 0, 0, 0.40), 0px 2px 8px rgba(0, 0, 0, 0.25);
 
     --toast-success-bg: 142 76% 95%;
     --toast-success-border: 142 76% 80%;
@@ -122,10 +122,10 @@ All colors MUST be HSL.
 
     /* Toast semantic tokens — dark theme */
     --toast-bg: 220 13% 14%;
-    --toast-fg: 210 40% 98%;
+    --toast-fg: 0 0% 98%;
     --toast-border: 220 13% 22%;
-    --toast-desc: 215 20% 65%;
-    --toast-shadow: 0 10px 30px hsl(0 0% 0% / 0.4), 0 2px 8px hsl(0 0% 0% / 0.25);
+    --toast-desc: 215 15% 65%;
+    --toast-shadow: 0px 10px 28px rgba(0, 0, 0, 0.40), 0px 2px 8px rgba(0, 0, 0, 0.25);
 
     --toast-success-bg: 142 76% 12%;
     --toast-success-border: 142 76% 26%;
