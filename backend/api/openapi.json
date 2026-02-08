@@ -97,6 +97,14 @@
                     { "$ref": "#/components/schemas/SuccessEnvelope" },
                     { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Site" } } } }
                   ]
+                },
+                "example": {
+                  "Status": { "IsSuccess": true, "IsFailed": false, "Code": 200, "Message": "OK", "Timestamp": "2026-02-07T12:00:00Z" },
+                  "Attributes": { "RequestedAt": "/api/v1/sites", "RequestDelegatedAt": "", "HasAnyErrors": false, "IsSingle": false, "IsMultiple": true, "TotalRecords": 2, "PerPage": 20, "TotalPages": 1, "CurrentPage": 1 },
+                  "Results": [
+                    { "id": 1, "name": "Production", "url": "https://example.com", "username": "admin", "isConnected": true, "uploaderVersion": "1.34.0", "createdAt": "2026-01-15T10:00:00Z" },
+                    { "id": 2, "name": "Staging", "url": "https://staging.example.com", "username": "admin", "isConnected": false, "uploaderVersion": "", "createdAt": "2026-01-20T14:30:00Z" }
+                  ]
                 }
               }
             }
@@ -116,7 +124,7 @@
           }
         },
         "responses": {
-          "201": { "description": "Site created", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Site" }, "minItems": 1, "maxItems": 1 } } }] } } } },
+          "201": { "description": "Site created", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/Site" }, "minItems": 1, "maxItems": 1 } } }] }, "example": { "Status": { "IsSuccess": true, "IsFailed": false, "Code": 201, "Message": "Created", "Timestamp": "2026-02-07T12:00:00Z" }, "Attributes": { "RequestedAt": "/api/v1/sites", "RequestDelegatedAt": "", "HasAnyErrors": false, "IsSingle": true, "IsMultiple": false, "TotalRecords": 1, "PerPage": 0, "TotalPages": 0, "CurrentPage": 0 }, "Results": [{ "id": 3, "name": "New Site", "url": "https://new.example.com", "username": "admin", "isConnected": false, "uploaderVersion": "", "createdAt": "2026-02-07T12:00:00Z" }] } } } },
           "400": { "$ref": "#/components/responses/Error" }
         }
       }
@@ -313,7 +321,7 @@
         "operationId": "getRemotePlugins",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
         "responses": {
-          "200": { "description": "Remote plugins list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginInfo" } } } }] } } } }
+          "200": { "description": "Remote plugins list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginInfo" } } } }] }, "example": { "Status": { "IsSuccess": true, "IsFailed": false, "Code": 200, "Message": "OK", "Timestamp": "2026-02-07T12:00:00Z" }, "Attributes": { "RequestedAt": "/api/v1/sites/1/remote-plugins", "RequestDelegatedAt": "https://example.com/wp-json/riseup-asia-uploader/v1/plugins", "HasAnyErrors": false, "IsSingle": false, "IsMultiple": true, "TotalRecords": 3, "PerPage": 0, "TotalPages": 0, "CurrentPage": 0 }, "Results": [{ "name": "Akismet", "slug": "akismet", "version": "5.3", "status": "active", "author": "Automattic", "description": "Anti-spam", "textDomain": "akismet", "updateAvailable": false }, { "name": "Yoast SEO", "slug": "wordpress-seo", "version": "22.1", "status": "active", "author": "Yoast", "description": "SEO plugin", "textDomain": "wordpress-seo", "updateAvailable": true }] } } } }
         }
       }
     },
@@ -354,7 +362,7 @@
           }
         },
         "responses": {
-          "200": { "description": "Plugin enabled", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginActionResult" }, "minItems": 1, "maxItems": 1 } } }] } } } }
+          "200": { "description": "Plugin enabled", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/RemotePluginActionResult" }, "minItems": 1, "maxItems": 1 } } }] }, "example": { "Status": { "IsSuccess": true, "IsFailed": false, "Code": 200, "Message": "OK", "Timestamp": "2026-02-07T12:00:00Z" }, "Attributes": { "RequestedAt": "/api/v1/sites/1/remote-plugins/enable", "RequestDelegatedAt": "https://example.com/wp-json/riseup-asia-uploader/v1/plugins/enable", "HasAnyErrors": false, "IsSingle": true, "IsMultiple": false, "TotalRecords": 1, "PerPage": 0, "TotalPages": 0, "CurrentPage": 0 }, "Results": [{ "plugin_slug": "akismet", "activated": true }] } } } }
         }
       }
     },
@@ -447,7 +455,7 @@
         "summary": "List remote snapshots",
         "operationId": "getRemoteSnapshots",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Snapshots list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" } } } }] } } } } }
+        "responses": { "200": { "description": "Snapshots list", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/SnapshotInfo" } } } }] }, "example": { "Status": { "IsSuccess": true, "IsFailed": false, "Code": 200, "Message": "OK", "Timestamp": "2026-02-07T12:00:00Z" }, "Attributes": { "RequestedAt": "/api/v1/sites/1/snapshots", "RequestDelegatedAt": "https://example.com/wp-json/riseup-asia-uploader/v1/snapshots", "HasAnyErrors": false, "IsSingle": false, "IsMultiple": true, "TotalRecords": 2, "PerPage": 0, "TotalPages": 0, "CurrentPage": 0 }, "Results": [{ "id": 1, "type": "master", "status": "completed", "rowCount": 15420, "fileSize": 2048576, "tables": ["wp_posts", "wp_options"], "createdAt": "2026-02-06T08:00:00Z" }, { "id": 2, "type": "incremental", "status": "completed", "rowCount": 320, "fileSize": 65536, "tables": ["wp_posts"], "createdAt": "2026-02-07T08:00:00Z" }] } } } } }
       },
       "post": {
         "tags": ["Snapshots"],
@@ -789,7 +797,7 @@
         "summary": "Git status for a plugin",
         "operationId": "gitStatus",
         "parameters": [{ "$ref": "#/components/parameters/id" }],
-        "responses": { "200": { "description": "Git status", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/GitStatusResult" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
+        "responses": { "200": { "description": "Git status", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/GitStatusResult" }, "minItems": 1, "maxItems": 1 } } }] }, "example": { "Status": { "IsSuccess": true, "IsFailed": false, "Code": 200, "Message": "OK", "Timestamp": "2026-02-07T12:00:00Z" }, "Attributes": { "RequestedAt": "/api/v1/plugins/1/git/status", "RequestDelegatedAt": "", "HasAnyErrors": false, "IsSingle": true, "IsMultiple": false, "TotalRecords": 1, "PerPage": 0, "TotalPages": 0, "CurrentPage": 0 }, "Results": [{ "branch": "main", "clean": false, "ahead": 2, "behind": 0, "staged": ["readme.txt"], "modified": ["my-plugin.php"], "untracked": [] }] } } } } }
       }
     },
     "/plugins/{id}/git/commit": {
@@ -1427,7 +1435,7 @@
             }
           }
         },
-        "responses": { "201": { "description": "Test run started", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ERun" }, "minItems": 1, "maxItems": 1 } } }] } } } } }
+        "responses": { "201": { "description": "Test run started", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/SuccessEnvelope" }, { "properties": { "Results": { "type": "array", "items": { "$ref": "#/components/schemas/E2ERun" }, "minItems": 1, "maxItems": 1 } } }] }, "example": { "Status": { "IsSuccess": true, "IsFailed": false, "Code": 201, "Message": "Created", "Timestamp": "2026-02-07T12:00:00Z" }, "Attributes": { "RequestedAt": "/api/v1/e2e/run", "RequestDelegatedAt": "", "HasAnyErrors": false, "IsSingle": true, "IsMultiple": false, "TotalRecords": 1, "PerPage": 0, "TotalPages": 0, "CurrentPage": 0 }, "Results": [{ "id": "run-001", "suiteId": "suite-core", "status": "running", "totalCases": 12, "passed": 0, "failed": 0, "skipped": 0, "durationMs": 0, "startedAt": "2026-02-07T12:00:00Z", "completedAt": null, "results": [] }] } } } } }
       }
     },
     "/e2e/runs": {
@@ -2373,7 +2381,13 @@
         "description": "Error response",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" }
+            "schema": { "$ref": "#/components/schemas/ErrorEnvelope" },
+            "example": {
+              "Status": { "IsSuccess": false, "IsFailed": true, "Code": 500, "Message": "Internal Server Error", "Timestamp": "2026-02-07T12:00:00Z" },
+              "Attributes": { "RequestedAt": "/api/v1/sites/1/remote-plugins", "RequestDelegatedAt": "https://example.com/wp-json/riseup-asia-uploader/v1/plugins", "HasAnyErrors": true, "IsSingle": false, "IsMultiple": false, "TotalRecords": 0, "PerPage": 0, "TotalPages": 0, "CurrentPage": 0 },
+              "Results": [],
+              "Errors": { "BackendMessage": "[E5001] Failed to fetch remote plugins", "DelegatedServiceErrorStack": ["PHP Fatal error: Class 'PDO' not found in plugin.php:42"], "Backend": [{ "Method": "HandleGetRemotePlugins", "File": "remote_plugin_handlers.go", "LineNumber": 55 }], "Frontend": [] }
+            }
           }
         }
       }
