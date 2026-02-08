@@ -1319,9 +1319,86 @@ function RequestDetails({ error, copySection }: { error: CapturedError; copySect
   const resolvedApiOrigin = typeof ctx.resolvedApiOrigin === "string" ? ctx.resolvedApiOrigin : undefined;
   const uiOrigin = typeof ctx.uiOrigin === "string" ? ctx.uiOrigin : undefined;
 
+  const hasRequestChain = error.requestedAt || error.requestDelegatedAt;
+
   return (
     <div className="space-y-4">
-      {(error.endpoint || error.method) && (
+      {/* Request Chain Visualization */}
+      {hasRequestChain && (
+        <div>
+          <h4 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+            <Route className="h-4 w-4" />
+            Request Chain
+          </h4>
+          <div className="space-y-0">
+            {/* Node 1: React → Go */}
+            <div className="border rounded-t-md bg-muted/50 p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                <Badge variant="outline" className="text-xs font-mono bg-blue-500/10 border-blue-500/30">React → Go</Badge>
+                {error.method && <Badge variant="outline" className="font-mono text-xs">{error.method}</Badge>}
+                {error.responseStatus && (
+                  <Badge variant={error.responseStatus >= 400 ? "destructive" : "secondary"} className="text-xs">
+                    {error.responseStatus}
+                  </Badge>
+                )}
+              </div>
+              <div className="ml-4 space-y-1">
+                <p className="text-xs font-mono text-muted-foreground break-all">
+                  {error.requestedAt || requestUrl || error.endpoint || "N/A"}
+                </p>
+                {error.requestBody && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground font-medium">Request Body</span>
+                      <Button variant="ghost" size="sm" className="h-5 px-1" onClick={() => copySection("Request body", JSON.stringify(error.requestBody, null, 2))}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <pre className="text-xs bg-background/60 p-2 rounded mt-1 overflow-x-auto font-mono max-h-32">
+                      {JSON.stringify(error.requestBody, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Connector line */}
+            {error.requestDelegatedAt && (
+              <div className="flex items-center pl-4">
+                <div className="w-0.5 h-4 bg-border ml-[3px]" />
+              </div>
+            )}
+
+            {/* Node 2: Go → PHP (Delegated) */}
+            {error.requestDelegatedAt && (
+              <div className="border rounded-b-md bg-muted/50 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0" />
+                  <Badge variant="outline" className="text-xs font-mono bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400">Go → PHP</Badge>
+                </div>
+                <div className="ml-4 space-y-1">
+                  <p className="text-xs font-mono text-muted-foreground break-all">
+                    {error.requestDelegatedAt}
+                  </p>
+                  {/* Show delegated error stack as PHP response if available */}
+                  {error.envelopeErrors?.DelegatedServiceErrorStack && error.envelopeErrors.DelegatedServiceErrorStack.length > 0 && (
+                    <div className="mt-2">
+                      <span className="text-xs text-muted-foreground font-medium">PHP Response Stack</span>
+                      <pre className="text-xs bg-background/60 p-2 rounded mt-1 overflow-x-auto font-mono max-h-32 text-orange-600 dark:text-orange-400 whitespace-pre-wrap">
+                        {error.envelopeErrors.DelegatedServiceErrorStack.join('\n')}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback: Simple API Request (no chain data) */}
+      {!hasRequestChain && (error.endpoint || error.method) && (
         <div>
           <h4 className="text-sm font-medium text-muted-foreground mb-1 flex items-center gap-2">
             <Globe className="h-4 w-4" />
@@ -1342,74 +1419,19 @@ function RequestDetails({ error, copySection }: { error: CapturedError; copySect
                 </Badge>
               </p>
             )}
-
-            {(requestUrl || apiBase || rawViteApiUrl) && (
-              <div className="pt-2 border-t border-border/60 space-y-1">
-                {requestUrl && (
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Requested URL: </span>
-                    <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{requestUrl}</code>
-                  </p>
-                )}
-                {apiBase && (
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">API Base: </span>
-                    <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{apiBase}</code>
-                  </p>
-                )}
-                {apiBaseAbsolute && (
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">API Base (absolute): </span>
-                    <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{apiBaseAbsolute}</code>
-                  </p>
-                )}
-                {(rawViteApiUrl || rawViteWsUrl || uiOrigin) && (
-                  <div className="mt-2 pt-2 border-t border-border/60">
-                    <p className="text-xs text-muted-foreground font-medium mb-1">Environment Variables</p>
-                    {rawViteApiUrl && (
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">VITE_API_URL: </span>
-                        <code className="text-xs bg-background/60 px-1 py-0.5 rounded">{rawViteApiUrl || "(not set)"}</code>
-                      </p>
-                    )}
-                    {rawViteWsUrl && (
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">VITE_WS_URL: </span>
-                        <code className="text-xs bg-background/60 px-1 py-0.5 rounded">{rawViteWsUrl || "(not set)"}</code>
-                      </p>
-                    )}
-                    {uiOrigin && (
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">UI Origin: </span>
-                        <code className="text-xs bg-background/60 px-1 py-0.5 rounded">{uiOrigin}</code>
-                      </p>
-                    )}
-                  </div>
-                )}
-                {resolvedApiOrigin && (
-                  <p className="text-sm">
-                    <span className="text-muted-foreground">Resolved API Origin: </span>
-                    <code className="text-xs bg-background/60 px-1 py-0.5 rounded break-all">{resolvedApiOrigin}</code>
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {error.requestBody && (
+      {/* Request Body (fallback for when no chain but body exists) */}
+      {!hasRequestChain && error.requestBody && (
         <div>
           <div className="flex items-center justify-between mb-1">
             <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-1">
               <Network className="h-4 w-4" />
               Request Body
             </h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => copySection("Request body", JSON.stringify(error.requestBody, null, 2))}
-            >
+            <Button variant="ghost" size="sm" onClick={() => copySection("Request body", JSON.stringify(error.requestBody, null, 2))}>
               <Copy className="h-4 w-4" />
             </Button>
           </div>
@@ -1419,7 +1441,50 @@ function RequestDetails({ error, copySection }: { error: CapturedError; copySect
         </div>
       )}
 
-      {!error.endpoint && !error.requestBody && (
+      {/* Environment details */}
+      {(requestUrl || apiBase || rawViteApiUrl) && (
+        <div className="border-t border-border/60 pt-3 space-y-1">
+          <h4 className="text-xs text-muted-foreground font-medium mb-1">Environment</h4>
+          {apiBase && (
+            <p className="text-xs">
+              <span className="text-muted-foreground">API Base: </span>
+              <code className="bg-background/60 px-1 py-0.5 rounded break-all">{apiBase}</code>
+            </p>
+          )}
+          {apiBaseAbsolute && (
+            <p className="text-xs">
+              <span className="text-muted-foreground">API Base (absolute): </span>
+              <code className="bg-background/60 px-1 py-0.5 rounded break-all">{apiBaseAbsolute}</code>
+            </p>
+          )}
+          {rawViteApiUrl && (
+            <p className="text-xs">
+              <span className="text-muted-foreground">VITE_API_URL: </span>
+              <code className="bg-background/60 px-1 py-0.5 rounded">{rawViteApiUrl}</code>
+            </p>
+          )}
+          {rawViteWsUrl && (
+            <p className="text-xs">
+              <span className="text-muted-foreground">VITE_WS_URL: </span>
+              <code className="bg-background/60 px-1 py-0.5 rounded">{rawViteWsUrl}</code>
+            </p>
+          )}
+          {uiOrigin && (
+            <p className="text-xs">
+              <span className="text-muted-foreground">UI Origin: </span>
+              <code className="bg-background/60 px-1 py-0.5 rounded">{uiOrigin}</code>
+            </p>
+          )}
+          {resolvedApiOrigin && (
+            <p className="text-xs">
+              <span className="text-muted-foreground">Resolved API Origin: </span>
+              <code className="bg-background/60 px-1 py-0.5 rounded break-all">{resolvedApiOrigin}</code>
+            </p>
+          )}
+        </div>
+      )}
+
+      {!error.endpoint && !error.requestBody && !hasRequestChain && (
         <div className="text-center py-8 text-muted-foreground">
           No request information available
         </div>

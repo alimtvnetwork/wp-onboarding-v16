@@ -281,11 +281,20 @@ Each error entry is appended to `error.log.txt` with the following structure:
 
 ### Conditional Sections
 
-- **Errors block**: Only present if the envelope's `Errors` field is non-nil (i.e., `includeErrors` is enabled in backend debug config)
-- **MethodsStack block**: Only present if `includeMethodsStack` is enabled
+- **Errors block**: Present by default (`includeErrors` defaults to `true` since v1.19.7)
+- **MethodsStack block**: Present by default (`includeMethodsStack` defaults to `true` since v1.19.7)
+- **Stack traces**: Present by default (`includeStackTrace` defaults to `true` since v1.19.7)
 - **RequestDelegatedAt**: Only present for operations that delegate to a remote service (e.g., PHP)
 - **Query Params**: Omitted when empty
 - **Request Body**: Omitted for GET/DELETE requests with no body
+
+### Go Stack Trace Auto-Capture (v1.19.7+)
+
+All error responses via `respondError()` now use `envelope.ErrorWithStack()` which auto-captures:
+1. **Backend trace** (`Errors.Backend`): Go runtime stack frames filtered to `wp-plugin-publish/` namespace
+2. **Methods stack** (`MethodsStack.Backend`): Structured `MethodFrame` objects with Method, File, LineNumber
+
+This ensures **every** error — even simple validation failures like "Plugin slug is required" — includes full Go call chain diagnostics in the envelope, visible in the Global Error Modal's Stack, Execution, and Request tabs.
 
 ### Truncation
 

@@ -93,8 +93,8 @@ export default function Settings() {
   
   // Response Debug settings (backend-persisted)
   const [includeErrors, setIncludeErrors] = useState(true);
-  const [includeStackTrace, setIncludeStackTrace] = useState(false);
-  const [includeMethodsStack, setIncludeMethodsStack] = useState(false);
+  const [includeStackTrace, setIncludeStackTrace] = useState(true);
+  const [includeMethodsStack, setIncludeMethodsStack] = useState(true);
   const [defaultPerPage, setDefaultPerPage] = useState(10);
   
   // Appearance settings
@@ -137,8 +137,8 @@ export default function Settings() {
     }
     if (settings?.responseDebug) {
       setIncludeErrors(settings.responseDebug.includeErrors ?? true);
-      setIncludeStackTrace(settings.responseDebug.includeStackTrace ?? false);
-      setIncludeMethodsStack(settings.responseDebug.includeMethodsStack ?? false);
+      setIncludeStackTrace(settings.responseDebug.includeStackTrace ?? true);
+      setIncludeMethodsStack(settings.responseDebug.includeMethodsStack ?? true);
     }
     if (settings?.pagination) {
       setDefaultPerPage(settings.pagination.defaultPerPage ?? 10);

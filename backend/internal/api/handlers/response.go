@@ -28,9 +28,9 @@ func respondCreated(w http.ResponseWriter, data interface{}) {
 	envelope.Write(w, envelope.Created(data))
 }
 
-// respondError writes an error envelope
+// respondError writes an error envelope with auto-captured Go stack traces
 func respondError(w http.ResponseWriter, status int, code, message string) {
-	envelope.Write(w, envelope.Error(status, code, message))
+	envelope.Write(w, envelope.ErrorWithStack(status, code, message))
 }
 
 // respondDeleted writes a standard deletion success envelope

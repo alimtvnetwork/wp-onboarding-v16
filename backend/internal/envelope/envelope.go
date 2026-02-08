@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -93,8 +95,8 @@ type DebugConfig struct {
 func DefaultDebugConfig() DebugConfig {
 	return DebugConfig{
 		IncludeErrors:       true,
-		IncludeStackTrace:   false,
-		IncludeMethodsStack: false,
+		IncludeStackTrace:   true,
+		IncludeMethodsStack: true,
 		MaxStackFrames:      20,
 	}
 }
@@ -391,4 +393,98 @@ func Write(w http.ResponseWriter, resp Response) {
 
 func now() string {
 	return time.Now().UTC().Format(time.RFC3339)
+}
+
+// CaptureMethodFrames captures the Go call stack as MethodFrame structs.
+// skip controls how many frames to skip (2 = skip this function + caller).
+// Only includes application frames (wp-plugin-publish/).
+func CaptureMethodFrames(skip int) []MethodFrame {
+	maxFrames := globalDebug.MaxStackFrames
+	if maxFrames <= 0 {
+		maxFrames = 20
+	}
+	pcs := make([]uintptr, 64)
+	n := runtime.Callers(skip+1, pcs)
+	if n == 0 {
+		return nil
+	}
+	pcs = pcs[:n]
+	frames := runtime.CallersFrames(pcs)
+	var result []MethodFrame
+	for {
+		frame, more := frames.Next()
+		// Only include application-specific frames
+		if strings.Contains(frame.Function, "wp-plugin-publish/") {
+			// Extract short file name
+			file := frame.File
+			if idx := strings.Index(file, "wp-plugin-publish/"); idx >= 0 {
+				file = file[idx+len("wp-plugin-publish/"):]
+			}
+			// Extract short function name
+			fn := frame.Function
+			if idx := strings.LastIndex(fn, "/"); idx >= 0 {
+				fn = fn[idx+1:]
+			}
+			result = append(result, MethodFrame{
+				Method:     fn,
+				File:       file,
+				LineNumber: frame.Line,
+			})
+			if len(result) >= maxFrames {
+				break
+			}
+		}
+		if !more {
+			break
+		}
+	}
+	return result
+}
+
+// CaptureBackendTrace captures Go stack trace as string lines for Errors.Backend.
+// skip controls how many frames to skip (2 = skip this function + caller).
+func CaptureBackendTrace(skip int) []string {
+	maxFrames := globalDebug.MaxStackFrames
+	if maxFrames <= 0 {
+		maxFrames = 20
+	}
+	pcs := make([]uintptr, 64)
+	n := runtime.Callers(skip+1, pcs)
+	if n == 0 {
+		return nil
+	}
+	pcs = pcs[:n]
+	frames := runtime.CallersFrames(pcs)
+	var result []string
+	for {
+		frame, more := frames.Next()
+		if strings.Contains(frame.Function, "wp-plugin-publish/") {
+			file := frame.File
+			if idx := strings.Index(file, "wp-plugin-publish/"); idx >= 0 {
+				file = file[idx+len("wp-plugin-publish/"):]
+			}
+			fn := frame.Function
+			if idx := strings.LastIndex(fn, "/"); idx >= 0 {
+				fn = fn[idx+1:]
+			}
+			result = append(result, fmt.Sprintf("%s:%d %s", file, frame.Line, fn))
+			if len(result) >= maxFrames {
+				break
+			}
+		}
+		if !more {
+			break
+		}
+	}
+	return result
+}
+
+// ErrorWithStack creates an error response with Go stack traces and methods stack auto-captured.
+func ErrorWithStack(statusCode int, code, message string) Response {
+	resp := Error(statusCode, code, message)
+	backendTrace := CaptureBackendTrace(3)
+	methodFrames := CaptureMethodFrames(3)
+	resp = resp.WithBackendTrace(backendTrace)
+	resp = resp.WithMethodsStack(methodFrames)
+	return resp
 }
