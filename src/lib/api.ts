@@ -1112,6 +1112,25 @@ export const api = {
     }),
   getErrorHistoryStats: () =>
     request<ErrorHistoryStats>("/error-history/stats"),
+
+  // Request Sessions (per-API-call logging)
+  getRequestSessions: (opts?: { limit?: number; offset?: number }) => {
+    const params = new URLSearchParams();
+    if (opts?.limit) params.set("limit", opts.limit.toString());
+    if (opts?.offset) params.set("offset", opts.offset.toString());
+    const query = params.toString();
+    return request<RequestSessionListResponse>(`/request-sessions${query ? `?${query}` : ""}`);
+  },
+  getRequestSession: (id: string) =>
+    request<RequestSessionRecord>(`/request-sessions/${id}`),
+  getRequestSessionErrors: (limit?: number) =>
+    request<RequestSessionListResponse>(`/request-sessions/errors${limit ? `?limit=${limit}` : ""}`),
+  deleteRequestSession: (id: string) =>
+    request<{ deleted: boolean; id: string }>(`/request-sessions/${id}`, { method: "DELETE" }),
+  clearRequestSessions: () =>
+    request<{ cleared: boolean }>("/request-sessions", { method: "DELETE" }),
+  exportRequestSession: (id: string) =>
+    request<RequestSessionRecord>(`/request-sessions/${id}/export`),
 };
 
 // Error History Types
@@ -1240,6 +1259,30 @@ export interface PublishHistoryEntry {
   errorMessage?: string;
   durationMs: number;
   createdAt: string;
+}
+
+// Request Session Types (per-API-call logging)
+export interface RequestSessionRecord {
+  id: string;
+  method: string;
+  path: string;
+  query?: string;
+  requestBody?: string;
+  responseBody?: string;
+  statusCode: number;
+  startedAt: string;
+  endedAt: string;
+  durationMs: number;
+  error?: string;
+  logs?: Array<{ timestamp: string; level: string; message: string; details?: Record<string, unknown> }>;
+  headers?: Record<string, string>;
+}
+
+export interface RequestSessionListResponse {
+  sessions: RequestSessionRecord[];
+  total: number;
+  limit?: number;
+  offset?: number;
 }
 
 export interface PublishHistoryStats {
