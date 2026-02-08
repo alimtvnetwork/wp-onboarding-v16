@@ -76,28 +76,35 @@ func (e *APIError) FullError() string {
 
 // ClientConfig holds WordPress client configuration
 type ClientConfig struct {
-	BaseURL   string
-	Username  string
-	Password  string
-	Timeout   time.Duration
-	OnProgress func(step, status, message string, details map[string]interface{})
+	BaseURL         string
+	Username        string
+	Password        string
+	Timeout         time.Duration
+	StackTraceDepth int
+	OnProgress      func(step, status, message string, details map[string]interface{})
 }
 
 // Client is a WordPress REST API client
 type Client struct {
-	baseURL    string
-	username   string
-	password   string
-	httpClient *http.Client
-	onProgress func(step, status, message string, details map[string]interface{})
+	baseURL         string
+	username        string
+	password        string
+	stackTraceDepth int
+	httpClient      *http.Client
+	onProgress      func(step, status, message string, details map[string]interface{})
 }
 
 // NewClient creates a new WordPress API client
 func NewClient(cfg ClientConfig) *Client {
+	depth := cfg.StackTraceDepth
+	if depth <= 0 {
+		depth = DefaultStackTraceDepth
+	}
 	return &Client{
 		baseURL:  strings.TrimSuffix(cfg.BaseURL, "/"),
 		username: cfg.Username,
 		password: cfg.Password,
+		stackTraceDepth: depth,
 		httpClient: &http.Client{
 			Timeout: cfg.Timeout,
 		},
