@@ -2285,13 +2285,14 @@ class Riseup_Asia {
 
             $result = $this->db->query_transactions($filters, $limit, $offset);
 
-            return new WP_REST_Response(array(
-                'success' => true,
-                'total'   => $result['total'],
-                'limit'   => (int) $limit,
-                'offset'  => (int) $offset,
-                'logs'    => $result['logs'],
-            ), RISEUP_HTTP_OK);
+            $total = $result['total'];
+            $per_page = (int) $limit;
+
+            return RiseupEnvelopeBuilder::success()
+                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_LOGS)
+                ->setResults($result['logs'])
+                ->setPagination($total, $per_page, $per_page > 0 ? (int) floor($offset / $per_page) + 1 : 1)
+                ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Query logs error');
             return $this->error_response('Failed to query logs: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
@@ -2314,10 +2315,10 @@ class Riseup_Asia {
 
             $stats = $this->db->get_stats();
 
-            return new WP_REST_Response(array(
-                'success' => true,
-                'stats'   => $stats,
-            ), RISEUP_HTTP_OK);
+            return RiseupEnvelopeBuilder::success()
+                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_LOGS_STATS)
+                ->setSingleResult($stats)
+                ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Logs stats error');
             return $this->error_response('Failed to get stats: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
@@ -2791,8 +2792,7 @@ class Riseup_Asia {
                 $max_lines = max(10, min(5000, (int) $request->get_param('max_lines')));
             }
 
-            $response = array(
-                'success'  => true,
+            $result = array(
                 'version'  => RISEUP_VERSION,
                 'settings' => array(
                     'include_error_log'  => $include_error,
@@ -2805,26 +2805,25 @@ class Riseup_Asia {
             // Read error log
             if ($include_error) {
                 $error_path = $this->file_logger->get_error_file();
-                $response['error_log'] = $this->read_log_tail($error_path, $max_lines);
+                $result['error_log'] = $this->read_log_tail($error_path, $max_lines);
             }
 
             // Read full log
             if ($include_full) {
                 $log_path = $this->file_logger->get_log_file();
-                $response['full_log'] = $this->read_log_tail($log_path, $max_lines);
+                $result['full_log'] = $this->read_log_tail($log_path, $max_lines);
             }
 
             // Read stacktrace log
             if ($include_stacktrace) {
                 $stacktrace_path = $this->file_logger->get_stacktrace_file();
-                $response['stacktrace_log'] = $this->read_log_tail($stacktrace_path, $max_lines);
+                $result['stacktrace_log'] = $this->read_log_tail($stacktrace_path, $max_lines);
             }
 
-            // Generate stack trace of this request for diagnostics
-            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-            $response['stackTraceFrames'] = riseup_backtrace_to_frames($backtrace);
-
-            return new WP_REST_Response($response, 200);
+            return RiseupEnvelopeBuilder::success()
+                ->autoDetectRequestedAt()
+                ->setSingleResult($result)
+                ->toResponse();
         }, 'error_logs');
     }
 
@@ -2862,14 +2861,10 @@ class Riseup_Asia {
             // Check if error_sessions table exists
             $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
             if (!$check->fetchColumn()) {
-                return new WP_REST_Response(array(
-                    'success' => true,
-                    'version' => RISEUP_VERSION,
-                    'message' => 'error_sessions table does not exist yet (migration v9 not applied)',
-                    'entries' => array(),
-                    'total'   => 0,
-                    'stackTraceFrames' => riseup_backtrace_to_frames(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)),
-                ), 200);
+                return RiseupEnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
+                    ->autoDetectRequestedAt()
+                    ->setResults(array())
+                    ->toResponse();
             }
 
             // Parse query params
@@ -2962,22 +2957,11 @@ class Riseup_Asia {
                 // flash_state table may not exist
             }
 
-            $response = array(
-                'success'    => true,
-                'version'    => RISEUP_VERSION,
-                'entries'    => $entries,
-                'total'      => $total,
-                'limit'      => $limit,
-                'offset'     => $offset,
-                'flash'      => array(
-                    'last_seen_id'    => $last_seen_id,
-                    'has_unseen'      => $has_unseen,
-                    'unseen_count'    => $since_id > 0 ? $total : max(0, $this->count_unseen_errors($pdo, $last_seen_id)),
-                ),
-                'stackTraceFrames' => riseup_backtrace_to_frames(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5)),
-            );
-
-            return new WP_REST_Response($response, 200);
+            return RiseupEnvelopeBuilder::success()
+                ->autoDetectRequestedAt()
+                ->setResults($entries)
+                ->setPagination($total, $limit, $limit > 0 ? (int) floor($offset / $limit) + 1 : 1)
+                ->toResponse();
         }, 'error_sessions');
     }
 
