@@ -541,9 +541,10 @@ if ($activeNamespace) {
         $base64Data = [Convert]::ToBase64String($fileBytes)
 
         $uploadBody = @{
-            plugin_zip = $base64Data
-            slug = $PluginSlug
-            activate = $ActivateAfterInstall
+            plugin_zip    = $base64Data
+            slug          = $PluginSlug
+            activate      = $ActivateAfterInstall
+            upload_source = "upload_script"
         } | ConvertTo-Json
 
         $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
