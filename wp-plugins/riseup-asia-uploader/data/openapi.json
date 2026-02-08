@@ -3,7 +3,7 @@
   "info": {
     "title": "Riseup Asia Uploader API",
     "description": "WordPress companion plugin REST API for remote plugin management, blog post publishing, delta file sync, and audit logging.",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "contact": {
       "name": "MD ALIM UL KARIM",
       "url": "https://rasia.pro/alim-r-profile-v1"
@@ -185,6 +185,13 @@
             "type": "boolean",
             "description": "Overwrite existing plugin",
             "default": true
+          },
+          "upload_source": {
+            "type": "string",
+            "description": "How the upload was initiated",
+            "enum": ["upload_script", "rest_api", "admin_ui", "wp_cli"],
+            "default": "rest_api",
+            "example": "upload_script"
           }
         }
       },
@@ -195,6 +202,17 @@
           "plugin": { "type": "string" },
           "action": { "type": "string" },
           "activated": { "type": "boolean" },
+          "plugin_version": {
+            "type": "string",
+            "description": "Version of the uploaded plugin extracted from plugin headers",
+            "example": "1.35.0"
+          },
+          "upload_source": {
+            "type": "string",
+            "description": "Echo of the upload source enum value",
+            "enum": ["upload_script", "rest_api", "admin_ui", "wp_cli"],
+            "example": "upload_script"
+          },
           "files_written": { "type": "integer" },
           "files_deleted": { "type": "integer" }
         }
@@ -388,7 +406,8 @@
                 "slug": "my-plugin",
                 "zip": "UEsDBBQAAAAIAA...",
                 "activate": true,
-                "overwrite": true
+                "overwrite": true,
+                "upload_source": "upload_script"
               }
             }
           }
