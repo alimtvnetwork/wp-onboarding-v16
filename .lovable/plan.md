@@ -1,133 +1,271 @@
-## Session Diagnostics Pipeline — ✅ COMPLETED
 
-All 5 phases have been implemented and are done.
 
-### Phase 1 ✅ — Go Backend: Folder-Based Session Storage
-Migrated session storage to `data/sessions/{uuid}/` with separate files for logs, request, response, and error data. Implemented application-filtered Go stack trace capture via `runtime.Callers()`.
+# Comprehensive Plan: Session-Based Diagnostics, Error Modal Integration, and Spec Update
 
-### Phase 2 ✅ — Go Stack Trace Capture
-Added structured stack frame extraction filtering to `wp-plugin-publish/` namespace, stored as JSON in `error.log`.
+## Summary
 
-### Phase 3 ✅ — Diagnostics API Endpoint
-Created `GET /api/v1/sessions/{id}/diagnostics` returning unified JSON with `request`, `response`, and `stackTrace` (Go + PHP) sections.
+This plan addresses three interconnected problems identified from the verbatim requirements and the current state audit:
 
-### Phase 4 ✅ — Frontend Diagnostic UI
-Updated the Error Modal's Session tab with sub-tabs: **Logs**, **Request**, **Response**, and **Stack Trace** (Go/PHP toggle). Fetches logs and diagnostics in parallel.
+1. **The Error Modal does not show session-based logs** -- when a remote plugin action fails, the error modal lacks the session diagnostic data (logs, request, response, stack traces) that exists on disk.
+2. **The Request tab does not show inner PHP sub-nodes** -- when Go delegates to PHP, the full delegated endpoint URL and PHP response are not rendered as sub-nodes.
+3. **Stack trace depth and debug toggles are not in the CW seedable config** -- they are hardcoded or only in `config.json`, not governed by the seedable config architecture.
 
-### Phase 5 ✅ — WordPress Plugin Response Enrichment (v1.30.0)
-Enriched all success and error responses with `requestUrl` and `responseUrl`. Bumped plugin version to 1.30.0.
+Additionally, several specs need updating to reflect the current implementation and the new requirements.
 
 ---
 
-## Diagnostic Pipeline Hardening — IN PROGRESS
+## What Already Works (Audit Results)
 
-### Phase 6 ✅ — CONFIRMED: Go Endpoint Map Delegation
-Already implemented in `backend/internal/wordpress/endpoint_map.go`. The `GoEndpointMap` and `WPEndpointMap` provide enum-to-route mappings. `ResolveGoEndpoint()` and `ResolveWPEndpoint()` are used for delegation. No changes needed.
+The following are already implemented and verified:
 
-### Phase 7 ✅ — CONFIRMED: Error Log Format (Redefined Log Format)
-Already implemented in `logToErrorFile()` (`backend/internal/services/site/service.go`). Logs include:
-- **Site Request URL** (full PHP endpoint URL)
-- **Backend URL** (Site Base URL)
-- **Delegated Request** (Method, Endpoint, full Request Body)
-- **Delegated Response** (Status Code, Response Body)
-- **Error Summary** with Guard Rail detection
-No changes needed.
+- Session folder structure: `data/sessions/{uuid}/` with `session.log`, `request.json`, `response.json`, `error.log`
+- Session diagnostics endpoint: `GET /api/v1/sessions/{id}/diagnostics` returns structured JSON with request, response, stackTrace, phpStackTraceLog
+- Go stack auto-capture via `envelope.ErrorWithStack()` in `respondError()` (since v1.19.7)
+- Debug defaults (`includeStackTrace`, `includeMethodsStack`, `includeErrors`) all default to `true`
+- `StackTraceDepth` in `LoggingConfig` (default 20) and `MaxStackFrames` in `ResponseDebugConfig` (default 20)
+- Endpoint map in `backend/internal/wordpress/endpoint_map.go` for Go-to-PHP routing
+- PHP stack trace capture via `extractErrorDetails()` and `fetchAndAttachRemotePHPErrors()`
+- `SessionLogsTab` component exists but only shows when `error.sessionId` is set
 
-### Phase 8 ✅ — CONFIRMED: Log Deduplication
-MD5-based dedup in `logToErrorFile()` using action, siteID, plugin, endpoint, status code, and response body. "Clear Dedup Hashes" endpoint exists. No changes needed.
+## What Is Missing
 
-### Phase 9 ✅ — Configurable Go Stack Trace Depth (18-20 from config.json)
-Added `StackTraceDepth` to `LoggingConfig` (default 20). `captureStackTraceN()` accepts configurable depth. Wired through `ClientConfig` → `Client` → all call sites.
+| Gap | Impact |
+|-----|--------|
+| Error modal does not fetch session diagnostics when sessionId is present | Stack/Execution/Request tabs are empty for remote plugin errors |
+| The `sessionId` from WebSocket events is not passed into the error store | Modal never has sessionId for remote plugin action failures |
+| Request tab shows only React-to-Go node; no inner Go-to-PHP sub-node with full PHP endpoint URL and response | User cannot trace the full delegation chain |
+| `stackTraceDepth` and `responseDebug` settings are not in `config.seed.json` | Not seedable/versioned via CW architecture |
+| Spec 17 (session-management) does not document the diagnostics endpoint or the `SessionDiagnostics` struct | Spec is out of date |
+| Spec 14 (logging-system) does not document the relationship between session diagnostics and the error modal | Missing integration spec |
 
-### Phase 10 ✅ — Maximize PHP Stack Trace Depth
-Changed `debug_backtrace()` from 10-frame limit to `0` (unlimited) in `error()`.
+---
 
-### Phase 11 ✅ — Upload Activation Error: Add Stack Trace + Traceability
-Added `stackTraceFrames`, `requestUrl`, `responseUrl` to activation failure response in `handle_upload()`.
+## Phase 1: CW Seedable Config for Stack Trace and Debug Settings
 
-### Phase 12 — Universal Response Envelope Migration (v1.34.0)
+**Goal:** Make `stackTraceDepth`, `responseDebug.*`, and PHP backtrace depth configurable via the seedable config architecture.
 
-#### Sub-phase 12.1 ✅ — Create PHP EnvelopeBuilder
-Created `class-envelope-builder.php` with fluent builder API: `RiseupEnvelopeBuilder::success()` / `::error()` with PascalCase output matching the spec.
+### 1.1 Update `config.json` and `config.seed.json`
 
-#### Sub-phase 12.2 ✅ — Migrate first endpoints (status, list-plugins, error_response)
-- `handle_status()` → Envelope with single result (PascalCase keys)
-- `handle_list_plugins()` → Envelope with Results array of plugins
-- `error_response()` → Envelope error format with `Errors.Backend` and `Errors.DelegatedServiceErrorStack`
+- Add `logging.stackTraceDepth` (already in LoggingConfig, just not in seed)
+- Add `responseDebug.includeStackTrace`, `responseDebug.includeMethodsStack`, `responseDebug.includeInternalErrors`, `responseDebug.maxStackFrames` to seedable config
+- Add `logging.phpStackTraceDepth: 0` (0 = unlimited, as per requirement)
 
-#### Sub-phase 12.3 ✅ — Go backend envelope-aware parsing
-- Created `envelope.go` with `IsEnvelope()`, `UnwrapResults()`, `UnwrapSingleResult()` utilities
-- Updated `GetUploaderStatus()` and `ListPluginsViaUploader()` with backward-compatible envelope parsing
-- Updated error response parser to handle both `Errors.Backend` (envelope) and `error.details.stackTraceFrames` (legacy)
+### 1.2 Wire Config to Services
 
-#### Sub-phase 12.4 ✅ — Migrate write endpoints (upload, enable, disable, delete)
-- `handle_upload()` → Envelope with single result (plugin_slug, is_update, activated, activation_error)
-- `handle_enable_plugin()` → Envelope with single result (plugin_slug, activated)
-- `handle_disable_plugin()` → Envelope with single result (plugin_slug, deactivated)
-- `handle_delete_plugin()` → Envelope with single result (plugin_slug, deleted)
-- Bumped plugin version to 1.34.0
-#### Sub-phase 12.5 ✅ — Migrate diagnostic endpoints (query-logs, logs-stats, error-logs, error-sessions)
-- `handle_query_logs()` → Envelope with Results array + pagination metadata
-- `handle_logs_stats()` → Envelope with single result (stats object)
-- `handle_error_logs()` → Envelope with single result (version, settings, log tails)
-- `handle_error_sessions()` → Envelope with Results array of entries + pagination
-- Removed legacy `stackTraceFrames` from diagnostic responses (now handled by EnvelopeBuilder errors block)
-#### Sub-phase 12.6 ✅ — Frontend envelope parsing (already complete)
-- `isEnvelope()` + `parseEnvelope<T>()` in `src/lib/api.ts` already auto-detect and convert PascalCase envelope responses from both Go backend and PHP plugin
-- No additional changes required; the transparent detection at line 270 handles all migrated endpoints
+- Pass `stackTraceDepth` from config to `session.CaptureGoStack()` and `envelope.CaptureMethodFrames()`
+- Pass `phpStackTraceDepth` to WordPress client for PHP backtrace requests (currently hardcoded to unlimited, document explicitly)
 
-### Phase 13 ✅ — Go Generics Migration for Envelope
+### 1.3 Acceptance Criteria
 
-#### Sub-phase 13.1 ✅ — Bump Go version
-- Updated `go.mod` from Go 1.21 → Go 1.22
+- [ ] `config.seed.json` contains all stack trace and debug toggle settings
+- [ ] Changing `stackTraceDepth` in config limits Go stack frames in envelope
+- [ ] `phpStackTraceDepth: 0` is documented as "unlimited" in spec
+- [ ] Settings page reflects seedable config defaults
 
-#### Sub-phase 13.2 ✅ — Generic envelope types
-- Added `TypedEnvelope[T any]` struct with `Results []T` (typed slice instead of `json.RawMessage`)
-- Added `ParseTypedEnvelope[T any]()` for fully typed envelope parsing
+---
 
-#### Sub-phase 13.3 ✅ — Generic unwrap functions
-- `UnwrapResults[T any](data []byte) ([]T, bool)` — returns typed slice directly
-- `UnwrapSingleResult[T any](data []byte) (*T, bool)` — returns typed pointer directly
-- No more `interface{}` parameters; callers get compile-time type safety
+## Phase 2: Pass Session ID to Error Store from WebSocket and API Errors
 
-#### Sub-phase 13.4 ✅ — Migrate call sites
-- `GetUploaderStatus()`: `UnwrapSingleResult[UploaderStatus](respBody)` returns `*UploaderStatus` directly
-- `ListPluginsViaUploader()`: `UnwrapResults[UploaderPluginInfo](respBody)` returns `[]UploaderPluginInfo` directly
+**Goal:** Ensure every remote plugin error in the error store has a `sessionId` so the modal can fetch diagnostics.
 
-#### Sub-phase 13.5 ✅ — PHP PHPStan @template annotations
-- Added `@template T of array`, `@phpstan-template`, and `@psalm-template` to `RiseupEnvelopeBuilder`
-- `$results` typed as `array<int, T>`; all fluent setters return `static<T>`
-- `setResults()` accepts `array<int, T>`, `setSingleResult()` accepts `T`
-- `build()` returns `array{Status: array, Attributes: array, Results: array<int, T>}`
-- Factory methods `success()` and `error()` return `static<T>`
+### 2.1 WebSocket Session ID Propagation
 
-### Phase 14 — OpenAPI Spec Alignment with Universal Response Envelope
+- The backend already broadcasts `remote_plugin_action_complete` with `sessionId` via `BroadcastWithSession()`
+- Frontend WebSocket handler must capture `sessionId` from the event and store it
+- When the error is captured via `captureException`, the `sessionId` from the most recent matching WebSocket event should be attached
 
-**Problem:** The OpenAPI spec uses a legacy `allOf + "data"` pattern for typed responses. Runtime responses use PascalCase `Results` arrays, not `data`. This causes schema mismatches in Swagger UI.
+### 2.2 API Response Session ID
 
-#### Sub-phase 14.1 ✅ — Replace `"data"` with typed `Results` in entity endpoints
-- Migrated 31 endpoint schemas from legacy `allOf + "data"` to `"Results"` with typed items
-- List endpoints use `Results: array of T`; single-item endpoints use `Results: array of T, minItems: 1, maxItems: 1`
-- Covers: Sites, Plugins, PluginMappings, FileChanges, Backups, PluginVersions, SiteHealthSummary, SiteHealthCheck, SiteHealthStats, PublishHistory, PublishHistoryStats, ErrorHistory, Sessions, SessionLogEntry, RequestSession, Settings, ConnectionResult, SiteCredentials, SyncResult, PushSyncResult, BatchSyncResult
-- Also migrated the `Deleted` response template from `data.deleted` to `Results[{deleted: true}]`
-- Zero remaining `"data":` references in openapi.json
+- When a remote plugin action fails, the Go handler receives the error from `executeRemotePluginAction` which has a session
+- Add `sessionId` to the envelope response `Attributes` block so the frontend API client can extract it
+- Update `envelope.go` to accept optional `sessionId` in error responses
+- Update `parseEnvelope` in `src/lib/api.ts` to extract `sessionId` from `Attributes`
 
-#### Sub-phase 14.2 ✅ — Replace `"data"` with typed `Results` in operation endpoints
-- All operation endpoints now use typed `Results` arrays (covered in 14.1 and 14.3)
+### 2.3 Acceptance Criteria
 
-#### Sub-phase 14.3 ✅ — Add missing endpoint-specific Results schemas
-- Created 16 new typed result schemas: `RemotePluginActionResult`, `RemotePluginInfo`, `RemoteFileInfo`, `SnapshotInfo`, `SnapshotSettings`, `SnapshotProvider`, `SnapshotTable`, `GitStatusResult`, `GitOperationResult`, `E2ESuite`, `E2ECase`, `E2ERun`, `E2ETestResult`, `BootstrapResult`, `PublishPreview`, `FileDiffResult`, `ErrorLogContent`, `ErrorHistoryStats`
-- Updated 40+ bare `$ref: Success/Created` endpoints with typed `Results` referencing the new schemas
-- Remaining bare `$ref: Success` kept intentionally for simple action endpoints (clear, delete, abort) that return no meaningful data
+- [ ] Error store has `sessionId` for remote plugin action failures
+- [ ] Session tab appears in error modal for remote plugin errors
+- [ ] `Attributes.SessionId` is present in failed envelope responses when a session exists
 
-#### Sub-phase 14.4 ✅ — Add response examples
-- Added complete envelope examples (Status + Attributes + Results) to 7 key endpoints: list sites, create site, remote plugins list, enable remote plugin, snapshots list, git status, E2E run
-- Added error envelope example to the Error response component
-- Examples cover all patterns: list (multiple), single-item, delegated, create (201), action, and error
+---
 
-#### Sub-phase 14.5 ✅ — Validate spec with Swagger UI rendering
-- Structural validation: spec parses as valid JSON (2396 lines), all `$ref` references resolve to defined schemas
-- All 16 new typed result schemas correctly defined in `#/components/schemas`
-- Swagger UI loads successfully in preview (backend API mode); rendering errors are limited to backend connectivity (Go server not running in Lovable preview), not spec issues
-- Full interactive "Try It Out" validation deferred to local dev environment where Go backend runs
-- Examples render correctly in schema expansion views
+## Phase 3: Session Diagnostics in Error Modal
+
+**Goal:** When the error modal has a `sessionId`, automatically fetch and display session diagnostics in the Stack, Execution, and Request tabs.
+
+### 3.1 Auto-fetch Session Diagnostics
+
+- When `BackendSection` mounts and `error.sessionId` exists, call `GET /api/v1/sessions/{id}/diagnostics`
+- Parse the `SessionDiagnostics` response into local state
+- Populate: Stack tab (Go + PHP frames), Execution tab (session logs), Request tab (request.json + response.json)
+
+### 3.2 Merge Envelope and Session Data
+
+- Stack tab: Show envelope `Errors.Backend` first, then session `stackTrace.golang` and `stackTrace.php`
+- Execution tab: Show envelope `MethodsStack.Backend` first, then session execution logs
+- Request tab: Build nested chain from session `request` and `response` data
+
+### 3.3 Acceptance Criteria
+
+- [ ] Stack tab shows Go and PHP stack traces from session diagnostics
+- [ ] Execution tab shows both envelope methods stack and session logs
+- [ ] Session tab shows full session.log content
+- [ ] Data loads in parallel (diagnostics + logs endpoints)
+
+---
+
+## Phase 4: Request Tab Inner PHP Sub-Nodes
+
+**Goal:** Show the full delegation chain in the Request tab: React --> Go Backend (Blue) --> PHP WordPress (Orange) with actual endpoint URLs and response data.
+
+### 4.1 Enrich Request Chain Data
+
+From session diagnostics `response.json`:
+- `requestUrl`: The full PHP endpoint URL that Go called (e.g., `https://example.com/wp-json/riseup-asia-uploader/v1/plugins/disable`)
+- `responseUrl`: The site URL
+- `statusCode`: HTTP status from PHP
+- `body`: Full PHP response body
+
+From endpoint map:
+- Use `WPEndpointMap` to display the mapped WordPress endpoint alongside the Go endpoint
+
+### 4.2 Update RequestDetails Component
+
+- **Node 1 (Blue)**: React --> Go
+  - Method + Go endpoint (e.g., `POST /api/v1/sites/1/remote-plugins/disable`)
+  - Request body from React
+  - Timestamp: `requestedAt`
+
+- **Node 2 (Orange)**: Go --> PHP (sub-node)
+  - Full PHP endpoint URL from session `response.requestUrl`
+  - Request body sent to PHP
+  - Timestamp: `requestDelegatedAt`
+  - PHP response status code
+  - PHP response body (collapsible)
+  - PHP error stack trace (if error)
+
+### 4.3 Acceptance Criteria
+
+- [ ] Request tab shows two nested nodes for delegated requests
+- [ ] PHP node shows full URL (e.g., `https://example.com/wp-json/riseup-asia-uploader/v1/plugins/disable`)
+- [ ] PHP response body is visible and collapsible
+- [ ] PHP stack trace frames appear in the PHP node when errors occur
+- [ ] Non-delegated errors show only the React --> Go node
+
+---
+
+## Phase 5: Spec and Memory Updates
+
+### 5.1 Update Spec 17 (Session Management)
+
+- Add `GET /api/v1/sessions/{id}/diagnostics` endpoint documentation
+- Document `SessionDiagnostics` struct with `request`, `response`, `stackTrace`, `phpStackTraceLog`
+- Add folder structure: `sessions/{uuid}/session.log`, `request.json`, `response.json`, `error.log`
+
+### 5.2 Update Spec 14 (Logging System)
+
+- Document the relationship between error.log.txt (middleware-level) and session-level error.log
+- Document how session diagnostics feed the error modal
+- Document CW config keys for stack trace depth
+
+### 5.3 Update Spec 15 (Seedable Config)
+
+- Add `logging.stackTraceDepth`, `logging.phpStackTraceDepth`, and `responseDebug.*` settings to the seed schema
+
+### 5.4 Update Spec 13 (Error Management)
+
+- Document the session-to-modal data flow
+- Add the Request tab delegation chain visualization spec
+
+### 5.5 Update Memory Files
+
+- Update `architecture/backend/session-management` with diagnostics endpoint
+- Update `architecture/frontend/error-modal-session-diagnostics` with new auto-fetch behavior
+- Update `architecture/frontend/error-modal-request-chain` with PHP sub-node spec
+- Create `architecture/configuration/seedable-debug-config` for CW stack trace settings
+
+### 5.6 Acceptance Criteria
+
+- [ ] All four specs (13, 14, 15, 17) are updated
+- [ ] Memory files reflect current implementation
+- [ ] Spec samples include session diagnostics JSON
+
+---
+
+## Technical Details
+
+### Files to Modify
+
+**Backend (Go):**
+- `backend/internal/config/config.go` -- Add `PhpStackTraceDepth` to `LoggingConfig`
+- `backend/internal/envelope/envelope.go` -- Add optional `SessionId` to `Attributes`
+- `backend/internal/api/handlers/site_handlers.go` -- Pass sessionId through error chain to respondError
+- `backend/internal/api/handlers/response.go` -- Support sessionId in error envelope
+
+**Frontend (React/TypeScript):**
+- `src/lib/api.ts` -- Extract `SessionId` from envelope attributes
+- `src/stores/errorStore.ts` -- Map sessionId from API error context
+- `src/components/errors/GlobalErrorModal.tsx` -- Auto-fetch diagnostics, render PHP sub-nodes in Request tab
+
+**Specs:**
+- `spec/wp-plugin-publish/01-backend/13-error-management.md`
+- `spec/wp-plugin-publish/01-backend/14-logging-system.md`
+- `spec/wp-plugin-publish/01-backend/15-seedable-config.md`
+- `spec/wp-plugin-publish/01-backend/17-session-management.md`
+
+**Memory:**
+- `.lovable/memory/architecture/backend/session-management`
+- `.lovable/memory/architecture/frontend/error-modal-session-diagnostics`
+- `.lovable/memory/architecture/frontend/error-modal-request-chain`
+- `.lovable/memory/architecture/configuration/seedable-debug-config` (new)
+
+### Data Flow Diagram
+
+```text
+User clicks "Disable Plugin"
+        |
+        v
+React sends POST /sites/1/remote-plugins/disable { plugin: "akismet/akismet.php" }
+        |
+        v
+Go Handler (DisableRemotePlugin)
+  |-- Validates input
+  |-- Calls executeRemotePluginAction()
+  |     |-- StartSession(remote_plugin_disable, ...)
+  |     |-- SaveRequest(request.json)
+  |     |-- Decrypt credentials
+  |     |-- Create WordPress client
+  |     |-- Execute disable via PHP endpoint
+  |     |     |-- POST https://site.com/wp-json/riseup-asia-uploader/v1/plugins/disable
+  |     |     |-- PHP returns envelope with status + stackTrace
+  |     |-- SaveResponse(response.json) -- includes requestUrl + responseUrl
+  |     |-- SaveError(error.log) -- Go frames + PHP frames
+  |     |-- EndSession(error/success)
+  |-- respondError() with ErrorWithStack() + SessionId in Attributes
+        |
+        v
+React receives envelope
+  |-- parseEnvelope extracts Errors, MethodsStack, SessionId
+  |-- captureException stores sessionId + envelope data
+        |
+        v
+Error Modal opens
+  |-- Backend Section mounts
+  |-- Auto-fetches GET /sessions/{id}/diagnostics (parallel)
+  |-- Auto-fetches GET /sessions/{id}/logs (parallel)
+  |-- Populates:
+  |     Overview: error message + code + timing
+  |     Stack: Go frames (envelope) + PHP frames (session diagnostics)
+  |     Execution: MethodsStack (envelope) + session logs
+  |     Request: React->Go node (blue) + Go->PHP node (orange, from diagnostics)
+  |     Session: Full session.log content
+```
+
+### Execution Order
+
+1. Phase 1 (config) -- no frontend changes, backend only
+2. Phase 2 (sessionId propagation) -- backend envelope + frontend API client + error store
+3. Phase 3 (diagnostics in modal) -- frontend only, depends on Phase 2
+4. Phase 4 (PHP sub-nodes) -- frontend only, depends on Phase 3
+5. Phase 5 (specs/memory) -- documentation, can run in parallel with Phase 4
+
