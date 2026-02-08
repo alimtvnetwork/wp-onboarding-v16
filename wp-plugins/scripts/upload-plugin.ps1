@@ -311,6 +311,10 @@ foreach ($ns in $apiNamespaces) {
 
     $uploadUrl = "$WordPressSiteURL/wp-json/$($ns.name)/upload"
     Write-Status "      Trying $($ns.display)..." -Color Gray
+    Write-Status "      ── Request ──" -Color DarkGray
+    Write-Status "      POST $uploadUrl" -Color White
+    Write-Status "      Auth: Basic (user=$Username)" -Color Gray
+    Write-Status "      Content-Type: application/json" -Color Gray
 
     try {
         $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
@@ -321,6 +325,10 @@ foreach ($ns in $apiNamespaces) {
             slug = $PluginSlug
             activate = $ActivateAfterInstall
         } | ConvertTo-Json
+
+        $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
+        Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
+        Write-Status "      ────────────" -Color DarkGray
 
         $uploadHeaders = @{
             "Authorization" = "Basic $base64Auth"
@@ -373,6 +381,13 @@ if (-not $uploadSuccess) {
 
     $fileName = Split-Path $OutputZipPath -Leaf
     $uploadUrl = "$WordPressSiteURL/wp-json/wp/v2/plugins"
+
+    Write-Status "      ── Request ──" -Color DarkGray
+    Write-Status "      POST $uploadUrl" -Color White
+    Write-Status "      Auth: Basic (user=$Username)" -Color Gray
+    Write-Status "      Content-Type: multipart/form-data" -Color Gray
+    Write-Status "      File: $fileName ($([math]::Round((Get-Item $OutputZipPath).Length / 1KB, 1)) KB)" -Color Gray
+    Write-Status "      ────────────" -Color DarkGray
 
     try {
         $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)

@@ -411,6 +411,11 @@ if ($activeNamespace) {
     # Use Riseup Asia Uploader
     $uploadUrl = "$WordPressSiteURL/wp-json/$activeNamespace/upload"
 
+    Write-Status "      ── Request ──" -Color DarkGray
+    Write-Status "      POST $uploadUrl" -Color White
+    Write-Status "      Auth: Basic (user=$Username)" -Color Gray
+    Write-Status "      Content-Type: application/json" -Color Gray
+
     try {
         $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
         $base64Data = [Convert]::ToBase64String($fileBytes)
@@ -420,6 +425,10 @@ if ($activeNamespace) {
             slug = $PluginSlug
             activate = $ActivateAfterInstall
         } | ConvertTo-Json
+
+        $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
+        Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
+        Write-Status "      ────────────" -Color DarkGray
 
         $uploadHeaders = @{
             "Authorization" = "Basic $base64Auth"
