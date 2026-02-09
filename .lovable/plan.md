@@ -18,11 +18,10 @@
 | 7 | PHP | ✅ Done | Snapshot class factory (`RiseupSnapshotFactory`) |
 | 8 | PHP | ✅ Done | Logger context consolidation (`prepare_context`) |
 | 9 | Frontend | ✅ Done | GlobalErrorModal decomposition into 7 sub-files |
-| 9 | Frontend | 📋 Pending | GlobalErrorModal decomposition |
-| 10 | Cross | 📋 Pending | Envelope JSON schema alignment |
+| 10 | Cross | ✅ Done | Envelope JSON schema alignment |
 
-**Completed:** 9/10 phases  
-**Remaining:** 1 phase (10)
+**Completed:** 10/10 phases  
+**Remaining:** 0 phases — DRY refactoring complete 🎉
 
 ---
 
