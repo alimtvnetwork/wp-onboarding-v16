@@ -23,6 +23,7 @@ type SiteServiceInterface interface {
 	InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error
 	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
+	CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error)
 	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (interface{}, error)
 	GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error)
@@ -136,6 +137,10 @@ func (a *SiteServiceAdapter) EnableRemotePlugin(ctx context.Context, siteID int6
 
 func (a *SiteServiceAdapter) DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
 	return a.Service.DisableRemotePlugin(ctx, siteID, pluginSlug)
+}
+
+func (a *SiteServiceAdapter) CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error) {
+	return a.Service.CheckRemotePluginExists(ctx, siteID, pluginSlug)
 }
 
 func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
