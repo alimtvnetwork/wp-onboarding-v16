@@ -348,6 +348,148 @@ class Publish_Result {
 
 ---
 
+## Partial Publish Failure Recovery (Multi-Site)
+
+When publishing a plugin to multiple sites via `publish_to_all`, some sites may succeed while others fail. This creates a **partial deployment state** that requires careful recovery.
+
+### Failure Scenarios
+
+| Scenario | Example | Impact |
+|----------|---------|--------|
+| **Network failure** | Site B is unreachable mid-deploy | Sites A,C have new version; Site B has old version |
+| **Auth failure** | Site C's app password was rotated | Sites A,B succeed; Site C returns 401 |
+| **Activation crash** | Plugin activates on A,B but crashes on C due to missing PHP extension | Sites A,B active; Site C rolled back to previous version |
+| **Timeout** | Site D is slow; upload times out at 60s | Sites A,B,C succeed; Site D in unknown state |
+| **Disk full** | Remote site runs out of space during ZIP extraction | Upload appears to succeed but plugin files are corrupted |
+
+### Recovery Architecture
+
+```
+publish_to_all(plugin, [site_a, site_b, site_c])
+    │
+    ├── site_a: ✅ SUCCESS (v1.36.1 active)
+    ├── site_b: ❌ FAILED  (PUB_TRANSFER_FAILED - network timeout)
+    └── site_c: ❌ FAILED  (PUB_ACTIVATION_FAILED - rolled back to v1.36.0)
+    │
+    ▼
+BulkPublishResult {
+    total: 3,
+    succeeded: [site_a],
+    failed: [
+        { siteId: site_b, stage: "transfer", error: "timeout", canRetry: true },
+        { siteId: site_c, stage: "activate", error: "fatal PHP error", canRetry: false, rolledBack: true }
+    ],
+    partialFailure: true
+}
+```
+
+### Recovery Strategies
+
+#### Strategy 1: Automatic Retry with Exponential Backoff
+
+For transient failures (network timeouts, 502/503 errors):
+
+```
+Retry Policy:
+  maxRetries: 3
+  initialDelay: 2s
+  maxDelay: 30s
+  backoffMultiplier: 2
+  retryableErrors: [PUB_TRANSFER_FAILED, PUB_REMOTE_ERROR]
+  nonRetryableErrors: [PUB_VALIDATION_FAILED, PUB_ACTIVATION_FAILED]
+```
+
+The publish service automatically retries `PUB_TRANSFER_FAILED` errors up to 3 times before marking a site as failed. Activation failures are never auto-retried because they may indicate a fundamental incompatibility.
+
+#### Strategy 2: Manual Selective Retry
+
+The UI presents failed sites with a "Retry Failed" button that re-runs the pipeline only for failed sites:
+
+```
+User Action: "Retry Failed Sites"
+    │
+    ├── Re-runs publish pipeline ONLY for site_b, site_c
+    ├── Skips site_a (already succeeded)
+    └── Uses same publish options (version, activate flag, etc.)
+```
+
+**Implementation:** The `BulkPublishResult` is persisted in the publish history table with per-site stage results, allowing the retry to pick up exactly where each site failed.
+
+#### Strategy 3: Rollback All on Partial Failure
+
+For critical deployments where version consistency across all sites is mandatory:
+
+```
+Publish Options:
+  rollback_all_on_partial_failure: true
+```
+
+When enabled:
+1. If **any** site fails, rollback **all** succeeded sites to their previous version
+2. This ensures all sites remain on the same version
+3. The user is notified with a detailed report of what was rolled back and why
+
+**Use case:** Plugins that communicate between sites (e.g., multisite sync plugins) where mixed versions could cause data corruption.
+
+#### Strategy 4: Version Verification Post-Deploy
+
+After all publish operations complete (including retries), the system can run a verification pass:
+
+```
+Verification Pass:
+  For each target site:
+    1. GET /wp-json/riseup-asia-uploader/v1/plugins/{slug}
+    2. Compare remote version with expected version
+    3. Flag mismatches as "version_drift"
+```
+
+This catches edge cases where:
+- The upload succeeded but activation silently failed
+- A cache layer is serving stale version information
+- The plugin was manually downgraded between publish and verification
+
+### UI Presentation
+
+The publish history dashboard shows multi-site results with per-site status:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Publish: my-plugin v1.36.1 → 3 sites                      │
+│  Status: ⚠️ Partial Failure (2/3 succeeded)                │
+├─────────────────────────────────────────────────────────────┤
+│  ✅ site-a.example.com    v1.36.1 active     0.8s          │
+│  ❌ site-b.example.com    TRANSFER_FAILED    timeout 60s   │
+│  ⚠️ site-c.example.com    ROLLED BACK v1.36.0  crash       │
+├─────────────────────────────────────────────────────────────┤
+│  [Retry Failed]  [Rollback All]  [View Logs]               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### WebSocket Events for Partial Failures
+
+```
+publish:site_complete  → { publishId, siteId, status: "success", version }
+publish:site_failed    → { publishId, siteId, stage, error, canRetry, rolledBack }
+publish:bulk_complete  → { publishId, total, succeeded, failed, partialFailure }
+```
+
+### Data Persistence
+
+All partial failure states are persisted to the `publish_history` SQLite table:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `publish_id` | TEXT | Unique publish operation ID |
+| `site_id` | INTEGER | Target site |
+| `stage_reached` | TEXT | Last completed stage |
+| `status` | TEXT | success / failed / rolled_back |
+| `error_message` | TEXT | Failure reason |
+| `can_retry` | BOOLEAN | Whether retry is safe |
+| `rolled_back_to` | TEXT | Previous version if rolled back |
+| `retry_count` | INTEGER | Number of retry attempts |
+
+---
+
 ## Version History
 
 ```php

@@ -642,6 +642,210 @@ func (c *clientImpl) UploadPluginFile(ctx context.Context, url, username, passwo
 | 404 | E2005 | Plugin/endpoint not found |
 | 500+ | E3003 | WordPress server error |
 
+### Concrete Error Response Examples
+
+#### 401 Unauthorized — Invalid Application Password
+
+**Cause:** Wrong username, expired/revoked application password, or Application Passwords feature disabled.
+
+```json
+{
+  "code": "rest_cannot_access",
+  "message": "Sorry, you are not allowed to do that.",
+  "data": {
+    "status": 401
+  }
+}
+```
+
+**Alternative (malformed Basic Auth header):**
+
+```json
+{
+  "code": "rest_not_logged_in",
+  "message": "You are not currently logged in.",
+  "data": {
+    "status": 401
+  }
+}
+```
+
+**Common causes:**
+- Application password contains spaces (WordPress formats them as `xxxx xxxx xxxx` but they must be sent without spaces)
+- The user account was deleted or disabled
+- A security plugin (Wordfence, iThemes) is blocking REST API authentication
+- `.htaccess` or server-level Basic Auth is intercepting the header before WordPress processes it (common on CGI/FastCGI setups)
+
+**Recovery:** Verify username, regenerate application password in WordPress admin → Users → Application Passwords. Check that no security plugin blocks REST API auth.
+
+---
+
+#### 403 Forbidden — Insufficient Capabilities
+
+**Cause:** User exists and authenticates, but lacks the required WordPress capability (e.g., `activate_plugins`, `install_plugins`, `delete_plugins`).
+
+```json
+{
+  "code": "rest_cannot_manage_plugins",
+  "message": "Sorry, you are not allowed to manage plugins for this site.",
+  "data": {
+    "status": 403
+  }
+}
+```
+
+**Activation-specific 403:**
+
+```json
+{
+  "code": "rest_cannot_activate_plugin",
+  "message": "Sorry, you are not allowed to activate this plugin.",
+  "data": {
+    "status": 403
+  }
+}
+```
+
+**Multisite-specific 403:**
+
+```json
+{
+  "code": "rest_cannot_manage_plugins",
+  "message": "Sorry, you are not allowed to manage network plugins.",
+  "data": {
+    "status": 403
+  }
+}
+```
+
+**Common causes:**
+- User role is Editor or lower (needs Administrator)
+- On WordPress Multisite, only Super Admins can manage plugins
+- A capability manager plugin (e.g., Members, User Role Editor) has restricted plugin capabilities
+- `DISALLOW_FILE_MODS` is set to `true` in `wp-config.php` (blocks install/delete but not activate)
+
+**Recovery:** Ensure the user has the `Administrator` role. On Multisite, the user must be a Super Admin. Check `wp-config.php` for `DISALLOW_FILE_MODS`.
+
+---
+
+#### 404 Not Found — Plugin or Endpoint Missing
+
+**Cause:** Plugin slug doesn't exist on the remote site, or the REST API endpoint is not registered.
+
+```json
+{
+  "code": "rest_plugin_not_found",
+  "message": "Plugin not found.",
+  "data": {
+    "status": 404
+  }
+}
+```
+
+**Endpoint not found (REST API disabled or not registered):**
+
+```json
+{
+  "code": "rest_no_route",
+  "message": "No route was found matching the URL and request method.",
+  "data": {
+    "status": 404
+  }
+}
+```
+
+**Common causes:**
+- Plugin was manually deleted from the filesystem
+- Plugin slug contains a `/` character that breaks URL routing (this project uses JSON body parameters to avoid this)
+- WordPress REST API is disabled by a security plugin or `.htaccess` rule
+- Permalink structure is set to "Plain" and REST API routes don't resolve
+
+**Recovery:** Use the pre-flight existence check (`/plugins/exists` endpoint) before lifecycle operations. Verify REST API is accessible via `GET /wp-json`.
+
+---
+
+#### 500 Internal Server Error — Remote Server Crash
+
+**Cause:** PHP fatal error, memory exhaustion, or database failure on the remote WordPress site.
+
+```json
+{
+  "code": "internal_server_error",
+  "message": "There has been a critical error on this website.",
+  "data": {
+    "status": 500
+  }
+}
+```
+
+**Plugin activation crash (plugin's own code throws fatal error on activation):**
+
+```json
+{
+  "code": "rest_plugin_activation_error",
+  "message": "Plugin activation failed: Call to undefined function my_custom_function()",
+  "data": {
+    "status": 500,
+    "plugin": "my-plugin/my-plugin.php"
+  }
+}
+```
+
+**Memory exhaustion:**
+
+```
+<html><body>
+<b>Fatal error</b>: Allowed memory size of 268435456 bytes exhausted
+</body></html>
+```
+
+> **Note:** When WordPress crashes hard (OOM, segfault), the response may be HTML instead of JSON. The Go client's `parseResponse` detects non-JSON responses and wraps them in an `apperror.ErrWPAPI` with the raw body in context.
+
+**Common causes:**
+- Plugin activation hook runs code that depends on missing classes or extensions
+- PHP memory limit too low for ZIP extraction during upload (increase `memory_limit` to `256M+`)
+- Database connection lost during plugin table creation
+- Plugin conflicts — activating one plugin crashes another
+
+**Recovery:** Check remote site error logs. If activation crashed, use rollback. Increase PHP `memory_limit` and `max_execution_time` if needed.
+
+---
+
+#### 409 Conflict — Plugin Already Exists (Upload)
+
+```json
+{
+  "code": "rest_upload_plugin_exists",
+  "message": "The plugin already exists. Use overwrite=true to replace.",
+  "data": {
+    "status": 409,
+    "existing_version": "1.35.0"
+  }
+}
+```
+
+**Recovery:** The Go client always sends `overwrite=true` in the multipart form, so this should not occur in normal operation. If it does, check that the WordPress version supports the `overwrite` parameter (WP 5.5+).
+
+---
+
+#### Non-JSON Responses
+
+When WordPress fails catastrophically, the response may be plain HTML or an empty body. The Go client handles this:
+
+```go
+// In parseResponse: detect HTML responses
+if strings.Contains(string(body), "<html") || strings.Contains(string(body), "<!DOCTYPE") {
+    return apperror.New(apperror.ErrWPAPI, "WordPress returned HTML instead of JSON - likely a fatal PHP error").
+        WithContext("status", resp.StatusCode).
+        WithContext("body_preview", string(body[:min(500, len(body))]))
+}
+```
+
+**Common causes:**
+- PHP fatal error before WordPress could set JSON content-type
+- Apache/Nginx error page intercepted the response
+- WordPress debug display is enabled (`WP_DEBUG_DISPLAY = true`) and outputs HTML before JSON
+
 ---
 
 ## Rate Limiting
