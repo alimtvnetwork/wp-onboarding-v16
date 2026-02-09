@@ -27,13 +27,10 @@ define('ONBOARD_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('ONBOARD_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 /**
- * Include constants file (default values).
+ * Foundation files — loaded raw (no loader available yet).
+ * Order matters: constants → logger → boolean helpers → include-files loader.
  */
 require_once ONBOARD_PLUGIN_DIR . 'includes/constants.php';
-
-/**
- * Include logger class first (for debugging).
- */
 require_once ONBOARD_PLUGIN_DIR . 'includes/class-logger.php';
 
 // Log plugin initialization start.
@@ -42,90 +39,41 @@ OnboardLogger::debug('Plugin Version: ' . ONBOARD_PLUGIN_VERSION);
 OnboardLogger::debug('WordPress Version: ' . (function_exists('get_bloginfo') ? get_bloginfo('version') : 'Unknown'));
 OnboardLogger::debug('PHP Version: ' . PHP_VERSION);
 
-/**
- * Include paths class (centralized path management).
- */
-OnboardLogger::debug('Loading OnboardPaths class...');
-require_once ONBOARD_PLUGIN_DIR . 'includes/class-paths.php';
-OnboardLogger::debug('OnboardPaths class loaded successfully');
-
-/**
- * Include boolean helpers (positive boolean functions).
- */
-OnboardLogger::debug('Loading OnboardBooleanHelpers class...');
 require_once ONBOARD_PLUGIN_DIR . 'includes/class-boolean-helpers.php';
-OnboardLogger::debug('OnboardBooleanHelpers class loaded successfully');
+require_once ONBOARD_PLUGIN_DIR . 'includes/class-include-files.php';
 
 /**
- * Include initialization helpers (reusable functions).
+ * Load remaining foundation files via OnboardIncludeFiles.
  */
-OnboardLogger::debug('Loading OnboardInitHelpers class...');
-require_once ONBOARD_PLUGIN_DIR . 'includes/class-init-helpers.php';
-OnboardLogger::debug('OnboardInitHelpers class loaded successfully');
+OnboardLogger::debug('Loading foundation classes via OnboardIncludeFiles...');
+OnboardIncludeFiles::load(OnboardIncludeFiles::PATHS);
+OnboardIncludeFiles::load(OnboardIncludeFiles::INIT_HELPERS);
+OnboardIncludeFiles::load(OnboardIncludeFiles::CONFIG);
 
 /**
- * Include config class (handles constant -> database -> ENV hierarchy).
+ * Load all remaining dependencies via OnboardIncludeFiles.
  */
-OnboardLogger::debug('Loading OnboardConfig class...');
-require_once ONBOARD_PLUGIN_DIR . 'includes/class-config.php';
-OnboardLogger::debug('OnboardConfig class loaded successfully');
-
-/**
- * Include core files with error handling.
- */
-function onboard_load_dependencies() {
-    OnboardLogger::debug('Loading plugin dependencies...');
-
-    $files = array(
-        'includes/class-database.php',
-        'includes/class-token-encryption.php',
-        'includes/class-rate-limiter.php',
-        'includes/class-audit-logger.php',
-        'includes/class-oauth.php',
-        'includes/class-mutation-token.php',
-        'includes/class-ip-whitelist.php',
-        'includes/class-snapshot.php',
-        'includes/class-backup-manager.php',
-        'includes/class-plugin-manager.php',
-        'includes/class-upload-validator.php',
-        'includes/class-debug-maintenance.php',
-        'includes/class-cleanup.php',
-        'includes/security-utils.php',
-        'api/class-api.php',
-        'api/class-permissions.php',
-        'admin/class-admin-ui.php',
-    );
-
-    $loaded = 0;
-    $failed = 0;
-
-    foreach ($files as $file) {
-        $filepath = ONBOARD_PLUGIN_DIR . $file;
-        OnboardLogger::debug("Loading file: {$file}");
-
-        if (file_exists($filepath)) {
-            try {
-                require_once $filepath;
-                $loaded++;
-                OnboardLogger::debug("  ✓ Loaded successfully: {$file}");
-            } catch (Exception $e) {
-                $failed++;
-                OnboardLogger::error("  ✗ Failed to load: {$file}", $e);
-                error_log('Plugins Onboard: Failed to load file - ' . $filepath . ' - ' . $e->getMessage());
-            }
-        } else {
-            $failed++;
-            OnboardLogger::error("  ✗ File not found: {$file}");
-            error_log('Plugins Onboard: Missing file - ' . $filepath);
-        }
-    }
-
-    OnboardLogger::debug("Dependencies loaded: {$loaded} successful, {$failed} failed");
-}
-
-// Load dependencies.
-OnboardLogger::debug('Starting dependency loading...');
-onboard_load_dependencies();
+OnboardLogger::debug('Loading plugin dependencies via OnboardIncludeFiles...');
+OnboardIncludeFiles::loadMany(array(
+    OnboardIncludeFiles::DATABASE,
+    OnboardIncludeFiles::TOKEN_ENCRYPTION,
+    OnboardIncludeFiles::RATE_LIMITER,
+    OnboardIncludeFiles::AUDIT_LOGGER,
+    OnboardIncludeFiles::OAUTH,
+    OnboardIncludeFiles::MUTATION_TOKEN,
+    OnboardIncludeFiles::IP_WHITELIST,
+    OnboardIncludeFiles::SNAPSHOT,
+    OnboardIncludeFiles::BACKUP_MANAGER,
+    OnboardIncludeFiles::PLUGIN_MANAGER,
+    OnboardIncludeFiles::UPLOAD_VALIDATOR,
+    OnboardIncludeFiles::DEBUG_MAINTENANCE,
+    OnboardIncludeFiles::CLEANUP,
+    OnboardIncludeFiles::SECURITY_UTILS,
+    OnboardIncludeFiles::API,
+    OnboardIncludeFiles::API_PERMISSIONS,
+    OnboardIncludeFiles::ADMIN_UI,
+));
+OnboardIncludeFiles::logSummary();
 OnboardLogger::debug('Dependency loading completed');
 
 /**

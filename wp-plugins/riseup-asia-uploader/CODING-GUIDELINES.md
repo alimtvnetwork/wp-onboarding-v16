@@ -119,7 +119,15 @@ RiseupDependencyLoader::loadManifest(array(
 RiseupDependencyLoader::logSummary($this->file_logger);
 ```
 
-A broken or missing file is recorded and reported instead of crashing the entire plugin.
+A broken or missing file is recorded with a full stack trace and reported instead of crashing the entire plugin.
+
+### Rules
+
+- **Never use raw `require_once`** for non-foundation files
+- Every file in the manifest gets a human-readable label
+- Missing files are logged as errors with stack traces — loading continues for remaining files
+- Use `RiseupDependencyLoader::getFailures()` to programmatically inspect failures
+- Foundation files (constants, boolean helpers, init helpers, dependency loader itself) are the only files that load via raw `require_once`
 
 ---
 
