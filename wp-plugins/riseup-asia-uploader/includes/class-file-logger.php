@@ -512,6 +512,9 @@ class Riseup_File_Logger {
             return true;
         }
 
+        // Auto-inject request metadata
+        $context = $this->enrich_context_with_request($context);
+
         $is_error = ($level === RISEUP_LOG_LEVEL_ERROR);
         $entry = $this->format_entry($level, $message, $file, $line, $context);
         return $this->write($entry, $is_error);
