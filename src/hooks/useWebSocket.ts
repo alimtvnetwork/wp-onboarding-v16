@@ -34,6 +34,29 @@ export function useWebSocket() {
       setLastMessage(createMessage(WS_EVENTS.CONNECTION, data));
     });
 
+    // ─── State Reconciliation on Reconnect ───
+    // After a WS disconnect, events are lost. On reconnect, invalidate all
+    // critical query keys so React Query re-fetches fresh state from the backend.
+    const unsubReconnect = wsClient.onReconnect(({ downtimeMs, reconnectAttempts }) => {
+      console.info(
+        `[WS] Reconciling state after reconnect (downtime: ${Math.round(downtimeMs / 1000)}s, attempts: ${reconnectAttempts})`
+      );
+      
+      // Core data that may have changed during downtime
+      queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      queryClient.invalidateQueries({ queryKey: ["sites"] });
+      queryClient.invalidateQueries({ queryKey: ["fileChanges"] });
+      queryClient.invalidateQueries({ queryKey: ["backups"] });
+      queryClient.invalidateQueries({ queryKey: ["e2e", "runs"] });
+      queryClient.invalidateQueries({ queryKey: ["errors"] });
+      queryClient.invalidateQueries({ queryKey: ["error-history"] });
+      queryClient.invalidateQueries({ queryKey: ["site-health-summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["site-health-stats"] });
+      
+      setIsConnected(true);
+      setLastMessage(createMessage("ws_reconnected", { downtimeMs, reconnectAttempts }));
+    });
+
     // File change events - invalidate file changes query
     const unsubFileChange = wsClient.on(WS_EVENTS.FILE_CHANGE, (data: unknown) => {
       const { pluginId } = data as { pluginId: number };
@@ -152,6 +175,7 @@ export function useWebSocket() {
 
     return () => {
       unsubConnection();
+      unsubReconnect();
       unsubFileChange();
       unsubSyncStarted();
       unsubSyncProgress();

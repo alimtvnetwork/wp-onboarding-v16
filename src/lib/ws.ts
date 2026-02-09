@@ -14,6 +14,8 @@ class WebSocketClient {
   private maxReconnectAttempts: number = 10;
   private url: string = resolveWsUrl();
   private isReconnectEnabled: boolean = true;
+  private hasConnectedBefore: boolean = false;
+  private disconnectedAt: number | null = null;
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {
@@ -29,14 +31,36 @@ class WebSocketClient {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        logger.info('[WS] Connected', { url: this.url });
+        const wasReconnect = this.hasConnectedBefore;
+        const downtime = this.disconnectedAt ? Date.now() - this.disconnectedAt : 0;
+        
+        logger.info('[WS] Connected', { url: this.url, wasReconnect, downtimeMs: downtime });
+        
         // Reset reconnect state on successful connection
+        const previousAttempts = this.reconnectAttempts;
         this.reconnectAttempts = 0;
         this.currentReconnectDelay = this.reconnectDelay;
+        this.hasConnectedBefore = true;
+        this.disconnectedAt = null;
         
         if (this.reconnectTimer) {
           clearTimeout(this.reconnectTimer);
           this.reconnectTimer = null;
+        }
+        
+        // Emit reconnected event so consumers can reconcile state
+        if (wasReconnect) {
+          logger.info('[WS] Reconnected — triggering state reconciliation', {
+            previousAttempts,
+            downtimeMs: downtime,
+          });
+          const reconnectHandlers = this.handlers.get('__reconnected');
+          if (reconnectHandlers) {
+            reconnectHandlers.forEach((handler) => handler({ 
+              downtimeMs: downtime, 
+              reconnectAttempts: previousAttempts 
+            }));
+          }
         }
       };
 
@@ -58,6 +82,9 @@ class WebSocketClient {
 
       this.ws.onclose = () => {
         logger.info('[WS] Disconnected', { willReconnect: this.isReconnectEnabled });
+        if (this.disconnectedAt === null) {
+          this.disconnectedAt = Date.now();
+        }
         if (this.isReconnectEnabled) {
           this.scheduleReconnect();
         }
@@ -120,6 +147,15 @@ class WebSocketClient {
     return () => {
       this.handlers.get(event)?.delete(handler);
     };
+  }
+
+  /**
+   * Register a handler for reconnection events.
+   * Called after a successful reconnect (not the initial connect).
+   * Use this to invalidate caches and reconcile stale state.
+   */
+  onReconnect(handler: (info: { downtimeMs: number; reconnectAttempts: number }) => void): () => void {
+    return this.on('__reconnected', handler as EventHandler);
   }
 
   off(event: string, handler: EventHandler) {
