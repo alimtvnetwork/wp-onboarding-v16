@@ -16,7 +16,6 @@
   },
   "usePnp": true,
   "pnpmStorePath": "E:/.pnpm-store",
-  "pnpmVirtualStorePath": "E:/.pnpm-store/v3",
   "cleanPaths": [
     "dist",
     ".vite",

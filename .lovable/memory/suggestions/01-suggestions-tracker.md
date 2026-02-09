@@ -18,14 +18,15 @@
 | Description | Implement automatic remote version check after bulk publish to detect version drift |
 | Notes | Architecture documented in `08-publish-service.md` Strategy 4; needs code implementation |
 
-### S-018: Remove Vestigial `pnpmVirtualStorePath` Config Key
+### ~~S-018: Remove Vestigial `pnpmVirtualStorePath` Config Key~~
 | Field | Value |
 |-------|-------|
 | Created | 2026-02-09 |
 | Source | Template comparison |
 | Priority | low |
-| Status | **open** |
-| Description | `pnpmVirtualStorePath` in `powershell.json` is unused — both scripts hardcode `.pnpm` in `Configure-PnpmStore`. Remove from config. |
+| Status | **completed** |
+| Completed | 2026-02-09 |
+| Description | `pnpmVirtualStorePath` removed from `powershell.json` — both scripts hardcode `.pnpm` in `Configure-PnpmStore`. |
 
 ---
 
@@ -64,8 +65,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 2 |
-| Completed | 16 |
+| Open | 1 |
+| Completed | 17 |
 | Rejected | 0 |
 | **Total** | **18** |
 
