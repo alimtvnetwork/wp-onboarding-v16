@@ -13,7 +13,6 @@
 |-------|-------|
 | Created | 2026-02-01 |
 | Source | Lovable (Risk Report) |
-| Project | wp-plugin-publish |
 | Priority | high |
 | Status | **open** |
 | Description | Add concrete WordPress REST API error response examples to `10-wp-rest-client.md` |
@@ -38,42 +37,6 @@
 | Status | **open** |
 | Description | Define how frontend recovers missed events after WS disconnect |
 
-### S-013: DRY Phase 7 — PHP Snapshot Factory
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-09 |
-| Source | DRY Refactoring Plan |
-| Priority | medium |
-| Status | **open** |
-| Description | Create `RiseupSnapshotFactory` with lazy singletons to replace 5+ duplicated require+instantiate blocks |
-
-### S-014: DRY Phase 8 — PHP Logger Consolidation
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-09 |
-| Source | DRY Refactoring Plan |
-| Priority | medium |
-| Status | **open** |
-| Description | Consolidate 4 logger methods' context enrichment into single `prepare_context()` |
-
-### S-015: DRY Phase 9 — GlobalErrorModal Decomposition
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-09 |
-| Source | DRY Refactoring Plan |
-| Priority | high |
-| Status | **open** |
-| Description | Split 2,164-line `GlobalErrorModal.tsx` into focused sub-components |
-
-### S-016: DRY Phase 10 — Envelope Schema Alignment
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-09 |
-| Source | DRY Refactoring Plan |
-| Priority | low |
-| Status | **open** |
-| Description | Create `envelope.schema.json` as single source of truth for Go/TS/PHP envelope types |
-
 ---
 
 ## Completed Suggestions
@@ -89,6 +52,10 @@
 | S-010 | WebSocket Real-time Sync | 2026-02-02 | Broadcasting helpers added |
 | S-011 | E2E Testing Framework | 2026-02-02 | 20 test cases, Go runner, React UI |
 | S-012 | Error Detail Modal | 2026-02-02 | Developer debug info with copy feature |
+| S-013 | DRY Phase 7 — PHP Snapshot Factory | 2026-02-09 | `RiseupSnapshotFactory` with lazy singletons |
+| S-014 | DRY Phase 8 — PHP Logger Consolidation | 2026-02-09 | `prepare_context()` method |
+| S-015 | DRY Phase 9 — GlobalErrorModal Decomposition | 2026-02-09 | Split into 7 sub-components |
+| S-016 | DRY Phase 10 — Envelope Schema Alignment | 2026-02-09 | `envelope.schema.json` v1.0.0 |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -104,8 +71,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 7 |
-| Completed | 9 |
+| Open | 3 |
+| Completed | 13 |
 | Rejected | 0 |
 | **Total** | **16** |
 

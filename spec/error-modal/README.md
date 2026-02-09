@@ -380,6 +380,197 @@ GlobalErrorModal.tsx
 └── ErrorModalTypes.ts (shared types: PHPStackFrame, AppInfo, SectionCommonProps)
 ```
 
+### Visual Layout Diagrams
+
+#### Full Modal Layout (Desktop: 95vw × 95vh)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ┌─ DialogHeader ──────────────────────────────────────────────────┐ │
+│ │ [E5001]  Failed to enable plugin   2026-02-09 14:32:01         │ │
+│ │                                          [◀ 1/3 ▶] [Copy All] │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─ Section Toggle ────────────────────────────────────────────────┐ │
+│ │  [ ● Backend ]  [ ○ Frontend ]                                 │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+│ ┌─ ScrollArea (flex-1) ──────────────────────────────────────────┐ │
+│ │ ┌─ Tab Bar ──────────────────────────────────────────────────┐ │ │
+│ │ │ Overview │ Log │ Execution │ Stack │ Session │ Request │ Traversal │
+│ │ └────────────────────────────────────────────────────────────┘ │ │
+│ │                                                                │ │
+│ │  ┌─ Active Tab Content ─────────────────────────────────────┐  │ │
+│ │  │                                                          │  │ │
+│ │  │  (Tab-specific content rendered here)                    │  │ │
+│ │  │                                                          │  │ │
+│ │  └──────────────────────────────────────────────────────────┘  │ │
+│ └────────────────────────────────────────────────────────────────┘ │
+│ ┌─ DialogFooter ─────────────────────────────────────────────────┐ │
+│ │  [▼ Download]                              [Close] [▼ Copy]   │ │
+│ └─────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### Backend Section — Overview Tab
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ┌─ Error Banner (red) ────────────────────────────────────────┐ │
+│  │ ⚠ Backend Error: Failed to fetch plugin details from site  │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌─ Request Info ──────────────────────────────────────────────┐ │
+│  │  Method: POST   Endpoint: /api/v1/plugins/enable            │ │
+│  │  Status: 500    Site: https://example.com                   │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌─ Timing ───────────────────────────────────────────────────┐  │
+│  │  Requested At:           /api/v1/plugins/enable             │  │
+│  │  Delegated At:           https://site.com/wp-json/...       │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Availability Badges ──────────────────────────────────────┐  │
+│  │  [✓ Session] [✓ Stack Traces] [✓ Execution Logs]          │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Backend Section — Stack Tab
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ┌─ Go Backend Stack (blue-themed) ───────────────────────────┐  │
+│  │  site_handlers.go:327  handlers.EnableRemotePlugin          │  │
+│  │  service.go:1245       site.(*Service).EnableRemotePlugin   │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ PHP Delegated Stack (orange-themed) ──────────────────────┐  │
+│  │  PHP Fatal error: Class 'PDO' not found in plugin-mgr.php  │  │
+│  │  #0 endpoints.php(15): PluginManager->connect()             │  │
+│  │  #1 {main}                                                  │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ PHP Structured Frames (table) ────────────────────────────┐  │
+│  │  #  │ Function                    │ File              │ Line│  │
+│  │  0  │ PluginManager::connect()    │ plugin-mgr.php    │ 42  │  │
+│  │  1  │ handle_enable()             │ endpoints.php     │ 15  │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Session Diagnostics (auto-fetched) ───────────────────────┐  │
+│  │  Go frames: 3 │ PHP frames: 2 │ stacktrace.txt: available  │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Backend Section — Request Tab (Chain Visualization)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ┌─ Node 1: React → Go ──────────────────────────────────────┐  │
+│  │  🔵 [React → Go]  [POST]  [500]                           │  │
+│  │  /api/v1/plugins/enable                                    │  │
+│  │  ▸ Request Body: { "slug": "my-plugin", "siteId": 1 }     │  │
+│  └──────────┬─────────────────────────────────────────────────┘  │
+│             │ (vertical connector line)                           │
+│  ┌──────────┴─────────────────────────────────────────────────┐  │
+│  │  🟠 [Go → PHP]  [500]                                     │  │
+│  │  https://example.com/wp-json/riseup-asia-uploader/v1/...   │  │
+│  │  ▸ PHP Response: { "success": false, ... }                 │  │
+│  │  ▸ PHP Error Stack: Fatal error: Class 'PDO' not found     │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Environment ──────────────────────────────────────────────┐  │
+│  │  API Base: http://localhost:8080   VITE_API_URL: ...        │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Backend Section — Traversal Tab
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ┌─ Endpoint Flow ────────────────────────────────────────────┐  │
+│  │  [Go] /api/v1/plugins/enable                               │  │
+│  │    ──▸                                                     │  │
+│  │  [PHP] https://site.com/wp-json/riseup.../v1/enable        │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Methods Stack (table) ────────────────────────────────────┐  │
+│  │  #  │ Method                          │ File            │ Ln│  │
+│  │  1  │ handlers.EnableRemotePlugin     │ site_handlers   │327│  │
+│  │  2  │ site.(*Service).EnableRemote... │ service.go      │1245│ │
+│  │  3  │ wordpress.(*Client).doRequest   │ uploader.go     │350│  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Delegated Service Error Stack (orange) ───────────────────┐  │
+│  │  PHP Fatal error: Class 'PDO' not found...                  │  │
+│  │  #0 endpoints.php(15): PluginManager->connect()             │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Frontend Section — Overview Tab
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ┌─ Trigger Context ──────────────────────────────────────────┐  │
+│  │  Component: PluginCard  →  Action: enable_clicked           │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Message ──────────────────────────────────────────────────┐  │
+│  │  Failed to enable plugin "my-plugin" on site                │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Call Chain ───────────────────────────────────────────────┐  │
+│  │  PluginsPage                                                │  │
+│  │    └─ usePluginActions.enable                               │  │
+│  │        └─ api.post("/api/v1/plugins/enable")                │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ User Interaction Path (last 10 clicks) ───────────────────┐  │
+│  │  14:31:55  PluginsPage     "Plugins" tab       click  /    │  │
+│  │  14:31:58  PluginCard      "Enable" button     click  /    │  │
+│  │  14:32:01  PluginCard      "Confirm" button    click  /    │  │
+│  └────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Frontend Section — Stack Tab
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  [● Parsed] [○ Raw]                    [□ Show internal frames] │
+│                                                                  │
+│  ┌─ Parsed Stack Frames (table) ──────────────────────────────┐  │
+│  │  #  │ Function              │ File                │ Line   │  │
+│  │  0  │ enablePlugin          │ usePluginActions.ts  │ 45    │  │
+│  │  1  │ handleClick           │ PluginCard.tsx       │ 112   │  │
+│  │  2  │ callCallback          │ react-dom.js         │ 3942  │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ React Execution Chain ────────────────────────────────────┐  │
+│  │  [render] PluginsPage                           14:31:50   │  │
+│  │  [effect] usePluginActions                      14:31:51   │  │
+│  │  [handler] enablePlugin                         14:32:01   │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Error Location: usePluginActions.ts:45 in enablePlugin()        │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### DialogFooter — Action Menus
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  [▼ Download]                              [Close]  [▼ Copy]    │
+│  ┌─────────────────┐                    ┌──────────────────────┐│
+│  │ Full Bundle (ZIP)│                    │ Full Report          ││
+│  │ error.log.txt    │                    │ With Backend Logs    ││
+│  │ log.txt          │                    │ error.log.txt        ││
+│  │ Report (.md)     │                    │ log.txt              ││
+│  └─────────────────┘                    └──────────────────────┘│
+└──────────────────────────────────────────────────────────────────┘
+```
+
 ### Full-Screen Layout
 
 The modal uses a **full-screen** layout on mobile and **95vw × 95vh** on desktop:
