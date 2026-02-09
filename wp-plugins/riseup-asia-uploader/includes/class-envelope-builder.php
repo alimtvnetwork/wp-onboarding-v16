@@ -8,6 +8,7 @@
  * @package RiseupAsiaUploader
  * @since   1.33.0
  * @see     spec/response-envelope/README.md
+ * @schema  spec/response-envelope/envelope.schema.json v1.0.0
  */
 
 if (!defined('ABSPATH')) {
