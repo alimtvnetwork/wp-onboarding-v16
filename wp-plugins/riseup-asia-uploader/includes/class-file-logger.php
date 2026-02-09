@@ -281,7 +281,7 @@ class Riseup_File_Logger {
         return $context;
     }
 
-
+    /**
      * Clear the deduplication hash map.
      * After calling this, previously suppressed entries will be logged again.
      *

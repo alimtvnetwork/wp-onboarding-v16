@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.35.3
+ * Version: 1.36.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -4277,6 +4277,96 @@ class Riseup_Asia {
 // =============================================================================
 // PLUGIN INITIALIZATION
 // =============================================================================
+
+/**
+ * Activation hook: ensure log directories and files exist on first activation.
+ * This runs before plugins_loaded, guaranteeing the logs folder is ready.
+ */
+function riseup_asia_activate() {
+    try {
+        // Ensure constants and helpers are loaded
+        $constants_file = __DIR__ . '/includes/constants.php';
+        if (file_exists($constants_file)) {
+            require_once $constants_file;
+        }
+
+        // Load boolean helpers for path utils
+        $helpers_file = __DIR__ . '/includes/class-boolean-helpers.php';
+        if (file_exists($helpers_file)) {
+            require_once $helpers_file;
+        }
+
+        // Load init helpers for directory creation
+        $init_file = __DIR__ . '/includes/class-init-helpers.php';
+        if (file_exists($init_file)) {
+            require_once $init_file;
+        }
+
+        // Resolve base directory and create logs folder
+        $upload_dir = wp_upload_dir();
+        if (!isset($upload_dir['error']) || !$upload_dir['error']) {
+            $base_dir = $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR;
+            $logs_dir = $base_dir . '/' . RISEUP_LOGS_SUBDIR;
+
+            // Create base + logs directories
+            if (!is_dir($base_dir)) {
+                wp_mkdir_p($base_dir);
+            }
+            if (!is_dir($logs_dir)) {
+                wp_mkdir_p($logs_dir);
+            }
+
+            // Write activation marker to log file
+            $log_file = $logs_dir . '/' . RISEUP_LOG_FILENAME;
+            $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
+            $version = defined('RISEUP_VERSION') ? RISEUP_VERSION : 'unknown';
+            $entry = sprintf(
+                "[%s] [INFO] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"version\":\"%s\",\"php\":\"%s\",\"wp\":\"%s\"}\n",
+                $timestamp,
+                $version,
+                phpversion(),
+                get_bloginfo('version')
+            );
+            @file_put_contents($log_file, $entry, FILE_APPEND | LOCK_EX);
+
+            // Also write to error log for visibility
+            $error_file = $logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
+            @file_put_contents($error_file, sprintf(
+                "[%s] [INFO] Plugin activated — error log initialized (v%s)\n",
+                $timestamp,
+                $version
+            ), FILE_APPEND | LOCK_EX);
+
+            // Initialize stacktrace.txt
+            $stacktrace_file = $logs_dir . '/' . RISEUP_STACKTRACE_FILENAME;
+            if (!file_exists($stacktrace_file)) {
+                @file_put_contents($stacktrace_file, sprintf(
+                    "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
+                    $timestamp
+                ));
+            }
+
+            // Add security files
+            if (class_exists('RiseupInitHelpers')) {
+                RiseupInitHelpers::addSecurityFiles($base_dir);
+            } else {
+                // Manual security files
+                $htaccess = $base_dir . '/.htaccess';
+                if (!file_exists($htaccess)) {
+                    @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
+                }
+                $index = $base_dir . '/index.php';
+                if (!file_exists($index)) {
+                    @file_put_contents($index, "<?php\n// Silence is golden.\n");
+                }
+            }
+        }
+    } catch (\Throwable $e) {
+        error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
+    }
+}
+
+register_activation_hook(__FILE__, 'riseup_asia_activate');
 
 /**
  * Initialize the plugin.
