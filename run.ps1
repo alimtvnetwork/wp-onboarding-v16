@@ -590,9 +590,21 @@ if ($zip) {
         Write-Host "  Replaced existing ZIP" -ForegroundColor DarkGray
     }
 
-    # Create ZIP using Compress-Archive
+    # Create ZIP using System.IO.Compression for SmallestSize (better than Compress-Archive Optimal)
     try {
-        Compress-Archive -Path "$zipPluginPath\*" -DestinationPath $zipOutputPath -CompressionLevel Optimal -Force
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        # Create temp structure with slug folder for proper ZIP root
+        $tempDir = Join-Path $env:TEMP "wp-zip-$(Get-Random)"
+        $pluginTempDir = Join-Path $tempDir (Split-Path $zipPluginPath -Leaf)
+        New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
+        Copy-Item -Path "$zipPluginPath\*" -Destination $pluginTempDir -Recurse
+        [System.IO.Compression.ZipFile]::CreateFromDirectory(
+            $pluginTempDir,
+            $zipOutputPath,
+            [System.IO.Compression.CompressionLevel]::SmallestSize,
+            $true  # includeBaseDirectory
+        )
+        Remove-Item $tempDir -Recurse -Force
 
         # Verify the ZIP was created
         if (Test-Path $zipOutputPath) {

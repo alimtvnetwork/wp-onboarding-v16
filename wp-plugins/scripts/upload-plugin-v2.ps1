@@ -464,7 +464,14 @@ try {
     $pluginTempDir = Join-Path $tempDir $folderName
     New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
     Copy-Item -Path "$PluginFolderPath\*" -Destination $pluginTempDir -Recurse
-    Compress-Archive -Path $pluginTempDir -DestinationPath $OutputZipPath -CompressionLevel Optimal
+    # Use System.IO.Compression for SmallestSize (better than Compress-Archive Optimal)
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::CreateFromDirectory(
+        $pluginTempDir,
+        $OutputZipPath,
+        [System.IO.Compression.CompressionLevel]::SmallestSize,
+        $true  # includeBaseDirectory — keeps the slug folder as root
+    )
     Remove-Item $tempDir -Recurse -Force
 
     $zipSize = (Get-Item $OutputZipPath).Length
