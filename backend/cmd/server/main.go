@@ -38,6 +38,7 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/internal/envelope"
+	"wp-plugin-publish/pkg/portutil"
 )
 
 var ansiRegexp = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -269,6 +270,11 @@ func main() {
 		RequestSessionStore:    reqSessionStore,
 		SessionLoggingEnabled:  cfg.Logging.SessionLoggingEnabled,
 	})
+	// Auto-resolve port conflict
+	if err := portutil.EnsurePortFree(cfg.Server.Port); err != nil {
+		log.Warn("Port conflict resolution", "port", cfg.Server.Port, "result", err.Error())
+	}
+
 	go func() {
 		if err := server.Start(); err != nil && err.Error() != "http: Server closed" {
 			log.Fatal("Server failed", "error", err)
