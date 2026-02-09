@@ -1,108 +1,219 @@
-# PowerShell Build & Run Script (pnpm PnP Edition)
+# PowerShell Build & Run Script — Generic Template
 # Version: 1.2.0
-# This script builds the React frontend and runs the Go backend
-# Uses pnpm with Plug'n'Play for disk-efficient package management
-# Generic template — configure via powershell.json (see spec/powershell-integration/)
+# Generic template for Go backend + React frontend projects with pnpm PnP support
+# Configure via powershell.json — see spec/powershell-integration/01-configuration-schema.md
+#
+# USAGE:
+#   Copy this file and powershell.json to your project root.
+#   Edit powershell.json with your project-specific paths and settings.
+#   Run: .\run.ps1 -h for help.
+#
+# FLAGS:
+#   -h   Show help
+#   -b   Build frontend only (don't start backend)
+#   -s   Skip frontend build (start backend only)
+#   -p   Skip git pull
+#   -f   Force clean build (remove caches, deps, databases)
+#   -i   Install/update all dependencies (frontend + backend)
+#   -r   Rebuild (combines -f + -i for complete clean reinstall)
+#   -fw  Add Windows Firewall inbound rules (requires Admin)
+#   -v   Verbose debug output
+#
+# PIPELINE:
+#   1. Git Pull → 2. Prerequisites → 3. pnpm Install → 4. Build → 5. Copy → 6. Run
+#
+# FEATURES:
+#   - Auto-install Go, Node.js, pnpm via winget if missing
+#   - pnpm PnP mode for disk-efficient package management
+#   - Shared pnpm store across multiple projects
+#   - Force clean mode: removes node_modules, dist, .vite, PnP artifacts, databases
+#   - Windows Firewall rule management
+#   - pnpm v10+ compatibility (auto --dangerously-allow-all-builds)
+#   - Cross-drive store detection (falls back to isolated linker)
+#   - Node v24+ detection (falls back to isolated linker for ESM compat)
+#
+# CONFIGURATION (powershell.json):
+#   {
+#     "projectName": "My App",
+#     "rootDir": ".",
+#     "backendDir": "backend",
+#     "frontendDir": ".",
+#     "distDir": "dist",
+#     "targetDir": "backend/frontend/dist",
+#     "dataDir": "backend/data",
+#     "ports": [8080],
+#     "prerequisites": { "go": true, "node": true, "pnpm": true },
+#     "usePnp": true,
+#     "pnpmStorePath": ".pnpm-store",
+#     "cleanPaths": ["node_modules", "dist", ".vite"],
+#     "buildCommand": "pnpm run build",
+#     "installCommand": "pnpm install",
+#     "runCommand": "go run cmd/server/main.go",
+#     "configFile": "config.json",
+#     "configExampleFile": "config.example.json"
+#   }
+#
+# See spec/powershell-integration/ for full documentation.
 
 param(
-    [switch]$BuildOnly,
-    [switch]$SkipBuild,
-    [switch]$SkipPull,
-    [switch]$Force,
-    [switch]$OpenFirewall,
-    [switch]$Help
+    [Alias('b')][switch]$buildonly,
+    [Alias('s')][switch]$skipbuild,
+    [Alias('p')][switch]$skippull,
+    [Alias('f')][switch]$force,
+    [Alias('i')][switch]$install,
+    [Alias('r')][switch]$rebuild,
+    [Alias('fw')][switch]$openfirewall,
+    [Alias('h')][switch]$help,
+    [Alias('v')][switch]$verbose
 )
 
+# -rebuild is a convenience flag that combines -force and -install
+if ($rebuild) {
+    $force = $true
+    $install = $true
+}
+
 $ErrorActionPreference = "Stop"
+
+# ============================================================================
+# PATH RESOLUTION: Script location is the working directory
+# ============================================================================
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+if ([string]::IsNullOrWhiteSpace($ScriptDir)) {
+    $ScriptDir = Get-Location
+}
 
-# Load configuration
+# ============================================================================
+# CONFIGURATION LOADING
+# ============================================================================
 $ConfigPath = Join-Path $ScriptDir "powershell.json"
+
 if (-not (Test-Path $ConfigPath)) {
-    Write-Host "ERROR: powershell.json not found at $ConfigPath" -ForegroundColor Red
-    Write-Host "Create a powershell.json config file. See spec/powershell-integration/01-configuration-schema.md" -ForegroundColor Yellow
-    exit 5
+    Write-Host "ERROR: powershell.json not found at: $ConfigPath" -ForegroundColor Red
+    Write-Host "Create a powershell.json configuration file in the script directory." -ForegroundColor Yellow
+    Write-Host "See spec/powershell-integration/01-configuration-schema.md for format." -ForegroundColor Yellow
+    exit 1
 }
 
-$config = Get-Content $ConfigPath | ConvertFrom-Json
+try {
+    $Config = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+} catch {
+    Write-Host "ERROR: Failed to parse powershell.json: $_" -ForegroundColor Red
+    exit 1
+}
 
-# Resolve paths relative to script location
-$RootDir = if ($config.rootDir -and $config.rootDir -ne ".") { 
-    Join-Path $ScriptDir $config.rootDir 
-} else { 
-    $ScriptDir 
+# Resolve paths - handles both relative and absolute paths
+function Resolve-RelativePath($Path) {
+    if ([string]::IsNullOrWhiteSpace($Path) -or $Path -eq ".") {
+        return $ScriptDir
+    }
+    if ($Path -match '^[A-Za-z]:' -or $Path -match '^\\\\') {
+        return $Path -replace '/', '\'
+    }
+    return Join-Path $ScriptDir $Path
 }
-$BackendDir = Join-Path $RootDir $config.backendDir
-$FrontendDir = if ($config.frontendDir -and $config.frontendDir -ne ".") {
-    Join-Path $RootDir $config.frontendDir
-} else {
-    $RootDir
-}
-$DistDir = if ($config.distDir) { $config.distDir } else { "dist" }
-$TargetDir = if ($config.targetDir) { Join-Path $RootDir $config.targetDir } else { Join-Path $BackendDir "frontend/dist" }
-$DataDir = if ($config.dataDir) { Join-Path $RootDir $config.dataDir } else { Join-Path $BackendDir "data" }
-$ProjectName = if ($config.projectName) { $config.projectName } else { "Project" }
-$Ports = if ($config.ports) { $config.ports } else { @(8080) }
-$BuildCommand = if ($config.buildCommand) { $config.buildCommand } else { "pnpm run build" }
-$InstallCommand = if ($config.installCommand) { $config.installCommand } else { "pnpm install" }
-$RunCommand = if ($config.runCommand) { $config.runCommand } else { "go run main.go" }
-$ConfigFile = if ($config.configFile) { $config.configFile } else { "config.json" }
-$ConfigExampleFile = if ($config.configExampleFile) { $config.configExampleFile } else { "config.example.json" }
-$UsePnp = if ($null -ne $config.usePnp) { $config.usePnp } else { $true }
-$PnpmStorePath = if ($config.pnpmStorePath) { $config.pnpmStorePath } else { ".pnpm-store" }
-$RequiredModules = if ($config.requiredModules) { $config.requiredModules } else { @() }
-$CleanPaths = if ($config.cleanPaths) { $config.cleanPaths } else { @("node_modules", "dist", ".vite", ".pnp.cjs", ".pnp.loader.mjs") }
+
+# Configuration with defaults
+$ProjectName = if ($Config.projectName) { $Config.projectName } else { "Project" }
+$RootDir = Resolve-RelativePath $Config.rootDir
+$BackendDir = Resolve-RelativePath $Config.backendDir
+$FrontendDir = Resolve-RelativePath $Config.frontendDir
+$DistDir = if ($Config.distDir) { $Config.distDir } else { "dist" }
+$TargetDir = if ($Config.targetDir) { Resolve-RelativePath $Config.targetDir } else { $null }
+$DataDir = if ($Config.dataDir) { Resolve-RelativePath $Config.dataDir } else { $null }
+$Ports = if ($Config.ports) { $Config.ports } else { @(8080) }
+$BuildCommand = if ($Config.buildCommand) { $Config.buildCommand } else { "pnpm run build" }
+$InstallCommand = if ($Config.installCommand) { $Config.installCommand } else { "pnpm install" }
+$RunCommand = if ($Config.runCommand) { $Config.runCommand } else { "go run cmd/server/main.go" }
+$CleanPaths = if ($Config.cleanPaths) { $Config.cleanPaths } else { @("node_modules", "dist", ".vite") }
+$ConfigFile = if ($Config.configFile) { $Config.configFile } else { "config.json" }
+$ConfigExampleFile = if ($Config.configExampleFile) { $Config.configExampleFile } else { "config.example.json" }
+$RequiredModules = if ($Config.requiredModules) { $Config.requiredModules } else { @() }
+
+# pnpm configuration
+$PnpmStorePath = if ($Config.pnpmStorePath) { Resolve-RelativePath $Config.pnpmStorePath } else { $null }
+$UsePnp = if ($null -ne $Config.usePnp) { $Config.usePnp } else { $true }
+
+# Prerequisites
+$CheckGo = if ($null -ne $Config.prerequisites -and $null -ne $Config.prerequisites.go) { $Config.prerequisites.go } else { $true }
+$CheckNode = if ($null -ne $Config.prerequisites -and $null -ne $Config.prerequisites.node) { $Config.prerequisites.node } else { $true }
+$CheckPnpm = if ($null -ne $Config.prerequisites -and $null -ne $Config.prerequisites.pnpm) { $Config.prerequisites.pnpm } else { $true }
+
+# pnpm version-aware install behavior (pnpm v10+ blocks dependency build scripts by default)
+$PnpmMajor = 0
+$NodeMajor = 0
+$EffectiveInstallCommand = $InstallCommand
+$DidFrontendInstall = $false
+$EffectiveNodeLinker = if ($UsePnp) { "pnp" } else { "isolated" }
 
 $TotalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-# Show help and exit
-if ($Help) {
+# ============================================================================
+# HELP
+# ============================================================================
+if ($help) {
     Write-Host ""
-    Write-Host "$ProjectName - Build & Run Script (pnpm PnP)" -ForegroundColor Cyan
-    Write-Host "================================================" -ForegroundColor Cyan
+    Write-Host "$ProjectName - Build & Run Script" -ForegroundColor Cyan
+    Write-Host ("=" * ($ProjectName.Length + 22)) -ForegroundColor Cyan
     Write-Host ""
     Write-Host "USAGE:" -ForegroundColor Yellow
     Write-Host "  .\run.ps1 [flags]"
     Write-Host ""
     Write-Host "FLAGS:" -ForegroundColor Yellow
-    Write-Host "  -Help          Show this help message and exit"
-    Write-Host "  -BuildOnly     Build frontend only, don't start the backend server"
-    Write-Host "  -SkipBuild     Skip frontend build, only run the backend server"
-    Write-Host "  -SkipPull      Skip git pull step"
-    Write-Host "  -Force         Clean build: remove caches, PnP files, prune pnpm store"
-    Write-Host "  -OpenFirewall  (Admin) Add Windows Firewall inbound rules for ports"
+    Write-Host "  -h,  -help          Show this help message and exit"
+    Write-Host "  -b,  -buildonly     Build frontend only, don't start the backend server"
+    Write-Host "  -s,  -skipbuild     Skip frontend build, only run the backend server"
+    Write-Host "  -p,  -skippull      Skip git pull step"
+    Write-Host "  -f,  -force         Clean build: remove caches, dependencies, databases"
+    Write-Host "  -i,  -install       Install/update dependencies (frontend + backend)"
+    Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
+    Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
+    Write-Host "  -v,  -verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
-    Write-Host "  .\run.ps1                  # Full build and run"
-    Write-Host "  .\run.ps1 -Force           # Clean rebuild everything"
-    Write-Host "  .\run.ps1 -SkipBuild       # Just start the backend"
-    Write-Host "  .\run.ps1 -BuildOnly       # Build only, don't start server"
-    Write-Host "  .\run.ps1 -SkipPull -Force # Clean build without git pull"
+    Write-Host "  .\run.ps1              # Full build and run"
+    Write-Host "  .\run.ps1 -i           # Install/update all dependencies"
+    Write-Host "  .\run.ps1 -r           # Complete clean reinstall and build"
+    Write-Host "  .\run.ps1 -f           # Clean rebuild everything"
+    Write-Host "  .\run.ps1 -s           # Just start the backend (skip build)"
+    Write-Host "  .\run.ps1 -b           # Build only, don't start server"
+    Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
     Write-Host "  Project: $ProjectName"
     Write-Host "  Backend: $BackendDir"
     Write-Host "  Frontend: $FrontendDir"
-    Write-Host "  pnpm Store: $PnpmStorePath"
-    Write-Host "  Ports: $($Ports -join ', ')"
-    Write-Host ""
-    Write-Host "STEPS:" -ForegroundColor Yellow
-    Write-Host "  1. Git pull (unless -SkipPull)"
-    Write-Host "  2. Check prerequisites (Go, Node.js, pnpm)"
-    Write-Host "  3. Install dependencies (pnpm PnP)"
-    Write-Host "  4. Build React frontend (unless -SkipBuild)"
-    Write-Host "  5. Copy build to backend, start server (unless -BuildOnly)"
+    if ($PnpmStorePath) {
+        Write-Host "  pnpm Store: $PnpmStorePath"
+    }
     Write-Host ""
     exit 0
 }
 
+# ============================================================================
+# BANNER
+# ============================================================================
+Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  $ProjectName - Build & Run Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Function to format elapsed time
+if ($verbose) {
+    Write-Host "Configuration:" -ForegroundColor Gray
+    Write-Host "  Script Dir: $ScriptDir" -ForegroundColor Gray
+    Write-Host "  Root Dir: $RootDir" -ForegroundColor Gray
+    Write-Host "  Backend Dir: $BackendDir" -ForegroundColor Gray
+    Write-Host "  Frontend Dir: $FrontendDir" -ForegroundColor Gray
+    Write-Host "  pnpm Store: $PnpmStorePath" -ForegroundColor Gray
+    Write-Host ""
+}
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
 function Format-ElapsedTime($Stopwatch) {
     $elapsed = $Stopwatch.Elapsed
     if ($elapsed.TotalMinutes -ge 1) {
@@ -112,16 +223,17 @@ function Format-ElapsedTime($Stopwatch) {
     }
 }
 
-# Function to check if command exists
 function Test-Command($Command) {
     $oldPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'stop'
-    try { if (Get-Command $Command) { return $true } }
+    $ErrorActionPreference = 'SilentlyContinue'
+    try { 
+        $result = Get-Command $Command -ErrorAction SilentlyContinue
+        return $null -ne $result
+    }
     catch { return $false }
     finally { $ErrorActionPreference = $oldPreference }
 }
 
-# Check if the current PowerShell session is running as Administrator
 function Test-IsAdmin {
     try {
         $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -132,22 +244,177 @@ function Test-IsAdmin {
     }
 }
 
-# Ensure Windows Firewall inbound rules exist
+function Refresh-Path {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + 
+                [System.Environment]::GetEnvironmentVariable("Path", "User")
+}
+
+function Get-PnpmMajorVersion([string]$Version) {
+    try {
+        $major = ($Version -split '\.')[0]
+        return [int]$major
+    } catch {
+        return 0
+    }
+}
+
+function Get-NodeMajorVersion([string]$Version) {
+    try {
+        $v = $Version.Trim()
+        if ($v.StartsWith('v')) { $v = $v.Substring(1) }
+        $major = ($v -split '\.')[0]
+        return [int]$major
+    } catch {
+        return 0
+    }
+}
+
+function Get-DriveRoot([string]$Path) {
+    try {
+        if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
+        $full = [System.IO.Path]::GetFullPath($Path)
+        if ($full -match '^[A-Za-z]:') { return $full.Substring(0, 2).ToUpper() }
+        return $null
+    } catch {
+        return $null
+    }
+}
+
+function Get-EffectivePnpmInstallCommand([string]$BaseCommand, [int]$Major) {
+    $cmd = $BaseCommand
+    if ($Major -ge 10 -and $cmd -match '(^|\s)pnpm\s+install(\s|$)' -and $cmd -notmatch 'dangerously-allow-all-builds') {
+        $cmd = "$cmd --dangerously-allow-all-builds"
+    }
+    return $cmd
+}
+
+function Enable-PnpmPnpNodeOptions([string]$ProjectDir) {
+    $pnpCjs = Join-Path $ProjectDir ".pnp.cjs"
+    $pnpLoader = Join-Path $ProjectDir ".pnp.loader.mjs"
+    $additions = @()
+
+    if (Test-Path $pnpCjs) {
+        if ([string]::IsNullOrWhiteSpace($env:NODE_OPTIONS) -or ($env:NODE_OPTIONS -notmatch [regex]::Escape($pnpCjs))) {
+            $additions += "--require `"$pnpCjs`""
+        }
+    }
+
+    if (Test-Path $pnpLoader) {
+        if ([string]::IsNullOrWhiteSpace($env:NODE_OPTIONS) -or ($env:NODE_OPTIONS -notmatch [regex]::Escape($pnpLoader))) {
+            $additions += "--experimental-loader `"$pnpLoader`""
+        }
+    }
+
+    if ($additions.Count -gt 0) {
+        $env:NODE_OPTIONS = (($env:NODE_OPTIONS + " " + ($additions -join " ")).Trim())
+    }
+}
+
+# ============================================================================
+# INSTALLATION FUNCTIONS
+# ============================================================================
+
+function Install-NodeJS {
+    Write-Host "  Attempting to install Node.js via winget..." -ForegroundColor Yellow
+    if (-not (Test-Command "winget")) {
+        Write-Host "ERROR: winget not available. Install Node.js manually: https://nodejs.org/" -ForegroundColor Red
+        exit 1
+    }
+    try {
+        winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
+        if ($LASTEXITCODE -ne 0) { throw "winget install failed" }
+        Refresh-Path
+        Write-Host "  ✓ Node.js installed successfully" -ForegroundColor Green
+    } catch {
+        Write-Host "ERROR: Failed to install Node.js. Install manually: https://nodejs.org/" -ForegroundColor Red
+        exit 1
+    }
+}
+
+function Install-Go {
+    Write-Host "  Attempting to install Go via winget..." -ForegroundColor Yellow
+    if (-not (Test-Command "winget")) {
+        Write-Host "ERROR: winget not available. Install Go manually: https://go.dev/dl/" -ForegroundColor Red
+        exit 1
+    }
+    try {
+        winget install GoLang.Go --accept-package-agreements --accept-source-agreements
+        if ($LASTEXITCODE -ne 0) { throw "winget install failed" }
+        Refresh-Path
+        Write-Host "  ✓ Go installed successfully" -ForegroundColor Green
+    } catch {
+        Write-Host "ERROR: Failed to install Go. Install manually: https://go.dev/dl/" -ForegroundColor Red
+        exit 1
+    }
+}
+
+function Install-Pnpm {
+    Write-Host "  Installing pnpm globally..." -ForegroundColor Yellow
+    try {
+        npm install -g pnpm
+        if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
+        Refresh-Path
+        Write-Host "  ✓ pnpm installed successfully" -ForegroundColor Green
+    } catch {
+        Write-Host "ERROR: Failed to install pnpm. Run: npm install -g pnpm" -ForegroundColor Red
+        exit 1
+    }
+}
+
+function Configure-PnpmStore {
+    $projectDrive = Get-DriveRoot $FrontendDir
+    $storeDrive = Get-DriveRoot $PnpmStorePath
+    $crossDrive = $false
+    if ($projectDrive -and $storeDrive -and ($projectDrive -ne $storeDrive)) {
+        $crossDrive = $true
+    }
+
+    $nodeLinker = "isolated"
+    if ($UsePnp -and (-not $crossDrive) -and ($NodeMajor -lt 24)) {
+        $nodeLinker = "pnp"
+    }
+
+    $script:EffectiveNodeLinker = $nodeLinker
+
+    if ($UsePnp -and $nodeLinker -ne "pnp") {
+        Write-Host "  NOTE: Falling back to node-linker=isolated (Node v$NodeMajor / cross-drive store)." -ForegroundColor Yellow
+    }
+
+    if ($PnpmStorePath) {
+        Write-Host "  Configuring pnpm store: $PnpmStorePath" -ForegroundColor Gray
+        if (-not (Test-Path $PnpmStorePath)) {
+            New-Item -ItemType Directory -Path $PnpmStorePath -Force | Out-Null
+        }
+        pnpm config set --location=project store-dir $PnpmStorePath 2>$null
+    }
+
+    pnpm config set --location=project virtual-store-dir .pnpm 2>$null
+    pnpm config set --location=project node-linker $nodeLinker 2>$null
+
+    if ($nodeLinker -eq "pnp") {
+        pnpm config set --location=project symlink false 2>$null
+    } else {
+        pnpm config set --location=project symlink true 2>$null
+    }
+
+    pnpm config set --location=project package-import-method auto 2>$null
+}
+
 function Ensure-FirewallRules {
-    param([int[]]$Ports = @(8080))
+    param([int[]]$PortList = @(8080))
 
     if (-not (Test-IsAdmin)) {
-        Write-Host "  WARNING: -OpenFirewall requires Administrator. Re-run PowerShell as Admin." -ForegroundColor Yellow
+        Write-Host "  WARNING: -OpenFirewall requires Administrator." -ForegroundColor Yellow
         return
     }
 
     if (-not (Test-Command "New-NetFirewallRule")) {
-        Write-Host "  WARNING: New-NetFirewallRule not available. Skipping." -ForegroundColor Yellow
+        Write-Host "  WARNING: New-NetFirewallRule not available." -ForegroundColor Yellow
         return
     }
 
-    foreach ($p in $Ports) {
-        $ruleName = "$ProjectName (Go Backend) TCP $p"
+    foreach ($p in $PortList) {
+        $ruleName = "$ProjectName (Backend) TCP $p"
         $existing = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
         if ($null -eq $existing) {
             New-NetFirewallRule `
@@ -165,79 +432,28 @@ function Ensure-FirewallRules {
     }
 }
 
-# Function to install Node.js using winget
-function Install-NodeJS {
-    Write-Host "  Attempting to install Node.js via winget..." -ForegroundColor Yellow
-    
-    if (-not (Test-Command "winget")) {
-        Write-Host "ERROR: winget not available. Install Node.js manually: https://nodejs.org/" -ForegroundColor Red
-        exit 1
-    }
-    
-    try {
-        winget install OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
-        if ($LASTEXITCODE -ne 0) { throw "winget install failed" }
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-        Write-Host "  ✓ Node.js installed successfully" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "ERROR: Failed to install Node.js. Install manually: https://nodejs.org/" -ForegroundColor Red
-        exit 1
-    }
-}
-
-# Function to install Go using winget
-function Install-Go {
-    Write-Host "  Attempting to install Go via winget..." -ForegroundColor Yellow
-    
-    if (-not (Test-Command "winget")) {
-        Write-Host "ERROR: winget not available. Install Go manually: https://go.dev/dl/" -ForegroundColor Red
-        exit 1
-    }
-    
-    try {
-        winget install GoLang.Go --accept-package-agreements --accept-source-agreements
-        if ($LASTEXITCODE -ne 0) { throw "winget install failed" }
-        $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-        Write-Host "  ✓ Go installed successfully" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "ERROR: Failed to install Go. Install manually: https://go.dev/dl/" -ForegroundColor Red
-        exit 1
-    }
-}
-
-# Function to install pnpm
-function Install-Pnpm {
-    Write-Host "  Installing pnpm globally..." -ForegroundColor Yellow
-    npm install -g pnpm
-    if ($LASTEXITCODE -ne 0) { 
-        Write-Host "ERROR: Failed to install pnpm" -ForegroundColor Red
-        exit 1 
-    }
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    Write-Host "  ✓ pnpm installed successfully" -ForegroundColor Green
-}
-
-# Set environment variables from config
-if ($config.env) {
-    foreach ($key in $config.env.PSObject.Properties.Name) {
-        [System.Environment]::SetEnvironmentVariable($key, $config.env.$key, "Process")
-    }
-}
-
-# Step timers
+# ============================================================================
+# STEP TRACKING
+# ============================================================================
 $StepTimes = @{}
 
-# Step 1: Git pull
+# Set environment variables from config
+if ($Config.env) {
+    foreach ($key in $Config.env.PSObject.Properties.Name) {
+        [System.Environment]::SetEnvironmentVariable($key, $Config.env.$key, "Process")
+    }
+}
+
+# ============================================================================
+# STEP 1: GIT PULL
+# ============================================================================
 $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
-if (-not $SkipPull) {
+if (-not $skippull) {
     Write-Host "[1/5] Pulling latest changes from git..." -ForegroundColor Yellow
-    
     Push-Location $RootDir
     try {
         if (Test-Path ".git") {
-            git pull
+            git pull 2>&1 | Out-Host
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "  WARNING: git pull failed, continuing..." -ForegroundColor Yellow
             } else {
@@ -249,193 +465,269 @@ if (-not $SkipPull) {
     }
     finally { Pop-Location }
 } else {
-    Write-Host "[1/5] Skipping git pull (-SkipPull)" -ForegroundColor Gray
+    Write-Host "[1/5] Skipping git pull (-p)" -ForegroundColor Gray
 }
 $stepWatch.Stop()
 $StepTimes["Git Pull"] = $stepWatch.Elapsed
 Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 Write-Host ""
 
-# Step 2: Check prerequisites
+# ============================================================================
+# STEP 2: PREREQUISITES
+# ============================================================================
 $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
 Write-Host "[2/5] Checking prerequisites..." -ForegroundColor Yellow
 
-$prereqs = $config.prerequisites
-if ($null -eq $prereqs -or $prereqs.go) {
-    if (-not (Test-Command "go")) {
-        Install-Go
-    }
-    Write-Host "  ✓ Go found: $(go version)" -ForegroundColor Green
+if ($CheckGo) {
+    if (-not (Test-Command "go")) { Install-Go }
+    $goVersion = (go version 2>&1) -replace 'go version ', ''
+    Write-Host "  ✓ Go found: $goVersion" -ForegroundColor Green
 }
 
-if ($null -eq $prereqs -or $prereqs.node) {
-    if (-not (Test-Command "node")) {
-        Install-NodeJS
-    }
-    Write-Host "  ✓ Node.js found: $(node --version)" -ForegroundColor Green
+if ($CheckNode) {
+    if (-not (Test-Command "node")) { Install-NodeJS }
+    $nodeVersion = node --version 2>&1
+    Write-Host "  ✓ Node.js found: $nodeVersion" -ForegroundColor Green
+    $NodeMajor = Get-NodeMajorVersion $nodeVersion
 }
 
-if ($null -eq $prereqs -or $prereqs.pnpm) {
-    if (-not (Test-Command "pnpm")) {
-        Install-Pnpm
-    }
-    Write-Host "  ✓ pnpm found: $(pnpm --version)" -ForegroundColor Green
+if ($CheckPnpm) {
+    if (-not (Test-Command "pnpm")) { Install-Pnpm }
+    $pnpmVersion = pnpm --version 2>&1
+    Write-Host "  ✓ pnpm found: $pnpmVersion" -ForegroundColor Green
+    $PnpmMajor = Get-PnpmMajorVersion $pnpmVersion
+    $EffectiveInstallCommand = Get-EffectivePnpmInstallCommand $InstallCommand $PnpmMajor
+    Configure-PnpmStore
 }
 
 $stepWatch.Stop()
 $StepTimes["Prerequisites"] = $stepWatch.Elapsed
 Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
+Write-Host ""
 
-# Step 3 & 4: Install & Build
-$stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
-if (-not $SkipBuild) {
+# ============================================================================
+# INSTALL MODE (-i): Install dependencies for both frontend and backend
+# ============================================================================
+if ($install) {
+    $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    Write-Host "[INSTALL] Installing/updating all dependencies..." -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "[3/5] Installing dependencies (pnpm PnP)..." -ForegroundColor Yellow
+    
+    # Frontend
+    if ($rebuild) {
+        Write-Host "  [Frontend] Rebuild mode: deferring until after force-clean..." -ForegroundColor Yellow
+    } else {
+        Write-Host "  [Frontend] Running pnpm install..." -ForegroundColor Yellow
+        Push-Location $FrontendDir
+        try {
+            Configure-PnpmStore
+            Invoke-Expression $EffectiveInstallCommand
+            if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
+            $DidFrontendInstall = $true
+            Write-Host "  ✓ Frontend dependencies installed" -ForegroundColor Green
+        }
+        finally { Pop-Location }
+    }
+    
+    # Backend
+    Write-Host ""
+    Write-Host "  [Backend] Running go mod tidy && go mod download..." -ForegroundColor Yellow
+    Push-Location $BackendDir
+    try {
+        go mod tidy
+        if ($LASTEXITCODE -ne 0) { throw "go mod tidy failed" }
+        go mod download
+        if ($LASTEXITCODE -ne 0) { throw "go mod download failed" }
+        Write-Host "  ✓ Backend dependencies installed" -ForegroundColor Green
+    }
+    finally { Pop-Location }
+    
+    $stepWatch.Stop()
+    $StepTimes["Install Dependencies"] = $stepWatch.Elapsed
+    
+    if (-not $rebuild) {
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  Dependencies installed!" -ForegroundColor Cyan
+        Write-Host "  Time: $(Format-ElapsedTime $stepWatch)" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        exit 0
+    }
+}
+
+# ============================================================================
+# STEP 3: FRONTEND BUILD
+# ============================================================================
+$stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
+if (-not $skipbuild) {
+    Write-Host "[3/5] Building React frontend..." -ForegroundColor Yellow
     
     Push-Location $FrontendDir
     try {
-        # Configure pnpm store path
-        if ($PnpmStorePath) {
-            $storePath = if ([System.IO.Path]::IsPathRooted($PnpmStorePath)) {
-                $PnpmStorePath
-            } else {
-                Join-Path $RootDir $PnpmStorePath
-            }
-            pnpm config set store-dir $storePath
-            Write-Host "  Store path: $storePath" -ForegroundColor Gray
-        }
-
         # Force clean
-        if ($Force) {
+        if ($force) {
             Write-Host "  FORCE MODE: Cleaning build artifacts..." -ForegroundColor Magenta
+            
             foreach ($cleanPath in $CleanPaths) {
-                $fullPath = Join-Path $RootDir $cleanPath
                 if ($cleanPath -match '\*') {
-                    # Handle glob patterns
-                    $parentDir = Split-Path $fullPath -Parent
-                    $pattern = Split-Path $fullPath -Leaf
-                    if (Test-Path $parentDir) {
-                        Get-ChildItem -Path $parentDir -Filter $pattern -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+                    $resolvedPath = Resolve-RelativePath ($cleanPath -replace '\*.*$', '')
+                    $pattern = $cleanPath -replace '^.*[\\/]', ''
+                    if (Test-Path $resolvedPath) {
+                        Get-ChildItem -Path $resolvedPath -Filter $pattern -ErrorAction SilentlyContinue | ForEach-Object {
                             Write-Host "  Removing: $($_.Name)..." -ForegroundColor Gray
-                            Remove-Item -Force $_.FullName -ErrorAction SilentlyContinue
+                            Remove-Item -Force -Recurse $_.FullName -ErrorAction SilentlyContinue
                         }
                     }
-                } elseif (Test-Path $fullPath) {
-                    Write-Host "  Removing: $cleanPath..." -ForegroundColor Gray
-                    Remove-Item -Recurse -Force $fullPath -ErrorAction SilentlyContinue
+                } else {
+                    $resolvedPath = Resolve-RelativePath $cleanPath
+                    if (Test-Path $resolvedPath) {
+                        Write-Host "  Removing: $cleanPath..." -ForegroundColor Gray
+                        Remove-Item -Recurse -Force $resolvedPath -ErrorAction SilentlyContinue
+                    }
+                }
+            }
+
+            # Always clean pnpm artifacts
+            foreach ($extraPath in @("node_modules", ".pnpm", ".pnp.cjs", ".pnp.loader.mjs", ".pnp.data.json")) {
+                if (Test-Path $extraPath) {
+                    Write-Host "  Removing: $extraPath..." -ForegroundColor Gray
+                    Remove-Item -Recurse -Force $extraPath -ErrorAction SilentlyContinue
                 }
             }
             
-            # Prune pnpm store
-            Write-Host "  Pruning pnpm store..." -ForegroundColor Gray
-            pnpm store prune 2>$null
+            if ($CheckPnpm) {
+                Write-Host "  Clearing pnpm cache..." -ForegroundColor Gray
+                pnpm store prune 2>&1 | Out-Null
+            }
+
+            # Clean backend runtime data if dataDir configured
+            if ($DataDir) {
+                foreach ($rtPath in @(
+                    (Join-Path $DataDir "sessions"),
+                    (Join-Path $DataDir "request-sessions"),
+                    (Join-Path $DataDir "errors")
+                )) {
+                    if (Test-Path $rtPath) {
+                        Write-Host "  Removing: $rtPath..." -ForegroundColor Gray
+                        Remove-Item -Recurse -Force $rtPath -ErrorAction SilentlyContinue
+                    }
+                }
+                foreach ($logFile in @("log.txt", "error.log.txt")) {
+                    $logPath = Join-Path $DataDir $logFile
+                    if (Test-Path $logPath) {
+                        Remove-Item -Force $logPath -ErrorAction SilentlyContinue
+                    }
+                }
+            }
             
             Write-Host "  ✓ Clean complete" -ForegroundColor Magenta
         }
-
+        
         # Check if install needed
-        $NeedsInstall = -not (Test-Path "pnpm-lock.yaml") -or $Force
-        if (-not $NeedsInstall -and $RequiredModules.Count -gt 0) {
+        $depsPresent = if ($EffectiveNodeLinker -eq "pnp") { (Test-Path ".pnp.cjs") } else { (Test-Path "node_modules") }
+        $NeedsInstall = $install -or (-not $depsPresent)
+        
+        if (-not $NeedsInstall -and $EffectiveNodeLinker -ne "pnp" -and $RequiredModules.Count -gt 0) {
             foreach ($m in $RequiredModules) {
-                $modulePath = Join-Path "node_modules" $m
-                if (-not (Test-Path $modulePath)) {
+                if (-not (Test-Path (Join-Path "node_modules" $m))) {
                     $NeedsInstall = $true
                     break
                 }
             }
         }
 
-        if ($NeedsInstall) {
+        if ($NeedsInstall -or $force) {
             Write-Host "  Installing dependencies..." -ForegroundColor Gray
-            Invoke-Expression $InstallCommand
+            Invoke-Expression $EffectiveInstallCommand
             if ($LASTEXITCODE -ne 0) { throw "pnpm install failed" }
         }
         
-        Write-Host "  ✓ Dependencies installed" -ForegroundColor Green
-        
         # Build
-        Write-Host ""
-        Write-Host "[4/5] Building React frontend..." -ForegroundColor Yellow
         Write-Host "  Running: $BuildCommand" -ForegroundColor Gray
-        Invoke-Expression $BuildCommand
-        if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+        $oldNodeOptions = $env:NODE_OPTIONS
+        try {
+            if ($EffectiveNodeLinker -eq "pnp") {
+                Enable-PnpmPnpNodeOptions -ProjectDir (Get-Location)
+            }
+            Invoke-Expression $BuildCommand
+            if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+        }
+        finally { $env:NODE_OPTIONS = $oldNodeOptions }
         
         Write-Host "  ✓ Frontend built successfully" -ForegroundColor Green
     }
     finally { Pop-Location }
     
     $stepWatch.Stop()
-    $StepTimes["Install & Build"] = $stepWatch.Elapsed
+    $StepTimes["Frontend Build"] = $stepWatch.Elapsed
     Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
-    
-    # Copy dist to backend
-    $copyWatch = [System.Diagnostics.Stopwatch]::StartNew()
     Write-Host ""
-    Write-Host "  Copying build to backend..." -ForegroundColor Yellow
     
-    $SourceDist = Join-Path $FrontendDir $DistDir
-    
-    # Create target directory if needed
-    $TargetParent = Split-Path $TargetDir -Parent
-    if (-not (Test-Path $TargetParent)) {
-        New-Item -ItemType Directory -Path $TargetParent | Out-Null
+    # STEP 4: COPY BUILD TO BACKEND
+    $stepWatch = [System.Diagnostics.Stopwatch]::StartNew()
+    if ($TargetDir) {
+        Write-Host "[4/5] Copying build to backend..." -ForegroundColor Yellow
+        $SourceDist = Join-Path $FrontendDir $DistDir
+        if (-not (Test-Path $SourceDist)) {
+            Write-Host "  WARNING: Build output not found: $SourceDist" -ForegroundColor Yellow
+        } else {
+            $TargetParent = Split-Path -Parent $TargetDir
+            if (-not (Test-Path $TargetParent)) {
+                New-Item -ItemType Directory -Path $TargetParent -Force | Out-Null
+            }
+            if (Test-Path $TargetDir) { Remove-Item -Recurse -Force $TargetDir }
+            Copy-Item -Recurse $SourceDist $TargetDir
+            Write-Host "  ✓ Copied to: $TargetDir" -ForegroundColor Green
+        }
+    } else {
+        Write-Host "[4/5] Skipping copy (no targetDir)" -ForegroundColor Gray
     }
-    
-    # Remove old dist if exists
-    if (Test-Path $TargetDir) {
-        Remove-Item -Recurse -Force $TargetDir
-    }
-    
-    # Copy new dist
-    Copy-Item -Recurse $SourceDist $TargetDir
-    Write-Host "  ✓ Build files copied to $TargetDir" -ForegroundColor Green
-    $copyWatch.Stop()
-    $StepTimes["Copy Build"] = $copyWatch.Elapsed
-} else {
-    Write-Host ""
-    Write-Host "[3/5] Skipping install (-SkipBuild)" -ForegroundColor Gray
-    Write-Host "[4/5] Skipping build (-SkipBuild)" -ForegroundColor Gray
     $stepWatch.Stop()
-    $StepTimes["Install & Build"] = $stepWatch.Elapsed
+    $StepTimes["Copy Build"] = $stepWatch.Elapsed
+} else {
+    Write-Host "[3/5] Skipping frontend build (-s)" -ForegroundColor Gray
+    Write-Host "[4/5] Skipping copy" -ForegroundColor Gray
+    $stepWatch.Stop()
+    $StepTimes["Frontend Build"] = [TimeSpan]::Zero
     $StepTimes["Copy Build"] = [TimeSpan]::Zero
 }
+Write-Host ""
 
-if ($BuildOnly) {
+# BUILD ONLY EXIT
+if ($buildonly) {
     $TotalStopwatch.Stop()
-    Write-Host ""
     Write-Host "========================================" -ForegroundColor Cyan
-    Write-Host "  Build complete! (-BuildOnly mode)" -ForegroundColor Cyan
+    Write-Host "  Build complete! (-b mode)" -ForegroundColor Cyan
     Write-Host "  Total time: $(Format-ElapsedTime $TotalStopwatch)" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     exit 0
 }
 
-# Step 5: Run Go backend
-Write-Host ""
+# ============================================================================
+# STEP 5: START BACKEND
+# ============================================================================
 Write-Host "[5/5] Starting Go backend..." -ForegroundColor Yellow
 
 Push-Location $BackendDir
 try {
-    # Check for config.json
-    $backendConfig = Join-Path $BackendDir $ConfigFile
-    $backendConfigExample = Join-Path $BackendDir $ConfigExampleFile
-    if (-not (Test-Path $backendConfig)) {
-        if (Test-Path $backendConfigExample) {
-            Write-Host "  Copying $ConfigExampleFile to $ConfigFile..." -ForegroundColor Gray
-            Copy-Item $backendConfigExample $backendConfig
+    $BackendConfigPath = Join-Path $BackendDir $ConfigFile
+    $BackendConfigExample = Join-Path $BackendDir $ConfigExampleFile
+    
+    if (-not (Test-Path $BackendConfigPath)) {
+        if (Test-Path $BackendConfigExample) {
+            Write-Host "  Creating $ConfigFile from $ConfigExampleFile..." -ForegroundColor Gray
+            Copy-Item $BackendConfigExample $BackendConfigPath
         } else {
-            Write-Host "  WARNING: $ConfigFile not found!" -ForegroundColor Yellow
+            Write-Host "  WARNING: No $ConfigFile found" -ForegroundColor Yellow
         }
     }
     
-    # Create data directory
-    if (-not (Test-Path $DataDir)) {
-        New-Item -ItemType Directory -Path $DataDir | Out-Null
+    if ($DataDir -and -not (Test-Path $DataDir)) {
+        New-Item -ItemType Directory -Path $DataDir -Force | Out-Null
     }
 
-    if ($OpenFirewall) {
-        Write-Host "  Configuring Windows Firewall rules..." -ForegroundColor Yellow
-        Ensure-FirewallRules -Ports $Ports
+    if ($openfirewall) {
+        Ensure-FirewallRules -PortList $Ports
     }
     
     $TotalStopwatch.Stop()
