@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -1155,7 +1156,14 @@ func (s *Service) DisableRemotePlugin(ctx context.Context, siteID int64, pluginS
 func (s *Service) DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {
 	return s.executeRemotePluginAction(ctx, siteID, pluginSlug, "delete", func(client *wordpress.Client) error {
 		// First deactivate, then delete via Riseup Asia Uploader
-		_ = client.DisablePluginViaUploader(pluginSlug)
+		// Ignore 404 on disable — plugin may not be installed yet (nothing to deactivate)
+		if disableErr := client.DisablePluginViaUploader(pluginSlug); disableErr != nil {
+			if apiErr, ok := disableErr.(*wordpress.APIError); ok && apiErr.StatusCode == http.StatusNotFound {
+				s.log.Info("Plugin not found during pre-delete disable (skipped safely)", "slug", pluginSlug)
+			} else {
+				s.log.Warn("Pre-delete disable failed (continuing with delete)", "slug", pluginSlug, "error", disableErr.Error())
+			}
+		}
 		return client.DeletePluginViaUploader(pluginSlug)
 	})
 }

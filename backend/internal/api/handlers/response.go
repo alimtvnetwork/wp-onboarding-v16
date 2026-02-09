@@ -4,11 +4,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
 	"wp-plugin-publish/internal/envelope"
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -102,4 +104,25 @@ func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (i
 // Returns nil on success, error on failure. Used by optional body decoders.
 func decodeJSONSilent(r *http.Request, target interface{}) error {
 	return json.NewDecoder(r.Body).Decode(target)
+}
+
+// resolveHTTPStatus extracts the HTTP status code from a WordPress APIError
+// wrapped inside an apperror chain. Returns fallback if no APIError is found.
+// This ensures that PHP-side 404s are forwarded to the frontend instead of
+// being masked as 500 Internal Server Error.
+func resolveHTTPStatus(err error, fallback int) int {
+	// Check direct APIError
+	var apiErr *wordpress.APIError
+	if errors.As(err, &apiErr) && apiErr.StatusCode > 0 {
+		return apiErr.StatusCode
+	}
+	// Check apperror wrapping an APIError
+	var appErr *apperror.AppError
+	if errors.As(err, &appErr) && appErr.Unwrap() != nil {
+		var inner *wordpress.APIError
+		if errors.As(appErr.Unwrap(), &inner) && inner.StatusCode > 0 {
+			return inner.StatusCode
+		}
+	}
+	return fallback
 }
