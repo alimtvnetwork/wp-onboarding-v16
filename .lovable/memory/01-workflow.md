@@ -1,7 +1,7 @@
 # Workflow Guidelines
 
 > **Location:** `.lovable/memory/01-workflow.md`  
-> **Updated:** 2026-02-01
+> **Updated:** 2026-02-09
 
 ---
 
@@ -9,46 +9,26 @@
 
 ### Plan File
 
-The `plan.md` at `.lovable/plan.md` serves as the primary roadmap:
+The `plan.md` at `.lovable/plan.md` serves as the primary roadmap for the current active track (DRY Refactoring).
 
-```markdown
-# Plan
-
-## Phase 1: Current
-| Task | Status | Notes |
-|------|--------|-------|
-| Task name | todo/in-progress/done | Brief notes |
-
-## Phase 2: Next
-...
-
-## Backlog
-...
-```
+**Active plan:** `.lovable/plan.md` — DRY Refactoring Phases 7–10 pending  
+**Active phases:** `.lovable/plan/active.md` — Status overview  
+**Completed work:** `.lovable/plan/completed-phases-1-14.md`, `completed-phases-33-40.md`, `completed/01-dry-refactoring-phases-1-6.md`
 
 **Statuses:**
-- `todo` - Not started
-- `in-progress` - Currently being worked on
-- `done` - Completed
+- `todo` / `📋 Pending` - Not started
+- `in-progress` / `🔄` - Currently being worked on
+- `done` / `✅` - Completed
 
 ---
 
 ## Suggestions Tracking
 
-When Lovable or AI suggests improvements:
+All suggestions are tracked in a single file: `.lovable/memory/suggestions/01-suggestions-tracker.md`
 
-1. Add to `plan.md` backlog section
-2. Include: description, rationale, priority
-3. Update status when addressed
-4. Remove or mark done when completed
+Completed suggestions are summarized there and detailed in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`.
 
-**Format in plan.md:**
-```markdown
-## Suggestions
-| ID | Suggestion | Priority | Status |
-|----|------------|----------|--------|
-| S-001 | Description | high/medium/low | open/done |
-```
+**Current stats:** 7 open, 9 completed, 0 rejected.
 
 ---
 
@@ -56,9 +36,10 @@ When Lovable or AI suggests improvements:
 
 When ending a session or handing off to another AI:
 
-1. Update `plan.md` with current progress
-2. Note any blockers or decisions made
-3. List next recommended actions
+1. Update `.lovable/plan.md` with current progress
+2. Update `.lovable/plan/active.md` with status changes
+3. Update `01-suggestions-tracker.md` if suggestions changed
+4. Note any blockers or decisions made
 
 ---
 
@@ -66,43 +47,47 @@ When ending a session or handing off to another AI:
 
 ### For New AI Sessions
 
-1. **Read `.lovable/README.md`** - Entry point
-2. **Read `.lovable/memory/02-project-context.md`** - Understand projects
-3. **Read `.lovable/plan.md`** - Current priorities
-4. **Read relevant spec `00-overview.md`** - Project details
-5. **Read `66-shared-constants.md`** - Single source of truth
-6. **Read `60-ai-implementation-checklist.md`** - Critical algorithms
+1. **Read `.lovable/memory/02-project-context.md`** — Project overview & current state
+2. **Read `.lovable/plan/active.md`** — What's pending
+3. **Read `.lovable/plan.md`** — Detailed pending phase descriptions
+4. **Check `01-suggestions-tracker.md`** — Open suggestions
+5. **Read relevant spec** for the feature being implemented
 
 ### Before Implementing
 
 1. Read the specific spec file for the feature
-2. Check `61-common-implementation-pitfalls.md` for anti-patterns
+2. Check memory files in `.lovable/memory/architecture/` for established patterns
 3. Review related specs via cross-references
-4. Check diagrams if available
 
 ---
 
-## Spec Updates
+## Folder Structure
 
-When modifying specifications:
-
-1. Update the relevant spec file
-2. Update the `Updated:` date in file header
-3. If breaking change, note in `plan.md`
-4. Update `66-shared-constants.md` if constants change
-5. Update `98/99-*-report.md` if cross-references change
-
----
-
-## Ideas Workflow
-
-Feature proposals go in `ideas/` folder:
-
-1. Create file: `{nn}-{idea-title}.md`
-2. Use template from `ideas/README.md`
-3. Set status to `Draft`
-4. Update status as idea progresses
-5. When implemented, link to actual spec files
+```
+.lovable/
+├── plan.md                          # Current active plan (DRY Refactoring)
+├── plan/
+│   ├── active.md                    # Status overview
+│   ├── completed-phases-1-14.md     # Feature phases history
+│   ├── completed-phases-33-40.md    # Feature phases history
+│   ├── completed/
+│   │   └── 01-dry-refactoring-phases-1-6.md
+│   ├── technical-notes.md
+│   └── README.md
+├── memory/
+│   ├── 01-conventions.md            # Coding conventions
+│   ├── 01-workflow.md               # This file
+│   ├── 02-project-context.md        # Project overview
+│   ├── 03-reliability-risk-report.md
+│   ├── PRD.md
+│   ├── architecture/               # Established patterns
+│   ├── features/                   # Feature documentation
+│   ├── issues-fixed/               # Bug fix history
+│   └── suggestions/
+│       ├── 01-suggestions-tracker.md  # Single tracking file
+│       └── completed/
+└── specs/
+```
 
 ---
 

@@ -1,40 +1,39 @@
 # Active & Future Phases
 
-**Updated: 2026-02-07**
+**Updated: 2026-02-09**
 
 ---
 
-## All 10 Phases Complete ✅
+## Current Track: DRY Refactoring (Phases 7–10 remaining)
 
-### Phase 1: Semantic Boolean Helpers (PHP)
-Replaced raw negations with `RiseupBooleanHelpers` for readable conditional logic.
+| Phase | Layer | Status | Description |
+|-------|-------|--------|-------------|
+| 7 | PHP | 📋 Pending | `RiseupSnapshotFactory` — lazy singleton construction |
+| 8 | PHP | 📋 Pending | Logger `prepare_context()` — consolidate 4 methods |
+| 9 | Frontend | 📋 Pending | GlobalErrorModal decomposition into sub-components |
+| 10 | Cross | 📋 Pending | Envelope JSON schema as single source of truth |
 
-### Phase 2: Idempotent Initialization (PHP)
-Introduced `RiseupInitHelpers` for safe directory/database setup with retry logic.
+**See:** `.lovable/plan.md` for full details on each pending phase.
 
-### Phase 3: Structured Path Handling (PHP)
-Created `RiseupPathUtils` centralizing all filesystem paths as method-based accessors.
+---
 
-### Phase 4: Manifest-Based Dependency Loading (PHP)
-Built `RiseupDependencyLoader` for declarative file inclusion with error trapping.
+## Previously Completed Tracks
 
-### Phase 5: CODING-GUIDELINES.md (PHP)
-Codified 11 mandatory standards into a formal reference document.
+### DRY Refactoring Phases 1–6 ✅ (2026-02-09)
+Go backend dedup, frontend error store/API client/hooks consolidation.  
+→ See: `.lovable/plan/completed/01-dry-refactoring-phases-1-6.md`
 
-### Phase 6: Go Backend Handler Modularization
-Split 2116-line `handlers.go` into 7 domain-specific files with shared DRY helpers (`requireService`, `decodeJSON`, `parseID`).
+### PHP Plugin Refactoring Phases 1–5 ✅ (2026-02-07)
+Boolean helpers, init helpers, path utils, dependency loader, coding guidelines.  
+→ See: `.lovable/plan/completed-phases-1-14.md` (items within)
 
-### Phase 7: Generic CRUD Handler Factory
-Created `handler_factory.go` with 7 reusable factory functions and lazy service resolution, eliminating ~300 lines of boilerplate across ~30 handlers.
+### Go Backend Phases 6–10 ✅ (2026-02-07)
+Handler modularization, CRUD factory, service registry unification, config standardization, E2E tests.  
+→ See: `.lovable/plan/active.md` (previous version archived)
 
-### Phase 8: Unify ServiceRegistry Definitions
-Co-located all 11 service interfaces with their adapter implementations in domain-specific adapter files. Reduced `handlers.go` to a lean ~45-line registry-only file.
-
-### Phase 9: Standardize Base Service Configs
-Added `Config` structs to `publishhistory` and `sitehealth` services. All 10+ services now follow the uniform `New(Config{...})` constructor pattern.
-
-### Phase 10: Real HTTP-based E2E Tests
-Replaced stub test implementations with real HTTP-based test logic. Created `http_client.go` (API client wrapper), `test_implementations.go` (13 real test functions covering Plugin CRUD, Site Connections, Sync Operations, and Publish Flow). Added `E2EConfig` to `config.go` and wired service into `main.go` with adapter pattern. Tests make actual HTTP requests to verify complete API workflows.
+### Feature Phases 1–14, 33–40 ✅ (2026-02-05 to 2026-02-06)
+Session logging, quick publish, remote plugins, file browser, version tracking, auto-update, multi-site orchestration, publish retry/queue/scheduler/rollback, history dashboard, site health monitor.  
+→ See: `.lovable/plan/completed-phases-1-14.md`, `.lovable/plan/completed-phases-33-40.md`
 
 ---
 
@@ -43,3 +42,7 @@ Replaced stub test implementations with real HTTP-based test logic. Created `htt
 1. **Remote Plugin Backups**: Store on WP site or download locally?
 2. **Bulk Quick Publish**: Add "Quick Publish Selected" for multiple plugins?
 3. **True Diff Comparison**: Compare with remote files for accurate modified/deleted counts?
+
+---
+
+*Next recommended: Phase 7 (PHP snapshot factory) or Phase 9 (GlobalErrorModal decomposition).*
