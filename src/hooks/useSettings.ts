@@ -1,15 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, requireSuccess, Settings } from "@/lib/api";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 type DeepPartial<T> = { [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P] };
 
 export function useSettings() {
-  return useQuery({
+  return useApiQuery<Settings>({
     queryKey: ["settings"],
-    queryFn: async () => {
-      const response = await api.getSettings();
-      return requireSuccess(response, { endpoint: "/settings", method: "GET" });
-    },
+    apiFn: () => api.getSettings(),
+    endpoint: "/settings",
   });
 }
 
