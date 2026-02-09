@@ -325,6 +325,128 @@ function buildInvocationChain(
   return chain;
 }
 
+// ─── Shared error builder ───────────────────────────────────────────
+
+/** Input for the shared buildCapturedError helper. */
+interface BuildCapturedErrorInput {
+  code: string;
+  message: string;
+  details?: string;
+  context?: Record<string, unknown>;
+  stack: string;
+  parsed: ParsedStackTrace;
+  stackInfo: { file?: string; line?: number; function?: string };
+  // Source / trigger
+  source?: string;
+  parentSource?: string;
+  triggerComponent?: string;
+  triggerAction?: string;
+  // API / request meta
+  endpoint?: string;
+  method?: string;
+  requestBody?: unknown;
+  responseStatus?: number;
+  // Backend execution data
+  backendLogs?: BackendLogEntry[];
+  backendStackTrace?: string;
+  siteUrl?: string;
+  sessionId?: string;
+  sessionType?: string;
+  // PHP diagnostics
+  phpStackFrames?: PHPStackFrame[];
+  errorFile?: string;
+  errorLine?: number;
+  // Envelope diagnostics (already extracted by caller)
+  envelopeContext?: Record<string, unknown>;
+  // Override timestamp
+  timestamp?: string;
+}
+
+/**
+ * Shared builder for CapturedError objects — used by both captureError and captureException.
+ * Captures UI click path and execution logs automatically.
+ */
+function buildCapturedError(input: BuildCapturedErrorInput): CapturedError {
+  const { clickPath, clickPathString } = getClickPathForError();
+  const execLogs = getExecutionLogsForError();
+
+  // Extract envelope diagnostic fields from the provided context
+  const ctx = input.envelopeContext || input.context;
+  const requestedAt = typeof ctx?.requestedAt === 'string' ? ctx.requestedAt : undefined;
+  const requestDelegatedAt = typeof ctx?.requestDelegatedAt === 'string' ? ctx.requestDelegatedAt : undefined;
+  const envelopeErrors: EnvelopeErrors | undefined =
+    (ctx?.delegatedServiceErrorStack || ctx?.backendTrace)
+      ? {
+          BackendMessage: input.message,
+          DelegatedServiceErrorStack: Array.isArray(ctx?.delegatedServiceErrorStack) ? ctx.delegatedServiceErrorStack as string[] : undefined,
+          Backend: Array.isArray(ctx?.backendTrace) ? ctx.backendTrace as string[] : undefined,
+        }
+      : undefined;
+  const envelopeMethodsStack = ctx?.methodsStack as EnvelopeMethodsStack | undefined;
+
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    code: input.code,
+    level: 'error',
+    message: input.message,
+    details: input.details,
+    context: input.context,
+    file: input.stackInfo.file,
+    line: input.stackInfo.line,
+    function: input.stackInfo.function,
+    stackTrace: input.stack || undefined,
+    createdAt: input.timestamp || new Date().toISOString(),
+    endpoint: input.endpoint,
+    method: input.method,
+    requestBody: input.requestBody,
+    responseStatus: input.responseStatus,
+    // Enhanced fields
+    invocationChain: buildInvocationChain(input.parsed.invocationChain, input.source, input.parentSource),
+    parsedFrames: input.parsed.frames.filter(f => !f.isInternal),
+    triggerComponent: input.triggerComponent,
+    triggerAction: input.triggerAction,
+    // Backend execution data
+    backendLogs: input.backendLogs,
+    backendStackTrace: input.backendStackTrace,
+    siteUrl: input.siteUrl,
+    // Session-based logging
+    sessionId: input.sessionId,
+    sessionType: input.sessionType,
+    // PHP/WordPress error details
+    phpStackFrames: input.phpStackFrames,
+    errorFile: input.errorFile,
+    errorLine: input.errorLine,
+    // UI click path tracking
+    uiClickPath: clickPath.length > 0 ? clickPath : undefined,
+    uiClickPathString: clickPathString || undefined,
+    // React execution logs
+    executionLogs: execLogs.entries.length > 0 ? execLogs.entries : undefined,
+    executionChain: execLogs.chain,
+    executionLogsEnabled: execLogs.enabled,
+    executionLogsFormatted: execLogs.formatted || undefined,
+    // Universal Envelope diagnostic fields
+    requestedAt,
+    requestDelegatedAt,
+    envelopeErrors,
+    envelopeMethodsStack,
+  };
+}
+
+/** Commits a captured error to the store. */
+function commitErrorToStore(
+  captured: CapturedError,
+  set: (fn: (state: ErrorStore) => Partial<ErrorStore>) => void,
+) {
+  set((state) => {
+    const newPendingSync = new Set(state.pendingSync);
+    newPendingSync.add(captured.id);
+    return {
+      recentErrors: [captured, ...state.recentErrors].slice(0, 50),
+      pendingSync: newPendingSync,
+    };
+  });
+}
+
 export const useErrorStore = create<ErrorStore>((set, get) => ({
   selectedError: null,
   isModalOpen: false,
@@ -348,78 +470,44 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     const triggerComponent = typeof meta?.context?.triggerComponent === 'string' ? meta.context.triggerComponent : undefined;
     const triggerAction = typeof meta?.context?.triggerAction === 'string' ? meta.context.triggerAction : undefined;
     
-    // Capture UI click path at the moment of error
-    const { clickPath, clickPathString } = getClickPathForError();
-    
-    // Capture React execution logs at the moment of error
-    const execLogs = getExecutionLogsForError();
-    
-    const captured: CapturedError = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    const mergedContext: Record<string, unknown> = {
+      ...error.context,
+      ...(meta?.context || {}),
+      ...(meta?.requestBody ? { requestData: meta.requestBody } : {}),
+    };
+
+    const captured = buildCapturedError({
       code: error.code || 'E9999',
-      level: 'error',
       message: error.message,
       details: error.details,
-      context: {
-        ...error.context,
-        ...(meta?.context || {}),
-        ...(meta?.requestBody ? { requestData: meta.requestBody } : {}),
+      context: mergedContext,
+      stack: combinedStack,
+      parsed,
+      stackInfo: {
+        file: error.file || stackInfo.file,
+        line: error.line || stackInfo.line,
+        function: error.function || stackInfo.function,
       },
-      file: error.file || stackInfo.file,
-      line: error.line || stackInfo.line,
-      function: error.function || stackInfo.function,
-      stackTrace: combinedStack || undefined,
-      createdAt: error.timestamp || new Date().toISOString(),
+      source,
+      triggerComponent,
+      triggerAction,
       endpoint: meta?.endpoint,
       method: meta?.method,
       requestBody: meta?.requestBody,
       responseStatus: meta?.responseStatus,
-      // Enhanced fields
-      invocationChain: buildInvocationChain(parsed.invocationChain, source),
-      parsedFrames: parsed.frames.filter(f => !f.isInternal),
-      triggerComponent,
-      triggerAction,
-      // Backend execution data
       backendLogs: meta?.backendLogs,
       backendStackTrace: meta?.backendStackTrace,
       siteUrl: meta?.siteUrl,
-      // Session-based logging
       sessionId: meta?.sessionId,
       sessionType: meta?.sessionType,
-      // PHP/WordPress error details
       phpStackFrames: meta?.phpStackFrames,
       errorFile: meta?.errorFile,
       errorLine: meta?.errorLine,
-      // UI click path tracking
-      uiClickPath: clickPath.length > 0 ? clickPath : undefined,
-      uiClickPathString: clickPathString || undefined,
-      // React execution logs
-      executionLogs: execLogs.entries.length > 0 ? execLogs.entries : undefined,
-      executionChain: execLogs.chain,
-      executionLogsEnabled: execLogs.enabled,
-      executionLogsFormatted: execLogs.formatted || undefined,
-      // Universal Envelope diagnostic fields (extracted from error.context)
-      requestedAt: typeof error.context?.requestedAt === 'string' ? error.context.requestedAt : undefined,
-      requestDelegatedAt: typeof error.context?.requestDelegatedAt === 'string' ? error.context.requestDelegatedAt : undefined,
-      envelopeErrors: error.context?.delegatedServiceErrorStack || error.context?.backendTrace
-        ? {
-            BackendMessage: error.message,
-            DelegatedServiceErrorStack: Array.isArray(error.context?.delegatedServiceErrorStack) ? error.context.delegatedServiceErrorStack as string[] : undefined,
-            Backend: Array.isArray(error.context?.backendTrace) ? error.context.backendTrace as string[] : undefined,
-          }
-        : undefined,
-      envelopeMethodsStack: error.context?.methodsStack as EnvelopeMethodsStack | undefined,
-    };
-    
-    set((state) => {
-      const newPendingSync = new Set(state.pendingSync);
-      newPendingSync.add(captured.id);
-      return {
-        recentErrors: [captured, ...state.recentErrors].slice(0, 50),
-        pendingSync: newPendingSync,
-      };
+      envelopeContext: error.context as Record<string, unknown> | undefined,
+      timestamp: error.timestamp,
     });
     
+    commitErrorToStore(captured, set);
     return captured;
   },
   
@@ -472,82 +560,35 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       return Object.keys(base).length ? base : undefined;
     })();
 
-    // Capture UI click path at the moment of error
-    const { clickPath, clickPathString } = getClickPathForError();
-    
-    // Capture React execution logs at the moment of error
-    const execLogs = getExecutionLogsForError();
-    
-    // Extract envelope diagnostic fields (from ApiClientError context)
-    const envRequestedAt = typeof apiErrorContext?.requestedAt === 'string' ? apiErrorContext.requestedAt : undefined;
-    const envRequestDelegatedAt = typeof apiErrorContext?.requestDelegatedAt === 'string' ? apiErrorContext.requestDelegatedAt : undefined;
-    const envEnvelopeErrors: EnvelopeErrors | undefined = 
-      (apiErrorContext?.delegatedServiceErrorStack || apiErrorContext?.backendTrace)
-        ? {
-            BackendMessage: message,
-            DelegatedServiceErrorStack: Array.isArray(apiErrorContext?.delegatedServiceErrorStack) ? apiErrorContext.delegatedServiceErrorStack as string[] : undefined,
-            Backend: Array.isArray(apiErrorContext?.backendTrace) ? apiErrorContext.backendTrace as string[] : undefined,
-          }
-        : undefined;
-    const envMethodsStack = apiErrorContext?.methodsStack as EnvelopeMethodsStack | undefined;
-
-    const captured: CapturedError = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    const captured = buildCapturedError({
       code: apiErrorCode || 'E9003',
-      level: 'error',
       message,
       details,
       context: mergedContext,
-      file: stackInfo.file,
-      line: stackInfo.line,
-      function: stackInfo.function,
-      stackTrace: stack || undefined,
-      createdAt: new Date().toISOString(),
+      stack,
+      parsed,
+      stackInfo,
+      source,
+      parentSource,
+      triggerComponent,
+      triggerAction,
       endpoint: context?.endpoint,
       method: context?.method,
       requestBody: context?.requestBody || (isApiClientError(error) ? error.meta.requestBody : undefined),
       responseStatus: apiResponseStatus,
-      // Enhanced fields
-      invocationChain: buildInvocationChain(parsed.invocationChain, source, parentSource),
-      parsedFrames: parsed.frames.filter(f => !f.isInternal),
-      triggerComponent,
-      triggerAction,
-      // Backend execution data (from context if available)
       backendLogs: 'backendLogs' in (context || {}) ? (context as { backendLogs?: BackendLogEntry[] }).backendLogs : undefined,
       backendStackTrace: 'backendStackTrace' in (context || {}) ? (context as { backendStackTrace?: string }).backendStackTrace : undefined,
       siteUrl: 'siteUrl' in (context || {}) ? (context as { siteUrl?: string }).siteUrl : undefined,
-      // Session-based logging
       sessionId: 'sessionId' in (context || {}) ? (context as { sessionId?: string }).sessionId 
         : (typeof apiErrorContext?.sessionId === 'string' ? apiErrorContext.sessionId : undefined),
       sessionType: 'sessionType' in (context || {}) ? (context as { sessionType?: string }).sessionType : undefined,
-      // PHP/WordPress error details
       phpStackFrames: 'phpStackFrames' in (context || {}) ? (context as { phpStackFrames?: PHPStackFrame[] }).phpStackFrames : undefined,
       errorFile: 'errorFile' in (context || {}) ? (context as { errorFile?: string }).errorFile : undefined,
       errorLine: 'errorLine' in (context || {}) ? (context as { errorLine?: number }).errorLine : undefined,
-      // UI click path tracking
-      uiClickPath: clickPath.length > 0 ? clickPath : undefined,
-      uiClickPathString: clickPathString || undefined,
-      // React execution logs
-      executionLogs: execLogs.entries.length > 0 ? execLogs.entries : undefined,
-      executionChain: execLogs.chain,
-      executionLogsEnabled: execLogs.enabled,
-      executionLogsFormatted: execLogs.formatted || undefined,
-      // Universal Envelope diagnostic fields (from ApiClientError)
-      requestedAt: envRequestedAt,
-      requestDelegatedAt: envRequestDelegatedAt,
-      envelopeErrors: envEnvelopeErrors,
-      envelopeMethodsStack: envMethodsStack,
-    };
-    
-    set((state) => {
-      const newPendingSync = new Set(state.pendingSync);
-      newPendingSync.add(captured.id);
-      return {
-        recentErrors: [captured, ...state.recentErrors].slice(0, 50),
-        pendingSync: newPendingSync,
-      };
+      envelopeContext: apiErrorContext as Record<string, unknown> | undefined,
     });
     
+    commitErrorToStore(captured, set);
     return captured;
   },
   
