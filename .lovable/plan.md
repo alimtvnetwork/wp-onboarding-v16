@@ -1,6 +1,7 @@
-# Plan: DRY Refactoring — Phase-by-Phase
+# Plan: DRY Refactoring — Complete ✅
 
 > Audit date: 2026-02-09  
+> Completion date: 2026-02-09  
 > Goal: Eliminate duplication, improve maintainability across Go backend, React frontend, and PHP WordPress plugin — without breaking anything.
 
 ---
@@ -20,76 +21,18 @@
 | 9 | Frontend | ✅ Done | GlobalErrorModal decomposition into 7 sub-files |
 | 10 | Cross | ✅ Done | Envelope JSON schema alignment |
 
-**Completed:** 10/10 phases  
-**Remaining:** 0 phases — DRY refactoring complete 🎉
+**Completed:** 10/10 phases 🎉
 
 ---
 
-## Pending Phases
+## Detailed Summary
 
-### Phase 7 — PHP Plugin: Snapshot Class Initialization
+See `spec/dry-refactoring-summary.md` for the full architectural summary.
 
-**Problem:** `class-admin.php` has 5+ instances of requiring + instantiating `RiseupSnapshotDetector`. Similarly, `class-snapshot-scheduler.php` has 4 instances of constructing `RiseupSnapshotCleaner`.
-
-**Fix:** Create `RiseupSnapshotFactory` class with lazy-loading singletons:
-```php
-class RiseupSnapshotFactory {
-    public static function detector() { ... }
-    public static function scheduler() { ... }
-    public static function cleaner() { ... }
-}
-```
-
-**Files:** `wp-plugins/riseup-asia-uploader/includes/class-admin.php`, `class-snapshot-scheduler.php`, new `class-snapshot-factory.php`  
-**Risk:** Low — construction logic only.
+**Phase history:**
+- Phases 1–6: `.lovable/plan/completed/01-dry-refactoring-phases-1-6.md`
+- Phases 7–10: `.lovable/plan/completed/02-dry-refactoring-phases-7-10.md`
 
 ---
 
-### Phase 8 — PHP Plugin: Logger Auto-Context Consolidation
-
-**Problem:** The logger's `warn()`, `error()`, `log_exception()`, and `log_at()` methods each independently call `enrich_context_with_request()` and build invocation chains. The enrichment pattern is duplicated across 4 methods.
-
-**Fix:** Move all context enrichment into a single `prepare_context($context, $include_backtrace = false)` method that all log methods call.
-
-**Files:** `wp-plugins/riseup-asia-uploader/includes/class-file-logger.php`  
-**Risk:** Low — logging internals.
-
----
-
-### Phase 9 — Frontend: GlobalErrorModal Decomposition
-
-**Problem:** `GlobalErrorModal.tsx` is ~2,164 lines — the largest file in the frontend. Contains rendering logic for 8+ tabs, markdown report generation, copy logic, and session diagnostics.
-
-**Fix:** Extract into focused sub-components:
-- `ErrorModalOverview.tsx` — Summary/overview tab
-- `ErrorModalStackTab.tsx` — Stack trace visualization
-- `ErrorModalRequestTab.tsx` — Request chain visualization
-- `ErrorModalTraversalTab.tsx` — Method traversal
-- `ErrorModalReportGenerator.ts` — Markdown report logic (pure function)
-- Keep `GlobalErrorModal.tsx` as shell with tabs + state
-
-**Files:** `src/components/errors/GlobalErrorModal.tsx` → extract into `src/components/errors/` subdirectory  
-**Risk:** Medium — complex UI, needs visual verification after split.
-
----
-
-### Phase 10 — Cross-Stack: Envelope Type Alignment
-
-**Problem:** The Universal Response Envelope types are defined independently in 3 places (Go, TypeScript, PHP). They can drift silently.
-
-**Fix:** Add `spec/response-envelope/envelope.schema.json` (JSON Schema) as single source of truth. Add schema version comments in each implementation.
-
-**Files:** `spec/response-envelope/`, Go/TS/PHP envelope files (add schema version comments)  
-**Risk:** Very low — documentation + comments only.
-
----
-
-## Recommended Execution Order
-
-Phase 7 → Phase 8 → Phase 9 → Phase 10
-
-Phase 9 is the largest remaining effort. Phase 5 (api.ts split) was recommended before Phase 9 and is now complete.
-
----
-
-*Updated: 2026-02-09. Phases 1–6 completed. See `.lovable/plan/completed/01-dry-refactoring-phases-1-6.md` for history.*
+*All DRY refactoring work is complete. No pending phases.*

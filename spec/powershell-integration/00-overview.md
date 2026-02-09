@@ -127,6 +127,14 @@ spec/powershell-integration/
 │   └── powershell.json          ← Example config with pnpm
 └── examples/
     └── server-client-project.json  ← Sample for server/client layout
+
+spec/upload-scripts/              ← Related: WordPress plugin upload scripts
+├── README.md                    ← Upload pipeline overview
+├── 01-upload-plugin-v1.md       ← V1: Basic single-file upload
+├── 02-upload-plugin-v2.md       ← V2: Envelope-aware upload
+├── 03-upload-plugin-v3.md       ← V3: Parallel multi-plugin deployment
+├── 04-upload-plugin-custom.md   ← Custom path deployments
+└── 05-configuration.md          ← Auth, headers, fallback config
 ```
 
 ---
@@ -325,6 +333,12 @@ Tell the AI:
 | [Integration Guide](./03-integration-guide.md) | Step-by-step setup |
 | [Error Codes](./04-error-codes.md) | Exit codes 9500-9599 |
 | [Firewall Rules](./05-firewall-rules.md) | Windows firewall setup |
+| **[Upload Scripts Spec](../upload-scripts/README.md)** | WordPress plugin upload scripts (V1, V2, V3) |
+| [Upload V1](../upload-scripts/01-upload-plugin-v1.md) | Single-file upload via Invoke-RestMethod |
+| [Upload V2](../upload-scripts/02-upload-plugin-v2.md) | Envelope-aware upload with unwrapping |
+| [Upload V3](../upload-scripts/03-upload-plugin-v3.md) | Parallel multi-plugin deployment via Start-Job |
+| [Upload Custom](../upload-scripts/04-upload-plugin-custom.md) | Custom path deployments via `run.ps1 -u -pp` |
+| [Upload Config](../upload-scripts/05-configuration.md) | Authentication, headers, and fallback config |
 
 ---
 

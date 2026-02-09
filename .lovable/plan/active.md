@@ -4,36 +4,44 @@
 
 ---
 
-## Current Track: DRY Refactoring (Phases 7–10 remaining)
+## Current Status: All Major Tracks Complete ✅
 
-| Phase | Layer | Status | Description |
-|-------|-------|--------|-------------|
-| 7 | PHP | 📋 Pending | `RiseupSnapshotFactory` — lazy singleton construction |
-| 8 | PHP | 📋 Pending | Logger `prepare_context()` — consolidate 4 methods |
-| 9 | Frontend | 📋 Pending | GlobalErrorModal decomposition into sub-components |
-| 10 | Cross | 📋 Pending | Envelope JSON schema as single source of truth |
-
-**See:** `.lovable/plan.md` for full details on each pending phase.
+No active implementation phases. All planned work is done.
 
 ---
 
-## Previously Completed Tracks
+## Completed Tracks
 
-### DRY Refactoring Phases 1–6 ✅ (2026-02-09)
-Go backend dedup, frontend error store/API client/hooks consolidation.  
-→ See: `.lovable/plan/completed/01-dry-refactoring-phases-1-6.md`
+### Documentation & Specs ✅ (2026-02-09)
+spec/README.md index, error-modal visual diagrams, upload-scripts spec, coding standards (TS/Go/PHP), DRY principles, error-handling cross-stack spec.  
+→ See: `spec/README.md` for full index.
+
+### 10-Phase DRY Refactoring ✅ (2026-02-09)
+Go backend dedup, frontend error store/API client/hooks consolidation, PHP snapshot factory, PHP logger consolidation, GlobalErrorModal decomposition, cross-stack JSON Schema alignment.  
+→ See: `.lovable/plan/completed/01-dry-refactoring-phases-1-6.md`, `.lovable/plan/completed/02-dry-refactoring-phases-7-10.md`
 
 ### PHP Plugin Refactoring Phases 1–5 ✅ (2026-02-07)
 Boolean helpers, init helpers, path utils, dependency loader, coding guidelines.  
-→ See: `.lovable/plan/completed-phases-1-14.md` (items within)
+→ See: `.lovable/plan/completed-phases-1-14.md`
 
 ### Go Backend Phases 6–10 ✅ (2026-02-07)
-Handler modularization, CRUD factory, service registry unification, config standardization, E2E tests.  
-→ See: `.lovable/plan/active.md` (previous version archived)
+Handler modularization, CRUD factory, service registry unification, config standardization, E2E tests.
 
 ### Feature Phases 1–14, 33–40 ✅ (2026-02-05 to 2026-02-06)
 Session logging, quick publish, remote plugins, file browser, version tracking, auto-update, multi-site orchestration, publish retry/queue/scheduler/rollback, history dashboard, site health monitor.  
 → See: `.lovable/plan/completed-phases-1-14.md`, `.lovable/plan/completed-phases-33-40.md`
+
+---
+
+## Open Suggestions (from suggestions tracker)
+
+| ID | Title | Priority |
+|----|-------|----------|
+| S-001 | Add WordPress API Error Examples to spec | high |
+| S-004 | Document Error Recovery for Partial Publish | high |
+| S-005 | Define WebSocket Reconnection State Recovery | medium |
+
+→ See: `.lovable/memory/suggestions/01-suggestions-tracker.md`
 
 ---
 
@@ -45,4 +53,4 @@ Session logging, quick publish, remote plugins, file browser, version tracking, 
 
 ---
 
-*Next recommended: Phase 7 (PHP snapshot factory) or Phase 9 (GlobalErrorModal decomposition).*
+*No pending implementation phases. Next work should come from open suggestions or new feature requests.*
