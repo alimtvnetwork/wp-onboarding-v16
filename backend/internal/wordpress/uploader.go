@@ -149,13 +149,7 @@ func (c *Client) CheckUploaderHelperAvailable() (bool, error) {
 // GetUploaderStatus gets the Rise Up Uploader status.
 func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 	// Detect which namespace is available
-	_, namespace, err := c.CheckRiseUpUploaderAvailable()
-	if err != nil {
-		return nil, err
-	}
-	if namespace == "" {
-		namespace = RiseUpUploaderNamespace // default
-	}
+	namespace := c.resolveNamespace()
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointStatus)
 	resp, err := c.request("GET", endpoint, nil)
@@ -227,13 +221,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	}
 
 	// STEP 1: Check uploader status BEFORE attempting upload
-	_, namespace, checkErr := c.CheckRiseupAsiaAvailable()
-	if checkErr != nil {
-		return nil, apperror.Wrap(checkErr, apperror.ErrWPConnection, "pre-upload status check failed")
-	}
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
+	namespace := c.resolveNamespace()
 
 	// Get detailed status to verify endpoint is working
 	statusEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointStatus)
@@ -348,42 +336,8 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n", 
 			uploadURL, absZipPath, resp.StatusCode, truncateBody(respBody, 4000), stackTrace)
 		
-		// Try to parse WordPress error response for PHP stack trace frames
-		var parsedError struct {
-			Success bool `json:"success"`
-			Error   struct {
-				Code    string `json:"code"`
-				Message string `json:"message"`
-				Details struct {
-					StackTrace       string `json:"stackTrace"`
-					StackTraceFrames []struct {
-						File     string `json:"file"`
-						FileBase string `json:"fileBase"`
-						Line     int    `json:"line"`
-						Function string `json:"function"`
-						Class    string `json:"class"`
-					} `json:"stackTraceFrames"`
-					ExceptionClass string `json:"exceptionClass"`
-					PHPVersion     string `json:"phpVersion"`
-				} `json:"details"`
-			} `json:"error"`
-		}
-		
-		// Attempt to parse the error response for additional PHP context
-		phpStackInfo := ""
-		if respBody != "" {
-			if err := json.Unmarshal(respBytes, &parsedError); err == nil && len(parsedError.Error.Details.StackTraceFrames) > 0 {
-				phpStackInfo = "\n--- PHP Stack Trace (from WordPress) ---\n"
-				for i, frame := range parsedError.Error.Details.StackTraceFrames {
-					funcName := frame.Function
-					if frame.Class != "" {
-						funcName = frame.Class + "::" + frame.Function
-					}
-					phpStackInfo += fmt.Sprintf("  #%d %s() at %s:%d\n", i, funcName, frame.FileBase, frame.Line)
-				}
-				phpStackInfo += "--- End PHP Stack Trace ---"
-			}
-		}
+		// Extract PHP stack trace from WordPress error response
+		phpStackInfo := ExtractPHPStackTrace(respBytes)
 		
 		return nil, &APIError{
 			Operation:    "upload plugin via RiseupAsia Uploader",
@@ -435,10 +389,7 @@ type pluginLifecycleInput struct {
 // It resolves the namespace, normalizes the slug, sends the POST, and returns a
 // structured APIError on failure.
 func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
+	namespace := c.resolveNamespace()
 
 	normalizedSlug := normalizePluginSlug(input.Slug)
 	endpoint := "/" + namespace + input.Endpoint
@@ -501,10 +452,7 @@ func (c *Client) DeletePluginViaUploader(slug string) error {
 
 // ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.
 func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
+	namespace := c.resolveNamespace()
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointPlugins)
 	resp, err := c.request("GET", endpoint, nil)
@@ -542,10 +490,7 @@ func (c *Client) ListPluginsViaUploader() ([]UploaderPluginInfo, error) {
 // ListPluginFilesViaUploader lists files in a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, error) {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
+	namespace := c.resolveNamespace()
 
 	endpoint := "/" + namespace + EndpointFiles
 	reqBody := map[string]string{"plugin": slug}
@@ -577,10 +522,7 @@ func (c *Client) ListPluginFilesViaUploader(slug string) ([]UploaderFileInfo, er
 // ReplaceFileViaUploader replaces a single file in a plugin via the RiseupAsia Uploader.
 // Uses a fixed endpoint with slug and file details in JSON body.
 func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, isBase64 bool) error {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
+	namespace := c.resolveNamespace()
 
 	endpoint := "/" + namespace + EndpointFiles
 
@@ -633,10 +575,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 // DeleteFileViaUploader deletes a single file from a plugin via the Riseup Asia Uploader.
 // Uses a fixed endpoint with slug and file path in JSON body.
 func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
+	namespace := c.resolveNamespace()
 
 	endpoint := "/" + namespace + EndpointFiles
 
@@ -707,10 +646,7 @@ type SyncResult struct {
 // SyncPluginFilesViaUploader performs a delta sync of multiple files to a plugin.
 // Uses a fixed endpoint with slug in JSON body.
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
+	namespace := c.resolveNamespace()
 
 	c.progress(ActionSync, "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), map[string]interface{}{
 		"slug":      slug,
@@ -790,7 +726,7 @@ type ExportPluginResult struct {
 // ExportPlugin fetches an arbitrary plugin as a base64-encoded ZIP from the remote site.
 // Uses a fixed endpoint with slug in JSON body.
 func (c *Client) ExportPlugin(slug string) (*ExportPluginResult, error) {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
+	namespace := c.resolveNamespace()
 	if namespace == "" {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
@@ -840,7 +776,7 @@ type ExportSelfResult struct {
 
 // ExportSelfFromSite fetches the Riseup Asia Uploader plugin as a ZIP from a site.
 func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
+	namespace := c.resolveNamespace()
 	if namespace == "" {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
@@ -906,10 +842,7 @@ type RemoteErrorLogsResult struct {
 // Uses GET /error-logs with Basic Auth. The response is controlled by the plugin's
 // log_retrieval settings (which logs to include, max lines).
 func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
-	_, namespace, err := c.CheckRiseupAsiaAvailable()
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "check uploader availability for error-logs")
-	}
+	namespace := c.resolveNamespace()
 	if namespace == "" {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
@@ -979,10 +912,7 @@ type RemoteErrorSessionsResult struct {
 // FetchRemoteErrorSessions retrieves structured error entries from the WordPress plugin's
 // error_sessions SQLite table. Supports filtering by level, search, since_id, and pagination.
 func (c *Client) FetchRemoteErrorSessions(level string, search string, sinceID int, limit int, offset int) (*RemoteErrorSessionsResult, error) {
-	_, namespace, err := c.CheckRiseupAsiaAvailable()
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "check uploader availability for error-sessions")
-	}
+	namespace := c.resolveNamespace()
 	if namespace == "" {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available")
 	}
