@@ -57,14 +57,17 @@ function showGlobalError(error: unknown, context?: { endpoint?: string; method?:
       return;
     }
 
+    const shortEndpoint = error.meta.requestUrl?.replace(/^https?:\/\/[^/]+/, '') || '';
     toast.error(error.apiError.message, {
-      description: "Click for details",
+      description: shortEndpoint ? `${error.meta.method || 'GET'} ${shortEndpoint}` : "Click for details",
       action: { label: "View Details", onClick: () => openErrorModal(captured) },
       duration: 10000,
     });
     return;
   }
 
+  const errorMessage = error instanceof Error ? error.message : "Unknown error";
+  const endpoint = context?.endpoint || "unknown";
   const captured = captureException(error, {
     source: "App.showGlobalError",
     triggerComponent: context?.triggerComponent || "QueryClient",
@@ -72,8 +75,8 @@ function showGlobalError(error: unknown, context?: { endpoint?: string; method?:
     endpoint: context?.endpoint,
     method: context?.method,
   });
-  toast.error("Request failed", {
-    description: "Click for details",
+  toast.error(`Request failed: ${endpoint}`, {
+    description: errorMessage.length > 120 ? errorMessage.slice(0, 120) + "…" : errorMessage,
     action: { label: "View Details", onClick: () => openErrorModal(captured) },
     duration: 10000,
   });
