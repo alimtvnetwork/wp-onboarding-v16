@@ -1,7 +1,7 @@
 # Lovable AI Memory
 
 > **Purpose:** Guidelines for AI models to understand project structure and maintain consistent workflows.  
-> **Updated:** 2026-02-02
+> **Updated:** 2026-02-09
 
 ---
 
@@ -10,19 +10,32 @@
 ```
 .lovable/
 ├── README.md                    # This file - entry point for AI
-├── plan.md                      # Active roadmap with prioritized backlog
+├── plan.md                      # DRY Refactoring plan (complete)
+├── plan/
+│   ├── README.md                # Plan index
+│   ├── active.md                # Status overview — all tracks complete
+│   ├── technical-notes.md       # Root cause analyses, architecture decisions
+│   └── completed/               # All completed plan files archived here
+│       ├── 01-dry-refactoring-phases-1-6.md
+│       ├── 02-dry-refactoring-phases-7-10.md
+│       ├── 03-error-diagnostics-v3.md
+│       ├── 04-frontend-pages.md
+│       ├── 05-snapshot-backup-system.md
+│       ├── 06-feature-phases-1-14.md
+│       └── 07-feature-phases-33-40.md
 └── memory/
     ├── 01-conventions.md        # Coding and file naming conventions
-    ├── 01-workflow.md           # Task tracking guidelines
+    ├── 01-workflow.md           # Task tracking and session handoff
     ├── 02-project-context.md    # Project overview and status
-    ├── 03-reliability-risk-report.md  # AI handoff reliability assessment
-    ├── features/
-    │   ├── e2e-testing.md       # E2E test framework details
-    │   └── error-handling-and-debugging.md  # Error modal details
+    ├── 03-reliability-risk-report.md  # Reliability assessment (95/100)
+    ├── PRD.md                   # Plugins Onboard PRD (secondary project)
+    ├── architecture/            # Established patterns (backend, frontend, WP plugin)
+    ├── features/                # Feature documentation
+    ├── issues-fixed/            # Bug fix history (15 entries)
     └── suggestions/
-        ├── 01-suggestions-tracker.md  # Active suggestions (consolidated)
+        ├── 01-suggestions-tracker.md  # All 18 suggestions (0 open, 18 completed)
         └── completed/
-            └── 01-completed-suggestions.md  # Archived completed items
+            └── 01-completed-suggestions.md  # Detailed completion archive
 ```
 
 ---
@@ -31,40 +44,38 @@
 
 | Document | Purpose |
 |----------|---------|
-| `plan.md` | **START HERE** - Prioritized backlog, current status |
-| `memory/02-project-context.md` | Project overview, what's done/pending |
-| `memory/03-reliability-risk-report.md` | Risk assessment, success probability |
-| `memory/suggestions/01-suggestions-tracker.md` | Open improvement suggestions |
+| `plan/active.md` | **START HERE** - Current status, all tracks complete |
+| `memory/02-project-context.md` | Project overview, architecture, key files |
+| `memory/03-reliability-risk-report.md` | Reliability score: 95/100 |
+| `memory/suggestions/01-suggestions-tracker.md` | All 18 suggestions completed |
 | `memory/01-conventions.md` | File naming, coding standards |
-| `memory/01-workflow.md` | Task tracking guidelines |
+| `memory/01-workflow.md` | Session handoff, spec reading order |
 
 ---
 
 ## For New AI Sessions
 
-1. **Read `plan.md`** - Current priorities and next tasks
-2. **Read `memory/02-project-context.md`** - Project status
-3. **Read `memory/03-reliability-risk-report.md`** - Risk assessment
-4. **Check open suggestions** in `memory/suggestions/01-suggestions-tracker.md`
-5. **Follow conventions** in `memory/01-conventions.md`
-6. **Ask user which task to implement**
+1. **Read `plan/active.md`** — All tracks complete, open questions listed
+2. **Read `memory/02-project-context.md`** — Full project status and architecture
+3. **Read `memory/suggestions/01-suggestions-tracker.md`** — 0 open suggestions
+4. **Follow conventions** in `memory/01-conventions.md`
+5. **Ask user what to implement next**
 
 ---
 
 ## Current Project: WP Plugin Publish
 
-**Status Summary:**
+**Status: FULLY IMPLEMENTED ✅**
+
 - ✅ 28 specification documents complete
-- ✅ Phases 1, 2, 5 complete (Plugin, Sync, Git services)
-- ✅ E2E Testing Framework complete (20 test cases)
-- ✅ Error Detail Modal complete
-- 📋 Phase 3 (Site Service) - **NEXT**
-- 📋 Phase 4 (Publish Service) - Pending
-- 📋 Phases 6-8 - Pending
+- ✅ All feature phases complete (1–14, 33–40)
+- ✅ 10-phase DRY refactoring complete
+- ✅ 18/18 improvement suggestions resolved
+- ✅ Error diagnostics v3 (6 phases) complete
+- ✅ Frontend pages (15 phases) complete
+- ✅ Snapshot backup system (10 phases) complete
 
-**Reliability Score:** 82/100 (Good - Continue implementation)
-
-**Priority:** Verify scaffolds compile, then implement Site Service (Phase 3)
+**Reliability Score:** 95/100 (Excellent — Production-ready)
 
 ---
 
@@ -72,24 +83,28 @@
 
 | Priority | Count |
 |----------|-------|
-| Critical | 2 (S-006, S-007 - verify builds) |
-| High | 4 (S-001, S-004, S-008, S-009) |
-| Medium | 2 (S-005, S-010) |
-| **Total Open** | **8** |
+| Open | 0 |
+| Completed | 18 |
+| Rejected | 0 |
+| **Total** | **18** |
 
 ---
 
 ## Spec Folder Overview
 
 ```
-spec/wp-plugin-publish/
-├── 00-overview.md               # Start here - master index
-├── 01-backend/                  # 16 backend service specs
-├── 02-frontend/                 # 6 frontend UI specs
-├── 03-implementation/           # 6 implementation guides
-├── 04-testing/                  # E2E test specification
-├── 66-shared-constants.md       # Single source of truth (SSOT)
-└── 99-consistency-report.md     # Cross-reference validation
+spec/
+├── README.md                    # Spec index (start here)
+├── coding-guidelines/           # DRY principles
+├── error-handling/              # Cross-stack error chain
+├── error-modal/                 # Error Modal UI spec with diagrams
+├── golang-standards/            # Go coding standards
+├── typescript-standards/        # TypeScript coding standards
+├── php-standards/               # PHP coding standards
+├── powershell-integration/      # Build runner (generic, cross-project)
+├── upload-scripts/              # Upload scripts V1-V3
+├── response-envelope/           # JSON Schema v1.0.0 & samples
+└── dry-refactoring-summary.md   # 10-phase summary
 ```
 
 ---
@@ -98,23 +113,18 @@ spec/wp-plugin-publish/
 
 ### 1. Split Database Architecture
 - Root DB as registry, child DBs for history/cache
-- See `memory/features/e2e-testing.md` for test data isolation
 
-### 2. Error Codes
-- E1xxx: Validation errors
-- E2xxx: Database/Storage errors
-- E3xxx: Network/API errors
-- E4xxx: File system errors
-- E5xxx: Sync/Publish errors
-- E9xxx: Internal errors
+### 2. Universal Response Envelope
+- PascalCase keys (Go/PHP compat), envelope.schema.json v1.0.0
+- Status/Attributes/Results/Navigation/Errors/MethodsStack
 
-### 3. File Watcher
-- Event-driven, not polling
-- Triggers on Git pull or manual refresh
+### 3. Error Handling
+- Go: `apperror.Wrap()` — no `fmt.Errorf`
+- PHP: `safe_execute` + `Throwable` catching
+- Frontend: Global Zustand error store with factory
 
 ### 4. Suggestions Workflow
-- All suggestions consolidated in `01-suggestions-tracker.md`
-- Status: open → in-progress → done
+- All consolidated in `01-suggestions-tracker.md`
 - Completed items archived in `completed/` folder
 
 ---
@@ -128,4 +138,4 @@ spec/wp-plugin-publish/
 
 ---
 
-*Updated 2026-02-02 with comprehensive project context and reliability assessment.*
+*Updated 2026-02-09. All features, refactoring, and suggestions complete.*
