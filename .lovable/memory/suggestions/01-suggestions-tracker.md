@@ -8,15 +8,6 @@
 
 ## Active Suggestions (Open)
 
-### S-005: Define WebSocket Reconnection State Recovery
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-01 |
-| Source | Lovable (Risk Report) |
-| Priority | medium |
-| Status | **open** |
-| Description | Define how frontend recovers missed events after WS disconnect |
-
 ### S-017: Post-Deploy Version Verification Pass
 | Field | Value |
 |-------|-------|
@@ -42,10 +33,11 @@
 
 | ID | Title | Completed | Notes |
 |----|-------|-----------|-------|
-| S-001 | WordPress API Error Examples | 2026-02-09 | 6 error types (401, 403, 404, 409, 500, non-JSON) in `10-wp-rest-client.md` |
+| S-001 | WordPress API Error Examples | 2026-02-09 | 6 error types in `10-wp-rest-client.md` |
 | S-002 | fsnotify Platform Differences | 2026-02-02 | Replaced with hybrid watcher mode |
 | S-003 | Specify Hash Algorithm | 2026-02-02 | MD5 implemented in scanner.go |
-| S-004 | Partial Publish Recovery | 2026-02-09 | 4 strategies documented in `08-publish-service.md` |
+| S-004 | Partial Publish Recovery | 2026-02-09 | 4 strategies in `08-publish-service.md` |
+| S-005 | WebSocket Reconnection Recovery | 2026-02-09 | Broad invalidation on reconnect in `useWebSocket.ts`; spec at `05-websocket-reconnection-recovery.md` |
 | S-006 | Verify Go Backend Compiles | 2026-02-05 | Confirmed working |
 | S-007 | Verify React Frontend Builds | 2026-02-05 | Confirmed working |
 | S-008 | Implement Site Service | 2026-02-02 | Full CRUD handlers |
@@ -72,8 +64,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 3 |
-| Completed | 15 |
+| Open | 2 |
+| Completed | 16 |
 | Rejected | 0 |
 | **Total** | **18** |
 
