@@ -122,13 +122,16 @@ class Riseup_File_Logger {
 
         // Resolve base directory via centralized helper
         $this->base_dir = RiseupInitHelpers::resolveBaseDir();
-        
-        $this->logs_dir        = RiseupPathUtils::getLogsDir();
+
+        // Build logs dir path using ONLY native string concatenation.
+        // CRITICAL: Do NOT call RiseupPathUtils::getLogsDir() here — it would
+        // trigger safeLog() → getLogger() → back to this constructor = infinite loop.
+        $this->logs_dir        = rtrim($this->base_dir, '/') . '/' . RISEUP_LOGS_SUBDIR;
         $this->log_file        = $this->logs_dir . '/' . RISEUP_LOG_FILENAME;
         $this->error_file      = $this->logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
         $this->stacktrace_file = $this->logs_dir . '/' . RISEUP_STACKTRACE_FILENAME;
-        
-        // Create directories via idempotent helper
+
+        // Create directories via native PHP only — avoids circular dependency
         return $this->ensure_directories();
     }
 
