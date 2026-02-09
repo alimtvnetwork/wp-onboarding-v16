@@ -110,45 +110,28 @@ type UploaderFileInfo struct {
 	Hash     string `json:"hash"`
 }
 
+// uploaderNamespaces defines the namespace probe order: newest first, then legacy.
+var uploaderNamespaces = []string{
+	RiseupAsiaNamespace,
+	RiseUpUploaderNamespace,
+	PluginUploaderNamespace,
+}
+
 // CheckRiseupAsiaAvailable checks if the Riseup Asia Uploader plugin is installed.
-// It tries the new namespace first, then falls back to legacy namespaces for backward compatibility.
+// It tries namespaces in priority order (newest first) and returns the first match.
 func (c *Client) CheckRiseupAsiaAvailable() (bool, string, error) {
-	// Try Riseup Asia Uploader first (newest namespace)
-	endpoint := fmt.Sprintf("/%s%s", RiseupAsiaNamespace, EndpointStatus)
-	resp, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return false, "", err
-	}
-	defer resp.Body.Close()
+	for _, ns := range uploaderNamespaces {
+		endpoint := "/" + ns + EndpointStatus
+		resp, err := c.request("GET", endpoint, nil)
+		if err != nil {
+			return false, "", err
+		}
+		resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return true, RiseupAsiaNamespace, nil
+		if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+			return true, ns, nil
+		}
 	}
-
-	// Try legacy namespace (riseup-uploader/v1)
-	endpoint = fmt.Sprintf("/%s%s", RiseUpUploaderNamespace, EndpointStatus)
-	resp2, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return false, "", err
-	}
-	defer resp2.Body.Close()
-
-	if resp2.StatusCode == http.StatusOK || resp2.StatusCode == http.StatusUnauthorized || resp2.StatusCode == http.StatusForbidden {
-		return true, RiseUpUploaderNamespace, nil
-	}
-
-	// Try oldest legacy namespace (plugin-uploader/v1)
-	endpoint = fmt.Sprintf("/%s%s", PluginUploaderNamespace, EndpointStatus)
-	resp3, err := c.request("GET", endpoint, nil)
-	if err != nil {
-		return false, "", err
-	}
-	defer resp3.Body.Close()
-
-	if resp3.StatusCode == http.StatusOK || resp3.StatusCode == http.StatusUnauthorized || resp3.StatusCode == http.StatusForbidden {
-		return true, PluginUploaderNamespace, nil
-	}
-
 	return false, "", nil
 }
 
@@ -440,21 +423,30 @@ func normalizePluginSlug(slug string) string {
 	return slug
 }
 
-// EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
-// Uses a fixed endpoint with JSON body containing the plugin slug.
-func (c *Client) EnablePluginViaUploader(slug string) error {
+// pluginLifecycleInput holds the parameters for a plugin lifecycle action.
+type pluginLifecycleInput struct {
+	Slug          string
+	Endpoint      string
+	OperationName string
+	ErrorCode     string
+}
+
+// pluginLifecycleAction is the shared implementation for Enable, Disable, and Delete.
+// It resolves the namespace, normalizes the slug, sends the POST, and returns a
+// structured APIError on failure.
+func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	_, namespace, _ := c.CheckRiseupAsiaAvailable()
 	if namespace == "" {
 		namespace = RiseupAsiaNamespace
 	}
 
-	normalizedSlug := normalizePluginSlug(slug)
-	endpoint := "/" + namespace + EndpointEnable
+	normalizedSlug := normalizePluginSlug(input.Slug)
+	endpoint := "/" + namespace + input.Endpoint
 	reqBody := map[string]string{"plugin": normalizedSlug}
 	reqBodyJSON, _ := json.Marshal(reqBody)
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
-		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "enable plugin request failed").
+		return apperror.Wrap(err, input.ErrorCode, input.OperationName+" request failed").
 			WithContext("slug", normalizedSlug)
 	}
 	defer resp.Body.Close()
@@ -463,7 +455,7 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return &APIError{
-			Operation:    "enable plugin via RiseupAsia Uploader",
+			Operation:    input.OperationName + " via RiseupAsia Uploader",
 			Method:       "POST",
 			Endpoint:     endpoint,
 			URL:          c.fullURL(endpoint),
@@ -475,80 +467,36 @@ func (c *Client) EnablePluginViaUploader(slug string) error {
 	}
 
 	return nil
+}
+
+// EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
+func (c *Client) EnablePluginViaUploader(slug string) error {
+	return c.pluginLifecycleAction(pluginLifecycleInput{
+		Slug:          slug,
+		Endpoint:      EndpointEnable,
+		OperationName: "enable plugin",
+		ErrorCode:     apperror.ErrWPPluginActivate,
+	})
 }
 
 // DisablePluginViaUploader disables (deactivates) a plugin via the RiseupAsia Uploader.
-// Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) DisablePluginViaUploader(slug string) error {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
-
-	normalizedSlug := normalizePluginSlug(slug)
-	endpoint := "/" + namespace + EndpointDisable
-	reqBody := map[string]string{"plugin": normalizedSlug}
-	reqBodyJSON, _ := json.Marshal(reqBody)
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrWPPluginActivate, "disable plugin request failed").
-			WithContext("slug", normalizedSlug)
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return &APIError{
-			Operation:    "disable plugin via RiseupAsia Uploader",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			RequestBody:  string(reqBodyJSON),
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-			PluginSlugIn: normalizedSlug,
-		}
-	}
-
-	return nil
+	return c.pluginLifecycleAction(pluginLifecycleInput{
+		Slug:          slug,
+		Endpoint:      EndpointDisable,
+		OperationName: "disable plugin",
+		ErrorCode:     apperror.ErrWPPluginActivate,
+	})
 }
 
 // DeletePluginViaUploader deletes a plugin via the RiseupAsia Uploader.
-// Uses a fixed endpoint with JSON body containing the plugin slug.
 func (c *Client) DeletePluginViaUploader(slug string) error {
-	_, namespace, _ := c.CheckRiseupAsiaAvailable()
-	if namespace == "" {
-		namespace = RiseupAsiaNamespace
-	}
-
-	normalizedSlug := normalizePluginSlug(slug)
-	endpoint := "/" + namespace + EndpointDelete
-	reqBody := map[string]string{"plugin": normalizedSlug}
-	reqBodyJSON, _ := json.Marshal(reqBody)
-	resp, err := c.request("POST", endpoint, reqBody)
-	if err != nil {
-		return apperror.Wrap(err, apperror.ErrWPConnection, "delete plugin request failed").
-			WithContext("slug", normalizedSlug)
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, _ := io.ReadAll(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return &APIError{
-			Operation:    "delete plugin via RiseupAsia Uploader",
-			Method:       "POST",
-			Endpoint:     endpoint,
-			URL:          c.fullURL(endpoint),
-			StatusCode:   resp.StatusCode,
-			RequestBody:  string(reqBodyJSON),
-			ResponseBody: truncateBody(string(bodyBytes), 8192),
-			PluginSlugIn: normalizedSlug,
-		}
-	}
-
-	return nil
+	return c.pluginLifecycleAction(pluginLifecycleInput{
+		Slug:          slug,
+		Endpoint:      EndpointDelete,
+		OperationName: "delete plugin",
+		ErrorCode:     apperror.ErrWPConnection,
+	})
 }
 
 // ListPluginsViaUploader lists all plugins via the RiseupAsia Uploader.

@@ -9,6 +9,11 @@
 // See spec/wp-plugin-publish/05-endpoint-mapping.md for full documentation.
 package wordpress
 
+import (
+	"strconv"
+	"strings"
+)
+
 // WPEndpointName identifies a WordPress-delegated operation.
 // Used in logs, error diagnostics, and endpoint validation.
 type WPEndpointName string
@@ -94,52 +99,8 @@ func ResolveWPEndpoint(name WPEndpointName) string {
 }
 
 func replaceID(pattern string, id int64) string {
-	// Simple string replacement for {id}
-	result := pattern
 	if id > 0 {
-		result = replaceAll(result, "{id}", formatInt64(id))
+		return strings.ReplaceAll(pattern, "{id}", strconv.FormatInt(id, 10))
 	}
-	return result
-}
-
-func replaceAll(s, old, new string) string {
-	for {
-		idx := indexOf(s, old)
-		if idx < 0 {
-			return s
-		}
-		s = s[:idx] + new + s[idx+len(old):]
-	}
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
-}
-
-func formatInt64(n int64) string {
-	if n == 0 {
-		return "0"
-	}
-	negative := n < 0
-	if negative {
-		n = -n
-	}
-	digits := make([]byte, 0, 20)
-	for n > 0 {
-		digits = append(digits, byte('0'+n%10))
-		n /= 10
-	}
-	// reverse
-	for i, j := 0, len(digits)-1; i < j; i, j = i+1, j-1 {
-		digits[i], digits[j] = digits[j], digits[i]
-	}
-	if negative {
-		return "-" + string(digits)
-	}
-	return string(digits)
+	return pattern
 }
