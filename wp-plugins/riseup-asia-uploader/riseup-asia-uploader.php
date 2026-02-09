@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.35.1
+ * Version: 1.35.2
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -3222,11 +3222,31 @@ class Riseup_Asia {
      * @return string|null Plugin file or null.
      */
     private function find_plugin_file($slug) {
-        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        // Safe-load plugin functions with try-catch to prevent crashes during early loading
+        try {
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+        } catch (Throwable $e) {
+            $this->file_logger->log_exception($e, 'find_plugin_file: Failed to load plugin.php');
+            return null;
         }
 
-        $all_plugins = get_plugins();
+        // Safe-call get_plugins() — may return empty during early WordPress loading
+        try {
+            $all_plugins = get_plugins();
+        } catch (Throwable $e) {
+            $this->file_logger->log_exception($e, 'find_plugin_file: get_plugins() threw an exception');
+            return null;
+        }
+
+        if (empty($all_plugins)) {
+            $this->file_logger->warn('find_plugin_file: get_plugins() returned empty list — WordPress may not be fully loaded', array(
+                'requested_slug' => $slug,
+            ));
+            return null;
+        }
+
         $available_slugs = array();
         foreach ($all_plugins as $plugin_file => $plugin_data) {
             $plugin_slug = dirname($plugin_file);
