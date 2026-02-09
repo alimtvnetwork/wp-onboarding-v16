@@ -700,6 +700,12 @@ if ($buildonly) {
     Write-Host "  Build complete! (-b mode)" -ForegroundColor Cyan
     Write-Host "  Total time: $(Format-ElapsedTime $TotalStopwatch)" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Build Summary:" -ForegroundColor Yellow
+    foreach ($step in $StepTimes.GetEnumerator()) {
+        $time = "{0:N1}s" -f $step.Value.TotalSeconds
+        Write-Host "  $($step.Key): $time" -ForegroundColor Gray
+    }
     exit 0
 }
 
