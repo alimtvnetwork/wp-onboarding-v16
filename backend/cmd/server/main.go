@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -274,9 +276,26 @@ func main() {
 	}()
 
 	log.Info("Server started", "port", cfg.Server.Port)
+	localURL := fmt.Sprintf("http://localhost:%d", cfg.Server.Port)
 	fmt.Printf("\n  %s\n", versionInfo.String())
-	fmt.Printf("  Local:     http://localhost:%d\n", cfg.Server.Port)
+	fmt.Printf("  Local:     %s\n", localURL)
 	fmt.Printf("  WebSocket: ws://localhost:%d/ws\n\n", cfg.Server.Port)
+
+	// Auto-open browser
+	go func() {
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case "windows":
+			cmd = exec.Command("cmd", "/c", "start", localURL)
+		case "darwin":
+			cmd = exec.Command("open", localURL)
+		default:
+			cmd = exec.Command("xdg-open", localURL)
+		}
+		if err := cmd.Run(); err != nil {
+			log.Warn("Could not open browser automatically", "error", err)
+		}
+	}()
 
 	// Wait for shutdown signal
 	quit := make(chan os.Signal, 1)
