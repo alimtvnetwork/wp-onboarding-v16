@@ -101,7 +101,29 @@ A unified response contract was needed to eliminate these problems without break
 
 ---
 
-## Consequences
+### 7. JSON Schema Draft 2020-12 as Cross-Stack Type Alignment
+
+**Decision:** A single `envelope.schema.json` file (JSON Schema Draft 2020-12) serves as the canonical source of truth for envelope types across Go, TypeScript, and PHP. Each implementation references the schema version in a comment.
+
+**Rationale:**
+- **Single source of truth:** Three independent type definitions (Go structs, TypeScript interfaces, PHP associative arrays) can silently drift. A machine-readable schema makes the contract explicit and auditable.
+- **Draft 2020-12:** The latest stable JSON Schema draft, with broad tooling support (AJV for JS/TS, `jsonschema` for Python, `santhosh-tekuri/jsonschema` for Go). Older drafts (Draft-07) lack `$defs` and `$dynamicRef`, which are cleaner for our nested block structure.
+- **Validation, not generation:** The schema is designed for validation and documentation, not code generation. Each stack maintains idiomatic type definitions (Go structs with `omitempty`, TypeScript interfaces with `?` optionals, PHP builder methods) and references the schema version for alignment audits.
+- **Lightweight enforcement:** Schema compliance is verified by manual sample validation during spec changes. Runtime validation is intentionally avoided to keep the hot path zero-overhead.
+
+**Alternatives considered:**
+- *Protobuf / OpenAPI shared components* — heavier tooling, forced code generation, and awkward fit for the PascalCase JSON convention.
+- *TypeScript as source, generate others* — would privilege one stack and require build-time codegen for Go/PHP.
+- *No formal schema, rely on spec README* — prose specifications cannot be machine-validated and are prone to interpretation drift.
+
+**Schema location:** `spec/response-envelope/envelope.schema.json`  
+**Version:** v1.0.0  
+**Referenced by:**
+- Go: `backend/internal/wordpress/envelope.go`
+- TypeScript: `src/lib/api/types.ts`
+- PHP: `wp-plugins/riseup-asia-uploader/includes/class-envelope-builder.php`
+
+---
 
 | Positive | Trade-off |
 |---|---|
@@ -116,7 +138,8 @@ A unified response contract was needed to eliminate these problems without break
 
 - [spec/response-envelope/README.md](./README.md) — Canonical specification
 - [spec/response-envelope/CHANGELOG.md](./CHANGELOG.md) — Migration timeline
-- [spec/response-envelope/configurability-rules.md](./configurability-rules.md) — Debug toggle rules
+- [spec/response-envelope/envelope.schema.json](./envelope.schema.json) — JSON Schema (Draft 2020-12) source of truth
+- [spec/response-envelope/CONFIGURABILITY.md](./CONFIGURABILITY.md) — Debug toggle rules
 - RFC 8288 — Web Linking (absolute URL convention)
 
 ---
