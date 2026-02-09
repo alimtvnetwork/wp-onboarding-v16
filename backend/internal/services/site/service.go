@@ -1138,10 +1138,17 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 // CheckRemotePluginExists performs a lightweight pre-flight check to verify
 // a plugin slug is installed on the remote WordPress site before lifecycle actions.
 func (s *Service) CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error) {
-	client, err := s.buildWPClient(ctx, siteID)
+	site, err := s.GetByID(ctx, siteID)
 	if err != nil {
-		return false, "", "", err
+		return false, "", "", apperror.Wrap(err, apperror.ErrNotFound, "site not found")
 	}
+
+	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
+	if err != nil {
+		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
+	}
+
+	client := s.wpClientFactory(site.URL, site.Username, string(password), nil)
 	return client.CheckPluginExistsViaUploader(pluginSlug)
 }
 
