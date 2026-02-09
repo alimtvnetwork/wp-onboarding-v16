@@ -151,15 +151,18 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
   });
 
   /**
-   * Pre-flight guard: validates a plugin identifier exists in the cached list
-   * before making any API call. Prevents unnecessary 404s from stale UI state.
+   * Pre-flight guard: validates a plugin identifier exists both in the local cache
+   * AND on the remote WordPress site via a lightweight server-side check.
+   * Prevents unnecessary 404s from stale UI state or cache mismatches.
    */
-  const validatePluginExists = useCallback((pluginIdentifier: string, actionLabel: string): boolean => {
+  const validatePluginExists = useCallback(async (pluginIdentifier: string, actionLabel: string): Promise<boolean> => {
     if (!pluginIdentifier || pluginIdentifier.trim() === "") {
       toast.error(`Cannot ${actionLabel}: plugin identifier is empty`);
       console.warn(`[guard] Blocked ${actionLabel} — empty plugin identifier`);
       return false;
     }
+
+    // Fast local check first
     const cachedPlugins = queryClient.getQueryData<RemotePlugin[]>(queryKey);
     if (cachedPlugins && !cachedPlugins.some((p) => p.plugin === pluginIdentifier)) {
       toast.error(`Cannot ${actionLabel}: plugin not found in current list`, {
@@ -169,13 +172,34 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
       console.warn(`[guard] Blocked ${actionLabel} — "${pluginIdentifier}" not in cached list of ${cachedPlugins.length} plugins`);
       return false;
     }
-    return true;
-  }, [queryClient, queryKey]);
+
+    // Server-side pre-flight check against the actual WordPress site
+    try {
+      const response = await api.checkRemotePluginExists(site.id, pluginIdentifier);
+      const result = requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/exists`, method: "POST" });
+      if (!result.exists) {
+        toast.error(`Cannot ${actionLabel}: plugin not installed on remote site`, {
+          description: `"${pluginIdentifier}" was not found on the WordPress site. It may have been removed externally.`,
+          duration: 8000,
+        });
+        console.warn(`[guard] Server pre-flight blocked ${actionLabel} — "${pluginIdentifier}" not installed remotely`);
+        // Invalidate local cache since it's stale
+        queryClient.invalidateQueries({ queryKey });
+        return false;
+      }
+      return true;
+    } catch (err) {
+      // If pre-flight check itself fails, log but allow the action to proceed
+      // (the actual action will produce its own error if the plugin is missing)
+      console.warn(`[guard] Pre-flight check failed for "${pluginIdentifier}", proceeding with ${actionLabel}:`, err);
+      return true;
+    }
+  }, [queryClient, queryKey, site.id]);
 
   const toggleMutation = useMutation({
     mutationFn: async ({ plugin, enable }: { plugin: RemotePlugin; enable: boolean }) => {
       const action = enable ? "activate" : "deactivate";
-      if (!validatePluginExists(plugin.plugin, action)) {
+      if (!(await validatePluginExists(plugin.plugin, action))) {
         throw new Error(`Plugin "${plugin.plugin}" not found — ${action} blocked by pre-flight check`);
       }
       if (enable) {
@@ -240,7 +264,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
 
   const deleteMutation = useMutation({
     mutationFn: async (plugin: RemotePlugin) => {
-      if (!validatePluginExists(plugin.plugin, "delete")) {
+      if (!(await validatePluginExists(plugin.plugin, "delete"))) {
         throw new Error(`Plugin "${plugin.plugin}" not found — delete blocked by pre-flight check`);
       }
       // If plugin is active, deactivate first, then delete
@@ -359,7 +383,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     );
 
     const results = await Promise.allSettled(
-      selectedList.filter((plugin) => validatePluginExists(plugin.plugin, "bulk activate")).map(async (plugin) => {
+      selectedList.map(async (plugin) => {
+        if (!(await validatePluginExists(plugin.plugin, "bulk activate"))) {
+          throw new Error(`Plugin "${plugin.plugin}" not found — bulk activate blocked`);
+        }
         const response = await api.enableRemotePlugin(site.id, plugin.plugin);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/enable`, method: "POST" });
         return plugin.name;
@@ -387,7 +414,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     );
 
     const results = await Promise.allSettled(
-      selectedList.filter((plugin) => validatePluginExists(plugin.plugin, "bulk deactivate")).map(async (plugin) => {
+      selectedList.map(async (plugin) => {
+        if (!(await validatePluginExists(plugin.plugin, "bulk deactivate"))) {
+          throw new Error(`Plugin "${plugin.plugin}" not found — bulk deactivate blocked`);
+        }
         const response = await api.disableRemotePlugin(site.id, plugin.plugin);
         requireSuccess(response, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });
         return plugin.name;
@@ -415,7 +445,10 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
     );
 
     const results = await Promise.allSettled(
-      selectedList.filter((plugin) => validatePluginExists(plugin.plugin, "bulk delete")).map(async (plugin) => {
+      selectedList.map(async (plugin) => {
+        if (!(await validatePluginExists(plugin.plugin, "bulk delete"))) {
+          throw new Error(`Plugin "${plugin.plugin}" not found — bulk delete blocked`);
+        }
         if (plugin.status === "active") {
           const disableResponse = await api.disableRemotePlugin(site.id, plugin.plugin);
           requireSuccess(disableResponse, { endpoint: `/sites/${site.id}/remote-plugins/disable`, method: "POST" });

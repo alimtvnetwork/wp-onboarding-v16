@@ -420,6 +420,57 @@ func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	return nil
 }
 
+// CheckPluginExistsViaUploader checks if a plugin slug is installed on the remote site.
+// Returns exists (bool), status (string: active/inactive/not_installed), and pluginFile (string).
+func (c *Client) CheckPluginExistsViaUploader(slug string) (bool, string, string, error) {
+	namespace := c.resolveNamespace()
+	normalizedSlug := normalizePluginSlug(slug)
+	endpoint := "/" + namespace + EndpointPluginExists
+	reqBody := map[string]string{"plugin": normalizedSlug}
+	resp, err := c.request("POST", endpoint, reqBody)
+	if err != nil {
+		return false, "", "", apperror.Wrap(err, apperror.ErrWPConnection, "check plugin exists request failed").
+			WithContext("slug", normalizedSlug)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return false, "", "", &APIError{
+			Operation:    "check plugin exists via RiseupAsia Uploader",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 4096),
+			PluginSlugIn: normalizedSlug,
+		}
+	}
+
+	// Try envelope format
+	type existsResult struct {
+		PluginSlug string `json:"plugin_slug"`
+		Exists     bool   `json:"exists"`
+		Status     string `json:"status"`
+		PluginFile string `json:"plugin_file"`
+	}
+	if results, ok := UnwrapResults[existsResult](bodyBytes); ok && len(results) > 0 {
+		return results[0].Exists, results[0].Status, results[0].PluginFile, nil
+	}
+
+	// Legacy fallback
+	var legacy struct {
+		Exists     bool   `json:"exists"`
+		Status     string `json:"status"`
+		PluginFile string `json:"plugin_file"`
+	}
+	if err := json.Unmarshal(bodyBytes, &legacy); err != nil {
+		return false, "", "", apperror.Wrap(err, apperror.ErrInternal, "decode plugin exists response")
+	}
+	return legacy.Exists, legacy.Status, legacy.PluginFile, nil
+}
+
 // EnablePluginViaUploader enables (activates) a plugin via the RiseupAsia Uploader.
 func (c *Client) EnablePluginViaUploader(slug string) error {
 	return c.pluginLifecycleAction(pluginLifecycleInput{

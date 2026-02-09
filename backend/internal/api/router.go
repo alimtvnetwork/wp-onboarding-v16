@@ -106,6 +106,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/{id}/remote-plugins/force-sync", handlers.ForceSyncRemotePlugins).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/cache", handlers.ClearRemotePluginsCache).Methods("DELETE")
 	// Remote plugin actions - JSON body based (plugin slug in request body, not URL)
+	api.HandleFunc("/sites/{id}/remote-plugins/exists", handlers.CheckRemotePluginExists).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/enable", handlers.EnableRemotePlugin).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/disable", handlers.DisableRemotePlugin).Methods("POST")
 	api.HandleFunc("/sites/{id}/remote-plugins/delete", handlers.DeleteRemotePlugin).Methods("POST")
