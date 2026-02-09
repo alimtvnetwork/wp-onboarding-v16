@@ -349,11 +349,8 @@ class Riseup_Admin {
         $update_settings = Riseup_Update_Resolver::get_instance()->get_settings();
 
         // Snapshot settings
-        require_once dirname(__FILE__) . '/class-snapshot-detector.php';
-        $detector = new RiseupSnapshotDetector(
-            Riseup_File_Logger::get_instance(),
-            Riseup_Database::get_instance()
-        );
+        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        $detector = RiseupSnapshotFactory::detector();
         $snapshot_settings = $detector->getSettings();
         $snapshot_providers = $detector->detectAvailableProviders();
 
@@ -494,20 +491,13 @@ class Riseup_Admin {
             $settings['batch_size'] = intval($_POST['batch_size']);
         }
 
-        require_once dirname(__FILE__) . '/class-snapshot-detector.php';
-        $detector = new RiseupSnapshotDetector(
-            Riseup_File_Logger::get_instance(),
-            Riseup_Database::get_instance()
-        );
+        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        $detector = RiseupSnapshotFactory::detector();
         $result = $detector->updateSettings($settings);
 
         // Re-sync cron schedule if scheduling changed
         if (isset($settings['schedule_enabled']) || isset($settings['schedule_frequency'])) {
-            require_once dirname(__FILE__) . '/class-snapshot-scheduler.php';
-            $scheduler = RiseupSnapshotScheduler::getInstance(
-                Riseup_File_Logger::get_instance(),
-                Riseup_Database::get_instance()
-            );
+            $scheduler = RiseupSnapshotFactory::scheduler();
             $scheduler->syncScheduleWithSettings();
         }
 
@@ -528,11 +518,8 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => 'Unauthorized'));
         }
 
-        require_once dirname(__FILE__) . '/class-snapshot-scheduler.php';
-        $scheduler = RiseupSnapshotScheduler::getInstance(
-            Riseup_File_Logger::get_instance(),
-            Riseup_Database::get_instance()
-        );
+        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        $scheduler = RiseupSnapshotFactory::scheduler();
         $result = $scheduler->runManualCleanup();
 
         wp_send_json_success(array(
@@ -557,11 +544,8 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => 'Unauthorized'));
         }
 
-        require_once dirname(__FILE__) . '/class-snapshot-scheduler.php';
-        $scheduler = RiseupSnapshotScheduler::getInstance(
-            Riseup_File_Logger::get_instance(),
-            Riseup_Database::get_instance()
-        );
+        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        $scheduler = RiseupSnapshotFactory::scheduler();
         $stats = $scheduler->getStorageStats();
 
         wp_send_json_success($stats);

@@ -77,8 +77,8 @@ class RiseupSnapshotScheduler {
         $this->logger = $logger ?: Riseup_File_Logger::get_instance();
         $this->db = $db ?: Riseup_Database::get_instance();
         
-        require_once dirname(__FILE__) . '/class-snapshot-detector.php';
-        $this->detector = new RiseupSnapshotDetector($this->logger, $this->db);
+        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        $this->detector = RiseupSnapshotFactory::detector($this->logger, $this->db);
     }
 
     /**
@@ -386,10 +386,8 @@ class RiseupSnapshotScheduler {
         $this->logger->info('[SCHEDULER] Executing snapshot cleanup');
 
         try {
-            require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
-            
             $settings = $this->detector->getSettings();
-            $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+            $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
             
             $result = $cleaner->runCleanup($settings);
 
@@ -415,9 +413,7 @@ class RiseupSnapshotScheduler {
      * @return array Storage stats from cleaner.
      */
     public function getStorageStats() {
-        require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
-        
-        $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+        $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->getStorageStats();
     }
 
@@ -427,10 +423,8 @@ class RiseupSnapshotScheduler {
      * @return array Cleanup estimate.
      */
     public function estimateCleanup() {
-        require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
-        
         $settings = $this->detector->getSettings();
-        $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+        $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->estimateCleanup($settings);
     }
 
@@ -440,10 +434,8 @@ class RiseupSnapshotScheduler {
      * @return array Cleanup result.
      */
     public function runManualCleanup() {
-        require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
-        
         $settings = $this->detector->getSettings();
-        $cleaner = new RiseupSnapshotCleaner($this->logger, $this->db);
+        $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->runCleanup($settings);
     }
 

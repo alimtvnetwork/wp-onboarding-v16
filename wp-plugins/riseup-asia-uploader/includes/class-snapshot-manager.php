@@ -81,7 +81,8 @@ class RiseupSnapshotManager {
     private function __construct($logger, $db) {
         $this->logger = $logger;
         $this->db = $db;
-        $this->detector = RiseupSnapshotDetector::getInstance($logger);
+        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        $this->detector = RiseupSnapshotFactory::detector($logger, $db);
 
         global $wpdb;
         $this->wpdb = $wpdb;
@@ -921,7 +922,7 @@ class RiseupSnapshotManager {
         // Sync cron schedule if frequency changed
         if (isset($settings['frequency'])) {
             $updated = $this->getSettings();
-            $scheduler = RiseupSnapshotScheduler::getInstance($this->logger, $this->db);
+            $scheduler = RiseupSnapshotFactory::scheduler($this->logger, $this->db);
             $scheduler->syncSchedule($updated);
         }
 
