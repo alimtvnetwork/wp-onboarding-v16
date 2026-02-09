@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"wp-plugin-publish/pkg/ziputil"
 )
 
 // --- Error/Log Handlers ---
@@ -198,6 +200,7 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", "attachment; filename=error-bundle-"+time.Now().Format("20060102-150405")+".zip")
 
 	zipWriter := zip.NewWriter(w)
+	ziputil.RegisterBestCompression(zipWriter)
 	defer zipWriter.Close()
 
 	if logExists {

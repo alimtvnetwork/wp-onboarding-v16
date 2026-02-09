@@ -25,6 +25,7 @@ import (
 	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
+	"wp-plugin-publish/pkg/ziputil"
 )
 
 // Config holds service configuration
@@ -828,6 +829,7 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
 
 	// Create ZIP writer
 	zipWriter := zip.NewWriter(tempFile)
+	ziputil.RegisterBestCompression(zipWriter)
 
 	// Walk directory and add files
 	baseName := filepath.Base(absUploaderPath)
