@@ -39,7 +39,7 @@ Session logging, quick publish, remote plugins, file browser, version tracking, 
 
 ## Open Suggestions
 
-None — all 17 suggestions are completed. 🎉
+None — all 18 suggestions are completed. 🎉
 
 → See: `.lovable/memory/suggestions/01-suggestions-tracker.md`
 

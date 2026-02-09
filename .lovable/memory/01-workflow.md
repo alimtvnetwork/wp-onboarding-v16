@@ -7,17 +7,20 @@
 
 ## Task Tracking
 
-### Plan File
+### Plan Files
 
-The `plan.md` at `.lovable/plan.md` serves as the primary roadmap. **All planned phases are now complete.**
+The `.lovable/plan.md` serves as the DRY refactoring roadmap (complete). All other plans are archived in `.lovable/plan/completed/`.
 
-**Active plan:** `.lovable/plan.md` — DRY Refactoring (10/10 phases complete)  
-**Active status:** `.lovable/plan/active.md` — All tracks complete, 2 open suggestions remaining  
-**Completed work:**
-- `.lovable/plan/completed-phases-1-14.md` — Feature phases 1–14
-- `.lovable/plan/completed-phases-33-40.md` — Feature phases 33–40
-- `.lovable/plan/completed/01-dry-refactoring-phases-1-6.md` — DRY phases 1–6
-- `.lovable/plan/completed/02-dry-refactoring-phases-7-10.md` — DRY phases 7–10
+**Status overview:** `.lovable/plan/active.md` — All tracks complete, 0 open suggestions  
+
+**Completed plans (in `.lovable/plan/completed/`):**
+- `01-dry-refactoring-phases-1-6.md` — DRY phases 1–6
+- `02-dry-refactoring-phases-7-10.md` — DRY phases 7–10
+- `03-error-diagnostics-v3.md` — Error diagnostics enhancement (6 phases)
+- `04-frontend-pages.md` — Frontend pages (15 phases)
+- `05-snapshot-backup-system.md` — Snapshot backup system (10 phases)
+- `06-feature-phases-1-14.md` — Feature phases 1–14
+- `07-feature-phases-33-40.md` — Feature phases 33–40
 
 **Statuses:**
 - `todo` / `📋 Pending` - Not started
@@ -30,9 +33,9 @@ The `plan.md` at `.lovable/plan.md` serves as the primary roadmap. **All planned
 
 All suggestions are tracked in a single file: `.lovable/memory/suggestions/01-suggestions-tracker.md`
 
-Completed suggestions are summarized there and detailed in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`.
+Completed suggestions are detailed in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`.
 
-**Current stats:** 2 open, 15 completed, 0 rejected.
+**Current stats:** 0 open, 18 completed, 0 rejected.
 
 ---
 
@@ -53,10 +56,10 @@ All specs are indexed at `spec/README.md`. Key spec folders:
 
 When ending a session or handing off to another AI:
 
-1. Update `.lovable/plan.md` with current progress
-2. Update `.lovable/plan/active.md` with status changes
-3. Update `01-suggestions-tracker.md` if suggestions changed
-4. Note any blockers or decisions made
+1. Update `.lovable/plan/active.md` with status changes
+2. Update `01-suggestions-tracker.md` if suggestions changed
+3. Note any blockers or decisions made
+4. Update `02-project-context.md` if major features added
 
 ---
 
@@ -64,11 +67,11 @@ When ending a session or handing off to another AI:
 
 ### For New AI Sessions
 
-1. **Read `.lovable/memory/02-project-context.md`** — Project overview & current state
-2. **Read `.lovable/plan/active.md`** — What's pending
+1. **Read `.lovable/plan/active.md`** — Current status and open questions
+2. **Read `.lovable/memory/02-project-context.md`** — Project overview & architecture
 3. **Read `spec/README.md`** — Spec index
-4. **Check `01-suggestions-tracker.md`** — Open suggestions
-5. **Read relevant spec** for the feature being implemented
+4. **Check `01-suggestions-tracker.md`** — Open suggestions (currently 0)
+5. **Ask user** what to implement next
 
 ### Before Implementing
 
@@ -83,40 +86,45 @@ When ending a session or handing off to another AI:
 
 ```
 .lovable/
-├── plan.md                          # DRY Refactoring (complete)
+├── README.md                          # Entry point for AI
+├── plan.md                            # DRY Refactoring (complete)
 ├── plan/
-│   ├── active.md                    # Status overview — all tracks complete
-│   ├── completed-phases-1-14.md     # Feature phases history
-│   ├── completed-phases-33-40.md    # Feature phases history
-│   ├── completed/
-│   │   ├── 01-dry-refactoring-phases-1-6.md
-│   │   └── 02-dry-refactoring-phases-7-10.md
-│   ├── technical-notes.md
-│   └── README.md
+│   ├── README.md                      # Plan index
+│   ├── active.md                      # Status overview — all tracks complete
+│   ├── technical-notes.md             # Root causes, architecture decisions
+│   └── completed/                     # All completed plan files
+│       ├── 01-dry-refactoring-phases-1-6.md
+│       ├── 02-dry-refactoring-phases-7-10.md
+│       ├── 03-error-diagnostics-v3.md
+│       ├── 04-frontend-pages.md
+│       ├── 05-snapshot-backup-system.md
+│       ├── 06-feature-phases-1-14.md
+│       └── 07-feature-phases-33-40.md
 ├── memory/
-│   ├── 01-conventions.md            # Coding conventions
-│   ├── 01-workflow.md               # This file
-│   ├── 02-project-context.md        # Project overview
-│   ├── 03-reliability-risk-report.md
-│   ├── PRD.md
-│   ├── architecture/               # Established patterns
-│   ├── features/                   # Feature documentation
-│   ├── issues-fixed/               # Bug fix history
+│   ├── 01-conventions.md              # Coding conventions
+│   ├── 01-workflow.md                 # This file
+│   ├── 02-project-context.md          # Project overview
+│   ├── 03-reliability-risk-report.md  # Reliability: 95/100
+│   ├── PRD.md                         # Plugins Onboard PRD
+│   ├── architecture/                  # Established patterns
+│   ├── features/                      # Feature documentation
+│   ├── issues-fixed/                  # Bug fix history
 │   └── suggestions/
-│       ├── 01-suggestions-tracker.md  # Single tracking file (2 open, 15 completed)
+│       ├── 01-suggestions-tracker.md  # Single tracking file (0 open, 18 completed)
 │       └── completed/
+│           └── 01-completed-suggestions.md
 spec/
-├── README.md                        # Spec index (start here)
-├── coding-guidelines/               # DRY principles
-├── error-handling/                  # Cross-stack error chain
-├── error-modal/                     # Error Modal UI spec with diagrams
-├── golang-standards/                # Go coding standards
-├── typescript-standards/            # TypeScript coding standards
-├── php-standards/                   # PHP coding standards
-├── powershell-integration/          # Build runner (generic, cross-project)
-├── upload-scripts/                  # Upload scripts V1-V3
-├── response-envelope/               # JSON Schema & samples
-└── dry-refactoring-summary.md       # 10-phase summary
+├── README.md                          # Spec index (start here)
+├── coding-guidelines/                 # DRY principles
+├── error-handling/                    # Cross-stack error chain
+├── error-modal/                       # Error Modal UI spec with diagrams
+├── golang-standards/                  # Go coding standards
+├── typescript-standards/              # TypeScript coding standards
+├── php-standards/                     # PHP coding standards
+├── powershell-integration/            # Build runner (generic, cross-project)
+├── upload-scripts/                    # Upload scripts V1-V3
+├── response-envelope/                 # JSON Schema & samples
+└── dry-refactoring-summary.md         # 10-phase summary
 ```
 
 ---

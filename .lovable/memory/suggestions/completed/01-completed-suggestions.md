@@ -5,6 +5,15 @@
 
 ---
 
+## S-001: WordPress API Error Examples ✅
+
+| Field | Value |
+|-------|-------|
+| Completed | 2026-02-09 |
+| Resolution | 6 error types documented (401, 403, 404, 409, 500, non-JSON) in `10-wp-rest-client.md` |
+
+---
+
 ## S-002: Document fsnotify Platform Differences ✅
 
 | Field | Value |
@@ -25,12 +34,22 @@
 
 ---
 
-## S-005: WebSocket Reconnection State Recovery ✅
+## S-004: Partial Publish Recovery ✅
 
 | Field | Value |
 |-------|-------|
-| Completed | 2026-02-07 |
-| Resolution | Hub pattern with reconnection implemented |
+| Completed | 2026-02-09 |
+| Resolution | 4 recovery strategies documented in `08-publish-service.md`: auto retry, selective retry, rollback all, post-deploy verification |
+
+---
+
+## S-005: WebSocket Reconnection Recovery ✅
+
+| Field | Value |
+|-------|-------|
+| Completed | 2026-02-09 |
+| Resolution | Broad invalidation of 9 React Query keys on reconnect; `hasConnectedBefore` + `disconnectedAt` tracking in `ws.ts`; spec at `05-websocket-reconnection-recovery.md` |
+| Implementation | `src/lib/ws.ts`, `src/hooks/useWebSocket.ts` |
 
 ---
 
@@ -38,19 +57,19 @@
 
 | ID | Title | Completed |
 |----|-------|-----------|
-| S-006 | Go backend compiles | 2026-02-03 |
-| S-007 | React frontend builds | 2026-02-03 |
-| S-008 | Site Service CRUD | 2026-02-04 |
-| S-009 | Publish Service pipeline | 2026-02-05 |
+| S-006 | Verify Go backend compiles | 2026-02-05 |
+| S-007 | Verify React frontend builds | 2026-02-05 |
+| S-008 | Implement Site Service | 2026-02-02 |
+| S-009 | Implement Publish Service | 2026-02-02 |
 
 ---
 
-## S-010: Pre-flight Plugin Existence Check ✅
+## S-010: WebSocket Real-time Sync ✅
 
 | Field | Value |
 |-------|-------|
-| Completed | 2026-02-09 |
-| Resolution | Full-stack implementation: PHP `/plugins/exists` endpoint, Go proxy service, React async guard with server-side verification |
+| Completed | 2026-02-02 |
+| Resolution | Broadcasting helpers added for real-time progress updates |
 
 ---
 
@@ -69,30 +88,64 @@
 | Field | Value |
 |-------|-------|
 | Completed | 2026-02-02 |
-| Resolution | Multi-tab diagnostic modal (Overview, Stack Trace, Request/Response, Suggested Fixes) |
+| Resolution | Multi-tab diagnostic modal with developer debug info and copy feature |
 | Implementation | `src/components/errors/ErrorDetailModal.tsx` |
 
 ---
 
-## S-013: DRY Refactoring Initiative (10 Phases) ✅
+## S-013: DRY Phase 7 — PHP Snapshot Factory ✅
 
 | Field | Value |
 |-------|-------|
 | Completed | 2026-02-09 |
-| Resolution | Go lifecycle dedup, API modularization, useApiQuery factory, PHP SnapshotFactory, logger consolidation, GlobalErrorModal decomposition, envelope JSON schema (v1.0.0) |
-| Details | `.lovable/plan/completed/01-dry-refactoring-phases-1-6.md`, `02-dry-refactoring-phases-7-10.md` |
+| Resolution | `RiseupSnapshotFactory` with lazy singletons for centralized snapshot class management |
 
 ---
 
-## S-014–S-017: PHP Plugin Hardening ✅
+## S-014: DRY Phase 8 — PHP Logger Consolidation ✅
 
-| ID | Title | Completed |
-|----|-------|-----------|
-| S-014 | PHP loading-time safety for find_plugin_file | 2026-02-07 |
-| S-015 | Status code propagation (404/403) PHP→React | 2026-02-07 |
-| S-016 | Professional PHP Error Modal redesign | 2026-02-07 |
-| S-017 | Real-time XHR upload progress indicators | 2026-02-07 |
+| Field | Value |
+|-------|-------|
+| Completed | 2026-02-09 |
+| Resolution | `prepare_context()` method for logger context consolidation |
 
 ---
 
-*Archive for completed suggestions — reference only.*
+## S-015: DRY Phase 9 — GlobalErrorModal Decomposition ✅
+
+| Field | Value |
+|-------|-------|
+| Completed | 2026-02-09 |
+| Resolution | Split monolithic GlobalErrorModal into 7 sub-components |
+
+---
+
+## S-016: DRY Phase 10 — Envelope Schema Alignment ✅
+
+| Field | Value |
+|-------|-------|
+| Completed | 2026-02-09 |
+| Resolution | `envelope.schema.json` v1.0.0 established as cross-stack source of truth (Go, TypeScript, PHP) |
+
+---
+
+## S-017: Post-Deploy Version Verification Pass ✅
+
+| Field | Value |
+|-------|-------|
+| Completed | 2026-02-09 |
+| Resolution | `usePostDeployVerification.ts` — auto version drift detection after bulk publish via force-sync + `compareVersions` |
+| Implementation | `src/hooks/usePostDeployVerification.ts`, `src/hooks/useBulkQuickPublish.ts`, `src/hooks/useQuickPublish.ts` |
+
+---
+
+## S-018: Remove Vestigial pnpmVirtualStorePath Config Key ✅
+
+| Field | Value |
+|-------|-------|
+| Completed | 2026-02-09 |
+| Resolution | `pnpmVirtualStorePath` removed from `powershell.json` — both scripts hardcode `.pnpm` in `Configure-PnpmStore` |
+
+---
+
+*Archive for completed suggestions — reference only. All 18 suggestions resolved.*
