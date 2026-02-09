@@ -304,12 +304,71 @@ public function process() {
 }
 ```
 
-## Initialization Order
+---
+
+## 4. File Loading via OnboardIncludeFiles
+
+**All file inclusions must use `OnboardIncludeFiles` instead of raw `require_once` / `include_once`.**
+
+Foundation files (constants, logger, boolean helpers, include-files itself) are the only exception — they load raw because the loader depends on them.
+
+### Enum Constants
+
+Every includable file has a class constant:
+
+```php
+OnboardIncludeFiles::DATABASE         // 'includes/class-database.php'
+OnboardIncludeFiles::OAUTH            // 'includes/class-oauth.php'
+OnboardIncludeFiles::BOOLEAN_HELPERS  // 'includes/class-boolean-helpers.php'
+```
+
+### Loading a Single File
+
+```php
+// ✅ CORRECT: Use the enum constant
+OnboardIncludeFiles::load(OnboardIncludeFiles::DATABASE);
+
+// ✅ With include_once instead of require_once
+OnboardIncludeFiles::load(OnboardIncludeFiles::SNAPSHOT, true);
+
+// ❌ WRONG: Raw require_once
+require_once ONBOARD_PLUGIN_DIR . 'includes/class-database.php';
+```
+
+### Loading Multiple Files
+
+```php
+OnboardIncludeFiles::loadMany(array(
+    OnboardIncludeFiles::DATABASE,
+    OnboardIncludeFiles::OAUTH,
+    OnboardIncludeFiles::AUDIT_LOGGER,
+));
+OnboardIncludeFiles::logSummary();
+```
+
+### Error Handling
+
+When a file is missing or fails to load:
+- A full **stack trace** is captured automatically
+- The error is logged to both `OnboardLogger::error()` and `error_log()`
+- Loading continues for remaining files (no crash)
+- Use `OnboardIncludeFiles::getFailures()` to inspect what failed
+
+### Adding New Files
+
+1. Add a new constant to `OnboardIncludeFiles` class
+2. Use `OnboardIncludeFiles::load(OnboardIncludeFiles::YOUR_NEW_FILE)` to load it
+3. Never use raw `require_once` for non-foundation files
+
+---
+
+## 5. Initialization Order
 
 Always follow this order:
 
-1. **Directories First**: Use `OnboardInitHelpers::ensure_directories_exist()`
-2. **Database Second**: Use `OnboardInitHelpers::ensure_database_ready()`
-3. **Components Third**: Initialize all other components
+1. **Foundation First** (raw): constants → logger → boolean helpers → include-files
+2. **Foundation via Loader**: paths → init helpers → config
+3. **Dependencies via Loader**: `OnboardIncludeFiles::loadMany(...)` for all remaining files
+4. **Components**: Initialize all other components in the plugin constructor
 
 This ensures proper dependency resolution and prevents initialization errors.
