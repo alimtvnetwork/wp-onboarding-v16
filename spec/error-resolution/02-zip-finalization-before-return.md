@@ -31,42 +31,45 @@
  3. Manual extraction of the ZIP fails or shows missing files
  4. Intermittent failures (depends on timing)
  
- ## Solution
- 
- Explicitly close the ZIP writer and file BEFORE returning the path:
- 
- ```go
- // CORRECT: Close explicitly before return
- zipFile, err := os.Create(absZipPath)
- if err != nil {
-     return "", err
- }
- // NO defer for zipFile.Close()
- 
- zipWriter := zip.NewWriter(zipFile)
- // NO defer for zipWriter.Close()
- 
- // ... write files ...
- 
- // CRITICAL: Close writer FIRST (writes central directory), then file
- if err := zipWriter.Close(); err != nil {
-     zipFile.Close()
-     os.Remove(absZipPath)
-     return "", err
- }
- if err := zipFile.Close(); err != nil {
-     os.Remove(absZipPath)
-     return "", err
- }
- 
- // Verify file exists and has content
- if info, err := os.Stat(absZipPath); err != nil || info.Size() == 0 {
-     os.Remove(absZipPath)
-     return "", errors.New("zip file invalid after creation")
- }
- 
- return absZipPath, nil
- ```
+## Solution
+
+Explicitly close the ZIP writer and file BEFORE returning the path, and use maximum compression:
+
+```go
+import "wp-plugin-publish/pkg/ziputil"
+
+// CORRECT: Close explicitly before return, with max compression
+zipFile, err := os.Create(absZipPath)
+if err != nil {
+    return "", err
+}
+// NO defer for zipFile.Close()
+
+zipWriter := zip.NewWriter(zipFile)
+ziputil.RegisterBestCompression(zipWriter) // flate.BestCompression (level 9)
+// NO defer for zipWriter.Close()
+
+// ... write files ...
+
+// CRITICAL: Close writer FIRST (writes central directory), then file
+if err := zipWriter.Close(); err != nil {
+    zipFile.Close()
+    os.Remove(absZipPath)
+    return "", err
+}
+if err := zipFile.Close(); err != nil {
+    os.Remove(absZipPath)
+    return "", err
+}
+
+// Verify file exists and has content
+if info, err := os.Stat(absZipPath); err != nil || info.Size() == 0 {
+    os.Remove(absZipPath)
+    return "", errors.New("zip file invalid after creation")
+}
+
+return absZipPath, nil
+```
  
  ## Key Rules
  
