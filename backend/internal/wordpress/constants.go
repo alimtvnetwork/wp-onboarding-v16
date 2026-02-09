@@ -39,6 +39,9 @@ const (
 	// EndpointPluginInfo gets info for a specific plugin (fixed URL, slug in JSON body).
 	EndpointPluginInfo = "/plugins/info"
 
+	// EndpointPluginExists checks if a plugin is installed (lightweight pre-flight, slug in JSON body).
+	EndpointPluginExists = "/plugins/exists"
+
 	// EndpointEnable activates a plugin (fixed URL, slug in JSON body).
 	EndpointEnable = "/plugins/enable"
 

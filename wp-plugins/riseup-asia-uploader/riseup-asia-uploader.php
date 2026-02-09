@@ -761,6 +761,13 @@ class Riseup_Asia {
             'permission_callback' => $this->build_permission_callback('plugin_file', array($this, 'check_plugin_permission')),
         ));
 
+        // Plugin existence check endpoint (lightweight pre-flight) - slug in JSON body.
+        $safe_register(RISEUP_ENDPOINT_PLUGIN_EXISTS, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_plugin_exists'),
+            'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
+        ));
+
         // Plugin enable endpoint (activate plugin) - slug in JSON body.
         $safe_register(RISEUP_ENDPOINT_PLUGIN_ENABLE, array(
             'methods'             => 'POST',
@@ -2400,8 +2407,54 @@ class Riseup_Asia {
     }
 
     // =========================================================================
-    // PLUGIN LIFECYCLE HANDLERS (Enable/Disable/Delete)
+    // PLUGIN LIFECYCLE HANDLERS (Exists/Enable/Disable/Delete)
     // =========================================================================
+
+    /**
+     * Handle plugin existence check (lightweight pre-flight).
+     * Returns whether a plugin slug is installed without performing any mutations.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_REST_Response
+     */
+    public function handle_plugin_exists($request) {
+        $body = $request->get_json_params();
+        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
+        if (RiseupBooleanHelpers::is_empty($slug)) {
+            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $plugin_file = $this->find_plugin_file($slug);
+            $exists = RiseupBooleanHelpers::is_truthy($plugin_file);
+
+            if ($exists) {
+                $status = is_plugin_active($plugin_file) ? 'active' : 'inactive';
+            } else {
+                $status = 'not_installed';
+            }
+
+            return RiseupEnvelopeBuilder::success()
+                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_EXISTS)
+                ->setSingleResult(array(
+                    'plugin_slug'  => $slug,
+                    'exists'       => $exists,
+                    'status'       => $status,
+                    'plugin_file'  => $exists ? $plugin_file : null,
+                    'requestUrl'   => $_SERVER['REQUEST_URI'] ?? '',
+                    'responseUrl'  => home_url(),
+                ))
+                ->toResponse();
+        } catch (Throwable $e) {
+            $this->file_logger->log_exception($e, 'handle_plugin_exists: Failed');
+            return $this->error_response(
+                'Failed to check plugin existence: ' . $e->getMessage(),
+                RISEUP_HTTP_SERVER_ERROR,
+                $e
+            );
+        }
+    }
 
     /**
      * Handle enable (activate) plugin request.

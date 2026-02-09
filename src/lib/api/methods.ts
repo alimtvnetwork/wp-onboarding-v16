@@ -123,6 +123,11 @@ export const api = {
   // Remote plugin management
   getRemotePlugins: (siteId: number) =>
     request<RemotePlugin[]>(`/sites/${siteId}/remote-plugins`),
+  checkRemotePluginExists: (siteId: number, pluginSlug: string) =>
+    request<{ exists: boolean; status: string; plugin_file: string; plugin: string }>(
+      `/sites/${siteId}/remote-plugins/exists`,
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
+    ),
   forceSyncRemotePlugins: (siteId: number) =>
     request<RemotePlugin[]>(`/sites/${siteId}/remote-plugins/force-sync`, { method: "POST" }),
   clearRemotePluginsCache: (siteId: number) =>

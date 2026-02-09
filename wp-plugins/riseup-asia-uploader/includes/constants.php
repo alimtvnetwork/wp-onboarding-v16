@@ -124,6 +124,10 @@ if (!defined('RISEUP_ENDPOINT_PLUGIN_DISABLE')) {
 if (!defined('RISEUP_ENDPOINT_PLUGIN_DELETE')) {
     define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugins/delete');
 }
+// Plugin existence check endpoint - lightweight pre-flight check, slug in JSON body
+if (!defined('RISEUP_ENDPOINT_PLUGIN_EXISTS')) {
+    define('RISEUP_ENDPOINT_PLUGIN_EXISTS', 'plugins/exists');
+}
 // Plugin export endpoint - fixed URL, slug passed in JSON body
 if (!defined('RISEUP_ENDPOINT_PLUGIN_EXPORT')) {
     define('RISEUP_ENDPOINT_PLUGIN_EXPORT', 'plugins/export');

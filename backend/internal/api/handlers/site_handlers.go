@@ -312,6 +312,36 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 	respondSuccess(w, map[string]interface{}{"cleared": true, "siteId": id})
 }
 
+// CheckRemotePluginExists performs a lightweight pre-flight check to verify plugin existence
+func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
+	if !requireService(w, Services.SiteService, "Site service") {
+		return
+	}
+
+	id, pluginSlug, err := parseRemotePluginInput(r)
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid request: "+err.Error())
+		return
+	}
+	if pluginSlug == "" {
+		respondError(w, http.StatusBadRequest, "E1002", "Plugin slug is required in JSON body")
+		return
+	}
+
+	exists, status, pluginFile, err := Services.SiteService.CheckRemotePluginExists(r.Context(), id, pluginSlug)
+	if err != nil {
+		statusCode := resolveHTTPStatus(err, http.StatusInternalServerError)
+		respondErrorWithSession(w, statusCode, "E3010", err.Error(), err)
+		return
+	}
+	respondSuccess(w, map[string]interface{}{
+		"exists":      exists,
+		"status":      status,
+		"plugin_file": pluginFile,
+		"plugin":      pluginSlug,
+	})
+}
+
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 	if !requireService(w, Services.SiteService, "Site service") {

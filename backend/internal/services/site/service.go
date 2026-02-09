@@ -1135,6 +1135,16 @@ func (s *Service) GetRemotePluginsCacheStatus(ctx context.Context, siteID int64)
 	return isValid, cachedAtPtr, expiresAtPtr, nil
 }
 
+// CheckRemotePluginExists performs a lightweight pre-flight check to verify
+// a plugin slug is installed on the remote WordPress site before lifecycle actions.
+func (s *Service) CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error) {
+	client, err := s.buildWPClient(ctx, siteID)
+	if err != nil {
+		return false, "", "", err
+	}
+	return client.CheckPluginExistsViaUploader(pluginSlug)
+}
+
 // EnableRemotePlugin activates a plugin on a remote WordPress site
 // Uses the Riseup Asia Uploader API for reliable plugin lifecycle management.
 func (s *Service) EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error {

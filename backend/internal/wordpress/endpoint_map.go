@@ -20,6 +20,7 @@ type WPEndpointName string
 
 const (
 	EPListPlugins       WPEndpointName = "ListPlugins"
+	EPPluginExists      WPEndpointName = "PluginExists"
 	EPEnablePlugin      WPEndpointName = "EnablePlugin"
 	EPDisablePlugin     WPEndpointName = "DisablePlugin"
 	EPDeletePlugin      WPEndpointName = "DeletePlugin"
@@ -49,6 +50,7 @@ type WPEndpointRoute struct {
 // GoEndpointMap maps each operation enum to the Go backend API route.
 var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 	EPListPlugins:       {Method: "GET", Pattern: "/api/v1/sites/{id}/remote-plugins"},
+	EPPluginExists:      {Method: "POST", Pattern: "/api/v1/sites/{id}/remote-plugins/exists"},
 	EPEnablePlugin:      {Method: "POST", Pattern: "/api/v1/sites/{id}/remote-plugins/enable"},
 	EPDisablePlugin:     {Method: "POST", Pattern: "/api/v1/sites/{id}/remote-plugins/disable"},
 	EPDeletePlugin:      {Method: "POST", Pattern: "/api/v1/sites/{id}/remote-plugins/delete"},
@@ -66,6 +68,7 @@ var GoEndpointMap = map[WPEndpointName]GoEndpointRoute{
 // Endpoints are relative to the plugin namespace (riseup-asia-uploader/v1).
 var WPEndpointMap = map[WPEndpointName]WPEndpointRoute{
 	EPListPlugins:       {Method: "GET", Endpoint: EndpointPlugins},
+	EPPluginExists:      {Method: "POST", Endpoint: EndpointPluginExists},
 	EPEnablePlugin:      {Method: "POST", Endpoint: EndpointEnable},
 	EPDisablePlugin:     {Method: "POST", Endpoint: EndpointDisable},
 	EPDeletePlugin:      {Method: "POST", Endpoint: EndpointDelete},
