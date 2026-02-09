@@ -83,6 +83,13 @@ class Riseup_File_Logger {
     private $dedup_hashes = array();
 
     /**
+     * Cached request metadata for the current lifecycle.
+     *
+     * @var array|null
+     */
+    private $request_metadata_cache = null;
+
+    /**
      * Get singleton instance.
      *
      * @return Riseup_File_Logger
@@ -176,6 +183,60 @@ class Riseup_File_Logger {
     }
 
     /**
+     * Gather HTTP request metadata (method, endpoint, user-agent, IP).
+     * Cached per request lifecycle to avoid repeated $_SERVER reads.
+     *
+     * @return array Associative array with request metadata keys.
+     */
+    private function get_request_metadata() {
+        if ($this->request_metadata_cache !== null) {
+            return $this->request_metadata_cache;
+        }
+
+        $meta = array();
+
+        if (php_sapi_name() === 'cli') {
+            $meta['_request'] = array(
+                'method'  => 'CLI',
+                'script'  => isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : 'unknown',
+            );
+            $this->request_metadata_cache = $meta;
+            return $meta;
+        }
+
+        $method    = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN';
+        $uri       = isset($_SERVER['REQUEST_URI']) ? strtok($_SERVER['REQUEST_URI'], '?') : '/';
+        $query     = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== '' ? '?' . $_SERVER['QUERY_STRING'] : '';
+        $useragent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+        $ip        = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+
+        $meta['_request'] = array(
+            'method'    => $method,
+            'endpoint'  => $uri . $query,
+            'userAgent' => strlen($useragent) > 200 ? substr($useragent, 0, 200) . '…' : $useragent,
+            'ip'        => $ip,
+        );
+
+        $this->request_metadata_cache = $meta;
+        return $meta;
+    }
+
+    /**
+     * Merge request metadata into a context array (non-destructive).
+     *
+     * @param array $context Existing context.
+     * @return array Context enriched with request metadata.
+     */
+    private function enrich_context_with_request($context) {
+        $meta = $this->get_request_metadata();
+        // Only add if not already present (caller can override)
+        if (!isset($context['_request'])) {
+            $context = array_merge($meta, $context);
+        }
+        return $context;
+    }
+
+
      * Clear the deduplication hash map.
      * After calling this, previously suppressed entries will be logged again.
      *
@@ -371,6 +432,9 @@ class Riseup_File_Logger {
             return true;
         }
 
+        // Auto-inject request metadata
+        $context = $this->enrich_context_with_request($context);
+
         // Enrich context with invocation chain for diagnostics
         if (!isset($context['_invocation_chain'])) {
             $chain = array();
@@ -421,6 +485,9 @@ class Riseup_File_Logger {
         if ($this->is_duplicate(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line)) {
             return true;
         }
+
+        // Auto-inject request metadata
+        $context = $this->enrich_context_with_request($context);
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
         $formatted_trace = $this->format_backtrace($trace);
@@ -464,12 +531,13 @@ class Riseup_File_Logger {
         }
 
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
+        $ctx = $this->enrich_context_with_request(array('trace' => $e->getTraceAsString()));
         $entry = $this->format_entry(
             RISEUP_LOG_LEVEL_ERROR,
             $message,
             $e->getFile(),
             $e->getLine(),
-            array('trace' => $e->getTraceAsString())
+            $ctx
         );
         $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
         $this->write_stacktrace($message, $e->getFile(), $e->getLine(), $e->getTraceAsString());
