@@ -12,6 +12,7 @@ import (
 
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
+	"wp-plugin-publish/pkg/ziputil"
 )
 
 // ExportResult contains information about an export operation
@@ -56,6 +57,7 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) (*ExportR
 	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
+	ziputil.RegisterBestCompression(zipWriter)
 	defer zipWriter.Close()
 
 	var filesCount int
@@ -315,6 +317,7 @@ func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPat
 	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
+	ziputil.RegisterBestCompression(zipWriter)
 	defer zipWriter.Close()
 
 	var filesCount int

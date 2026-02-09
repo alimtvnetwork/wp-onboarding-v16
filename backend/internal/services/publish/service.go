@@ -26,6 +26,7 @@ import (
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
+	"wp-plugin-publish/pkg/ziputil"
 )
 
 // SitePasswordDecryptor interface for getting decrypted site passwords
@@ -1124,6 +1125,7 @@ func (s *Service) createFullZip(pluginPath, pluginName string, excludePatterns [
 	}
 
 	zipWriter := zip.NewWriter(zipFile)
+	ziputil.RegisterBestCompression(zipWriter)
 
 	// Walk the plugin directory (using absolute path)
 	err = filepath.Walk(absPluginPath, func(path string, info os.FileInfo, err error) error {
@@ -1237,6 +1239,7 @@ func (s *Service) createSelectiveZip(pluginPath, pluginName string, files []stri
 	}
 
 	zipWriter := zip.NewWriter(zipFile)
+	ziputil.RegisterBestCompression(zipWriter)
 
 	for _, relPath := range files {
 		fullPath := pathutil.MustJoin(absPluginPath, relPath)

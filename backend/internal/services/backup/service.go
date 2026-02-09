@@ -17,6 +17,7 @@ import (
 	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 	"wp-plugin-publish/pkg/pathutil"
+	"wp-plugin-publish/pkg/ziputil"
 )
 
 // Config holds backup service configuration
@@ -251,6 +252,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	defer zipFile.Close()
 
 	zipWriter := zip.NewWriter(zipFile)
+	ziputil.RegisterBestCompression(zipWriter)
 	defer zipWriter.Close()
 
 	var filesCount int
