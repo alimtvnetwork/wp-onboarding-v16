@@ -236,6 +236,51 @@ class Riseup_File_Logger {
         return $context;
     }
 
+    /**
+     * Prepare context for logging by enriching with request metadata and
+     * optionally building an invocation chain from a backtrace.
+     *
+     * This is the single entry point for all context enrichment, eliminating
+     * duplicated enrich_context_with_request() + invocation chain logic
+     * across warn(), error(), log_at(), and log_exception().
+     *
+     * @param array      $context          Existing context array.
+     * @param array|null $trace            Optional debug_backtrace result for invocation chain.
+     * @param bool       $include_chain    Whether to build _invocation_chain from $trace.
+     * @return array Enriched context.
+     */
+    private function prepare_context($context, $trace = null, $include_chain = false) {
+        // Step 1: Inject request metadata
+        $context = $this->enrich_context_with_request($context);
+
+        // Step 2: Build invocation chain from backtrace if requested
+        if ($include_chain && $trace !== null && !isset($context['_invocation_chain'])) {
+            $chain = array();
+            foreach ($trace as $i => $frame) {
+                if ($i === 0) continue; // skip self
+                $entry = array();
+                if (isset($frame['class'])) {
+                    $entry['class'] = $frame['class'];
+                }
+                if (isset($frame['function'])) {
+                    $entry['function'] = $frame['function'];
+                }
+                if (isset($frame['file'])) {
+                    $entry['file'] = basename($frame['file']);
+                    $entry['line'] = isset($frame['line']) ? $frame['line'] : 0;
+                }
+                if (!empty($entry)) {
+                    $chain[] = $entry;
+                }
+            }
+            if (!empty($chain)) {
+                $context['_invocation_chain'] = $chain;
+            }
+        }
+
+        return $context;
+    }
+
 
      * Clear the deduplication hash map.
      * After calling this, previously suppressed entries will be logged again.
@@ -432,33 +477,7 @@ class Riseup_File_Logger {
             return true;
         }
 
-        // Auto-inject request metadata
-        $context = $this->enrich_context_with_request($context);
-
-        // Enrich context with invocation chain for diagnostics
-        if (!isset($context['_invocation_chain'])) {
-            $chain = array();
-            foreach ($trace as $i => $frame) {
-                if ($i === 0) continue; // skip self
-                $entry = array();
-                if (isset($frame['class'])) {
-                    $entry['class'] = $frame['class'];
-                }
-                if (isset($frame['function'])) {
-                    $entry['function'] = $frame['function'];
-                }
-                if (isset($frame['file'])) {
-                    $entry['file'] = basename($frame['file']);
-                    $entry['line'] = isset($frame['line']) ? $frame['line'] : 0;
-                }
-                if (!empty($entry)) {
-                    $chain[] = $entry;
-                }
-            }
-            if (!empty($chain)) {
-                $context['_invocation_chain'] = $chain;
-            }
-        }
+        $context = $this->prepare_context($context, $trace, true);
 
         // Capture abbreviated stack trace for warn-level too
         $formatted_trace = $this->format_backtrace($trace);
@@ -486,8 +505,7 @@ class Riseup_File_Logger {
             return true;
         }
 
-        // Auto-inject request metadata
-        $context = $this->enrich_context_with_request($context);
+        $context = $this->prepare_context($context, $trace, true);
         
         $entry = $this->format_entry(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
         $formatted_trace = $this->format_backtrace($trace);
@@ -512,8 +530,7 @@ class Riseup_File_Logger {
             return true;
         }
 
-        // Auto-inject request metadata
-        $context = $this->enrich_context_with_request($context);
+        $context = $this->prepare_context($context);
 
         $is_error = ($level === RISEUP_LOG_LEVEL_ERROR);
         $entry = $this->format_entry($level, $message, $file, $line, $context);
@@ -534,7 +551,7 @@ class Riseup_File_Logger {
         }
 
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
-        $ctx = $this->enrich_context_with_request(array('trace' => $e->getTraceAsString()));
+        $ctx = $this->prepare_context(array('trace' => $e->getTraceAsString()));
         $entry = $this->format_entry(
             RISEUP_LOG_LEVEL_ERROR,
             $message,
