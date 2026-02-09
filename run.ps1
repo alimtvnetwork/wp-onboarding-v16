@@ -12,6 +12,7 @@ param(
     [Alias('r')][switch]$rebuild,
     [Alias('fw')][switch]$openfirewall,
     [Alias('u')][switch]$upload,
+    [Alias('z')][switch]$zip,
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose,
     [Alias('pp')][string]$pluginpath = ""
@@ -122,7 +123,8 @@ if ($help) {
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -u,  -upload        Upload default plugin to WordPress via upload-plugin-v2"
-    Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u)"
+    Write-Host "  -z,  -zip           Create a versioned ZIP of the default plugin (e.g. riseup-asia-uploader-v1.36.0.zip)"
+    Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u or -z)"
     Write-Host "  -v,  -verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
@@ -135,6 +137,8 @@ if ($help) {
     Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
     Write-Host "  .\run.ps1 -u           # Upload default plugin to WordPress"
     Write-Host "  .\run.ps1 -u -pp 'C:\path\to\plugin'  # Upload a specific plugin"
+    Write-Host "  .\run.ps1 -z           # ZIP the default plugin with version number"
+    Write-Host "  .\run.ps1 -z -pp 'C:\path\to\plugin'  # ZIP a specific plugin"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
@@ -514,6 +518,108 @@ $stepWatch.Stop()
 $StepTimes["Prerequisites"] = $stepWatch.Elapsed
 Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 Write-Host ""
+
+# ============================================================================
+# ZIP MODE: Create a versioned ZIP of the default plugin (-z / -zip)
+# ============================================================================
+if ($zip) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  ZIP Mode (-z)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+
+    # Determine plugin path: use -pp override or default from config
+    $zipPluginPath = $null
+    $zipPluginName = $null
+
+    if ($pluginpath -ne "") {
+        $zipPluginPath = $pluginpath
+        if (-not [System.IO.Path]::IsPathRooted($zipPluginPath)) {
+            $zipPluginPath = Join-Path $ScriptDir $zipPluginPath
+        }
+        if (-not (Test-Path $zipPluginPath)) {
+            Write-Host "ERROR: Plugin folder not found: $zipPluginPath" -ForegroundColor Red
+            exit 1
+        }
+        $zipPluginName = Split-Path $zipPluginPath -Leaf
+    } else {
+        $defaultUploader = $null
+        if ($Config.wpPlugins -and $Config.wpPlugins.defaultUploader) {
+            $defaultUploader = $Config.wpPlugins.defaultUploader
+        }
+        if (-not $defaultUploader -or -not $Config.wpPlugins.plugins.$defaultUploader) {
+            Write-Host "ERROR: No default uploader configured in powershell.json (wpPlugins.defaultUploader)" -ForegroundColor Red
+            exit 1
+        }
+        $pluginConfig = $Config.wpPlugins.plugins.$defaultUploader
+        $zipPluginPath = Resolve-RelativePath $pluginConfig.path
+        $zipPluginName = $defaultUploader
+
+        if (-not (Test-Path $zipPluginPath)) {
+            Write-Host "ERROR: Plugin folder not found: $zipPluginPath" -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    # Extract version from main PHP file header
+    $mainFile = if ($pluginConfig -and $pluginConfig.mainFile) { $pluginConfig.mainFile } else { "$zipPluginName.php" }
+    $mainFilePath = Join-Path $zipPluginPath $mainFile
+    $pluginVersion = "unknown"
+
+    if (Test-Path $mainFilePath) {
+        $headerContent = Get-Content $mainFilePath -Raw -ErrorAction SilentlyContinue
+        if ($headerContent -match '\*\s*Version:\s*([0-9]+\.[0-9]+\.[0-9]+)') {
+            $pluginVersion = $Matches[1]
+        }
+    }
+
+    # Build ZIP filename with version
+    $zipFileName = "$zipPluginName-v$pluginVersion.zip"
+    $zipOutputPath = Join-Path (Split-Path $zipPluginPath -Parent) $zipFileName
+
+    Write-Host "  Plugin:  $zipPluginName" -ForegroundColor Yellow
+    Write-Host "  Version: v$pluginVersion" -ForegroundColor Yellow
+    Write-Host "  Source:  $zipPluginPath" -ForegroundColor Gray
+    Write-Host "  Output:  $zipOutputPath" -ForegroundColor Gray
+    Write-Host ""
+
+    # Remove existing ZIP if present
+    if (Test-Path $zipOutputPath) {
+        Remove-Item $zipOutputPath -Force
+        Write-Host "  Replaced existing ZIP" -ForegroundColor DarkGray
+    }
+
+    # Create ZIP using Compress-Archive
+    try {
+        Compress-Archive -Path "$zipPluginPath\*" -DestinationPath $zipOutputPath -CompressionLevel Optimal -Force
+
+        # Verify the ZIP was created
+        if (Test-Path $zipOutputPath) {
+            $zipSize = (Get-Item $zipOutputPath).Length
+            $zipSizeKB = [math]::Round($zipSize / 1024, 1)
+            $zipSizeMB = [math]::Round($zipSize / 1048576, 2)
+
+            Write-Host ""
+            Write-Host "  ZIP created successfully!" -ForegroundColor Green
+            Write-Host "  File: $zipFileName" -ForegroundColor White
+            if ($zipSizeMB -ge 1) {
+                Write-Host "  Size: $zipSizeMB MB" -ForegroundColor White
+            } else {
+                Write-Host "  Size: $zipSizeKB KB" -ForegroundColor White
+            }
+            Write-Host ""
+        } else {
+            Write-Host "ERROR: ZIP file was not created" -ForegroundColor Red
+            exit 1
+        }
+    } catch {
+        Write-Host "ERROR: Failed to create ZIP: $_" -ForegroundColor Red
+        exit 1
+    }
+
+    exit 0
+}
 
 # ============================================================================
 # UPLOAD MODE: Upload default plugin to WordPress (early exit - no build/backend)
