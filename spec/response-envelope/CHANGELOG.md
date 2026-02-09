@@ -57,6 +57,26 @@ All notable milestones in the design, migration, and adoption of the Universal R
 - Published configurability rules document in `spec/response-envelope/`.
 - Finalised all phases (1–14) of the envelope migration plan.
 
+## v1.9.0 — 2026-02-09 · JSON Schema & DRY Refactoring Complete
+
+- **Created `envelope.schema.json` (v1.0.0)** — canonical JSON Schema (Draft 2020-12) as single source of truth for all envelope types across Go, TypeScript, and PHP.
+- Schema covers all 6 top-level blocks with full `$defs`: `Status`, `Attributes`, `Results`, `Navigation`, `Errors`, `MethodsStack` (including `StackFrame`).
+- Added `@schema` / version comments referencing the schema in all three implementations:
+  - Go: `backend/internal/wordpress/envelope.go`
+  - TypeScript: `src/lib/api/types.ts`
+  - PHP: `wp-plugins/riseup-asia-uploader/includes/class-envelope-builder.php`
+- **Completed all 10 DRY refactoring phases:**
+  1. Go uploader lifecycle method dedup + stdlib usage
+  2. Envelope unwrap helper + PHP stack extraction
+  3. API error diagnostic context dedup
+  4. Error store capture dedup (`buildCapturedError`)
+  5. `api.ts` split into `src/lib/api/` modules
+  6. `useApiQuery` factory hook
+  7. PHP `RiseupSnapshotFactory` for snapshot class construction
+  8. PHP logger context consolidation (`prepare_context`)
+  9. `GlobalErrorModal.tsx` decomposition (2,164 → 195 lines, 7 sub-components)
+  10. Cross-stack envelope JSON schema alignment (this entry)
+
 ---
 
 _This changelog is maintained alongside the specification in `spec/response-envelope/`._
