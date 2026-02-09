@@ -1,14 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { api, requireSuccess, PluginMapping } from "@/lib/api";
+import { api, PluginMapping } from "@/lib/api";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 export function useSiteMappings(siteId: number | null) {
-  return useQuery({
+  return useApiQuery<PluginMapping[]>({
     queryKey: ["sites", siteId, "mappings"],
-    queryFn: async () => {
-      if (!siteId) return [];
-      const response = await api.getSiteMappings(siteId);
-      return requireSuccess(response, { endpoint: `/sites/${siteId}/mappings`, method: "GET" });
+    apiFn: async () => {
+      if (!siteId) return { success: true, data: [] as PluginMapping[] };
+      return api.getSiteMappings(siteId);
     },
+    endpoint: `/sites/${siteId}/mappings`,
     enabled: !!siteId,
   });
 }

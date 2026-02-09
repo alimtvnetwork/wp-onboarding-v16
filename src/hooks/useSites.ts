@@ -1,37 +1,29 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { api, requireSuccess, Site } from "@/lib/api";
-import { requireSuccessWithEnvelope, withPaginationParams, PaginatedResult } from "@/lib/apiHelpers";
+import { api, Site } from "@/lib/api";
+import { useApiQuery, useApiQueryPaginated } from "@/hooks/useApiQuery";
 
 export function useSites() {
-  return useQuery({
+  return useApiQuery<Site[]>({
     queryKey: ["sites"],
-    queryFn: async () => {
-      const response = await api.getSites();
-      return requireSuccess(response, { endpoint: "/sites", method: "GET" });
-    },
+    apiFn: () => api.getSites(),
+    endpoint: "/sites",
   });
 }
 
 export function useSitesPaginated(page: number = 1, perPage: number = 25) {
-  return useQuery({
+  return useApiQueryPaginated<Site[]>({
     queryKey: ["sites", "paginated", page, perPage],
-    queryFn: async () => {
-      const endpoint = withPaginationParams("/sites", { page, perPage });
-      const response = await api.getSites();
-      // When the backend returns an envelope, requireSuccessWithEnvelope will extract pagination
-      return requireSuccessWithEnvelope<Site[]>(response, { endpoint, method: "GET" });
-    },
+    apiFn: () => api.getSites(),
+    endpoint: "/sites",
+    page,
+    perPage,
   });
 }
 
 export function useSite(id: number) {
-  return useQuery({
+  return useApiQuery<Site>({
     queryKey: ["sites", id],
-    queryFn: async () => {
-      const response = await api.getSite(id);
-      return requireSuccess(response, { endpoint: `/sites/${id}`, method: "GET" });
-    },
+    apiFn: () => api.getSite(id),
+    endpoint: `/sites/${id}`,
     enabled: !!id,
   });
 }

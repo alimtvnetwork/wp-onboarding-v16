@@ -1,35 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { api, Plugin, requireSuccess } from "@/lib/api";
-import { requireSuccessWithEnvelope, withPaginationParams, PaginatedResult } from "@/lib/apiHelpers";
+import { api, Plugin } from "@/lib/api";
+import { useApiQuery, useApiQueryPaginated } from "@/hooks/useApiQuery";
 
 export function usePlugins() {
-  return useQuery({
+  return useApiQuery<Plugin[]>({
     queryKey: ["plugins"],
-    queryFn: async () => {
-      const response = await api.getPlugins();
-      return requireSuccess(response, { endpoint: "/plugins", method: "GET" });
-    },
+    apiFn: () => api.getPlugins(),
+    endpoint: "/plugins",
   });
 }
 
 export function usePluginsPaginated(page: number = 1, perPage: number = 25) {
-  return useQuery({
+  return useApiQueryPaginated<Plugin[]>({
     queryKey: ["plugins", "paginated", page, perPage],
-    queryFn: async () => {
-      const endpoint = withPaginationParams("/plugins", { page, perPage });
-      const response = await api.getPlugins();
-      return requireSuccessWithEnvelope<Plugin[]>(response, { endpoint, method: "GET" });
-    },
+    apiFn: () => api.getPlugins(),
+    endpoint: "/plugins",
+    page,
+    perPage,
   });
 }
 
 export function usePlugin(id: number) {
-  return useQuery({
+  return useApiQuery<Plugin>({
     queryKey: ["plugins", id],
-    queryFn: async () => {
-      const response = await api.getPlugin(id);
-      return requireSuccess(response, { endpoint: `/plugins/${id}`, method: "GET" });
-    },
+    apiFn: () => api.getPlugin(id),
+    endpoint: `/plugins/${id}`,
     enabled: !!id,
   });
 }

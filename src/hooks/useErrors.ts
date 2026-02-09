@@ -1,27 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
-import { api, ErrorLog, requireSuccess } from "@/lib/api";
-import { requireSuccessWithEnvelope, withPaginationParams, PaginatedResult } from "@/lib/apiHelpers";
+import { api, ErrorLog } from "@/lib/api";
+import { useApiQuery, useApiQueryPaginated } from "@/hooks/useApiQuery";
 
 export function useErrors(limit?: number) {
-  return useQuery({
+  return useApiQuery<ErrorLog[]>({
     queryKey: ["errors", limit],
-    queryFn: async () => {
-      const response = await api.getErrors(limit);
-      return requireSuccess(response, {
-        endpoint: `/errors${limit ? `?limit=${limit}` : ""}`,
-        method: "GET",
-      });
-    },
+    apiFn: () => api.getErrors(limit),
+    endpoint: `/errors${limit ? `?limit=${limit}` : ""}`,
   });
 }
 
 export function useErrorsPaginated(page: number = 1, perPage: number = 25) {
-  return useQuery({
+  return useApiQueryPaginated<ErrorLog[]>({
     queryKey: ["errors", "paginated", page, perPage],
-    queryFn: async () => {
-      const endpoint = withPaginationParams("/errors", { page, perPage });
-      const response = await api.getErrors();
-      return requireSuccessWithEnvelope<ErrorLog[]>(response, { endpoint, method: "GET" });
-    },
+    apiFn: () => api.getErrors(),
+    endpoint: "/errors",
+    page,
+    perPage,
   });
 }
