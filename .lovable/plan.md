@@ -16,12 +16,12 @@
 | 5 | Frontend | ✅ Done | api.ts split into `src/lib/api/` modules |
 | 6 | Frontend | ✅ Done | `useApiQuery` factory hook |
 | 7 | PHP | ✅ Done | Snapshot class factory (`RiseupSnapshotFactory`) |
-| 8 | PHP | 📋 Pending | Logger context consolidation (`prepare_context`) |
+| 8 | PHP | ✅ Done | Logger context consolidation (`prepare_context`) |
 | 9 | Frontend | 📋 Pending | GlobalErrorModal decomposition |
 | 10 | Cross | 📋 Pending | Envelope JSON schema alignment |
 
-**Completed:** 7/10 phases  
-**Remaining:** 3 phases (8–10)
+**Completed:** 8/10 phases  
+**Remaining:** 2 phases (9–10)
 
 ---
 
