@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.35.0
+ * Version: 1.35.1
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -3227,6 +3227,7 @@ class Riseup_Asia {
         }
 
         $all_plugins = get_plugins();
+        $available_slugs = array();
         foreach ($all_plugins as $plugin_file => $plugin_data) {
             $plugin_slug = dirname($plugin_file);
             if ($plugin_slug === '.') {
@@ -3235,7 +3236,16 @@ class Riseup_Asia {
             if ($plugin_slug === $slug) {
                 return $plugin_file;
             }
+            $available_slugs[] = $plugin_slug;
         }
+
+        // Log available slugs for diagnostic purposes when plugin is not found
+        $this->file_logger->warn('Plugin slug not found among installed plugins', array(
+            'requested_slug'  => $slug,
+            'available_slugs' => $available_slugs,
+            'total_plugins'   => count($all_plugins),
+        ));
+
         return null;
     }
 
