@@ -2,20 +2,7 @@
 
 > **Location:** `.lovable/memory/suggestions/01-suggestions-tracker.md`  
 > **Purpose:** Track AI suggestions for improvements (consolidated single file)  
-> **Updated:** 2026-02-02
-
----
-
-## File Convention
-
-This file consolidates all suggestions to keep the folder small. Each suggestion has:
-
-- **ID**: `S-{number}` (sequential)
-- **Created**: Date
-- **Source**: Who suggested (Lovable, User, External AI)
-- **Project**: Which project it affects
-- **Status**: `open` | `in-progress` | `done` | `rejected`
-- **Priority**: `critical` | `high` | `medium` | `low`
+> **Updated:** 2026-02-09
 
 ---
 
@@ -30,138 +17,86 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 | Priority | high |
 | Status | **open** |
 | Description | Add concrete WordPress REST API error response examples to `10-wp-rest-client.md` |
-| Rationale | AI needs to know exact error shapes for proper error handling |
-| Proposed Change | Add JSON examples for 401, 403, 404, 500 responses from WP |
 | Acceptance Criteria | Spec includes ≥4 error response examples with codes |
-
----
 
 ### S-004: Add Error Recovery for Partial Publish
 | Field | Value |
 |-------|-------|
 | Created | 2026-02-01 |
 | Source | Lovable (Risk Report) |
-| Project | wp-plugin-publish |
 | Priority | high |
 | Status | **open** |
-| Description | Document what happens if publish fails mid-way |
-| Rationale | User needs to know if plugin is in broken state |
-| Proposed Change | Add error recovery section to `08-publish-service.md` |
-| Acceptance Criteria | Spec covers: rollback trigger, backup restore, status reporting |
-
----
+| Description | Document what happens if publish fails mid-way (rollback trigger, backup restore, status reporting) |
+| Notes | Phase 38 (Rollback on Failure) implemented the mechanism; spec documentation still pending |
 
 ### S-005: Define WebSocket Reconnection State Recovery
 | Field | Value |
 |-------|-------|
 | Created | 2026-02-01 |
 | Source | Lovable (Risk Report) |
-| Project | wp-plugin-publish |
 | Priority | medium |
 | Status | **open** |
 | Description | Define how frontend recovers missed events after WS disconnect |
-| Rationale | UI can desync from backend during network issues |
-| Proposed Change | Add state sync protocol to `12-websocket-events.md` |
-| Acceptance Criteria | Spec defines: reconnect event, full state refresh trigger |
 
----
-
-### S-006: Verify Go Backend Compiles
+### S-013: DRY Phase 7 — PHP Snapshot Factory
 | Field | Value |
 |-------|-------|
-| Created | 2026-02-01 |
-| Source | Lovable (Risk Report) |
-| Project | wp-plugin-publish |
-| Priority | **critical** |
-| Status | **open** |
-| Description | Run `go build` to confirm backend compiles without errors |
-| Rationale | Scaffolded code may have import or type errors |
-| Proposed Change | Fix any compilation errors |
-| Acceptance Criteria | `go build ./cmd/server` succeeds |
-
----
-
-### S-007: Verify React Frontend Builds
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-01 |
-| Source | Lovable (Risk Report) |
-| Project | wp-plugin-publish |
-| Priority | **critical** |
-| Status | **open** |
-| Description | Run `npm run build` to confirm frontend builds |
-| Rationale | Scaffolded code may have type or import errors |
-| Proposed Change | Fix any build errors |
-| Acceptance Criteria | `npm run build` succeeds |
-
----
-
-### S-008: Implement Site Service ✅
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-02 |
-| Completed | 2026-02-02 |
-| Source | User |
-| Project | wp-plugin-publish |
-| Priority | **high** |
-| Status | **done** |
-| Description | Complete Site Service with CRUD and connection testing |
-| Implementation | `backend/internal/api/handlers/handlers.go` - Full CRUD handlers |
-
----
-
-### S-009: Implement Publish Service ✅
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-02 |
-| Completed | 2026-02-02 |
-| Source | User |
-| Project | wp-plugin-publish |
-| Priority | **high** |
-| Status | **done** |
-| Description | Create publish service for ZIP upload and file patches |
-| Implementation | `backend/internal/services/publish/service.go` - Full pipeline |
-
----
-
-### S-010: WebSocket Real-time Sync Updates ✅
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-02 |
-| Completed | 2026-02-02 |
-| Source | User |
-| Project | wp-plugin-publish |
+| Created | 2026-02-09 |
+| Source | DRY Refactoring Plan |
 | Priority | medium |
-| Status | **done** |
-| Description | Add WebSocket events for sync status and file scan progress |
-| Implementation | `backend/internal/ws/hub.go` - Broadcasting helpers added |
+| Status | **open** |
+| Description | Create `RiseupSnapshotFactory` with lazy singletons to replace 5+ duplicated require+instantiate blocks |
 
----
+### S-014: DRY Phase 8 — PHP Logger Consolidation
+| Field | Value |
+|-------|-------|
+| Created | 2026-02-09 |
+| Source | DRY Refactoring Plan |
+| Priority | medium |
+| Status | **open** |
+| Description | Consolidate 4 logger methods' context enrichment into single `prepare_context()` |
 
-## In Progress
+### S-015: DRY Phase 9 — GlobalErrorModal Decomposition
+| Field | Value |
+|-------|-------|
+| Created | 2026-02-09 |
+| Source | DRY Refactoring Plan |
+| Priority | high |
+| Status | **open** |
+| Description | Split 2,164-line `GlobalErrorModal.tsx` into focused sub-components |
 
-*No suggestions currently in progress.*
+### S-016: DRY Phase 10 — Envelope Schema Alignment
+| Field | Value |
+|-------|-------|
+| Created | 2026-02-09 |
+| Source | DRY Refactoring Plan |
+| Priority | low |
+| Status | **open** |
+| Description | Create `envelope.schema.json` as single source of truth for Go/TS/PHP envelope types |
 
 ---
 
 ## Completed Suggestions
 
-> Moved to `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
-
 | ID | Title | Completed | Notes |
 |----|-------|-----------|-------|
 | S-002 | fsnotify Platform Differences | 2026-02-02 | Replaced with hybrid watcher mode |
 | S-003 | Specify Hash Algorithm | 2026-02-02 | MD5 implemented in scanner.go |
+| S-006 | Verify Go Backend Compiles | 2026-02-05 | Confirmed working |
+| S-007 | Verify React Frontend Builds | 2026-02-05 | Confirmed working |
+| S-008 | Implement Site Service | 2026-02-02 | Full CRUD handlers |
+| S-009 | Implement Publish Service | 2026-02-02 | Full pipeline |
+| S-010 | WebSocket Real-time Sync | 2026-02-02 | Broadcasting helpers added |
 | S-011 | E2E Testing Framework | 2026-02-02 | 20 test cases, Go runner, React UI |
 | S-012 | Error Detail Modal | 2026-02-02 | Developer debug info with copy feature |
+
+→ Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
 ---
 
 ## Rejected Suggestions
 
-| ID | Title | Rejected | Reason |
-|----|-------|----------|--------|
-| - | No rejected suggestions yet | - | - |
+*None.*
 
 ---
 
@@ -169,11 +104,10 @@ This file consolidates all suggestions to keep the folder small. Each suggestion
 
 | Metric | Count |
 |--------|-------|
-| Open | 8 |
-| In Progress | 0 |
-| Completed | 4 |
+| Open | 7 |
+| Completed | 9 |
 | Rejected | 0 |
-| **Total** | **12** |
+| **Total** | **16** |
 
 ---
 

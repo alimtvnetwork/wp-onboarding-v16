@@ -1,7 +1,7 @@
 # Project Context
 
 > **Location:** `.lovable/memory/02-project-context.md`  
-> **Updated:** 2026-02-02
+> **Updated:** 2026-02-09
 
 ---
 
@@ -19,42 +19,58 @@ This repository contains **three projects**:
 
 ## Active Project: WP Plugin Publish
 
-**Purpose:** Local development tool for WordPress plugin developers.
+**Purpose:** Local development tool for WordPress plugin developers — manages plugin publishing, syncing, monitoring, and diagnostics across multiple WordPress sites.
 
 **Architecture:**
 - **Frontend:** React + TypeScript + Tailwind (localhost:3000)
 - **Backend:** Go 1.21+ (localhost:8080)
 - **Database:** SQLite with Split DB Architecture
 - **Config:** JSON seed + SQLite runtime
+- **Companion WP Plugin:** `wp-plugins/riseup-asia-uploader/` (PHP)
 
 ---
 
 ## Implementation Status
 
-### ✅ Completed
+### ✅ All Core Features Complete
 
-| Phase | Feature | Date | Notes |
-|-------|---------|------|-------|
-| Spec | 28 spec documents | 2026-02-01 | Complete with E2E test spec |
-| Scaffold | Go backend | 2026-02-01 | main.go, services, API, WebSocket |
-| Scaffold | React frontend | 2026-02-01 | Routing, layout, pages, hooks |
-| Phase 1 | Plugin Service | 2026-02-02 | CRUD, scanning, mappings |
-| Phase 2 | Sync Service | 2026-02-02 | Local/remote comparison, MD5 hashing |
-| Phase 5 | Git & Build Service | 2026-02-02 | Git pull, build commands |
-| - | Hybrid File Watcher | 2026-02-02 | Event-driven, not polling |
-| - | E2E Test Framework | 2026-02-02 | 20 test cases, Go runner, React UI |
-| - | Error Detail Modal | 2026-02-02 | Developer debug, copy report |
-| - | Tests page in nav | 2026-02-02 | Tab-based test suite UI |
+| Category | Features Implemented |
+|----------|---------------------|
+| **Plugin Management** | CRUD, scanning, mappings, remote viewer, file browser |
+| **Publishing** | Quick publish, batch parallel, queue system, scheduled, rollback, retry, diff preview |
+| **Site Management** | CRUD, connection testing, health monitoring, multi-site orchestration |
+| **Sync** | Local/remote comparison, MD5 hashing, hybrid file watcher |
+| **Logging & Diagnostics** | Session-based logging, global error modal (8+ tabs), execution logger, stack traces |
+| **Version Tracking** | Remote version badges, auto-update with 301 redirect support |
+| **History** | Publish history dashboard, site health dashboard |
+| **E2E Testing** | 20 test cases, Go runner, React UI, real HTTP-based tests |
+| **Git & Build** | Git pull, build commands |
 
-### 📋 Pending
+### 🔄 Current: DRY Refactoring (6/10 phases done)
 
-| Phase | Feature | Priority | Dependencies | Est. Time |
-|-------|---------|----------|--------------|-----------|
-| Phase 3 | Site Service | **HIGH** | None | 2 hours |
-| Phase 4 | Publish Service | **HIGH** | Site Service | 3 hours |
-| Phase 6 | Backup Service | MEDIUM | Publish Service | 2 hours |
-| Phase 7 | WebSocket real-time | MEDIUM | None | 2 hours |
-| Phase 8 | Integration testing | LOW | All phases | 2-3 hours |
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1–3 | ✅ | Go backend: uploader dedup, envelope parsing, diagnostic context |
+| 4 | ✅ | Frontend: `buildCapturedError` + `commitErrorToStore` in errorStore |
+| 5 | ✅ | Frontend: `src/lib/api/` modular split (types, envelope, client, methods, barrel) |
+| 6 | ✅ | Frontend: `useApiQuery` / `useApiQueryPaginated` factory hooks |
+| 7–8 | 📋 | PHP: Snapshot factory, logger context consolidation |
+| 9 | 📋 | Frontend: GlobalErrorModal decomposition (~2,164 lines) |
+| 10 | 📋 | Cross-stack: Envelope JSON schema alignment |
+
+---
+
+## Key Architecture Patterns
+
+| Pattern | Details |
+|---------|---------|
+| **Universal Response Envelope** | PascalCase keys (Go/PHP compat), Status/Attributes/Results/Navigation/Errors/MethodsStack |
+| **Modular API Client** | `src/lib/api/` — types, envelope, client, methods, barrel index |
+| **Error Store** | `buildCapturedError()` factory + `commitErrorToStore()` helper |
+| **API Query Factory** | `useApiQuery` / `useApiQueryPaginated` wrapping React Query |
+| **WordPress Endpoint Mapping** | Centralized `endpoint_map.go` with `WPEndpointName` enum |
+| **apperror Package** | `apperror.Wrap(err, code, message)` with `.WithContext()` — no `fmt.Errorf` |
+| **PHP Standards** | `CODING-GUIDELINES.md` — 11 mandatory rules, `RiseupPathUtils`, `RiseupBooleanHelpers`, `RiseupDependencyLoader` |
 
 ---
 
@@ -63,63 +79,24 @@ This repository contains **three projects**:
 | Type | Location |
 |------|----------|
 | Master Spec | `spec/wp-plugin-publish/00-overview.md` |
-| Backend Specs | `spec/wp-plugin-publish/01-backend/` (16 files) |
-| Frontend Specs | `spec/wp-plugin-publish/02-frontend/` (6 files) |
-| Implementation Specs | `spec/wp-plugin-publish/03-implementation/` (6 files) |
-| E2E Test Spec | `spec/wp-plugin-publish/04-testing/40-e2e-test-spec.md` |
-| Shared Constants | `spec/wp-plugin-publish/66-shared-constants.md` |
-| Go Backend | `backend/` |
-| React Frontend | `src/` |
-| E2E Service | `backend/internal/services/e2e/` |
-| Plan | `.lovable/plan.md` |
+| DRY Plan | `.lovable/plan.md` |
+| Active Phases | `.lovable/plan/active.md` |
+| Completed Phases | `.lovable/plan/completed-phases-1-14.md`, `completed-phases-33-40.md`, `completed/01-dry-refactoring-phases-1-6.md` |
 | Suggestions | `.lovable/memory/suggestions/01-suggestions-tracker.md` |
-| Risk Report | `.lovable/memory/03-reliability-risk-report.md` |
-
----
-
-## Backend Services Structure
-
-```
-backend/internal/services/
-├── backup/     # Backup and restore (pending)
-├── e2e/        # End-to-end testing ✅
-├── git/        # Git pull and build ✅
-├── plugin/     # Plugin CRUD and scanning ✅
-├── publish/    # Publish pipeline (pending)
-├── site/       # Site CRUD (pending)
-├── sync/       # Sync comparison ✅
-└── watcher/    # File change detection ✅
-```
-
----
-
-## Recent Changes (2026-02-02)
-
-1. **E2E Testing Framework** - 20 test cases, 4 categories, Split DB integration
-2. **Error Detail Modal** - Developer debug with stack trace and copy report
-3. **Hybrid File Watcher** - Event-driven instead of polling
-4. **Tests page** - Tab-based UI for running E2E tests
-
----
-
-## Known Issues / Blockers
-
-| Issue | Impact | Resolution |
-|-------|--------|------------|
-| Go Backend Not Verified | May have compile errors | Run `go build ./cmd/server` |
-| React Build Not Verified | May have type errors | Run `npm run build` |
-| Site Service Missing | Blocks Publish Service | Implement Phase 3 |
-| Publish Service Missing | Core functionality incomplete | Implement Phase 4 |
+| API Client | `src/lib/api/` (types, envelope, client, methods, index) |
+| Error Store | `src/stores/errorStore.ts` |
+| API Query Factory | `src/hooks/useApiQuery.ts` |
+| Go Backend | `backend/` |
+| WP Plugin | `wp-plugins/riseup-asia-uploader/` |
 
 ---
 
 ## Next Steps for New AI
 
-1. **Read `.lovable/plan.md`** - Prioritized tasks with phase details
-2. **Read `.lovable/memory/03-reliability-risk-report.md`** - Risk assessment
-3. **Check suggestions** in `01-suggestions-tracker.md`
-4. **Start with Phase 3: Site Service** (or ask user for preference)
-5. **Verify Go backend compiles** before adding more code
+1. **Read `.lovable/plan.md`** — DRY refactoring phases 7–10 pending
+2. **Read `.lovable/plan/active.md`** — Current status overview
+3. **Check suggestions** in `01-suggestions-tracker.md` — 7 open items
+4. **Ask user** which phase to implement next (recommended: Phase 7 or 9)
 
 ---
 
@@ -127,14 +104,7 @@ backend/internal/services/
 
 **Location:** `plugins-onboard/`  
 **Status:** Complete (v1.0.5)  
-**Purpose:** WordPress plugin providing REST API for remote plugin management
-
-Features:
-- OAuth 2.0 authentication with JWT
-- Ephemeral mutation tokens
-- Automatic backups and snapshots
-- Audit logging
-- Admin dashboard with test runner
+**Purpose:** WordPress plugin providing REST API for remote plugin management (OAuth 2.0, JWT, ephemeral tokens, backups, audit logging)
 
 See `memory/PRD.md` for full specification.
 
