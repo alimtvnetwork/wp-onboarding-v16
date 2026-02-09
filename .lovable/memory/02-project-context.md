@@ -98,10 +98,11 @@ This repository contains **three projects**:
 
 ## Next Steps for New AI
 
-1. **Read `.lovable/plan.md`** — All phases complete
-2. **Read `.lovable/plan/active.md`** — Open suggestions and questions
-3. **Check suggestions** in `01-suggestions-tracker.md` — 2 open items (S-001, S-004)
-4. **Ask user** what to implement next
+1. **Read `.lovable/plan.md`** — Future work roadmap with next task selection
+2. **Read `.lovable/plan/active.md`** — Open questions listed
+3. **Check suggestions** in `01-suggestions-tracker.md` — 0 open, 18 completed
+4. **Read `03-reliability-risk-report.md`** — Score: 92/100, failure map included
+5. **Ask user** what to implement next
 
 ---
 

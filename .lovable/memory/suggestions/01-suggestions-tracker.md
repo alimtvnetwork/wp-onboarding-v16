@@ -8,25 +8,7 @@
 
 ## Active Suggestions (Open)
 
-### S-017: Post-Deploy Version Verification Pass
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-09 |
-| Source | S-004 recovery strategy 4 |
-| Priority | medium |
-| Status | **open** |
-| Description | Implement automatic remote version check after bulk publish to detect version drift |
-| Notes | Architecture documented in `08-publish-service.md` Strategy 4; needs code implementation |
-
-### ~~S-018: Remove Vestigial `pnpmVirtualStorePath` Config Key~~
-| Field | Value |
-|-------|-------|
-| Created | 2026-02-09 |
-| Source | Template comparison |
-| Priority | low |
-| Status | **completed** |
-| Completed | 2026-02-09 |
-| Description | `pnpmVirtualStorePath` removed from `powershell.json` — both scripts hardcode `.pnpm` in `Configure-PnpmStore`. |
+*None — all suggestions are completed.* 🎉
 
 ---
 
@@ -38,7 +20,7 @@
 | S-002 | fsnotify Platform Differences | 2026-02-02 | Replaced with hybrid watcher mode |
 | S-003 | Specify Hash Algorithm | 2026-02-02 | MD5 implemented in scanner.go |
 | S-004 | Partial Publish Recovery | 2026-02-09 | 4 strategies in `08-publish-service.md` |
-| S-005 | WebSocket Reconnection Recovery | 2026-02-09 | Broad invalidation on reconnect in `useWebSocket.ts`; spec at `05-websocket-reconnection-recovery.md` |
+| S-005 | WebSocket Reconnection Recovery | 2026-02-09 | Broad invalidation on reconnect in `useWebSocket.ts` |
 | S-006 | Verify Go Backend Compiles | 2026-02-05 | Confirmed working |
 | S-007 | Verify React Frontend Builds | 2026-02-05 | Confirmed working |
 | S-008 | Implement Site Service | 2026-02-02 | Full CRUD handlers |
@@ -50,6 +32,8 @@
 | S-014 | DRY Phase 8 — PHP Logger Consolidation | 2026-02-09 | `prepare_context()` method |
 | S-015 | DRY Phase 9 — GlobalErrorModal Decomposition | 2026-02-09 | Split into 7 sub-components |
 | S-016 | DRY Phase 10 — Envelope Schema Alignment | 2026-02-09 | `envelope.schema.json` v1.0.0 |
+| S-017 | Post-Deploy Version Verification Pass | 2026-02-09 | Auto version drift detection via force-sync |
+| S-018 | Remove Vestigial `pnpmVirtualStorePath` Config Key | 2026-02-09 | Removed from `powershell.json` |
 
 → Details in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
@@ -65,10 +49,36 @@
 
 | Metric | Count |
 |--------|-------|
-| Open | 1 |
-| Completed | 17 |
+| Open | 0 |
+| Completed | 18 |
 | Rejected | 0 |
 | **Total** | **18** |
+
+---
+
+## Suggestion Workflow Convention
+
+### File Location
+All suggestions tracked in this single file: `.lovable/memory/suggestions/01-suggestions-tracker.md`
+
+### Adding a New Suggestion
+Add to "Active Suggestions (Open)" section with:
+- **ID:** S-NNN (sequential)
+- **Created:** date
+- **Source:** where the suggestion originated
+- **Priority:** low / medium / high
+- **Status:** open → inProgress → completed
+- **Description:** what to change
+- **Rationale:** why it matters
+- **Acceptance criteria:** how to verify it's done
+
+### Completing a Suggestion
+1. Move from "Active" to "Completed" table
+2. Add completion date and notes
+3. Update statistics
+
+### Archive
+Completed suggestion details are in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`
 
 ---
 
