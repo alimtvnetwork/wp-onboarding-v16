@@ -12,7 +12,7 @@
 The `plan.md` at `.lovable/plan.md` serves as the primary roadmap. **All planned phases are now complete.**
 
 **Active plan:** `.lovable/plan.md` — DRY Refactoring (10/10 phases complete)  
-**Active status:** `.lovable/plan/active.md` — All tracks complete, 3 open suggestions remaining  
+**Active status:** `.lovable/plan/active.md` — All tracks complete, 2 open suggestions remaining  
 **Completed work:**
 - `.lovable/plan/completed-phases-1-14.md` — Feature phases 1–14
 - `.lovable/plan/completed-phases-33-40.md` — Feature phases 33–40
@@ -32,7 +32,7 @@ All suggestions are tracked in a single file: `.lovable/memory/suggestions/01-su
 
 Completed suggestions are summarized there and detailed in `.lovable/memory/suggestions/completed/01-completed-suggestions.md`.
 
-**Current stats:** 3 open, 13 completed, 0 rejected.
+**Current stats:** 2 open, 15 completed, 0 rejected.
 
 ---
 
@@ -45,7 +45,7 @@ All specs are indexed at `spec/README.md`. Key spec folders:
 - `spec/golang-standards/`, `spec/typescript-standards/`, `spec/php-standards/` — Language standards
 - `spec/error-handling/` — Cross-stack error chain
 - `spec/response-envelope/` — Universal Response Envelope JSON Schema
-- `spec/powershell-integration/` — Build runner
+- `spec/powershell-integration/` — Build runner (generic, cross-project)
 
 ---
 
@@ -103,7 +103,7 @@ When ending a session or handing off to another AI:
 │   ├── features/                   # Feature documentation
 │   ├── issues-fixed/               # Bug fix history
 │   └── suggestions/
-│       ├── 01-suggestions-tracker.md  # Single tracking file (3 open, 13 completed)
+│       ├── 01-suggestions-tracker.md  # Single tracking file (2 open, 15 completed)
 │       └── completed/
 spec/
 ├── README.md                        # Spec index (start here)
@@ -113,7 +113,7 @@ spec/
 ├── golang-standards/                # Go coding standards
 ├── typescript-standards/            # TypeScript coding standards
 ├── php-standards/                   # PHP coding standards
-├── powershell-integration/          # Build runner
+├── powershell-integration/          # Build runner (generic, cross-project)
 ├── upload-scripts/                  # Upload scripts V1-V3
 ├── response-envelope/               # JSON Schema & samples
 └── dry-refactoring-summary.md       # 10-phase summary

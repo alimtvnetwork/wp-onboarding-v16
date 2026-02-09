@@ -1,6 +1,8 @@
 # PowerShell Build & Run Script (pnpm PnP Edition)
+# Version: 1.2.0
 # This script builds the React frontend and runs the Go backend
 # Uses pnpm with Plug'n'Play for disk-efficient package management
+# Generic template — configure via powershell.json (see spec/powershell-integration/)
 
 param(
     [switch]$BuildOnly,

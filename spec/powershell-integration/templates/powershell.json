@@ -1,6 +1,6 @@
 {
   "$schema": "../schemas/powershell.schema.json",
-  "projectName": "My Project",
+  "projectName": "My Fullstack App",
   "rootDir": ".",
   "backendDir": "backend",
   "frontendDir": ".",
@@ -14,7 +14,7 @@
     "pnpm": true
   },
   "usePnp": true,
-  "pnpmStorePath": "E:/.pnpm-store",
+  "pnpmStorePath": ".pnpm-store",
   "cleanPaths": [
     "node_modules",
     "dist",

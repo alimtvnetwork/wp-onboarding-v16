@@ -26,13 +26,13 @@ This repository contains **three projects**:
 - **Backend:** Go 1.21+ (localhost:8080)
 - **Database:** SQLite with Split DB Architecture
 - **Config:** JSON seed + SQLite runtime
-- **Companion WP Plugin:** `wp-plugins/riseup-asia-uploader/` (PHP)
+- **Companion WP Plugin:** `wp-plugins/riseup-asia-uploader/` (PHP, current: v1.36.1)
 
 ---
 
 ## Implementation Status
 
-### ✅ All Core Features Complete
+### ✅ All Core Features & Refactoring Complete
 
 | Category | Features Implemented |
 |----------|---------------------|
@@ -45,8 +45,11 @@ This repository contains **three projects**:
 | **History** | Publish history dashboard, site health dashboard |
 | **E2E Testing** | 20 test cases, Go runner, React UI, real HTTP-based tests |
 | **Git & Build** | Git pull, build commands |
+| **DRY Refactoring** | 10/10 phases complete (Go, React, PHP, cross-stack) |
+| **Pre-flight Guard** | S-010: Plugin exists check (PHP API + Go proxy + React guard) |
+| **PHP Resilience** | Circular dependency fix, bootstrapping guards, native fallbacks |
 
-### 🔄 Current: DRY Refactoring (6/10 phases done)
+### ✅ DRY Refactoring (10/10 phases complete)
 
 | Phase | Status | Description |
 |-------|--------|-------------|
@@ -54,9 +57,10 @@ This repository contains **three projects**:
 | 4 | ✅ | Frontend: `buildCapturedError` + `commitErrorToStore` in errorStore |
 | 5 | ✅ | Frontend: `src/lib/api/` modular split (types, envelope, client, methods, barrel) |
 | 6 | ✅ | Frontend: `useApiQuery` / `useApiQueryPaginated` factory hooks |
-| 7–8 | 📋 | PHP: Snapshot factory, logger context consolidation |
-| 9 | 📋 | Frontend: GlobalErrorModal decomposition (~2,164 lines) |
-| 10 | 📋 | Cross-stack: Envelope JSON schema alignment |
+| 7 | ✅ | PHP: `RiseupSnapshotFactory` centralized snapshot class management |
+| 8 | ✅ | PHP: Logger context consolidation (`prepare_context`) |
+| 9 | ✅ | Frontend: GlobalErrorModal decomposition into 7 sub-files |
+| 10 | ✅ | Cross-stack: Envelope JSON schema (v1.0.0) alignment |
 
 ---
 
@@ -71,6 +75,7 @@ This repository contains **three projects**:
 | **WordPress Endpoint Mapping** | Centralized `endpoint_map.go` with `WPEndpointName` enum |
 | **apperror Package** | `apperror.Wrap(err, code, message)` with `.WithContext()` — no `fmt.Errorf` |
 | **PHP Standards** | `CODING-GUIDELINES.md` — 11 mandatory rules, `RiseupPathUtils`, `RiseupBooleanHelpers`, `RiseupDependencyLoader` |
+| **PHP Bootstrapping Guards** | Static `$bootstrapping` flags prevent circular dependencies during init |
 
 ---
 
@@ -81,7 +86,7 @@ This repository contains **three projects**:
 | Master Spec | `spec/wp-plugin-publish/00-overview.md` |
 | DRY Plan | `.lovable/plan.md` |
 | Active Phases | `.lovable/plan/active.md` |
-| Completed Phases | `.lovable/plan/completed-phases-1-14.md`, `completed-phases-33-40.md`, `completed/01-dry-refactoring-phases-1-6.md` |
+| Completed Phases | `.lovable/plan/completed-phases-1-14.md`, `completed-phases-33-40.md`, `completed/` |
 | Suggestions | `.lovable/memory/suggestions/01-suggestions-tracker.md` |
 | API Client | `src/lib/api/` (types, envelope, client, methods, index) |
 | Error Store | `src/stores/errorStore.ts` |
@@ -93,10 +98,10 @@ This repository contains **three projects**:
 
 ## Next Steps for New AI
 
-1. **Read `.lovable/plan.md`** — DRY refactoring phases 7–10 pending
-2. **Read `.lovable/plan/active.md`** — Current status overview
-3. **Check suggestions** in `01-suggestions-tracker.md` — 7 open items
-4. **Ask user** which phase to implement next (recommended: Phase 7 or 9)
+1. **Read `.lovable/plan.md`** — All phases complete
+2. **Read `.lovable/plan/active.md`** — Open suggestions and questions
+3. **Check suggestions** in `01-suggestions-tracker.md` — 2 open items (S-001, S-004)
+4. **Ask user** what to implement next
 
 ---
 
