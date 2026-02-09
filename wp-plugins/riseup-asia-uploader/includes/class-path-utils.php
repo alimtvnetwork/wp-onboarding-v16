@@ -31,34 +31,45 @@ class RiseupPathUtils {
 
     /**
      * Re-entrancy guard to prevent circular dependency during logger init.
+     * When true, ALL logging in this class is suppressed to avoid the
+     * RiseupPathUtils → RiseupInitHelpers → Riseup_File_Logger → RiseupPathUtils loop.
      *
      * @var bool
      */
-    private static $initializing = false;
+    private static $bootstrapping = false;
 
     /**
      * Get logger instance (null-safe).
      *
-     * Returns null if the logger class is not yet loaded or if we are
-     * inside logger initialization (re-entrancy guard). Callers must
-     * check for null before invoking logger methods.
+     * Returns null if:
+     *  - We are inside a bootstrapping phase (re-entrancy guard)
+     *  - The Riseup_File_Logger class is not yet loaded
      *
      * @return Riseup_File_Logger|null
      */
     private static function getLogger() {
-        // Prevent circular dependency: if we're already initializing the logger, bail out
-        if (self::$initializing) {
+        // CRITICAL: Prevent circular dependency. During bootstrapping,
+        // return null so safeLog() falls back to error_log().
+        if (self::$bootstrapping) {
             return null;
         }
 
-        if (RiseupBooleanHelpers::is_null(self::$logger)) {
-            if (!class_exists('Riseup_File_Logger')) {
+        if (self::$logger === null) {
+            // Use native class_exists — RiseupBooleanHelpers may not be loaded yet
+            // during very early initialization.
+            if (!class_exists('Riseup_File_Logger', false)) {
                 return null;
             }
 
-            self::$initializing = true;
-            self::$logger = Riseup_File_Logger::get_instance();
-            self::$initializing = false;
+            self::$bootstrapping = true;
+            try {
+                self::$logger = Riseup_File_Logger::get_instance();
+            } catch (\Throwable $e) {
+                // Logger init failed — stay in fallback mode
+                error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
+                self::$logger = null;
+            }
+            self::$bootstrapping = false;
         }
         return self::$logger;
     }
@@ -72,8 +83,14 @@ class RiseupPathUtils {
      * @return void
      */
     private static function safeLog($level, $message, $context = array()) {
+        // During bootstrapping, always use native error_log to avoid circular calls
+        if (self::$bootstrapping) {
+            error_log('[Riseup Asia] [' . strtoupper($level) . '] ' . $message);
+            return;
+        }
+
         $logger = self::getLogger();
-        if (RiseupBooleanHelpers::is_set($logger)) {
+        if ($logger !== null) {
             $logger->$level($message, $context);
         } else {
             error_log('[Riseup Asia] [' . strtoupper($level) . '] ' . $message);
