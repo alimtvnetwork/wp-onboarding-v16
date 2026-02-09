@@ -1,0 +1,255 @@
+# PHP Coding Standards
+
+> **Version:** 1.0.0  
+> **Updated:** 2026-02-09  
+> **Applies to:** WordPress companion plugins (PHP 7.4+)
+
+---
+
+## Naming Conventions
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Class names | PascalCase | `RiseupEnvelopeBuilder`, `RiseupSnapshotFactory` |
+| Method names | camelCase | `buildResponse()`, `getPluginInfo()` |
+| Constants | UPPER_SNAKE_CASE | `RISEUP_VERSION`, `RISEUP_REST_NAMESPACE` |
+| File names | `class-{kebab-case}.php` | `class-envelope-builder.php` |
+| Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` |
+
+---
+
+## Error Handling — Safe Execution Strategy
+
+### Rule: Catch `Throwable`, not just `Exception`
+
+PHP 7+ introduces `Error` and `TypeError` that are **not** subclasses of `Exception`. All endpoint handlers must catch `Throwable`:
+
+```php
+// ❌ FORBIDDEN: Misses PHP 7+ Errors (e.g., missing class)
+try {
+    $result = $manager->process();
+} catch (Exception $e) {
+    wp_send_json_error($e->getMessage());
+}
+
+// ✅ REQUIRED: Catches all throwables
+try {
+    $result = $manager->process();
+} catch (\Throwable $e) {
+    $this->logger->log_exception($e, 'process_failed');
+    wp_send_json_error([
+        'message'          => $e->getMessage(),
+        'stackTrace'       => $e->getTraceAsString(),
+        'stackTraceFrames' => $this->formatStackFrames($e),
+    ], 500);
+}
+```
+
+### Safe Execute Wrapper
+
+All REST endpoint handlers must be wrapped in `safe_execute`:
+
+```php
+// ✅ Pattern: safe_execute wrapper
+public function handle_upload($request) {
+    return $this->safe_execute(function() use ($request) {
+        // Business logic here
+        return $this->envelope->success($result);
+    });
+}
+
+private function safe_execute(callable $callback) {
+    try {
+        return $callback();
+    } catch (\Throwable $e) {
+        $this->logger->log_exception($e, 'endpoint_error');
+        return $this->envelope->error($e->getMessage(), 500);
+    }
+}
+```
+
+### Global Shutdown Handler
+
+Register a shutdown handler to catch fatal errors:
+
+```php
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // Log to fatal-errors.log with memory usage
+        // Send JSON response before process dies
+    }
+});
+```
+
+---
+
+## Structured Error Responses
+
+### Required Fields
+
+Every error response must include:
+
+```json
+{
+  "message": "Human-readable error description",
+  "stackTrace": "Full trace as string (debug_backtrace with unlimited depth)",
+  "stackTraceFrames": [
+    {
+      "file": "/path/to/file.php",
+      "line": 42,
+      "function": "methodName",
+      "class": "ClassName"
+    }
+  ]
+}
+```
+
+### Stack Trace Logging
+
+The logger captures two outputs for every error:
+
+1. **Structured frames** — `stackTraceFrames` array in JSON responses
+2. **Raw backtrace** — Written to `stacktrace.txt` with `debug_backtrace(0, 0)` (unlimited depth)
+
+```php
+// ✅ Dual logging: structured + raw
+public function log_exception(\Throwable $e, string $context = '') {
+    // Structured frames for JSON responses
+    $frames = $this->formatStackFrames($e);
+    
+    // Raw backtrace to file (unlimited depth)
+    $backtrace = debug_backtrace(0, 0);
+    file_put_contents($this->stacktraceFile, $this->formatBacktrace($backtrace), FILE_APPEND);
+}
+```
+
+---
+
+## Constants — No Magic Strings
+
+### Rule: All strings in `constants.php`
+
+Every endpoint path, action name, capability string, and option key must be defined in `includes/constants.php`:
+
+```php
+// ❌ FORBIDDEN: Magic strings
+add_action('wp_ajax_my_action', [$this, 'handle']);
+$url = rest_url('riseup-asia-uploader/v1/upload');
+
+// ✅ REQUIRED: Centralized constants
+// In constants.php:
+define('RISEUP_REST_NAMESPACE', 'riseup-asia-uploader/v1');
+define('RISEUP_ACTION_UPLOAD', 'upload');
+
+// In handlers:
+add_action('wp_ajax_' . RISEUP_ACTION_UPLOAD, [$this, 'handle']);
+$url = rest_url(RISEUP_REST_NAMESPACE . '/' . RISEUP_ACTION_UPLOAD);
+```
+
+---
+
+## Dependency Checks
+
+### Rule: Check before using
+
+Before using external dependencies (PDO, extensions), verify availability:
+
+```php
+// ✅ Runtime dependency check
+if (!class_exists('PDO') || !extension_loaded('pdo_sqlite')) {
+    $this->logger->error('PDO/SQLite not available');
+    return $this->envelope->error('SQLite support not available', 500);
+}
+```
+
+Throttle repeated initialization errors to prevent log bloat.
+
+---
+
+## File Path Resolution
+
+### Rule: Use typed path accessors
+
+Never construct file paths with string concatenation. Use `RiseupPathUtils`:
+
+```php
+// ❌ FORBIDDEN: Manual path construction
+$path = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/data.db';
+
+// ✅ REQUIRED: Typed accessor
+$path = RiseupPathUtils::getDataDir() . '/data.db';
+```
+
+---
+
+## Initialization — No WordPress Calls in Constructors
+
+### Rule: Lazy initialization
+
+Never call WordPress functions (`add_action`, `register_rest_route`, etc.) in class constructors:
+
+```php
+// ❌ FORBIDDEN: WordPress call in constructor
+class MyPlugin {
+    public function __construct() {
+        add_action('init', [$this, 'setup']); // May fail if WP not loaded
+    }
+}
+
+// ✅ REQUIRED: Lazy initialization
+class MyPlugin {
+    private $initialized = false;
+    
+    public function initialize() {
+        if ($this->initialized) return;
+        $this->initialized = true;
+        add_action('init', [$this, 'setup']);
+    }
+}
+```
+
+---
+
+## Boolean Logic
+
+### Rule: Use semantic helpers
+
+Replace raw negation with `RiseupBooleanHelpers`:
+
+```php
+// ❌ Confusing negation
+if (!$plugin->is_active()) { ... }
+if (!!$value) { ... }
+
+// ✅ Semantic boolean
+if (RiseupBooleanHelpers::isFalsy($plugin->is_active())) { ... }
+if (RiseupBooleanHelpers::isTruthy($value)) { ... }
+```
+
+---
+
+## Forbidden Patterns
+
+| Pattern | Why | Alternative |
+|---------|-----|-------------|
+| `catch (Exception $e)` | Misses PHP 7+ `Error` types | `catch (\Throwable $e)` |
+| Magic strings in handlers | Unmaintainable | `constants.php` |
+| `wp_die()` in REST handlers | Breaks JSON responses | `wp_send_json_error()` |
+| Manual path concatenation | Fragile paths | `RiseupPathUtils` accessors |
+| Constructor WordPress calls | Load order issues | Lazy initialization |
+| `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
+| Unchecked `new PDO()` | Fatal if extension missing | `class_exists()` check first |
+
+---
+
+## Cross-References
+
+- [WordPress Plugin Development Spec](../wordpress-plugin-development/) — Full 10-document guide
+- [WordPress Plugin Coding Guidelines](../../wp-plugins/riseup-asia-uploader/CODING-GUIDELINES.md) — In-repo standards
+- [Error Trapping Strategy](../../.lovable/memory/architecture/wordpress-plugin/error-trapping-strategy) — Safe execution architecture
+- [DRY Principles](../coding-guidelines/dry-principles.md) — Cross-language DRY rules
+
+---
+
+*PHP standards specification created: 2026-02-09*

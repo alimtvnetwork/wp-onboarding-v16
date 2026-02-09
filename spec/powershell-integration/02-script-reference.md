@@ -19,6 +19,8 @@
 | `-i` | `-install` | Switch | Install/update dependencies for frontend (pnpm) and backend (go mod), then exit |
 | `-r` | `-rebuild` | Switch | Full reset: clean build artifacts, sessions, logs, and error data first, then install, then build/run (frontend install happens after the clean) |
 | `-fw` | `-openfirewall` | Switch | Add Windows Firewall rules (requires Admin) |
+| `-u` | `-upload` | Switch | Upload default plugin to WordPress via upload-plugin-v2 |
+| `-pp` | `-pluginpath` | String | Override plugin folder path (use with `-u`) |
 | `-v` | `-verbose` | Switch | Show detailed debug output |
 
 ---
@@ -52,6 +54,12 @@
 
 # First-time setup with firewall
 .\run.ps1 -fw
+
+# Upload default plugin to WordPress
+.\run.ps1 -u
+
+# Upload custom plugin path
+.\run.ps1 -u -pp "C:\path\to\custom-plugin"
 
 # Verbose output for debugging
 .\run.ps1 -v
@@ -447,3 +455,4 @@ pnpm remove <package>
 - [Overview](./00-overview.md) - Architecture and quick start
 - [Configuration Schema](./01-configuration-schema.md) - JSON config format
 - [Error Codes](./04-error-codes.md) - Detailed error handling
+- [Upload Scripts](../upload-scripts/README.md) - WordPress plugin deployment scripts

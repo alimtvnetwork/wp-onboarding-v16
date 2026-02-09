@@ -1,4 +1,5 @@
 {
+  "$schema": "./envelope.schema.json",
   "Status": {
     "IsSuccess": false,
     "IsFailed": true,
