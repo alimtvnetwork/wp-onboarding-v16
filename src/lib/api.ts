@@ -242,11 +242,28 @@ async function fetchRequest<T>(
   logger.trace(functionName, 'enter', { endpoint, method });
   logApiCall(method, endpoint);
   const startTime = Date.now();
+  // Hoist env/diagnostic values once for all error paths
+  const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
+  const envViteWsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)";
+  const uiOrigin = typeof window !== "undefined" ? window.location.origin : "N/A";
+
   try {
     const apiBase = resolveApiBase();
     const apiOrigin = resolveApiOrigin();
     const url = resolveApiUrl(endpoint);
     const requestUrl = toAbsoluteUrl(url);
+
+    /** Builds the shared diagnostic context object for error responses. */
+    const buildDiagnosticContext = (extras?: Record<string, unknown>) => ({
+      requestUrl,
+      apiBase,
+      apiBaseAbsolute: toAbsoluteUrl(apiBase),
+      "VITE_API_URL (raw)": envViteApiUrl,
+      "VITE_WS_URL (raw)": envViteWsUrl,
+      resolvedApiOrigin: apiOrigin || null,
+      uiOrigin,
+      ...extras,
+    });
 
     const headers = new Headers(options?.headers);
     headers.set("Accept", "application/json");
@@ -279,11 +296,6 @@ async function fetchRequest<T>(
     const rawTrim = raw.trim();
     const looksLikeHtml = rawTrim.startsWith("<!") || rawTrim.startsWith("<html") || /<html[\s>]/i.test(raw);
 
-    // Raw environment variable values for diagnostics
-    const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
-    const envViteWsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)";
-    const uiOrigin = typeof window !== "undefined" ? window.location.origin : "N/A";
-
     if (looksLikeHtml || !contentType.includes("application/json")) {
       return {
         success: false,
@@ -298,18 +310,11 @@ async function fetchRequest<T>(
             `VITE_API_URL (raw): ${envViteApiUrl}\n` +
             "Fix: set VITE_API_URL to your backend origin (e.g. http://localhost:8080) and reload.\n" +
             `HTTP ${response.status} (${contentType || "no content-type"})`,
-          context: {
-            requestUrl,
-            apiBase,
-            apiBaseAbsolute: toAbsoluteUrl(apiBase),
-            "VITE_API_URL (raw)": envViteApiUrl,
-            "VITE_WS_URL (raw)": envViteWsUrl,
-            resolvedApiOrigin: apiOrigin || null,
-            uiOrigin,
+          context: buildDiagnosticContext({
             responseStatus: response.status,
             contentType: contentType || null,
             responsePreview: preview,
-          },
+          }),
           timestamp: new Date().toISOString(),
         },
       };
@@ -325,18 +330,11 @@ async function fetchRequest<T>(
           `Expected JSON but got: ${contentType || "unknown"}\n` +
           `Requested URL: ${requestUrl}\n` +
           `Preview: ${preview}`,
-        context: {
-          requestUrl,
-          apiBase,
-          apiBaseAbsolute: toAbsoluteUrl(apiBase),
-          "VITE_API_URL (raw)": envViteApiUrl,
-          "VITE_WS_URL (raw)": envViteWsUrl,
-          resolvedApiOrigin: apiOrigin || null,
-          uiOrigin,
+        context: buildDiagnosticContext({
           responseStatus: response.status,
           contentType: contentType || null,
           responsePreview: preview,
-        },
+        }),
         timestamp: new Date().toISOString(),
       },
     };
@@ -344,10 +342,6 @@ async function fetchRequest<T>(
     const duration = Date.now() - startTime;
     logger.error(`API request failed: ${endpoint}`, error, { endpoint, method, duration });
     
-    // Raw environment variable values for diagnostics
-    const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
-    const envViteWsUrl = (import.meta.env.VITE_WS_URL as string | undefined) || "(not set)";
-    const uiOrigin = typeof window !== "undefined" ? window.location.origin : "N/A";
     return {
       success: false,
       error: {
