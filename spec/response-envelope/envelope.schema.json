@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://riseup.asia/schemas/response-envelope/v1.0.0",
+  "title": "Universal Response Envelope",
+  "description": "Single source of truth for the Universal Response Envelope. All implementations (Go, TypeScript, PHP) MUST conform to this schema. See ADR.md for rationale.",
+  "type": "object",
+  "required": ["Status", "Attributes", "Results"],
+  "additionalProperties": false,
+  "properties": {
+    "Status": { "$ref": "#/$defs/Status" },
+    "Attributes": { "$ref": "#/$defs/Attributes" },
+    "Results": {
+      "type": "array",
+      "description": "Payload — always an array, even for single items or empty responses.",
+      "items": {}
+    },
+    "Navigation": {
+      "oneOf": [
+        { "$ref": "#/$defs/Navigation" },
+        { "type": "null" }
+      ],
+      "description": "Pagination links. Present only for paginated list responses."
+    },
+    "Errors": {
+      "oneOf": [
+        { "$ref": "#/$defs/Errors" },
+        { "type": "null" }
+      ],
+      "description": "Error details. Present only when HasAnyErrors is true AND reporting is enabled."
+    },
+    "MethodsStack": {
+      "oneOf": [
+        { "$ref": "#/$defs/MethodsStack" },
+        { "type": "null" }
+      ],
+      "description": "Debug call-chain trace. Present only when enabled in config."
+    }
+  },
+
+  "$defs": {
+    "Status": {
+      "type": "object",
+      "required": ["IsSuccess", "IsFailed", "Code", "Message", "Timestamp"],
+      "additionalProperties": false,
+      "properties": {
+        "IsSuccess": {
+          "type": "boolean",
+          "description": "true if the request succeeded."
+        },
+        "IsFailed": {
+          "type": "boolean",
+          "description": "true if the request failed (inverse of IsSuccess)."
+        },
+        "Code": {
+          "type": "integer",
+          "description": "HTTP status code."
+        },
+        "Message": {
+          "type": "string",
+          "description": "Human-readable status message."
+        },
+        "Timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of the response."
+        }
+      }
+    },
+
+    "Attributes": {
+      "type": "object",
+      "required": ["HasAnyErrors", "IsSingle", "IsMultiple"],
+      "additionalProperties": false,
+      "properties": {
+        "RequestedAt": {
+          "type": "string",
+          "description": "The Go backend endpoint that handled the request."
+        },
+        "RequestDelegatedAt": {
+          "type": "string",
+          "description": "Downstream endpoint (PHP/other) if request was proxied; empty if not delegated."
+        },
+        "SessionId": {
+          "type": "string",
+          "description": "Session identifier for linking with session-level diagnostics."
+        },
+        "HasAnyErrors": {
+          "type": "boolean",
+          "description": "true if any errors occurred (even partial)."
+        },
+        "IsSingle": {
+          "type": "boolean",
+          "description": "true if Results contains exactly one item."
+        },
+        "IsMultiple": {
+          "type": "boolean",
+          "description": "true if Results contains multiple items."
+        },
+        "TotalRecords": {
+          "type": "integer",
+          "description": "Total number of records across all pages."
+        },
+        "PerPage": {
+          "type": "integer",
+          "description": "Number of records per page."
+        },
+        "TotalPages": {
+          "type": "integer",
+          "description": "Total number of pages."
+        },
+        "CurrentPage": {
+          "type": "integer",
+          "description": "Current page number."
+        }
+      }
+    },
+
+    "Navigation": {
+      "type": "object",
+      "required": ["NextPage", "PrevPage", "CloserLinks"],
+      "additionalProperties": false,
+      "properties": {
+        "NextPage": {
+          "type": ["string", "null"],
+          "description": "URL for the next page, null if on last page."
+        },
+        "PrevPage": {
+          "type": ["string", "null"],
+          "description": "URL for the previous page, null if on first page."
+        },
+        "CloserLinks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Sliding window of nearby page URLs."
+        }
+      }
+    },
+
+    "Errors": {
+      "type": "object",
+      "required": ["BackendMessage"],
+      "additionalProperties": false,
+      "properties": {
+        "BackendMessage": {
+          "type": "string",
+          "description": "Primary error message from the Go backend."
+        },
+        "DelegatedServiceErrorStack": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Stack trace lines from downstream PHP/other services."
+        },
+        "Backend": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Stack trace lines from the Go backend."
+        },
+        "Frontend": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Reserved for frontend-injected error context."
+        }
+      }
+    },
+
+    "MethodsStack": {
+      "type": "object",
+      "required": ["Backend", "Frontend"],
+      "additionalProperties": false,
+      "properties": {
+        "Backend": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StackFrame" },
+          "description": "Ordered list of method calls in the Go backend."
+        },
+        "Frontend": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/StackFrame" },
+          "description": "Reserved for frontend-injected call chain."
+        }
+      }
+    },
+
+    "StackFrame": {
+      "type": "object",
+      "required": ["Method", "File", "LineNumber"],
+      "additionalProperties": false,
+      "properties": {
+        "Method": {
+          "type": "string",
+          "description": "Function or method name."
+        },
+        "File": {
+          "type": "string",
+          "description": "Source file name."
+        },
+        "LineNumber": {
+          "type": "integer",
+          "description": "Line number in the source file."
+        }
+      }
+    }
+  }
+}

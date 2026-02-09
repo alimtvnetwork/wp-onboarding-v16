@@ -1,5 +1,7 @@
 // API types — all interfaces and type aliases for the WP Plugin Publish API.
-// See spec/response-envelope/README.md for envelope specification.
+//
+// Envelope Schema: spec/response-envelope/envelope.schema.json v1.0.0
+// See spec/response-envelope/README.md for full specification.
 
 // ---------------------------------------------------------------------------
 // Universal Response Envelope types (PascalCase, matches Go backend)
