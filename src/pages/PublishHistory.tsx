@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, PublishHistoryEntry } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,11 @@ import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 import { formatActionLabel, getActionBadgeClasses, getPluginBadgeClasses } from "@/lib/publishHistoryUtils";
 
 export default function PublishHistory() {
+  const [searchParams] = useSearchParams();
+  const siteIdParam = searchParams.get("siteId");
+  const siteNameParam = searchParams.get("siteName");
+  const siteId = siteIdParam ? Number(siteIdParam) : undefined;
+
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -21,12 +27,13 @@ export default function PublishHistory() {
   const limit = 25;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["publish-history", page, statusFilter, search],
+    queryKey: ["publish-history", page, statusFilter, search, siteId],
     queryFn: () => api.getPublishHistory({
       limit,
       offset: page * limit,
       status: statusFilter === "all" ? undefined : statusFilter,
       search: search || undefined,
+      siteId,
     }),
   });
 
@@ -73,14 +80,18 @@ export default function PublishHistory() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Publish History</h1>
+            <h1 className="text-2xl font-bold">
+              {siteNameParam ? `Activity — ${siteNameParam}` : "Publish History"}
+            </h1>
             {entries.length > 0 && entries[0]?.version && (
               <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5">
                 v{entries[0].version}
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground text-sm">Audit log of all publish operations</p>
+          <p className="text-muted-foreground text-sm">
+            {siteNameParam ? `Activity logs for ${siteNameParam}` : "Audit log of all publish operations"}
+          </p>
         </div>
         <Button variant="destructive" size="sm" onClick={() => clearMutation.mutate()} disabled={total === 0}>
           Clear All

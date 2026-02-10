@@ -19,6 +19,7 @@ import {
   Eye,
   FlaskConical,
   Database,
+  Activity,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping } from "@/lib/api";
@@ -274,6 +275,16 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           >
             <Database className="h-4 w-4 shrink-0" />
             <span className="text-[10px] leading-tight truncate">Snapshots</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => navigate(`/publish-history?siteId=${site.id}&siteName=${encodeURIComponent(site.name)}`)}
+            title="View activity logs for this site"
+          >
+            <Activity className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Activity</span>
           </Button>
           <Button
             variant="ghost"
