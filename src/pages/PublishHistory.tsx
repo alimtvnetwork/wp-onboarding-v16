@@ -137,6 +137,7 @@ export default function PublishHistory() {
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
               <TableHead>Duration</TableHead>
+              <TableHead>Machine</TableHead>
               <TableHead>Rollback</TableHead>
               <TableHead>When</TableHead>
               <TableHead className="w-10"></TableHead>
