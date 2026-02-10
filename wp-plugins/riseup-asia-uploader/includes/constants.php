@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.40.0');
+    define('RISEUP_VERSION', '1.41.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
