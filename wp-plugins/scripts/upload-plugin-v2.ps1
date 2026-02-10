@@ -792,64 +792,140 @@ try {
     $pUpdate = if ($null -ne $resultData.is_update) { $resultData.is_update } elseif ($null -ne $resultData.isUpdate) { $resultData.isUpdate } else { "N/A" }
     $pActivated = if ($null -ne $resultData.activated) { $resultData.activated } elseif ($null -ne $resultData.active) { $resultData.active } else { "N/A" }
     $responseVersion = if ($resultData.plugin_version) { $resultData.plugin_version } elseif ($resultData.version) { $resultData.version } else { "unknown" }
-    Write-Status "  Plugin:     $pSlug" -Color White
-    Write-Status "  Version:    $LocalVersion (sent)" -Color White
-    Write-Status "  Resp. Ver:  $responseVersion (server response)" -Color $(if ($responseVersion -eq $LocalVersion) { "Green" } else { "Yellow" })
-    Write-Status "  Action:     $VersionAction" -Color White
-    Write-Status "  Is Update:  $pUpdate" -Color White
-    Write-Status "  Activated:  $pActivated" -Color White
+    
+    # Detect self-update: the plugin being uploaded IS the uploader itself
+    $isSelfUpdate = ($PluginSlug -eq "riseup-asia-uploader")
+    
+    # For self-updates, the response version is ALWAYS stale (old code processed the request)
+    if ($isSelfUpdate -and $responseVersion -ne $LocalVersion) {
+        Write-Status "  Plugin:     $pSlug" -Color White
+        Write-Status "  Version:    $LocalVersion (sent)" -Color White
+        Write-Status "  Resp. Ver:  $responseVersion (stale — expected for self-update)" -Color DarkYellow
+        Write-Status "  Action:     $VersionAction" -Color White
+        Write-Status "  Is Update:  $pUpdate" -Color White
+        Write-Status "  Activated:  $pActivated" -Color White
+        Write-Status ""
+        Write-Status "      ℹ Self-update: server response version is from OLD cached code" -Color Cyan
+    } else {
+        Write-Status "  Plugin:     $pSlug" -Color White
+        Write-Status "  Version:    $LocalVersion (sent)" -Color White
+        Write-Status "  Resp. Ver:  $responseVersion (server response)" -Color $(if ($responseVersion -eq $LocalVersion) { "Green" } else { "Yellow" })
+        Write-Status "  Action:     $VersionAction" -Color White
+        Write-Status "  Is Update:  $pUpdate" -Color White
+        Write-Status "  Activated:  $pActivated" -Color White
+    }
     if ($resultData.activation_error) {
         Write-Status "  Activation Error: $($resultData.activation_error)" -Color Yellow
     }
 
     # =================================================================
-    # POST-UPLOAD VERIFICATION: Call /status to confirm actual version
+    # OPCACHE RESET: For self-updates, call the standalone reset script
+    # to flush OPcache so the next request serves the new code.
     # =================================================================
-    Write-Status ""
-    Write-Status "[8/8] Post-upload version verification..." -Color Yellow
-    Start-Sleep -Seconds 2  # Brief pause for plugin activation to settle
-
-    $verifyUrl = "$WordPressSiteURL/wp-json/$activeNamespace/status"
-    Write-Debug-Log "Verify URL: $verifyUrl"
-    Write-Status "      GET $verifyUrl" -Color Gray
-    try {
-        $verifyResponse = Invoke-SafeRestRequest -Uri $verifyUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "Post-upload verify" -MaxRetries 3 -RetryDelaySec 5
-
-        if ($null -eq $verifyResponse) {
-            Write-Status "      ⚠ Verification blocked by HTML challenge — check WP admin manually" -Color Yellow
-        } else {
-            $verifyData = $verifyResponse
-            if ($verifyResponse.Results -and $verifyResponse.Results.Count -gt 0) {
-                $verifyData = $verifyResponse.Results[0]
-            }
-
-            $deployedVersion = if ($verifyData.Version) { $verifyData.Version } elseif ($verifyData.version) { $verifyData.version } else { "unknown" }
-            Write-Debug-Log "Deployed version from /status: $deployedVersion"
-
-            if ($deployedVersion -eq $LocalVersion) {
-                Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
-            } elseif ($deployedVersion -eq "unknown") {
-                Write-Status "      ⚠ Could not determine deployed version from /status" -Color Yellow
+    if ($isSelfUpdate) {
+        Write-Status ""
+        Write-Status "[8/8] Flushing OPcache for self-update..." -Color Yellow
+        
+        $opcacheUrl = "$WordPressSiteURL/wp-content/plugins/riseup-asia-uploader/opcache-reset.php"
+        Write-Debug-Log "OPcache reset URL: $opcacheUrl"
+        Write-Status "      GET $opcacheUrl" -Color Gray
+        
+        try {
+            $opcacheResponse = Invoke-SafeRestRequest -Uri $opcacheUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "OPcache reset" -MaxRetries 2 -RetryDelaySec 3
+            
+            if ($null -ne $opcacheResponse -and $opcacheResponse.success -eq $true) {
+                $resetDone = if ($opcacheResponse.opcache_reset) { "yes" } else { "no" }
+                $filesInvalidated = if ($opcacheResponse.files_invalidated) { $opcacheResponse.files_invalidated } else { 0 }
+                Write-Status "      ✓ OPcache reset: $resetDone, files invalidated: $filesInvalidated" -Color Green
+            } elseif ($null -ne $opcacheResponse) {
+                Write-Status "      ⚠ OPcache reset response: $($opcacheResponse | ConvertTo-Json -Compress)" -Color Yellow
             } else {
-                Write-Status ""
-                Write-Status "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
-                Write-Status "  ║          ⚠  VERSION MISMATCH DETECTED  ⚠               ║" -ForegroundColor Red
-                Write-Status "  ╠══════════════════════════════════════════════════════════╣" -ForegroundColor Red
-                Write-Status "  ║  Uploaded:  v$LocalVersion" -ForegroundColor White -NoNewline
-                Write-Status (" " * [Math]::Max(0, 42 - $LocalVersion.Length)) -ForegroundColor Red -NoNewline
-                Write-Status "║" -ForegroundColor Red
-                Write-Status "  ║  Deployed:  v$deployedVersion" -ForegroundColor Yellow -NoNewline
-                Write-Status (" " * [Math]::Max(0, 42 - $deployedVersion.Length)) -ForegroundColor Red -NoNewline
-                Write-Status "║" -ForegroundColor Red
-                Write-Status "  ║                                                        ║" -ForegroundColor Red
-                Write-Status "  ║  Run the upload AGAIN — the new code will now handle   ║" -ForegroundColor White
-                Write-Status "  ║  it correctly.                                          ║" -ForegroundColor White
-                Write-Status "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+                Write-Status "      ⚠ OPcache reset returned null (may be blocked)" -Color Yellow
             }
+        } catch {
+            Write-Status "      ⚠ OPcache reset failed: $($_.Exception.Message)" -Color Yellow
+            Write-Status "        This is normal on first deploy — the reset script is part of v1.45.0+" -Color DarkGray
         }
-    } catch {
-        Write-Status "      ⚠ Verification call failed: $($_.Exception.Message)" -Color Yellow
-        Write-Status "      The upload likely succeeded — check the WordPress admin." -Color Gray
+        
+        Start-Sleep -Seconds 2  # Brief pause for OPcache to settle
+        
+        # Now verify version after OPcache flush
+        Write-Status ""
+        Write-Status "      Verifying version after OPcache flush..." -Color Yellow
+        $verifyUrl = "$WordPressSiteURL/wp-json/$activeNamespace/status"
+        Write-Debug-Log "Verify URL: $verifyUrl"
+        Write-Status "      GET $verifyUrl" -Color Gray
+        
+        try {
+            $verifyResponse = Invoke-SafeRestRequest -Uri $verifyUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "Post-OPcache verify" -MaxRetries 2 -RetryDelaySec 3
+            
+            if ($null -ne $verifyResponse) {
+                $verifyData = $verifyResponse
+                if ($verifyResponse.Results -and $verifyResponse.Results.Count -gt 0) {
+                    $verifyData = $verifyResponse.Results[0]
+                }
+                $deployedVersion = if ($verifyData.Version) { $verifyData.Version } elseif ($verifyData.version) { $verifyData.version } else { "unknown" }
+                Write-Debug-Log "Deployed version from /status: $deployedVersion"
+                
+                if ($deployedVersion -eq $LocalVersion) {
+                    Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
+                } else {
+                    Write-Status "      ⚠ Server still reports v$deployedVersion (OPcache may need manual reset)" -Color Yellow
+                    Write-Status "        Files ARE on disk (v$LocalVersion). OPcache TTL will expire shortly." -Color DarkGray
+                }
+            } else {
+                Write-Status "      ⚠ Verification blocked — check WP admin manually" -Color Yellow
+            }
+        } catch {
+            Write-Status "      ⚠ Verification failed: $($_.Exception.Message)" -Color Yellow
+        }
+    } else {
+        # =================================================================
+        # NON-SELF-UPDATE: Standard post-upload verification
+        # =================================================================
+        Write-Status ""
+        Write-Status "[8/8] Post-upload version verification..." -Color Yellow
+        Start-Sleep -Seconds 2
+
+        $verifyUrl = "$WordPressSiteURL/wp-json/$activeNamespace/status"
+        Write-Debug-Log "Verify URL: $verifyUrl"
+        Write-Status "      GET $verifyUrl" -Color Gray
+        try {
+            $verifyResponse = Invoke-SafeRestRequest -Uri $verifyUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "Post-upload verify" -MaxRetries 3 -RetryDelaySec 5
+
+            if ($null -eq $verifyResponse) {
+                Write-Status "      ⚠ Verification blocked by HTML challenge — check WP admin manually" -Color Yellow
+            } else {
+                $verifyData = $verifyResponse
+                if ($verifyResponse.Results -and $verifyResponse.Results.Count -gt 0) {
+                    $verifyData = $verifyResponse.Results[0]
+                }
+
+                $deployedVersion = if ($verifyData.Version) { $verifyData.Version } elseif ($verifyData.version) { $verifyData.version } else { "unknown" }
+                Write-Debug-Log "Deployed version from /status: $deployedVersion"
+
+                if ($deployedVersion -eq $LocalVersion) {
+                    Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
+                } elseif ($deployedVersion -eq "unknown") {
+                    Write-Status "      ⚠ Could not determine deployed version from /status" -Color Yellow
+                } else {
+                    Write-Status ""
+                    Write-Status "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
+                    Write-Status "  ║          ⚠  VERSION MISMATCH DETECTED  ⚠               ║" -ForegroundColor Red
+                    Write-Status "  ╠══════════════════════════════════════════════════════════╣" -ForegroundColor Red
+                    Write-Status "  ║  Uploaded:  v$LocalVersion" -ForegroundColor White -NoNewline
+                    Write-Status (" " * [Math]::Max(0, 42 - $LocalVersion.Length)) -ForegroundColor Red -NoNewline
+                    Write-Status "║" -ForegroundColor Red
+                    Write-Status "  ║  Deployed:  v$deployedVersion" -ForegroundColor Yellow -NoNewline
+                    Write-Status (" " * [Math]::Max(0, 42 - $deployedVersion.Length)) -ForegroundColor Red -NoNewline
+                    Write-Status "║" -ForegroundColor Red
+                    Write-Status "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+                }
+            }
+        } catch {
+            Write-Status "      ⚠ Verification call failed: $($_.Exception.Message)" -Color Yellow
+            Write-Status "      The upload likely succeeded — check the WordPress admin." -Color Gray
+        }
     }
 
     Write-Status ""
