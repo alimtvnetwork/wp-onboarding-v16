@@ -15,6 +15,7 @@ param(
     [Alias('z')][switch]$zip,
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose,
+    [Alias('d')][switch]$debug,
     [Alias('pp')][string]$pluginpath = ""
 )
 
@@ -123,6 +124,7 @@ if ($help) {
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
     Write-Host "  -u,  -upload        Upload default plugin to WordPress via upload-plugin-v2"
+    Write-Host "  -d,  -debug         Enable debug logging for upload (shows all endpoints, paths, responses)"
     Write-Host "  -z,  -zip           Create a versioned ZIP of the default plugin (e.g. riseup-asia-uploader-v1.36.0.zip)"
     Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u or -z)"
     Write-Host "  -v,  -verbose       Show detailed debug output"
@@ -136,6 +138,7 @@ if ($help) {
     Write-Host "  .\run.ps1 -b           # Build only, don't start server"
     Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
     Write-Host "  .\run.ps1 -u           # Upload default plugin to WordPress"
+    Write-Host "  .\run.ps1 -u -d        # Upload with debug logging (shows all endpoints & responses)"
     Write-Host "  .\run.ps1 -u -pp 'C:\path\to\plugin'  # Upload a specific plugin"
     Write-Host "  .\run.ps1 -z           # ZIP the default plugin with version number"
     Write-Host "  .\run.ps1 -z -pp 'C:\path\to\plugin'  # ZIP a specific plugin"
@@ -693,7 +696,9 @@ if ($upload) {
         Write-Host "  Path:   $pluginPath" -ForegroundColor Gray
         Write-Host "  Site:   $($wpConfig.wordPressSiteURL)" -ForegroundColor Gray
         Write-Host ""
-        & $uploadScript -JsonConfig $jsonConfigStr -Activate
+        $debugArgs = @()
+        if ($debug) { $debugArgs += "-Debug" }
+        & $uploadScript -JsonConfig $jsonConfigStr -Activate @debugArgs
     } else {
         Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red
         Write-Host "Create it with site URL, username, and app password." -ForegroundColor Yellow
