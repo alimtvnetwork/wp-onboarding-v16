@@ -322,6 +322,7 @@ class Riseup_Admin {
 
         // Action labels for display
         $action_labels = array(
+            'upload_initiated' => 'Upload Initiated',
             'upload'          => 'Plugin Upload',
             'upload_active'   => 'Upload & Activate',
             'enable'          => 'Plugin Enable',

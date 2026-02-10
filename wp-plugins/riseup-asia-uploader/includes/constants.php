@@ -197,6 +197,9 @@ if (!defined('RISEUP_ACTION_EXPORT_SELF')) {
 if (!defined('RISEUP_ACTION_EXPORT_PLUGIN')) {
     define('RISEUP_ACTION_EXPORT_PLUGIN', 'export_plugin');
 }
+if (!defined('RISEUP_ACTION_UPLOAD_INITIATED')) {
+    define('RISEUP_ACTION_UPLOAD_INITIATED', 'upload_initiated');
+}
 
 // =============================================================================
 // STATUS VALUES
