@@ -80,14 +80,18 @@ export default function PublishHistory() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Publish History</h1>
+            <h1 className="text-2xl font-bold">
+              {siteNameParam ? `Activity — ${siteNameParam}` : "Publish History"}
+            </h1>
             {entries.length > 0 && entries[0]?.version && (
               <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5">
                 v{entries[0].version}
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground text-sm">Audit log of all publish operations</p>
+          <p className="text-muted-foreground text-sm">
+            {siteNameParam ? `Activity logs for ${siteNameParam}` : "Audit log of all publish operations"}
+          </p>
         </div>
         <Button variant="destructive" size="sm" onClick={() => clearMutation.mutate()} disabled={total === 0}>
           Clear All
