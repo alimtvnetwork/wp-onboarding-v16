@@ -135,7 +135,8 @@ export default function PublishHistory() {
               <TableHead>Action</TableHead>
               <TableHead>Plugin / Target</TableHead>
               <TableHead>Version</TableHead>
-              <TableHead className="w-10"></TableHead>
+              <TableHead className="w-6 px-0"></TableHead>
+              <TableHead>New Ver.</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
               <TableHead>Duration</TableHead>
