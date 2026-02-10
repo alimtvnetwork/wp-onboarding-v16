@@ -302,7 +302,7 @@ Write-Status ""
 # ============================================================================
 # STEP 3: GET REMOTE VERSION
 # ============================================================================
-Write-Status "[3/7] Checking remote version on $WordPressSiteURL..." -Color Yellow
+Write-Status "[3/8] Checking remote version on $WordPressSiteURL..." -Color Yellow
 
 $RemoteVersion = "not installed"
 $CleanAppPassword = $AppPassword -replace '\s', ''
