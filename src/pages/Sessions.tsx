@@ -391,7 +391,7 @@ export default function Sessions() {
                     </span>
                   )}
                   <span className="font-mono text-muted-foreground">
-                    {selectedSession.sessionId.slice(0, 8)}
+                    {selectedSession.sessionId?.slice(0, 8) ?? '—'}
                   </span>
                 </CardDescription>
 

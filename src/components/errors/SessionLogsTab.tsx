@@ -76,7 +76,7 @@ export function SessionLogsTab({ sessionId, sessionType }: SessionLogsTabProps) 
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `session-${sessionId.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.log`;
+    link.download = `session-${(sessionId ?? '').slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.log`;
     link.click();
     window.URL.revokeObjectURL(url);
     toast.success("Session logs downloaded");
@@ -128,7 +128,7 @@ export function SessionLogsTab({ sessionId, sessionType }: SessionLogsTabProps) 
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs">
             <Clock className="h-3 w-3 mr-1" />
-            {sessionId.slice(0, 8)}...
+            {sessionId?.slice(0, 8) ?? '—'}...
           </Badge>
           {sessionType && (
             <Badge variant="secondary" className="capitalize">

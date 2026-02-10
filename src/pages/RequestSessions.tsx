@@ -526,7 +526,7 @@ export default function RequestSessions() {
                     {format(new Date(detail.startedAt), "MMM d, yyyy HH:mm:ss.SSS")}
                   </span>
                   <span>{detail.durationMs}ms</span>
-                  <span className="font-mono text-muted-foreground">{detail.id.slice(0, 8)}</span>
+                  <span className="font-mono text-muted-foreground">{detail.id?.slice(0, 8) ?? '—'}</span>
                 </CardDescription>
 
                 {detail.error && (

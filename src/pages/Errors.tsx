@@ -86,7 +86,7 @@ export default function Errors() {
     const all = [...storeErrors, ...errorNotifications];
     const seen = new Set<string>();
     return all.filter((e) => {
-      const key = `${e.message}-${e.createdAt.slice(0, 16)}`;
+      const key = `${e.message}-${(e.createdAt ?? '').slice(0, 16)}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
