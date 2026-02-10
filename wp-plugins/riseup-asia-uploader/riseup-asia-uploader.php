@@ -670,6 +670,13 @@ class Riseup_Asia {
             'permission_callback' => $this->build_permission_callback('openapi', array($this, 'check_status_permission')),
         ));
 
+        // OPcache reset endpoint (used by upload script after self-updates).
+        $safe_register(RISEUP_ENDPOINT_OPCACHE_RESET, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_opcache_reset'),
+            'permission_callback' => $this->build_permission_callback('opcache_reset', array($this, 'check_plugin_permission')),
+        ));
+
         // Plugin upload endpoint.
         $safe_register(RISEUP_ENDPOINT_UPLOAD, array(
             'methods'             => 'POST',
