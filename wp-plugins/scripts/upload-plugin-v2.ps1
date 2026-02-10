@@ -443,11 +443,24 @@ Write-Status ""
 # ============================================================================
 Write-Status "[6/7] REST API health check..." -Color Yellow
 $healthUrl = "$WordPressSiteURL/wp-json/"
-Write-Status "      GET $healthUrl" -Color Gray
+Write-Status "      ── Request ──" -Color DarkGray
+Write-Status "      GET $healthUrl" -Color White
+Write-Status "      Auth: Basic (user=$Username)" -Color Gray
+Write-Status "      ────────────" -Color DarkGray
 
 $restApiHealthy = $false
 try {
     $healthResponse = Invoke-RestMethod -Uri $healthUrl -Method Get -Headers @{ "Authorization" = "Basic $base64Auth" } -TimeoutSec 15 -ErrorAction Stop
+    
+    # Always dump raw response
+    try {
+        $rawHealth = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
+        if ($rawHealth.Length -gt 1000) { $rawHealth = $rawHealth.Substring(0, 1000) + "..." }
+        Write-Status "      Raw response: $rawHealth" -Color DarkGray
+    } catch {
+        Write-Status "      Raw response: $healthResponse" -Color DarkGray
+    }
+
     if ($healthResponse.name -or $healthResponse.namespaces) {
         $restApiHealthy = $true
         $siteName = if ($healthResponse.name) { $healthResponse.name } else { "Unknown" }
@@ -463,24 +476,12 @@ try {
         }
     } else {
         Write-Status "      ⚠ REST API responded but format unexpected" -Color Yellow
-        Write-Status "      Response type: $($healthResponse.GetType().FullName)" -Color Gray
-        try {
-            $rawPreview = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
-            if ($rawPreview.Length -gt 500) { $rawPreview = $rawPreview.Substring(0, 500) + "..." }
-            Write-Status "      Response preview: $rawPreview" -Color Gray
-        } catch {
-            Write-Status "      Response (raw): $healthResponse" -Color Gray
-        }
     }
 } catch {
     $healthErr = Get-ErrorResponseBody $_
     Write-Status "      ✗ REST API health check failed: $($_.Exception.Message)" -Color Red
     if ($healthErr -ne "") {
-        if (Test-IsHtml $healthErr) {
-            Write-Status "      Response: $(ConvertFrom-Html $healthErr)" -Color Gray
-        } else {
-            Write-Status "      Response: $healthErr" -Color Gray
-        }
+        Write-Status "      Raw error response: $healthErr" -Color Gray
     }
     Write-Status "      ⚠ Continuing anyway..." -Color Yellow
 }
