@@ -167,7 +167,7 @@ export default function PublishHistory() {
                   <TableCell>
                     <div className="flex items-center gap-1.5">
                       {e.isSelfUpdate && (
-                        <RefreshCw className="h-3.5 w-3.5 text-amber-500 shrink-0" title="Self-update" />
+                        <RefreshCw className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                       )}
                       <Badge className={actionClasses}>
                         {actionLabel}
