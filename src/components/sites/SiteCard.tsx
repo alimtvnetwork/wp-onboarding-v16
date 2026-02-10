@@ -19,6 +19,7 @@ import {
   Eye,
   FlaskConical,
   Database,
+  Activity,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping } from "@/lib/api";
