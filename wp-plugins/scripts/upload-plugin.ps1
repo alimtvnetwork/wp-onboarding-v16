@@ -35,7 +35,7 @@ param(
     [switch]$Force = $false,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Debug = $false,
+    [switch]$DebugMode = $false,
     
     # JSON string with all config (alternative to individual params)
     [Parameter(Mandatory=$false)]
@@ -57,7 +57,7 @@ function Write-Status {
 # Debug-only output
 function Write-Debug-Log {
     param([string]$Message)
-    if ($Debug) {
+    if ($DebugMode) {
         Write-Host "      [DEBUG] $Message" -ForegroundColor Magenta
     }
 }

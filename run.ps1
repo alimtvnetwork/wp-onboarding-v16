@@ -697,7 +697,7 @@ if ($upload) {
         Write-Host "  Site:   $($wpConfig.wordPressSiteURL)" -ForegroundColor Gray
         Write-Host ""
         $debugArgs = @()
-        if ($debug) { $debugArgs += "-Debug" }
+        if ($debug) { $debugArgs += "-DebugMode" }
         & $uploadScript -JsonConfig $jsonConfigStr -Activate @debugArgs
     } else {
         Write-Host "ERROR: wp-plugin-config.json not found at: $wpConfigPath" -ForegroundColor Red

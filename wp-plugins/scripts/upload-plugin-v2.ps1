@@ -34,7 +34,7 @@ param(
     [switch]$Quiet = $false,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Debug = $false,
+    [switch]$DebugMode = $false,
 
     [Parameter(Mandatory=$false)]
     [string]$JsonConfig = ""
@@ -52,10 +52,10 @@ function Write-Status {
     }
 }
 
-# Debug-only output (shown when -Debug flag is set)
+# Debug-only output (shown when -DebugMode flag is set)
 function Write-Debug-Log {
     param([string]$Message)
-    if ($Debug) {
+    if ($DebugMode) {
         Write-Host "      [DEBUG] $Message" -ForegroundColor Magenta
     }
 }
@@ -296,7 +296,7 @@ else {
         Write-Host "  .\upload-plugin-v2.ps1 -PluginPath 'C:\path' -SiteUrl 'https://site.com' -User 'admin' -Password 'pass'" -ForegroundColor Gray
         Write-Host "  .\upload-plugin-v2.ps1 -ConfigPath 'path\to\config.json'" -ForegroundColor Gray
         Write-Host "  .\upload-plugin-v2.ps1 -SkipGitPull  # skip git pull step" -ForegroundColor Gray
-        Write-Host "  .\upload-plugin-v2.ps1 -Debug  # enable debug logging" -ForegroundColor Gray
+        Write-Host "  .\upload-plugin-v2.ps1 -DebugMode  # enable debug logging" -ForegroundColor Gray
         Write-Host ""
         exit 1
     }
@@ -853,7 +853,7 @@ if (-not $uploadSuccess) {
 
     try {
         $fallbackArgs = @("-JsonConfig", $fallbackConfig, "-Force")
-        if ($Debug) { $fallbackArgs += "-Debug" }
+        if ($DebugMode) { $fallbackArgs += "-DebugMode" }
         & $basicScript @fallbackArgs
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error: Basic upload script failed with exit code $LASTEXITCODE" -ForegroundColor Red
