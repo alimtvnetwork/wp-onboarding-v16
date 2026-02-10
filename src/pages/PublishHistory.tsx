@@ -146,9 +146,9 @@ export default function PublishHistory() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : entries.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
             ) : entries.map((e: PublishHistoryEntry) => {
               const actionLabel = formatActionLabel(e.actionType || e.mode);
               const actionClasses = getActionBadgeClasses(e.actionType || e.mode);
