@@ -221,7 +221,7 @@ if ($PluginFolderPath -eq "" -or $WordPressSiteURL -eq "" -or $Username -eq "" -
 Write-Status ""
 Write-Status "===============================================" -Color Cyan
 Write-Status "  WordPress Plugin Uploader V2" -Color Cyan
-Write-Status "  Git Pull → Version Compare → Publish" -Color Cyan
+Write-Status "  Git Pull → Version Compare → Publish → Verify" -Color Cyan
 Write-Status "===============================================" -Color Cyan
 Write-Status ""
 
