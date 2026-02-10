@@ -566,12 +566,27 @@ $upload_source_classes = array(
 
     <script>
     jQuery(document).ready(function($) {
-        // Toggle details modal
-        $('.toggle-details').on('click', function() {
+        // Toggle details modal via button
+        $('.toggle-details').on('click', function(e) {
+            e.stopPropagation();
             var details = $(this).data('details');
             var formatted = JSON.stringify(details, null, 2);
             $('#riseup-details-content').text(formatted);
             $('#riseup-details-modal').show();
+        });
+
+        // Clickable rows - open details modal when row has data
+        $('.riseup-log-row.has-details').on('click', function(e) {
+            // Don't trigger if clicking a button or link inside the row
+            if ($(e.target).is('button, a, .toggle-details') || $(e.target).closest('button, a').length) {
+                return;
+            }
+            var details = $(this).data('details');
+            if (details) {
+                var formatted = JSON.stringify(details, null, 2);
+                $('#riseup-details-content').text(formatted);
+                $('#riseup-details-modal').show();
+            }
         });
 
         // Close modal
