@@ -481,7 +481,7 @@ Write-Status ""
 # ============================================================================
 # STEP 6: REST API HEALTH CHECK
 # ============================================================================
-Write-Status "[6/7] REST API health check..." -Color Yellow
+Write-Status "[6/8] REST API health check..." -Color Yellow
 $healthUrl = "$WordPressSiteURL/wp-json/"
 Write-Status "      ── Request ──" -Color DarkGray
 Write-Status "      GET $healthUrl" -Color White
