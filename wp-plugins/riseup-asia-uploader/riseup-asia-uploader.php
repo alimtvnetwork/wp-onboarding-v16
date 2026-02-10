@@ -1740,6 +1740,8 @@ class Riseup_Asia {
             if (RiseupBooleanHelpers::has_content($plugin_file)) {
                 // Force re-read from disk (not cached)
                 $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+                // Clear PHP's stat cache so file_exists/file_get_contents read fresh data
+                clearstatcache(true, $full_path);
                 if (file_exists($full_path)) {
                     // Read file header directly to bypass any caching
                     $file_contents = file_get_contents($full_path, false, null, 0, 8192);
