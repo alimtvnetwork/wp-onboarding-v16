@@ -531,7 +531,7 @@ Write-Status ""
 # ============================================================================
 # STEP 7: UPLOAD & PUBLISH
 # ============================================================================
-Write-Status "[7/7] Publishing to WordPress..." -Color Yellow
+Write-Status "[7/8] Publishing to WordPress..." -Color Yellow
 Write-Status "      Site: $WordPressSiteURL" -Color Gray
 Write-Status "      User: $Username" -Color Gray
 
