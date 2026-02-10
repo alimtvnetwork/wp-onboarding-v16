@@ -188,7 +188,12 @@ $upload_source_classes = array(
                     $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';
                     $upload_source_label = isset($upload_source_labels[$upload_source]) ? $upload_source_labels[$upload_source] : ($upload_source ?: '—');
                     ?>
-                    <tr>
+                    <tr class="riseup-log-row <?php echo (!empty($log['details']) || !empty($log['error_msg'])) ? 'has-details' : ''; ?>" 
+                        <?php if (!empty($log['details'])): ?>
+                            data-details="<?php echo esc_attr(json_encode($log['details'])); ?>"
+                        <?php elseif (!empty($log['error_msg'])): ?>
+                            data-details="<?php echo esc_attr(json_encode(array('error' => $log['error_msg']))); ?>"
+                        <?php endif; ?>>
                         <td class="column-id"><?php echo esc_html($log['id']); ?></td>
                         <td class="column-timestamp">
                             <span class="timestamp" title="<?php echo esc_attr($log['created_at']); ?>">
@@ -202,12 +207,12 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-plugin">
                             <?php if (!empty($log['plugin_slug'])): ?>
-                                <code><?php echo esc_html($log['plugin_slug']); ?></code>
+                                <span class="plugin-target-badge"><?php echo esc_html($log['plugin_slug']); ?></span>
                                 <?php if (!empty($log['plugin_file']) && $log['plugin_file'] !== $log['plugin_slug']): ?>
                                     <br><small class="plugin-file" title="<?php echo esc_attr($log['plugin_file']); ?>"><?php echo esc_html($log['plugin_file']); ?></small>
                                 <?php endif; ?>
                             <?php elseif (!empty($log['post_id'])): ?>
-                                <?php esc_html_e('Post:', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log['post_id']); ?>
+                                <span class="plugin-target-badge target-post"><?php esc_html_e('Post', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log['post_id']); ?></span>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
@@ -243,9 +248,9 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-source">
                             <?php if (!empty($source_machine)): ?>
-                                <code class="source-machine" title="<?php esc_attr_e('Management Server Hostname', 'riseup-asia-uploader'); ?>">
+                                <span class="source-badge" title="<?php esc_attr_e('Management Server Hostname', 'riseup-asia-uploader'); ?>">
                                     <?php echo esc_html($source_machine); ?>
-                                </code>
+                                </span>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
@@ -318,47 +323,64 @@ $upload_source_classes = array(
     </div>
 
     <style>
-    /* Trigger badge colors */
+    /* ================================================================
+       MODERN ACTIVITY TABLE STYLES
+       ================================================================ */
+
+    /* Trigger badge colors with drop shadows */
     .trigger-badge {
         display: inline-block;
-        padding: 2px 8px;
-        border-radius: 3px;
+        padding: 3px 10px;
+        border-radius: 4px;
         font-size: 11px;
-        font-weight: 500;
+        font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
     }
     .trigger-api {
         background: #e3f2fd;
         color: #1565c0;
+        border: 1px solid #90caf9;
     }
     .trigger-dashboard {
         background: #e8f5e9;
         color: #2e7d32;
+        border: 1px solid #a5d6a7;
     }
     .trigger-agent {
         background: #fff3e0;
         color: #e65100;
+        border: 1px solid #ffcc80;
     }
     .trigger-cron {
         background: #f3e5f5;
         color: #7b1fa2;
+        border: 1px solid #ce93d8;
     }
     .trigger-cli {
         background: #eceff1;
         color: #455a64;
+        border: 1px solid #b0bec5;
     }
     .trigger-unknown {
         background: #fafafa;
         color: #9e9e9e;
+        border: 1px solid #e0e0e0;
     }
 
-    /* Source machine styling */
-    .source-machine {
-        background: #263238;
-        color: #80cbc4;
-        padding: 2px 6px;
-        border-radius: 3px;
+    /* Source badge - black bg, white text */
+    .source-badge {
+        display: inline-block;
+        background: #1a1a2e;
+        color: #ffffff;
+        padding: 3px 8px;
+        border-radius: 4px;
         font-size: 11px;
+        font-family: 'SFMono-Regular', 'Consolas', monospace;
+        font-weight: 500;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        letter-spacing: 0.3px;
     }
     .ip-address {
         color: #757575;
@@ -369,6 +391,24 @@ $upload_source_classes = array(
         font-family: monospace;
         font-size: 10px;
         word-break: break-all;
+    }
+
+    /* Plugin/Target badges - colorful labels */
+    .plugin-target-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: 'SFMono-Regular', 'Consolas', monospace;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+        letter-spacing: 0.3px;
+    }
+    .target-post {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        box-shadow: 0 2px 6px rgba(245, 87, 108, 0.3);
     }
 
     /* Filter row improvements */
@@ -389,55 +429,125 @@ $upload_source_classes = array(
         margin-bottom: 3px;
     }
 
-    /* Version badge - base */
+    /* Version badge - base with drop shadow */
     .version-badge {
-        padding: 2px 6px;
-        border-radius: 3px;
+        padding: 3px 8px;
+        border-radius: 4px;
         font-size: 11px;
         font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    /* Current version - green */
     .version-current {
         background: #d4edda;
         color: #155724;
         border: 1px solid #a3d9a5;
     }
-    /* Older version - muted indigo */
     .version-old {
         background: #e8eaf6;
         color: #283593;
+        border: 1px solid #c5cae9;
     }
 
-    /* Upload source badge */
+    /* Upload source badge with drop shadow */
     .upload-source-badge {
         display: inline-block;
-        padding: 2px 8px;
-        border-radius: 3px;
+        padding: 3px 10px;
+        border-radius: 4px;
         font-size: 11px;
-        font-weight: 500;
-        text-transform: uppercase;
-    }
-    .source-script {
-        background: #fff3cd;
-        color: #664d03;
-        border: 1px solid #ffda6a;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+    }
+    /* Upload Script - yellow bg, black text, border, drop shadow */
+    .source-script {
+        background: #ffd600;
+        color: #1a1a1a;
+        border: 1px solid #c6a700;
+        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(255, 214, 0, 0.4);
     }
     .source-api {
         background: #e3f2fd;
         color: #1565c0;
+        border: 1px solid #90caf9;
     }
     .source-admin {
         background: #e8f5e9;
         color: #2e7d32;
+        border: 1px solid #a5d6a7;
     }
     .source-cli {
         background: #eceff1;
         color: #455a64;
+        border: 1px solid #b0bec5;
     }
     .source-unknown {
         background: #fafafa;
         color: #9e9e9e;
+        border: 1px solid #e0e0e0;
+    }
+
+    /* Table row hover and clickable */
+    .riseup-logs-table tbody tr.riseup-log-row {
+        transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .riseup-logs-table tbody tr.riseup-log-row:hover {
+        background-color: #eef2ff !important;
+        box-shadow: inset 3px 0 0 #667eea;
+    }
+    .riseup-logs-table tbody tr.riseup-log-row.has-details {
+        cursor: pointer;
+    }
+    .riseup-logs-table tbody tr.riseup-log-row.has-details:hover {
+        background-color: #e8eeff !important;
+    }
+
+    /* Action badges - enhanced with drop shadows */
+    .action-badge {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+        border-radius: 4px;
+    }
+    .action-upload,
+    .action-upload_active {
+        border: 1px solid #6dd297;
+    }
+    .action-enable {
+        border: 1px solid #6dd297;
+    }
+    .action-disable {
+        border: 1px solid #f0c36d;
+    }
+    .action-delete,
+    .action-file_delete {
+        border: 1px solid #f5a5a5;
+    }
+    .action-auth_failed {
+        border: 1px solid #f5a5a5;
+    }
+    .action-post_create,
+    .action-post_update,
+    .action-category_create {
+        border: 1px solid #a1c4fd;
+    }
+    .action-sync,
+    .action-file_replace {
+        border: 1px solid #c0c4c9;
+    }
+    .action-export_self {
+        border: 1px solid #c9a7e4;
+    }
+
+    /* Status badges - enhanced */
+    .status-badge {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 4px;
+    }
+    .status-success {
+        border: 1px solid #6dd297;
+    }
+    .status-failed {
+        border: 1px solid #f5a5a5;
     }
 
     /* Column widths */
@@ -456,12 +566,27 @@ $upload_source_classes = array(
 
     <script>
     jQuery(document).ready(function($) {
-        // Toggle details modal
-        $('.toggle-details').on('click', function() {
+        // Toggle details modal via button
+        $('.toggle-details').on('click', function(e) {
+            e.stopPropagation();
             var details = $(this).data('details');
             var formatted = JSON.stringify(details, null, 2);
             $('#riseup-details-content').text(formatted);
             $('#riseup-details-modal').show();
+        });
+
+        // Clickable rows - open details modal when row has data
+        $('.riseup-log-row.has-details').on('click', function(e) {
+            // Don't trigger if clicking a button or link inside the row
+            if ($(e.target).is('button, a, .toggle-details') || $(e.target).closest('button, a').length) {
+                return;
+            }
+            var details = $(this).data('details');
+            if (details) {
+                var formatted = JSON.stringify(details, null, 2);
+                $('#riseup-details-content').text(formatted);
+                $('#riseup-details-modal').show();
+            }
         });
 
         // Close modal
