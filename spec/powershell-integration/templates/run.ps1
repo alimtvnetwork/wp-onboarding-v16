@@ -189,6 +189,9 @@ if ($help) {
     Write-Host "  -i,  -install       Install/update dependencies (frontend + backend)"
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
+    Write-Host "  -u,  -upload        Upload plugin to WordPress via upload-plugin-v2"
+    Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u)"
+    Write-Host "  -d,  -debugmode     Debug mode for upload (verbose HTTP logging)"
     Write-Host "  -v,  -verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
@@ -199,6 +202,9 @@ if ($help) {
     Write-Host "  .\run.ps1 -s           # Just start the backend (skip build)"
     Write-Host "  .\run.ps1 -b           # Build only, don't start server"
     Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
+    Write-Host "  .\run.ps1 -u           # Upload default plugin to WordPress"
+    Write-Host "  .\run.ps1 -u -d        # Upload with debug output"
+    Write-Host "  .\run.ps1 -u -pp 'C:\path'  # Upload custom plugin path"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
