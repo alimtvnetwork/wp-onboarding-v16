@@ -898,6 +898,13 @@ try {
         } catch {
             Write-Status "      ⚠ Verification failed: $($_.Exception.Message)" -Color Yellow
         }
+    } elseif ($isSelfUpdate -and $responseVersion -eq $LocalVersion) {
+        # =================================================================
+        # SELF-UPDATE WITH MATCHING VERSION: Server already runs new code,
+        # no OPcache flush needed — just confirm.
+        # =================================================================
+        Write-Status ""
+        Write-Status "[8/8] Self-update verified — server already reports v$responseVersion ✓" -Color Green
     } else {
         # =================================================================
         # NON-SELF-UPDATE: Standard post-upload verification
