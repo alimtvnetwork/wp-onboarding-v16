@@ -350,7 +350,7 @@ Write-Status ""
 # ============================================================================
 # STEP 4: VERSION COMPARISON
 # ============================================================================
-Write-Status "[4/7] Version comparison..." -Color Yellow
+Write-Status "[4/8] Version comparison..." -Color Yellow
 
 $VersionAction = "install"
 if ($RemoteVersion -ne "not installed" -and $RemoteVersion -ne "unknown") {
