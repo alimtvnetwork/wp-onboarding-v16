@@ -554,23 +554,51 @@ try {
     $tempDir = Join-Path $env:TEMP "wp-plugin-upload-$(Get-Random)"
     $pluginTempDir = Join-Path $tempDir $folderName
     New-Item -ItemType Directory -Path $pluginTempDir -Force | Out-Null
-    Copy-Item -Path "$PluginFolderPath\*" -Destination $pluginTempDir -Recurse
-    # Use System.IO.Compression for SmallestSize (better than Compress-Archive Optimal)
+
+    # Copy files and show progress
+    $allFiles = Get-ChildItem -Path $PluginFolderPath -Recurse -File
+    $totalFiles = $allFiles.Count
+    $copiedCount = 0
+    Write-Status "      Copying $totalFiles files to staging..." -Color Gray
+    foreach ($file in $allFiles) {
+        $relativePath = $file.FullName.Substring($PluginFolderPath.Length)
+        $destPath = Join-Path $pluginTempDir $relativePath
+        $destDir = Split-Path $destPath -Parent
+        if (-not (Test-Path $destDir)) {
+            New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+        }
+        Copy-Item -Path $file.FullName -Destination $destPath
+        $copiedCount++
+        if ($copiedCount % 50 -eq 0 -or $copiedCount -eq $totalFiles) {
+            $pct = [math]::Round(($copiedCount / $totalFiles) * 100)
+            Write-Host "`r      Staging: $copiedCount/$totalFiles files ($pct%)" -NoNewline -ForegroundColor Gray
+        }
+    }
+    Write-Host ""
+
+    # Compress with maximum compression (SmallestSize)
     Add-Type -AssemblyName System.IO.Compression.FileSystem
+    Write-Status "      Compressing (SmallestSize)..." -Color Gray -NoNewline
+
     [System.IO.Compression.ZipFile]::CreateFromDirectory(
         $pluginTempDir,
         $OutputZipPath,
         [System.IO.Compression.CompressionLevel]::SmallestSize,
         $true  # includeBaseDirectory — keeps the slug folder as root
     )
+
     Remove-Item $tempDir -Recurse -Force
 
     $zipSize = (Get-Item $OutputZipPath).Length
     $zipSizeKB = [math]::Round($zipSize / 1KB, 2)
-    Write-Status "      ✓ ZIP created: $zipSizeKB KB" -Color Green
-    Write-Debug-Log "ZIP path: $OutputZipPath"
-    Write-Debug-Log "ZIP size: $zipSizeKB KB"
-    Write-Debug-Log "Cache dir: $cacheDir"
+    $sourceSizeKB = [math]::Round(($allFiles | Measure-Object -Property Length -Sum).Sum / 1KB, 2)
+    $ratio = if ($sourceSizeKB -gt 0) { [math]::Round(($zipSizeKB / $sourceSizeKB) * 100, 1) } else { 0 }
+
+    Write-Host " done" -ForegroundColor Green
+    Write-Status "      ✓ ZIP created: $zipSizeKB KB (from $sourceSizeKB KB source, ${ratio}% ratio)" -Color Green
+    Write-Status "      Path: $OutputZipPath" -Color Gray
+    Write-Status "      Cache: $cacheDir" -Color Gray
+    Write-Status "      Files: $totalFiles" -Color Gray
 } catch {
     Write-Host "      Error creating ZIP: $_" -ForegroundColor Red
     exit 1
