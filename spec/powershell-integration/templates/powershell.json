@@ -36,5 +36,11 @@
   ],
   "env": {
     "NODE_ENV": "production"
+  },
+  "_comment_upload": "Optional: Remove this section if you don't need WordPress plugin upload",
+  "upload": {
+    "scriptPath": "wp-plugins/scripts/upload-plugin-v2.ps1",
+    "defaultPluginPath": "wp-plugins/my-plugin",
+    "configPath": "wp-plugins/scripts/wp-plugin-config.json"
   }
 }

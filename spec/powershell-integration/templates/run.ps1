@@ -1,5 +1,5 @@
 # PowerShell Build & Run Script — Generic Template
-# Version: 1.2.0
+# Version: 1.3.0
 # Generic template for Go backend + React frontend projects with pnpm PnP support
 # Configure via powershell.json — see spec/powershell-integration/01-configuration-schema.md
 #
@@ -17,10 +17,14 @@
 #   -i   Install/update all dependencies (frontend + backend)
 #   -r   Rebuild (combines -f + -i for complete clean reinstall)
 #   -fw  Add Windows Firewall inbound rules (requires Admin)
+#   -u   Upload plugin to WordPress via upload-plugin-v2.ps1
+#   -pp  Override plugin path for upload (use with -u)
+#   -d   Debug mode for upload (verbose request/response logging)
 #   -v   Verbose debug output
 #
 # PIPELINE:
 #   1. Git Pull → 2. Prerequisites → 3. pnpm Install → 4. Build → 5. Copy → 6. Run
+#   Upload mode (-u): 1. Git Pull → 2. Prerequisites → Upload Plugin V2
 #
 # FEATURES:
 #   - Auto-install Go, Node.js, pnpm via winget if missing
@@ -31,6 +35,7 @@
 #   - pnpm v10+ compatibility (auto --dangerously-allow-all-builds)
 #   - Cross-drive store detection (falls back to isolated linker)
 #   - Node v24+ detection (falls back to isolated linker for ESM compat)
+#   - WordPress plugin upload integration (optional, via powershell.json)
 #
 # CONFIGURATION (powershell.json):
 #   {
@@ -50,8 +55,21 @@
 #     "installCommand": "pnpm install",
 #     "runCommand": "go run cmd/server/main.go",
 #     "configFile": "config.json",
-#     "configExampleFile": "config.example.json"
+#     "configExampleFile": "config.example.json",
+#     "upload": {
+#       "scriptPath": "wp-plugins/scripts/upload-plugin-v2.ps1",
+#       "defaultPluginPath": "wp-plugins/riseup-asia-uploader",
+#       "configPath": "wp-plugins/scripts/wp-plugin-config.json"
+#     }
 #   }
+#
+# UPLOAD INTEGRATION (optional):
+#   Add the "upload" section to powershell.json to enable -u flag.
+#   The upload script must exist at the configured scriptPath.
+#   Example:
+#     .\run.ps1 -u              # Upload default plugin
+#     .\run.ps1 -u -d           # Upload with debug output
+#     .\run.ps1 -u -pp "C:\custom-plugin"  # Upload custom path
 #
 # See spec/powershell-integration/ for full documentation.
 
@@ -63,6 +81,9 @@ param(
     [Alias('i')][switch]$install,
     [Alias('r')][switch]$rebuild,
     [Alias('fw')][switch]$openfirewall,
+    [Alias('u')][switch]$upload,
+    [Alias('pp')][string]$pluginpath = "",
+    [Alias('d')][switch]$debugmode,
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose
 )
@@ -168,6 +189,9 @@ if ($help) {
     Write-Host "  -i,  -install       Install/update dependencies (frontend + backend)"
     Write-Host "  -r,  -rebuild       Complete clean reinstall (combines -f + -i)"
     Write-Host "  -fw, -openfirewall  (Admin) Add Windows Firewall inbound rules"
+    Write-Host "  -u,  -upload        Upload plugin to WordPress via upload-plugin-v2"
+    Write-Host "  -pp, -pluginpath    Override plugin folder path (use with -u)"
+    Write-Host "  -d,  -debugmode     Debug mode for upload (verbose HTTP logging)"
     Write-Host "  -v,  -verbose       Show detailed debug output"
     Write-Host ""
     Write-Host "EXAMPLES:" -ForegroundColor Yellow
@@ -178,6 +202,9 @@ if ($help) {
     Write-Host "  .\run.ps1 -s           # Just start the backend (skip build)"
     Write-Host "  .\run.ps1 -b           # Build only, don't start server"
     Write-Host "  .\run.ps1 -p -f        # Clean build without git pull"
+    Write-Host "  .\run.ps1 -u           # Upload default plugin to WordPress"
+    Write-Host "  .\run.ps1 -u -d        # Upload with debug output"
+    Write-Host "  .\run.ps1 -u -pp 'C:\path'  # Upload custom plugin path"
     Write-Host ""
     Write-Host "CONFIGURATION:" -ForegroundColor Yellow
     Write-Host "  Config file: $ConfigPath"
@@ -504,6 +531,83 @@ $stepWatch.Stop()
 $StepTimes["Prerequisites"] = $stepWatch.Elapsed
 Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 Write-Host ""
+
+# ============================================================================
+# UPLOAD MODE (-u): Upload plugin to WordPress via upload-plugin-v2.ps1
+# This section is optional — only runs when -u flag is passed.
+# Requires "upload" section in powershell.json with:
+#   scriptPath:        Path to upload-plugin-v2.ps1
+#   defaultPluginPath: Default plugin folder to upload
+#   configPath:        Path to wp-plugin-config.json (credentials)
+# ============================================================================
+if ($upload) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Upload Mode (-u)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    
+    # Resolve upload config from powershell.json
+    $uploadConfig = $Config.upload
+    if (-not $uploadConfig) {
+        Write-Host "ERROR: No 'upload' section in powershell.json." -ForegroundColor Red
+        Write-Host "Add this to powershell.json:" -ForegroundColor Yellow
+        Write-Host '  "upload": {' -ForegroundColor Gray
+        Write-Host '    "scriptPath": "path/to/upload-plugin-v2.ps1",' -ForegroundColor Gray
+        Write-Host '    "defaultPluginPath": "path/to/plugin-folder",' -ForegroundColor Gray
+        Write-Host '    "configPath": "path/to/wp-plugin-config.json"' -ForegroundColor Gray
+        Write-Host '  }' -ForegroundColor Gray
+        exit 1
+    }
+    
+    $uploadScript = Resolve-RelativePath $uploadConfig.scriptPath
+    $defaultPlugin = Resolve-RelativePath $uploadConfig.defaultPluginPath
+    $wpConfig = Resolve-RelativePath $uploadConfig.configPath
+    
+    if (-not (Test-Path $uploadScript)) {
+        Write-Host "ERROR: Upload script not found: $uploadScript" -ForegroundColor Red
+        exit 1
+    }
+    
+    # Determine plugin path (CLI override or default from config)
+    $targetPlugin = if ($pluginpath -ne "") { $pluginpath } else { $defaultPlugin }
+    
+    if (-not (Test-Path $targetPlugin)) {
+        Write-Host "ERROR: Plugin folder not found: $targetPlugin" -ForegroundColor Red
+        exit 1
+    }
+    
+    $pluginName = Split-Path $targetPlugin -Leaf
+    Write-Host "  Plugin: $pluginName" -ForegroundColor White
+    Write-Host "  Path:   $targetPlugin" -ForegroundColor Gray
+    
+    # Read config to show site URL
+    if (Test-Path $wpConfig) {
+        try {
+            $wpConfigData = Get-Content $wpConfig -Raw | ConvertFrom-Json
+            Write-Host "  Site:   $($wpConfigData.wordPressSiteURL)" -ForegroundColor Gray
+        } catch {}
+    }
+    Write-Host ""
+    
+    # Build JSON config for V2 script
+    if (Test-Path $wpConfig) {
+        $configContent = Get-Content $wpConfig -Raw | ConvertFrom-Json
+        $configContent.pluginFolderPath = $targetPlugin
+        $jsonConfig = $configContent | ConvertTo-Json -Compress
+        Write-Host "Parsing inline JSON config..." -ForegroundColor Gray
+    } else {
+        Write-Host "ERROR: Config file not found: $wpConfig" -ForegroundColor Red
+        exit 1
+    }
+    
+    # Build V2 arguments
+    $v2Args = @("-JsonConfig", $jsonConfig)
+    if ($debugmode) { $v2Args += "-DebugMode" }
+    
+    & $uploadScript @v2Args
+    exit $LASTEXITCODE
+}
 
 # ============================================================================
 # INSTALL MODE (-i): Install dependencies for both frontend and backend
