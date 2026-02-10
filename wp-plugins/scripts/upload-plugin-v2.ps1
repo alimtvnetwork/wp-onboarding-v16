@@ -170,9 +170,15 @@ function Invoke-SafeRestRequest {
         [string]$Label = "Request"
     )
 
+    # Ensure Accept header is set so WordPress returns JSON, not HTML
+    if (-not $Headers.ContainsKey("Accept")) {
+        $Headers["Accept"] = "application/json"
+    }
+
     for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
         Write-Debug-Log "$Label → Attempt $attempt/$MaxRetries"
         Write-Debug-Log "$Label → $Method $Uri"
+        Write-Debug-Log "$Label → Headers: $($Headers.Keys -join ', ')"
 
         try {
             $reqParams = @{
@@ -195,9 +201,10 @@ function Invoke-SafeRestRequest {
 
             Write-Debug-Log "$Label → Status: $statusCode"
             Write-Debug-Log "$Label → Content-Type: $respContentType"
+            Write-Debug-Log "$Label → Body (first 500): $($rawBody.Substring(0, [Math]::Min(500, $rawBody.Length)))"
 
-            # Detect HTML challenge pages (SpeedyCache, Cloudflare, etc.)
-            if ($rawBody -match "One moment, please" -or $rawBody -match "Checking your browser" -or ($respContentType -and $respContentType -match "text/html" -and $rawBody -match "<html")) {
+            # Detect HTML challenge pages — only the specific spinner/challenge pages
+            if ($rawBody -match "One moment, please" -or $rawBody -match "Checking your browser") {
                 Write-Status "      ⚠ Got HTML challenge page (security plugin/CDN)" -Color Yellow
                 if ($attempt -lt $MaxRetries) {
                     Write-Status "        Waiting ${RetryDelaySec}s and retrying (attempt $attempt/$MaxRetries)..." -Color Yellow
@@ -205,10 +212,16 @@ function Invoke-SafeRestRequest {
                     continue
                 } else {
                     Write-Status "        All $MaxRetries attempts returned HTML challenge page." -Color Red
-                    Write-Status "        Your server has a security plugin (SpeedyCache/Cloudflare)" -Color Red
-                    Write-Status "        blocking REST API requests. Whitelist your IP or /wp-json/." -Color Red
                     return $null
                 }
+            }
+
+            # If content-type is HTML but NOT a challenge page, log it clearly as a server error
+            if ($respContentType -and $respContentType -match "text/html") {
+                Write-Status "      ⚠ Server returned HTML (not JSON) — Status: $statusCode" -Color Yellow
+                Write-Debug-Log "$Label → HTML response (not a challenge). Raw (first 800):"
+                Write-Debug-Log ($rawBody.Substring(0, [Math]::Min(800, $rawBody.Length)))
+                return $null
             }
 
             # Parse JSON
@@ -417,6 +430,7 @@ $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Usern
 
 $headers = @{
     "Authorization" = "Basic $base64Auth"
+    "Accept"        = "application/json"
 }
 
 $apiNamespaces = @(
@@ -694,6 +708,7 @@ try {
 
     $uploadHeaders = @{
         "Authorization"              = "Basic $base64Auth"
+        "Accept"                     = "application/json"
         "X-Riseup-Source-Machine"    = $machineName
         "X-Riseup-Plugin-Version"    = $LocalVersion
     }
@@ -852,9 +867,12 @@ if (-not $uploadSuccess) {
     } | ConvertTo-Json -Compress
 
     try {
-        $fallbackArgs = @("-JsonConfig", $fallbackConfig, "-Force")
-        if ($DebugMode) { $fallbackArgs += "-DebugMode" }
-        & $basicScript @fallbackArgs
+        # Use direct named parameters — array splatting mangles JSON strings
+        if ($DebugMode) {
+            & $basicScript -JsonConfig $fallbackConfig -Force -DebugMode
+        } else {
+            & $basicScript -JsonConfig $fallbackConfig -Force
+        }
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error: Basic upload script failed with exit code $LASTEXITCODE" -ForegroundColor Red
             exit 1

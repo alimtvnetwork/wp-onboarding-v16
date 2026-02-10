@@ -76,9 +76,15 @@ function Invoke-SafeRestRequest {
         [string]$Label = "Request"
     )
 
+    # Ensure Accept header is set so WordPress returns JSON, not HTML
+    if (-not $Headers.ContainsKey("Accept")) {
+        $Headers["Accept"] = "application/json"
+    }
+
     for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
         Write-Debug-Log "$Label → Attempt $attempt/$MaxRetries"
         Write-Debug-Log "$Label → $Method $Uri"
+        Write-Debug-Log "$Label → Headers: $($Headers.Keys -join ', ')"
 
         try {
             $reqParams = @{
@@ -100,9 +106,10 @@ function Invoke-SafeRestRequest {
             $rawBody = $webResponse.Content
 
             Write-Debug-Log "$Label → Status: $statusCode, Content-Type: $respContentType"
+            Write-Debug-Log "$Label → Body (first 500): $($rawBody.Substring(0, [Math]::Min(500, $rawBody.Length)))"
 
-            # Detect HTML challenge pages
-            if ($rawBody -match "One moment, please" -or $rawBody -match "Checking your browser" -or ($respContentType -and $respContentType -match "text/html" -and $rawBody -match "<html")) {
+            # Detect HTML challenge pages — only specific spinner/challenge pages
+            if ($rawBody -match "One moment, please" -or $rawBody -match "Checking your browser") {
                 Write-Status "      ⚠ Got HTML challenge page (security plugin/CDN)" -Color Yellow
                 if ($attempt -lt $MaxRetries) {
                     Write-Status "        Waiting ${RetryDelaySec}s and retrying..." -Color Yellow
@@ -110,9 +117,16 @@ function Invoke-SafeRestRequest {
                     continue
                 } else {
                     Write-Status "        All $MaxRetries attempts returned HTML challenge." -Color Red
-                    Write-Status "        Whitelist your IP or /wp-json/ in your security plugin." -Color Red
                     return $null
                 }
+            }
+
+            # HTML but NOT a challenge — log clearly
+            if ($respContentType -and $respContentType -match "text/html") {
+                Write-Status "      ⚠ Server returned HTML (not JSON) — Status: $statusCode" -Color Yellow
+                Write-Debug-Log "$Label → HTML response (first 800):"
+                Write-Debug-Log ($rawBody.Substring(0, [Math]::Min(800, $rawBody.Length)))
+                return $null
             }
 
             try {
