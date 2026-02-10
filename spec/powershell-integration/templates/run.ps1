@@ -81,6 +81,9 @@ param(
     [Alias('i')][switch]$install,
     [Alias('r')][switch]$rebuild,
     [Alias('fw')][switch]$openfirewall,
+    [Alias('u')][switch]$upload,
+    [Alias('pp')][string]$pluginpath = "",
+    [Alias('d')][switch]$debugmode,
     [Alias('h')][switch]$help,
     [Alias('v')][switch]$verbose
 )
