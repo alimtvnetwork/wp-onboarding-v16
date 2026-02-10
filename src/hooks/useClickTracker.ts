@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { create } from 'zustand';
+import { getComponentForRoute } from '@/lib/routeComponentMap';
 
 // Single click/interaction event
 export interface ClickEvent {
@@ -55,7 +56,11 @@ export const useClickTrackerStore = create<ClickTrackerState>((set, get) => ({
         else if (e.element) parts.push(e.element);
         if (e.text) parts.push(`"${e.text.slice(0, 30)}${e.text.length > 30 ? '...' : ''}"`);
         if (e.action !== 'click') parts.push(`(${e.action})`);
-        if (e.route) parts.push(`@ ${e.route}`);
+        // Route + component name
+        if (e.route) {
+          const comp = getComponentForRoute(e.route);
+          parts.push(comp ? `@ ${e.route} <${comp}>` : `@ ${e.route}`);
+        }
         return `${i + 1}. ${parts.join(' ')}`;
       })
       .join('\n');
