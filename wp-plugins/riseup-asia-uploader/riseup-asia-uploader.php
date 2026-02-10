@@ -1664,8 +1664,32 @@ class Riseup_Asia {
             // Cleanup temp extraction directory.
             $this->delete_directory($temp_extract_dir);
 
-            // Find the main plugin file.
+            // =================================================================
+            // OPCACHE INVALIDATION — critical for self-updates
+            // WordPress/PHP may cache the old plugin file contents in OPcache,
+            // causing get_plugin_data() to return stale version numbers.
+            // =================================================================
             $plugin_file = $this->find_plugin_file($slug);
+            if (RiseupBooleanHelpers::has_content($plugin_file)) {
+                $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+                
+                // Invalidate OPcache for the main plugin file
+                if (function_exists('opcache_invalidate')) {
+                    opcache_invalidate($full_plugin_path, true);
+                    $this->file_logger->debug('OPcache invalidated for plugin file', array('path' => $full_plugin_path));
+                }
+                
+                // Also invalidate constants file if it exists (version is defined here)
+                $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
+                if (file_exists($constants_file) && function_exists('opcache_invalidate')) {
+                    opcache_invalidate($constants_file, true);
+                    $this->file_logger->debug('OPcache invalidated for constants file', array('path' => $constants_file));
+                }
+                
+                // Clear WordPress plugin cache
+                wp_cache_delete('plugins', 'plugins');
+            }
+
             if (RiseupBooleanHelpers::is_falsy($plugin_file)) {
                 $this->file_logger->error('Could not find plugin file after extraction', array(
                     'slug'       => $slug,
@@ -1705,19 +1729,44 @@ class Riseup_Asia {
                 $this->file_logger->info('Plugin activated successfully');
             }
 
-            // Detect plugin version from installed plugin headers.
-            // Prefer client-sent version (from upload script), fall back to get_plugin_data()
-            $plugin_version = $client_plugin_version;
-            if (empty($plugin_version) && RiseupBooleanHelpers::has_content($plugin_file)) {
-                $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin_file, false, false);
-                if (!empty($plugin_data['Version'])) {
-                    $plugin_version = $plugin_data['Version'];
+            // =================================================================
+            // VERSION DETECTION — Always read from the NEWLY INSTALLED files
+            // The client-sent version is used as a fallback, but we prefer
+            // reading the actual installed file to confirm what's on disk.
+            // This avoids the self-update chicken-and-egg problem where
+            // RISEUP_VERSION constant still holds the old value.
+            // =================================================================
+            $installed_version = '';
+            if (RiseupBooleanHelpers::has_content($plugin_file)) {
+                // Force re-read from disk (not cached)
+                $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+                if (file_exists($full_path)) {
+                    // Read file header directly to bypass any caching
+                    $file_contents = file_get_contents($full_path, false, null, 0, 8192);
+                    if ($file_contents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $file_contents, $matches)) {
+                        $installed_version = $matches[1];
+                        $this->file_logger->debug('Version read directly from file header', array('version' => $installed_version));
+                    }
+                }
+                
+                // Fallback: try get_plugin_data (may be cached by OPcache)
+                if (empty($installed_version)) {
+                    $plugin_data = get_plugin_data($full_path, false, false);
+                    if (!empty($plugin_data['Version'])) {
+                        $installed_version = $plugin_data['Version'];
+                    }
                 }
             }
+
+            // Priority: installed file header > client-sent version > RISEUP_VERSION constant
+            $plugin_version = $installed_version ?: ($client_plugin_version ?: RISEUP_VERSION);
+            
             $this->file_logger->info('Plugin version determined', array(
-                'version'        => $plugin_version,
-                'source'         => !empty($client_plugin_version) ? 'client' : 'get_plugin_data',
-                'client_version' => $client_plugin_version,
+                'version'           => $plugin_version,
+                'installed_version' => $installed_version,
+                'client_version'    => $client_plugin_version,
+                'constant_version'  => RISEUP_VERSION,
+                'source'            => $installed_version ? 'file_header' : (!empty($client_plugin_version) ? 'client' : 'constant'),
             ));
 
             // =====================================================================
