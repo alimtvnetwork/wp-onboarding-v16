@@ -867,9 +867,12 @@ if (-not $uploadSuccess) {
     } | ConvertTo-Json -Compress
 
     try {
-        $fallbackArgs = @("-JsonConfig", $fallbackConfig, "-Force")
-        if ($DebugMode) { $fallbackArgs += "-DebugMode" }
-        & $basicScript @fallbackArgs
+        # Use direct named parameters — array splatting mangles JSON strings
+        if ($DebugMode) {
+            & $basicScript -JsonConfig $fallbackConfig -Force -DebugMode
+        } else {
+            & $basicScript -JsonConfig $fallbackConfig -Force
+        }
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error: Basic upload script failed with exit code $LASTEXITCODE" -ForegroundColor Red
             exit 1
