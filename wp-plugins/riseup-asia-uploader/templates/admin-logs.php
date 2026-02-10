@@ -45,7 +45,7 @@ $upload_source_classes = array(
     'wp_cli'        => 'source-cli',
 );
 ?>
-<div class="wrap riseup-admin">
+<div class="wrap riseup-admin" style="padding: 10px 20px 20px 10px;">
     <h1>
         <span class="dashicons dashicons-list-view"></span>
         <?php esc_html_e('Riseup Asia Uploader - Activity Logs', 'riseup-asia-uploader'); ?>
