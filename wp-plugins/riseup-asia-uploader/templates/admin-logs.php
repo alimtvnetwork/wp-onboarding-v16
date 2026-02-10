@@ -177,8 +177,9 @@ $upload_source_classes = array(
                     <td colspan="11" class="no-items"><?php esc_html_e('No activity logs found.', 'riseup-asia-uploader'); ?></td>
                 </tr>
             <?php else: ?>
-                <?php foreach ($logs as $log): ?>
-                    <?php 
+                <?php 
+                $current_date_group = '';
+                foreach ($logs as $log): 
                     $triggered_by = isset($log['triggered_by']) ? $log['triggered_by'] : '';
                     $source_machine = isset($log['source_machine']) ? $log['source_machine'] : '';
                     $plugin_version = isset($log['plugin_version']) ? $log['plugin_version'] : '';
@@ -187,7 +188,33 @@ $upload_source_classes = array(
                     $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
                     $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';
                     $upload_source_label = isset($upload_source_labels[$upload_source]) ? $upload_source_labels[$upload_source] : ($upload_source ?: '—');
-                    ?>
+                    
+                    // Date grouping
+                    $log_timestamp = strtotime($log['created_at']);
+                    $log_date = date('Y-m-d', $log_timestamp);
+                    $log_date_display = date('F j, Y', $log_timestamp); // e.g., "February 10, 2026"
+                    $log_time_display = date('g:i A', $log_timestamp);  // e.g., "2:30 PM"
+                    
+                    // Insert date group header when date changes
+                    if ($log_date !== $current_date_group):
+                        $current_date_group = $log_date;
+                        // Check if today/yesterday
+                        $today = date('Y-m-d');
+                        $yesterday = date('Y-m-d', strtotime('-1 day'));
+                        if ($log_date === $today) {
+                            $date_label = __('Today', 'riseup-asia-uploader') . ' — ' . $log_date_display;
+                        } elseif ($log_date === $yesterday) {
+                            $date_label = __('Yesterday', 'riseup-asia-uploader') . ' — ' . $log_date_display;
+                        } else {
+                            $date_label = $log_date_display;
+                        }
+                ?>
+                    <tr class="date-group-header">
+                        <td colspan="11">
+                            <span class="date-group-label"><?php echo esc_html($date_label); ?></span>
+                        </td>
+                    </tr>
+                <?php endif; ?>
                     <tr class="riseup-log-row <?php echo (!empty($log['details']) || !empty($log['error_msg'])) ? 'has-details' : ''; ?>" 
                         <?php if (!empty($log['details'])): ?>
                             data-details="<?php echo esc_attr(json_encode($log['details'])); ?>"
@@ -197,7 +224,7 @@ $upload_source_classes = array(
                         <td class="column-id"><?php echo esc_html($log['id']); ?></td>
                         <td class="column-timestamp">
                             <span class="timestamp" title="<?php echo esc_attr($log['created_at']); ?>">
-                                <?php echo esc_html(date('Y-m-d H:i:s', strtotime($log['created_at']))); ?>
+                                <?php echo esc_html($log_time_display); ?>
                             </span>
                         </td>
                         <td class="column-action">
