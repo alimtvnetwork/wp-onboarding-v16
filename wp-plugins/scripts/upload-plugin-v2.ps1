@@ -52,7 +52,7 @@ function Write-Status {
     }
 }
 
-# Debug-only output (shown when -Debug flag is set)
+# Debug-only output (shown when -DebugMode flag is set)
 function Write-Debug-Log {
     param([string]$Message)
     if ($DebugMode) {
