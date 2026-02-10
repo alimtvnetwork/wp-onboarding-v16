@@ -853,7 +853,7 @@ if (-not $uploadSuccess) {
 
     try {
         $fallbackArgs = @("-JsonConfig", $fallbackConfig, "-Force")
-        if ($Debug) { $fallbackArgs += "-Debug" }
+        if ($DebugMode) { $fallbackArgs += "-DebugMode" }
         & $basicScript @fallbackArgs
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error: Basic upload script failed with exit code $LASTEXITCODE" -ForegroundColor Red
