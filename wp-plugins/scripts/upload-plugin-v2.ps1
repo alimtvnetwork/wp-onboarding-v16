@@ -453,17 +453,23 @@ if ($cachedZips.Count -gt 0) {
     Write-Status "      Cached hash: $latestCachedHash" -Color Gray
 
     if ($newHash -eq $latestCachedHash) {
-        Write-Status ""
-        Write-Status "  ═══════════════════════════════════════════" -Color Cyan
-        Write-Status "  ✓ ZIP hash matches cached version — SKIP UPLOAD" -Color Cyan
-        Write-Status "    Version $LocalVersion ($VersionAction) is already" -Color Cyan
-        Write-Status "    deployed with identical content." -Color Cyan
-        Write-Status "  ═══════════════════════════════════════════" -Color Cyan
-        Write-Status ""
-        # Remove the duplicate zip we just created
-        Remove-Item $OutputZipPath -Force
-        Write-Status "Done! (no upload needed)" -Color Green
-        exit 0
+        # Only skip if remote version matches local — otherwise the previous upload failed or wasn't applied
+        if ($RemoteVersion -eq $LocalVersion) {
+            Write-Status ""
+            Write-Status "  ═══════════════════════════════════════════" -Color Cyan
+            Write-Status "  ✓ ZIP hash matches cached version — SKIP UPLOAD" -Color Cyan
+            Write-Status "    Version $LocalVersion is confirmed deployed" -Color Cyan
+            Write-Status "    on remote (v$RemoteVersion) with identical content." -Color Cyan
+            Write-Status "  ═══════════════════════════════════════════" -Color Cyan
+            Write-Status ""
+            # Remove the duplicate zip we just created
+            Remove-Item $OutputZipPath -Force
+            Write-Status "Done! (no upload needed)" -Color Green
+            exit 0
+        } else {
+            Write-Status "      ⚠ Hash matches cache but remote is v$RemoteVersion (expected v$LocalVersion)" -Color Yellow
+            Write-Status "        Re-uploading to ensure deployment..." -Color Yellow
+        }
     }
 }
 
