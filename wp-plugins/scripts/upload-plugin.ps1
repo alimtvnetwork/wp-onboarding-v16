@@ -30,6 +30,9 @@ param(
     
     [Parameter(Mandatory=$false)]
     [switch]$Quiet = $false,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Force = $false,
     
     # JSON string with all config (alternative to individual params)
     [Parameter(Mandatory=$false)]
