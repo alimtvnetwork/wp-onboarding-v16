@@ -72,7 +72,14 @@ export default function PublishHistory() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Publish History</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Publish History</h1>
+            {entries.length > 0 && entries[0]?.version && (
+              <Badge variant="secondary" className="font-mono text-xs px-2 py-0.5">
+                v{entries[0].version}
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground text-sm">Audit log of all publish operations</p>
         </div>
         <Button variant="destructive" size="sm" onClick={() => clearMutation.mutate()} disabled={total === 0}>
@@ -130,6 +137,7 @@ export default function PublishHistory() {
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
               <TableHead>Duration</TableHead>
+              <TableHead>Machine</TableHead>
               <TableHead>Rollback</TableHead>
               <TableHead>When</TableHead>
               <TableHead className="w-10"></TableHead>
@@ -137,9 +145,9 @@ export default function PublishHistory() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : entries.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
+              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
             ) : entries.map((e: PublishHistoryEntry) => {
               const actionLabel = formatActionLabel(e.actionType || e.mode);
               const actionClasses = getActionBadgeClasses(e.actionType || e.mode);
@@ -184,6 +192,13 @@ export default function PublishHistory() {
                   </TableCell>
                   <TableCell>{e.filesUpdated}</TableCell>
                   <TableCell className="text-muted-foreground">{(e.durationMs / 1000).toFixed(1)}s</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {e.machineName && (
+                      <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0">
+                        {e.machineName}
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {e.rollbackStatus && e.rollbackStatus !== "" && (
                       <Badge variant={e.rollbackStatus === "success" ? "default" : e.rollbackStatus === "failed" ? "destructive" : "outline"} className="text-xs">

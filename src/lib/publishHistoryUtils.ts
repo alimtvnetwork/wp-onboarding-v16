@@ -39,7 +39,7 @@ export function getActionBadgeClasses(actionType: string): string {
 
   switch (upper) {
     case "UPLOADSCRIPT":
-      return "bg-yellow-400/90 text-yellow-950 border border-yellow-600/40 font-semibold text-xs hover:bg-yellow-400";
+      return "bg-yellow-400 text-yellow-950 border border-yellow-600/50 font-semibold text-xs hover:bg-yellow-500 shadow-sm";
     case "PLUGINDISABLE":
     case "PLUGINDISABLED":
       return "bg-orange-500/15 text-orange-700 border border-orange-500/30 font-semibold text-xs dark:text-orange-400";
