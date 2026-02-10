@@ -15,6 +15,11 @@ import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 import { formatActionLabel, getActionBadgeClasses, getPluginBadgeClasses } from "@/lib/publishHistoryUtils";
 
 export default function PublishHistory() {
+  const [searchParams] = useSearchParams();
+  const siteIdParam = searchParams.get("siteId");
+  const siteNameParam = searchParams.get("siteName");
+  const siteId = siteIdParam ? Number(siteIdParam) : undefined;
+
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -22,12 +27,13 @@ export default function PublishHistory() {
   const limit = 25;
 
   const { data, isLoading } = useQuery({
-    queryKey: ["publish-history", page, statusFilter, search],
+    queryKey: ["publish-history", page, statusFilter, search, siteId],
     queryFn: () => api.getPublishHistory({
       limit,
       offset: page * limit,
       status: statusFilter === "all" ? undefined : statusFilter,
       search: search || undefined,
+      siteId,
     }),
   });
 
