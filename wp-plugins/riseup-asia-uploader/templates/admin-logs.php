@@ -159,7 +159,7 @@ $upload_source_classes = array(
         <thead>
             <tr>
                 <th class="column-id"><?php esc_html_e('ID', 'riseup-asia-uploader'); ?></th>
-                <th class="column-timestamp"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></th>
+                <th class="column-timestamp"><?php esc_html_e('Time', 'riseup-asia-uploader'); ?></th>
                 <th class="column-action"><?php esc_html_e('Action', 'riseup-asia-uploader'); ?></th>
                 <th class="column-plugin"><?php esc_html_e('Plugin/Target', 'riseup-asia-uploader'); ?></th>
                 <th class="column-version"><?php esc_html_e('Version', 'riseup-asia-uploader'); ?></th>
