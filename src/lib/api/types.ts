@@ -476,6 +476,8 @@ export interface PublishHistoryEntry {
   mode: string;
   actionType?: string;
   version?: string;
+  newVersion?: string;
+  isSelfUpdate?: boolean;
   machineName?: string;
   filesUpdated: number;
   activationStatus: string;

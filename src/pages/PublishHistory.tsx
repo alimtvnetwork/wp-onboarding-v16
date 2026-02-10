@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Search, BarChart3, Clock, CheckCircle2, XCircle, AlertTriangle, ExternalLink } from "lucide-react";
+import { Trash2, Search, BarChart3, Clock, CheckCircle2, XCircle, AlertTriangle, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
@@ -134,6 +134,7 @@ export default function PublishHistory() {
               <TableHead>Status</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Plugin / Target</TableHead>
+              <TableHead>New Ver.</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
               <TableHead>Duration</TableHead>
@@ -145,9 +146,9 @@ export default function PublishHistory() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : entries.length === 0 ? (
-              <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
+              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
             ) : entries.map((e: PublishHistoryEntry) => {
               const actionLabel = formatActionLabel(e.actionType || e.mode);
               const actionClasses = getActionBadgeClasses(e.actionType || e.mode);
@@ -164,9 +165,14 @@ export default function PublishHistory() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={actionClasses}>
-                      {actionLabel}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      {e.isSelfUpdate && (
+                        <RefreshCw className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                      )}
+                      <Badge className={actionClasses}>
+                        {actionLabel}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -179,6 +185,15 @@ export default function PublishHistory() {
                         </Badge>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {e.newVersion ? (
+                      <Badge className="bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 font-mono text-[10px] px-1.5 py-0 dark:text-emerald-400">
+                        v{e.newVersion}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
