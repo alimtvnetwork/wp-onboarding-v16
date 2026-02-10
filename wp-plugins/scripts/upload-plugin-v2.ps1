@@ -720,6 +720,23 @@ try {
         throw "Upload failed — server returned HTML or non-JSON response after retries"
     }
 
+    # Detect error/access-denied responses that still return JSON
+    $respMessage = if ($response.message) { $response.message } else { $null }
+    if ($respMessage -and ($respMessage -match "Access denied" -or $respMessage -match "bot.protection" -or $respMessage -match "not allowed" -or $respMessage -match "unauthorized")) {
+        Write-Status "      Raw response: $respMessage" -Color Red
+        Write-Status ""
+        Write-Host "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
+        Write-Host "  ║       ⚠  SERVER BLOCKED THE REQUEST  ⚠                 ║" -ForegroundColor Red
+        Write-Host "  ╠══════════════════════════════════════════════════════════╣" -ForegroundColor Red
+        Write-Host "  ║  $respMessage" -ForegroundColor Yellow
+        Write-Host "  ║                                                        ║" -ForegroundColor Yellow
+        Write-Host "  ║  Fix: Whitelist your IP in the server's security tool  ║" -ForegroundColor White
+        Write-Host "  ║  (Imunify360, ModSecurity, Cloudflare, etc.)           ║" -ForegroundColor White
+        Write-Host "  ║  cPanel → Security → Imunify360 → White List           ║" -ForegroundColor White
+        Write-Host "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+        throw "Upload blocked by server security: $respMessage"
+    }
+
     $uploadSuccess = $true
 
     # Unwrap Universal Response Envelope: data is in Results[0]
