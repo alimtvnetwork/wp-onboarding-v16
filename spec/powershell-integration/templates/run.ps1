@@ -1,5 +1,5 @@
 # PowerShell Build & Run Script — Generic Template
-# Version: 1.2.0
+# Version: 1.3.0
 # Generic template for Go backend + React frontend projects with pnpm PnP support
 # Configure via powershell.json — see spec/powershell-integration/01-configuration-schema.md
 #
@@ -17,10 +17,14 @@
 #   -i   Install/update all dependencies (frontend + backend)
 #   -r   Rebuild (combines -f + -i for complete clean reinstall)
 #   -fw  Add Windows Firewall inbound rules (requires Admin)
+#   -u   Upload plugin to WordPress via upload-plugin-v2.ps1
+#   -pp  Override plugin path for upload (use with -u)
+#   -d   Debug mode for upload (verbose request/response logging)
 #   -v   Verbose debug output
 #
 # PIPELINE:
 #   1. Git Pull → 2. Prerequisites → 3. pnpm Install → 4. Build → 5. Copy → 6. Run
+#   Upload mode (-u): 1. Git Pull → 2. Prerequisites → Upload Plugin V2
 #
 # FEATURES:
 #   - Auto-install Go, Node.js, pnpm via winget if missing
@@ -31,6 +35,7 @@
 #   - pnpm v10+ compatibility (auto --dangerously-allow-all-builds)
 #   - Cross-drive store detection (falls back to isolated linker)
 #   - Node v24+ detection (falls back to isolated linker for ESM compat)
+#   - WordPress plugin upload integration (optional, via powershell.json)
 #
 # CONFIGURATION (powershell.json):
 #   {
@@ -50,8 +55,21 @@
 #     "installCommand": "pnpm install",
 #     "runCommand": "go run cmd/server/main.go",
 #     "configFile": "config.json",
-#     "configExampleFile": "config.example.json"
+#     "configExampleFile": "config.example.json",
+#     "upload": {
+#       "scriptPath": "wp-plugins/scripts/upload-plugin-v2.ps1",
+#       "defaultPluginPath": "wp-plugins/riseup-asia-uploader",
+#       "configPath": "wp-plugins/scripts/wp-plugin-config.json"
+#     }
 #   }
+#
+# UPLOAD INTEGRATION (optional):
+#   Add the "upload" section to powershell.json to enable -u flag.
+#   The upload script must exist at the configured scriptPath.
+#   Example:
+#     .\run.ps1 -u              # Upload default plugin
+#     .\run.ps1 -u -d           # Upload with debug output
+#     .\run.ps1 -u -pp "C:\custom-plugin"  # Upload custom path
 #
 # See spec/powershell-integration/ for full documentation.
 
