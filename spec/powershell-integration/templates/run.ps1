@@ -533,6 +533,83 @@ Write-Host "  ⏱ $(Format-ElapsedTime $stepWatch)" -ForegroundColor DarkGray
 Write-Host ""
 
 # ============================================================================
+# UPLOAD MODE (-u): Upload plugin to WordPress via upload-plugin-v2.ps1
+# This section is optional — only runs when -u flag is passed.
+# Requires "upload" section in powershell.json with:
+#   scriptPath:        Path to upload-plugin-v2.ps1
+#   defaultPluginPath: Default plugin folder to upload
+#   configPath:        Path to wp-plugin-config.json (credentials)
+# ============================================================================
+if ($upload) {
+    Write-Host ""
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "  Upload Mode (-u)" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host ""
+    
+    # Resolve upload config from powershell.json
+    $uploadConfig = $Config.upload
+    if (-not $uploadConfig) {
+        Write-Host "ERROR: No 'upload' section in powershell.json." -ForegroundColor Red
+        Write-Host "Add this to powershell.json:" -ForegroundColor Yellow
+        Write-Host '  "upload": {' -ForegroundColor Gray
+        Write-Host '    "scriptPath": "path/to/upload-plugin-v2.ps1",' -ForegroundColor Gray
+        Write-Host '    "defaultPluginPath": "path/to/plugin-folder",' -ForegroundColor Gray
+        Write-Host '    "configPath": "path/to/wp-plugin-config.json"' -ForegroundColor Gray
+        Write-Host '  }' -ForegroundColor Gray
+        exit 1
+    }
+    
+    $uploadScript = Resolve-RelativePath $uploadConfig.scriptPath
+    $defaultPlugin = Resolve-RelativePath $uploadConfig.defaultPluginPath
+    $wpConfig = Resolve-RelativePath $uploadConfig.configPath
+    
+    if (-not (Test-Path $uploadScript)) {
+        Write-Host "ERROR: Upload script not found: $uploadScript" -ForegroundColor Red
+        exit 1
+    }
+    
+    # Determine plugin path (CLI override or default from config)
+    $targetPlugin = if ($pluginpath -ne "") { $pluginpath } else { $defaultPlugin }
+    
+    if (-not (Test-Path $targetPlugin)) {
+        Write-Host "ERROR: Plugin folder not found: $targetPlugin" -ForegroundColor Red
+        exit 1
+    }
+    
+    $pluginName = Split-Path $targetPlugin -Leaf
+    Write-Host "  Plugin: $pluginName" -ForegroundColor White
+    Write-Host "  Path:   $targetPlugin" -ForegroundColor Gray
+    
+    # Read config to show site URL
+    if (Test-Path $wpConfig) {
+        try {
+            $wpConfigData = Get-Content $wpConfig -Raw | ConvertFrom-Json
+            Write-Host "  Site:   $($wpConfigData.wordPressSiteURL)" -ForegroundColor Gray
+        } catch {}
+    }
+    Write-Host ""
+    
+    # Build JSON config for V2 script
+    if (Test-Path $wpConfig) {
+        $configContent = Get-Content $wpConfig -Raw | ConvertFrom-Json
+        $configContent.pluginFolderPath = $targetPlugin
+        $jsonConfig = $configContent | ConvertTo-Json -Compress
+        Write-Host "Parsing inline JSON config..." -ForegroundColor Gray
+    } else {
+        Write-Host "ERROR: Config file not found: $wpConfig" -ForegroundColor Red
+        exit 1
+    }
+    
+    # Build V2 arguments
+    $v2Args = @("-JsonConfig", $jsonConfig)
+    if ($debugmode) { $v2Args += "-DebugMode" }
+    
+    & $uploadScript @v2Args
+    exit $LASTEXITCODE
+}
+
+# ============================================================================
 # INSTALL MODE (-i): Install dependencies for both frontend and backend
 # ============================================================================
 if ($install) {
