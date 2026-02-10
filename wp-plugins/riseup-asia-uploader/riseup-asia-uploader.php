@@ -1758,15 +1758,25 @@ class Riseup_Asia {
                 }
             }
 
-            // Priority: installed file header > client-sent version > RISEUP_VERSION constant
-            $plugin_version = $installed_version ?: ($client_plugin_version ?: RISEUP_VERSION);
+            // Priority depends on whether this is a self-update:
+            // - Self-update: client_version > installed_version > RISEUP_VERSION
+            //   (running PHP process has stale constants and OPcache may serve old file content)
+            // - Other plugins: installed_version > client_version > RISEUP_VERSION
+            if ($is_self_update) {
+                $plugin_version = $client_plugin_version ?: ($installed_version ?: RISEUP_VERSION);
+                $version_source = !empty($client_plugin_version) ? 'client (self-update)' : ($installed_version ? 'file_header' : 'constant');
+            } else {
+                $plugin_version = $installed_version ?: ($client_plugin_version ?: RISEUP_VERSION);
+                $version_source = $installed_version ? 'file_header' : (!empty($client_plugin_version) ? 'client' : 'constant');
+            }
             
             $this->file_logger->info('Plugin version determined', array(
                 'version'           => $plugin_version,
                 'installed_version' => $installed_version,
                 'client_version'    => $client_plugin_version,
                 'constant_version'  => RISEUP_VERSION,
-                'source'            => $installed_version ? 'file_header' : (!empty($client_plugin_version) ? 'client' : 'constant'),
+                'is_self_update'    => $is_self_update,
+                'source'            => $version_source,
             ));
 
             // =====================================================================
