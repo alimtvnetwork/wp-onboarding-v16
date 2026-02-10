@@ -373,7 +373,7 @@ $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Usern
 
 # Pre-upload health check: verify REST API is reachable
 Write-Status ""
-Write-Status "[3/5] Pre-upload health check..." -Color Yellow
+Write-Status "[3/6] Pre-upload health check..." -Color Yellow
 $healthUrl = "$WordPressSiteURL/wp-json/"
 Write-Status "      ── Request ──" -Color DarkGray
 Write-Status "      GET $healthUrl" -Color White
