@@ -1,9 +1,12 @@
 # WordPress Plugin Uploader V2
-# Version: 2.1.0
+# Version: 2.2.0
 # Enhanced version with Git Pull, Version Comparison, Self-Update OPcache Flush, and Publish
 # Uses Riseup Asia Uploader API for reliable uploads
 #
 # CHANGELOG:
+#   2.2.0 (2026-02-10) — OPcache reset now uses proper REST API endpoint (POST /opcache-reset)
+#                         instead of standalone PHP file (fixes 403 on hosts blocking direct PHP).
+#                         Removed dependency on opcache-reset.php standalone file.
 #   2.1.0 (2026-02-10) — Self-update OPcache flush via opcache-reset.php, self-update version
 #                         detection trusts client version, Accept header on all requests,
 #                         HTML challenge retry with Imunify360 detection, ZIP staging with
