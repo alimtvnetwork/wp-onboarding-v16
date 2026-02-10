@@ -9,10 +9,36 @@
    GENERAL LAYOUT
    ============================================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu:wght@500;700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 .riseup-admin {
     max-width: 1400px;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Apply Poppins to all text elements */
+.riseup-admin,
+.riseup-admin p,
+.riseup-admin td,
+.riseup-admin th,
+.riseup-admin label,
+.riseup-admin input,
+.riseup-admin select,
+.riseup-admin button,
+.riseup-admin .description,
+.riseup-admin .stat-item,
+.riseup-admin .filter-row,
+.riseup-admin .riseup-card,
+.riseup-admin .riseup-modal-header h3,
+.riseup-admin .riseup-modal-body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Headers stay Ubuntu */
+.riseup-admin h1,
+.riseup-admin h2,
+.riseup-admin h3 {
+    font-family: 'Ubuntu', sans-serif;
 }
 
 .riseup-admin h1 {
