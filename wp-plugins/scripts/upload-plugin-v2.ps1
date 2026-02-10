@@ -272,7 +272,7 @@ Write-Status ""
 # ============================================================================
 # STEP 2: READ LOCAL VERSION
 # ============================================================================
-Write-Status "[2/7] Reading local plugin version..." -Color Yellow
+Write-Status "[2/8] Reading local plugin version..." -Color Yellow
 
 $LocalVersion = "unknown"
 $constantsFile = Join-Path $PluginFolderPath "includes/constants.php"
