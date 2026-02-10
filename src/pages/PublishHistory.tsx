@@ -192,6 +192,13 @@ export default function PublishHistory() {
                   </TableCell>
                   <TableCell>{e.filesUpdated}</TableCell>
                   <TableCell className="text-muted-foreground">{(e.durationMs / 1000).toFixed(1)}s</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {e.machineName && (
+                      <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0">
+                        {e.machineName}
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {e.rollbackStatus && e.rollbackStatus !== "" && (
                       <Badge variant={e.rollbackStatus === "success" ? "default" : e.rollbackStatus === "failed" ? "destructive" : "outline"} className="text-xs">
