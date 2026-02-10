@@ -265,7 +265,7 @@ if (-not $SkipGitPull) {
         Write-Status "      Skipping git pull (no .git found)" -Color Gray
     }
 } else {
-    Write-Status "[1/7] Skipping git pull (-SkipGitPull)" -Color Gray
+    Write-Status "[1/8] Skipping git pull (-SkipGitPull)" -Color Gray
 }
 Write-Status ""
 
