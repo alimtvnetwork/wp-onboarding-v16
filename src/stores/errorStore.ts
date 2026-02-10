@@ -96,6 +96,9 @@ export interface CapturedError {
   // UI click path tracking (Phase 5)
   uiClickPath?: ClickEvent[];
   uiClickPathString?: string;
+  uiClickPathArrow?: string;
+  // Current page route when error occurred
+  route?: string;
   // React execution logs (Phase 6.3)
   executionLogs?: ExecutionLogEntry[];
   executionChain?: CallChain | null;
@@ -367,7 +370,7 @@ interface BuildCapturedErrorInput {
  * Captures UI click path and execution logs automatically.
  */
 function buildCapturedError(input: BuildCapturedErrorInput): CapturedError {
-  const { clickPath, clickPathString } = getClickPathForError();
+  const { clickPath, clickPathString, clickPathArrow } = getClickPathForError();
   const execLogs = getExecutionLogsForError();
 
   // Extract envelope diagnostic fields from the provided context
@@ -419,6 +422,9 @@ function buildCapturedError(input: BuildCapturedErrorInput): CapturedError {
     // UI click path tracking
     uiClickPath: clickPath.length > 0 ? clickPath : undefined,
     uiClickPathString: clickPathString || undefined,
+    uiClickPathArrow: clickPathArrow || undefined,
+    // Current page route
+    route: typeof window !== 'undefined' ? window.location.pathname : undefined,
     // React execution logs
     executionLogs: execLogs.entries.length > 0 ? execLogs.entries : undefined,
     executionChain: execLogs.chain,

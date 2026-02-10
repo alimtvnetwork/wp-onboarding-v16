@@ -80,8 +80,19 @@ export function generateErrorReport(
       }\n`
     : "";
 
+  // Route / page context
+  const routeSection = error.route
+    ? `### Page\n\`${error.route}\`${error.triggerComponent ? ` (${error.triggerComponent})` : ''}\n`
+    : "";
+
+  // Arrow-style interaction summary for the header
+  const interactionArrowSection = error.uiClickPathArrow
+    ? `### User Interaction\n\`\`\`\n${error.uiClickPathArrow}\n\`\`\`\n`
+    : "";
+
+  // Detailed numbered interaction path with routes
   const uiClickPathSection = error.uiClickPathString
-    ? `### User Interaction Path\n\`\`\`\n${error.uiClickPathString}\n\`\`\`\n`
+    ? `### User Interaction Path (${error.uiClickPath?.length ?? 0} steps)\n\`\`\`\n${error.uiClickPathString}\n\`\`\`\n`
     : "";
 
   const executionChainSection = error.executionLogsFormatted
@@ -105,8 +116,11 @@ ${appInfo.join("\n")}
 **Level:** ${error.level}
 **Timestamp:** ${error.createdAt}
 
+${routeSection}
+${interactionArrowSection}
 ${triggerSection}
 ${chainSection}
+${uiClickPathSection}
 ${siteUrlSection}
 ${sessionSection}
 ### Message
@@ -118,7 +132,6 @@ ${error.requestBody ? `### Request Body\n\`\`\`json\n${JSON.stringify(error.requ
 ${backendLogsSection}
 ${backendStackSection}
 ${phpStackFramesSection}
-${uiClickPathSection}
 ${executionChainSection}
 ${framesSection}
 ${error.file ? `### Location\n\`${error.file}:${error.line}\` (${error.function})\n` : ""}
