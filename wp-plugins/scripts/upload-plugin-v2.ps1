@@ -863,7 +863,7 @@ try {
             }
         } catch {
             Write-Status "      ⚠ OPcache reset failed: $($_.Exception.Message)" -Color Yellow
-            Write-Status "        This is normal on first deploy — the endpoint is part of v1.46.0+" -Color DarkGray
+            Write-Status "        Expected on first upgrade — endpoint registered by new version" -Color DarkGray
         }
         
         Start-Sleep -Seconds 2  # Brief pause for OPcache to settle
