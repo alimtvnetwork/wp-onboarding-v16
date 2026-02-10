@@ -132,20 +132,20 @@ export const api = {
     request<RemotePlugin[]>(`/sites/${siteId}/remote-plugins/force-sync`, { method: "POST" }),
   clearRemotePluginsCache: (siteId: number) =>
     request<{ cleared: boolean }>(`/sites/${siteId}/remote-plugins/cache`, { method: "DELETE" }),
-  enableRemotePlugin: (siteId: number, pluginSlug: string) =>
+  enableRemotePlugin: (siteId: number, pluginSlug: string, version?: string) =>
     request<{ enabled: boolean; plugin: string }>(
       `/sites/${siteId}/remote-plugins/enable`,
-      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug, ...(version ? { version } : {}) }) }
     ),
-  disableRemotePlugin: (siteId: number, pluginSlug: string) =>
+  disableRemotePlugin: (siteId: number, pluginSlug: string, version?: string) =>
     request<{ disabled: boolean; plugin: string }>(
       `/sites/${siteId}/remote-plugins/disable`,
-      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug, ...(version ? { version } : {}) }) }
     ),
-  deleteRemotePlugin: (siteId: number, pluginSlug: string) =>
+  deleteRemotePlugin: (siteId: number, pluginSlug: string, version?: string) =>
     request<{ deleted: boolean; plugin: string }>(
       `/sites/${siteId}/remote-plugins/delete`,
-      { method: "POST", body: JSON.stringify({ plugin: pluginSlug }) }
+      { method: "POST", body: JSON.stringify({ plugin: pluginSlug, ...(version ? { version } : {}) }) }
     ),
   uploadRemotePlugin: (siteId: number, file: File, activate: boolean) => {
     const formData = new FormData();
