@@ -569,7 +569,7 @@ if (-not $uploadSuccess) {
         # Activate if requested
         if ($ActivateAfterInstall) {
             Write-Status ""
-            Write-Status "[5/5] Activating plugin..." -Color Yellow
+            Write-Status "[5/6] Activating plugin..." -Color Yellow
 
             $activateUrl = "$WordPressSiteURL/wp-json/wp/v2/plugins/$pluginSlugResult"
             $activateBody = @{ status = "active" } | ConvertTo-Json
