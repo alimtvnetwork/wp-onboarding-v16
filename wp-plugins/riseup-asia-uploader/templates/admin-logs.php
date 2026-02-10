@@ -589,6 +589,32 @@ $upload_source_classes = array(
     .column-user { width: 90px; }
     .column-status { width: 65px; }
     .column-details { width: 60px; }
+
+    /* Date group header */
+    .date-group-header td {
+        background: linear-gradient(135deg, #f8f9fb 0%, #eef1f6 100%) !important;
+        border-top: 2px solid #667eea;
+        border-bottom: 1px solid #dcdcde;
+        padding: 10px 12px !important;
+        font-size: 0;
+    }
+    .date-group-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #1e2a4a;
+        letter-spacing: 0.3px;
+        text-transform: none;
+    }
+    .date-group-label::before {
+        content: '📅';
+        font-size: 14px;
+    }
+    .date-group-header:hover td {
+        background: linear-gradient(135deg, #f8f9fb 0%, #eef1f6 100%) !important;
+    }
     </style>
 
     <script>
