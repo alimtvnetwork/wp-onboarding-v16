@@ -18,9 +18,10 @@ if (!defined('ABSPATH')) {
 }
 </style>
 <div class="wrap riseup-admin">
-    <h1>
+    <h1 style="font-family: 'Ubuntu', sans-serif; font-weight: 700; font-size: 26px;">
         <span class="dashicons dashicons-admin-settings"></span>
         <?php esc_html_e('Riseup Asia Uploader - Settings', 'riseup-asia-uploader'); ?>
+        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
     </h1>
 
     <p class="description">

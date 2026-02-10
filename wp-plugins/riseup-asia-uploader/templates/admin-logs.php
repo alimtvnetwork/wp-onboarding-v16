@@ -46,9 +46,10 @@ $upload_source_classes = array(
 );
 ?>
 <div class="wrap riseup-admin">
-    <h1>
+    <h1 style="font-family: 'Ubuntu', sans-serif; font-weight: 700; font-size: 26px;">
         <span class="dashicons dashicons-list-view"></span>
         <?php esc_html_e('Riseup Asia Uploader - Activity Logs', 'riseup-asia-uploader'); ?>
+        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
     </h1>
     
     <p class="description">
@@ -404,8 +405,10 @@ $upload_source_classes = array(
         text-transform: uppercase;
     }
     .source-script {
-        background: #fff8e1;
-        color: #f57f17;
+        background: #fff3cd;
+        color: #664d03;
+        border: 1px solid #ffda6a;
+        font-weight: 600;
     }
     .source-api {
         background: #e3f2fd;

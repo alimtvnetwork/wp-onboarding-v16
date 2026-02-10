@@ -1531,6 +1531,41 @@ class Riseup_Asia {
             $target_dir   = $plugins_dir . '/' . $slug;
             $is_update    = is_dir($target_dir);
 
+            // =====================================================================
+            // SELF-UPDATE PRE-LOGGING: If the plugin is updating itself, log the
+            // activity BEFORE the files are replaced. Otherwise, the log entry
+            // might not be created if the new code changes the logging behavior.
+            // =====================================================================
+            $is_self_update = ($slug === RISEUP_SLUG && $is_update);
+            if ($is_self_update) {
+                // Detect current (old) version before replacement
+                $old_plugin_file = $this->find_plugin_file($slug);
+                $old_version = RISEUP_VERSION;
+                
+                $this->file_logger->info('Self-update detected, pre-logging activity', array(
+                    'old_version'   => $old_version,
+                    'upload_source' => $upload_source,
+                ));
+                
+                $this->logger->log_plugin_action(
+                    RISEUP_ACTION_UPLOAD,
+                    $slug,
+                    RISEUP_STATUS_SUCCESS,
+                    array(
+                        'is_update'       => true,
+                        'is_self_update'  => true,
+                        'old_version'     => $old_version,
+                        'file_size'       => strlen($zip_content),
+                        'note'            => 'Pre-logged before self-update to ensure audit trail',
+                    ),
+                    null,
+                    array(
+                        'plugin_version' => $old_version,
+                        'upload_source'  => $upload_source,
+                    )
+                );
+            }
+
             $this->file_logger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array(
                 'slug'       => $slug,
                 'target_dir' => $target_dir,
@@ -1663,16 +1698,18 @@ class Riseup_Asia {
             }
             $this->file_logger->info('Plugin version detected', array('version' => $plugin_version));
 
-            // Log success with version and upload source.
-            $this->logger->log_upload($slug, array(
-                'is_update' => $is_update,
-                'activated' => $activated,
-                'file_size' => strlen($zip_content),
-                'plugin_version' => $plugin_version,
-            ), array(
-                'plugin_version' => $plugin_version,
-                'upload_source'  => $upload_source,
-            ));
+            // Log success with version and upload source (skip if self-update was pre-logged).
+            if (!$is_self_update) {
+                $this->logger->log_upload($slug, array(
+                    'is_update' => $is_update,
+                    'activated' => $activated,
+                    'file_size' => strlen($zip_content),
+                    'plugin_version' => $plugin_version,
+                ), array(
+                    'plugin_version' => $plugin_version,
+                    'upload_source'  => $upload_source,
+                ));
+            }
 
             $this->file_logger->info('Upload complete', array(
                 'slug'           => $slug,
