@@ -46,7 +46,7 @@ $upload_source_classes = array(
 );
 ?>
 <div class="wrap riseup-admin">
-    <h1 style="font-family: 'Ubuntu', sans-serif; font-weight: 700; font-size: 26px;">
+    <h1>
         <span class="dashicons dashicons-list-view"></span>
         <?php esc_html_e('Riseup Asia Uploader - Activity Logs', 'riseup-asia-uploader'); ?>
         <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
