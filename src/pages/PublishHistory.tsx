@@ -165,9 +165,14 @@ export default function PublishHistory() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={actionClasses}>
-                      {actionLabel}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      {e.isSelfUpdate && (
+                        <RefreshCw className="h-3.5 w-3.5 text-amber-500 shrink-0" title="Self-update" />
+                      )}
+                      <Badge className={actionClasses}>
+                        {actionLabel}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -180,6 +185,15 @@ export default function PublishHistory() {
                         </Badge>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {e.newVersion ? (
+                      <Badge className="bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 font-mono text-[10px] px-1.5 py-0 dark:text-emerald-400">
+                        v{e.newVersion}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
