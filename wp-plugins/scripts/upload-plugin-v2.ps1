@@ -34,7 +34,7 @@ param(
     [switch]$Quiet = $false,
 
     [Parameter(Mandatory=$false)]
-    [switch]$Debug = $false,
+    [switch]$DebugMode = $false,
 
     [Parameter(Mandatory=$false)]
     [string]$JsonConfig = ""
