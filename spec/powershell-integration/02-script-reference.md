@@ -1,8 +1,8 @@
 # PowerShell Script Reference
 
-> **Spec Version:** 2.1.0  
-> **Script Version:** 1.2.0  
-> **Updated:** 2026-02-04  
+> **Spec Version:** 2.2.0  
+> **Script Version:** run.ps1 1.2.0, upload-plugin-v2.ps1 2.1.0  
+> **Updated:** 2026-02-10  
 > **Status:** Active
 
 ---

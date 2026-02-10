@@ -1,10 +1,10 @@
 # PowerShell Script Changelog
 
-All notable changes to the PowerShell runner script (`run.ps1`) will be documented in this file.
+All notable changes to the PowerShell runner script (`run.ps1`) and upload scripts will be documented in this file.
 
 ## New Entry Template (copy/paste)
 
-Use this template whenever you change `run.ps1` or make a functional/config-schema change to `powershell.json`.
+Use this template whenever you change `run.ps1`, upload scripts, or make a functional/config-schema change to `powershell.json`.
 
 ```md
 ## [X.Y.Z] - YYYY-MM-DD
@@ -24,7 +24,29 @@ Use this template whenever you change `run.ps1` or make a functional/config-sche
 
 ---
 
-## [1.2.0] - 2026-02-08
+## [upload-plugin-v2 2.1.0] - 2026-02-10
+
+### Added
+- **Self-update OPcache flush**: After uploading `riseup-asia-uploader` to itself, script calls `opcache-reset.php` to force-flush PHP OPcache, then verifies version
+- **`opcache-reset.php`**: New standalone PHP file deployed with the plugin for OPcache reset (Basic Auth secured)
+- **Imunify360 detection**: JSON responses with "Access denied" / "bot-protection" now throw actionable errors instead of false success
+- **ZIP staging progress**: Real-time file count display during staging (e.g., `Staging: 47/47 files (100%)`)
+- **Full path display**: ZIP destination path, cache directory, compression ratio shown in output
+- **`Accept: application/json` header**: All HTTP requests now include this to prevent HTML challenge pages
+
+### Changed
+- **Pipeline expanded to 8 steps**: Step 8 is now self-update-aware (OPcache flush + verify) or standard version check
+- **Self-update version priority**: For self-updates, client-sent version takes priority over server response (server returns stale version from cached old code)
+- **V1 fallback**: Uses direct named parameters instead of array splatting to prevent JSON mangling
+
+### Fixed
+- Version mismatch on self-update caused by PHP OPcache serving old bytecode
+- False "PUBLISH COMPLETE" when server returns Imunify360 block message
+- V1 fallback failing due to `@fallbackArgs` array splatting mangling JSON strings
+
+---
+
+## [run.ps1 1.2.0] - 2026-02-08
 
 ### Added
 - **Runtime data cleanup**: Force mode (`-f`, `-r`) now cleans backend sessions, request-sessions, error logs, and standalone log files from `backend/data/`
@@ -39,7 +61,7 @@ Use this template whenever you change `run.ps1` or make a functional/config-sche
 
 ---
 
-## [1.1.0] - 2026-02-04
+## [run.ps1 1.1.0] - 2026-02-04
 
 ### Added
 - **Version tracking**: Script now has version number in header and `powershell.json`
@@ -55,7 +77,7 @@ Use this template whenever you change `run.ps1` or make a functional/config-sche
 
 ---
 
-## [1.0.0] - 2026-02-02
+## [run.ps1 1.0.0] - 2026-02-02
 
 ### Added
 - Initial PowerShell runner with pnpm PnP support
@@ -67,4 +89,4 @@ Use this template whenever you change `run.ps1` or make a functional/config-sche
 
 ---
 
-*Keep this file updated when the script changes.*
+*Keep this file updated when scripts change.*

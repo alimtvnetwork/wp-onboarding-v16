@@ -1,6 +1,15 @@
 # WordPress Plugin Uploader V2
-# Enhanced version with Git Pull, Version Comparison, and Publish
+# Version: 2.1.0
+# Enhanced version with Git Pull, Version Comparison, Self-Update OPcache Flush, and Publish
 # Uses Riseup Asia Uploader API for reliable uploads
+#
+# CHANGELOG:
+#   2.1.0 (2026-02-10) — Self-update OPcache flush via opcache-reset.php, self-update version
+#                         detection trusts client version, Accept header on all requests,
+#                         HTML challenge retry with Imunify360 detection, ZIP staging with
+#                         progress and SmallestSize compression, full cache path display
+#   2.0.0 (2026-02-09) — Initial V2: Git pull, version comparison, smart publish, ZIP caching,
+#                         fallback to V1, quiet mode JSON output, debug mode, retry mechanism
 
 param(
     [Parameter(Mandatory=$false)]

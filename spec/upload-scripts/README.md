@@ -1,7 +1,7 @@
 # Upload Scripts Specification
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-09  
+> **Version:** 1.1.0  
+> **Updated:** 2026-02-10  
 > **Status:** Active  
 > **Location:** `wp-plugins/scripts/`  
 > **Purpose:** WordPress plugin deployment via PowerShell scripts using Riseup Asia Uploader API
@@ -21,7 +21,7 @@ All scripts use **Basic Authentication** (WordPress Application Passwords) and s
 ```
 wp-plugins/scripts/
 ├── upload-plugin.ps1          ← V1: Basic standalone uploader
-├── upload-plugin-v2.ps1       ← V2: Enhanced (Git Pull + Version Compare + Publish)
+├── upload-plugin-v2.ps1       ← V2: Enhanced (Git Pull + Version Compare + OPcache Flush + Publish)
 ├── upload-plugin-v3.ps1       ← V3: Parallel multi-plugin wrapper around V2
 ├── upload-plugin-custom.ps1   ← Custom path wrapper around V2
 └── wp-plugin-config.json      ← Shared credentials config (not in git)
@@ -35,6 +35,14 @@ upload-plugin-custom.ps1 ──wraps──→ upload-plugin-v2.ps1
 run.ps1 (project runner) ──calls──→ upload-plugin-v2.ps1
 ```
 
+### Server-Side Components
+
+```
+wp-content/plugins/riseup-asia-uploader/
+├── opcache-reset.php          ← Standalone OPcache flush (called by V2 after self-updates)
+└── riseup-asia-uploader.php   ← Upload handler with version detection + OPcache invalidation
+```
+
 ---
 
 ## Documents
@@ -43,7 +51,7 @@ run.ps1 (project runner) ──calls──→ upload-plugin-v2.ps1
 |------|-------------|
 | [README.md](./README.md) | This overview |
 | [01-upload-plugin-v1.md](./01-upload-plugin-v1.md) | V1 script specification |
-| [02-upload-plugin-v2.md](./02-upload-plugin-v2.md) | V2 script specification |
+| [02-upload-plugin-v2.md](./02-upload-plugin-v2.md) | V2 script specification (v2.1.0) |
 | [03-upload-plugin-v3.md](./03-upload-plugin-v3.md) | V3 script specification |
 | [04-upload-plugin-custom.md](./04-upload-plugin-custom.md) | Custom path wrapper specification |
 | [05-configuration.md](./05-configuration.md) | Shared configuration format |
@@ -62,6 +70,12 @@ $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Usern
 ```
 
 **Important:** Application password spaces are stripped before encoding.
+
+### Request Headers
+
+All requests include:
+- `Authorization: Basic <base64>`
+- `Accept: application/json` (prevents HTML challenge responses)
 
 ### Envelope Unwrapping
 
@@ -82,10 +96,11 @@ All scripts include:
 - **Server critical error detection** — Detects `critical error on this website` and `internal_server_error` patterns
 - **Stack trace rendering** — Parses `stackTrace` strings and `stackTraceFrames` arrays from JSON error responses
 - **Error response extraction** — `Get-ErrorResponseBody` works on both PowerShell 5.1 and 7+
+- **Security block detection** — Imunify360 `Access denied` / `bot-protection` messages throw actionable errors
 
 ### Upload Source Attribution
 
-V2 includes `upload_source: "upload_script"` in the request body for audit log tracking.
+V2 includes `upload_source: "upload_script"` and `machine_name` in the request body for audit log tracking.
 
 ---
 
@@ -110,6 +125,7 @@ V2 includes `upload_source: "upload_script"` in the request body for audit log t
 | `/wp-json/riseup-uploader/v1/upload` | POST | V1 | Legacy namespace fallback |
 | `/wp-json/riseup-asia-uploader/v1/status` | GET | V2, V3 | Version check & status |
 | `/wp-json/wp/v2/plugins` | POST | V1 | WordPress Core API fallback (multipart) |
+| `/wp-content/plugins/.../opcache-reset.php` | GET | V2 | OPcache flush after self-update |
 
 ---
 
@@ -119,6 +135,7 @@ The project runner (`run.ps1`) integrates upload scripts via the `-u` flag:
 
 ```powershell
 .\run.ps1 -u                              # Upload default plugin via V2
+.\run.ps1 -u -d                           # Upload with debug mode
 .\run.ps1 -u -pp "C:\path\to\plugin"      # Upload custom plugin path via V2
 ```
 
@@ -126,4 +143,4 @@ The runner locates `upload-plugin-v2.ps1` at `wp-plugins/scripts/upload-plugin-v
 
 ---
 
-*Specification created: 2026-02-09*
+*Specification v1.1.0 — updated: 2026-02-10*
