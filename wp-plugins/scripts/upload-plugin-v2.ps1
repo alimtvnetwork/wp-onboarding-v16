@@ -232,7 +232,7 @@ if ($PluginSlug -eq "") { $PluginSlug = $folderName }
 # STEP 1: GIT PULL
 # ============================================================================
 if (-not $SkipGitPull) {
-    Write-Status "[1/7] Git pull (current branch)..." -Color Yellow
+    Write-Status "[1/8] Git pull (current branch)..." -Color Yellow
 
     # Find git root from plugin folder
     $gitDir = $PluginFolderPath
