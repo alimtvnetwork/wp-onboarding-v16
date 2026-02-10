@@ -221,20 +221,21 @@
     cursor: help;
 }
 
-/* Action Badges */
+/* Action Badges — Title Case, no uppercase transform */
 .action-badge {
     display: inline-block;
     padding: 3px 8px;
     border-radius: 3px;
     font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
 }
 
 .action-upload_initiated {
     background: #e0f7fa;
     color: #00695c;
+    border: 1px solid #b2dfdb;
 }
 
 .action-upload,
@@ -277,9 +278,236 @@
     color: #41464b;
 }
 
-.action-export_self {
+.action-export_self,
+.action-export_plugin {
     background: #e7d5f7;
     color: #5e3d76;
+}
+
+.action-media_upload {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.action-update_check,
+.action-update_resolve,
+.action-update_download,
+.action-update_install {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.action-agent_add,
+.action-agent_remove,
+.action-agent_test,
+.action-agent_sync,
+.action-agent_plugin_enable,
+.action-agent_plugin_disable,
+.action-agent_plugin_delete,
+.action-agent_plugin_update {
+    background: #e8daef;
+    color: #6c3483;
+}
+
+/* ============================================================================
+   TRIGGER BADGES
+   ============================================================================ */
+
+.trigger-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.trigger-api {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.trigger-dashboard {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.trigger-agent {
+    background: #e8daef;
+    color: #6c3483;
+}
+
+.trigger-cron {
+    background: #e8eaf6;
+    color: #283593;
+}
+
+.trigger-cli {
+    background: #efebe9;
+    color: #4e342e;
+}
+
+.trigger-unknown {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+/* ============================================================================
+   UPLOAD SOURCE BADGES
+   ============================================================================ */
+
+.upload-source-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Upload Script — yellow background, dark text, border (high contrast) */
+.source-script {
+    background: #fff3cd;
+    color: #664d03;
+    border: 1px solid #ffc107;
+}
+
+.source-api {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.source-admin {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.source-cli {
+    background: #efebe9;
+    color: #4e342e;
+}
+
+.source-unknown {
+    background: #f5f5f5;
+    color: #757575;
+}
+
+/* ============================================================================
+   SOURCE MACHINE BADGE
+   ============================================================================ */
+
+.source-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+    background: #e8eaf6;
+    color: #283593;
+    font-family: monospace;
+}
+
+.ip-address {
+    color: #78909c;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+/* ============================================================================
+   PLUGIN TARGET BADGE
+   ============================================================================ */
+
+.plugin-target-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #e8f5e9;
+    color: #2e7d32;
+    font-family: monospace;
+}
+
+.target-post {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.plugin-file {
+    color: #78909c;
+    font-family: monospace;
+    font-size: 10px;
+}
+
+/* ============================================================================
+   VERSION BADGES (in logs table)
+   ============================================================================ */
+
+.version-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+.version-current {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.version-old {
+    background: #e8eaf6;
+    color: #3949ab;
+}
+
+/* ============================================================================
+   DATE GROUP HEADERS (in logs table)
+   ============================================================================ */
+
+.date-group-header td {
+    background: #f0f0f1 !important;
+    padding: 8px 12px !important;
+    border-top: 2px solid #c3c4c7;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.date-group-label {
+    font-weight: 700;
+    font-size: 12px;
+    color: #1d2327;
+    font-family: 'Ubuntu', sans-serif;
+    letter-spacing: 0.3px;
+}
+
+/* ============================================================================
+   ENDPOINT GROUPS (settings page)
+   ============================================================================ */
+
+.endpoint-group-header td {
+    background: #f8f9fa !important;
+    padding: 10px 12px !important;
+    border-top: 2px solid #2271b1;
+    font-weight: 700;
+    font-size: 13px;
+    color: #1d2327;
+    font-family: 'Ubuntu', sans-serif;
+}
+
+.endpoint-group-header .dashicons {
+    vertical-align: middle;
+    margin-right: 6px;
+    color: #2271b1;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+/* Filter row secondary */
+.filter-row-secondary {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
 }
 
 /* Status Badges */
