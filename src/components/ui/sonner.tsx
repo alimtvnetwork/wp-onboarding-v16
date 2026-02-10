@@ -15,7 +15,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       closeButton
       duration={4000}
       gap={8}
-      style={{ zIndex: 99999 }}
+      style={{ zIndex: 99999, pointerEvents: "auto" }}
       toastOptions={{
         classNames: {
           // Base toast — dark neutral surface, Poppins, consistent radius and padding
