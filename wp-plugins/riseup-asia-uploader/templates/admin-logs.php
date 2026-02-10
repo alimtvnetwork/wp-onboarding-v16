@@ -214,7 +214,11 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-version">
                             <?php if (!empty($plugin_version)): ?>
-                                <code class="version-badge">v<?php echo esc_html($plugin_version); ?></code>
+                                <?php if ($plugin_version === RISEUP_VERSION): ?>
+                                    <code class="version-badge version-current">v<?php echo esc_html($plugin_version); ?></code>
+                                <?php else: ?>
+                                    <code class="version-badge version-old">v<?php echo esc_html($plugin_version); ?></code>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
