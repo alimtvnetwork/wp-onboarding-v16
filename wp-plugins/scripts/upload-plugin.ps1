@@ -260,23 +260,48 @@ if (-not (Test-Path $PluginFolderPath)) {
 $folderName = Split-Path $PluginFolderPath -Leaf
 if ($PluginSlug -eq "") { $PluginSlug = $folderName }
 
-Write-Status "[1/5] Plugin Folder: $folderName" -Color Yellow
+Write-Status "[1/6] Plugin Folder: $folderName" -Color Yellow
 Write-Status "      Path: $PluginFolderPath" -Color Gray
 Write-Status "      Slug: $PluginSlug" -Color Gray
 
-# Step 2: Create ZIP file
-if ($OutputZipPath -eq "") {
-    $OutputZipPath = Join-Path $env:TEMP "$folderName-$(Get-Date -Format 'yyyyMMddHHmmss').zip"
+# Read local version from plugin header or constants file
+$LocalVersion = "unknown"
+$constantsFile = Join-Path $PluginFolderPath "includes/constants.php"
+if (Test-Path $constantsFile) {
+    $verContent = Get-Content $constantsFile -Raw
+    if ($verContent -match "RISEUP_VERSION.*?'([0-9]+\.[0-9]+\.[0-9]+)'") {
+        $LocalVersion = $Matches[1]
+    }
+} else {
+    $mainFile = Get-ChildItem $PluginFolderPath -Filter "*.php" | Where-Object {
+        (Get-Content $_.FullName -Head 5 -Raw) -match 'Plugin Name:'
+    } | Select-Object -First 1
+    if ($mainFile) {
+        $verContent = Get-Content $mainFile.FullName -Raw
+        if ($verContent -match "Version:\s*([0-9]+\.[0-9]+\.[0-9]+)") {
+            $LocalVersion = $Matches[1]
+        }
+    }
+}
+Write-Status "      Version: $LocalVersion" -Color Gray
+
+# Step 2: Create ZIP file (with cache deduplication)
+$cacheDir = Join-Path $env:TEMP "RiseupUploader\$LocalVersion"
+if (-not (Test-Path $cacheDir)) {
+    New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
 }
 
-# Remove existing ZIP if it exists
+if ($OutputZipPath -eq "") {
+    $OutputZipPath = Join-Path $cacheDir "$folderName-$(Get-Date -Format 'yyyyMMddHHmmss').zip"
+}
+
+# Remove existing ZIP if it exists at the output path
 if (Test-Path $OutputZipPath) {
-    Write-Status "      Removing existing ZIP file..." -Color Gray
     Remove-Item $OutputZipPath -Force
 }
 
 Write-Status ""
-Write-Status "[2/5] Creating ZIP file..." -Color Yellow
+Write-Status "[2/6] Creating ZIP file..." -Color Yellow
 
 try {
     # Create a temp directory for proper ZIP structure
@@ -300,11 +325,46 @@ try {
     
     $zipSize = (Get-Item $OutputZipPath).Length
     $zipSizeKB = [math]::Round($zipSize / 1KB, 2)
-    Write-Status "      Success! ZIP created: $OutputZipPath" -Color Green
+    Write-Status "      ✓ ZIP created: $OutputZipPath" -Color Green
     Write-Status "      Size: $zipSizeKB KB" -Color Gray
 } catch {
     Write-Host "      Error creating ZIP file: $_" -ForegroundColor Red
     exit 1
+}
+
+# Step 2b: Hash deduplication — compare with cached zips
+$newHash = (Get-FileHash $OutputZipPath -Algorithm SHA256).Hash
+Write-Status "      Hash: $newHash" -Color Gray
+
+# Get existing cached zips (sorted newest first), excluding the one we just created
+$cachedZips = Get-ChildItem $cacheDir -Filter "*.zip" | Where-Object { $_.FullName -ne $OutputZipPath } | Sort-Object LastWriteTime -Descending
+
+if ($cachedZips.Count -gt 0) {
+    $latestCachedHash = (Get-FileHash $cachedZips[0].FullName -Algorithm SHA256).Hash
+    Write-Status "      Cached hash: $latestCachedHash" -Color Gray
+
+    if ($newHash -eq $latestCachedHash) {
+        Write-Status ""
+        Write-Status "  ═══════════════════════════════════════════" -Color Cyan
+        Write-Status "  ✓ ZIP hash matches cached version — SKIP UPLOAD" -Color Cyan
+        Write-Status "    Version $LocalVersion is already deployed with" -Color Cyan
+        Write-Status "    identical content." -Color Cyan
+        Write-Status "  ═══════════════════════════════════════════" -Color Cyan
+        Write-Status ""
+        # Remove the duplicate zip we just created
+        Remove-Item $OutputZipPath -Force
+        Write-Status "Done! (no upload needed)" -Color Green
+        exit 0
+    }
+}
+
+# Housekeeping: keep only the last 2 zips in this version's cache folder
+$allCachedZips = Get-ChildItem $cacheDir -Filter "*.zip" | Sort-Object LastWriteTime -Descending
+if ($allCachedZips.Count -gt 2) {
+    $allCachedZips | Select-Object -Skip 2 | ForEach-Object {
+        Remove-Item $_.FullName -Force
+        Write-Status "      Pruned old cache: $($_.Name)" -Color Gray
+    }
 }
 
 # Create Basic Auth header
@@ -313,7 +373,7 @@ $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Usern
 
 # Pre-upload health check: verify REST API is reachable
 Write-Status ""
-Write-Status "[3/5] Pre-upload health check..." -Color Yellow
+Write-Status "[3/6] Pre-upload health check..." -Color Yellow
 $healthUrl = "$WordPressSiteURL/wp-json/"
 Write-Status "      ── Request ──" -Color DarkGray
 Write-Status "      GET $healthUrl" -Color White
@@ -360,7 +420,7 @@ try {
 
 # Step 4: Upload plugin (try Riseup Asia Uploader first, then WP Core)
 Write-Status ""
-Write-Status "[4/5] Uploading plugin to WordPress..." -Color Yellow
+Write-Status "[4/6] Uploading plugin to WordPress..." -Color Yellow
 Write-Status "      Site: $WordPressSiteURL" -Color Gray
 Write-Status "      User: $Username" -Color Gray
 
@@ -422,7 +482,7 @@ foreach ($ns in $apiNamespaces) {
 
         Write-Status "      ✓ Uploaded via $($ns.display)!" -Color Green
         Write-Status ""
-        Write-Status "[5/5] Installation Complete!" -Color Yellow
+        Write-Status "[5/6] Installation Complete!" -Color Yellow
         Write-Status ""
         Write-Status "========================================" -Color Green
         Write-Status "  SUCCESS! Plugin Deployed!" -Color Green
@@ -509,7 +569,7 @@ if (-not $uploadSuccess) {
         # Activate if requested
         if ($ActivateAfterInstall) {
             Write-Status ""
-            Write-Status "[5/5] Activating plugin..." -Color Yellow
+            Write-Status "[5/6] Activating plugin..." -Color Yellow
 
             $activateUrl = "$WordPressSiteURL/wp-json/wp/v2/plugins/$pluginSlugResult"
             $activateBody = @{ status = "active" } | ConvertTo-Json

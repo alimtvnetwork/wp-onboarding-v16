@@ -396,7 +396,7 @@ Write-Status "  └────────────────────�
 Write-Status ""
 
 # ============================================================================
-# STEP 5: CREATE ZIP
+# STEP 5: CREATE ZIP (with cache deduplication)
 # ============================================================================
 Write-Status "[5/7] Creating ZIP file..." -Color Yellow
 
@@ -405,8 +405,14 @@ if (-not (Test-Path $PluginFolderPath)) {
     exit 1
 }
 
+# Cache directory: %TEMP%\RiseupUploader\{version}\
+$cacheDir = Join-Path $env:TEMP "RiseupUploader\$LocalVersion"
+if (-not (Test-Path $cacheDir)) {
+    New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+}
+
 if ($OutputZipPath -eq "") {
-    $OutputZipPath = Join-Path $env:TEMP "$folderName-$(Get-Date -Format 'yyyyMMddHHmmss').zip"
+    $OutputZipPath = Join-Path $cacheDir "$folderName-$(Get-Date -Format 'yyyyMMddHHmmss').zip"
 }
 
 if (Test-Path $OutputZipPath) {
@@ -434,6 +440,40 @@ try {
 } catch {
     Write-Host "      Error creating ZIP: $_" -ForegroundColor Red
     exit 1
+}
+
+# Hash deduplication — compare with cached zips
+$newHash = (Get-FileHash $OutputZipPath -Algorithm SHA256).Hash
+Write-Status "      Hash: $newHash" -Color Gray
+
+$cachedZips = Get-ChildItem $cacheDir -Filter "*.zip" | Where-Object { $_.FullName -ne $OutputZipPath } | Sort-Object LastWriteTime -Descending
+
+if ($cachedZips.Count -gt 0) {
+    $latestCachedHash = (Get-FileHash $cachedZips[0].FullName -Algorithm SHA256).Hash
+    Write-Status "      Cached hash: $latestCachedHash" -Color Gray
+
+    if ($newHash -eq $latestCachedHash) {
+        Write-Status ""
+        Write-Status "  ═══════════════════════════════════════════" -Color Cyan
+        Write-Status "  ✓ ZIP hash matches cached version — SKIP UPLOAD" -Color Cyan
+        Write-Status "    Version $LocalVersion ($VersionAction) is already" -Color Cyan
+        Write-Status "    deployed with identical content." -Color Cyan
+        Write-Status "  ═══════════════════════════════════════════" -Color Cyan
+        Write-Status ""
+        # Remove the duplicate zip we just created
+        Remove-Item $OutputZipPath -Force
+        Write-Status "Done! (no upload needed)" -Color Green
+        exit 0
+    }
+}
+
+# Housekeeping: keep only the last 2 zips per version
+$allCachedZips = Get-ChildItem $cacheDir -Filter "*.zip" | Sort-Object LastWriteTime -Descending
+if ($allCachedZips.Count -gt 2) {
+    $allCachedZips | Select-Object -Skip 2 | ForEach-Object {
+        Remove-Item $_.FullName -Force
+        Write-Status "      Pruned old cache: $($_.Name)" -Color Gray
+    }
 }
 
 Write-Status ""
