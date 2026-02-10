@@ -220,6 +220,11 @@ class Riseup_Logger {
             $enhanced['source_machine'] = $source_machine;
         }
         
+        // Always include plugin_version for audit trail
+        if (defined('RISEUP_VERSION')) {
+            $enhanced['plugin_version'] = RISEUP_VERSION;
+        }
+        
         return $this->get_db()->log_transaction(
             $action,
             null, // plugin_slug
