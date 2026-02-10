@@ -214,7 +214,11 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-version">
                             <?php if (!empty($plugin_version)): ?>
-                                <code class="version-badge">v<?php echo esc_html($plugin_version); ?></code>
+                                <?php if ($plugin_version === RISEUP_VERSION): ?>
+                                    <code class="version-badge version-current">v<?php echo esc_html($plugin_version); ?></code>
+                                <?php else: ?>
+                                    <code class="version-badge version-old">v<?php echo esc_html($plugin_version); ?></code>
+                                <?php endif; ?>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
@@ -385,14 +389,23 @@ $upload_source_classes = array(
         margin-bottom: 3px;
     }
 
-    /* Version badge */
+    /* Version badge - base */
     .version-badge {
-        background: #e8eaf6;
-        color: #283593;
         padding: 2px 6px;
         border-radius: 3px;
         font-size: 11px;
         font-weight: 600;
+    }
+    /* Current version - green */
+    .version-current {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #a3d9a5;
+    }
+    /* Older version - muted indigo */
+    .version-old {
+        background: #e8eaf6;
+        color: #283593;
     }
 
     /* Upload source badge */
