@@ -629,6 +629,11 @@ if ($activeNamespace) {
 
         Write-Host ""
         Write-Host "  ⚠ Riseup Uploader API failed: $errorMessage" -ForegroundColor Yellow
+        Write-Host "  Status code: $($_.Exception.Response.StatusCode.value__)" -ForegroundColor Gray
+        if ($errorBody -ne "") {
+            $previewBody = if ($errorBody.Length -gt 500) { $errorBody.Substring(0, 500) + "..." } else { $errorBody }
+            Write-Host "  Error body: $previewBody" -ForegroundColor Gray
+        }
         Write-ErrorBody $errorBody "Riseup API Error"
         Write-ServerErrorBanner
         Write-Host ""
