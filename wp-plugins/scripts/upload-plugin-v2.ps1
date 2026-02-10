@@ -55,7 +55,7 @@ function Write-Status {
 # Debug-only output (shown when -Debug flag is set)
 function Write-Debug-Log {
     param([string]$Message)
-    if ($Debug) {
+    if ($DebugMode) {
         Write-Host "      [DEBUG] $Message" -ForegroundColor Magenta
     }
 }
