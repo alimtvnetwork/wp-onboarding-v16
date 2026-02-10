@@ -134,6 +134,7 @@ export default function PublishHistory() {
               <TableHead>Status</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Plugin / Target</TableHead>
+              <TableHead>New Ver.</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
               <TableHead>Duration</TableHead>
