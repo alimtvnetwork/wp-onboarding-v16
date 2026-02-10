@@ -106,27 +106,76 @@ function getElementDescription(element: HTMLElement): string {
   return elementMap[tagName] || tagName;
 }
 
+// Natively interactive element tags
+const INTERACTIVE_TAGS = new Set(['button', 'a', 'input', 'select', 'textarea', 'label']);
+
+// Roles that represent directly interactive elements
+const INTERACTIVE_ROLES = new Set(['button', 'link', 'menuitem', 'tab', 'checkbox', 'radio', 'switch', 'option']);
+
+/**
+ * Check whether an element is interactive (clickable by intent).
+ * Non-interactive elements (div, span, section …) produce noise
+ * when recorded as click targets.
+ */
+function isInteractiveElement(el: HTMLElement): boolean {
+  if (INTERACTIVE_TAGS.has(el.tagName.toLowerCase())) return true;
+  const role = el.getAttribute('role');
+  if (role && INTERACTIVE_ROLES.has(role)) return true;
+  if (el.hasAttribute('data-click-track') || el.hasAttribute('data-component')) return true;
+  if (el.hasAttribute('data-radix-collection-item')) return true;
+  if (el.hasAttribute('tabindex') && el.getAttribute('tabindex') !== '-1') return true;
+  return false;
+}
+
+/**
+ * Get only the direct text-node content of an element,
+ * ignoring text inside child elements.
+ * Prevents concatenation like "AllRunningDoneError".
+ */
+function getDirectTextContent(element: HTMLElement): string {
+  let text = '';
+  for (const node of Array.from(element.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const t = node.textContent?.trim();
+      if (t) text += (text ? ' ' : '') + t;
+    }
+  }
+  return text.trim();
+}
+
 // Get text content from element (button text, link text, etc.)
 function getElementText(element: HTMLElement): string | undefined {
   // For inputs, get placeholder or value
   if (element instanceof HTMLInputElement) {
     return element.placeholder || element.value?.slice(0, 50) || undefined;
   }
-  
-  // For buttons and links, get text content
-  const text = element.textContent?.trim();
-  if (text && text.length > 0 && text.length < 100) {
-    return text;
-  }
-  
-  // Check for aria-label
+
+  // Prefer explicit labels
   const ariaLabel = element.getAttribute('aria-label');
   if (ariaLabel) return ariaLabel;
-  
-  // Check for title
+
   const title = element.getAttribute('title');
   if (title) return title;
-  
+
+  const trackLabel = element.getAttribute('data-click-track');
+  if (trackLabel) return trackLabel;
+
+  // For interactive elements use full textContent (short cap)
+  if (INTERACTIVE_TAGS.has(element.tagName.toLowerCase())) {
+    const text = element.textContent?.trim();
+    if (text && text.length > 0 && text.length < 100) {
+      return text;
+    }
+    return undefined;
+  }
+
+  // For non-interactive elements only use direct text nodes
+  // to avoid concatenating all child button/link text
+  const directText = getDirectTextContent(element);
+  if (directText && directText.length > 0 && directText.length < 60) {
+    return directText;
+  }
+
   return undefined;
 }
 
@@ -198,6 +247,12 @@ export function useClickTracker() {
 
     // Find the most relevant clickable element
     const clickable = findClickableAncestor(target);
+
+    // Skip clicks on non-interactive elements (container padding, etc.)
+    // These produce noise like Container "AllRunningDoneError"
+    if (!isInteractiveElement(clickable)) {
+      return;
+    }
     
     // Get component name from data attribute if present
     const componentName = 
