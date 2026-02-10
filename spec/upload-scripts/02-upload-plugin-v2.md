@@ -1,7 +1,7 @@
 # Upload Plugin V2 — Enhanced Pipeline
 
 > **Script:** `wp-plugins/scripts/upload-plugin-v2.ps1`  
-> **Version:** 2.1.0  
+> **Version:** 2.2.0  
 > **Updated:** 2026-02-10  
 > **Status:** Active (primary upload script)
 
@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Enhanced uploader that adds **Git Pull**, **version comparison**, **smart publish**, **self-update OPcache flush**, and **retry with security detection** on top of V1. This is the primary upload script used by both `run.ps1` and `upload-plugin-v3.ps1`.
+Enhanced uploader that adds **Git Pull**, **version comparison**, **smart publish**, **self-update OPcache flush**, **duplicate plugin cleanup**, and **retry with security detection** on top of V1. This is the primary upload script used by both `run.ps1` and `upload-plugin-v3.ps1`.
 
 ---
 
@@ -17,6 +17,7 @@ Enhanced uploader that adds **Git Pull**, **version comparison**, **smart publis
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.2.0 | 2026-02-10 | OPcache reset now uses proper REST API endpoint (`POST /opcache-reset`) instead of standalone PHP file. Removed `opcache-reset.php`. Plugin v1.47.0: duplicate plugin scanner auto-removes duplicate folders before extraction. Upload handler calls `opcache_reset()` after file replacement. |
 | 2.1.0 | 2026-02-10 | Self-update OPcache flush via `opcache-reset.php`, client-version priority for self-updates, `Accept: application/json` header, Imunify360 detection, ZIP staging with progress + SmallestSize compression, full cache path display |
 | 2.0.0 | 2026-02-09 | Initial V2: Git pull, version comparison, smart publish, ZIP hash caching, V1 fallback, quiet mode, debug mode, retry mechanism |
 
@@ -33,7 +34,7 @@ Enhanced uploader that adds **Git Pull**, **version comparison**, **smart publis
 | 5/8 | **Create ZIP** — Stage files with progress, compress with `SmallestSize`, display full paths and ratio |
 | 6/8 | **REST API health check** — Verify REST API reachability and namespace availability |
 | 7/8 | **Publish** — Upload via Riseup Asia Uploader API with envelope unwrapping |
-| 8/8 | **Post-upload verify** — Self-update: flush OPcache + verify; Other: check `/status` version |
+| 8/8 | **Post-upload verify** — Self-update: flush OPcache via REST + verify; Other: check `/status` version |
 
 ---
 
@@ -135,9 +136,9 @@ When a JSON response contains `"Access denied"` or `"bot-protection"`, the scrip
       Staging: 47/47 files (100%)
       Compressing (SmallestSize)... done
       ✓ ZIP created: 205.58 KB (from 1011.68 KB source, 20.3% ratio)
-      Path: C:\Users\Alim\AppData\Local\Temp\RiseupUploader\1.45.0\plugin-20260211.zip
-      Cache: C:\Users\Alim\AppData\Local\Temp\RiseupUploader\1.45.0
-      Files: 47
+      Path: C:\Users\Alim\AppData\Local\Temp\RiseupUploader\1.47.0\plugin-20260211.zip
+      Cache: C:\Users\Alim\AppData\Local\Temp\RiseupUploader\1.47.0
+      Files: 48
       Hash: F25C936D...
 ```
 
@@ -157,7 +158,7 @@ ZIP files are cached by version in `%TEMP%\RiseupUploader\{version}\`. If the SH
   "slug": "my-plugin",
   "activate": true,
   "upload_source": "upload_script",
-  "plugin_version": "1.45.0",
+  "plugin_version": "1.47.0",
   "machine_name": "ALIM-DESKTOP"
 }
 ```
@@ -178,34 +179,91 @@ if ($response.Results -and $response.Results.Count -gt 0) {
 
 ---
 
-## Self-Update Flow (v2.1.0+)
+## Duplicate Plugin Scanner (v1.47.0+)
+
+Before extraction, the `handle_upload` endpoint scans all installed plugins for duplicates that match the target slug. This prevents the situation where a ZIP's internal folder name differs from the expected slug, creating two copies of the same plugin.
+
+### Detection Criteria
+
+A plugin is flagged as a duplicate if:
+1. Its `TextDomain` matches the target slug, OR
+2. The plugin file path contains the target slug string
+
+AND it is in a **different** directory than the target slug.
+
+### Cleanup Actions
+
+1. Deactivate the duplicate if it's active
+2. Delete the duplicate folder entirely
+3. Clear WordPress plugin cache after cleanup
+4. Log all actions (duplicate found, deactivated, removed)
+
+### Example Log Output
+
+```
+[WARN] Duplicate plugin folder detected: dir=riseup-asia-uploader-2, ver=1.45.0, target=riseup-asia-uploader
+[INFO] Deactivated duplicate plugin: riseup-asia-uploader-2/riseup-asia-uploader.php
+[INFO] Removed duplicate plugin folder: /wp-content/plugins/riseup-asia-uploader-2
+[INFO] Duplicate cleanup complete: removed=1
+```
+
+---
+
+## Self-Update Flow (v2.2.0+)
 
 When the uploaded plugin slug is `riseup-asia-uploader` (the uploader itself):
 
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  1. Upload processed by OLD code on server               │
-│  2. Response version is STALE (expected)                 │
-│  3. Script calls opcache-reset.php to flush OPcache      │
-│  4. Script verifies /status returns NEW version          │
+│  2. handle_upload calls opcache_reset() after extraction  │
+│  3. Response version is STALE (expected for self-update)  │
+│  4. Script calls POST /opcache-reset REST endpoint        │
+│  5. Script verifies /status returns NEW version           │
 └──────────────────────────────────────────────────────────┘
 ```
 
-### OPcache Reset
+### Server-Side OPcache Reset (in handle_upload)
 
-The script calls a standalone PHP file deployed with the plugin:
+After extracting plugin files, the upload handler calls `opcache_reset()` directly. This ensures the **next** HTTP request (the `/status` verification) serves new bytecode:
+
+```php
+// After file extraction and rename
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+}
+// Also invalidates specific files as belt-and-suspenders
+opcache_invalidate($full_plugin_path, true);
+opcache_invalidate($constants_file, true);
+wp_cache_delete('plugins', 'plugins');
+```
+
+### Client-Side OPcache Reset (REST endpoint)
+
+The upload script calls the authenticated REST API endpoint (not a standalone PHP file):
 
 ```
-GET /wp-content/plugins/riseup-asia-uploader/opcache-reset.php
+POST /wp-json/riseup-asia-uploader/v1/opcache-reset
+Authorization: Basic <credentials>
+Content-Type: application/json
 ```
 
-This file:
-- Requires Basic Auth (same WordPress credentials)
-- Calls `opcache_reset()` to flush all cached bytecode
-- Invalidates specific plugin files via `opcache_invalidate()`
-- Returns JSON: `{ "success": true, "opcache_reset": true, "files_invalidated": 2 }`
+Response (wrapped in standard envelope):
+```json
+{
+  "success": true,
+  "opcache_available": true,
+  "opcache_reset": true,
+  "files_invalidated": 2,
+  "timestamp": "2026-02-10T19:15:00+00:00"
+}
+```
 
-**Note:** On the first deploy of v2.1.0+, the reset script doesn't exist yet on the server, so it will fail gracefully. The second upload will work correctly.
+**Why REST instead of standalone PHP?** Many hosting environments (cPanel/FastCGI) strip `PHP_AUTH_*` headers for direct PHP file requests, causing 403 errors. The WordPress REST API handles authentication properly through its own infrastructure.
+
+### First Deploy Note
+
+On the first deploy of v1.47.0+ to a server running an older version, the OPcache reset endpoint won't exist yet. The script handles this gracefully and reports a warning. Running the upload a second time will use the new code with proper OPcache handling.
 
 ---
 
@@ -230,9 +288,9 @@ When `-Quiet` is set, only a JSON result is written to stdout:
 {
   "success": true,
   "plugin": "my-plugin",
-  "localVersion": "1.45.0",
+  "localVersion": "1.47.0",
   "remoteVersion": "1.36.0",
-  "deployedVersion": "1.45.0",
+  "deployedVersion": "1.47.0",
   "action": "upgrade",
   "activated": true
 }
@@ -251,4 +309,4 @@ This enables machine-readable output for V3 parallel job processing.
 
 ---
 
-*V2 specification v2.1.0 — updated: 2026-02-10*
+*V2 specification v2.2.0 — updated: 2026-02-10*
