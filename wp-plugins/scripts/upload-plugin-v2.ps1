@@ -552,14 +552,16 @@ if ($activeNamespace) {
 
         $machineName = $env:COMPUTERNAME
         $uploadBody = @{
-            plugin_zip    = $base64Data
-            slug          = $PluginSlug
-            activate      = $ActivateAfterInstall
-            upload_source = "upload_script"
+            plugin_zip     = $base64Data
+            slug           = $PluginSlug
+            activate       = $ActivateAfterInstall
+            upload_source  = "upload_script"
+            plugin_version = $LocalVersion
+            machine_name   = $machineName
         } | ConvertTo-Json
 
         $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
-        Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, upload_source: `"upload_script`", plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
+        Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, upload_source: `"upload_script`", plugin_version: `"$LocalVersion`", machine_name: `"$machineName`", plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
         Write-Status "      Machine: $machineName" -Color Gray
         Write-Status "      ────────────" -Color DarkGray
 
