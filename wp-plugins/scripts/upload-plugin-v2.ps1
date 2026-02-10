@@ -430,6 +430,7 @@ $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Usern
 
 $headers = @{
     "Authorization" = "Basic $base64Auth"
+    "Accept"        = "application/json"
 }
 
 $apiNamespaces = @(
