@@ -446,19 +446,23 @@ foreach ($ns in $apiNamespaces) {
         $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
         $base64Data = [Convert]::ToBase64String($fileBytes)
 
+        $machineName = $env:COMPUTERNAME
         $uploadBody = @{
-            plugin_zip = $base64Data
-            slug = $PluginSlug
-            activate = $ActivateAfterInstall
+            plugin_zip    = $base64Data
+            slug          = $PluginSlug
+            activate      = $ActivateAfterInstall
+            upload_source = "upload_script"
         } | ConvertTo-Json
 
         $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
-        Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
+        Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, upload_source: `"upload_script`", plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
+        Write-Status "      Machine: $machineName" -Color Gray
         Write-Status "      ────────────" -Color DarkGray
 
         $uploadHeaders = @{
-            "Authorization" = "Basic $base64Auth"
-            "Content-Type" = "application/json"
+            "Authorization"            = "Basic $base64Auth"
+            "Content-Type"             = "application/json"
+            "X-Riseup-Source-Machine"  = $machineName
         }
 
         $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
