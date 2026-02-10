@@ -135,6 +135,7 @@ export default function PublishHistory() {
               <TableHead>Action</TableHead>
               <TableHead>Plugin / Target</TableHead>
               <TableHead>Version</TableHead>
+              <TableHead className="w-6 px-0"></TableHead>
               <TableHead>New Ver.</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
@@ -147,9 +148,9 @@ export default function PublishHistory() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : entries.length === 0 ? (
-              <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
+              <TableRow><TableCell colSpan={13} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
             ) : entries.map((e: PublishHistoryEntry) => {
               const actionLabel = formatActionLabel(e.actionType || e.mode);
               const actionClasses = getActionBadgeClasses(e.actionType || e.mode);
@@ -187,6 +188,11 @@ export default function PublishHistory() {
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center px-0">
+                    {e.newVersion && (
+                      <span className="text-muted-foreground text-xs font-semibold">→</span>
                     )}
                   </TableCell>
                   <TableCell>
