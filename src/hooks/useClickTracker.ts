@@ -21,6 +21,7 @@ interface ClickTrackerState {
   addClick: (event: Omit<ClickEvent, 'id' | 'timestamp'>) => void;
   getClickPath: () => ClickEvent[];
   getClickPathString: () => string;
+  getClickPathArrow: () => string;
   clear: () => void;
 }
 
@@ -54,9 +55,27 @@ export const useClickTrackerStore = create<ClickTrackerState>((set, get) => ({
         else if (e.element) parts.push(e.element);
         if (e.text) parts.push(`"${e.text.slice(0, 30)}${e.text.length > 30 ? '...' : ''}"`);
         if (e.action !== 'click') parts.push(`(${e.action})`);
+        if (e.route) parts.push(`@ ${e.route}`);
         return `${i + 1}. ${parts.join(' ')}`;
       })
       .join('\n');
+  },
+
+  /** Arrow-style summary for error report header: Button "X" → Button "Y" → ... */
+  getClickPathArrow: () => {
+    const path = get().clickPath;
+    if (path.length === 0) return '';
+
+    return path
+      .map((e) => {
+        const parts = [];
+        if (e.componentName) parts.push(e.componentName);
+        else if (e.element) parts.push(e.element);
+        if (e.text) parts.push(`"${e.text.slice(0, 30)}${e.text.length > 30 ? '...' : ''}"`);
+        if (e.action !== 'click') parts.push(`(${e.action})`);
+        return parts.join(' ');
+      })
+      .join(' → ');
   },
 
   clear: () => set({ clickPath: [] }),
@@ -252,10 +271,11 @@ export function useClickTracker() {
 }
 
 // Export a function to get click path for error capture (doesn't need hook)
-export function getClickPathForError(): { clickPath: ClickEvent[]; clickPathString: string } {
+export function getClickPathForError(): { clickPath: ClickEvent[]; clickPathString: string; clickPathArrow: string } {
   const state = useClickTrackerStore.getState();
   return {
     clickPath: state.getClickPath(),
     clickPathString: state.getClickPathString(),
+    clickPathArrow: state.getClickPathArrow(),
   };
 }
