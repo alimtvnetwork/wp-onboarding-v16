@@ -355,20 +355,53 @@ class Riseup_Admin {
         $snapshot_settings = $detector->getSettings();
         $snapshot_providers = $detector->detectAvailableProviders();
 
-        // Endpoint metadata for display
-        $endpoints_meta = array(
-            'status'       => array('label' => 'Status Check', 'desc' => 'Returns plugin status and version'),
-            'upload'       => array('label' => 'Plugin Upload', 'desc' => 'Upload and install plugins'),
-            'plugins'      => array('label' => 'List Plugins', 'desc' => 'List all installed plugins'),
-            'plugin_files' => array('label' => 'Plugin Files', 'desc' => 'List files in a plugin'),
-            'plugin_file'  => array('label' => 'File Content', 'desc' => 'Get file content from plugin'),
-            'export_self'  => array('label' => 'Export Self', 'desc' => 'Export this plugin as ZIP'),
-            'posts'        => array('label' => 'Blog Posts', 'desc' => 'Create and manage posts'),
-            'categories'   => array('label' => 'Categories', 'desc' => 'Create and manage categories'),
-            'logs'         => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
-            'logs_stats'   => array('label' => 'Logs Stats', 'desc' => 'Get log statistics'),
-            'openapi'      => array('label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'),
+        // Endpoint metadata for display — grouped by category
+        $endpoint_groups = array(
+            'core' => array(
+                'label' => __('Core Operations', 'riseup-asia-uploader'),
+                'icon'  => 'dashicons-admin-tools',
+                'endpoints' => array(
+                    'status'       => array('label' => 'Status Check', 'desc' => 'Returns plugin status and version'),
+                    'upload'       => array('label' => 'Plugin Upload', 'desc' => 'Upload and install plugins'),
+                    'plugins'      => array('label' => 'List Plugins', 'desc' => 'List all installed plugins'),
+                    'plugin_files' => array('label' => 'Plugin Files', 'desc' => 'List files in a plugin'),
+                    'plugin_file'  => array('label' => 'File Content', 'desc' => 'Get file content from plugin'),
+                    'export_self'  => array('label' => 'Export Self', 'desc' => 'Export this plugin as ZIP'),
+                ),
+            ),
+            'content' => array(
+                'label' => __('Content Management', 'riseup-asia-uploader'),
+                'icon'  => 'dashicons-edit-page',
+                'endpoints' => array(
+                    'posts'        => array('label' => 'Blog Posts', 'desc' => 'Create and manage posts'),
+                    'categories'   => array('label' => 'Categories', 'desc' => 'Create and manage categories'),
+                ),
+            ),
+            'monitoring' => array(
+                'label' => __('Monitoring & Logs', 'riseup-asia-uploader'),
+                'icon'  => 'dashicons-chart-area',
+                'endpoints' => array(
+                    'logs'         => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
+                    'logs_stats'   => array('label' => 'Logs Stats', 'desc' => 'Get log statistics'),
+                    'error_logs'   => array('label' => 'Error Logs', 'desc' => 'Fetch error log sessions'),
+                ),
+            ),
+            'docs' => array(
+                'label' => __('Documentation', 'riseup-asia-uploader'),
+                'icon'  => 'dashicons-media-document',
+                'endpoints' => array(
+                    'openapi'      => array('label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'),
+                ),
+            ),
         );
+
+        // Flatten for backward compatibility
+        $endpoints_meta = array();
+        foreach ($endpoint_groups as $group) {
+            foreach ($group['endpoints'] as $key => $meta) {
+                $endpoints_meta[$key] = $meta;
+            }
+        }
 
         include dirname(__FILE__) . '/../templates/admin-settings.php';
     }

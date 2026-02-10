@@ -183,7 +183,7 @@ if (!defined('ABSPATH')) {
             </table>
         </div>
 
-        <!-- Endpoint Configuration -->
+        <!-- Endpoint Configuration (Grouped) -->
         <div class="riseup-card">
             <h2><?php esc_html_e('API Endpoints Configuration', 'riseup-asia-uploader'); ?></h2>
             <p class="description">
@@ -200,35 +200,43 @@ if (!defined('ABSPATH')) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($endpoints_meta as $endpoint => $meta): ?>
-                        <tr>
-                            <td class="column-endpoint">
-                                <strong><?php echo esc_html($meta['label']); ?></strong>
-                                <br>
-                                <code class="endpoint-path">/<?php echo esc_html($endpoint); ?></code>
-                            </td>
-                            <td class="column-description">
-                                <?php echo esc_html($meta['desc']); ?>
-                            </td>
-                            <td class="column-enabled">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" 
-                                           name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][enabled]" 
-                                           value="1" 
-                                           <?php checked(!empty($settings['endpoints'][$endpoint]['enabled'])); ?>>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </td>
-                            <td class="column-auth">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" 
-                                           name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][auth_required]" 
-                                           value="1" 
-                                           <?php checked(!empty($settings['endpoints'][$endpoint]['auth_required'])); ?>>
-                                    <span class="toggle-slider"></span>
-                                </label>
+                    <?php foreach ($endpoint_groups as $group_key => $group): ?>
+                        <tr class="endpoint-group-header">
+                            <td colspan="4">
+                                <span class="dashicons <?php echo esc_attr($group['icon']); ?>"></span>
+                                <?php echo esc_html($group['label']); ?>
                             </td>
                         </tr>
+                        <?php foreach ($group['endpoints'] as $endpoint => $meta): ?>
+                            <tr>
+                                <td class="column-endpoint">
+                                    <strong><?php echo esc_html($meta['label']); ?></strong>
+                                    <br>
+                                    <code class="endpoint-path">/<?php echo esc_html($endpoint); ?></code>
+                                </td>
+                                <td class="column-description">
+                                    <?php echo esc_html($meta['desc']); ?>
+                                </td>
+                                <td class="column-enabled">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" 
+                                               name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][enabled]" 
+                                               value="1" 
+                                               <?php checked(!empty($settings['endpoints'][$endpoint]['enabled'])); ?>>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </td>
+                                <td class="column-auth">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" 
+                                               name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][auth_required]" 
+                                               value="1" 
+                                               <?php checked(!empty($settings['endpoints'][$endpoint]['auth_required'])); ?>>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
                     <?php endforeach; ?>
                 </tbody>
             </table>
