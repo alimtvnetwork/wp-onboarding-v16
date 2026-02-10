@@ -1706,16 +1706,24 @@ class Riseup_Asia {
             }
 
             // Detect plugin version from installed plugin headers.
-            $plugin_version = '';
-            if (RiseupBooleanHelpers::has_content($plugin_file)) {
+            // Prefer client-sent version (from upload script), fall back to get_plugin_data()
+            $plugin_version = $client_plugin_version;
+            if (empty($plugin_version) && RiseupBooleanHelpers::has_content($plugin_file)) {
                 $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin_file, false, false);
                 if (!empty($plugin_data['Version'])) {
                     $plugin_version = $plugin_data['Version'];
                 }
             }
-            $this->file_logger->info('Plugin version detected', array('version' => $plugin_version));
+            $this->file_logger->info('Plugin version determined', array(
+                'version'        => $plugin_version,
+                'source'         => !empty($client_plugin_version) ? 'client' : 'get_plugin_data',
+                'client_version' => $client_plugin_version,
+            ));
 
-            // Log success with version and upload source (skip if self-update was pre-logged).
+            // =====================================================================
+            // ACTIVITY STATE 2: Log "Upload Success/Failed" after processing
+            // (skip if self-update was pre-logged)
+            // =====================================================================
             if (!$is_self_update) {
                 $this->logger->log_upload($slug, array(
                     'is_update' => $is_update,
