@@ -708,6 +708,7 @@ try {
 
     $uploadHeaders = @{
         "Authorization"              = "Basic $base64Auth"
+        "Accept"                     = "application/json"
         "X-Riseup-Source-Machine"    = $machineName
         "X-Riseup-Plugin-Version"    = $LocalVersion
     }
