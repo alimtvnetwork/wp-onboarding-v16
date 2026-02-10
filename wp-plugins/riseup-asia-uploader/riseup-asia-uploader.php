@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.45.0
+ * Version: 1.46.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -668,6 +668,13 @@ class Riseup_Asia {
             'methods'             => 'GET',
             'callback'            => array($this, 'handle_openapi'),
             'permission_callback' => $this->build_permission_callback('openapi', array($this, 'check_status_permission')),
+        ));
+
+        // OPcache reset endpoint (used by upload script after self-updates).
+        $safe_register(RISEUP_ENDPOINT_OPCACHE_RESET, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_opcache_reset'),
+            'permission_callback' => $this->build_permission_callback('opcache_reset', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin upload endpoint.
@@ -1468,6 +1475,63 @@ class Riseup_Asia {
     }
 
     // =========================================================================
+    // OPCACHE RESET HANDLER
+    // =========================================================================
+
+    /**
+     * Handle OPcache reset request.
+     *
+     * Called by the upload script after a self-update to flush stale bytecode
+     * so the next request serves new plugin code.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function handle_opcache_reset($request) {
+        $this->file_logger->info('OPcache reset endpoint called');
+
+        $result = array(
+            'success'           => true,
+            'opcache_available' => function_exists('opcache_reset'),
+            'opcache_reset'     => false,
+            'files_invalidated' => 0,
+            'timestamp'         => gmdate('c'),
+        );
+
+        // Full OPcache reset
+        if (function_exists('opcache_reset')) {
+            $result['opcache_reset'] = opcache_reset();
+            $this->file_logger->info('OPcache reset executed', array('result' => $result['opcache_reset']));
+        }
+
+        // Also invalidate specific plugin files
+        $plugin_dir = WP_PLUGIN_DIR . '/' . RISEUP_SLUG;
+        $invalidated = 0;
+        if (function_exists('opcache_invalidate')) {
+            $files_to_invalidate = array(
+                $plugin_dir . '/' . RISEUP_SLUG . '.php',
+                $plugin_dir . '/includes/constants.php',
+            );
+            foreach ($files_to_invalidate as $file) {
+                if (file_exists($file)) {
+                    clearstatcache(true, $file);
+                    opcache_invalidate($file, true);
+                    $invalidated++;
+                }
+            }
+        }
+        $result['files_invalidated'] = $invalidated;
+
+        // Clear WordPress plugin cache
+        wp_cache_delete('plugins', 'plugins');
+
+        return RiseupEnvelopeBuilder::success('OPcache reset complete')
+            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_OPCACHE_RESET)
+            ->setSingleResult($result)
+            ->toResponse();
+    }
+
+    // =========================================================================
     // PLUGIN HANDLERS
     // =========================================================================
 
@@ -1687,21 +1751,28 @@ class Riseup_Asia {
             $this->delete_directory($temp_extract_dir);
 
             // =================================================================
-            // OPCACHE INVALIDATION — critical for self-updates
-            // WordPress/PHP may cache the old plugin file contents in OPcache,
-            // causing get_plugin_data() to return stale version numbers.
+            // OPCACHE RESET — critical for self-updates
+            // After replacing files, do a FULL opcache_reset() so the NEXT
+            // HTTP request serves the new bytecode. Individual invalidate()
+            // calls are unreliable on many hosts. The full reset ensures
+            // the /status endpoint (called next by the upload script) will
+            // execute the NEW code and return the correct version.
             // =================================================================
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+                $this->file_logger->info('Full OPcache reset after plugin extraction');
+            }
+
             $plugin_file = $this->find_plugin_file($slug);
             if (RiseupBooleanHelpers::has_content($plugin_file)) {
                 $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
                 
-                // Invalidate OPcache for the main plugin file
+                // Also invalidate specific files as belt-and-suspenders
                 if (function_exists('opcache_invalidate')) {
                     opcache_invalidate($full_plugin_path, true);
                     $this->file_logger->debug('OPcache invalidated for plugin file', array('path' => $full_plugin_path));
                 }
                 
-                // Also invalidate constants file if it exists (version is defined here)
                 $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
                 if (file_exists($constants_file) && function_exists('opcache_invalidate')) {
                     opcache_invalidate($constants_file, true);
