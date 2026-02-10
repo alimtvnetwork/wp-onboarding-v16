@@ -1706,12 +1706,13 @@ class Riseup_Asia {
                         'is_update'       => true,
                         'is_self_update'  => true,
                         'old_version'     => $old_version,
+                        'new_version'     => $client_plugin_version,
                         'file_size'       => strlen($zip_content),
                         'note'            => 'Pre-logged before self-update to ensure audit trail',
                     ),
                     null,
                     array(
-                        'plugin_version' => $old_version,
+                        'plugin_version' => $client_plugin_version ?: $old_version,
                         'upload_source'  => $upload_source,
                     )
                 );
