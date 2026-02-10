@@ -134,6 +134,7 @@ export default function PublishHistory() {
               <TableHead>Status</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Plugin / Target</TableHead>
+              <TableHead>Version</TableHead>
               <TableHead>New Ver.</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
@@ -146,9 +147,9 @@ export default function PublishHistory() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : entries.length === 0 ? (
-              <TableRow><TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
+              <TableRow><TableCell colSpan={12} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
             ) : entries.map((e: PublishHistoryEntry) => {
               const actionLabel = formatActionLabel(e.actionType || e.mode);
               const actionClasses = getActionBadgeClasses(e.actionType || e.mode);
@@ -175,16 +176,18 @@ export default function PublishHistory() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={pluginClasses}>
-                        {e.pluginName}
+                    <Badge variant="outline" className={pluginClasses}>
+                      {e.pluginName}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {e.version ? (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                        v{e.version}
                       </Badge>
-                      {e.version && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
-                          v{e.version}
-                        </Badge>
-                      )}
-                    </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {e.newVersion ? (
