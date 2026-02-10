@@ -280,6 +280,16 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
             variant="ghost"
             size="sm"
             className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
+            onClick={() => navigate(`/publish-history?siteId=${site.id}&siteName=${encodeURIComponent(site.name)}`)}
+            title="View activity logs for this site"
+          >
+            <Activity className="h-4 w-4 shrink-0" />
+            <span className="text-[10px] leading-tight truncate">Activity</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex flex-col items-center justify-center h-auto py-2 px-2 gap-0.5 min-w-[3.5rem] flex-1"
             onClick={handleDeployUploader}
             disabled={deployingUploader || site.connectionStatus !== "connected"}
             title={site.connectionStatus !== "connected" ? "Connect site first" : "Deploy Riseup Asia Uploader to this site"}
