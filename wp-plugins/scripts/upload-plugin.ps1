@@ -102,75 +102,15 @@ function Get-ErrorResponseBody {
     return ""
 }
 
-# Pretty-print an error response body (JSON or raw, with HTML stripping)
+# Print error response body as-is (raw, no HTML stripping)
 function Write-ErrorBody {
     param([string]$Body, [string]$Label = "Response Body")
     if ($Body -eq "") { return }
     Write-Status ""
     Write-Status "      ── $Label ──" -Color DarkGray
-    try {
-        $errJson = $Body | ConvertFrom-Json
-        # Strip HTML from message fields
-        if ($errJson.message) {
-            $msg = if (Test-IsHtml $errJson.message) { ConvertFrom-Html $errJson.message } else { $errJson.message }
-            Write-Status "      Message: $msg" -Color Red
-        }
-        if ($errJson.error -and $errJson.error.message) {
-            $msg = if (Test-IsHtml $errJson.error.message) { ConvertFrom-Html $errJson.error.message } else { $errJson.error.message }
-            Write-Status "      Error:   $msg" -Color Red
-        }
-        if ($errJson.code) {
-            Write-Status "      Code:    $($errJson.code)" -Color Red
-        }
-        if ($errJson.data -and $errJson.data.status) {
-            Write-Status "      Status:  $($errJson.data.status)" -Color Red
-        }
-        if ($errJson.stackTrace) {
-            Write-Status "      Stack Trace:" -Color Yellow
-            Write-Status $errJson.stackTrace -Color Gray
-        }
-        if ($errJson.stackTraceFrames) {
-            Write-Status "      Stack Frames:" -Color Yellow
-            foreach ($frame in $errJson.stackTraceFrames) {
-                $loc = "        $($frame.file):$($frame.line)"
-                if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
-                elseif ($frame.function) { $loc += " -> $($frame.function)" }
-                Write-Status $loc -Color Gray
-            }
-        }
-        if ($errJson.error -and $errJson.error.details) {
-            $d = $errJson.error.details
-            if ($d.stackTrace) {
-                Write-Status "      Stack Trace:" -Color Yellow
-                Write-Status $d.stackTrace -Color Gray
-            }
-            if ($d.stackTraceFrames) {
-                Write-Status "      Stack Frames:" -Color Yellow
-                foreach ($frame in $d.stackTraceFrames) {
-                    $loc = "        $($frame.file):$($frame.line)"
-                    if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
-                    elseif ($frame.function) { $loc += " -> $($frame.function)" }
-                    Write-Status $loc -Color Gray
-                }
-            }
-        }
-        $hasKnown = $errJson.message -or $errJson.error -or $errJson.stackTrace -or $errJson.code
-        if (-not $hasKnown) {
-            # Fallback: strip HTML if present
-            if (Test-IsHtml $Body) {
-                Write-Status (ConvertFrom-Html $Body) -Color Gray
-            } else {
-                Write-Status $Body -Color Gray
-            }
-        }
-    } catch {
-        # Not JSON — strip HTML if present
-        if (Test-IsHtml $Body) {
-            Write-Status (ConvertFrom-Html $Body) -Color Gray
-        } else {
-            Write-Status $Body -Color Gray
-        }
-    }
+    # Truncate to 2000 chars for readability
+    $preview = if ($Body.Length -gt 2000) { $Body.Substring(0, 2000) + "`n      ... (truncated, total $($Body.Length) chars)" } else { $Body }
+    Write-Status "      $preview" -Color Gray
     Write-Status "      ────────────────" -Color DarkGray
 }
 
@@ -375,11 +315,24 @@ $base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${Usern
 Write-Status ""
 Write-Status "[3/5] Pre-upload health check..." -Color Yellow
 $healthUrl = "$WordPressSiteURL/wp-json/"
-Write-Status "      GET $healthUrl" -Color Gray
+Write-Status "      ── Request ──" -Color DarkGray
+Write-Status "      GET $healthUrl" -Color White
+Write-Status "      Auth: Basic (user=$Username)" -Color Gray
+Write-Status "      ────────────" -Color DarkGray
 
 $restApiHealthy = $false
 try {
     $healthResponse = Invoke-RestMethod -Uri $healthUrl -Method Get -Headers @{ "Authorization" = "Basic $base64Auth" } -TimeoutSec 15 -ErrorAction Stop
+    
+    # Always dump raw response
+    try {
+        $rawHealth = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
+        if ($rawHealth.Length -gt 1000) { $rawHealth = $rawHealth.Substring(0, 1000) + "..." }
+        Write-Status "      Raw response: $rawHealth" -Color DarkGray
+    } catch {
+        Write-Status "      Raw response: $healthResponse" -Color DarkGray
+    }
+
     if ($healthResponse.name -or $healthResponse.namespaces) {
         $restApiHealthy = $true
         $siteName = if ($healthResponse.name) { $healthResponse.name } else { "Unknown" }
@@ -395,24 +348,12 @@ try {
         }
     } else {
         Write-Status "      ⚠ REST API responded but format unexpected" -Color Yellow
-        Write-Status "      Response type: $($healthResponse.GetType().FullName)" -Color Gray
-        try {
-            $rawPreview = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
-            if ($rawPreview.Length -gt 500) { $rawPreview = $rawPreview.Substring(0, 500) + "..." }
-            Write-Status "      Response preview: $rawPreview" -Color Gray
-        } catch {
-            Write-Status "      Response (raw): $healthResponse" -Color Gray
-        }
     }
 } catch {
     $healthErr = Get-ErrorResponseBody $_
     Write-Status "      ✗ REST API health check failed: $($_.Exception.Message)" -Color Red
     if ($healthErr -ne "") {
-        if (Test-IsHtml $healthErr) {
-            Write-Status "      Response: $(ConvertFrom-Html $healthErr)" -Color Gray
-        } else {
-            Write-Status "      Response: $healthErr" -Color Gray
-        }
+        Write-Status "      Raw error response: $healthErr" -Color Gray
     }
     Write-Status "      ⚠ Continuing anyway..." -Color Yellow
 }
