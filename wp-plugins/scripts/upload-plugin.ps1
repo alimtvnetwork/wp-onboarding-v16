@@ -482,7 +482,7 @@ foreach ($ns in $apiNamespaces) {
 
         Write-Status "      ✓ Uploaded via $($ns.display)!" -Color Green
         Write-Status ""
-        Write-Status "[5/5] Installation Complete!" -Color Yellow
+        Write-Status "[5/6] Installation Complete!" -Color Yellow
         Write-Status ""
         Write-Status "========================================" -Color Green
         Write-Status "  SUCCESS! Plugin Deployed!" -Color Green
