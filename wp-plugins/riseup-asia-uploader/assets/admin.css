@@ -232,6 +232,11 @@
     letter-spacing: 0.5px;
 }
 
+.action-upload_initiated {
+    background: #e0f7fa;
+    color: #00695c;
+}
+
 .action-upload,
 .action-upload_active {
     background: #d1e4dd;

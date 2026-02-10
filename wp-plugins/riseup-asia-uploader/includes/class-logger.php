@@ -280,6 +280,19 @@ class Riseup_Logger {
     }
 
     /**
+     * Log upload initiated (before processing begins).
+     *
+     * @param string $plugin_slug Plugin slug.
+     * @param array  $details     Details about the upload attempt.
+     * @param array  $extra_enhanced Extra enhanced fields.
+     *
+     * @return int|false Insert ID or false.
+     */
+    public function log_upload_initiated($plugin_slug, $details = array(), $extra_enhanced = array()) {
+        return $this->log_plugin_action(RISEUP_ACTION_UPLOAD_INITIATED, $plugin_slug, RISEUP_STATUS_SUCCESS, $details, null, $extra_enhanced);
+    }
+
+    /**
      * Log upload success.
      *
      * @param string $plugin_slug Plugin slug.

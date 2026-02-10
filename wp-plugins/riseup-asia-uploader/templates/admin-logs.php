@@ -535,6 +535,11 @@ $upload_source_classes = array(
         box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
         border-radius: 4px;
     }
+    .action-upload_initiated {
+        background: #e0f7fa;
+        color: #00695c;
+        border: 1px solid #80cbc4;
+    }
     .action-upload,
     .action-upload_active {
         border: 1px solid #6dd297;

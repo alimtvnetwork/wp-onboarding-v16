@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.41.0');
+    define('RISEUP_VERSION', '1.42.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -196,6 +196,9 @@ if (!defined('RISEUP_ACTION_EXPORT_SELF')) {
 }
 if (!defined('RISEUP_ACTION_EXPORT_PLUGIN')) {
     define('RISEUP_ACTION_EXPORT_PLUGIN', 'export_plugin');
+}
+if (!defined('RISEUP_ACTION_UPLOAD_INITIATED')) {
+    define('RISEUP_ACTION_UPLOAD_INITIATED', 'upload_initiated');
 }
 
 // =============================================================================
