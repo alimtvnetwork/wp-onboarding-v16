@@ -346,7 +346,7 @@ if ($cachedZips.Count -gt 0) {
     $latestCachedHash = (Get-FileHash $cachedZips[0].FullName -Algorithm SHA256).Hash
     Write-Status "      Cached hash: $latestCachedHash" -Color Gray
 
-    if ($newHash -eq $latestCachedHash) {
+    if ($newHash -eq $latestCachedHash -and -not $Force) {
         Write-Status ""
         Write-Status "  ═══════════════════════════════════════════" -Color Cyan
         Write-Status "  ✓ ZIP hash matches cached version — SKIP UPLOAD" -Color Cyan
@@ -358,6 +358,8 @@ if ($cachedZips.Count -gt 0) {
         Remove-Item $OutputZipPath -Force
         Write-Status "Done! (no upload needed)" -Color Green
         exit 0
+    } elseif ($newHash -eq $latestCachedHash -and $Force) {
+        Write-Status "      ⚠ Hash matches cache but -Force specified, re-uploading..." -Color Yellow
     }
 }
 

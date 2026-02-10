@@ -729,7 +729,7 @@ if (-not $uploadSuccess) {
     } | ConvertTo-Json -Compress
 
     try {
-        & $basicScript -JsonConfig $fallbackConfig
+        & $basicScript -JsonConfig $fallbackConfig -Force
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error: Basic upload script failed with exit code $LASTEXITCODE" -ForegroundColor Red
             exit 1
