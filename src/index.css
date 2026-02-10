@@ -365,3 +365,13 @@ All colors MUST be HSL.
     @apply pb-3;
   }
 }
+
+/* Ensure Sonner toasts are always clickable above modals/dialogs */
+[data-sonner-toaster] {
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+}
+
+[data-sonner-toaster] [data-sonner-toast] {
+  pointer-events: auto !important;
+}
