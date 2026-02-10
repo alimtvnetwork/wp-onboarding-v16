@@ -828,32 +828,39 @@ try {
     }
 
     # =================================================================
-    # OPCACHE RESET: For self-updates, call the standalone reset script
+    # OPCACHE RESET: For self-updates, call the REST API endpoint
     # to flush OPcache so the next request serves the new code.
+    # Uses proper WP REST endpoint with authentication (not raw PHP).
     # =================================================================
     if ($isSelfUpdate) {
         Write-Status ""
         Write-Status "[8/8] Flushing OPcache for self-update..." -Color Yellow
         
-        $opcacheUrl = "$WordPressSiteURL/wp-content/plugins/riseup-asia-uploader/opcache-reset.php"
+        $opcacheUrl = "$WordPressSiteURL/wp-json/$activeNamespace/opcache-reset"
         Write-Debug-Log "OPcache reset URL: $opcacheUrl"
-        Write-Status "      GET $opcacheUrl" -Color Gray
+        Write-Status "      POST $opcacheUrl" -Color Gray
         
         try {
-            $opcacheResponse = Invoke-SafeRestRequest -Uri $opcacheUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "OPcache reset" -MaxRetries 2 -RetryDelaySec 3
+            $opcacheResponse = Invoke-SafeRestRequest -Uri $opcacheUrl -Method "Post" -Headers $headers -Body "{}" -ContentType "application/json" -TimeoutSec 15 -Label "OPcache reset" -MaxRetries 2 -RetryDelaySec 3
             
-            if ($null -ne $opcacheResponse -and $opcacheResponse.success -eq $true) {
-                $resetDone = if ($opcacheResponse.opcache_reset) { "yes" } else { "no" }
-                $filesInvalidated = if ($opcacheResponse.files_invalidated) { $opcacheResponse.files_invalidated } else { 0 }
+            # Parse envelope response
+            $opcacheData = $opcacheResponse
+            if ($null -ne $opcacheResponse -and $opcacheResponse.Results -and $opcacheResponse.Results.Count -gt 0) {
+                $opcacheData = $opcacheResponse.Results[0]
+            }
+            
+            if ($null -ne $opcacheData -and $opcacheData.success -eq $true) {
+                $resetDone = if ($opcacheData.opcache_reset) { "yes" } else { "no" }
+                $filesInvalidated = if ($opcacheData.files_invalidated) { $opcacheData.files_invalidated } else { 0 }
                 Write-Status "      ✓ OPcache reset: $resetDone, files invalidated: $filesInvalidated" -Color Green
             } elseif ($null -ne $opcacheResponse) {
                 Write-Status "      ⚠ OPcache reset response: $($opcacheResponse | ConvertTo-Json -Compress)" -Color Yellow
             } else {
-                Write-Status "      ⚠ OPcache reset returned null (may be blocked)" -Color Yellow
+                Write-Status "      ⚠ OPcache reset returned null (endpoint may not exist yet)" -Color Yellow
             }
         } catch {
             Write-Status "      ⚠ OPcache reset failed: $($_.Exception.Message)" -Color Yellow
-            Write-Status "        This is normal on first deploy — the reset script is part of v1.45.0+" -Color DarkGray
+            Write-Status "        This is normal on first deploy — the endpoint is part of v1.46.0+" -Color DarkGray
         }
         
         Start-Sleep -Seconds 2  # Brief pause for OPcache to settle

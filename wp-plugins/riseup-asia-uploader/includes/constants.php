@@ -136,6 +136,10 @@ if (!defined('RISEUP_ENDPOINT_PLUGIN_EXPORT')) {
 if (!defined('RISEUP_ENDPOINT_OPENAPI')) {
     define('RISEUP_ENDPOINT_OPENAPI', 'openapi');
 }
+// OPcache reset endpoint (used after self-updates to flush stale bytecode)
+if (!defined('RISEUP_ENDPOINT_OPCACHE_RESET')) {
+    define('RISEUP_ENDPOINT_OPCACHE_RESET', 'opcache-reset');
+}
 
 // =============================================================================
 // DATABASE CONFIGURATION

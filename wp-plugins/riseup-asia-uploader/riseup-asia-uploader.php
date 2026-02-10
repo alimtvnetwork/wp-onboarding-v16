@@ -1475,6 +1475,63 @@ class Riseup_Asia {
     }
 
     // =========================================================================
+    // OPCACHE RESET HANDLER
+    // =========================================================================
+
+    /**
+     * Handle OPcache reset request.
+     *
+     * Called by the upload script after a self-update to flush stale bytecode
+     * so the next request serves new plugin code.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function handle_opcache_reset($request) {
+        $this->file_logger->info('OPcache reset endpoint called');
+
+        $result = array(
+            'success'           => true,
+            'opcache_available' => function_exists('opcache_reset'),
+            'opcache_reset'     => false,
+            'files_invalidated' => 0,
+            'timestamp'         => gmdate('c'),
+        );
+
+        // Full OPcache reset
+        if (function_exists('opcache_reset')) {
+            $result['opcache_reset'] = opcache_reset();
+            $this->file_logger->info('OPcache reset executed', array('result' => $result['opcache_reset']));
+        }
+
+        // Also invalidate specific plugin files
+        $plugin_dir = WP_PLUGIN_DIR . '/' . RISEUP_SLUG;
+        $invalidated = 0;
+        if (function_exists('opcache_invalidate')) {
+            $files_to_invalidate = array(
+                $plugin_dir . '/' . RISEUP_SLUG . '.php',
+                $plugin_dir . '/includes/constants.php',
+            );
+            foreach ($files_to_invalidate as $file) {
+                if (file_exists($file)) {
+                    clearstatcache(true, $file);
+                    opcache_invalidate($file, true);
+                    $invalidated++;
+                }
+            }
+        }
+        $result['files_invalidated'] = $invalidated;
+
+        // Clear WordPress plugin cache
+        wp_cache_delete('plugins', 'plugins');
+
+        return RiseupEnvelopeBuilder::success('OPcache reset complete')
+            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_OPCACHE_RESET)
+            ->setSingleResult($result)
+            ->toResponse();
+    }
+
+    // =========================================================================
     // PLUGIN HANDLERS
     // =========================================================================
 
