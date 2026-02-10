@@ -189,6 +189,11 @@ export default function PublishHistory() {
                       <span className="text-muted-foreground text-xs">—</span>
                     )}
                   </TableCell>
+                  <TableCell className="text-center px-0">
+                    {e.newVersion && (
+                      <span className="text-muted-foreground text-xs font-semibold">→</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {e.newVersion ? (
                       <Badge className="bg-emerald-500/15 text-emerald-700 border border-emerald-500/30 font-mono text-[10px] px-1.5 py-0 dark:text-emerald-400">
