@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ApiError, EnvelopeErrors, EnvelopeMethodsStack, isApiClientError } from '@/lib/api';
 import { getClickPathForError, ClickEvent } from '@/hooks/useClickTracker';
 import { getExecutionLogsForError, ExecutionLogEntry, CallChain } from '@/hooks/useExecutionLogger';
+import { getComponentForRoute } from '@/lib/routeComponentMap';
 
 /**
  * Parsed stack frame with file, line, column info
@@ -99,6 +100,8 @@ export interface CapturedError {
   uiClickPathArrow?: string;
   // Current page route when error occurred
   route?: string;
+  // React component name for the active route
+  routeComponent?: string;
   // React execution logs (Phase 6.3)
   executionLogs?: ExecutionLogEntry[];
   executionChain?: CallChain | null;
@@ -425,6 +428,7 @@ function buildCapturedError(input: BuildCapturedErrorInput): CapturedError {
     uiClickPathArrow: clickPathArrow || undefined,
     // Current page route
     route: typeof window !== 'undefined' ? window.location.pathname : undefined,
+    routeComponent: typeof window !== 'undefined' ? getComponentForRoute(window.location.pathname) : undefined,
     // React execution logs
     executionLogs: execLogs.entries.length > 0 ? execLogs.entries : undefined,
     executionChain: execLogs.chain,

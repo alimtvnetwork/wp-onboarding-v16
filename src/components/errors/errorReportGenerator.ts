@@ -80,9 +80,10 @@ export function generateErrorReport(
       }\n`
     : "";
 
-  // Route / page context
+  // Route / page context with React component name
+  const componentLabel = error.routeComponent || error.triggerComponent;
   const routeSection = error.route
-    ? `### Page\n\`${error.route}\`${error.triggerComponent ? ` (${error.triggerComponent})` : ''}\n`
+    ? `### Page\n\`${error.route}\`${componentLabel ? ` \`<${componentLabel}>\`` : ''}\n`
     : "";
 
   // Arrow-style interaction summary for the header
