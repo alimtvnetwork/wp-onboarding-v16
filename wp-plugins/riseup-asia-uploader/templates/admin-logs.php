@@ -405,8 +405,10 @@ $upload_source_classes = array(
         text-transform: uppercase;
     }
     .source-script {
-        background: #fff8e1;
-        color: #f57f17;
+        background: #fff3cd;
+        color: #664d03;
+        border: 1px solid #ffda6a;
+        font-weight: 600;
     }
     .source-api {
         background: #e3f2fd;
