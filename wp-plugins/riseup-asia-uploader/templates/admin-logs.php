@@ -389,14 +389,23 @@ $upload_source_classes = array(
         margin-bottom: 3px;
     }
 
-    /* Version badge */
+    /* Version badge - base */
     .version-badge {
-        background: #e8eaf6;
-        color: #283593;
         padding: 2px 6px;
         border-radius: 3px;
         font-size: 11px;
         font-weight: 600;
+    }
+    /* Current version - green */
+    .version-current {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #a3d9a5;
+    }
+    /* Older version - muted indigo */
+    .version-old {
+        background: #e8eaf6;
+        color: #283593;
     }
 
     /* Upload source badge */
