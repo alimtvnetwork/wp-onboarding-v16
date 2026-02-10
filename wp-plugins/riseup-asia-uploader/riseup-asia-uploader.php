@@ -1361,6 +1361,28 @@ class Riseup_Asia {
             }
         }
 
+        // =====================================================================
+        // VERSION DETECTION — Read from the actual plugin file on disk to
+        // avoid stale RISEUP_VERSION constant after self-updates. OPcache
+        // may cache the old constants.php bytecode across requests.
+        // =====================================================================
+        $live_version = RISEUP_VERSION; // default fallback
+        $main_plugin_file = WP_PLUGIN_DIR . '/' . RISEUP_SLUG . '/' . RISEUP_SLUG . '.php';
+        clearstatcache(true, $main_plugin_file);
+        if (file_exists($main_plugin_file)) {
+            if (function_exists('opcache_invalidate')) {
+                opcache_invalidate($main_plugin_file, true);
+                $constants_file = WP_PLUGIN_DIR . '/' . RISEUP_SLUG . '/includes/constants.php';
+                if (file_exists($constants_file)) {
+                    opcache_invalidate($constants_file, true);
+                }
+            }
+            $header_content = file_get_contents($main_plugin_file, false, null, 0, 8192);
+            if ($header_content !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $header_content, $ver_matches)) {
+                $live_version = $ver_matches[1];
+            }
+        }
+
         // Gather additional diagnostic details
         $db_available = RiseupBooleanHelpers::is_set($this->db);
         $site_url = get_site_url();
@@ -1372,7 +1394,7 @@ class Riseup_Asia {
             ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . RISEUP_ENDPOINT_STATUS)
             ->setSingleResult(array(
                 'Plugin'           => RISEUP_NAME,
-                'Version'          => RISEUP_VERSION,
+                'Version'          => $live_version,
                 'Slug'             => RISEUP_SLUG,
                 'Api'              => RISEUP_API_FULL_NAMESPACE,
                 'SiteUrl'          => $site_url,
