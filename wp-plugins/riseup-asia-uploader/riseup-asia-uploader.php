@@ -1694,21 +1694,28 @@ class Riseup_Asia {
             $this->delete_directory($temp_extract_dir);
 
             // =================================================================
-            // OPCACHE INVALIDATION — critical for self-updates
-            // WordPress/PHP may cache the old plugin file contents in OPcache,
-            // causing get_plugin_data() to return stale version numbers.
+            // OPCACHE RESET — critical for self-updates
+            // After replacing files, do a FULL opcache_reset() so the NEXT
+            // HTTP request serves the new bytecode. Individual invalidate()
+            // calls are unreliable on many hosts. The full reset ensures
+            // the /status endpoint (called next by the upload script) will
+            // execute the NEW code and return the correct version.
             // =================================================================
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+                $this->file_logger->info('Full OPcache reset after plugin extraction');
+            }
+
             $plugin_file = $this->find_plugin_file($slug);
             if (RiseupBooleanHelpers::has_content($plugin_file)) {
                 $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
                 
-                // Invalidate OPcache for the main plugin file
+                // Also invalidate specific files as belt-and-suspenders
                 if (function_exists('opcache_invalidate')) {
                     opcache_invalidate($full_plugin_path, true);
                     $this->file_logger->debug('OPcache invalidated for plugin file', array('path' => $full_plugin_path));
                 }
                 
-                // Also invalidate constants file if it exists (version is defined here)
                 $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
                 if (file_exists($constants_file) && function_exists('opcache_invalidate')) {
                     opcache_invalidate($constants_file, true);
