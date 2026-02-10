@@ -1634,6 +1634,55 @@ class Riseup_Asia {
             $target_dir   = $plugins_dir . '/' . $slug;
             $is_update    = is_dir($target_dir);
 
+            // =================================================================
+            // DUPLICATE PLUGIN SCANNER — Remove any duplicate folders that
+            // contain the same plugin (same Plugin Name header) but under a
+            // different folder name. This can happen when the ZIP's internal
+            // folder name differs from the expected slug.
+            // =================================================================
+            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+                require_once ABSPATH . 'wp-admin/includes/plugin.php';
+            }
+            $all_plugins = get_plugins();
+            $duplicates_removed = 0;
+            foreach ($all_plugins as $pfile => $pdata) {
+                $pdir = dirname($pfile);
+                if ($pdir === '.' || $pdir === $slug) {
+                    continue; // skip single-file plugins and the target slug itself
+                }
+                // Check if this is a duplicate by matching slug in the directory name
+                // or by matching the Plugin Name header
+                $is_duplicate = false;
+                if (isset($pdata['TextDomain']) && $pdata['TextDomain'] === $slug) {
+                    $is_duplicate = true;
+                } elseif (isset($pdata['Name']) && strpos(strtolower($pfile), $slug) !== false) {
+                    $is_duplicate = true;
+                }
+                if ($is_duplicate) {
+                    $dup_dir = $plugins_dir . '/' . $pdir;
+                    $this->file_logger->warn('Duplicate plugin folder detected', array(
+                        'duplicate_dir'  => $pdir,
+                        'duplicate_ver'  => isset($pdata['Version']) ? $pdata['Version'] : 'unknown',
+                        'target_slug'    => $slug,
+                    ));
+                    // Deactivate if active
+                    if (is_plugin_active($pfile)) {
+                        deactivate_plugins($pfile);
+                        $this->file_logger->info('Deactivated duplicate plugin', array('file' => $pfile));
+                    }
+                    // Remove the duplicate directory
+                    if (is_dir($dup_dir)) {
+                        $this->delete_directory($dup_dir);
+                        $this->file_logger->info('Removed duplicate plugin folder', array('dir' => $dup_dir));
+                        $duplicates_removed++;
+                    }
+                }
+            }
+            if ($duplicates_removed > 0) {
+                wp_cache_delete('plugins', 'plugins');
+                $this->file_logger->info('Duplicate cleanup complete', array('removed' => $duplicates_removed));
+            }
+
             // =====================================================================
             // SELF-UPDATE PRE-LOGGING: If the plugin is updating itself, log the
             // activity BEFORE the files are replaced. Otherwise, the log entry
@@ -1641,7 +1690,6 @@ class Riseup_Asia {
             // =====================================================================
             $is_self_update = ($slug === RISEUP_SLUG && $is_update);
             if ($is_self_update) {
-                // Detect current (old) version before replacement
                 $old_plugin_file = $this->find_plugin_file($slug);
                 $old_version = RISEUP_VERSION;
                 
