@@ -176,16 +176,18 @@ export default function PublishHistory() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={pluginClasses}>
-                        {e.pluginName}
+                    <Badge variant="outline" className={pluginClasses}>
+                      {e.pluginName}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {e.version ? (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                        v{e.version}
                       </Badge>
-                      {e.version && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
-                          v{e.version}
-                        </Badge>
-                      )}
-                    </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {e.newVersion ? (
