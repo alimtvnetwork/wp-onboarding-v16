@@ -1479,6 +1479,7 @@ class Riseup_Asia {
             $slug     = sanitize_file_name($data['slug'] ?? '');
             $activate = RiseupBooleanHelpers::has_content($data['activate']);
             $upload_source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UPLOAD_SOURCE_REST_API;
+            $client_plugin_version = isset($data['plugin_version']) ? sanitize_text_field($data['plugin_version']) : '';
             
             // Validate upload_source against allowed enum values
             $valid_sources = json_decode(UPLOAD_SOURCES_VALID, true);
@@ -1486,7 +1487,23 @@ class Riseup_Asia {
                 $upload_source = UPLOAD_SOURCE_REST_API;
             }
             
-            $this->file_logger->debug('Upload parameters', array('slug' => $slug, 'activate' => $activate, 'upload_source' => $upload_source));
+            $this->file_logger->debug('Upload parameters', array('slug' => $slug, 'activate' => $activate, 'upload_source' => $upload_source, 'client_version' => $client_plugin_version));
+
+            // =====================================================================
+            // ACTIVITY STATE 1: Log "Upload Initiated" before any processing
+            // This ensures we have a record even if the upload fails partway through
+            // =====================================================================
+            if (RiseupBooleanHelpers::has_content($slug)) {
+                $this->logger->log_upload_initiated($slug, array(
+                    'activate'       => $activate,
+                    'upload_source'  => $upload_source,
+                    'client_version' => $client_plugin_version,
+                    'file_size'      => strlen($zip_content),
+                ), array(
+                    'plugin_version' => $client_plugin_version ?: RISEUP_VERSION,
+                    'upload_source'  => $upload_source,
+                ));
+            }
 
             // Create temp file.
             $temp_dir  = $this->get_temp_dir();
