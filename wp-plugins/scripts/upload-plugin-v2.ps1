@@ -831,11 +831,11 @@ try {
     }
 
     # =================================================================
-    # OPCACHE RESET: For self-updates, call the REST API endpoint
-    # to flush OPcache so the next request serves the new code.
-    # Uses proper WP REST endpoint with authentication (not raw PHP).
+    # OPCACHE RESET: Only needed when response version is STALE.
+    # If the server already responded with the correct version,
+    # the new code processed the request and OPcache is fine.
     # =================================================================
-    if ($isSelfUpdate) {
+    if ($isSelfUpdate -and $responseVersion -ne $LocalVersion) {
         Write-Status ""
         Write-Status "[8/8] Flushing OPcache for self-update..." -Color Yellow
         
