@@ -369,10 +369,10 @@ if ($RemoteVersion -ne "not installed" -and $RemoteVersion -ne "unknown") {
 
     if ($comparison -gt 0) {
         $VersionAction = "upgrade"
-        Write-Status "      ▲ UPGRADE: $RemoteVersion → $LocalVersion" -Color Green
+        Write-Status "      ▲ UPGRADE: $LocalVersion → $RemoteVersion" -Color Green
     } elseif ($comparison -lt 0) {
         $VersionAction = "downgrade"
-        Write-Status "      ▼ DOWNGRADE: $RemoteVersion → $LocalVersion" -Color Red
+        Write-Status "      ▼ DOWNGRADE: $LocalVersion → $RemoteVersion" -Color Red
     } else {
         $VersionAction = "reinstall"
         Write-Status "      ═ SAME VERSION: $LocalVersion (reinstall)" -Color Yellow
