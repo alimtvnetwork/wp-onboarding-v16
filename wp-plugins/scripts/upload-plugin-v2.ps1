@@ -398,7 +398,7 @@ Write-Status ""
 # ============================================================================
 # STEP 5: CREATE ZIP (with cache deduplication)
 # ============================================================================
-Write-Status "[5/7] Creating ZIP file..." -Color Yellow
+Write-Status "[5/8] Creating ZIP file..." -Color Yellow
 
 if (-not (Test-Path $PluginFolderPath)) {
     Write-Host "Error: Plugin folder not found at: $PluginFolderPath" -ForegroundColor Red
