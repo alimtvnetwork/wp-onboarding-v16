@@ -420,7 +420,7 @@ try {
 
 # Step 4: Upload plugin (try Riseup Asia Uploader first, then WP Core)
 Write-Status ""
-Write-Status "[4/5] Uploading plugin to WordPress..." -Color Yellow
+Write-Status "[4/6] Uploading plugin to WordPress..." -Color Yellow
 Write-Status "      Site: $WordPressSiteURL" -Color Gray
 Write-Status "      User: $Username" -Color Gray
 
