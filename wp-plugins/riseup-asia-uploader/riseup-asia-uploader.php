@@ -1698,16 +1698,18 @@ class Riseup_Asia {
             }
             $this->file_logger->info('Plugin version detected', array('version' => $plugin_version));
 
-            // Log success with version and upload source.
-            $this->logger->log_upload($slug, array(
-                'is_update' => $is_update,
-                'activated' => $activated,
-                'file_size' => strlen($zip_content),
-                'plugin_version' => $plugin_version,
-            ), array(
-                'plugin_version' => $plugin_version,
-                'upload_source'  => $upload_source,
-            ));
+            // Log success with version and upload source (skip if self-update was pre-logged).
+            if (!$is_self_update) {
+                $this->logger->log_upload($slug, array(
+                    'is_update' => $is_update,
+                    'activated' => $activated,
+                    'file_size' => strlen($zip_content),
+                    'plugin_version' => $plugin_version,
+                ), array(
+                    'plugin_version' => $plugin_version,
+                    'upload_source'  => $upload_source,
+                ));
+            }
 
             $this->file_logger->info('Upload complete', array(
                 'slug'           => $slug,
