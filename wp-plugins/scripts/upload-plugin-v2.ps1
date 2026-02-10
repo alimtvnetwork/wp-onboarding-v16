@@ -509,6 +509,14 @@ try {
         }
     } else {
         Write-Status "      ⚠ REST API responded but format unexpected" -Color Yellow
+        Write-Status "      Response type: $($healthResponse.GetType().FullName)" -Color Gray
+        try {
+            $rawPreview = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
+            if ($rawPreview.Length -gt 500) { $rawPreview = $rawPreview.Substring(0, 500) + "..." }
+            Write-Status "      Response preview: $rawPreview" -Color Gray
+        } catch {
+            Write-Status "      Response (raw): $healthResponse" -Color Gray
+        }
     }
 } catch {
     $healthErr = Get-ErrorResponseBody $_
