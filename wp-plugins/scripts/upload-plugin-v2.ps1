@@ -601,14 +601,68 @@ if ($activeNamespace) {
         $pSlug = if ($resultData.plugin_slug) { $resultData.plugin_slug } elseif ($resultData.slug) { $resultData.slug } elseif ($resultData.pluginSlug) { $resultData.pluginSlug } else { $PluginSlug }
         $pUpdate = if ($null -ne $resultData.is_update) { $resultData.is_update } elseif ($null -ne $resultData.isUpdate) { $resultData.isUpdate } else { "N/A" }
         $pActivated = if ($null -ne $resultData.activated) { $resultData.activated } elseif ($null -ne $resultData.active) { $resultData.active } else { "N/A" }
+        $responseVersion = if ($resultData.plugin_version) { $resultData.plugin_version } elseif ($resultData.version) { $resultData.version } else { "unknown" }
         Write-Status "  Plugin:     $pSlug" -Color White
-        Write-Status "  Version:    $LocalVersion" -Color White
+        Write-Status "  Version:    $LocalVersion (sent)" -Color White
+        Write-Status "  Resp. Ver:  $responseVersion (server response)" -Color $(if ($responseVersion -eq $LocalVersion) { "Green" } else { "Yellow" })
         Write-Status "  Action:     $VersionAction" -Color White
         Write-Status "  Is Update:  $pUpdate" -Color White
         Write-Status "  Activated:  $pActivated" -Color White
         if ($resultData.activation_error) {
             Write-Status "  Activation Error: $($resultData.activation_error)" -Color Yellow
         }
+
+        # =================================================================
+        # POST-UPLOAD VERIFICATION: Call /status to confirm actual version
+        # This is critical for self-updates where the response version
+        # comes from the OLD code that processed the request.
+        # =================================================================
+        Write-Status ""
+        Write-Status "[8/8] Post-upload version verification..." -Color Yellow
+        Start-Sleep -Seconds 2  # Brief pause for plugin activation to settle
+        
+        $verifyUrl = "$WordPressSiteURL/wp-json/$activeNamespace/status"
+        Write-Status "      GET $verifyUrl" -Color Gray
+        try {
+            $verifyResponse = Invoke-RestMethod -Uri $verifyUrl -Method Get -Headers $headers -TimeoutSec 15 -ErrorAction Stop
+            
+            $verifyData = $verifyResponse
+            if ($verifyResponse.Results -and $verifyResponse.Results.Count -gt 0) {
+                $verifyData = $verifyResponse.Results[0]
+            }
+            
+            $deployedVersion = if ($verifyData.Version) { $verifyData.Version } elseif ($verifyData.version) { $verifyData.version } else { "unknown" }
+            
+            if ($deployedVersion -eq $LocalVersion) {
+                Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
+            } elseif ($deployedVersion -eq "unknown") {
+                Write-Status "      ⚠ Could not determine deployed version from /status" -Color Yellow
+            } else {
+                Write-Status ""
+                Write-Status "  ╔══════════════════════════════════════════════════════════╗" -ForegroundColor Red
+                Write-Status "  ║          ⚠  VERSION MISMATCH DETECTED  ⚠               ║" -ForegroundColor Red
+                Write-Status "  ╠══════════════════════════════════════════════════════════╣" -ForegroundColor Red
+                Write-Status "  ║  Uploaded:  v$LocalVersion" -ForegroundColor White -NoNewline
+                Write-Status (" " * [Math]::Max(0, 42 - $LocalVersion.Length)) -ForegroundColor Red -NoNewline
+                Write-Status "║" -ForegroundColor Red
+                Write-Status "  ║  Deployed:  v$deployedVersion" -ForegroundColor Yellow -NoNewline
+                Write-Status (" " * [Math]::Max(0, 42 - $deployedVersion.Length)) -ForegroundColor Red -NoNewline
+                Write-Status "║" -ForegroundColor Red
+                Write-Status "  ║                                                        ║" -ForegroundColor Red
+                Write-Status "  ║  The server reports a different version than expected.  ║" -ForegroundColor Yellow
+                Write-Status "  ║  This can happen on the FIRST self-update because the   ║" -ForegroundColor Yellow
+                Write-Status "  ║  OLD plugin code generated the upload response.         ║" -ForegroundColor Yellow
+                Write-Status "  ║                                                        ║" -ForegroundColor Yellow
+                Write-Status "  ║  If this is the first deploy after a large version gap, ║" -ForegroundColor White
+                Write-Status "  ║  run the upload AGAIN — the new code will now handle    ║" -ForegroundColor White
+                Write-Status "  ║  it correctly.                                          ║" -ForegroundColor White
+                Write-Status "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
+            }
+        } catch {
+            Write-Status "      ⚠ Verification call failed: $($_.Exception.Message)" -Color Yellow
+            Write-Status "      The upload likely succeeded — check the WordPress admin." -Color Gray
+        }
+        
         Write-Status ""
 
         if ($Quiet) {
@@ -617,6 +671,7 @@ if ($activeNamespace) {
                 plugin = $PluginSlug
                 localVersion = $LocalVersion
                 remoteVersion = $RemoteVersion
+                deployedVersion = $deployedVersion
                 action = $VersionAction
                 activated = $resultData.activated
             }
