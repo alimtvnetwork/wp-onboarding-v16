@@ -566,9 +566,10 @@ if ($activeNamespace) {
         Write-Status "      ────────────" -Color DarkGray
 
         $uploadHeaders = @{
-            "Authorization"            = "Basic $base64Auth"
-            "Content-Type"             = "application/json"
-            "X-Riseup-Source-Machine"  = $machineName
+            "Authorization"              = "Basic $base64Auth"
+            "Content-Type"               = "application/json"
+            "X-Riseup-Source-Machine"    = $machineName
+            "X-Riseup-Plugin-Version"    = $LocalVersion
         }
 
         Write-Status "      Uploading via Riseup Asia Uploader..." -Color Gray
