@@ -97,61 +97,15 @@ function Get-ErrorResponseBody {
     return ""
 }
 
+# Print error response body as-is (raw, no HTML stripping)
 function Write-ErrorBody {
     param([string]$Body, [string]$Label = "Response Body")
     if ($Body -eq "") { return }
     Write-Host ""
     Write-Host "  ── $Label ──" -ForegroundColor DarkGray
-    try {
-        $errJson = $Body | ConvertFrom-Json
-        if ($errJson.message) {
-            $msg = if (Test-IsHtml $errJson.message) { ConvertFrom-Html $errJson.message } else { $errJson.message }
-            Write-Host "  Message: $msg" -ForegroundColor Red
-        }
-        if ($errJson.error -and $errJson.error.message) {
-            $msg = if (Test-IsHtml $errJson.error.message) { ConvertFrom-Html $errJson.error.message } else { $errJson.error.message }
-            Write-Host "  Error:   $msg" -ForegroundColor Red
-        }
-        if ($errJson.code) { Write-Host "  Code:    $($errJson.code)" -ForegroundColor Red }
-        if ($errJson.data -and $errJson.data.status) { Write-Host "  Status:  $($errJson.data.status)" -ForegroundColor Red }
-        if ($errJson.stackTrace) {
-            Write-Host "  Stack Trace:" -ForegroundColor Yellow
-            Write-Host $errJson.stackTrace -ForegroundColor Gray
-        }
-        if ($errJson.stackTraceFrames) {
-            Write-Host "  Stack Frames:" -ForegroundColor Yellow
-            foreach ($frame in $errJson.stackTraceFrames) {
-                $loc = "    $($frame.file):$($frame.line)"
-                if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
-                elseif ($frame.function) { $loc += " -> $($frame.function)" }
-                Write-Host $loc -ForegroundColor Gray
-            }
-        }
-        if ($errJson.error -and $errJson.error.details) {
-            $d = $errJson.error.details
-            if ($d.stackTrace) {
-                Write-Host "  Stack Trace:" -ForegroundColor Yellow
-                Write-Host $d.stackTrace -ForegroundColor Gray
-            }
-            if ($d.stackTraceFrames) {
-                Write-Host "  Stack Frames:" -ForegroundColor Yellow
-                foreach ($frame in $d.stackTraceFrames) {
-                    $loc = "    $($frame.file):$($frame.line)"
-                    if ($frame.class) { $loc += " -> $($frame.class)::$($frame.function)" }
-                    elseif ($frame.function) { $loc += " -> $($frame.function)" }
-                    Write-Host $loc -ForegroundColor Gray
-                }
-            }
-        }
-        $hasKnown = $errJson.message -or $errJson.error -or $errJson.stackTrace -or $errJson.code
-        if (-not $hasKnown) {
-            if (Test-IsHtml $Body) { Write-Host (ConvertFrom-Html $Body) -ForegroundColor Gray }
-            else { Write-Host $Body -ForegroundColor Gray }
-        }
-    } catch {
-        if (Test-IsHtml $Body) { Write-Host (ConvertFrom-Html $Body) -ForegroundColor Gray }
-        else { Write-Host $Body -ForegroundColor Gray }
-    }
+    # Truncate to 2000 chars for readability
+    $preview = if ($Body.Length -gt 2000) { $Body.Substring(0, 2000) + "`n  ... (truncated, total $($Body.Length) chars)" } else { $Body }
+    Write-Host "  $preview" -ForegroundColor Gray
     Write-Host "  ────────────────────" -ForegroundColor DarkGray
 }
 
