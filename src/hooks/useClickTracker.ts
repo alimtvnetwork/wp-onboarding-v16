@@ -148,6 +148,20 @@ function getDirectTextContent(element: HTMLElement): string {
   return text.trim();
 }
 
+/**
+ * Get the first short, meaningful text from a child element.
+ * Useful for buttons with structured content like heading + description.
+ */
+function getFirstChildText(element: HTMLElement): string | undefined {
+  for (const child of Array.from(element.children)) {
+    const text = (child as HTMLElement).textContent?.trim();
+    if (text && text.length > 0 && text.length < 60) {
+      return text;
+    }
+  }
+  return undefined;
+}
+
 // Get text content from element (button text, link text, etc.)
 function getElementText(element: HTMLElement): string | undefined {
   // For inputs, get placeholder or value
@@ -165,20 +179,23 @@ function getElementText(element: HTMLElement): string | undefined {
   const trackLabel = element.getAttribute('data-click-track');
   if (trackLabel) return trackLabel;
 
-  // For interactive elements use full textContent (short cap)
-  if (INTERACTIVE_TAGS.has(element.tagName.toLowerCase())) {
-    const text = element.textContent?.trim();
-    if (text && text.length > 0 && text.length < 100) {
-      return text;
-    }
-    return undefined;
-  }
-
-  // For non-interactive elements only use direct text nodes
-  // to avoid concatenating all child button/link text
+  // Try direct text nodes first (works for simple elements)
   const directText = getDirectTextContent(element);
   if (directText && directText.length > 0 && directText.length < 60) {
     return directText;
+  }
+
+  // For interactive elements with structured content (heading + description),
+  // use the first child's text instead of concatenating everything
+  if (INTERACTIVE_TAGS.has(element.tagName.toLowerCase())) {
+    const firstChild = getFirstChildText(element);
+    if (firstChild) return firstChild;
+
+    // Last resort: full textContent if short enough
+    const text = element.textContent?.trim();
+    if (text && text.length > 0 && text.length < 60) {
+      return text;
+    }
   }
 
   return undefined;
