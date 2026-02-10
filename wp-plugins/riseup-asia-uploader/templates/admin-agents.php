@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     <h1>
         <span class="dashicons dashicons-networking"></span>
         <?php esc_html_e('Riseup Asia Uploader - Agent Sites', 'riseup-asia-uploader'); ?>
+        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
     </h1>
 
     <p class="description">
