@@ -581,7 +581,14 @@ if ($activeNamespace) {
             $resultData = $response.Results[0]
         }
 
-        # Debug: print raw response keys so we know what the API returned
+        # Debug: dump full raw response JSON
+        try {
+            $rawJson = ($response | ConvertTo-Json -Depth 5 -Compress)
+            if ($rawJson.Length -gt 1000) { $rawJson = $rawJson.Substring(0, 1000) + "..." }
+            Write-Status "      Raw response: $rawJson" -Color DarkGray
+        } catch {
+            Write-Status "      Raw response: $response" -Color DarkGray
+        }
         Write-Status "      Response keys: $( ($resultData | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name) -join ', ' )" -Color Gray
 
         Write-Status ""
@@ -622,6 +629,11 @@ if ($activeNamespace) {
 
         Write-Host ""
         Write-Host "  ⚠ Riseup Uploader API failed: $errorMessage" -ForegroundColor Yellow
+        Write-Host "  Status code: $($_.Exception.Response.StatusCode.value__)" -ForegroundColor Gray
+        if ($errorBody -ne "") {
+            $previewBody = if ($errorBody.Length -gt 500) { $errorBody.Substring(0, 500) + "..." } else { $errorBody }
+            Write-Host "  Error body: $previewBody" -ForegroundColor Gray
+        }
         Write-ErrorBody $errorBody "Riseup API Error"
         Write-ServerErrorBanner
         Write-Host ""

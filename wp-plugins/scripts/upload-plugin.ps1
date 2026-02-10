@@ -469,7 +469,14 @@ foreach ($ns in $apiNamespaces) {
             $resultData = $response.Results[0]
         }
 
-        # Debug: print raw response keys so we know what the API returned
+        # Debug: dump full raw response JSON
+        try {
+            $rawJson = ($response | ConvertTo-Json -Depth 5 -Compress)
+            if ($rawJson.Length -gt 1000) { $rawJson = $rawJson.Substring(0, 1000) + "..." }
+            Write-Status "      Raw response: $rawJson" -Color DarkGray
+        } catch {
+            Write-Status "      Raw response: $response" -Color DarkGray
+        }
         Write-Status "      Response keys: $( ($resultData | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name) -join ', ' )" -Color Gray
 
         Write-Status "      ✓ Uploaded via $($ns.display)!" -Color Green
