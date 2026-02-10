@@ -33,6 +33,9 @@ param(
 
     [Parameter(Mandatory=$false)]
     [switch]$Force = $false,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$Debug = $false,
     
     # JSON string with all config (alternative to individual params)
     [Parameter(Mandatory=$false)]
@@ -49,6 +52,91 @@ function Write-Status {
             Write-Host $Message -ForegroundColor $Color
         }
     }
+}
+
+# Debug-only output
+function Write-Debug-Log {
+    param([string]$Message)
+    if ($Debug) {
+        Write-Host "      [DEBUG] $Message" -ForegroundColor Magenta
+    }
+}
+
+# Invoke a web request with HTML challenge detection & retry
+function Invoke-SafeRestRequest {
+    param(
+        [string]$Uri,
+        [string]$Method = "Get",
+        [hashtable]$Headers = @{},
+        [string]$Body = "",
+        [string]$ContentType = "",
+        [int]$TimeoutSec = 30,
+        [int]$MaxRetries = 2,
+        [int]$RetryDelaySec = 5,
+        [string]$Label = "Request"
+    )
+
+    for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
+        Write-Debug-Log "$Label → Attempt $attempt/$MaxRetries"
+        Write-Debug-Log "$Label → $Method $Uri"
+
+        try {
+            $reqParams = @{
+                Uri             = $Uri
+                Method          = $Method
+                Headers         = $Headers
+                TimeoutSec      = $TimeoutSec
+                UseBasicParsing = $true
+                ErrorAction     = "Stop"
+            }
+            if ($Body -ne "") {
+                $reqParams.Body = $Body
+                $reqParams.ContentType = $ContentType
+            }
+
+            $webResponse = Invoke-WebRequest @reqParams
+            $statusCode = $webResponse.StatusCode
+            $respContentType = $webResponse.Headers["Content-Type"]
+            $rawBody = $webResponse.Content
+
+            Write-Debug-Log "$Label → Status: $statusCode, Content-Type: $respContentType"
+
+            # Detect HTML challenge pages
+            if ($rawBody -match "One moment, please" -or $rawBody -match "Checking your browser" -or ($respContentType -and $respContentType -match "text/html" -and $rawBody -match "<html")) {
+                Write-Status "      ⚠ Got HTML challenge page (security plugin/CDN)" -Color Yellow
+                if ($attempt -lt $MaxRetries) {
+                    Write-Status "        Waiting ${RetryDelaySec}s and retrying..." -Color Yellow
+                    Start-Sleep -Seconds $RetryDelaySec
+                    continue
+                } else {
+                    Write-Status "        All $MaxRetries attempts returned HTML challenge." -Color Red
+                    Write-Status "        Whitelist your IP or /wp-json/ in your security plugin." -Color Red
+                    return $null
+                }
+            }
+
+            try {
+                $parsed = $rawBody | ConvertFrom-Json
+                return $parsed
+            } catch {
+                Write-Status "      ⚠ Response is not valid JSON" -Color Yellow
+                Write-Debug-Log "$Label → Raw (first 500): $($rawBody.Substring(0, [Math]::Min(500, $rawBody.Length)))"
+                return $null
+            }
+
+        } catch {
+            $errBody = Get-ErrorResponseBody $_
+            Write-Debug-Log "$Label → Exception: $($_.Exception.Message)"
+
+            if ($attempt -lt $MaxRetries) {
+                Write-Status "      ⚠ $Label failed, retrying in ${RetryDelaySec}s..." -Color Yellow
+                Start-Sleep -Seconds $RetryDelaySec
+            } else {
+                throw $_
+            }
+        }
+    }
+    return $null
 }
 
 # Strip HTML tags and decode entities to plain text
@@ -330,6 +418,9 @@ try {
     $zipSizeKB = [math]::Round($zipSize / 1KB, 2)
     Write-Status "      ✓ ZIP created: $OutputZipPath" -Color Green
     Write-Status "      Size: $zipSizeKB KB" -Color Gray
+    Write-Debug-Log "ZIP path: $OutputZipPath"
+    Write-Debug-Log "ZIP size: $zipSizeKB KB"
+    Write-Debug-Log "Cache dir: $cacheDir"
 } catch {
     Write-Host "      Error creating ZIP file: $_" -ForegroundColor Red
     exit 1
@@ -384,21 +475,16 @@ Write-Status "      ── Request ──" -Color DarkGray
 Write-Status "      GET $healthUrl" -Color White
 Write-Status "      Auth: Basic (user=$Username)" -Color Gray
 Write-Status "      ────────────" -Color DarkGray
+Write-Debug-Log "Health check URL: $healthUrl"
 
 $restApiHealthy = $false
 try {
-    $healthResponse = Invoke-RestMethod -Uri $healthUrl -Method Get -Headers @{ "Authorization" = "Basic $base64Auth" } -TimeoutSec 15 -ErrorAction Stop
-    
-    # Always dump raw response
-    try {
-        $rawHealth = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
-        if ($rawHealth.Length -gt 1000) { $rawHealth = $rawHealth.Substring(0, 1000) + "..." }
-        Write-Status "      Raw response: $rawHealth" -Color DarkGray
-    } catch {
-        Write-Status "      Raw response: $healthResponse" -Color DarkGray
-    }
+    $healthResponse = Invoke-SafeRestRequest -Uri $healthUrl -Headers @{ "Authorization" = "Basic $base64Auth" } -TimeoutSec 15 -Label "Health Check" -MaxRetries 3 -RetryDelaySec 5
 
-    if ($healthResponse.name -or $healthResponse.namespaces) {
+    if ($null -eq $healthResponse) {
+        Write-Status "      ✗ REST API unreachable (HTML challenge or error)" -Color Red
+        Write-Status "      ⚠ Continuing anyway..." -Color Yellow
+    } elseif ($healthResponse.name -or $healthResponse.namespaces) {
         $restApiHealthy = $true
         $siteName = if ($healthResponse.name) { $healthResponse.name } else { "Unknown" }
         Write-Status "      ✓ REST API is reachable (Site: $siteName)" -Color Green
@@ -408,7 +494,7 @@ try {
                 Write-Status "      ✓ riseup-asia-uploader/v1 namespace registered" -Color Green
             } else {
                 Write-Status "      ⚠ riseup-asia-uploader/v1 namespace NOT found" -Color Yellow
-                Write-Status "        Available: $($healthResponse.namespaces -join ', ')" -Color Gray
+                Write-Debug-Log "Available: $($healthResponse.namespaces -join ', ')"
             }
         }
     } else {
@@ -417,9 +503,7 @@ try {
 } catch {
     $healthErr = Get-ErrorResponseBody $_
     Write-Status "      ✗ REST API health check failed: $($_.Exception.Message)" -Color Red
-    if ($healthErr -ne "") {
-        Write-Status "      Raw error response: $healthErr" -Color Gray
-    }
+    Write-Debug-Log "Health error: $healthErr"
     Write-Status "      ⚠ Continuing anyway..." -Color Yellow
 }
 
@@ -470,7 +554,23 @@ foreach ($ns in $apiNamespaces) {
             "X-Riseup-Source-Machine"  = $machineName
         }
 
-        $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
+        # Health check and upload endpoints
+        Write-Debug-Log "Upload endpoint: $uploadUrl"
+        Write-Debug-Log "ZIP file: $OutputZipPath"
+        Write-Debug-Log "ZIP size: $bodySizeKB KB"
+
+        $uploadHeaders = @{
+            "Authorization"            = "Basic $base64Auth"
+            "X-Riseup-Source-Machine"  = $machineName
+        }
+
+        $response = Invoke-SafeRestRequest -Uri $uploadUrl -Method "Post" -Headers $uploadHeaders -Body $uploadBody -ContentType "application/json" -TimeoutSec 300 -Label "Upload ($($ns.display))" -MaxRetries 3 -RetryDelaySec 8
+
+        if ($null -eq $response) {
+            Write-Status "      ✗ $($ns.display) returned non-JSON response" -Color Yellow
+            continue
+        }
+
         $uploadSuccess = $true
 
         # Unwrap Universal Response Envelope: data is in Results[0]
@@ -526,6 +626,7 @@ foreach ($ns in $apiNamespaces) {
         $errBody = Get-ErrorResponseBody $_
         Test-ServerCriticalError $errBody | Out-Null
         Write-Status "      ✗ $($ns.display) failed: $errMsg" -Color Yellow
+        Write-Debug-Log "Error body: $errBody"
         Write-ErrorBody $errBody "$($ns.display) Error"
     }
 }

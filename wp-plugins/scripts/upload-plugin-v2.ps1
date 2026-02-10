@@ -34,6 +34,9 @@ param(
     [switch]$Quiet = $false,
 
     [Parameter(Mandatory=$false)]
+    [switch]$Debug = $false,
+
+    [Parameter(Mandatory=$false)]
     [string]$JsonConfig = ""
 )
 
@@ -48,6 +51,16 @@ function Write-Status {
         }
     }
 }
+
+# Debug-only output (shown when -Debug flag is set)
+function Write-Debug-Log {
+    param([string]$Message)
+    if ($Debug) {
+        Write-Host "      [DEBUG] $Message" -ForegroundColor Magenta
+    }
+}
+
+# ... keep existing code (ConvertFrom-Html, Test-IsHtml, Get-ErrorResponseBody, Write-ErrorBody, Test-ServerCriticalError, Write-ServerErrorBanner functions)
 
 # Strip HTML tags and decode entities to plain text
 function ConvertFrom-Html {
@@ -140,6 +153,93 @@ function Write-ServerErrorBanner {
     Write-Host ""
 }
 
+# ============================================================================
+# Invoke-SafeRestRequest: Web request with HTML challenge detection & retry
+# Returns parsed JSON object, or $null if all attempts fail
+# ============================================================================
+function Invoke-SafeRestRequest {
+    param(
+        [string]$Uri,
+        [string]$Method = "Get",
+        [hashtable]$Headers = @{},
+        [string]$Body = "",
+        [string]$ContentType = "",
+        [int]$TimeoutSec = 30,
+        [int]$MaxRetries = 2,
+        [int]$RetryDelaySec = 5,
+        [string]$Label = "Request"
+    )
+
+    for ($attempt = 1; $attempt -le $MaxRetries; $attempt++) {
+        Write-Debug-Log "$Label → Attempt $attempt/$MaxRetries"
+        Write-Debug-Log "$Label → $Method $Uri"
+
+        try {
+            $reqParams = @{
+                Uri             = $Uri
+                Method          = $Method
+                Headers         = $Headers
+                TimeoutSec      = $TimeoutSec
+                UseBasicParsing = $true
+                ErrorAction     = "Stop"
+            }
+            if ($Body -ne "") {
+                $reqParams.Body = $Body
+                $reqParams.ContentType = $ContentType
+            }
+
+            $webResponse = Invoke-WebRequest @reqParams
+            $statusCode = $webResponse.StatusCode
+            $respContentType = $webResponse.Headers["Content-Type"]
+            $rawBody = $webResponse.Content
+
+            Write-Debug-Log "$Label → Status: $statusCode"
+            Write-Debug-Log "$Label → Content-Type: $respContentType"
+
+            # Detect HTML challenge pages (SpeedyCache, Cloudflare, etc.)
+            if ($rawBody -match "One moment, please" -or $rawBody -match "Checking your browser" -or ($respContentType -and $respContentType -match "text/html" -and $rawBody -match "<html")) {
+                Write-Status "      ⚠ Got HTML challenge page (security plugin/CDN)" -Color Yellow
+                if ($attempt -lt $MaxRetries) {
+                    Write-Status "        Waiting ${RetryDelaySec}s and retrying (attempt $attempt/$MaxRetries)..." -Color Yellow
+                    Start-Sleep -Seconds $RetryDelaySec
+                    continue
+                } else {
+                    Write-Status "        All $MaxRetries attempts returned HTML challenge page." -Color Red
+                    Write-Status "        Your server has a security plugin (SpeedyCache/Cloudflare)" -Color Red
+                    Write-Status "        blocking REST API requests. Whitelist your IP or /wp-json/." -Color Red
+                    return $null
+                }
+            }
+
+            # Parse JSON
+            try {
+                $parsed = $rawBody | ConvertFrom-Json
+                Write-Debug-Log "$Label → JSON parsed OK"
+                return $parsed
+            } catch {
+                Write-Status "      ⚠ Response is not valid JSON" -Color Yellow
+                Write-Debug-Log "$Label → Raw (first 500): $($rawBody.Substring(0, [Math]::Min(500, $rawBody.Length)))"
+                return $null
+            }
+
+        } catch {
+            $errBody = Get-ErrorResponseBody $_
+            Write-Debug-Log "$Label → Exception: $($_.Exception.Message)"
+            if ($errBody -ne "") {
+                Write-Debug-Log "$Label → Error body (first 300): $($errBody.Substring(0, [Math]::Min(300, $errBody.Length)))"
+            }
+
+            if ($attempt -lt $MaxRetries) {
+                Write-Status "      ⚠ $Label failed, retrying in ${RetryDelaySec}s..." -Color Yellow
+                Start-Sleep -Seconds $RetryDelaySec
+            } else {
+                throw $_
+            }
+        }
+    }
+    return $null
+}
+
 # Initialize variables
 $PluginFolderPath = ""
 $WordPressSiteURL = ""
@@ -196,6 +296,7 @@ else {
         Write-Host "  .\upload-plugin-v2.ps1 -PluginPath 'C:\path' -SiteUrl 'https://site.com' -User 'admin' -Password 'pass'" -ForegroundColor Gray
         Write-Host "  .\upload-plugin-v2.ps1 -ConfigPath 'path\to\config.json'" -ForegroundColor Gray
         Write-Host "  .\upload-plugin-v2.ps1 -SkipGitPull  # skip git pull step" -ForegroundColor Gray
+        Write-Host "  .\upload-plugin-v2.ps1 -Debug  # enable debug logging" -ForegroundColor Gray
         Write-Host ""
         exit 1
     }
@@ -224,6 +325,11 @@ Write-Status "  WordPress Plugin Uploader V2" -Color Cyan
 Write-Status "  Git Pull → Version Compare → Publish → Verify" -Color Cyan
 Write-Status "===============================================" -Color Cyan
 Write-Status ""
+
+if ($Debug) {
+    Write-Status "  [DEBUG MODE ENABLED]" -Color Magenta
+    Write-Status ""
+}
 
 $folderName = Split-Path $PluginFolderPath -Leaf
 if ($PluginSlug -eq "") { $PluginSlug = $folderName }
@@ -297,6 +403,7 @@ if (-not (Test-Path $constantsFile)) {
 Write-Status "      Local Version:  $LocalVersion" -Color White
 Write-Status "      Plugin Folder:  $folderName" -Color Gray
 Write-Status "      Slug:           $PluginSlug" -Color Gray
+Write-Debug-Log "Plugin path: $PluginFolderPath"
 Write-Status ""
 
 # ============================================================================
@@ -320,8 +427,15 @@ $apiNamespaces = @(
 $activeNamespace = $null
 foreach ($ns in $apiNamespaces) {
     $statusUrl = "$WordPressSiteURL/wp-json/$($ns.name)/status"
+    Write-Debug-Log "Trying namespace: $($ns.name)"
+    Write-Debug-Log "Status URL: $statusUrl"
     try {
-        $statusResponse = Invoke-RestMethod -Uri $statusUrl -Method Get -Headers $headers -ErrorAction Stop
+        $statusResponse = Invoke-SafeRestRequest -Uri $statusUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "Status ($($ns.display))" -MaxRetries 3 -RetryDelaySec 5
+
+        if ($null -eq $statusResponse) {
+            Write-Debug-Log "Status check returned null (HTML challenge or parse error)"
+            continue
+        }
 
         # Unwrap Universal Response Envelope: data is in Results[0]
         $statusData = $statusResponse
@@ -333,6 +447,8 @@ foreach ($ns in $apiNamespaces) {
         $detectedVersion = if ($statusData.Version) { $statusData.Version } elseif ($statusData.version) { $statusData.version } else { $null }
         $isSuccess = ($statusResponse.Status -and $statusResponse.Status.IsSuccess -eq $true) -or ($statusResponse.success -eq $true) -or $detectedVersion
 
+        Write-Debug-Log "Detected version: $detectedVersion, isSuccess: $isSuccess"
+
         if ($isSuccess -or $detectedVersion) {
             $RemoteVersion = $detectedVersion
             $activeNamespace = $ns.name
@@ -340,6 +456,7 @@ foreach ($ns in $apiNamespaces) {
             break
         }
     } catch {
+        Write-Debug-Log "Namespace $($ns.name) failed: $($_.Exception.Message)"
         # Try next namespace
     }
 }
@@ -437,6 +554,9 @@ try {
     $zipSize = (Get-Item $OutputZipPath).Length
     $zipSizeKB = [math]::Round($zipSize / 1KB, 2)
     Write-Status "      ✓ ZIP created: $zipSizeKB KB" -Color Green
+    Write-Debug-Log "ZIP path: $OutputZipPath"
+    Write-Debug-Log "ZIP size: $zipSizeKB KB"
+    Write-Debug-Log "Cache dir: $cacheDir"
 } catch {
     Write-Host "      Error creating ZIP: $_" -ForegroundColor Red
     exit 1
@@ -453,7 +573,7 @@ if ($cachedZips.Count -gt 0) {
     Write-Status "      Cached hash: $latestCachedHash" -Color Gray
 
     if ($newHash -eq $latestCachedHash) {
-        # Only skip if remote version matches local — otherwise the previous upload failed or wasn't applied
+        # Only skip if remote version matches local — otherwise the previous upload failed
         if ($RemoteVersion -eq $LocalVersion) {
             Write-Status ""
             Write-Status "  ═══════════════════════════════════════════" -Color Cyan
@@ -485,7 +605,7 @@ if ($allCachedZips.Count -gt 2) {
 Write-Status ""
 
 # ============================================================================
-# STEP 6: REST API HEALTH CHECK
+# STEP 6: REST API HEALTH CHECK (with HTML challenge detection)
 # ============================================================================
 Write-Status "[6/8] REST API health check..." -Color Yellow
 $healthUrl = "$WordPressSiteURL/wp-json/"
@@ -493,21 +613,16 @@ Write-Status "      ── Request ──" -Color DarkGray
 Write-Status "      GET $healthUrl" -Color White
 Write-Status "      Auth: Basic (user=$Username)" -Color Gray
 Write-Status "      ────────────" -Color DarkGray
+Write-Debug-Log "Health check URL: $healthUrl"
 
 $restApiHealthy = $false
 try {
-    $healthResponse = Invoke-RestMethod -Uri $healthUrl -Method Get -Headers @{ "Authorization" = "Basic $base64Auth" } -TimeoutSec 15 -ErrorAction Stop
-    
-    # Always dump raw response
-    try {
-        $rawHealth = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
-        if ($rawHealth.Length -gt 1000) { $rawHealth = $rawHealth.Substring(0, 1000) + "..." }
-        Write-Status "      Raw response: $rawHealth" -Color DarkGray
-    } catch {
-        Write-Status "      Raw response: $healthResponse" -Color DarkGray
-    }
+    $healthResponse = Invoke-SafeRestRequest -Uri $healthUrl -Headers @{ "Authorization" = "Basic $base64Auth" } -TimeoutSec 15 -Label "Health Check" -MaxRetries 3 -RetryDelaySec 5
 
-    if ($healthResponse.name -or $healthResponse.namespaces) {
+    if ($null -eq $healthResponse) {
+        Write-Status "      ✗ REST API unreachable (HTML challenge or error)" -Color Red
+        Write-Status "      ⚠ Continuing anyway — upload may still work..." -Color Yellow
+    } elseif ($healthResponse.name -or $healthResponse.namespaces) {
         $restApiHealthy = $true
         $siteName = if ($healthResponse.name) { $healthResponse.name } else { "Unknown" }
         Write-Status "      ✓ REST API is reachable (Site: $siteName)" -Color Green
@@ -517,7 +632,7 @@ try {
                 Write-Status "      ✓ riseup-asia-uploader/v1 namespace registered" -Color Green
             } else {
                 Write-Status "      ⚠ riseup-asia-uploader/v1 namespace NOT found" -Color Yellow
-                Write-Status "        Available: $($healthResponse.namespaces -join ', ')" -Color Gray
+                Write-Debug-Log "Available namespaces: $($healthResponse.namespaces -join ', ')"
             }
         }
     } else {
@@ -526,9 +641,7 @@ try {
 } catch {
     $healthErr = Get-ErrorResponseBody $_
     Write-Status "      ✗ REST API health check failed: $($_.Exception.Message)" -Color Red
-    if ($healthErr -ne "") {
-        Write-Status "      Raw error response: $healthErr" -Color Gray
-    }
+    Write-Debug-Log "Health check error: $healthErr"
     Write-Status "      ⚠ Continuing anyway..." -Color Yellow
 }
 
@@ -543,102 +656,116 @@ Write-Status "      User: $Username" -Color Gray
 
 $uploadSuccess = $false
 
-if ($activeNamespace) {
-    # Use Riseup Asia Uploader
-    $uploadUrl = "$WordPressSiteURL/wp-json/$activeNamespace/upload"
+# If no active namespace was detected (HTML challenge blocked Step 3),
+# default to the primary namespace and try uploading anyway.
+if (-not $activeNamespace) {
+    $activeNamespace = "riseup-asia-uploader/v1"
+    Write-Status "      ⚠ No namespace detected in Step 3 — defaulting to $activeNamespace" -Color Yellow
+}
 
-    Write-Status "      ── Request ──" -Color DarkGray
-    Write-Status "      POST $uploadUrl" -Color White
-    Write-Status "      Auth: Basic (user=$Username)" -Color Gray
-    Write-Status "      Content-Type: application/json" -Color Gray
+$uploadUrl = "$WordPressSiteURL/wp-json/$activeNamespace/upload"
 
+Write-Status "      ── Request ──" -Color DarkGray
+Write-Status "      POST $uploadUrl" -Color White
+Write-Status "      Auth: Basic (user=$Username)" -Color Gray
+Write-Status "      Content-Type: application/json" -Color Gray
+Write-Debug-Log "Upload endpoint: $uploadUrl"
+Write-Debug-Log "ZIP file: $OutputZipPath"
+Write-Debug-Log "ZIP size: $([math]::Round((Get-Item $OutputZipPath).Length / 1KB, 1)) KB"
+
+try {
+    $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
+    $base64Data = [Convert]::ToBase64String($fileBytes)
+
+    $machineName = $env:COMPUTERNAME
+    $uploadBody = @{
+        plugin_zip     = $base64Data
+        slug           = $PluginSlug
+        activate       = $ActivateAfterInstall
+        upload_source  = "upload_script"
+        plugin_version = $LocalVersion
+        machine_name   = $machineName
+    } | ConvertTo-Json
+
+    $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
+    Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, upload_source: `"upload_script`", plugin_version: `"$LocalVersion`", machine_name: `"$machineName`", plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
+    Write-Status "      Machine: $machineName" -Color Gray
+    Write-Status "      ────────────" -Color DarkGray
+
+    $uploadHeaders = @{
+        "Authorization"              = "Basic $base64Auth"
+        "X-Riseup-Source-Machine"    = $machineName
+        "X-Riseup-Plugin-Version"    = $LocalVersion
+    }
+
+    Write-Status "      Uploading via Riseup Asia Uploader..." -Color Gray
+    $response = Invoke-SafeRestRequest -Uri $uploadUrl -Method "Post" -Headers $uploadHeaders -Body $uploadBody -ContentType "application/json" -TimeoutSec 300 -Label "Upload" -MaxRetries 3 -RetryDelaySec 8
+
+    if ($null -eq $response) {
+        throw "Upload failed — server returned HTML or non-JSON response after retries"
+    }
+
+    $uploadSuccess = $true
+
+    # Unwrap Universal Response Envelope: data is in Results[0]
+    $resultData = $response
+    if ($response.Results -and $response.Results.Count -gt 0) {
+        $resultData = $response.Results[0]
+    }
+
+    # Debug: dump full raw response JSON
     try {
-        $fileBytes = [System.IO.File]::ReadAllBytes($OutputZipPath)
-        $base64Data = [Convert]::ToBase64String($fileBytes)
+        $rawJson = ($response | ConvertTo-Json -Depth 5 -Compress)
+        if ($rawJson.Length -gt 1000) { $rawJson = $rawJson.Substring(0, 1000) + "..." }
+        Write-Status "      Raw response: $rawJson" -Color DarkGray
+    } catch {
+        Write-Status "      Raw response: $response" -Color DarkGray
+    }
+    Write-Status "      Response keys: $( ($resultData | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name) -join ', ' )" -Color Gray
 
-        $machineName = $env:COMPUTERNAME
-        $uploadBody = @{
-            plugin_zip     = $base64Data
-            slug           = $PluginSlug
-            activate       = $ActivateAfterInstall
-            upload_source  = "upload_script"
-            plugin_version = $LocalVersion
-            machine_name   = $machineName
-        } | ConvertTo-Json
+    Write-Status ""
+    Write-Status "===============================================" -Color Green
+    Write-Status "  ✓ PUBLISH COMPLETE!" -Color Green
+    Write-Status "===============================================" -Color Green
+    Write-Status ""
+    $pSlug = if ($resultData.plugin_slug) { $resultData.plugin_slug } elseif ($resultData.slug) { $resultData.slug } elseif ($resultData.pluginSlug) { $resultData.pluginSlug } else { $PluginSlug }
+    $pUpdate = if ($null -ne $resultData.is_update) { $resultData.is_update } elseif ($null -ne $resultData.isUpdate) { $resultData.isUpdate } else { "N/A" }
+    $pActivated = if ($null -ne $resultData.activated) { $resultData.activated } elseif ($null -ne $resultData.active) { $resultData.active } else { "N/A" }
+    $responseVersion = if ($resultData.plugin_version) { $resultData.plugin_version } elseif ($resultData.version) { $resultData.version } else { "unknown" }
+    Write-Status "  Plugin:     $pSlug" -Color White
+    Write-Status "  Version:    $LocalVersion (sent)" -Color White
+    Write-Status "  Resp. Ver:  $responseVersion (server response)" -Color $(if ($responseVersion -eq $LocalVersion) { "Green" } else { "Yellow" })
+    Write-Status "  Action:     $VersionAction" -Color White
+    Write-Status "  Is Update:  $pUpdate" -Color White
+    Write-Status "  Activated:  $pActivated" -Color White
+    if ($resultData.activation_error) {
+        Write-Status "  Activation Error: $($resultData.activation_error)" -Color Yellow
+    }
 
-        $bodySizeKB = [math]::Round($uploadBody.Length / 1KB, 1)
-        Write-Status "      Body: {slug: `"$PluginSlug`", activate: $ActivateAfterInstall, upload_source: `"upload_script`", plugin_version: `"$LocalVersion`", machine_name: `"$machineName`", plugin_zip: `"<base64 $bodySizeKB KB>`"}" -Color Gray
-        Write-Status "      Machine: $machineName" -Color Gray
-        Write-Status "      ────────────" -Color DarkGray
+    # =================================================================
+    # POST-UPLOAD VERIFICATION: Call /status to confirm actual version
+    # =================================================================
+    Write-Status ""
+    Write-Status "[8/8] Post-upload version verification..." -Color Yellow
+    Start-Sleep -Seconds 2  # Brief pause for plugin activation to settle
 
-        $uploadHeaders = @{
-            "Authorization"              = "Basic $base64Auth"
-            "Content-Type"               = "application/json"
-            "X-Riseup-Source-Machine"    = $machineName
-            "X-Riseup-Plugin-Version"    = $LocalVersion
-        }
+    $verifyUrl = "$WordPressSiteURL/wp-json/$activeNamespace/status"
+    Write-Debug-Log "Verify URL: $verifyUrl"
+    Write-Status "      GET $verifyUrl" -Color Gray
+    try {
+        $verifyResponse = Invoke-SafeRestRequest -Uri $verifyUrl -Method "Get" -Headers $headers -TimeoutSec 15 -Label "Post-upload verify" -MaxRetries 3 -RetryDelaySec 5
 
-        Write-Status "      Uploading via Riseup Asia Uploader..." -Color Gray
-        $response = Invoke-RestMethod -Uri $uploadUrl -Method Post -Headers $uploadHeaders -Body $uploadBody -TimeoutSec 300
-        $uploadSuccess = $true
-
-        # Unwrap Universal Response Envelope: data is in Results[0]
-        $resultData = $response
-        if ($response.Results -and $response.Results.Count -gt 0) {
-            $resultData = $response.Results[0]
-        }
-
-        # Debug: dump full raw response JSON
-        try {
-            $rawJson = ($response | ConvertTo-Json -Depth 5 -Compress)
-            if ($rawJson.Length -gt 1000) { $rawJson = $rawJson.Substring(0, 1000) + "..." }
-            Write-Status "      Raw response: $rawJson" -Color DarkGray
-        } catch {
-            Write-Status "      Raw response: $response" -Color DarkGray
-        }
-        Write-Status "      Response keys: $( ($resultData | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name) -join ', ' )" -Color Gray
-
-        Write-Status ""
-        Write-Status "===============================================" -Color Green
-        Write-Status "  ✓ PUBLISH COMPLETE!" -Color Green
-        Write-Status "===============================================" -Color Green
-        Write-Status ""
-        # Try multiple possible field names for robustness
-        $pSlug = if ($resultData.plugin_slug) { $resultData.plugin_slug } elseif ($resultData.slug) { $resultData.slug } elseif ($resultData.pluginSlug) { $resultData.pluginSlug } else { $PluginSlug }
-        $pUpdate = if ($null -ne $resultData.is_update) { $resultData.is_update } elseif ($null -ne $resultData.isUpdate) { $resultData.isUpdate } else { "N/A" }
-        $pActivated = if ($null -ne $resultData.activated) { $resultData.activated } elseif ($null -ne $resultData.active) { $resultData.active } else { "N/A" }
-        $responseVersion = if ($resultData.plugin_version) { $resultData.plugin_version } elseif ($resultData.version) { $resultData.version } else { "unknown" }
-        Write-Status "  Plugin:     $pSlug" -Color White
-        Write-Status "  Version:    $LocalVersion (sent)" -Color White
-        Write-Status "  Resp. Ver:  $responseVersion (server response)" -Color $(if ($responseVersion -eq $LocalVersion) { "Green" } else { "Yellow" })
-        Write-Status "  Action:     $VersionAction" -Color White
-        Write-Status "  Is Update:  $pUpdate" -Color White
-        Write-Status "  Activated:  $pActivated" -Color White
-        if ($resultData.activation_error) {
-            Write-Status "  Activation Error: $($resultData.activation_error)" -Color Yellow
-        }
-
-        # =================================================================
-        # POST-UPLOAD VERIFICATION: Call /status to confirm actual version
-        # This is critical for self-updates where the response version
-        # comes from the OLD code that processed the request.
-        # =================================================================
-        Write-Status ""
-        Write-Status "[8/8] Post-upload version verification..." -Color Yellow
-        Start-Sleep -Seconds 2  # Brief pause for plugin activation to settle
-        
-        $verifyUrl = "$WordPressSiteURL/wp-json/$activeNamespace/status"
-        Write-Status "      GET $verifyUrl" -Color Gray
-        try {
-            $verifyResponse = Invoke-RestMethod -Uri $verifyUrl -Method Get -Headers $headers -TimeoutSec 15 -ErrorAction Stop
-            
+        if ($null -eq $verifyResponse) {
+            Write-Status "      ⚠ Verification blocked by HTML challenge — check WP admin manually" -Color Yellow
+        } else {
             $verifyData = $verifyResponse
             if ($verifyResponse.Results -and $verifyResponse.Results.Count -gt 0) {
                 $verifyData = $verifyResponse.Results[0]
             }
-            
+
             $deployedVersion = if ($verifyData.Version) { $verifyData.Version } elseif ($verifyData.version) { $verifyData.version } else { "unknown" }
-            
+            Write-Debug-Log "Deployed version from /status: $deployedVersion"
+
             if ($deployedVersion -eq $LocalVersion) {
                 Write-Status "      ✓ VERIFIED: Server is running v$deployedVersion" -Color Green
             } elseif ($deployedVersion -eq "unknown") {
@@ -655,53 +782,49 @@ if ($activeNamespace) {
                 Write-Status (" " * [Math]::Max(0, 42 - $deployedVersion.Length)) -ForegroundColor Red -NoNewline
                 Write-Status "║" -ForegroundColor Red
                 Write-Status "  ║                                                        ║" -ForegroundColor Red
-                Write-Status "  ║  The server reports a different version than expected.  ║" -ForegroundColor Yellow
-                Write-Status "  ║  This can happen on the FIRST self-update because the   ║" -ForegroundColor Yellow
-                Write-Status "  ║  OLD plugin code generated the upload response.         ║" -ForegroundColor Yellow
-                Write-Status "  ║                                                        ║" -ForegroundColor Yellow
-                Write-Status "  ║  If this is the first deploy after a large version gap, ║" -ForegroundColor White
-                Write-Status "  ║  run the upload AGAIN — the new code will now handle    ║" -ForegroundColor White
+                Write-Status "  ║  Run the upload AGAIN — the new code will now handle   ║" -ForegroundColor White
                 Write-Status "  ║  it correctly.                                          ║" -ForegroundColor White
                 Write-Status "  ╚══════════════════════════════════════════════════════════╝" -ForegroundColor Red
             }
-        } catch {
-            Write-Status "      ⚠ Verification call failed: $($_.Exception.Message)" -Color Yellow
-            Write-Status "      The upload likely succeeded — check the WordPress admin." -Color Gray
         }
-        
-        Write-Status ""
-
-        if ($Quiet) {
-            $result = @{
-                success = $true
-                plugin = $PluginSlug
-                localVersion = $LocalVersion
-                remoteVersion = $RemoteVersion
-                deployedVersion = $deployedVersion
-                action = $VersionAction
-                activated = $resultData.activated
-            }
-            Write-Output ($result | ConvertTo-Json -Compress)
-        }
-
     } catch {
-        $errorMessage = $_.Exception.Message
-        $errorBody = Get-ErrorResponseBody $_
-        Test-ServerCriticalError $errorBody | Out-Null
-
-        Write-Host ""
-        Write-Host "  ⚠ Riseup Uploader API failed: $errorMessage" -ForegroundColor Yellow
-        Write-Host "  Status code: $($_.Exception.Response.StatusCode.value__)" -ForegroundColor Gray
-        if ($errorBody -ne "") {
-            $previewBody = if ($errorBody.Length -gt 500) { $errorBody.Substring(0, 500) + "..." } else { $errorBody }
-            Write-Host "  Error body: $previewBody" -ForegroundColor Gray
-        }
-        Write-ErrorBody $errorBody "Riseup API Error"
-        Write-ServerErrorBanner
-        Write-Host ""
-        Write-Host "  Falling back to basic upload script..." -ForegroundColor Yellow
-        Write-Host ""
+        Write-Status "      ⚠ Verification call failed: $($_.Exception.Message)" -Color Yellow
+        Write-Status "      The upload likely succeeded — check the WordPress admin." -Color Gray
     }
+
+    Write-Status ""
+
+    if ($Quiet) {
+        $result = @{
+            success = $true
+            plugin = $PluginSlug
+            localVersion = $LocalVersion
+            remoteVersion = $RemoteVersion
+            deployedVersion = $deployedVersion
+            action = $VersionAction
+            activated = $resultData.activated
+        }
+        Write-Output ($result | ConvertTo-Json -Compress)
+    }
+
+} catch {
+    $errorMessage = $_.Exception.Message
+    $errorBody = Get-ErrorResponseBody $_
+    Test-ServerCriticalError $errorBody | Out-Null
+
+    Write-Host ""
+    Write-Host "  ⚠ Riseup Uploader API failed: $errorMessage" -ForegroundColor Yellow
+    Write-Host "  Endpoint: $uploadUrl" -ForegroundColor Gray
+    Write-Debug-Log "Upload error body: $errorBody"
+    if ($errorBody -ne "") {
+        $previewBody = if ($errorBody.Length -gt 500) { $errorBody.Substring(0, 500) + "..." } else { $errorBody }
+        Write-Host "  Error body: $previewBody" -ForegroundColor Gray
+    }
+    Write-ErrorBody $errorBody "Riseup API Error"
+    Write-ServerErrorBanner
+    Write-Host ""
+    Write-Host "  Falling back to basic upload script..." -ForegroundColor Yellow
+    Write-Host ""
 }
 
 # ============================================================================
@@ -729,7 +852,9 @@ if (-not $uploadSuccess) {
     } | ConvertTo-Json -Compress
 
     try {
-        & $basicScript -JsonConfig $fallbackConfig -Force
+        $fallbackArgs = @("-JsonConfig", $fallbackConfig, "-Force")
+        if ($Debug) { $fallbackArgs += "-Debug" }
+        & $basicScript @fallbackArgs
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Error: Basic upload script failed with exit code $LASTEXITCODE" -ForegroundColor Red
             exit 1
