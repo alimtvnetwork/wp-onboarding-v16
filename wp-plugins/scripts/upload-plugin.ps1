@@ -395,6 +395,14 @@ try {
         }
     } else {
         Write-Status "      ⚠ REST API responded but format unexpected" -Color Yellow
+        Write-Status "      Response type: $($healthResponse.GetType().FullName)" -Color Gray
+        try {
+            $rawPreview = ($healthResponse | ConvertTo-Json -Depth 3 -Compress)
+            if ($rawPreview.Length -gt 500) { $rawPreview = $rawPreview.Substring(0, 500) + "..." }
+            Write-Status "      Response preview: $rawPreview" -Color Gray
+        } catch {
+            Write-Status "      Response (raw): $healthResponse" -Color Gray
+        }
     }
 } catch {
     $healthErr = Get-ErrorResponseBody $_
@@ -461,6 +469,9 @@ foreach ($ns in $apiNamespaces) {
             $resultData = $response.Results[0]
         }
 
+        # Debug: print raw response keys so we know what the API returned
+        Write-Status "      Response keys: $( ($resultData | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name) -join ', ' )" -Color Gray
+
         Write-Status "      ✓ Uploaded via $($ns.display)!" -Color Green
         Write-Status ""
         Write-Status "[5/5] Installation Complete!" -Color Yellow
@@ -470,9 +481,13 @@ foreach ($ns in $apiNamespaces) {
         Write-Status "========================================" -Color Green
         Write-Status ""
         Write-Status "Plugin Details:" -Color Cyan
-        Write-Status "  - Plugin Slug: $($resultData.plugin_slug)" -Color White
-        Write-Status "  - Is Update: $($resultData.is_update)" -Color White
-        Write-Status "  - Activated: $($resultData.activated)" -Color White
+        # Try multiple possible field names
+        $pSlug = if ($resultData.plugin_slug) { $resultData.plugin_slug } elseif ($resultData.slug) { $resultData.slug } elseif ($resultData.pluginSlug) { $resultData.pluginSlug } else { $PluginSlug }
+        $pUpdate = if ($null -ne $resultData.is_update) { $resultData.is_update } elseif ($null -ne $resultData.isUpdate) { $resultData.isUpdate } else { "N/A" }
+        $pActivated = if ($null -ne $resultData.activated) { $resultData.activated } elseif ($null -ne $resultData.active) { $resultData.active } else { "N/A" }
+        Write-Status "  - Plugin Slug: $pSlug" -Color White
+        Write-Status "  - Is Update:   $pUpdate" -Color White
+        Write-Status "  - Activated:   $pActivated" -Color White
         if ($resultData.activation_error) {
             Write-Status "  - Activation Error: $($resultData.activation_error)" -Color Yellow
         }
