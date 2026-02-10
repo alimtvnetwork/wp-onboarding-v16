@@ -166,7 +166,15 @@ class Riseup_Logger {
             $enhanced['source_machine'] = $source_machine;
         }
         
+        // Always include plugin_version — use RISEUP_VERSION as fallback
+        // This ensures every action (enable, disable, delete, etc.) records which
+        // version of the uploader plugin performed the operation.
+        if (empty($enhanced['plugin_version']) && defined('RISEUP_VERSION')) {
+            $enhanced['plugin_version'] = RISEUP_VERSION;
+        }
+        
         // Merge any extra enhanced fields (plugin_version, upload_source, etc.)
+        // Extra enhanced fields override defaults (e.g., upload passes the target plugin's version)
         if (!empty($extra_enhanced)) {
             $enhanced = array_merge($enhanced, $extra_enhanced);
         }
@@ -212,6 +220,11 @@ class Riseup_Logger {
             $enhanced['source_machine'] = $source_machine;
         }
         
+        // Always include plugin_version for audit trail
+        if (defined('RISEUP_VERSION')) {
+            $enhanced['plugin_version'] = RISEUP_VERSION;
+        }
+        
         return $this->get_db()->log_transaction(
             $action,
             null, // plugin_slug
@@ -245,6 +258,11 @@ class Riseup_Logger {
         $enhanced = array();
         if ($source_machine) {
             $enhanced['source_machine'] = $source_machine;
+        }
+        
+        // Always include plugin_version for audit trail
+        if (defined('RISEUP_VERSION')) {
+            $enhanced['plugin_version'] = RISEUP_VERSION;
         }
         
         return $this->get_db()->log_transaction(
