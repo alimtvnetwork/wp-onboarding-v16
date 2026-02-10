@@ -11,6 +11,7 @@ import { Trash2, Search, BarChart3, Clock, CheckCircle2, XCircle, AlertTriangle,
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
+import { formatActionLabel, getActionBadgeClasses, getPluginBadgeClasses } from "@/lib/publishHistoryUtils";
 
 export default function PublishHistory() {
   const queryClient = useQueryClient();
@@ -124,7 +125,8 @@ export default function PublishHistory() {
           <TableHeader>
             <TableRow>
               <TableHead>Status</TableHead>
-              <TableHead>Plugin</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Plugin / Target</TableHead>
               <TableHead>Site</TableHead>
               <TableHead>Files</TableHead>
               <TableHead>Duration</TableHead>
@@ -135,49 +137,71 @@ export default function PublishHistory() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading...</TableCell></TableRow>
             ) : entries.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
-            ) : entries.map((e: PublishHistoryEntry) => (
-              <TableRow key={e.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {statusIcon(e.status)}
-                    <Badge variant={e.status === "success" ? "default" : e.status === "failed" ? "destructive" : "secondary"} className="text-xs">
-                      {e.status}
+              <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No publish history yet</TableCell></TableRow>
+            ) : entries.map((e: PublishHistoryEntry) => {
+              const actionLabel = formatActionLabel(e.actionType || e.mode);
+              const actionClasses = getActionBadgeClasses(e.actionType || e.mode);
+              const pluginClasses = getPluginBadgeClasses();
+
+              return (
+                <TableRow key={e.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {statusIcon(e.status)}
+                      <Badge variant={e.status === "success" ? "default" : e.status === "failed" ? "destructive" : "secondary"} className="text-xs">
+                        {e.status}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={actionClasses}>
+                      {actionLabel}
                     </Badge>
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium">{e.pluginName}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm">{e.siteName}</span>
-                    {e.siteUrl && (
-                      <a href={e.siteUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={pluginClasses}>
+                        {e.pluginName}
+                      </Badge>
+                      {e.version && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+                          v{e.version}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm">{e.siteName}</span>
+                      {e.siteUrl && (
+                        <a href={e.siteUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{e.filesUpdated}</TableCell>
+                  <TableCell className="text-muted-foreground">{(e.durationMs / 1000).toFixed(1)}s</TableCell>
+                  <TableCell>
+                    {e.rollbackStatus && e.rollbackStatus !== "" && (
+                      <Badge variant={e.rollbackStatus === "success" ? "default" : e.rollbackStatus === "failed" ? "destructive" : "outline"} className="text-xs">
+                        {e.rollbackStatus}
+                      </Badge>
                     )}
-                  </div>
-                </TableCell>
-                <TableCell>{e.filesUpdated}</TableCell>
-                <TableCell className="text-muted-foreground">{(e.durationMs / 1000).toFixed(1)}s</TableCell>
-                <TableCell>
-                  {e.rollbackStatus && e.rollbackStatus !== "" && (
-                    <Badge variant={e.rollbackStatus === "success" ? "default" : e.rollbackStatus === "failed" ? "destructive" : "outline"} className="text-xs">
-                      {e.rollbackStatus}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-xs">
-                  {formatDistanceToNow(new Date(e.createdAt), { addSuffix: true })}
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteMutation.mutate(e.id)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {formatDistanceToNow(new Date(e.createdAt), { addSuffix: true })}
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteMutation.mutate(e.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </Card>

@@ -474,6 +474,9 @@ export interface PublishHistoryEntry {
   sessionId?: string;
   status: "success" | "failed" | "partial";
   mode: string;
+  actionType?: string;
+  version?: string;
+  machineName?: string;
   filesUpdated: number;
   activationStatus: string;
   rollbackStatus?: string;

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Rocket, CheckCircle2, XCircle, AlertTriangle, ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { PublishHistoryEntry, PublishHistoryStats } from "@/lib/api";
+import { formatActionLabel, getActionBadgeClasses, getPluginBadgeClasses } from "@/lib/publishHistoryUtils";
 
 interface RecentPublishesProps {
   entries: PublishHistoryEntry[];
@@ -49,6 +50,10 @@ export function RecentPublishes({ entries, stats }: RecentPublishesProps) {
             {entries.map((entry) => {
               const cfg = statusConfig[entry.status] || statusConfig.partial;
               const StatusIcon = cfg.icon;
+              const actionLabel = formatActionLabel(entry.actionType || entry.mode);
+              const actionClasses = getActionBadgeClasses(entry.actionType || entry.mode);
+              const pluginClasses = getPluginBadgeClasses();
+
               return (
                 <div
                   key={entry.id}
@@ -60,12 +65,22 @@ export function RecentPublishes({ entries, stats }: RecentPublishesProps) {
                     "text-warning"
                   }`} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {entry.pluginName}
-                      <span className="text-muted-foreground font-normal"> → {entry.siteName}</span>
-                    </p>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <Badge className={actionClasses + " text-[10px] px-1.5 py-0"}>
+                        {actionLabel}
+                      </Badge>
+                      <Badge variant="outline" className={pluginClasses + " text-[10px] px-1.5 py-0"}>
+                        {entry.pluginName}
+                      </Badge>
+                      {entry.version && (
+                        <Badge variant="secondary" className="text-[10px] px-1 py-0 font-mono">
+                          v{entry.version}
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      {entry.filesUpdated} files • {(entry.durationMs / 1000).toFixed(1)}s
+                      → {entry.siteName} • {entry.filesUpdated} files • {(entry.durationMs / 1000).toFixed(1)}s
+                      {entry.machineName && <span> • {entry.machineName}</span>}
                     </p>
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0">
