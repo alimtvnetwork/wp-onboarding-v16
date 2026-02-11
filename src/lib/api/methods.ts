@@ -373,16 +373,57 @@ export const api = {
   checkAllSites: (pluginId: number) =>
     request<void>(`/plugins/${pluginId}/sync/check-all`, { method: "POST" }),
 
-  // Publish
-  publishPlugin: (
-    pluginId: number,
-    siteId: number,
-    options: { mode: "selected" | "full"; files?: string[]; createBackup: boolean; keepZipFiles?: boolean }
-  ) =>
-    request<{ filesUpdated: number; backupId?: number }>(`/plugins/${pluginId}/sites/${siteId}/publish`, {
-      method: "POST",
-      body: JSON.stringify(options),
-    }),
+  // Publish — with global dedup lock to prevent duplicate concurrent requests
+  publishPlugin: (() => {
+    const inFlight = new Set<string>();
+    const cooldowns = new Map<string, number>();
+    const COOLDOWN_MS = 30_000; // 30s cooldown after success
+    return (
+      pluginId: number,
+      siteId: number,
+      options: { mode: "selected" | "full"; files?: string[]; createBackup: boolean; keepZipFiles?: boolean }
+    ) => {
+      const key = `${pluginId}:${siteId}`;
+      // Block if already in-flight
+      if (inFlight.has(key)) {
+        console.warn(`[api.publishPlugin] BLOCKED duplicate in-flight request for plugin=${pluginId} site=${siteId}`);
+        return Promise.resolve({
+          success: false,
+          error: {
+            code: "E_DEDUP",
+            message: "A publish is already in progress for this plugin and site",
+            timestamp: new Date().toISOString(),
+          },
+        } as ApiResponse<{ filesUpdated: number; backupId?: number }>);
+      }
+      // Block if within cooldown period
+      const lastSuccess = cooldowns.get(key);
+      if (lastSuccess && Date.now() - lastSuccess < COOLDOWN_MS) {
+        const secsLeft = Math.ceil((COOLDOWN_MS - (Date.now() - lastSuccess)) / 1000);
+        console.warn(`[api.publishPlugin] BLOCKED by cooldown (${secsLeft}s remaining) for plugin=${pluginId} site=${siteId}`);
+        return Promise.resolve({
+          success: false,
+          error: {
+            code: "E_COOLDOWN",
+            message: `Publish cooldown active (${secsLeft}s remaining). Please wait before re-publishing.`,
+            timestamp: new Date().toISOString(),
+          },
+        } as ApiResponse<{ filesUpdated: number; backupId?: number }>);
+      }
+      inFlight.add(key);
+      return request<{ filesUpdated: number; backupId?: number }>(`/plugins/${pluginId}/sites/${siteId}/publish`, {
+        method: "POST",
+        body: JSON.stringify(options),
+      }).then(response => {
+        if (response.success) {
+          cooldowns.set(key, Date.now());
+        }
+        return response;
+      }).finally(() => {
+        inFlight.delete(key);
+      });
+    };
+  })(),
   previewPublish: (pluginId: number, siteId: number) =>
     request<PublishPreview>(`/plugins/${pluginId}/sites/${siteId}/preview`),
 
