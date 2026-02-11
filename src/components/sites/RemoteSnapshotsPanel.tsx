@@ -54,7 +54,7 @@ import {
   ArrowRight,
   Copy,
 } from "lucide-react";
-import { Site, SnapshotRecord, api } from "@/lib/api";
+import { Site, SnapshotRecord, SnapshotSchedule, SnapshotInterval, api } from "@/lib/api";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
 import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
@@ -335,23 +335,104 @@ function SnapshotSettingsTab({
 
       <Separator />
 
-      {/* Schedule */}
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium">Schedule</Label>
-        <Select
-          value={(current.schedule as string) || "manual"}
-          onValueChange={(v) => handleChange("schedule", v)}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="manual">Manual Only</SelectItem>
-            <SelectItem value="daily">Daily</SelectItem>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Multi-Schedule */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
+            Schedules
+          </Label>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const intervals: SnapshotInterval[] = ["hourly", "3h", "6h", "12h", "daily", "weekly", "monthly", "yearly"];
+              const existingSchedules = (current.schedules as SnapshotSchedule[]) || [];
+              const usedIntervals = new Set(existingSchedules.map((s) => s.interval));
+              const available = intervals.find((i) => !usedIntervals.has(i));
+              if (!available) return;
+              const newSchedule: SnapshotSchedule = {
+                id: `sched_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+                interval: available,
+                enabled: true,
+              };
+              handleChange("schedules", [...existingSchedules, newSchedule]);
+            }}
+            disabled={((current.schedules as SnapshotSchedule[]) || []).length >= 8}
+            className="h-6 text-[10px] px-2"
+          >
+            <Plus className="h-3 w-3 mr-0.5" />
+            Add
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          Add multiple schedules — each becomes a separate cron job
+        </p>
+
+        {((current.schedules as SnapshotSchedule[]) || []).length === 0 && (
+          <div className="text-center py-3 text-muted-foreground text-[10px] border rounded-md border-dashed">
+            No schedules. Snapshots run manually only.
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          {((current.schedules as SnapshotSchedule[]) || []).map((schedule) => {
+            const intervalLabels: Record<string, string> = {
+              hourly: "Every Hour", "3h": "Every 3h", "6h": "Every 6h", "12h": "Every 12h",
+              daily: "Daily", weekly: "Weekly", monthly: "Monthly", yearly: "Yearly",
+            };
+            return (
+              <div
+                key={schedule.id}
+                className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
+                  schedule.enabled ? "bg-accent/30 border-primary/20" : "bg-muted/30 opacity-60"
+                }`}
+              >
+                <Switch
+                  checked={schedule.enabled}
+                  onCheckedChange={(v) => {
+                    const updated = ((current.schedules as SnapshotSchedule[]) || []).map((s) =>
+                      s.id === schedule.id ? { ...s, enabled: v } : s
+                    );
+                    handleChange("schedules", updated);
+                  }}
+                  className="shrink-0 scale-75"
+                />
+                <Select
+                  value={schedule.interval}
+                  onValueChange={(v) => {
+                    const updated = ((current.schedules as SnapshotSchedule[]) || []).map((s) =>
+                      s.id === schedule.id ? { ...s, interval: v as SnapshotInterval } : s
+                    );
+                    handleChange("schedules", updated);
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-[11px] flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(intervalLabels).map(([val, label]) => (
+                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    const filtered = ((current.schedules as SnapshotSchedule[]) || []).filter(
+                      (s) => s.id !== schedule.id
+                    );
+                    handleChange("schedules", filtered);
+                  }}
+                  className="h-7 w-7 p-0 text-destructive hover:text-destructive shrink-0"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Default Scope */}
