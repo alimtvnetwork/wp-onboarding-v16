@@ -363,19 +363,25 @@ export function PublishProgressDialog({
           </DialogTitle>
           <DialogDescription className="flex items-center gap-2 flex-wrap">
             <span>Deploying <strong>{pluginName}</strong> to <strong>{siteName}</strong></span>
-            {localVersion && (
+            {(localVersion || remoteVersion) && (
               <span className="inline-flex items-center gap-1.5 text-xs">
-                <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
-                  v{localVersion}
-                </Badge>
-                <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
                 {remoteVersion ? (
                   <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
                     v{remoteVersion}
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-[10px] italic text-muted-foreground h-5 px-1.5">
-                    new
+                    new install
+                  </Badge>
+                )}
+                <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
+                {localVersion ? (
+                  <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
+                    v{localVersion}
+                  </Badge>
+                ) : (
+                  <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
+                    latest
                   </Badge>
                 )}
               </span>

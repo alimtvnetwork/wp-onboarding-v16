@@ -352,10 +352,19 @@ export default function Plugins() {
   };
 
   const publishGuardRef = useRef(false);
+  const publishCooldownRef = useRef<number>(0);
 
   const handlePublish = async (plugin: Plugin, siteId: number, files?: string[]) => {
     // Debounce guard: prevent double-invocation from race conditions or double-clicks
     if (publishGuardRef.current) return;
+    
+    // Cooldown guard: prevent re-trigger within 30s of last successful publish
+    const now = Date.now();
+    if (now - publishCooldownRef.current < 30000) {
+      console.warn('[Publish] Blocked: cooldown active, last publish was', Math.round((now - publishCooldownRef.current) / 1000), 's ago');
+      return;
+    }
+    
     publishGuardRef.current = true;
 
     // Open progress dialog instead of inline publishing
@@ -368,10 +377,8 @@ export default function Plugins() {
     // Determine publish mode based on whether specific files were selected
     let publishMode: "selected" | "full";
     if (files && files.length > 0) {
-      // Selective publish - user picked specific files
       publishMode = "selected";
     } else {
-      // Full publish or no file selection - use localStorage preference
       let uploadMode: "file" | "zip" = "file";
       try {
         const saved = localStorage.getItem("wppp_upload_mode");
@@ -394,13 +401,14 @@ export default function Plugins() {
     try {
       const response = await api.publishPlugin(plugin.id, siteId, {
         mode: publishMode,
-        files: files, // Pass selected files to backend
+        files: files,
         createBackup: true,
         keepZipFiles,
       });
       if (response.success) {
         toast.success(`Published ${response.data?.filesUpdated || 0} files`);
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
+        publishCooldownRef.current = Date.now(); // Set cooldown on success
       } else if (response.error) {
         const captured = captureError(response.error, {
           endpoint: `/plugins/${plugin.id}/sites/${siteId}/publish`,
@@ -437,6 +445,7 @@ export default function Plugins() {
   const handlePublishComplete = (success: boolean) => {
     if (success) {
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
+      publishCooldownRef.current = Date.now(); // Prevent re-trigger
     }
     setIsPublishing(null);
   };
