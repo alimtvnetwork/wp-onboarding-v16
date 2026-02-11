@@ -130,22 +130,22 @@ https://demoat.attoproperty.com.au
 
 ### Request
 
-**GET** /api/v1/sites/1/snapshots/settings
+**GET** http://localhost:8080/api/v1/sites/1/snapshots/settings
 **Status:** 500
 
 ### Frontend Execution Chain
 
 ```
-[12:58:22 AM] ⬡ GET /api/v1/sites/2/mappings
-[12:58:22 AM] ⬡ GET /api/v1/sites/1/mappings
-[12:58:22 AM] ⬡ GET /api/v1/error-history?limit=100
-[12:58:22 AM] ⬡ GET /api/v1/plugins
-[12:58:22 AM] ⬡ GET /api/v1/sites
-[12:58:26 AM] ⬡ GET /api/v1/sites/1/snapshots
-[12:58:26 AM] ⬡ GET /api/v1/sites/1/snapshots/settings
-[12:58:26 AM] ⬡ GET /api/v1/sites/1/snapshots/providers
-[12:58:32 AM] ⬡ POST /api/v1/error-history
-[12:58:32 AM] ⬡ GET /api/v1/error-history?limit=100
+[12:58:22 AM] ⬡ GET http://localhost:8080/api/v1/sites/2/mappings
+[12:58:22 AM] ⬡ GET http://localhost:8080/api/v1/sites/1/mappings
+[12:58:22 AM] ⬡ GET http://localhost:8080/api/v1/error-history?limit=100
+[12:58:22 AM] ⬡ GET http://localhost:8080/api/v1/plugins
+[12:58:22 AM] ⬡ GET http://localhost:8080/api/v1/sites
+[12:58:26 AM] ⬡ GET http://localhost:8080/api/v1/sites/1/snapshots
+[12:58:26 AM] ⬡ GET http://localhost:8080/api/v1/sites/1/snapshots/settings
+[12:58:26 AM] ⬡ GET http://localhost:8080/api/v1/sites/1/snapshots/providers
+[12:58:32 AM] ⬡ POST http://localhost:8080/api/v1/error-history
+[12:58:32 AM] ⬡ GET http://localhost:8080/api/v1/error-history?limit=100
 ```
 
 ### Backend Stack Trace (Go)

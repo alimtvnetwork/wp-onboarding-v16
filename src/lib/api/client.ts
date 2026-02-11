@@ -69,7 +69,7 @@ async function fetchRequest<T>(
   const functionName = `api.${method.toLowerCase()}.${endpoint}`;
   
   logger.trace(functionName, 'enter', { endpoint, method });
-  logApiCall(method, endpoint);
+  logApiCall(method, toAbsoluteUrl(resolveApiUrl(endpoint)));
   const startTime = Date.now();
   // Hoist env/diagnostic values once for all error paths
   const envViteApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || "(not set)";
