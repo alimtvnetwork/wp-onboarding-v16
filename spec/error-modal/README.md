@@ -1,10 +1,10 @@
 # Error Modal — Frontend Specification
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-09  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-11  
 > **Status:** Active  
 > **Location:** `src/components/errors/`  
-> **Purpose:** Comprehensive specification for the Global Error Modal — how errors are captured, enriched, displayed, and exported across the React → Go → PHP request chain.
+> **Purpose:** Comprehensive specification for the Global Error Modal — how errors are captured, enriched, displayed, and exported across the React → Go → Delegated Server request chain.
 
 ---
 
@@ -143,6 +143,9 @@ export interface CapturedError {
   requestDelegatedAt?: string;             // Attributes.RequestDelegatedAt (PHP endpoint URL)
   envelopeErrors?: EnvelopeErrors;         // Errors block from envelope
   envelopeMethodsStack?: EnvelopeMethodsStack; // MethodsStack block from envelope
+
+  // === Delegated Server Details (NEW v2.0.0) ===
+  delegatedRequestServer?: DelegatedRequestServer; // Full delegated server error info
 }
 ```
 
@@ -176,9 +179,21 @@ export interface PHPStackFrame {
 // From the Universal Response Envelope
 export interface EnvelopeErrors {
   BackendMessage: string;
-  DelegatedServiceErrorStack?: string[];  // PHP error lines
+  DelegatedServiceErrorStack?: string[];  // PHP error lines (legacy)
   Backend?: string[];                      // Go stack trace lines
   Frontend?: string[];                     // Reserved for frontend injection
+  DelegatedRequestServer?: DelegatedRequestServer; // NEW v2.0.0
+}
+
+// NEW v2.0.0 — Structured delegated server error details
+export interface DelegatedRequestServer {
+  DelegatedEndpoint: string;    // Exact URL of downstream endpoint
+  Method: string;               // HTTP method (GET, POST, etc.)
+  StatusCode: number;           // HTTP status code from downstream
+  RequestBody?: unknown;        // What was sent to downstream (null for GET)
+  Response?: unknown;           // Full response body from downstream
+  StackTrace?: string[];        // Stack trace lines from downstream server
+  AdditionalMessages?: string;  // Human-readable error context
 }
 
 export interface EnvelopeMethodsStack {
@@ -298,14 +313,34 @@ The Universal Response Envelope provides six top-level blocks. The error modal c
       "site_handlers.go:327 handlers.EnableRemotePlugin",
       "service.go:1245 site.(*Service).EnableRemotePlugin"
     ],
-    "Frontend": []
+    "Frontend": [],
+    "DelegatedRequestServer": {
+      "DelegatedEndpoint": "https://example.com/wp-json/riseup.../v1/snapshots/settings",
+      "Method": "GET",
+      "StatusCode": 403,
+      "RequestBody": null,
+      "Response": {
+        "code": "rest_forbidden",
+        "message": "This endpoint is disabled",
+        "data": { "status": 403, "plugin_version": "1.54.0" }
+      },
+      "StackTrace": [
+        "#0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()",
+        "#1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()"
+      ],
+      "AdditionalMessages": "Endpoint 'snapshots' is not enabled in plugin settings."
+    }
   }
 }
 ```
 
 **Mapping:**
 - `BackendMessage` → Overview tab red banner
-- `DelegatedServiceErrorStack` → Stack tab (orange-themed PHP trace) + Traversal tab
+- `DelegatedServiceErrorStack` → Stack tab (orange-themed PHP trace) + Traversal tab (legacy)
+- `DelegatedRequestServer` → Stack tab (purple-themed delegated section) + Request tab (3rd hop) + Traversal tab (NEW v2.0.0)
+- `DelegatedRequestServer.AdditionalMessages` → Overview tab info banner
+- `DelegatedRequestServer.Response` → Request tab delegated response JSON viewer
+- `DelegatedRequestServer.StackTrace` → Stack tab delegated server stack trace
 - `Backend` → Stack tab (Go trace)
 
 ### MethodsStack Block → Execution + Traversal tabs
@@ -418,6 +453,11 @@ GlobalErrorModal.tsx
 │  │ ⚠ Backend Error: Failed to fetch plugin details from site  │ │
 │  └─────────────────────────────────────────────────────────────┘ │
 │                                                                  │
+│  ┌─ Delegated Info Banner (blue, NEW v2.0.0) ──────────────────┐ │
+│  │ ℹ Endpoint 'snapshots' is not enabled in plugin settings.   │ │
+│  │   (from DelegatedRequestServer.AdditionalMessages)          │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
 │  ┌─ Request Info ──────────────────────────────────────────────┐ │
 │  │  Method: POST   Endpoint: /api/v1/plugins/enable            │ │
 │  │  Status: 500    Site: https://example.com                   │ │
@@ -429,7 +469,7 @@ GlobalErrorModal.tsx
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  ┌─ Availability Badges ──────────────────────────────────────┐  │
-│  │  [✓ Session] [✓ Stack Traces] [✓ Execution Logs]          │  │
+│  │  [✓ Session] [✓ Stack Traces] [✓ Delegated Info] [✓ Exec] │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -443,7 +483,20 @@ GlobalErrorModal.tsx
 │  │  service.go:1245       site.(*Service).EnableRemotePlugin   │  │
 │  └─────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  ┌─ PHP Delegated Stack (orange-themed) ──────────────────────┐  │
+│  ┌─ Delegated Server Stack (purple-themed, NEW v2.0.0) ───────┐  │
+│  │  ┌─ Header ─────────────────────────────────────────────┐   │  │
+│  │  │ 🟣 Delegated Server  GET  403                        │   │  │
+│  │  │ https://example.com/wp-json/riseup.../snapshots/...  │   │  │
+│  │  └──────────────────────────────────────────────────────┘   │  │
+│  │  Stack Trace:                                               │  │
+│  │  #0 riseup-asia-uploader.php(1098): Logger->error()         │  │
+│  │  #1 class-wp-hook.php(341): Riseup_Asia->enrich_error()     │  │
+│  │  #2 plugin.php(205): WP_Hook->apply_filters()               │  │
+│  │  Response:                                                  │  │
+│  │  ▸ { "code": "rest_forbidden", "message": "...", ... }     │  │
+│  └─────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ PHP Delegated Stack (orange-themed, legacy) ───────────────┐  │
 │  │  PHP Fatal error: Class 'PDO' not found in plugin-mgr.php  │  │
 │  │  #0 endpoints.php(15): PluginManager->connect()             │  │
 │  │  #1 {main}                                                  │  │
@@ -472,10 +525,16 @@ GlobalErrorModal.tsx
 │  └──────────┬─────────────────────────────────────────────────┘  │
 │             │ (vertical connector line)                           │
 │  ┌──────────┴─────────────────────────────────────────────────┐  │
-│  │  🟠 [Go → PHP]  [500]                                     │  │
-│  │  https://example.com/wp-json/riseup-asia-uploader/v1/...   │  │
-│  │  ▸ PHP Response: { "success": false, ... }                 │  │
-│  │  ▸ PHP Error Stack: Fatal error: Class 'PDO' not found     │  │
+│  │  🟠 [Go → Delegated]  [GET]  [403]                        │  │
+│  │  https://example.com/wp-json/riseup.../v1/snapshots/...    │  │
+│  │  ▸ Request Body: (none — GET)                              │  │
+│  └──────────┬─────────────────────────────────────────────────┘  │
+│             │ (vertical connector line)                           │
+│  ┌──────────┴─────────────────────────────────────────────────┐  │
+│  │  🟣 [Delegated Response]  (NEW v2.0.0)                     │  │
+│  │  ▸ Response: { "code": "rest_forbidden", "message": ... }  │  │
+│  │  ▸ Stack Trace: #0 riseup-asia-uploader.php(1098)...       │  │
+│  │  ▸ Additional: Endpoint 'snapshots' is not enabled...      │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  ┌─ Environment ──────────────────────────────────────────────┐  │
@@ -488,22 +547,34 @@ GlobalErrorModal.tsx
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  ┌─ Endpoint Flow ────────────────────────────────────────────┐  │
-│  │  [Go] /api/v1/plugins/enable                               │  │
-│  │    ──▸                                                     │  │
-│  │  [PHP] https://site.com/wp-json/riseup.../v1/enable        │  │
+│  ┌─ Endpoint Flow (3-hop, NEW v2.0.0) ─────────────────────────┐ │
+│  │  [React] http://localhost:8080                               │ │
+│  │    ──▸                                                      │ │
+│  │  [Go] /api/v1/sites/1/snapshots/settings                    │ │
+│  │    ──▸                                                      │ │
+│  │  [Delegated] https://site.com/wp-json/riseup.../settings    │ │
+│  │              GET → 403                                      │ │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  ┌─ Methods Stack (table) ────────────────────────────────────┐  │
 │  │  #  │ Method                          │ File            │ Ln│  │
-│  │  1  │ handlers.EnableRemotePlugin     │ site_handlers   │327│  │
-│  │  2  │ site.(*Service).EnableRemote... │ service.go      │1245│ │
-│  │  3  │ wordpress.(*Client).doRequest   │ uploader.go     │350│  │
+│  │  1  │ handlers.handleSiteActionByID   │ handler_factory │107│  │
+│  │  2  │ api.SessionLogging              │ session_log     │107│  │
+│  │  3  │ api.Recovery                    │ middleware      │245│  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  ┌─ Delegated Service Error Stack (orange) ───────────────────┐  │
-│  │  PHP Fatal error: Class 'PDO' not found...                  │  │
-│  │  #0 endpoints.php(15): PluginManager->connect()             │  │
+│  ┌─ Delegated Server Details (purple, NEW v2.0.0) ─────────────┐ │
+│  │  Endpoint: https://site.com/wp-json/riseup.../settings      │ │
+│  │  Method: GET │ Status: 403                                  │ │
+│  │  Stack Trace:                                                │ │
+│  │    #0 riseup-asia-uploader.php(1098): Logger->error()       │ │
+│  │    #1 class-wp-hook.php(341): enrich_error_response()       │ │
+│  │  Additional: Endpoint not enabled in plugin settings        │ │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Delegated Service Error Stack (orange, legacy) ────────────┐ │
+│  │  PHP Fatal error: Class 'PDO' not found...                  │ │
+│  │  #0 endpoints.php(15): PluginManager->connect()             │ │
 │  └────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -654,8 +725,17 @@ Plus environment diagnostics: API base, VITE_API_URL, resolved origin, UI origin
 
 - **Endpoint Flow** — Go endpoint → PHP endpoint with badges
 - **Methods Stack** — Table: #, Method, File, Line
-- **Delegated Service Error Stack** — Orange-themed PHP error lines
+- **Delegated Server Details** — Purple-themed section with endpoint, method, status, stack trace, response JSON (NEW v2.0.0)
+- **Delegated Service Error Stack** — Orange-themed PHP error lines (legacy)
 - **Backend Trace** — Go stack trace lines
+
+### Sections Rendered (Priority Order):
+
+1. **Endpoint Flow** — React → Go → Delegated badges with full URLs (3-hop when DelegatedRequestServer present)
+2. **Methods Stack Table** — Go call chain from envelope
+3. **Delegated Server Details** — Purple-themed block with endpoint, method, status, stack trace, response (NEW v2.0.0)
+4. **Delegated Service Error Stack** — Orange-themed PHP error lines (legacy, ScrollArea)
+5. **Backend Trace** — Go stack trace lines (ScrollArea)
 
 ---
 
@@ -687,24 +767,30 @@ Plus environment diagnostics: API base, VITE_API_URL, resolved origin, UI origin
 
 ## 8. Request Chain Visualization
 
-The `RequestDetails` component renders the full React → Go → PHP delegation chain:
+The `RequestDetails` component renders the full React → Go → Delegated Server chain:
 
 ```tsx
 // Key data sources:
 const hasRequestChain = error.requestedAt || error.requestDelegatedAt;
 const hasDelegation = error.requestDelegatedAt || sessionDiagnostics?.response?.requestUrl;
+const hasDelegatedServer = error.delegatedRequestServer || error.envelopeErrors?.DelegatedRequestServer;
 
 // Node 1: React → Go
 // - endpoint, method, responseStatus from CapturedError
 // - requestBody (collapsible JSON)
 
-// Node 2: Go → PHP (only shown if delegated)
-// - phpEndpointUrl from session diagnostics or requestDelegatedAt
-// - phpResponseStatus, phpResponseBody from session diagnostics
-// - DelegatedServiceErrorStack from envelope errors
+// Node 2: Go → Delegated (shown if delegated)
+// - delegatedEndpoint from DelegatedRequestServer or requestDelegatedAt
+// - method, statusCode from DelegatedRequestServer
+// - requestBody from DelegatedRequestServer (if POST/PUT)
+
+// Node 3: Delegated Response (shown if DelegatedRequestServer present, NEW v2.0.0)
+// - Response JSON from DelegatedRequestServer.Response
+// - StackTrace from DelegatedRequestServer.StackTrace
+// - AdditionalMessages from DelegatedRequestServer.AdditionalMessages
 ```
 
-### Sample Code: Rendering the Request Chain
+### Sample Code: Rendering the 3-Hop Request Chain
 
 ```tsx
 {/* Node 1: React → Go */}
@@ -729,18 +815,68 @@ const hasDelegation = error.requestDelegatedAt || sessionDiagnostics?.response?.
   <div className="w-0.5 h-4 bg-border ml-[3px]" />
 </div>
 
-{/* Node 2: Go → PHP */}
-<div className="border rounded-b-md bg-muted/50 p-3">
+{/* Node 2: Go → Delegated */}
+<div className={cn("border bg-muted/50 p-3", hasDelegatedServer ? "" : "rounded-b-md")}>
   <div className="flex items-center gap-2 mb-1">
     <div className="w-2 h-2 rounded-full bg-orange-500" />
     <Badge variant="outline" className="font-mono bg-orange-500/10 border-orange-500/30 text-orange-600">
-      Go → PHP
+      Go → Delegated
     </Badge>
+    {delegatedServer && (
+      <>
+        <Badge variant="outline" className="font-mono">{delegatedServer.Method}</Badge>
+        <Badge variant={delegatedServer.StatusCode >= 400 ? "destructive" : "secondary"}>
+          {delegatedServer.StatusCode}
+        </Badge>
+      </>
+    )}
   </div>
   <p className="ml-4 text-xs font-mono text-orange-600 break-all">
-    {phpEndpointUrl || error.requestDelegatedAt}
+    {delegatedServer?.DelegatedEndpoint || error.requestDelegatedAt}
   </p>
 </div>
+
+{/* Node 3: Delegated Response (NEW v2.0.0) */}
+{hasDelegatedServer && (
+  <>
+    <div className="flex items-center pl-4">
+      <div className="w-0.5 h-4 bg-border ml-[3px]" />
+    </div>
+    <div className="border rounded-b-md bg-muted/50 p-3">
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-2 h-2 rounded-full bg-purple-500" />
+        <Badge variant="outline" className="font-mono bg-purple-500/10 border-purple-500/30 text-purple-600">
+          Delegated Response
+        </Badge>
+      </div>
+      {delegatedServer?.Response && (
+        <Collapsible>
+          <CollapsibleTrigger className="text-xs text-muted-foreground">
+            ▸ Response JSON
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-auto max-h-32">
+              {JSON.stringify(delegatedServer.Response, null, 2)}
+            </pre>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+      {delegatedServer?.StackTrace?.length > 0 && (
+        <div className="mt-2">
+          <p className="text-xs text-muted-foreground mb-1">Stack Trace:</p>
+          {delegatedServer.StackTrace.map((line, i) => (
+            <p key={i} className="text-xs font-mono text-purple-600 ml-2">{line}</p>
+          ))}
+        </div>
+      )}
+      {delegatedServer?.AdditionalMessages && (
+        <p className="mt-2 text-xs text-purple-600">
+          ℹ {delegatedServer.AdditionalMessages}
+        </p>
+      )}
+    </div>
+  </>
+)}
 ```
 
 ---
@@ -760,14 +896,61 @@ const hasEndpoints = error.requestedAt || error.requestDelegatedAt;
 const hasMethodsStack = error.envelopeMethodsStack?.Backend?.length > 0;
 const hasDelegatedStack = error.envelopeErrors?.DelegatedServiceErrorStack?.length > 0;
 const hasBackendTrace = error.envelopeErrors?.Backend?.length > 0;
+const hasDelegatedServer = error.delegatedRequestServer || error.envelopeErrors?.DelegatedRequestServer; // NEW v2.0.0
 ```
 
 ### Sections Rendered:
 
-1. **Endpoint Flow** — Go → PHP badges with full URLs
+1. **Endpoint Flow** — 3-hop badges: React → Go → Delegated (with method + status for delegated hop)
 2. **Methods Stack Table** — Go call chain from envelope
-3. **Delegated Service Error Stack** — Orange-themed PHP error lines (ScrollArea)
-4. **Backend Trace** — Go stack trace lines (ScrollArea)
+3. **Delegated Server Details** — Purple-themed block (NEW v2.0.0): endpoint, method, status, stack trace, response JSON, additional messages
+4. **Delegated Service Error Stack** — Orange-themed PHP error lines (legacy, ScrollArea)
+5. **Backend Trace** — Go stack trace lines (ScrollArea)
+
+### Sample Code: Rendering Delegated Server Details in Traversal
+
+```tsx
+{/* Delegated Server Details (NEW v2.0.0) */}
+{hasDelegatedServer && (() => {
+  const ds = error.delegatedRequestServer || error.envelopeErrors?.DelegatedRequestServer;
+  if (!ds) return null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-purple-500" />
+          Delegated Server Details
+        </h4>
+        <Button variant="ghost" size="sm" onClick={() => copySection("Delegated Server", 
+          `Endpoint: ${ds.DelegatedEndpoint}\nMethod: ${ds.Method}\nStatus: ${ds.StatusCode}\n` +
+          (ds.StackTrace?.join('\n') || '') + '\n' + (ds.AdditionalMessages || '')
+        )}>
+          <Copy className="h-3 w-3" />
+        </Button>
+      </div>
+      <div className="bg-purple-500/5 border border-purple-500/20 rounded p-3 space-y-2">
+        <div className="flex items-center gap-2 text-xs">
+          <Badge variant="outline" className="font-mono">{ds.Method}</Badge>
+          <Badge variant={ds.StatusCode >= 400 ? "destructive" : "secondary"}>{ds.StatusCode}</Badge>
+        </div>
+        <p className="text-xs font-mono text-purple-600 break-all">{ds.DelegatedEndpoint}</p>
+        {ds.StackTrace?.length > 0 && (
+          <ScrollArea className="max-h-32">
+            {ds.StackTrace.map((line, i) => (
+              <p key={i} className="text-xs font-mono text-purple-500">{line}</p>
+            ))}
+          </ScrollArea>
+        )}
+        {ds.AdditionalMessages && (
+          <p className="text-xs text-purple-600 border-t border-purple-500/20 pt-2">
+            ℹ {ds.AdditionalMessages}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+})()}
+```
 
 ---
 
@@ -1037,12 +1220,12 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 | `src/components/errors/GlobalErrorModal.tsx` | 239 | Modal shell: header, section toggle, footer actions |
 | `src/components/errors/BackendSection.tsx` | 721 | Backend tabs: Overview, Log, Execution, Stack, Session, Request, Traversal |
 | `src/components/errors/FrontendSection.tsx` | 328 | Frontend tabs: Overview, Stack, Context, Fixes |
-| `src/components/errors/RequestDetails.tsx` | 176 | Request chain visualization (React → Go → PHP) |
-| `src/components/errors/TraversalDetails.tsx` | 149 | Envelope traversal: endpoint flow, methods stack, error stacks |
+| `src/components/errors/RequestDetails.tsx` | 176 | Request chain visualization (React → Go → Delegated, 3-hop) |
+| `src/components/errors/TraversalDetails.tsx` | 149 | Envelope traversal: endpoint flow, methods stack, delegated server details, error stacks |
 | `src/components/errors/SessionLogsTab.tsx` | 443 | Session diagnostics: logs, request, response, stack traces |
 | `src/components/errors/ErrorModalActions.tsx` | 194 | Download and Copy dropdown menus |
 | `src/components/errors/errorReportGenerator.ts` | 185 | Pure function: Markdown report generation + suggested fixes |
-| `src/components/errors/ErrorModalTypes.ts` | 26 | Shared types: PHPStackFrame, AppInfo, SectionCommonProps |
+| `src/components/errors/ErrorModalTypes.ts` | 26 | Shared types: PHPStackFrame, AppInfo, SectionCommonProps, DelegatedRequestServer |
 | `src/components/errors/ErrorDetailModal.tsx` | — | Standalone error detail viewer |
 | `src/components/errors/ErrorHistoryDrawer.tsx` | — | Error history browser drawer |
 | `src/components/errors/ErrorQueueBadge.tsx` | — | Error queue indicator badge |
@@ -1050,19 +1233,20 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 | `src/hooks/useSessionDiagnostics.ts` | — | Hook for auto-fetching session-level diagnostics |
 | `src/hooks/useClickTracker.ts` | — | Click path tracking for error context |
 | `src/hooks/useExecutionLogger.ts` | — | React execution logger (debug mode) |
-| `src/lib/api/envelope.ts` | — | Envelope parsing and error extraction |
+| `src/lib/api/envelope.ts` | — | Envelope parsing and error extraction (incl. DelegatedRequestServer) |
 
 ---
 
 ## Cross-References
 
-- [Error Handling Cross-Stack Spec](../error-handling/README.md) — PHP, Go, frontend error chain
-- [Response Envelope Schema](../response-envelope/envelope.schema.json) — JSON Schema for envelope
-- [Response Envelope ADR](../response-envelope/ADR.md) — Architectural decisions
+- [Error Handling Cross-Stack Spec](../error-handling/README.md) — PHP, Go, frontend error chain + DelegatedRequestServer flow
+- [Copy Format Samples](./COPY-FORMATS.md) — Complete samples for all copy/export formats
+- [Response Envelope Schema](../response-envelope/envelope.schema.json) — JSON Schema for envelope (incl. DelegatedRequestServer)
+- [Envelope Configurability](../response-envelope/CONFIGURABILITY.md) — DelegatedRequestServer presence rules
 - [Session-Based Logging](../logging-and-diagnostics/session-based-logging.md) — Backend session system
 - [React Execution Logger](../logging-and-diagnostics/react-execution-logger.md) — Frontend debug logger
 - [TypeScript Standards](../typescript-standards/README.md) — Type safety rules
 
 ---
 
-*Error Modal specification created: 2026-02-09*
+*Error Modal specification v2.0.0 — updated: 2026-02-11*
