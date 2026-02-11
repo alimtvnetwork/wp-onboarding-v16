@@ -7,6 +7,7 @@ import { SnapshotRetentionPolicy, type RetentionConfig } from "./SnapshotRetenti
 import { SnapshotRestoreDialog } from "./SnapshotRestoreDialog";
 import { SnapshotStorageAnalytics } from "./SnapshotStorageAnalytics";
 import { SnapshotCalendarView } from "./SnapshotCalendarView";
+import { SnapshotConfigPanel } from "./SnapshotConfigPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -52,7 +53,9 @@ import {
   RotateCcw,
   Activity,
   Server,
+  Copy,
 } from "lucide-react";
+import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -277,147 +280,17 @@ export function SnapshotSettingsTab() {
 
           <Separator />
 
-          {/* Storage Mode */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <HardDrive className="h-4 w-4" />
-              Storage Mode
-            </div>
-            <p className="text-xs text-muted-foreground">
-              How snapshot data is stored on disk
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setStorageMode("single");
-                  markDirty();
-                }}
-                className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg border transition-all text-left",
-                  storageMode === "single"
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "hover:bg-accent/50"
-                )}
-              >
-                <Database className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Single File</p>
-                  <p className="text-xs text-muted-foreground">
-                    All tables in one SQLite database. Simpler management.
-                  </p>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setStorageMode("per-table");
-                  markDirty();
-                }}
-                className={cn(
-                  "flex items-start gap-3 p-3 rounded-lg border transition-all text-left",
-                  storageMode === "per-table"
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "hover:bg-accent/50"
-                )}
-              >
-                <Layers className="h-5 w-5 mt-0.5 shrink-0 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Per-Table Files</p>
-                  <p className="text-xs text-muted-foreground">
-                    Separate SQLite file per table. Parallel backup via worker pool.
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Worker Pool Settings */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Cpu className="h-4 w-4" />
-              Worker Pool
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Controls parallel execution when using per-table storage mode
-            </p>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Worker Count</Label>
-                  <span className="text-xs font-mono text-muted-foreground">
-                    {workerCount}
-                  </span>
-                </div>
-                <Slider
-                  value={[workerCount]}
-                  onValueChange={([v]) => {
-                    setWorkerCount(v);
-                    markDirty();
-                  }}
-                  min={1}
-                  max={16}
-                  step={1}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Number of concurrent backup workers (1–16)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs">Batch Size</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={batchSize}
-                  onChange={(e) => {
-                    setBatchSize(parseInt(e.target.value) || 10);
-                    markDirty();
-                  }}
-                  className="h-9"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Number of rows processed per batch during backup
-                </p>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Save button */}
-      {isDirty && (
-        <div className="pt-2">
-          <Button
-            onClick={handleSave}
-            disabled={saveSettings.isPending}
-            className="w-full"
-          >
-            {saveSettings.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Database className="h-4 w-4 mr-2" />
-            )}
-            Save Snapshot Settings
-          </Button>
-        </div>
-      )}
-
-      {enabled && (
-        <>
-          <Separator />
-
-          {/* Retention Policy */}
-          <SnapshotRetentionPolicy
-            config={retention}
-            onChange={(c) => { setRetention(c); markDirty(); }}
+          {/* Shared Snapshot Config: Storage Mode, Worker Pool, Retention */}
+          <SnapshotConfigPanel
+            storageMode={storageMode}
+            onStorageModeChange={(mode) => { setStorageMode(mode); markDirty(); }}
+            workerCount={workerCount}
+            onWorkerCountChange={(count) => { setWorkerCount(count); markDirty(); }}
+            batchSize={batchSize}
+            onBatchSizeChange={(size) => { setBatchSize(size); markDirty(); }}
+            retention={retention}
+            onRetentionChange={(c) => { setRetention(c); markDirty(); }}
+            showRetention={true}
           />
 
           <Separator />
@@ -1152,10 +1025,24 @@ function SnapshotDetailDrawer({
               {/* Error Details */}
               {snapshot.error && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                    <XCircle className="h-3.5 w-3.5" />
-                    Error Details
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                      <XCircle className="h-3.5 w-3.5" />
+                      Error Details
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        navigator.clipboard.writeText(toClipboardText(snapshot.error || ""));
+                        toast.success("Error copied to clipboard");
+                      }}
+                    >
+                      <Copy className="h-3 w-3" />
+                      Copy
+                    </Button>
+                  </div>
                   <div className="text-xs text-destructive bg-destructive/10 rounded-md p-3 border border-destructive/20 whitespace-pre-wrap break-words font-mono">
                     {snapshot.error}
                   </div>

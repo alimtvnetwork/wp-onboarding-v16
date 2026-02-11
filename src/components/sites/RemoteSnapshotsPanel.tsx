@@ -52,9 +52,13 @@ import {
   Upload,
   GitBranch,
   ArrowRight,
+  Copy,
 } from "lucide-react";
 import { Site, SnapshotRecord, api } from "@/lib/api";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
+import { toClipboardText } from "@/lib/logText";
+import { toast } from "sonner";
+import { SnapshotConfigPanel } from "@/components/settings/SnapshotConfigPanel";
 
 interface RemoteSnapshotsPanelProps {
   site: Site;
@@ -229,9 +233,24 @@ function SnapshotRow({
 
       {/* Error message */}
       {snapshot.error && (
-        <p className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1">
-          {snapshot.error}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1 flex-1">
+            {snapshot.error}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(toClipboardText(snapshot.error || ""));
+              toast.success("Error copied to clipboard");
+            }}
+            title="Copy error"
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -400,6 +419,19 @@ function SnapshotSettingsTab({
           />
         </div>
       )}
+
+      <Separator />
+
+      {/* Parallel Execution & Storage Config */}
+      <SnapshotConfigPanel
+        storageMode={((current.storage_mode as string) || "single") as "single" | "per-table"}
+        onStorageModeChange={(mode) => handleChange("storage_mode", mode)}
+        workerCount={(current.worker_count as number) || 4}
+        onWorkerCountChange={(count) => handleChange("worker_count", count)}
+        batchSize={(current.batch_size as number) || 10}
+        onBatchSizeChange={(size) => handleChange("batch_size", size)}
+        showRetention={false}
+      />
 
       <Separator />
 
@@ -1048,8 +1080,22 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
               )}
 
               {detailTarget.error && (
-                <div className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1.5">
-                  {detailTarget.error}
+                <div className="flex items-center gap-1.5">
+                  <div className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1.5 flex-1">
+                    {detailTarget.error}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(toClipboardText(detailTarget.error || ""));
+                      toast.success("Error copied to clipboard");
+                    }}
+                    title="Copy error"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
                 </div>
               )}
 

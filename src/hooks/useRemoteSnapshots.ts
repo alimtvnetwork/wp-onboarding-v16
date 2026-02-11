@@ -3,8 +3,22 @@ import { api, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo, AvailableT
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
 import { useMemo } from "react";
+import { toClipboardText } from "@/lib/logText";
 
 const POLL_INTERVAL = 5000; // 5s when snapshots are running
+
+function snapshotErrorToast(title: string, err: Error) {
+  const errorText = `${title}: ${err.message}`;
+  toast.error(title, {
+    description: err.message,
+    action: {
+      label: "Check Logs",
+      onClick: () => { window.location.href = "/errors"; },
+    },
+  });
+  // Also copy error to clipboard for convenience
+  navigator.clipboard?.writeText(toClipboardText(errorText)).catch(() => {});
+}
 
 export function useRemoteSnapshots(siteId: number, enabled = true) {
   const queryClient = useQueryClient();
@@ -67,7 +81,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (err: Error) => {
-      toast.error("Snapshot creation failed", { description: err.message });
+      snapshotErrorToast("Snapshot creation failed", err);
     },
   });
 
@@ -82,7 +96,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (err: Error) => {
-      toast.error("Delete failed", { description: err.message });
+      snapshotErrorToast("Delete failed", err);
     },
   });
 
@@ -97,7 +111,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (err: Error) => {
-      toast.error("Restore failed", { description: err.message });
+      snapshotErrorToast("Restore failed", err);
     },
   });
 
@@ -112,7 +126,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey: [...queryKey, "settings"] });
     },
     onError: (err: Error) => {
-      toast.error("Settings update failed", { description: err.message });
+      snapshotErrorToast("Settings update failed", err);
     },
   });
 
@@ -127,7 +141,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (err: Error) => {
-      toast.error("Full backup failed", { description: err.message });
+      snapshotErrorToast("Full backup failed", err);
     },
   });
 
@@ -142,7 +156,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (err: Error) => {
-      toast.error("Incremental backup failed", { description: err.message });
+      snapshotErrorToast("Incremental backup failed", err);
     },
   });
 
@@ -157,7 +171,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (err: Error) => {
-      toast.error("Import failed", { description: err.message });
+      snapshotErrorToast("Import failed", err);
     },
   });
 
@@ -178,7 +192,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       queryClient.invalidateQueries({ queryKey });
     },
     onError: (err: Error) => {
-      toast.error("Cleanup failed", { description: err.message });
+      snapshotErrorToast("Cleanup failed", err);
     },
   });
 
