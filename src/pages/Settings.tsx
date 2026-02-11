@@ -111,6 +111,9 @@ export default function Settings() {
   const [pollInterval, setPollInterval] = useState("5000");
   const [debounceDelay, setDebounceDelay] = useState("500");
   
+  // Publish settings
+  const [uploaderHelperPath, setUploaderHelperPath] = useState("");
+  
   // Backup settings
   const [retentionDays, setRetentionDays] = useState("30");
   const [maxBackups, setMaxBackups] = useState("10");
@@ -153,6 +156,9 @@ export default function Settings() {
     }
     if (settings?.pagination) {
       setDefaultPerPage(settings.pagination.defaultPerPage ?? 10);
+    }
+    if (settings?.publish) {
+      setUploaderHelperPath(settings.publish.uploaderHelperPath ?? "");
     }
   }, [settings]);
   
@@ -528,6 +534,46 @@ export default function Settings() {
                 }}
                 className="shrink-0"
               />
+            </div>
+
+            {/* Uploader Helper Path */}
+            <div className="space-y-2 pt-4 border-t">
+              <Label className="text-sm">Uploader Helper Plugin Path</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={uploaderHelperPath}
+                  onChange={(e) => setUploaderHelperPath(e.target.value)}
+                  placeholder="e.g. D:\wp-work\plugins\riseup-asia-uploader"
+                  className="h-9 sm:h-10 font-mono text-xs"
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0"
+                  onClick={() => {
+                    saveSettings.mutate(
+                      { publish: { uploaderHelperPath: uploaderHelperPath || undefined } },
+                      {
+                        onSuccess: () => {
+                          toast.success("Uploader helper path saved", {
+                            style: {
+                              background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+                              color: "white",
+                              border: "none",
+                            },
+                          });
+                        },
+                        onError: (err) => toast.error(`Failed to save: ${err.message}`),
+                      }
+                    );
+                  }}
+                >
+                  Save
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Absolute path to the uploader helper plugin folder. Used when deploying the uploader to WordPress sites. Leave empty to use the backend default.
+              </p>
             </div>
           </div>
         );
