@@ -1,6 +1,7 @@
 /**
  * SiteVersionBadge - Displays version comparison for a site in the publish dialog
  * Fetches version info from the preview endpoint and shows upgrade/new badges
+ * Shows local version immediately once available, remote version loads independently
  */
 
 import { useState, useEffect } from "react";
@@ -25,7 +26,9 @@ export interface VersionInfo {
 }
 
 export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersionBadgeProps) {
-  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [localVersion, setLocalVersion] = useState<string | null>(null);
+  const [remoteVersion, setRemoteVersion] = useState<string | null>(null);
+  const [remoteLoaded, setRemoteLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,19 +44,9 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
         if (cancelled) return;
         
         if (response.success && response.data) {
-          const { localVersion, remoteVersion } = response.data;
-          const isNewInstall = !remoteVersion;
-          const cmp = isNewInstall ? 0 : compareVersions(localVersion, remoteVersion);
-          const isUpgrade = !isNewInstall && cmp > 0;
-          const isDowngrade = !isNewInstall && cmp < 0;
-          
-          setVersionInfo({
-            localVersion: localVersion || "Unknown",
-            remoteVersion: remoteVersion || "",
-            isNewInstall,
-            isUpgrade,
-            isDowngrade,
-          });
+          setLocalVersion(response.data.localVersion || null);
+          setRemoteVersion(response.data.remoteVersion || null);
+          setRemoteLoaded(true);
         } else {
           setError("Failed to fetch version");
         }
@@ -69,17 +62,7 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
     return () => { cancelled = true; };
   }, [pluginId, siteId]);
 
-  if (loading) {
-    return (
-      <div className={`flex items-center gap-1.5 ${className}`}>
-        <Skeleton className="h-5 w-12" />
-        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-        <Skeleton className="h-5 w-12" />
-      </div>
-    );
-  }
-
-  if (error || !versionInfo) {
+  if (error && !localVersion) {
     return (
       <div className={`flex items-center gap-1 text-xs text-muted-foreground ${className}`}>
         <RefreshCw className="h-3 w-3" />
@@ -88,19 +71,37 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
     );
   }
 
+  // Derive comparison info
+  const isNewInstall = remoteLoaded && !remoteVersion;
+  const cmp = remoteLoaded && remoteVersion && localVersion
+    ? compareVersions(localVersion, remoteVersion)
+    : 0;
+  const isUpgrade = remoteLoaded && !isNewInstall && cmp > 0;
+  const isDowngrade = remoteLoaded && !isNewInstall && cmp < 0;
+  const noChanges = remoteLoaded && !isNewInstall && !isUpgrade && !isDowngrade;
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Local version (what we're deploying) */}
-      <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
-        v{versionInfo.localVersion}
-      </Badge>
+      {/* Local version — show immediately or skeleton */}
+      {localVersion ? (
+        <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
+          v{localVersion}
+        </Badge>
+      ) : loading ? (
+        <Skeleton className="h-5 w-14" />
+      ) : null}
       
-      <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
+      {/* Arrow — only show when we have local version */}
+      {localVersion && (
+        <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
+      )}
       
-      {/* Remote version (what's currently installed) */}
-      {versionInfo.remoteVersion ? (
+      {/* Remote version — skeleton while loading, then actual value */}
+      {!remoteLoaded ? (
+        loading ? <Skeleton className="h-5 w-14" /> : null
+      ) : remoteVersion ? (
         <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
-          v{versionInfo.remoteVersion}
+          v{remoteVersion}
         </Badge>
       ) : (
         <Badge variant="outline" className="text-[10px] italic text-muted-foreground h-5 px-1.5">
@@ -108,26 +109,30 @@ export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersi
         </Badge>
       )}
       
-      {/* Status badge */}
-      {versionInfo.isNewInstall && (
-        <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-accent text-accent-foreground">
-          Install
-        </Badge>
-      )}
-      {versionInfo.isUpgrade && (
-        <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-primary/10 text-primary">
-          Upgrade
-        </Badge>
-      )}
-      {versionInfo.isDowngrade && (
-        <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-destructive/10 text-destructive">
-          Downgrade
-        </Badge>
-      )}
-      {!versionInfo.isNewInstall && !versionInfo.isUpgrade && !versionInfo.isDowngrade && (
-        <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-muted text-muted-foreground">
-          No changes
-        </Badge>
+      {/* Status badge — only after remote is loaded */}
+      {remoteLoaded && (
+        <>
+          {isNewInstall && (
+            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-accent text-accent-foreground">
+              Install
+            </Badge>
+          )}
+          {isUpgrade && (
+            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-primary/10 text-primary">
+              Upgrade
+            </Badge>
+          )}
+          {isDowngrade && (
+            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-destructive/10 text-destructive">
+              Downgrade
+            </Badge>
+          )}
+          {noChanges && (
+            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-muted text-muted-foreground">
+              No changes
+            </Badge>
+          )}
+        </>
       )}
     </div>
   );
