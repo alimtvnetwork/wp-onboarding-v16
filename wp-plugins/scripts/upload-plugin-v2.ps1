@@ -274,6 +274,7 @@ $OutputZipPath = ""
 $ActivateAfterInstall = $false
 $DeleteZipAfterUpload = $false
 $PluginSlug = ""
+$AdminPageSlug = ""
 
 # ============================================================================
 # CONFIG LOADING (same priority as V1)
@@ -291,6 +292,7 @@ if ($JsonConfig -ne "") {
         if ($null -ne $config.activateAfterInstall) { $ActivateAfterInstall = $config.activateAfterInstall }
         if ($null -ne $config.deleteZipAfterUpload) { $DeleteZipAfterUpload = $config.deleteZipAfterUpload }
         if ($config.pluginSlug) { $PluginSlug = $config.pluginSlug }
+        if ($config.adminPageSlug) { $AdminPageSlug = $config.adminPageSlug }
     } catch {
         Write-Host "Error: Invalid JSON config: $_" -ForegroundColor Red
         exit 1
@@ -336,6 +338,7 @@ else {
     if ($null -ne $config.activateAfterInstall) { $ActivateAfterInstall = $config.activateAfterInstall }
     if ($null -ne $config.deleteZipAfterUpload) { $DeleteZipAfterUpload = $config.deleteZipAfterUpload }
     if ($config.pluginSlug) { $PluginSlug = $config.pluginSlug }
+    if ($config.adminPageSlug) { $AdminPageSlug = $config.adminPageSlug }
 }
 
 # Validate required parameters
@@ -956,7 +959,21 @@ try {
 
     Write-Status ""
 
-    if ($Quiet) {
+    # ============================================================================
+    # OPEN ADMIN PAGE IN BROWSER (if adminPageSlug is configured)
+    # ============================================================================
+    if ($AdminPageSlug -ne "") {
+        $adminUrl = "$WordPressSiteURL/wp-admin/admin.php?page=$AdminPageSlug"
+        Write-Status "  🌐 Admin URL: $adminUrl" -Color Cyan
+        Write-Status "      Opening in browser..." -Color Gray
+        try {
+            Start-Process $adminUrl
+        } catch {
+            Write-Status "      ⚠ Could not open browser: $($_.Exception.Message)" -Color Yellow
+        }
+    }
+
+    Write-Status ""
         $result = @{
             success = $true
             plugin = $PluginSlug
