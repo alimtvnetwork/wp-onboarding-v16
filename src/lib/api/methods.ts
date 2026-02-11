@@ -32,6 +32,8 @@ import type {
   ErrorHistoryStats,
   RequestSessionRecord,
   RequestSessionListResponse,
+  SnapshotCronJob,
+  SnapshotCronSyncResult,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -557,6 +559,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify(opts || {}),
     }),
+
+  // Snapshot Cron Jobs
+  getSnapshotCronJobs: (siteId: number) =>
+    request<SnapshotCronJob[]>(`/sites/${siteId}/snapshots/cron`),
+  syncSnapshotCronJobs: (siteId: number) =>
+    request<SnapshotCronSyncResult>(`/sites/${siteId}/snapshots/cron/sync`, { method: "POST" }),
+  triggerSnapshotCronJob: (siteId: number, cronId: string) =>
+    request<{ triggered: boolean; runId?: string }>(`/sites/${siteId}/snapshots/cron/${cronId}/trigger`, { method: "POST" }),
+  pauseSnapshotCronJob: (siteId: number, cronId: string) =>
+    request<SnapshotCronJob>(`/sites/${siteId}/snapshots/cron/${cronId}/pause`, { method: "POST" }),
+  resumeSnapshotCronJob: (siteId: number, cronId: string) =>
+    request<SnapshotCronJob>(`/sites/${siteId}/snapshots/cron/${cronId}/resume`, { method: "POST" }),
 
   // Error History
   saveErrorHistory: (input: ErrorHistoryInput) =>

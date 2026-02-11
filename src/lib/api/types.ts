@@ -521,6 +521,28 @@ export interface PublishHistoryStats {
   lastPublishAt?: string;
 }
 
+// Snapshot Cron Job Types
+export interface SnapshotCronJob {
+  id: string;
+  scheduleId: string;
+  interval: SnapshotInterval;
+  cronExpression: string;
+  enabled: boolean;
+  status: "active" | "paused" | "error";
+  lastRunAt?: string;
+  nextRunAt?: string;
+  lastStatus?: "completed" | "failed" | "running";
+  lastError?: string;
+  runCount: number;
+}
+
+export interface SnapshotCronSyncResult {
+  created: number;
+  updated: number;
+  removed: number;
+  active: SnapshotCronJob[];
+}
+
 // Request Session Types
 export interface RequestSessionRecord {
   id: string;

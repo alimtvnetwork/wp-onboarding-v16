@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
-import { SnapshotInterval, SnapshotSchedule, SnapshotRecord } from "@/lib/api/types";
+import { SnapshotInterval, SnapshotSchedule, SnapshotRecord, SnapshotCronJob } from "@/lib/api/types";
 import { useApiQuery } from "@/hooks/useApiQuery";
-import { api } from "@/lib/api";
+import { api, requireSuccess } from "@/lib/api";
 import {
   Database,
   Plus,
@@ -29,6 +29,10 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
+  Play,
+  Pause,
+  Zap,
+  Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
@@ -81,7 +85,7 @@ export function SnapshotSettingsTab() {
 
   const markDirty = () => setIsDirty(true);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     saveSettings.mutate(
       {
         snapshots: {
@@ -93,7 +97,7 @@ export function SnapshotSettingsTab() {
         },
       },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
           setIsDirty(false);
           toast.success("Snapshot settings saved", {
             style: {
@@ -102,6 +106,12 @@ export function SnapshotSettingsTab() {
               border: "none",
             },
           });
+          // Auto-sync cron jobs after saving schedules
+          try {
+            await api.syncSnapshotCronJobs(0);
+          } catch {
+            // silent — cron panel will show stale state until refresh
+          }
         },
         onError: (err) => toast.error(`Failed to save: ${err.message}`),
       }
@@ -377,10 +387,210 @@ export function SnapshotSettingsTab() {
         </div>
       )}
 
+      {enabled && (
+        <>
+          <Separator />
+          <CronJobsPanel />
+        </>
+      )}
+
       <Separator />
 
       {/* Snapshot History */}
       <SnapshotHistoryViewer />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Cron Jobs Panel                                                           */
+/* -------------------------------------------------------------------------- */
+
+const CRON_STATUS_CONFIG: Record<string, { className: string; label: string }> = {
+  active: { className: "text-emerald-500", label: "Active" },
+  paused: { className: "text-amber-500", label: "Paused" },
+  error: { className: "text-destructive", label: "Error" },
+};
+
+function CronJobsPanel() {
+  const {
+    data: cronJobs,
+    isLoading,
+    refetch,
+    isFetching,
+  } = useApiQuery<SnapshotCronJob[]>({
+    queryKey: ["snapshot-cron-jobs"],
+    apiFn: () => api.getSnapshotCronJobs(0),
+    endpoint: "/sites/0/snapshots/cron",
+  });
+
+  const [syncing, setSyncing] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const jobs = cronJobs ?? [];
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await api.syncSnapshotCronJobs(0);
+      const result = requireSuccess(res, { endpoint: "/sites/0/snapshots/cron/sync", method: "POST" });
+      toast.success(`Cron sync: ${result.created} created, ${result.updated} updated, ${result.removed} removed`);
+      refetch();
+    } catch (err: any) {
+      toast.error(`Cron sync failed: ${err.message}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleTrigger = async (cronId: string) => {
+    setActionLoading(cronId);
+    try {
+      const res = await api.triggerSnapshotCronJob(0, cronId);
+      requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${cronId}/trigger`, method: "POST" });
+      toast.success("Snapshot triggered");
+      refetch();
+    } catch (err: any) {
+      toast.error(`Trigger failed: ${err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleTogglePause = async (job: SnapshotCronJob) => {
+    setActionLoading(job.id);
+    try {
+      const apiFn = job.status === "paused" ? api.resumeSnapshotCronJob : api.pauseSnapshotCronJob;
+      const res = await apiFn(0, job.id);
+      requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${job.id}/${job.status === "paused" ? "resume" : "pause"}`, method: "POST" });
+      toast.success(job.status === "paused" ? "Cron job resumed" : "Cron job paused");
+      refetch();
+    } catch (err: any) {
+      toast.error(`Action failed: ${err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const intervalLabel = (interval: string) =>
+    INTERVAL_OPTIONS.find((o) => o.value === interval)?.label ?? interval;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Radio className="h-4 w-4" />
+          Cron Jobs
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSync}
+            disabled={syncing}
+            className="h-7 text-xs"
+          >
+            <Zap className={cn("h-3.5 w-3.5 mr-1", syncing && "animate-spin")} />
+            Sync
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-7 text-xs"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Active cron jobs running on the backend. Sync to match current schedules.
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8 text-muted-foreground text-xs gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading cron jobs…
+        </div>
+      ) : jobs.length === 0 ? (
+        <div className="text-center py-6 text-muted-foreground text-xs border rounded-md border-dashed">
+          No cron jobs registered. Save settings with schedules, then sync.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {jobs.map((job) => {
+            const statusCfg = CRON_STATUS_CONFIG[job.status] ?? { className: "text-muted-foreground", label: job.status };
+            const isThisLoading = actionLoading === job.id;
+            return (
+              <div
+                key={job.id}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                  job.status === "active" ? "bg-accent/20 border-primary/15" : "bg-muted/30"
+                )}
+              >
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{intervalLabel(job.interval)}</span>
+                    <span className={cn("text-[10px] font-medium uppercase tracking-wider", statusCfg.className)}>
+                      {statusCfg.label}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                    <span className="font-mono">{job.cronExpression}</span>
+                    {job.nextRunAt && (
+                      <span>
+                        Next: {formatDistanceToNow(new Date(job.nextRunAt), { addSuffix: true })}
+                      </span>
+                    )}
+                    {job.lastRunAt && (
+                      <span>
+                        Last: {formatDistanceToNow(new Date(job.lastRunAt), { addSuffix: true })}
+                      </span>
+                    )}
+                    <span>Runs: {job.runCount}</span>
+                  </div>
+                  {job.lastError && (
+                    <p className="text-[10px] text-destructive truncate max-w-[300px]" title={job.lastError}>
+                      {job.lastError}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleTogglePause(job)}
+                    disabled={isThisLoading}
+                    className="h-7 w-7 p-0"
+                    title={job.status === "paused" ? "Resume" : "Pause"}
+                  >
+                    {isThisLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : job.status === "paused" ? (
+                      <Play className="h-3.5 w-3.5" />
+                    ) : (
+                      <Pause className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleTrigger(job.id)}
+                    disabled={isThisLoading}
+                    className="h-7 w-7 p-0"
+                    title="Trigger now"
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

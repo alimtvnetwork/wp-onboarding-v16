@@ -44,6 +44,8 @@ export type {
   PublishHistoryStats,
   SnapshotSchedule,
   SnapshotInterval,
+  SnapshotCronJob,
+  SnapshotCronSyncResult,
   RequestSessionRecord,
   RequestSessionListResponse,
 } from './types';
