@@ -493,6 +493,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
     snapshots,
     isLoading,
     isError,
+    error: snapshotError,
     refetch,
     hasRunningSnapshots,
     createSnapshot,
@@ -769,8 +770,11 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                   </div>
                 ) : isError ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
-                    <AlertCircle className="h-8 w-8" />
-                    <p className="text-sm">Failed to load snapshots</p>
+                    <AlertCircle className="h-8 w-8 text-destructive/60" />
+                    <p className="text-sm font-medium">Failed to load snapshots</p>
+                    {snapshotError?.message && (
+                      <p className="text-xs text-destructive/80 max-w-[300px] text-center break-all">{snapshotError.message}</p>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => refetch()}>
                       Retry
                     </Button>

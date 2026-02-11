@@ -557,6 +557,7 @@ export interface SnapshotCronSyncResult {
 // Request Session Types
 export interface RequestSessionRecord {
   id: string;
+  title?: string;
   method: string;
   path: string;
   query?: string;

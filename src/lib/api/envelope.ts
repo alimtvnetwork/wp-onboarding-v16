@@ -78,6 +78,7 @@ export function parseEnvelope<T>(env: RawEnvelope): ApiResponse<T> {
           ...(env.Attributes.SessionId ? { sessionId: env.Attributes.SessionId } : {}),
           ...(errBlock?.Backend?.length ? { backendTrace: errBlock.Backend } : {}),
           ...(errBlock?.DelegatedServiceErrorStack?.length ? { delegatedServiceErrorStack: errBlock.DelegatedServiceErrorStack } : {}),
+          ...(errBlock?.DelegatedRequestServer ? { delegatedRequestServer: errBlock.DelegatedRequestServer } : {}),
           ...(env.MethodsStack ? { methodsStack: env.MethodsStack } : {}),
         },
         timestamp: env.Status.Timestamp,
