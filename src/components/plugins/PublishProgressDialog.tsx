@@ -220,31 +220,50 @@ export function PublishProgressDialog({
   useEffect(() => {
     if (!open) return;
 
+    // Track if this publish cycle is complete to ignore duplicate events
+    let publishCompleted = false;
+    // Deduplicate logs by tracking seen messages
+    const seenLogKeys = new Set<string>();
+
+    const addLog = (log: PublishLogEntry) => {
+      // Filter verbose ZIP file tree and package debug logs at accumulation
+      const msg = log.message.toLowerCase();
+      if (log.level === 'debug' && log.step === 'package') return;
+      if (log.step === 'file_list' || log.step === 'zip_contents') return;
+      if (log.step === 'package' && (msg.includes('adding file') || msg.includes('compressing') || msg.includes('included in zip'))) return;
+      
+      // Deduplicate by timestamp + message
+      const key = `${log.timestamp}|${log.step}|${log.message}`;
+      if (seenLogKeys.has(key)) return;
+      seenLogKeys.add(key);
+      
+      setLogs(prev => [...prev, log]);
+    };
+
     // Handle publish started
     const unsubProgress = wsClient.on(WS_EVENTS.PUBLISH_STARTED, (data: unknown) => {
       const payload = data as { pluginId: number; siteId: number };
-      if (payload.pluginId === pluginId && payload.siteId === siteId) {
+      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompleted) {
         setStages(prev => prev.map(s => 
           s.name === "backup" ? { ...s, status: "running" } : s
         ));
-        // Add initial log
-        setLogs(prev => [...prev, {
+        addLog({
           timestamp: new Date().toISOString(),
           level: 'info',
           step: 'init',
           message: `Starting publish for ${pluginName} to ${siteName}`,
-        }]);
+        });
       }
     });
 
     const unsubStageProgress = wsClient.on("publish_progress", (data: unknown) => {
       const payload = data as PublishProgressPayload;
-      if (payload.pluginId === pluginId && payload.siteId === siteId) {
+      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompleted) {
         const stageName = payload.stage;
         
-        // Add log entry if provided
+        // Add log entry if provided (this is the PRIMARY log source — skip WS_EVENTS.LOG)
         if (payload.log) {
-          setLogs(prev => [...prev, payload.log!]);
+          addLog(payload.log);
         }
         
         setStages(prev => prev.map(s => {
@@ -268,17 +287,15 @@ export function PublishProgressDialog({
       }
     });
 
-    // Listen for log events specifically
-    const unsubLog = wsClient.on(WS_EVENTS.LOG, (data: unknown) => {
-      const payload = data as { pluginId?: number; siteId?: number; operationType?: string; log?: PublishLogEntry };
-      if (payload.operationType === "publish" && payload.pluginId === pluginId && payload.siteId === siteId && payload.log) {
-        setLogs(prev => [...prev, payload.log!]);
-      }
-    });
+    // DO NOT listen for WS_EVENTS.LOG separately — publish_progress already includes logs.
+    // This was causing every log to appear twice.
 
     const unsubComplete = wsClient.on(WS_EVENTS.PUBLISH_COMPLETE, (data: unknown) => {
       const payload = data as PublishCompletePayload & { status?: string; message?: string };
-      if (payload.pluginId === pluginId && payload.siteId === siteId) {
+      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompleted) {
+        // Mark complete — ignore any further events for this publish cycle
+        publishCompleted = true;
+        
         const wasSuccessful = payload.isSuccess ?? payload.success ?? (payload.status === "completed" || payload.status === "success");
         
         setIsComplete(true);
@@ -298,24 +315,23 @@ export function PublishProgressDialog({
         
         // Append any final logs
         if (payload.logs?.length) {
-          setLogs(prev => [...prev, ...payload.logs!]);
+          payload.logs.forEach(l => addLog(l));
         }
         
         // Add completion log
-        setLogs(prev => [...prev, {
+        addLog({
           timestamp: new Date().toISOString(),
           level: wasSuccessful ? 'info' : 'error',
           step: 'complete',
           message: wasSuccessful 
             ? `Publish completed successfully (${payload.filesUpdated || 0} files updated)`
             : `Publish failed: ${payload.error || payload.message || 'Unknown error'}`,
-        }]);
+        });
         
         // FORCE all stages (except version_check) to correct final state
         if (payload.stages) {
           setStages(payload.stages.map(s => ({
             ...s,
-            // Keep version_check pending — it runs after completion
             status: s.name === "version_check" ? "pending" : (wasSuccessful && s.status !== "skipped" ? "success" : s.status),
           })));
         } else {
@@ -347,21 +363,14 @@ export function PublishProgressDialog({
                     : `Version mismatch: remote=${newRemote || 'unknown'}, expected=${local}`
                 } : s
               ));
-              if (versionMatch) {
-                setLogs(prev => [...prev, {
-                  timestamp: new Date().toISOString(),
-                  level: 'info',
-                  step: 'version_check',
-                  message: `✓ Version verified: remote is now v${newRemote}`,
-                }]);
-              } else {
-                setLogs(prev => [...prev, {
-                  timestamp: new Date().toISOString(),
-                  level: 'warn',
-                  step: 'version_check',
-                  message: `⚠ Version mismatch: remote=${newRemote || 'unknown'}, expected=${local}. OPcache may need flushing.`,
-                }]);
-              }
+              addLog({
+                timestamp: new Date().toISOString(),
+                level: versionMatch ? 'info' : 'warn',
+                step: 'version_check',
+                message: versionMatch
+                  ? `✓ Version verified: remote is now v${newRemote}`
+                  : `⚠ Version mismatch: remote=${newRemote || 'unknown'}, expected=${local}. OPcache may need flushing.`,
+              });
             }
           }).catch(() => {
             setStages(prev => prev.map(s => 
@@ -377,7 +386,6 @@ export function PublishProgressDialog({
     return () => {
       unsubProgress();
       unsubStageProgress();
-      unsubLog();
       unsubComplete();
     };
   }, [open, pluginId, siteId, pluginName, siteName, onComplete]);
@@ -645,16 +653,10 @@ export function PublishProgressDialog({
             </ScrollArea>
           </TabsContent>
 
-          {/* Logs Tab - Filter verbose file-listing logs by default */}
+          {/* Logs Tab — verbose logs already filtered at accumulation */}
           <TabsContent value="logs" className="flex-1 overflow-hidden mt-4">
             <LogViewer
-              logs={logs.filter(l => {
-                // Hide verbose file-listing messages (e.g., "Adding file X", "Compressing file Y")
-                const msg = l.message.toLowerCase();
-                if (l.step === 'package' && (msg.includes('adding file') || msg.includes('compressing') || msg.includes('included in zip'))) return false;
-                if (l.step === 'file_list' || l.step === 'zip_contents') return false;
-                return true;
-              })}
+              logs={logs}
               title="Execution Logs"
               height="h-[300px]"
               showToggle={false}
