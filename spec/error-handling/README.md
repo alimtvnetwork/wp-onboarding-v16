@@ -430,13 +430,14 @@ The API client's `parseEnvelope` detects failed responses and extracts:
 
 ```typescript
 // In parseEnvelope() or buildCapturedError()
-if (envelope.Errors?.DelegatedRequestServer) {
-  captured.delegatedRequestServer = envelope.Errors.DelegatedRequestServer;
-  
-  // Also populate legacy fields for backward compatibility
-  if (envelope.Errors.DelegatedRequestServer.StackTrace?.length) {
-    captured.delegatedServiceErrorStack = envelope.Errors.DelegatedRequestServer.StackTrace;
-  }
+if (envelope.Errors) {
+  captured.envelopeErrors = {
+    BackendMessage: envelope.Errors.BackendMessage,
+    DelegatedServiceErrorStack: envelope.Errors.DelegatedServiceErrorStack,
+    Backend: envelope.Errors.Backend,
+    Frontend: envelope.Errors.Frontend,
+    DelegatedRequestServer: envelope.Errors.DelegatedRequestServer,
+  };
 }
 ```
 
@@ -463,7 +464,7 @@ if (envelope.Errors?.DelegatedRequestServer) {
 
 ### Session Diagnostics Auto-Fetch
 
-When `sessionId` is present, the modal automatically fetches session-level diagnostics from `GET /api/v1/request-sessions/{id}`, merging deep Go/PHP/delegated stack traces into the Stack and Execution tabs.
+When `sessionId` is present, the modal automatically fetches session-level diagnostics from `GET /api/v1/sessions/{id}/diagnostics`, merging deep Go/PHP/delegated stack traces into the Stack and Execution tabs.
 
 ### Error Reporting Bundle
 
