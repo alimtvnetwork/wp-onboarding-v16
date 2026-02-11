@@ -26,6 +26,7 @@
   },
   "wordpress": {
     "timeoutSeconds": 30,
-    "maxRetries": 3
+    "maxRetries": 3,
+    "adminPageSlug": "your-plugin-slug"
   }
 }
