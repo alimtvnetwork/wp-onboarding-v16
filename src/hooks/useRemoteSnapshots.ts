@@ -33,6 +33,8 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       return (res.data || []) as SnapshotRecord[];
     },
     enabled,
+    retry: 1,
+    meta: { suppressGlobalError: true },
     refetchInterval: (query) => {
       const data = query.state.data as SnapshotRecord[] | undefined;
       if (!data) return false;
@@ -49,6 +51,8 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       return res.data as SnapshotSettings;
     },
     enabled,
+    retry: 1,
+    meta: { suppressGlobalError: true },
   });
 
   const providersQuery = useQuery({
@@ -59,6 +63,8 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       return (res.data || []) as SnapshotProviderInfo[];
     },
     enabled,
+    retry: 1,
+    meta: { suppressGlobalError: true },
   });
 
   const tablesQuery = useQuery({

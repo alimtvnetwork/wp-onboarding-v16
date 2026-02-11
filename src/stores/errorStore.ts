@@ -380,12 +380,14 @@ function buildCapturedError(input: BuildCapturedErrorInput): CapturedError {
   const ctx = input.envelopeContext || input.context;
   const requestedAt = typeof ctx?.requestedAt === 'string' ? ctx.requestedAt : undefined;
   const requestDelegatedAt = typeof ctx?.requestDelegatedAt === 'string' ? ctx.requestDelegatedAt : undefined;
+  const delegatedServer = ctx?.delegatedRequestServer as import('@/lib/api').DelegatedRequestServer | undefined;
   const envelopeErrors: EnvelopeErrors | undefined =
-    (ctx?.delegatedServiceErrorStack || ctx?.backendTrace)
+    (ctx?.delegatedServiceErrorStack || ctx?.backendTrace || delegatedServer)
       ? {
           BackendMessage: input.message,
           DelegatedServiceErrorStack: Array.isArray(ctx?.delegatedServiceErrorStack) ? ctx.delegatedServiceErrorStack as string[] : undefined,
           Backend: Array.isArray(ctx?.backendTrace) ? ctx.backendTrace as string[] : undefined,
+          DelegatedRequestServer: delegatedServer || undefined,
         }
       : undefined;
   const envelopeMethodsStack = ctx?.methodsStack as EnvelopeMethodsStack | undefined;

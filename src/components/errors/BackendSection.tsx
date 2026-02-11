@@ -41,6 +41,8 @@ export function BackendSection({
 
   const envelopeBackendStack = error.envelopeErrors?.Backend;
   const envelopeDelegatedStack = error.envelopeErrors?.DelegatedServiceErrorStack;
+  const delegatedServer = error.envelopeErrors?.DelegatedRequestServer;
+  const delegatedStackTrace = delegatedServer?.StackTrace;
   const envelopeMethodsBackend = error.envelopeMethodsStack?.Backend;
 
   const sessionGoFrames = sessionDiag?.stackTrace?.golang;
@@ -50,6 +52,7 @@ export function BackendSection({
     || !!error.backendStackTrace 
     || (envelopeBackendStack && envelopeBackendStack.length > 0)
     || (envelopeDelegatedStack && envelopeDelegatedStack.length > 0)
+    || (delegatedStackTrace && delegatedStackTrace.length > 0)
     || (sessionGoFrames && sessionGoFrames.length > 0)
     || (sessionPhpFrames && sessionPhpFrames.length > 0)
     || !!sessionDiag?.phpStackTraceLog;
@@ -486,6 +489,54 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
           </ScrollArea>
         </div>
       )}
+
+      {/* DelegatedRequestServer.StackTrace — PHP stack from the delegated 3rd-party server */}
+      {error.envelopeErrors?.DelegatedRequestServer?.StackTrace && error.envelopeErrors.DelegatedRequestServer.StackTrace.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              PHP Stack Trace — Delegated Server ({error.envelopeErrors.DelegatedRequestServer.StackTrace.length} frames)
+              {error.envelopeErrors.DelegatedRequestServer.DelegatedEndpoint && (
+                <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono truncate max-w-[250px]">
+                  {error.envelopeErrors.DelegatedRequestServer.DelegatedEndpoint}
+                </code>
+              )}
+            </h4>
+            <Button variant="ghost" size="sm" onClick={() => copySection("Delegated PHP stack", error.envelopeErrors!.DelegatedRequestServer!.StackTrace!.join('\n'))}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          {error.envelopeErrors.DelegatedRequestServer.StatusCode && (
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant={error.envelopeErrors.DelegatedRequestServer.StatusCode >= 400 ? "destructive" : "secondary"} className="text-xs">
+                {error.envelopeErrors.DelegatedRequestServer.Method} {error.envelopeErrors.DelegatedRequestServer.StatusCode}
+              </Badge>
+              {error.envelopeErrors.DelegatedRequestServer.AdditionalMessages && (
+                <span className="text-xs text-muted-foreground truncate">{error.envelopeErrors.DelegatedRequestServer.AdditionalMessages}</span>
+              )}
+            </div>
+          )}
+          <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
+            <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all text-orange-700 dark:text-orange-300">
+              {error.envelopeErrors.DelegatedRequestServer.StackTrace.join('\n')}
+            </pre>
+          </ScrollArea>
+          {error.envelopeErrors.DelegatedRequestServer.Response && (
+            <details className="mt-2">
+              <summary className="text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground">
+                PHP Response Body
+              </summary>
+              <pre className="text-xs p-3 font-mono whitespace-pre-wrap break-all mt-1 rounded-md border bg-muted">
+                {typeof error.envelopeErrors.DelegatedRequestServer.Response === 'string'
+                  ? error.envelopeErrors.DelegatedRequestServer.Response
+                  : JSON.stringify(error.envelopeErrors.DelegatedRequestServer.Response, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
+
 
       {phpStackFrames.length > 0 && (
         <div>

@@ -196,6 +196,7 @@ export default function RequestSessions() {
           s.path.toLowerCase().includes(q) ||
           s.method.toLowerCase().includes(q) ||
           s.id.toLowerCase().includes(q) ||
+          (s.title && s.title.toLowerCase().includes(q)) ||
           (s.error && s.error.toLowerCase().includes(q))
         );
       }
@@ -425,7 +426,7 @@ export default function RequestSessions() {
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
                                   {getMethodBadge(session.method)}
-                                  <span className="font-mono text-sm truncate">{session.path}</span>
+                                  <span className="font-mono text-sm truncate">{session.title || session.path}</span>
                                 </div>
                                 <Badge
                                   variant="outline"
@@ -434,6 +435,11 @@ export default function RequestSessions() {
                                   {session.statusCode}
                                 </Badge>
                               </div>
+                              {session.title && (
+                                <div className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
+                                  {session.path}
+                                </div>
+                              )}
                               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
@@ -465,13 +471,18 @@ export default function RequestSessions() {
             <>
               <CardHeader className="pb-3 flex-shrink-0">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    {getMethodBadge(detail.method)}
-                    <span className="font-mono">{detail.path}</span>
-                    {detail.query && (
-                      <span className="text-muted-foreground font-mono text-sm">?{detail.query}</span>
+                  <div className="min-w-0">
+                    {detail.title && (
+                      <p className="text-sm font-semibold text-foreground mb-0.5">{detail.title}</p>
                     )}
-                  </CardTitle>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      {getMethodBadge(detail.method)}
+                      <span className="font-mono">{detail.path}</span>
+                      {detail.query && (
+                        <span className="text-muted-foreground font-mono text-sm">?{detail.query}</span>
+                      )}
+                    </CardTitle>
+                  </div>
                   <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
