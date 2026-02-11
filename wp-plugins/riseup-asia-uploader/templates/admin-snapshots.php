@@ -304,32 +304,119 @@ jQuery(document).ready(function($) {
     var $status = $('#snapshot_action_status');
     var currentPage = 1;
     var currentRestoreId = null;
+    var isInitialLoad = true;
 
     // Status helper
     function showStatus($el, message, isError) {
         $el.html(message).css('color', isError ? '#d63638' : '#00a32a').show();
-        setTimeout(function() { $el.fadeOut(); }, 5000);
+        setTimeout(function() { $el.fadeOut(); }, 8000);
     }
 
-    // Format file size
-    function formatBytes(bytes) {
-        if (!bytes || bytes === 0) return '0 B';
-        var k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
-        var i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-    }
+    /**
+     * Extract detailed error info from an API error response.
+     * Returns an object with message, stack trace, and copy-able diagnostic text.
+     */
+    function extractErrorDetails(xhr) {
+        var resp = xhr.responseJSON || {};
+        var status = xhr.status || 0;
+        var msg = resp.message || resp.Status && resp.Status.Message || 'Unknown error';
+        var pluginVersion = resp.plugin_version || resp.Status && resp.Status.PluginVersion || '?';
+        var timestamp = resp.timestamp || new Date().toISOString();
+        var logHint = resp.log_hint || '';
+        var stackTrace = '';
+        var backendErrors = '';
 
-    // Status badge
-    function statusBadge(status) {
-        var colors = {
-            'complete': '#00a32a', 'running': '#2271b1', 'pending': '#dba617',
-            'scheduled': '#2271b1', 'failed': '#d63638'
+        // Extract stack trace from enriched error responses
+        if (resp.Errors) {
+            if (resp.Errors.DelegatedServiceErrorStack && resp.Errors.DelegatedServiceErrorStack.length) {
+                stackTrace = resp.Errors.DelegatedServiceErrorStack.join('\n');
+            }
+            if (resp.Errors.BackendMessage) {
+                backendErrors = resp.Errors.BackendMessage;
+            }
+            if (resp.Errors.Backend && resp.Errors.Backend.length) {
+                stackTrace = stackTrace || resp.Errors.Backend.join('\n');
+            }
+        }
+
+        // Also check WP standard error data for stack trace
+        if (resp.data && resp.data.stack_trace) {
+            stackTrace = stackTrace || resp.data.stack_trace;
+        }
+
+        // Build copy-to-clipboard diagnostic text
+        var diagnostic = '## Error Report\n\n';
+        diagnostic += '**Status:** ' + status + '\n';
+        diagnostic += '**Message:** ' + msg + '\n';
+        diagnostic += '**Plugin Version:** ' + pluginVersion + '\n';
+        diagnostic += '**Timestamp:** ' + timestamp + '\n';
+        if (backendErrors) {
+            diagnostic += '**Backend:** ' + backendErrors + '\n';
+        }
+        if (logHint) {
+            diagnostic += '**Log Hint:** ' + logHint + '\n';
+        }
+        if (stackTrace) {
+            diagnostic += '\n**Stack Trace:**\n```\n' + stackTrace + '\n```\n';
+        }
+
+        return {
+            message: msg,
+            status: status,
+            pluginVersion: pluginVersion,
+            timestamp: timestamp,
+            logHint: logHint,
+            stackTrace: stackTrace,
+            backendErrors: backendErrors,
+            diagnostic: diagnostic
         };
-        var color = colors[status] || '#666';
-        return '<span class="riseup-badge" style="background:' + color + ';">' + status + '</span>';
     }
 
-    // Load snapshots
+    /**
+     * Show a rich error status with Copy button and optional Check Logs link.
+     */
+    function showErrorStatus($el, xhr, contextLabel) {
+        var err = extractErrorDetails(xhr);
+        var label = contextLabel ? contextLabel + ': ' : '';
+        var html = '<span style="color:#d63638;">✗ ' + label + err.message + '</span>';
+        html += ' <button type="button" class="button button-small btn-copy-error" title="Copy diagnostic to clipboard" style="margin-left:6px;">';
+        html += '<span class="dashicons dashicons-clipboard" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Copy</button>';
+        if (err.logHint) {
+            html += ' <a href="<?php echo esc_url(admin_url('admin.php?page=riseup-asia-uploader-logs')); ?>" class="button button-small" style="margin-left:4px;" title="' + err.logHint + '">';
+            html += '<span class="dashicons dashicons-list-view" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Check Logs</a>';
+        }
+        $el.html(html).show();
+
+        // Store diagnostic data on the element for copy
+        $el.data('diagnostic', err.diagnostic);
+
+        // Auto-hide after 15 seconds for errors
+        setTimeout(function() { $el.fadeOut(); }, 15000);
+    }
+
+    // Copy error diagnostic to clipboard
+    $(document).on('click', '.btn-copy-error', function(e) {
+        e.preventDefault();
+        var $statusEl = $(this).closest('.riseup-inline-status, #snapshot_action_status, #settings_status');
+        var diagnostic = $statusEl.data('diagnostic') || 'No diagnostic data available.';
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(diagnostic).then(function() {
+                var $btn = $(e.target).closest('.btn-copy-error');
+                $btn.text('Copied!');
+                setTimeout(function() {
+                    $btn.html('<span class="dashicons dashicons-clipboard" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Copy');
+                }, 2000);
+            });
+        } else {
+            // Fallback for older browsers
+            var $temp = $('<textarea>').val(diagnostic).appendTo('body').select();
+            document.execCommand('copy');
+            $temp.remove();
+        }
+    });
+
+    // Load snapshots — uses the correct snapshots/list endpoint
     function loadSnapshots(page) {
         page = page || 1;
         currentPage = page;
@@ -340,13 +427,14 @@ jQuery(document).ready(function($) {
         $('#snapshots_table, #snapshots_empty, #snapshots_pagination').hide();
 
         $.ajax({
-            url: restBase + '/snapshots?limit=' + limit + '&offset=' + offset,
+            url: restBase + '/snapshots/list?limit=' + limit + '&offset=' + offset,
             method: 'GET',
             beforeSend: function(xhr) {
                 xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
             },
             success: function(response) {
                 $('#snapshots_loading').hide();
+                isInitialLoad = false;
                 var snapshots = response.snapshots || [];
 
                 if (snapshots.length === 0 && page === 1) {
@@ -401,7 +489,13 @@ jQuery(document).ready(function($) {
             },
             error: function(xhr) {
                 $('#snapshots_loading').hide();
-                showStatus($status, '✗ Failed to load snapshots', true);
+                // On initial load, don't show error — just show the empty state
+                if (isInitialLoad) {
+                    isInitialLoad = false;
+                    $('#snapshots_empty').show();
+                    return;
+                }
+                showErrorStatus($status, xhr, 'Failed to load snapshots');
             }
         });
     }
@@ -423,7 +517,13 @@ jQuery(document).ready(function($) {
                 if (settings.default_scope) $('#setting_scope').val(settings.default_scope);
                 if (settings.default_provider) $('#setting_provider').val(settings.default_provider);
             },
-            error: function() {
+            error: function(xhr) {
+                // On initial load, just show the form with defaults — don't scream errors
+                if (isInitialLoad || xhr.status === 404) {
+                    $('#settings_loading').hide();
+                    $('#settings_form').show();
+                    return;
+                }
                 $('#settings_loading').html('<em>Failed to load settings.</em>');
             }
         });
@@ -454,7 +554,11 @@ jQuery(document).ready(function($) {
                 html += '</tbody></table>';
                 $('#providers_list').html(html).show();
             },
-            error: function() {
+            error: function(xhr) {
+                if (isInitialLoad || xhr.status === 404) {
+                    $('#providers_loading').html('<em>No providers detected yet.</em>');
+                    return;
+                }
                 $('#providers_loading').html('<em>Failed to detect providers.</em>');
             }
         });
@@ -529,8 +633,7 @@ jQuery(document).ready(function($) {
                 loadSnapshots(1);
             },
             error: function(xhr) {
-                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Snapshot creation failed';
-                showStatus($status, '✗ ' + msg, true);
+                showErrorStatus($status, xhr, 'Snapshot creation failed');
             },
             complete: function() {
                 $btn.prop('disabled', false);
@@ -579,8 +682,7 @@ jQuery(document).ready(function($) {
                 loadSnapshots(1);
             },
             error: function(xhr) {
-                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Import failed';
-                showStatus($status, '✗ ' + msg, true);
+                showErrorStatus($status, xhr, 'Import failed');
             },
             complete: function() {
                 $btn.prop('disabled', false).html('<span class="dashicons dashicons-upload"></span> Upload & Import');
@@ -611,17 +713,18 @@ jQuery(document).ready(function($) {
         currentRestoreId = null;
     });
 
-    // Confirm restore
+    // Confirm restore — uses snapshots/restore with ID in body
     $('#btn_confirm_restore').on('click', function() {
         if (!currentRestoreId) return;
         var $btn = $(this);
         $btn.prop('disabled', true).text('Restoring...');
 
         $.ajax({
-            url: restBase + '/snapshots/' + currentRestoreId + '/restore',
+            url: restBase + '/snapshots/restore',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
+                id: currentRestoreId,
                 confirm: true,
                 mode: $('#restore_mode').val(),
                 create_backup: $('#restore_create_backup').is(':checked')
@@ -635,8 +738,7 @@ jQuery(document).ready(function($) {
                 loadSnapshots(currentPage);
             },
             error: function(xhr) {
-                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Restore failed';
-                showStatus($status, '✗ ' + msg, true);
+                showErrorStatus($status, xhr, 'Restore failed');
             },
             complete: function() {
                 $btn.prop('disabled', false).html('<span class="dashicons dashicons-database-import"></span> Restore Now');
@@ -645,13 +747,49 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // Export button
+    // Export button — uses snapshots/export with ID in body via POST
     $(document).on('click', '.btn-export', function() {
         var id = $(this).data('id');
-        window.open(restBase + '/snapshots/' + id + '/export?_wpnonce=<?php echo wp_create_nonce('wp_rest'); ?>', '_blank');
+        // POST to snapshots/export with ID in body, handle as blob download
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+        $.ajax({
+            url: restBase + '/snapshots/export',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id }),
+            xhrFields: { responseType: 'blob' },
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
+            },
+            success: function(blob, status, xhr) {
+                // Extract filename from Content-Disposition header if available
+                var filename = 'snapshot-' + id + '.zip';
+                var disposition = xhr.getResponseHeader('Content-Disposition');
+                if (disposition && disposition.indexOf('filename=') !== -1) {
+                    var matches = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                    if (matches && matches[1]) filename = matches[1].replace(/['"]/g, '');
+                }
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                showStatus($status, '✓ Export downloaded', false);
+            },
+            error: function(xhr) {
+                showErrorStatus($status, xhr, 'Export failed');
+            },
+            complete: function() {
+                $btn.prop('disabled', false);
+            }
+        });
     });
 
-    // Delete button
+    // Delete button — uses snapshots/delete with ID in body via POST
     $(document).on('click', '.btn-delete-snapshot', function() {
         var id = $(this).data('id');
         if (!confirm('<?php esc_html_e('Are you sure you want to delete this snapshot? This cannot be undone.', 'riseup-asia-uploader'); ?>')) {
@@ -659,8 +797,10 @@ jQuery(document).ready(function($) {
         }
 
         $.ajax({
-            url: restBase + '/snapshots/' + id,
-            method: 'DELETE',
+            url: restBase + '/snapshots/delete',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id }),
             beforeSend: function(xhr) {
                 xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
             },
@@ -669,8 +809,7 @@ jQuery(document).ready(function($) {
                 loadSnapshots(currentPage);
             },
             error: function(xhr) {
-                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Delete failed';
-                showStatus($status, '✗ ' + msg, true);
+                showErrorStatus($status, xhr, 'Delete failed');
             }
         });
     });
@@ -711,8 +850,7 @@ jQuery(document).ready(function($) {
                 showStatus($('#settings_status'), '✓ Settings saved', false);
             },
             error: function(xhr) {
-                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Save failed';
-                showStatus($('#settings_status'), '✗ ' + msg, true);
+                showErrorStatus($('#settings_status'), xhr, 'Save failed');
             },
             complete: function() {
                 $btn.prop('disabled', false);
