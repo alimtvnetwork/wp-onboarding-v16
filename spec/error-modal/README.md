@@ -106,7 +106,7 @@ export interface CapturedError {
   context?: Record<string, unknown>;       // Arbitrary context data
 
   // === API Request Context ===
-  endpoint?: string;                       // API endpoint path (e.g., "/api/v1/plugins/enable")
+  endpoint?: string;                       // API endpoint path (e.g., "http://localhost:8080/api/v1/plugins/enable")
   method?: string;                         // HTTP method (GET, POST, etc.)
   requestBody?: unknown;                   // JSON request body sent
   responseStatus?: number;                 // HTTP response status code
@@ -365,7 +365,7 @@ The Universal Response Envelope provides six top-level blocks. The error modal c
 ```json
 {
   "Attributes": {
-    "RequestedAt": "/api/v1/plugins/enable",
+    "RequestedAt": "http://localhost:8080/api/v1/plugins/enable",
     "RequestDelegatedAt": "https://example.com/wp-json/riseup-asia-uploader/v1/enable",
     "SessionId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "HasAnyErrors": true
@@ -594,7 +594,7 @@ GlobalErrorModal.tsx
 │  ┌─ Call Chain ───────────────────────────────────────────────┐  │
 │  │  PluginsPage                                                │  │
 │  │    └─ usePluginActions.enable                               │  │
-│  │        └─ api.post("/api/v1/plugins/enable")                │  │
+│  │        └─ api.post("http://localhost:8080/api/v1/plugins/enable")                │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  ┌─ User Interaction Path (last 10 clicks) ───────────────────┐  │

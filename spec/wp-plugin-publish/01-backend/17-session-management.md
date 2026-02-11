@@ -173,7 +173,7 @@ sessionService.SetMetadata(sessionID, key string, value interface{})
 ```json
 {
   "request": {
-    "url": "/api/v1/sites/1/remote-plugins/disable",
+    "url": "http://localhost:8080/api/v1/sites/1/remote-plugins/disable",
     "method": "POST",
     "body": { "siteId": 1, "pluginSlug": "akismet/akismet.php", "action": "disable" }
   },

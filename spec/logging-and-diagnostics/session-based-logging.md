@@ -180,7 +180,7 @@ type DelegatedRequestInfo struct {
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "method": "GET",
-  "path": "/api/v1/sites/1/snapshots/settings",
+  "path": "http://localhost:8080/api/v1/sites/1/snapshots/settings",
   "queryString": "",
   "requestHeaders": {
     "content-type": "application/json",
