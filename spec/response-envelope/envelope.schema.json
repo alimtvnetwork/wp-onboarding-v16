@@ -148,7 +148,7 @@
         "DelegatedServiceErrorStack": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Stack trace lines from downstream PHP/other services."
+          "description": "Stack trace lines from downstream PHP/other services. Legacy field — prefer DelegatedRequestServer for structured data."
         },
         "Backend": {
           "type": "array",
@@ -159,6 +159,13 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "Reserved for frontend-injected error context."
+        },
+        "DelegatedRequestServer": {
+          "oneOf": [
+            { "$ref": "#/$defs/DelegatedRequestServer" },
+            { "type": "null" }
+          ],
+          "description": "Structured error details from the delegated downstream server (PHP, Chrome extension, or any 3rd-party). Present only when the Go backend proxied a request that failed."
         }
       }
     },
@@ -197,6 +204,50 @@
         "LineNumber": {
           "type": "integer",
           "description": "Line number in the source file."
+        }
+      }
+    },
+
+    "DelegatedRequestServer": {
+      "type": "object",
+      "required": ["DelegatedEndpoint", "Method", "StatusCode"],
+      "additionalProperties": false,
+      "description": "Structured error details from a downstream delegated server (PHP/WordPress, Chrome extension, or any 3rd-party service). Populated when the Go backend proxied a request that failed.",
+      "properties": {
+        "DelegatedEndpoint": {
+          "type": "string",
+          "description": "Exact URL of the downstream endpoint that was called."
+        },
+        "Method": {
+          "type": "string",
+          "description": "HTTP method used for the delegated request (GET, POST, etc.)."
+        },
+        "StatusCode": {
+          "type": "integer",
+          "description": "HTTP status code returned by the delegated server."
+        },
+        "RequestBody": {
+          "description": "Request body sent to the delegated server. Null for GET requests.",
+          "oneOf": [
+            { "type": "object" },
+            { "type": "null" }
+          ]
+        },
+        "Response": {
+          "description": "Full response body from the delegated server. Should include stacktrace if the delegated server supports structured error responses.",
+          "oneOf": [
+            { "type": "object" },
+            { "type": "null" }
+          ]
+        },
+        "StackTrace": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Stack trace lines from the delegated server (e.g., PHP backtrace, Node.js stack)."
+        },
+        "AdditionalMessages": {
+          "type": "string",
+          "description": "Human-readable context or diagnostic message about the delegated error."
         }
       }
     }
