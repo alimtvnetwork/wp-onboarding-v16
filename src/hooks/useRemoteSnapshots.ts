@@ -239,6 +239,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     refetch: snapshotsQuery.refetch,
     hasRunningSnapshots,
     settings: settingsQuery.data,
+    settingsDataUpdatedAt: settingsQuery.dataUpdatedAt,
     isLoadingSettings: settingsQuery.isLoading,
     providers: providersQuery.data || [],
     isLoadingProviders: providersQuery.isLoading,
