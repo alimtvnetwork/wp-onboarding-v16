@@ -481,6 +481,10 @@ export interface SnapshotSettings {
   retention_max?: number;
   pre_restore_backup: boolean;
   batch_size?: number;
+  // Multi-schedule & parallel execution (synced with global settings)
+  schedules?: SnapshotSchedule[];
+  storage_mode?: "single" | "per-table";
+  worker_count?: number;
 }
 
 export interface SnapshotProviderInfo {
