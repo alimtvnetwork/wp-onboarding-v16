@@ -69,16 +69,16 @@ export const api = {
   deleteSite: (id: number) =>
     request<void>(`/sites/${id}`, { method: "DELETE" }),
   testConnection: (id: number) =>
-    request<{ success: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>(`/sites/${id}/test`, { method: "POST" }),
+    request<{ isSuccess: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>(`/sites/${id}/test`, { method: "POST" }),
   testCredentials: (credentials: { url: string; username: string; password: string }) =>
-    request<{ success: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>("/sites/test", { method: "POST", body: JSON.stringify(credentials) }),
+    request<{ isSuccess: boolean; wpVersion?: string; message?: string; siteName?: string; canManagePlugins?: boolean }>("/sites/test", { method: "POST", body: JSON.stringify(credentials) }),
   bootstrapUploader: (siteId: number, uploaderPath?: string) =>
-    request<{ success: boolean; siteId: number; siteName: string; message: string; activated: boolean }>(
+    request<{ isSuccess: boolean; siteId: number; siteName: string; message: string; isActivated: boolean }>(
       `/sites/${siteId}/bootstrap-uploader`,
       { method: "POST", body: JSON.stringify({ uploaderPath }) }
     ),
   bulkBootstrapUploader: (siteIds: number[], uploaderPath?: string) =>
-    request<{ results: Array<{ siteId: number; siteName: string; success: boolean; message: string; activated?: boolean; error?: string }> }>(
+    request<{ results: Array<{ siteId: number; siteName: string; isSuccess: boolean; message: string; isActivated?: boolean; error?: string }> }>(
       `/sites/bulk-bootstrap-uploader`,
       { method: "POST", body: JSON.stringify({ siteIds, uploaderPath }) }
     ),
@@ -261,7 +261,7 @@ export const api = {
 
   // Git operations
   gitPull: (pluginId: number) =>
-    request<{ success: boolean; filesChanged: number; commitHash: string; branch: string }>(
+    request<{ isSuccess: boolean; filesChanged: number; commitHash: string; branch: string }>(
       `/plugins/${pluginId}/git/pull`, { method: "POST" }
     ),
   gitPullAll: () =>
@@ -280,11 +280,11 @@ export const api = {
       lastCommit?: string;
     }>(`/plugins/${pluginId}/git/status`),
   gitCommit: (pluginId: number, message: string) =>
-    request<{ success: boolean; commitHash: string }>(
+    request<{ isSuccess: boolean; commitHash: string }>(
       `/plugins/${pluginId}/git/commit`, { method: "POST", body: JSON.stringify({ message }) }
     ),
   gitPush: (pluginId: number) =>
-    request<{ success: boolean; pushed: number }>(
+    request<{ isSuccess: boolean; pushed: number }>(
       `/plugins/${pluginId}/git/push`, { method: "POST" }
     ),
 
@@ -367,7 +367,7 @@ export const api = {
       filesDeleted: number;
       filesIgnored: number;
       totalChanges: number;
-      success: boolean;
+      isSuccess: boolean;
       errorMessage?: string;
     }>(`/plugins/${pluginId}/sites/${siteId}/sync/push`, { method: "POST" }),
   checkAllSites: (pluginId: number) =>
@@ -404,7 +404,7 @@ export const api = {
   // Backups
   getBackups: (pluginId: number) => request<Backup[]>(`/plugins/${pluginId}/backups`),
   restoreBackup: (backupId: number) =>
-    request<{ success: boolean }>(`/backups/${backupId}/restore`, { method: "POST" }),
+    request<{ isSuccess: boolean }>(`/backups/${backupId}/restore`, { method: "POST" }),
   deleteBackup: (backupId: number) =>
     request<void>(`/backups/${backupId}`, { method: "DELETE" }),
 
@@ -427,7 +427,7 @@ export const api = {
   getPluginVersion: (pluginId: number, versionId: number) =>
     request<PluginVersion>(`/plugins/${pluginId}/versions/${versionId}`),
   rollbackPluginVersion: (pluginId: number, versionId: number) =>
-    request<{ success: boolean; version: string; rolledBackAt: string }>(
+    request<{ isSuccess: boolean; version: string; rolledBackAt: string }>(
       `/plugins/${pluginId}/versions/${versionId}/rollback`, { method: "POST" }
     ),
   deletePluginVersion: (pluginId: number, versionId: number) =>

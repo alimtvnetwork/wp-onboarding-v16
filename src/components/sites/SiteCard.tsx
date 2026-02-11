@@ -58,7 +58,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     setTestingSiteId(site.id);
     try {
       const response = await api.testConnection(site.id);
-      if (response.success && response.data?.success) {
+      if (response.success && response.data?.isSuccess) {
         toast.success(`Connection successful! WP ${response.data.wpVersion}`);
         queryClient.invalidateQueries({ queryKey: ["sites"] });
       } else if (response.error) {
@@ -89,9 +89,9 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     setDeployingUploader(true);
     try {
       const response = await api.bootstrapUploader(site.id);
-      if (response.success && response.data?.success) {
+      if (response.success && response.data?.isSuccess) {
         toast.success("Riseup Asia Uploader deployed!", {
-          description: response.data.activated ? "Plugin is active" : "Plugin uploaded but not activated",
+          description: response.data.isActivated ? "Plugin is active" : "Plugin uploaded but not activated",
         });
         queryClient.invalidateQueries({ queryKey: ["sites"] });
       } else if (response.error) {

@@ -337,6 +337,7 @@ export interface Settings {
     retentionDays: number;
     debugMode: boolean;
     frontendDebugMode?: boolean;
+    showZipFileTreeInLogs?: boolean;
     retryMaxAttempts?: number;
     retryInitialDelayMs?: number;
     circuitBreakerThreshold?: number;

@@ -15,9 +15,9 @@ import { toast } from "sonner";
 interface DeploySiteResult {
   siteId: number;
   siteName: string;
-  success: boolean;
+  isSuccess: boolean;
   message: string;
-  activated?: boolean;
+  isActivated?: boolean;
   error?: string;
 }
 
@@ -87,7 +87,7 @@ export function DeployUploaderDialog({
       const deployResults = await onDeploy(siteIds);
       setResults(deployResults);
       
-      const succeeded = deployResults.filter((r) => r.success).length;
+      const succeeded = deployResults.filter((r) => r.isSuccess).length;
       const failed = deployResults.length - succeeded;
 
       setLogs((prev) => [
@@ -197,7 +197,7 @@ export function DeployUploaderDialog({
                     >
                       <span className="text-sm">{site.name}</span>
                       {result && (
-                        result.success ? (
+                        result.isSuccess ? (
                           <CheckCircle className="h-4 w-4 text-primary" />
                         ) : (
                           <XCircle className="h-4 w-4 text-destructive" />
@@ -221,13 +221,13 @@ export function DeployUploaderDialog({
                     <div
                       key={result.siteId}
                       className={`p-2 rounded text-sm ${
-                        result.success ? "bg-primary/10" : "bg-destructive/10"
+                        result.isSuccess ? "bg-primary/10" : "bg-destructive/10"
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{result.siteName}</span>
-                        <span className={result.success ? "text-primary" : "text-destructive"}>
-                          {result.success ? "Success" : "Failed"}
+                        <span className={result.isSuccess ? "text-primary" : "text-destructive"}>
+                          {result.isSuccess ? "Success" : "Failed"}
                         </span>
                       </div>
                       {result.error && (

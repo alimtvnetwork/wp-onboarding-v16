@@ -15,12 +15,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
-import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Settings2, ListChecks, Terminal, Activity } from "lucide-react";
+import { Check, X, Upload, AlertCircle, ExternalLink, Copy, Settings2, ListChecks, Terminal, Activity, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useErrorStore, BackendLogEntry } from "@/stores/errorStore";
 import { toast } from "sonner";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import { ActivationDiagnostics } from "@/components/plugins/ActivationDiagnostics";
+import { api } from "@/lib/api";
+import { compareVersions } from "@/lib/versionUtils";
 
 export interface PublishStage {
   name: string;
@@ -49,7 +51,9 @@ interface PublishCompletePayload {
   publishId: string;
   pluginId: number;
   siteId: number;
-  success: boolean;
+  /** @deprecated Use isSuccess instead */
+  success?: boolean;
+  isSuccess?: boolean;
   filesUpdated?: number;
   error?: string;
   stages: PublishStage[];
@@ -154,6 +158,10 @@ export function PublishProgressDialog({
   const [backendStackTrace, setBackendStackTrace] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("progress");
   
+  // Version info
+  const [localVersion, setLocalVersion] = useState<string | null>(null);
+  const [remoteVersion, setRemoteVersion] = useState<string | null>(null);
+  
   // Live logs
   const [logs, setLogs] = useState<PublishLogEntry[]>([]);
   
@@ -179,7 +187,7 @@ export function PublishProgressDialog({
     }
   });
 
-  // Reset state when dialog opens
+  // Reset state when dialog opens & fetch version info
   useEffect(() => {
     if (open) {
       setStages(DEFAULT_STAGES.map(s => ({ ...s, status: "pending" })));
@@ -191,8 +199,20 @@ export function PublishProgressDialog({
       setBackendStackTrace(null);
       setLogs([]);
       setActiveTab("progress");
+      setLocalVersion(null);
+      setRemoteVersion(null);
+      
+      // Fetch version info
+      if (pluginId && siteId) {
+        api.previewPublish(pluginId, siteId).then(response => {
+          if (response.success && response.data) {
+            setLocalVersion(response.data.localVersion || null);
+            setRemoteVersion(response.data.remoteVersion || null);
+          }
+        }).catch(() => { /* version info is optional */ });
+      }
     }
-  }, [open]);
+  }, [open, pluginId, siteId]);
 
   // Listen for WebSocket events
   useEffect(() => {
@@ -257,7 +277,7 @@ export function PublishProgressDialog({
     const unsubComplete = wsClient.on(WS_EVENTS.PUBLISH_COMPLETE, (data: unknown) => {
       const payload = data as PublishCompletePayload & { status?: string; message?: string };
       if (payload.pluginId === pluginId && payload.siteId === siteId) {
-        const wasSuccessful = payload.success ?? (payload.status === "completed" || payload.status === "success");
+        const wasSuccessful = payload.isSuccess ?? payload.success ?? (payload.status === "completed" || payload.status === "success");
         
         setIsComplete(true);
         setIsSuccess(wasSuccessful);
@@ -343,6 +363,23 @@ export function PublishProgressDialog({
           </DialogTitle>
           <DialogDescription className="flex items-center gap-2 flex-wrap">
             <span>Deploying <strong>{pluginName}</strong> to <strong>{siteName}</strong></span>
+            {localVersion && (
+              <span className="inline-flex items-center gap-1.5 text-xs">
+                <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
+                  v{localVersion}
+                </Badge>
+                <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
+                {remoteVersion ? (
+                  <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
+                    v{remoteVersion}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] italic text-muted-foreground h-5 px-1.5">
+                    new
+                  </Badge>
+                )}
+              </span>
+            )}
             {siteUrl && (
               <a 
                 href={siteUrl} 
