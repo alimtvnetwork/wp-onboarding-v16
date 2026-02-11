@@ -1,15 +1,17 @@
 # Error Handling — Cross-Stack Specification
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-09  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-11  
 > **Status:** Active  
-> **Applies to:** Go backend, React/TypeScript frontend, PHP WordPress plugin
+> **Applies to:** Go backend, React/TypeScript frontend, PHP WordPress plugin, any delegated 3rd-party server
 
 ---
 
 ## Overview
 
-The project implements a **three-tier error handling architecture** spanning the full React → Go → PHP request chain. Every error is captured with structured diagnostics, stack traces, and contextual metadata to enable deep debugging from the frontend Global Error Modal.
+The project implements a **three-tier error handling architecture** spanning the full React → Go → Delegated Server (PHP/3rd-party) request chain. Every error is captured with structured diagnostics, stack traces, and contextual metadata to enable deep debugging from the frontend Global Error Modal.
+
+**v2.0.0 change:** Added `DelegatedRequestServer` structured error block — the Go backend now captures and propagates full request/response/stack details from any downstream server it proxies to.
 
 ---
 
@@ -26,6 +28,9 @@ The project implements a **three-tier error handling architecture** spanning the
 │         │ Envelope.Errors       │ executionChain                    │
 │         │ Envelope.MethodsStack │ clickPath                         │
 │         │ Envelope.SessionId    │ componentContext                  │
+│         │ Envelope.Errors       │                                    │
+│         │  .DelegatedRequest    │                                    │
+│         │   Server ◀────────── NEW (v2.0.0)                         │
 └─────────────────────────────────────────────────────────────────────┘
                               ▲
                               │ Universal Response Envelope
@@ -36,19 +41,64 @@ The project implements a **three-tier error handling architecture** spanning the
 │  │ + .WithContext() │    │ (per-request ID)  │    │ (deduped)     │   │
 │  └─────────────────┘    └──────────────────┘    └───────────────┘   │
 │         │                       │                                    │
-│         │ stack trace           │ fetchAndAttachRemotePHPErrors     │
-│         │ error code            │                                    │
+│         │ stack trace           │ buildDelegatedRequestServer()      │
+│         │ error code            │ fetchAndAttachRemotePHPErrors      │
+│         │                       │                                    │
+│         │ ┌─────────────────────────────────────────────────────┐    │
+│         │ │ DelegatedRequestServer Builder (NEW v2.0.0)         │    │
+│         │ │  • Captures: endpoint, method, statusCode           │    │
+│         │ │  • Captures: requestBody, response, stackTrace      │    │
+│         │ │  • Injects into Envelope.Errors block               │    │
+│         │ │  • Writes to error.log.txt "Delegated Server Info"  │    │
+│         │ └─────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
                               ▲
-                              │ REST API (JSON)
+                              │ REST API (JSON) — any downstream server
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     WordPress Plugin (PHP)                           │
+│              Delegated Server (PHP / Chrome Extension / Other)       │
 │  ┌─────────────────┐    ┌──────────────────┐    ┌───────────────┐   │
 │  │ safe_execute()  │───▸│ RiseupLogger      │───▸│ stacktrace.txt│   │
 │  │ catch Throwable │    │ (6-frame backtrace)│   │ fatal-errors  │   │
-│  └─────────────────┘    └──────────────────┘    │ error.txt     │   │
-│                                                  └───────────────┘   │
+│  │                 │    │                    │    │ error.txt     │   │
+│  │ OR any 3rd-party│    │ OR structured     │    │               │   │
+│  │ error format    │    │ error response     │    │               │   │
+│  └─────────────────┘    └──────────────────┘    └───────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
+```
+
+### Request Chain (3-Hop)
+
+```
+  React Frontend          Go Backend           Delegated Server
+       │                      │                      │
+       │  GET /api/v1/sites   │                      │
+       │  /1/snapshots/       │                      │
+       │  settings            │                      │
+       │─────────────────────▸│                      │
+       │                      │  GET /wp-json/       │
+       │                      │  riseup.../v1/       │
+       │                      │  snapshots/settings  │
+       │                      │─────────────────────▸│
+       │                      │                      │
+       │                      │  HTTP 403            │
+       │                      │  { code, message,    │
+       │                      │    stackTrace,       │
+       │                      │    plugin_version }  │
+       │                      │◀─────────────────────│
+       │                      │                      │
+       │                      │ Build envelope:      │
+       │                      │ • Errors.Backend[]   │
+       │                      │ • Errors.Delegated   │
+       │                      │   RequestServer{}    │
+       │                      │ • MethodsStack       │
+       │                      │                      │
+       │  HTTP 500            │                      │
+       │  Universal Envelope  │                      │
+       │◀─────────────────────│                      │
+       │                      │                      │
+       │ parseEnvelope()      │                      │
+       │ captureError()       │                      │
+       │ openErrorModal()     │                      │
 ```
 
 ---
@@ -81,6 +131,25 @@ The wrapper catches `\Throwable` (not just `Exception`) to capture PHP 7+ Errors
   ]
 }
 ```
+
+### REST API Error Enrichment
+
+The plugin uses a `rest_post_dispatch` filter to inject metadata into all error responses:
+
+```php
+add_filter('rest_post_dispatch', function($response, $server, $request) {
+    if ($response->is_error()) {
+        $data = $response->get_data();
+        $data['plugin_version'] = RISEUP_VERSION;
+        $data['timestamp'] = gmdate('c');
+        $data['log_hint'] = $this->get_log_hint($response->get_status());
+        $response->set_data($data);
+    }
+    return $response;
+}, 10, 3);
+```
+
+This ensures the Go backend always receives structured metadata when a delegated request fails.
 
 ### Logging Outputs
 
@@ -133,7 +202,110 @@ return apperror.New("E4001", "invalid plugin slug")
 
 **Forbidden:** `fmt.Errorf` for errors leaving a service (no stack trace).
 
-### Remote PHP Error Injection
+### DelegatedRequestServer Injection (NEW v2.0.0)
+
+When the Go backend proxies a request to any downstream server and the request fails (status ≥ 400), it builds a `DelegatedRequestServer` object and injects it into the envelope's `Errors` block.
+
+#### Construction Flow
+
+```go
+// In the HTTP client wrapper (e.g., wordpress.(*Client).doRequest)
+func (c *Client) doRequest(ctx context.Context, method, url string, body interface{}) (*http.Response, error) {
+    // ... execute request ...
+    
+    if resp.StatusCode >= 400 {
+        // Build DelegatedRequestServer from the failed response
+        delegated := &DelegatedRequestServer{
+            DelegatedEndpoint:  url,
+            Method:             method,
+            StatusCode:         resp.StatusCode,
+            RequestBody:        body,        // what we sent
+            Response:           respBody,    // what they returned (parsed JSON)
+            StackTrace:         extractStackTrace(respBody),  // from response if available
+            AdditionalMessages: extractMessage(respBody),
+        }
+        
+        // Attach to the request context for envelope builder to pick up
+        ctx = context.WithValue(ctx, delegatedServerKey, delegated)
+        
+        return resp, apperror.Wrap(err, "E3001", "delegated request failed").
+            WithContext("delegatedEndpoint", url).
+            WithContext("delegatedStatus", resp.StatusCode)
+    }
+}
+```
+
+#### Envelope Builder Integration
+
+```go
+func (b *EnvelopeBuilder) BuildErrorResponse(ctx context.Context, err error) *Response {
+    resp := &Response{
+        Status: Status{IsFailed: true, Code: getStatusCode(err), ...},
+        Errors: &Errors{
+            BackendMessage: err.Error(),
+            Backend:        getGoStackTrace(err),
+        },
+    }
+    
+    // Inject DelegatedRequestServer if present in context
+    if delegated, ok := ctx.Value(delegatedServerKey).(*DelegatedRequestServer); ok {
+        resp.Errors.DelegatedRequestServer = delegated
+        
+        // Also populate legacy DelegatedServiceErrorStack for backward compatibility
+        if len(delegated.StackTrace) > 0 {
+            resp.Errors.DelegatedServiceErrorStack = delegated.StackTrace
+        }
+    }
+    
+    return resp
+}
+```
+
+#### Go Struct Definition
+
+```go
+type DelegatedRequestServer struct {
+    DelegatedEndpoint  string      `json:"DelegatedEndpoint"`
+    Method             string      `json:"Method"`
+    StatusCode         int         `json:"StatusCode"`
+    RequestBody        interface{} `json:"RequestBody,omitempty"`
+    Response           interface{} `json:"Response,omitempty"`
+    StackTrace         []string    `json:"StackTrace,omitempty"`
+    AdditionalMessages string      `json:"AdditionalMessages,omitempty"`
+}
+```
+
+#### error.log.txt Format
+
+When `DelegatedRequestServer` is present, the error log includes a `Delegated Server Info:` section:
+
+```
+[2026-02-12 00:53:34] HTTP 500 GET FAILED
+  Requested To: GET http://localhost:8080/api/v1/sites/1/snapshots/settings
+  Duration: 4.1904552s
+  Error Code: 500
+  Error Message: [E3001] failed to fetch snapshot settings...
+  Backend Error: [E3025] [E3001] ...
+  Go Backend Stack:
+    handler_factory.go:107 handlers.init.handleSiteActionByID.func63
+    ...
+  Delegated Server Info:
+    Endpoint: "https://example.com/wp-json/riseup.../v1/snapshots/settings"
+    Method: "GET"
+    Status: 403
+    Stacktrace:
+        #0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()
+        #1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()
+        ...
+    RequestBody:
+        (none — GET request)
+    Additional Message:
+        Endpoint 'snapshots' is not enabled in plugin settings.
+  Response Body:
+    { "Status": { ... }, "Errors": { ..., "DelegatedRequestServer": { ... } } }
+```
+
+### Remote PHP Error Injection (Legacy)
 
 When a remote WordPress operation fails, the Go backend automatically:
 
@@ -141,6 +313,8 @@ When a remote WordPress operation fails, the Go backend automatically:
 2. Retrieves the 10 most recent PHP errors from remote SQLite database
 3. Retrieves `stacktrace.txt` content
 4. Injects this data into Go session logs and the envelope's `Errors` block
+
+> **Note:** `DelegatedRequestServer` (v2.0.0) supersedes the legacy `fetchAndAttachRemotePHPErrors` approach for inline error data. The legacy system remains for retrieving historical PHP errors not present in the immediate response.
 
 ### Error Log Deduplication
 
@@ -161,8 +335,9 @@ Every failure log entry follows this structure:
 3. **Backend Endpoint** — The Go endpoint hit by the frontend
 4. **Delegated Request** — Method, PHP endpoint, full JSON request body
 5. **Delegated Response** — Status code and body
-6. **Error Summary** — Concise error description
-7. **Guard Rail** — Blocks unauthorized direct mutations to `/wp/v2/plugins/*`
+6. **Delegated Server Info** — Endpoint, method, status, stack trace, request body, additional messages (NEW v2.0.0)
+7. **Error Summary** — Concise error description
+8. **Guard Rail** — Blocks unauthorized direct mutations to `/wp/v2/plugins/*`
 
 ### Session-Based Logging
 
@@ -171,6 +346,7 @@ Every HTTP request gets a unique session ID. Full request/response data is captu
 - Bodies (truncated at 50KB)
 - Timing
 - Error extraction for status ≥ 400
+- DelegatedRequestServer data (if delegated request failed)
 
 Storage: `backend/data/request-sessions/{date}/{hour}/{uuid}.json`
 
@@ -195,10 +371,24 @@ interface CapturedError {
   methodsStack?: StackFrame[];
   sessionId?: string;
   
+  // Delegated server details (NEW v2.0.0)
+  delegatedRequestServer?: DelegatedRequestServer;
+  
   // Frontend diagnostics
   executionChain?: string;    // From React Execution Logger
   clickPath?: string[];       // User interaction history
   stackFrames?: ParsedFrame[];
+}
+
+// NEW v2.0.0
+interface DelegatedRequestServer {
+  DelegatedEndpoint: string;
+  Method: string;
+  StatusCode: number;
+  RequestBody?: unknown;
+  Response?: unknown;
+  StackTrace?: string[];
+  AdditionalMessages?: string;
 }
 ```
 
@@ -206,24 +396,50 @@ interface CapturedError {
 
 The API client's `parseEnvelope` detects failed responses and extracts:
 - `Errors.BackendMessage` — Primary error text
-- `Errors.DelegatedServiceErrorStack` — PHP stack trace lines
+- `Errors.DelegatedServiceErrorStack` — PHP stack trace lines (legacy)
+- `Errors.DelegatedRequestServer` — Full delegated server error details (NEW v2.0.0)
 - `Errors.Backend` — Go stack trace lines
 - `MethodsStack.Backend` — Go call chain with file:line
 - `Attributes.SessionId` — Links to session-level diagnostics
+
+### DelegatedRequestServer Frontend Extraction (NEW v2.0.0)
+
+```typescript
+// In parseEnvelope() or buildCapturedError()
+if (envelope.Errors?.DelegatedRequestServer) {
+  captured.delegatedRequestServer = envelope.Errors.DelegatedRequestServer;
+  
+  // Also populate legacy fields for backward compatibility
+  if (envelope.Errors.DelegatedRequestServer.StackTrace?.length) {
+    captured.delegatedServiceErrorStack = envelope.Errors.DelegatedRequestServer.StackTrace;
+  }
+}
+```
 
 ### Global Error Modal Tabs
 
 | Tab | Content |
 |-----|---------|
 | **Overview** | Error message, component context, suggested fixes |
-| **Stack** | Backend (Go) + Frontend (React) stack traces |
-| **Request** | HTTP request/response details |
-| **Traversal** | React → Go → PHP request chain visualization |
-| **Execution** | React Execution Logger chain + click path |
+| **Log** | error.log.txt content |
+| **Execution** | Go call chain table + session logs |
+| **Stack** | Backend (Go) + Delegated Server stack traces + PHP frames |
+| **Session** | Session diagnostics: logs, request, response, stack trace |
+| **Request** | HTTP request/response chain (3-hop: React → Go → Delegated) |
+| **Traversal** | Endpoint flow + methods stack + delegated error stack |
+
+### DelegatedRequestServer in Modal Tabs (NEW v2.0.0)
+
+| Tab | What's Shown |
+|-----|-------------|
+| **Stack** | New "Delegated Server Stack" section (purple-themed) with StackTrace lines + Response JSON |
+| **Request** | 3rd node in chain: Go → Delegated (with endpoint, method, status, request body, response) |
+| **Traversal** | Endpoint flow extended to 3 hops; DelegatedRequestServer details below methods stack |
+| **Overview** | AdditionalMessages shown as info banner below the error banner |
 
 ### Session Diagnostics Auto-Fetch
 
-When `sessionId` is present, the modal automatically fetches session-level diagnostics from `GET /api/v1/request-sessions/{id}`, merging deep Go/PHP stack traces into the Stack and Execution tabs.
+When `sessionId` is present, the modal automatically fetches session-level diagnostics from `GET /api/v1/request-sessions/{id}`, merging deep Go/PHP/delegated stack traces into the Stack and Execution tabs.
 
 ### Error Reporting Bundle
 
@@ -231,7 +447,7 @@ The "Download Bundle" button exports:
 - All diagnostic data as JSON
 - Syntax-highlighted error report
 - Execution chain and click path
-- Full request/response data
+- Full request/response data (including DelegatedRequestServer)
 
 ---
 
@@ -239,10 +455,15 @@ The "Download Bundle" button exports:
 
 | Range | Category | Example |
 |-------|----------|---------|
+| E1000–E1999 | Connection/network errors | E1001: Backend unreachable |
+| E2000–E2999 | Remote site errors | E2001: Invalid credentials |
+| E3000–E3999 | Resource/data errors | E3001: Failed to fetch resource |
 | E4000–E4999 | Client/validation errors | E4001: Invalid plugin slug |
 | E5000–E5999 | Server/infrastructure errors | E5001: Upload failed |
 | E6000–E6999 | Remote site (WordPress) errors | E6001: Plugin not found on site |
 | E7000–E7999 | Scheduler/background job errors | E7001: Scheduled publish timeout |
+| E8000–E8999 | Delegated server errors | E8001: Delegated server returned 5xx |
+| E9000–E9999 | Frontend/UI errors | E9003: Unhandled API error, E9005: HTML instead of JSON |
 
 ---
 
@@ -261,10 +482,13 @@ The Errors page implements a 3-tier fallback:
 - [Error Resolution Retrospectives](../error-resolution/00-overview.md)
 - [Session-Based Logging](../logging-and-diagnostics/session-based-logging.md)
 - [React Execution Logger](../logging-and-diagnostics/react-execution-logger.md)
-- [PHP Error Trapping Strategy](../../.lovable/memory/architecture/wordpress-plugin/error-trapping-strategy)
+- [Error Modal Spec](../error-modal/README.md)
+- [Copy Format Samples](../error-modal/COPY-FORMATS.md)
+- [Response Envelope Schema](../response-envelope/envelope.schema.json)
+- [Envelope Configurability](../response-envelope/CONFIGURABILITY.md)
 - [PHP Standards](../php-standards/README.md)
 - [Golang Standards](../golang-standards/README.md)
 
 ---
 
-*Error handling specification created: 2026-02-09*
+*Error handling specification v2.0.0 — updated: 2026-02-11*
