@@ -50,7 +50,7 @@ Every API response is a JSON object with the following top-level keys. All JSON 
 ```json
 {
   "Attributes": {
-    "RequestedAt": "/api/v1/plugins",
+    "RequestedAt": "http://localhost:8080/api/v1/plugins",
     "RequestDelegatedAt": "https://example.com/wp-json/riseup-asia-uploader/v1/plugins",
     "HasAnyErrors": false,
     "IsSingle": false,
@@ -100,12 +100,12 @@ Present only for paginated list responses. Contains URL strings for navigation l
 ```json
 {
   "Navigation": {
-    "NextPage": "/api/v1/plugins?page=3&perPage=10",
-    "PrevPage": "/api/v1/plugins?page=1&perPage=10",
+    "NextPage": "http://localhost:8080/api/v1/plugins?page=3&perPage=10",
+    "PrevPage": "http://localhost:8080/api/v1/plugins?page=1&perPage=10",
     "CloserLinks": [
-      "/api/v1/plugins?page=3&perPage=10",
-      "/api/v1/plugins?page=4&perPage=10",
-      "/api/v1/plugins?page=5&perPage=10"
+      "http://localhost:8080/api/v1/plugins?page=3&perPage=10",
+      "http://localhost:8080/api/v1/plugins?page=4&perPage=10",
+      "http://localhost:8080/api/v1/plugins?page=5&perPage=10"
     ]
   }
 }

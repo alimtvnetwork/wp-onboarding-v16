@@ -18,6 +18,7 @@ import {
   Radio,
 } from "lucide-react";
 import { api, RequestSessionRecord, RequestSessionListResponse, requireSuccess } from "@/lib/api";
+import { toAbsoluteUrl } from "@/lib/endpoints";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -426,7 +427,7 @@ export default function RequestSessions() {
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0">
                                   {getMethodBadge(session.method)}
-                                  <span className="font-mono text-sm truncate">{session.title || session.path}</span>
+                                  <span className="font-mono text-sm truncate">{session.title || toAbsoluteUrl(session.path)}</span>
                                 </div>
                                 <Badge
                                   variant="outline"
@@ -437,7 +438,7 @@ export default function RequestSessions() {
                               </div>
                               {session.title && (
                                 <div className="text-[10px] font-mono text-muted-foreground truncate mt-0.5">
-                                  {session.path}
+                                  {toAbsoluteUrl(session.path)}
                                 </div>
                               )}
                               <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
@@ -477,7 +478,7 @@ export default function RequestSessions() {
                     )}
                     <CardTitle className="text-lg flex items-center gap-2">
                       {getMethodBadge(detail.method)}
-                      <span className="font-mono">{detail.path}</span>
+                      <span className="font-mono">{toAbsoluteUrl(detail.path)}</span>
                       {detail.query && (
                         <span className="text-muted-foreground font-mono text-sm">?{detail.query}</span>
                       )}

@@ -500,7 +500,7 @@ This is the raw JSON response from the Go backend when an error occurs. See `spe
     "Message": "[E3001] failed to fetch snapshot settings..."
   },
   "Attributes": {
-    "RequestedAt": "/api/v1/sites/1/snapshots/settings",
+    "RequestedAt": "http://localhost:8080/api/v1/sites/1/snapshots/settings",
     "RequestDelegatedAt": "https://example.com/wp-json/.../snapshots/settings",
     "SessionId": "a1b2c3d4-...",
     "HasAnyErrors": true
@@ -544,7 +544,7 @@ This is the raw JSON response from the Go backend when an error occurs. See `spe
 
 ## 8. Session Diagnostics (JSON)
 
-Fetched via `GET /api/v1/sessions/{sessionId}/diagnostics` (for diagnostics) and `GET /api/v1/sessions/{sessionId}/logs` (for logs) when `sessionId` is present. Raw session data also available via `GET /api/v1/request-sessions/{sessionId}`.
+Fetched via `GET http://localhost:8080/api/v1/sessions/{sessionId}/diagnostics` (for diagnostics) and `GET http://localhost:8080/api/v1/sessions/{sessionId}/logs` (for logs) when `sessionId` is present. Raw session data also available via `GET http://localhost:8080/api/v1/request-sessions/{sessionId}`.
 
 ### Complete Sample
 
@@ -552,7 +552,7 @@ Fetched via `GET /api/v1/sessions/{sessionId}/diagnostics` (for diagnostics) and
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "method": "GET",
-  "path": "/api/v1/sites/1/snapshots/settings",
+  "path": "http://localhost:8080/api/v1/sites/1/snapshots/settings",
   "queryString": "",
   "requestHeaders": {
     "content-type": "application/json",
