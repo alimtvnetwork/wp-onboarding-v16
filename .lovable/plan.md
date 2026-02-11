@@ -1,66 +1,57 @@
 
 
-## Plan: Snapshot Section Improvements + Config File Updates
+## Plan: Improve Request Sessions UI, Store responseBody as Object, and Add `IsEmpty` to Envelope
 
-This plan covers 6 items from your request, executed sequentially.
-
----
-
-### 1. Add `adminPageSlug` to Example Config Files
-
-**Files to edit:**
-- `backend/scripts/wp-plugin-config.example.json` -- Add `"adminPageSlug": "your-plugin-slug"` field
-- `backend/config.example.json` -- Add `"adminPageSlug"` inside a `"wordpress"` section if relevant (or note it's a wp-plugin-config concern only)
+This plan covers three areas: (1) enhanced request session visualization with copy functionality, (2) storing `responseBody` as a parsed object instead of a JSON string, and (3) adding an `IsEmpty` field to the envelope `Attributes`.
 
 ---
 
-### 2. Duplicate Snapshot Settings into the Snapshot Section (RemoteSnapshotsPanel)
+### 1. Store `responseBody` (and `requestBody`) as parsed objects
 
-Currently, snapshot configuration (schedules, storage mode, worker pool, retention policy) lives **only** in `Settings > Snapshots`. The `RemoteSnapshotsPanel` (the per-site snapshot dialog) has a "Settings" tab but doesn't include the parallel execution or retention settings.
+**Problem:** Currently `RequestSessionRecord.responseBody` and `requestBody` are typed as `string`. The backend returns JSON as a string, and the frontend re-parses it for display.
 
-**Action:** Extract the snapshot config controls (worker count, batch size, storage mode, retention policy) into a reusable component, then render it in both:
-- `src/components/settings/SnapshotSettingsTab.tsx` (existing location)
-- `src/components/sites/RemoteSnapshotsPanel.tsx` (Settings tab inside the snapshot dialog)
+**Changes:**
+- **`src/lib/api/types.ts`** -- Change `requestBody` and `responseBody` from `string` to `unknown` (object or null). This means the data is stored as a proper JS object, no re-parsing needed.
+- **`src/pages/RequestSessions.tsx`** -- Update the `JsonViewer` component to accept `unknown` instead of `string`. If the value is already an object, stringify it for display. Remove the try/catch JSON.parse since data is already an object.
+- **`src/lib/api/methods.ts`** (if needed) -- Ensure the API layer does not double-stringify response bodies.
 
-**New file:** `src/components/settings/SnapshotConfigPanel.tsx` -- shared component containing:
-- Storage Mode selector (Single / Per-Table)
-- Worker Pool settings (Worker Count slider, Batch Size input)
-- Retention Policy (`SnapshotRetentionPolicy`)
+### 2. Enhanced Request Sessions UI with Copy Button
 
----
+**Changes to `src/pages/RequestSessions.tsx`:**
 
-### 3. Improve Snapshot Error Messages with "Check Logs" Button
+- **Copy button on detail panel header** -- Add a "Copy" icon button next to the existing Download and Delete buttons. Clicking it copies the full session detail (formatted JSON) to clipboard with a toast confirmation.
+- **Copy button per tab** -- Add a small "Copy" button inside each tab (Response, Request, Headers) to copy just that section's content.
+- **Full path display** -- Confirm all paths render as absolute URLs using `toAbsoluteUrl()` (already done, will verify consistency).
+- **Improved `JsonViewer`** -- Add syntax-highlighted JSON display using the existing `highlight.js` dependency. Add line numbers and a copy button in the top-right corner of the code block.
+- **Headers tab** -- Add a copy button to copy all headers as formatted text.
 
-When snapshot creation fails with a generic error like "The handler for the route is invalid", the toast/error should:
-- Show the actual error message
-- Include a **"Check Logs"** button that navigates to `/errors` (the error history page)
+### 3. Add `IsEmpty` field to Envelope Attributes
 
-**Files to edit:**
-- `src/hooks/useRemoteSnapshots.ts` -- Update `onError` callbacks for `createMutation`, `fullBackupMutation`, `restoreMutation`, etc. to use `toast.error()` with a custom action button
-- Pattern: Use `toast.error("...", { action: { label: "Check Logs", onClick: () => navigate("/errors") } })` or similar using `sonner`'s action API
+**Problem:** When Results is empty/null, there's no explicit `IsEmpty` flag. The user wants `IsEmpty: true` when `TotalRecords` is 0 or Results is empty.
 
----
+**Changes:**
 
-### 4. Add "Copy All Logs" Button to Error Toasts / Snapshot Error Display
-
-Add a standardized copy button alongside error messages in the snapshot section:
-- In the `SnapshotDetailDrawer` error section (line ~1153-1162 of `SnapshotSettingsTab.tsx`), add a copy button next to the error text
-- In the `RemoteSnapshotsPanel` snapshot rows that show errors, add a small copy icon button
-- Uses existing `toClipboardText()` utility from `src/lib/logText.ts`
-
-**Files to edit:**
-- `src/components/settings/SnapshotSettingsTab.tsx` -- Add copy button in `SnapshotDetailDrawer` error section
-- `src/components/sites/RemoteSnapshotsPanel.tsx` -- Add copy button in error display areas
-- `src/hooks/useRemoteSnapshots.ts` -- Enhanced error toasts with copy action
+- **`spec/response-envelope/envelope.schema.json`** -- Add `IsEmpty` boolean to the Attributes definition: `"IsEmpty": { "type": "boolean", "description": "true when Results is empty (TotalRecords is 0 or Results array has no items)." }`
+- **`spec/response-envelope/README.md`** -- Document the `IsEmpty` field in the Attributes table.
+- **All sample JSON files** -- Add `"IsEmpty": true/false` to Attributes in:
+  - `envelope-minimal.json` (IsEmpty: true, since Results is empty)
+  - `envelope-single.json` (IsEmpty: false)
+  - `envelope-multiple.json` (IsEmpty: false)
+  - `envelope-error.json` (IsEmpty: true)
+  - `envelope-debug.json` (IsEmpty: false)
+- **`src/lib/api/types.ts`** -- Add `IsEmpty?: boolean` to `EnvelopeAttributes`.
+- **`src/lib/api/envelope.ts`** -- In `parseEnvelope`, auto-derive `IsEmpty` if not present from the backend: `env.Attributes.IsEmpty = env.Attributes.IsEmpty ?? (!Array.isArray(env.Results) || env.Results.length === 0)`. Also set `TotalRecords: 0` when IsEmpty is true and TotalRecords is undefined.
 
 ---
 
-### Summary of Changes
+### Technical Summary
 
-| # | Task | Files |
-|---|------|-------|
-| 1 | Add `adminPageSlug` to example configs | `backend/scripts/wp-plugin-config.example.json`, `backend/config.example.json` |
-| 2 | Shared snapshot config panel in both Settings and Snapshot dialog | New: `SnapshotConfigPanel.tsx`, Edit: `SnapshotSettingsTab.tsx`, `RemoteSnapshotsPanel.tsx` |
-| 3 | "Check Logs" button on snapshot errors | `useRemoteSnapshots.ts` |
-| 4 | Copy button for error logs | `SnapshotSettingsTab.tsx`, `RemoteSnapshotsPanel.tsx`, `useRemoteSnapshots.ts` |
+| File | Change |
+|---|---|
+| `src/lib/api/types.ts` | `requestBody`/`responseBody` to `unknown`; add `IsEmpty` to `EnvelopeAttributes` |
+| `src/lib/api/envelope.ts` | Auto-derive `IsEmpty` in `parseEnvelope` |
+| `src/pages/RequestSessions.tsx` | Revamp `JsonViewer` (syntax highlighting, copy button); add copy buttons to detail panel; handle object-typed bodies |
+| `spec/response-envelope/envelope.schema.json` | Add `IsEmpty` to Attributes |
+| `spec/response-envelope/README.md` | Document `IsEmpty` |
+| `spec/response-envelope/envelope-*.json` (5 files) | Add `IsEmpty` field to all samples |
 
