@@ -974,17 +974,16 @@ try {
     }
 
     Write-Status ""
-        $result = @{
-            success = $true
-            plugin = $PluginSlug
-            localVersion = $LocalVersion
-            remoteVersion = $RemoteVersion
-            deployedVersion = $deployedVersion
-            action = $VersionAction
-            activated = $resultData.activated
-        }
-        Write-Output ($result | ConvertTo-Json -Compress)
+    $result = @{
+        success = $true
+        plugin = $PluginSlug
+        localVersion = $LocalVersion
+        remoteVersion = $RemoteVersion
+        deployedVersion = $deployedVersion
+        action = $VersionAction
+        activated = $resultData.activated
     }
+    Write-Output ($result | ConvertTo-Json -Compress)
 
 } catch {
     $errorMessage = $_.Exception.Message
