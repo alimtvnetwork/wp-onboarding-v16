@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -59,6 +59,7 @@ import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
 import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
 import { SnapshotConfigPanel } from "@/components/settings/SnapshotConfigPanel";
+import { useErrorStore } from "@/stores/errorStore";
 
 interface RemoteSnapshotsPanelProps {
   site: Site;
@@ -621,6 +622,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
     isImporting,
   } = useRemoteSnapshots(site.id, open);
 
+  const { captureException, openErrorModal } = useErrorStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [deleteTarget, setDeleteTarget] = useState<SnapshotRecord | null>(null);
@@ -883,9 +885,27 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                     {snapshotError?.message && (
                       <p className="text-xs text-destructive/80 max-w-[300px] text-center break-all">{snapshotError.message}</p>
                     )}
-                    <Button variant="outline" size="sm" onClick={() => refetch()}>
-                      Retry
-                    </Button>
+                    <div className="flex gap-2 mt-1">
+                      <Button variant="outline" size="sm" onClick={() => refetch()}>
+                        Retry
+                      </Button>
+                      {snapshotError && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const captured = captureException(snapshotError, {
+                              source: 'RemoteSnapshotsPanel.fetchSnapshots',
+                              endpoint: `/sites/${site.id}/snapshots`,
+                              method: 'GET',
+                            });
+                            openErrorModal(captured);
+                          }}
+                        >
+                          View Error
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ) : snapshots.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground animate-fade-in">
