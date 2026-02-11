@@ -263,6 +263,7 @@ function SnapshotSettingsTab({
 }) {
   const {
     settings,
+    settingsDataUpdatedAt,
     isLoadingSettings,
     providers,
     isLoadingProviders,
@@ -309,6 +310,32 @@ function SnapshotSettingsTab({
 
   return (
     <div className="space-y-4 py-2">
+      {/* Sync Indicator */}
+      {settingsDataUpdatedAt > 0 && (
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-accent/40 border border-border/50">
+          <CheckCircle className="h-3 w-3 text-primary shrink-0" />
+          <span className="text-[10px] text-muted-foreground">
+            Last synced: {(() => {
+              const d = new Date(settingsDataUpdatedAt);
+              const now = new Date();
+              const diffMs = now.getTime() - d.getTime();
+              const diffSecs = Math.floor(diffMs / 1000);
+              if (diffSecs < 10) return "just now";
+              if (diffSecs < 60) return `${diffSecs}s ago`;
+              const diffMins = Math.floor(diffSecs / 60);
+              if (diffMins < 60) return `${diffMins}m ago`;
+              const diffHours = Math.floor(diffMins / 60);
+              if (diffHours < 24) return `${diffHours}h ago`;
+              return d.toLocaleDateString();
+            })()}
+          </span>
+          {localSettings !== null && (
+            <Badge variant="outline" className="text-[9px] h-4 px-1 ml-auto border-destructive/30 text-destructive">
+              Unsaved Changes
+            </Badge>
+          )}
+        </div>
+      )}
       {/* Provider */}
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Snapshot Provider</Label>
