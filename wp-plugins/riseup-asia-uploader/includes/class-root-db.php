@@ -167,7 +167,7 @@ class RiseupRootDb {
         // Get WordPress version
         $wp_version = get_bloginfo('version');
 
-        $stmt = $pdo->prepare("INSERT INTO snapshot_meta
+        $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_meta
             (id, title, type, created_at, created_by, mysql_version, wp_version, plugin_version, table_count, total_rows, config_json)
             VALUES (1, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
 
