@@ -353,6 +353,9 @@ export interface Settings {
     compactMode: boolean;
     animationsEnabled: boolean;
   };
+  publish?: {
+    uploaderHelperPath?: string;
+  };
   server: {
     port: number;
     wsReconnectDelayMs: number;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useErrorStore } from "@/stores/errorStore";
 import { RemotePluginsPanel } from "./RemotePluginsPanel";
 import { RemoteSnapshotsPanel } from "./RemoteSnapshotsPanel";
+import { useSettings } from "@/hooks/useSettings";
 
 interface SiteCardProps {
   site: Site;
@@ -43,6 +44,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const [deployingUploader, setDeployingUploader] = useState(false);
   const [showRemotePlugins, setShowRemotePlugins] = useState(false);
   const [showSnapshots, setShowSnapshots] = useState(false);
+  const { data: settings } = useSettings();
+  const uploaderPath = settings?.publish?.uploaderHelperPath || undefined;
 
   // Fetch linked plugins for this site
   const { data: mappings } = useQuery({
@@ -88,7 +91,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
   const handleDeployUploader = async () => {
     setDeployingUploader(true);
     try {
-      const response = await api.bootstrapUploader(site.id);
+      const response = await api.bootstrapUploader(site.id, uploaderPath);
       if (response.success && response.data?.isSuccess) {
         toast.success("Riseup Asia Uploader deployed!", {
           description: response.data.isActivated ? "Plugin is active" : "Plugin uploaded but not activated",
