@@ -187,7 +187,7 @@ export function PublishProgressDialog({
     }
   });
 
-  // Reset state when dialog opens & fetch version info
+  // Reset state when dialog opens & fetch version info immediately
   useEffect(() => {
     if (open) {
       setStages(DEFAULT_STAGES.map(s => ({ ...s, status: "pending" })));
@@ -202,14 +202,17 @@ export function PublishProgressDialog({
       setLocalVersion(null);
       setRemoteVersion(null);
       
-      // Fetch version info
+      // Fetch version info immediately with high priority
       if (pluginId && siteId) {
-        api.previewPublish(pluginId, siteId).then(response => {
+        // Use Promise.race with a timeout so UI never waits long
+        const versionPromise = api.previewPublish(pluginId, siteId).then(response => {
           if (response.success && response.data) {
             setLocalVersion(response.data.localVersion || null);
             setRemoteVersion(response.data.remoteVersion || null);
           }
-        }).catch(() => { /* version info is optional */ });
+        });
+        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
+        Promise.race([versionPromise, timeoutPromise]).catch(() => {});
       }
     }
   }, [open, pluginId, siteId]);
@@ -355,16 +358,16 @@ export function PublishProgressDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+      <DialogContent className="sm:max-w-2xl lg:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-primary" />
             {isComplete ? (isSuccess ? "Publish Complete" : "Publish Failed") : "Publishing..."}
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-2 flex-wrap">
-            <span>Deploying <strong>{pluginName}</strong> to <strong>{siteName}</strong></span>
-            {(localVersion || remoteVersion) && (
-              <span className="inline-flex items-center gap-1.5 text-xs">
+          <DialogDescription className="flex items-center gap-2 flex-wrap min-h-0">
+            <span className="truncate">Deploying <strong>{pluginName}</strong> to <strong className="truncate max-w-[200px] inline-block align-bottom">{siteName}</strong></span>
+            {(localVersion || remoteVersion) ? (
+              <span className="inline-flex items-center gap-1.5 text-xs flex-shrink-0">
                 {remoteVersion ? (
                   <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
                     v{remoteVersion}
@@ -385,13 +388,18 @@ export function PublishProgressDialog({
                   </Badge>
                 )}
               </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+                <div className="h-3 w-3 border border-muted-foreground/40 border-t-transparent rounded-full animate-spin" />
+                loading version...
+              </span>
             )}
             {siteUrl && (
               <a 
                 href={siteUrl} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-primary hover:underline inline-flex items-center gap-1"
+                className="text-primary hover:underline inline-flex items-center gap-1 flex-shrink-0 ml-auto"
               >
                 <ExternalLink className="h-3 w-3" />
                 Open Site
@@ -402,21 +410,21 @@ export function PublishProgressDialog({
 
         {/* Tabbed content for better screen fit */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
-            <TabsTrigger value="progress" className="gap-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 flex-shrink-0">
+            <TabsTrigger value="progress" className="gap-1 text-xs sm:text-sm">
               <ListChecks className="h-3 w-3" />
               Progress
             </TabsTrigger>
-            <TabsTrigger value="logs" className="gap-1">
+            <TabsTrigger value="logs" className="gap-1 text-xs sm:text-sm">
               <Terminal className="h-3 w-3" />
               Logs
-              <Badge variant="secondary" className="ml-1 text-xs">{logs.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-[10px]">{logs.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="diagnostics" className="gap-1">
+            <TabsTrigger value="diagnostics" className="gap-1 text-xs sm:text-sm">
               <Activity className="h-3 w-3" />
-              Diagnostics
+              Diag
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1" disabled={isComplete}>
+            <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm" disabled={isComplete}>
               <Settings2 className="h-3 w-3" />
               Settings
             </TabsTrigger>
