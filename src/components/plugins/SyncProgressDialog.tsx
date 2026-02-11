@@ -415,7 +415,7 @@ export function SyncProgressDialog({
                 try {
                   toast.info("Pushing changes to remote...");
                   const res = await api.pushSync(pluginId, siteId);
-                  if (res.data?.success) {
+                  if (res.data?.isSuccess) {
                     toast.success(`Sync pushed: ${res.data.filesUpdated} updated, ${res.data.filesDeleted} deleted`);
                   } else {
                     toast.error("Push failed: " + (res.data?.errorMessage || "Unknown error"));

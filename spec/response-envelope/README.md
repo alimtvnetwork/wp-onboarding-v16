@@ -186,6 +186,23 @@ Present only when debug/traversal mode is enabled in config.
 
 ---
 
+## Naming Conventions
+
+### Boolean Fields
+
+All boolean fields in API responses **MUST** use a prefix:
+- **`Is`** — for state/identity booleans (e.g., `IsSuccess`, `IsFailed`, `IsSingle`, `IsMultiple`, `IsEmpty`, `IsActive`)
+- **`Has`** — for presence booleans (e.g., `HasAnyErrors`)
+
+**Do NOT** use bare boolean names like `success`, `active`, `enabled`. Use `isSuccess`, `isActive`, `isEnabled` instead.
+
+This applies to:
+- Envelope fields (`Status`, `Attributes`)
+- Individual result object fields
+- All backend response payloads (Go, PHP, WebSocket events)
+
+---
+
 ## Rules
 
 1. **Results is ALWAYS an array** — even for single items, deletions (empty array), or errors.
@@ -193,3 +210,4 @@ Present only when debug/traversal mode is enabled in config.
 3. **Conditional sections use pointers** — In Go, `Navigation`, `Errors`, and `MethodsStack` are pointer fields with `omitempty`. They are simply absent from the JSON when not applicable.
 4. **Navigation is pagination-only** — It contains only page links. Errors and debug info are separate top-level fields.
 5. **Errors and MethodsStack are top-level** — They are NOT nested inside Navigation.
+6. **Boolean naming** — All boolean fields must use `Is` or `Has` prefix (see Naming Conventions above).

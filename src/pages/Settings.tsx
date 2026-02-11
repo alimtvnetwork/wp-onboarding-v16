@@ -498,6 +498,37 @@ export default function Settings() {
                 className="shrink-0"
               />
             </div>
+
+            {/* Show ZIP file tree in logs toggle */}
+            <div className="flex items-center justify-between gap-3 pt-4 border-t">
+              <div className="min-w-0">
+                <Label className="text-sm">Show ZIP File Tree in Logs</Label>
+                <p className="text-xs text-muted-foreground">
+                  Include detailed file listing from ZIP packages in publish logs. Disable to reduce log verbosity.
+                </p>
+              </div>
+              <Switch 
+                checked={settings?.logging?.showZipFileTreeInLogs ?? false}
+                onCheckedChange={(enabled) => {
+                  saveSettings.mutate(
+                    { logging: { showZipFileTreeInLogs: enabled } },
+                    {
+                      onSuccess: () => {
+                        toast.success(`ZIP file tree in logs ${enabled ? 'enabled' : 'disabled'}`, {
+                          style: {
+                            background: "linear-gradient(135deg, hsl(142 76% 36%) 0%, hsl(142 76% 30%) 100%)",
+                            color: "white",
+                            border: "none",
+                          },
+                        });
+                      },
+                      onError: (err) => toast.error(`Failed to save: ${err.message}`),
+                    }
+                  );
+                }}
+                className="shrink-0"
+              />
+            </div>
           </div>
         );
         

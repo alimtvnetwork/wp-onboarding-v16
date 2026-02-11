@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useExecutionLoggerStore } from "@/hooks/useExecutionLogger";
 import { usePlugins, usePluginsPaginated } from "@/hooks/usePlugins";
 import { useSites } from "@/hooks/useSites";
@@ -351,7 +351,13 @@ export default function Plugins() {
     setShowPublishDialog(true);
   };
 
+  const publishGuardRef = useRef(false);
+
   const handlePublish = async (plugin: Plugin, siteId: number, files?: string[]) => {
+    // Debounce guard: prevent double-invocation from race conditions or double-clicks
+    if (publishGuardRef.current) return;
+    publishGuardRef.current = true;
+
     // Open progress dialog instead of inline publishing
     setPublishPlugin(plugin);
     setPublishSiteId(siteId);
@@ -424,6 +430,7 @@ export default function Plugins() {
       });
     } finally {
       setIsPublishing(null);
+      publishGuardRef.current = false;
     }
   };
 

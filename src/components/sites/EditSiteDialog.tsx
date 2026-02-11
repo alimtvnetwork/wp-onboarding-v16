@@ -117,7 +117,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
 
     try {
       const response = await api.testConnection(site.id);
-      if (response.success && response.data?.success) {
+      if (response.success && response.data?.isSuccess) {
         setTestSuccess(true);
         toast.success(`Connection successful! WP ${response.data.wpVersion}`);
         queryClient.invalidateQueries({ queryKey: ["sites"] });

@@ -123,7 +123,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
       });
 
       if (response.success && response.data) {
-        if (response.data.success) {
+        if (response.data.isSuccess) {
           setCredentialsTestResult({
             success: true,
             message: response.data.message || "Connection successful",
