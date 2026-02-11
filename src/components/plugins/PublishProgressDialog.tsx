@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -167,6 +167,21 @@ export function PublishProgressDialog({
   // Live logs
   const [logs, setLogs] = useState<PublishLogEntry[]>([]);
   
+  // Refs to stabilize effect dependencies — these change every render but we don't want to re-subscribe
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const pluginNameRef = useRef(pluginName);
+  pluginNameRef.current = pluginName;
+  const siteNameRef = useRef(siteName);
+  siteNameRef.current = siteName;
+  
+  // Track whether this dialog session has completed — survives effect re-runs
+  const publishCompletedRef = useRef(false);
+  // Deduplicate logs — survives effect re-runs
+  const seenLogKeysRef = useRef(new Set<string>());
+  // Hold unsub functions so we can force-unsubscribe after completion
+  const unsubsRef = useRef<Array<() => void>>([]);
+  
   // Upload mode setting
   const [useFileByFile, setUseFileByFile] = useState(() => {
     const saved = localStorage.getItem("settings");
@@ -189,6 +204,35 @@ export function PublishProgressDialog({
     }
   });
 
+  // Helper: strip zipStructure from log details (it's huge and not useful in UI)
+  const sanitizeLogDetails = (details?: Record<string, unknown>): Record<string, unknown> | undefined => {
+    if (!details) return details;
+    const { zipStructure, ...rest } = details;
+    return Object.keys(rest).length > 0 ? rest : undefined;
+  };
+
+  const addLog = useCallback((log: PublishLogEntry) => {
+    // Filter verbose ZIP file tree and package debug logs
+    const msg = log.message.toLowerCase();
+    if (log.level === 'debug' && log.step === 'package') return;
+    if (log.step === 'file_list' || log.step === 'zip_contents') return;
+    if (log.step === 'package' && (msg.includes('adding file') || msg.includes('compressing') || msg.includes('included in zip'))) return;
+    
+    // Deduplicate by timestamp + message
+    const key = `${log.timestamp}|${log.step}|${log.message}`;
+    if (seenLogKeysRef.current.has(key)) return;
+    seenLogKeysRef.current.add(key);
+    
+    // Strip zipStructure from details
+    setLogs(prev => [...prev, { ...log, details: sanitizeLogDetails(log.details) }]);
+  }, []);
+
+  // Force-unsubscribe all WS listeners
+  const forceUnsubAll = useCallback(() => {
+    unsubsRef.current.forEach(fn => fn());
+    unsubsRef.current = [];
+  }, []);
+
   // Reset state when dialog opens & fetch version info immediately
   useEffect(() => {
     if (open) {
@@ -202,9 +246,10 @@ export function PublishProgressDialog({
       setLogs([]);
       setActiveTab("progress");
       setRemoteVersion(null);
+      publishCompletedRef.current = false;
+      seenLogKeysRef.current.clear();
       
-      // Fetch version info — local version comes back instantly from backend cache,
-      // remote version may take longer (network call to WP site)
+      // Fetch version info
       if (pluginId && siteId) {
         api.previewPublish(pluginId, siteId).then(response => {
           if (response.success && response.data) {
@@ -213,37 +258,22 @@ export function PublishProgressDialog({
           }
         }).catch(() => {});
       }
+    } else {
+      // Dialog closed — force unsub everything
+      forceUnsubAll();
     }
-  }, [open, pluginId, siteId]);
+  }, [open, pluginId, siteId, forceUnsubAll]);
 
-  // Listen for WebSocket events
+  // Listen for WebSocket events — deps are ONLY open/pluginId/siteId (stable values)
   useEffect(() => {
     if (!open) return;
 
-    // Track if this publish cycle is complete to ignore duplicate events
-    let publishCompleted = false;
-    // Deduplicate logs by tracking seen messages
-    const seenLogKeys = new Set<string>();
+    // Clean up any previous subscriptions first
+    forceUnsubAll();
 
-    const addLog = (log: PublishLogEntry) => {
-      // Filter verbose ZIP file tree and package debug logs at accumulation
-      const msg = log.message.toLowerCase();
-      if (log.level === 'debug' && log.step === 'package') return;
-      if (log.step === 'file_list' || log.step === 'zip_contents') return;
-      if (log.step === 'package' && (msg.includes('adding file') || msg.includes('compressing') || msg.includes('included in zip'))) return;
-      
-      // Deduplicate by timestamp + message
-      const key = `${log.timestamp}|${log.step}|${log.message}`;
-      if (seenLogKeys.has(key)) return;
-      seenLogKeys.add(key);
-      
-      setLogs(prev => [...prev, log]);
-    };
-
-    // Handle publish started
-    const unsubProgress = wsClient.on(WS_EVENTS.PUBLISH_STARTED, (data: unknown) => {
+    const unsub1 = wsClient.on(WS_EVENTS.PUBLISH_STARTED, (data: unknown) => {
       const payload = data as { pluginId: number; siteId: number };
-      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompleted) {
+      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompletedRef.current) {
         setStages(prev => prev.map(s => 
           s.name === "backup" ? { ...s, status: "running" } : s
         ));
@@ -251,34 +281,26 @@ export function PublishProgressDialog({
           timestamp: new Date().toISOString(),
           level: 'info',
           step: 'init',
-          message: `Starting publish for ${pluginName} to ${siteName}`,
+          message: `Starting publish for ${pluginNameRef.current} to ${siteNameRef.current}`,
         });
       }
     });
 
-    const unsubStageProgress = wsClient.on("publish_progress", (data: unknown) => {
+    const unsub2 = wsClient.on("publish_progress", (data: unknown) => {
       const payload = data as PublishProgressPayload;
-      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompleted) {
-        const stageName = payload.stage;
-        
-        // Add log entry if provided (this is the PRIMARY log source — skip WS_EVENTS.LOG)
+      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompletedRef.current) {
         if (payload.log) {
           addLog(payload.log);
         }
         
         setStages(prev => prev.map(s => {
-          if (s.name === stageName) {
+          if (s.name === payload.stage) {
             let mappedStatus: PublishStage["status"] = "running";
             if (payload.status === "success" || payload.status === "completed") mappedStatus = "success";
             else if (payload.status === "error" || payload.status === "failed") mappedStatus = "error";
-            
-            return {
-              ...s,
-              status: mappedStatus,
-              message: payload.message,
-            };
+            return { ...s, status: mappedStatus, message: payload.message };
           }
-          if (s.status === "running" && s.name !== stageName) {
+          if (s.status === "running" && s.name !== payload.stage) {
             return { ...s, status: "success" };
           }
           return s;
@@ -287,38 +309,30 @@ export function PublishProgressDialog({
       }
     });
 
-    // DO NOT listen for WS_EVENTS.LOG separately — publish_progress already includes logs.
-    // This was causing every log to appear twice.
-
-    const unsubComplete = wsClient.on(WS_EVENTS.PUBLISH_COMPLETE, (data: unknown) => {
+    const unsub3 = wsClient.on(WS_EVENTS.PUBLISH_COMPLETE, (data: unknown) => {
       const payload = data as PublishCompletePayload & { status?: string; message?: string };
-      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompleted) {
-        // Mark complete — ignore any further events for this publish cycle
-        publishCompleted = true;
+      if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompletedRef.current) {
+        // PERMANENTLY lock — no more events accepted for this session
+        publishCompletedRef.current = true;
         
         const wasSuccessful = payload.isSuccess ?? payload.success ?? (payload.status === "completed" || payload.status === "success");
         
         setIsComplete(true);
         setIsSuccess(wasSuccessful);
         setFilesUpdated(payload.filesUpdated ?? null);
-        
-        // Force progress to 100% on completion — never leave it partial
         setOverallProgress(100);
         
         if (payload.error || (payload.message && !wasSuccessful)) {
           setErrorMessage(payload.error || payload.message || "Unknown error");
         }
-        
         if (payload.backendStackTrace) {
           setBackendStackTrace(payload.backendStackTrace);
         }
         
-        // Append any final logs
         if (payload.logs?.length) {
           payload.logs.forEach(l => addLog(l));
         }
         
-        // Add completion log
         addLog({
           timestamp: new Date().toISOString(),
           level: wasSuccessful ? 'info' : 'error',
@@ -328,7 +342,7 @@ export function PublishProgressDialog({
             : `Publish failed: ${payload.error || payload.message || 'Unknown error'}`,
         });
         
-        // FORCE all stages (except version_check) to correct final state
+        // Force all stages to final state
         if (payload.stages) {
           setStages(payload.stages.map(s => ({
             ...s,
@@ -341,7 +355,7 @@ export function PublishProgressDialog({
           })));
         }
 
-        // Post-publish version verification (like PS script does)
+        // Version verification
         if (wasSuccessful && pluginId && siteId) {
           setStages(prev => prev.map(s => 
             s.name === "version_check" ? { ...s, status: "running", message: "Checking remote version..." } : s
@@ -379,16 +393,20 @@ export function PublishProgressDialog({
           });
         }
 
-        onComplete?.(wasSuccessful);
+        onCompleteRef.current?.(wasSuccessful);
+        
+        // FORCE unsubscribe all WS listeners after completion
+        // This prevents any backend re-publish events from reaching this dialog
+        setTimeout(() => forceUnsubAll(), 500);
       }
     });
 
+    unsubsRef.current = [unsub1, unsub2, unsub3];
+
     return () => {
-      unsubProgress();
-      unsubStageProgress();
-      unsubComplete();
+      forceUnsubAll();
     };
-  }, [open, pluginId, siteId, pluginName, siteName, onComplete]);
+  }, [open, pluginId, siteId, addLog, forceUnsubAll]);
 
   const getStageIcon = (stage: PublishStage) => {
     switch (stage.status) {
