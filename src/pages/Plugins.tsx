@@ -355,13 +355,16 @@ export default function Plugins() {
   const publishCooldownRef = useRef<number>(0);
 
   const handlePublish = async (plugin: Plugin, siteId: number, files?: string[]) => {
-    // Debounce guard: prevent double-invocation from race conditions or double-clicks
-    if (publishGuardRef.current) return;
+    // Absolute guard: prevent any re-invocation once a publish has been initiated
+    if (publishGuardRef.current) {
+      console.warn('[Publish] Blocked: publish already in progress');
+      return;
+    }
     
-    // Cooldown guard: prevent re-trigger within 30s of last successful publish
+    // Cooldown guard: prevent re-trigger after last successful publish (no auto-retry ever)
     const now = Date.now();
-    if (now - publishCooldownRef.current < 30000) {
-      console.warn('[Publish] Blocked: cooldown active, last publish was', Math.round((now - publishCooldownRef.current) / 1000), 's ago');
+    if (publishCooldownRef.current > 0) {
+      console.warn('[Publish] Blocked: cooldown active, last publish was', Math.round((now - publishCooldownRef.current) / 1000), 's ago. Only manual retry allowed.');
       return;
     }
     
@@ -407,8 +410,10 @@ export default function Plugins() {
       });
       if (response.success) {
         toast.success(`Published ${response.data?.filesUpdated || 0} files`);
+        // Set permanent cooldown — only user clicking publish again should reset this
+        publishCooldownRef.current = Date.now();
+        // Refresh data without triggering re-publish
         queryClient.invalidateQueries({ queryKey: ["plugins"] });
-        publishCooldownRef.current = Date.now(); // Set cooldown on success
       } else if (response.error) {
         const captured = captureError(response.error, {
           endpoint: `/plugins/${plugin.id}/sites/${siteId}/publish`,
@@ -444,10 +449,13 @@ export default function Plugins() {
 
   const handlePublishComplete = (success: boolean) => {
     if (success) {
+      // Set permanent cooldown — no auto re-publish allowed
+      publishCooldownRef.current = Date.now();
+      // Only refresh data, never re-trigger publish
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
-      publishCooldownRef.current = Date.now(); // Prevent re-trigger
     }
     setIsPublishing(null);
+    // Do NOT close dialog automatically — let user click Done
   };
 
   const handleCategoryToggle = (category: string) => {
