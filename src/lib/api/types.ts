@@ -22,6 +22,7 @@ export interface EnvelopeAttributes {
   HasAnyErrors: boolean;
   IsSingle: boolean;
   IsMultiple: boolean;
+  IsEmpty?: boolean;
   TotalRecords?: number;
   PerPage?: number;
   TotalPages?: number;
@@ -565,8 +566,8 @@ export interface RequestSessionRecord {
   method: string;
   path: string;
   query?: string;
-  requestBody?: string;
-  responseBody?: string;
+  requestBody?: unknown;
+  responseBody?: unknown;
   statusCode: number;
   startedAt: string;
   endedAt: string;

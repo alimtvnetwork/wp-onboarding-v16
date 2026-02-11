@@ -96,6 +96,10 @@
           "type": "boolean",
           "description": "true if Results contains multiple items."
         },
+        "IsEmpty": {
+          "type": "boolean",
+          "description": "true when Results is empty (TotalRecords is 0 or Results array has no items)."
+        },
         "TotalRecords": {
           "type": "integer",
           "description": "Total number of records across all pages."

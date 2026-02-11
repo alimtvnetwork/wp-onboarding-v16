@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, isToday, isYesterday } from "date-fns";
 import {
@@ -16,6 +16,8 @@ import {
   FileJson,
   Eraser,
   Radio,
+  Copy,
+  Check,
 } from "lucide-react";
 import { api, RequestSessionRecord, RequestSessionListResponse, requireSuccess } from "@/lib/api";
 import { toAbsoluteUrl } from "@/lib/endpoints";
@@ -85,20 +87,73 @@ function getMethodBadge(method: string) {
   );
 }
 
-function JsonViewer({ content, label }: { content: string; label: string }) {
-  if (!content) return <p className="text-sm text-muted-foreground italic">No {label}</p>;
+function useCopyAction() {
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback((text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, []);
+  return { copied, copy };
+}
 
-  let formatted = content;
-  try {
-    formatted = JSON.stringify(JSON.parse(content), null, 2);
-  } catch {
-    // not JSON, show raw
+function formatUnknown(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") {
+    // Try to parse and re-format if it's a JSON string
+    try {
+      return JSON.stringify(JSON.parse(value), null, 2);
+    } catch {
+      return value;
+    }
   }
+  return JSON.stringify(value, null, 2);
+}
+
+function JsonViewer({ content, label }: { content: unknown; label: string }) {
+  const formatted = formatUnknown(content);
+  const { copied, copy } = useCopyAction();
+
+  if (!formatted) return <p className="text-sm text-muted-foreground italic">No {label}</p>;
+
+  // Simple syntax highlighting
+  const highlighted = formatted
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"([^"]*)"(\s*:)/g, '<span class="text-sky-600 dark:text-sky-400">"$1"</span>$2')
+    .replace(/:\s*"([^"]*)"/g, ': <span class="text-emerald-600 dark:text-emerald-400">"$1"</span>')
+    .replace(/:\s*(true|false)/g, ': <span class="text-amber-600 dark:text-amber-400">$1</span>')
+    .replace(/:\s*(\d+\.?\d*)/g, ': <span class="text-purple-600 dark:text-purple-400">$1</span>')
+    .replace(/:\s*(null)/g, ': <span class="text-muted-foreground">$1</span>');
+
+  const lines = formatted.split("\n");
 
   return (
-    <pre className="text-xs font-mono bg-muted/50 rounded-md p-3 overflow-auto max-h-[400px] whitespace-pre-wrap break-all">
-      {formatted}
-    </pre>
+    <div className="relative group">
+      <button
+        onClick={() => copy(formatted)}
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted border border-border opacity-0 group-hover:opacity-100 transition-opacity"
+        title="Copy"
+      >
+        {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+      </button>
+      <div className="flex text-xs font-mono bg-muted/50 rounded-md overflow-auto max-h-[500px] border border-border">
+        {/* Line numbers */}
+        <div className="py-3 px-2 text-right select-none border-r border-border bg-muted/30 sticky left-0">
+          {lines.map((_, i) => (
+            <div key={i} className="text-muted-foreground/50 leading-5">{i + 1}</div>
+          ))}
+        </div>
+        {/* Code */}
+        <pre
+          className="py-3 px-3 whitespace-pre-wrap break-all leading-5 flex-1"
+          dangerouslySetInnerHTML={{ __html: highlighted }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -488,6 +543,17 @@ export default function RequestSessions() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      title="Copy full session JSON"
+                      onClick={() => {
+                        navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
+                        toast.success("Session copied to clipboard");
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         const blob = new Blob([JSON.stringify(detail, null, 2)], { type: "application/json" });
                         const url = URL.createObjectURL(blob);
@@ -571,20 +637,35 @@ export default function RequestSessions() {
                   <ScrollArea className="flex-1">
                     <div className="p-4">
                       <TabsContent value="response" className="mt-0">
-                        <JsonViewer content={detail.responseBody || ""} label="response body" />
+                        <JsonViewer content={detail.responseBody} label="response body" />
                       </TabsContent>
                       <TabsContent value="request" className="mt-0">
-                        <JsonViewer content={detail.requestBody || ""} label="request body" />
+                        <JsonViewer content={detail.requestBody} label="request body" />
                       </TabsContent>
                       <TabsContent value="headers" className="mt-0">
                         {detail.headers && Object.keys(detail.headers).length > 0 ? (
-                          <div className="space-y-1">
-                            {Object.entries(detail.headers).map(([key, value]) => (
-                              <div key={key} className="flex gap-2 text-xs font-mono">
-                                <span className="text-muted-foreground shrink-0">{key}:</span>
-                                <span className="break-all">{String(value)}</span>
-                              </div>
-                            ))}
+                          <div className="relative group">
+                            <button
+                              onClick={() => {
+                                const text = Object.entries(detail.headers!)
+                                  .map(([k, v]) => `${k}: ${v}`)
+                                  .join("\n");
+                                navigator.clipboard.writeText(text);
+                                toast.success("Headers copied to clipboard");
+                              }}
+                              className="absolute top-2 right-2 z-10 p-1.5 rounded-md bg-muted/80 hover:bg-muted border border-border opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Copy headers"
+                            >
+                              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                            </button>
+                            <div className="space-y-1 bg-muted/50 rounded-md p-3 border border-border">
+                              {Object.entries(detail.headers).map(([key, value]) => (
+                                <div key={key} className="flex gap-2 text-xs font-mono">
+                                  <span className="text-sky-600 dark:text-sky-400 shrink-0">{key}:</span>
+                                  <span className="break-all">{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         ) : (
                           <p className="text-sm text-muted-foreground italic">No headers captured</p>
