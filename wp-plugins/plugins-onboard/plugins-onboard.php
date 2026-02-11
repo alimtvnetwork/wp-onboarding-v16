@@ -3,7 +3,7 @@
  * Plugin Name: Plugins Onboard
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Manages plugin onboarding and snapshots with robust security, OAuth 2.0 authentication, and comprehensive audit logging.
- * Version: 1.0.8
+ * Version: 1.0.9
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL-2.0+
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define core plugin constants (these never change).
-define('ONBOARD_PLUGIN_VERSION', '1.0.8');
+define('ONBOARD_PLUGIN_VERSION', '1.0.9');
 define('ONBOARD_PLUGIN_FILE', __FILE__);
 define('ONBOARD_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ONBOARD_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -537,6 +537,80 @@ class PluginsOnboard {
         if ($this->api) {
             $this->api->register_routes();
         }
+
+        // Catch-all route for invalid endpoints within our namespace.
+        $namespace = ONBOARD_API_NAMESPACE . '/' . ONBOARD_API_VERSION;
+        register_rest_route($namespace, '/(?P<path>.+)', array(
+            'methods'             => WP_REST_Server::ALLMETHODS,
+            'callback'            => array($this, 'handle_invalid_route'),
+            'permission_callback' => '__return_true',
+            'priority'            => 999, // lowest priority so real routes match first
+        ));
+
+        // Enrich ALL error responses from our namespace with structured metadata.
+        add_filter('rest_post_dispatch', array($this, 'enrich_error_response'), 10, 3);
+    }
+
+    /**
+     * Handle requests to invalid routes within the plugin namespace.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_Error
+     */
+    public function handle_invalid_route($request) {
+        $path = $request->get_param('path');
+        $method = $request->get_method();
+
+        OnboardLogger::error("Invalid route requested: {$method} /{$path}");
+
+        return new WP_Error(
+            'invalid_route',
+            "The endpoint '/{$path}' does not exist. Check the API documentation for available endpoints.",
+            array(
+                'status'         => 404,
+                'plugin_version' => ONBOARD_PLUGIN_VERSION,
+                'timestamp'      => gmdate('c'),
+                'requested_path' => $path,
+                'method'         => $method,
+                'log_hint'       => 'Check the plugin error logs or the Activity Logs page for details.',
+            )
+        );
+    }
+
+    /**
+     * Enrich error responses from our namespace with structured metadata.
+     *
+     * @param WP_REST_Response $response Response object.
+     * @param WP_REST_Server   $server   REST server.
+     * @param WP_REST_Request  $request  Request object.
+     * @return WP_REST_Response
+     */
+    public function enrich_error_response($response, $server, $request) {
+        $namespace = ONBOARD_API_NAMESPACE . '/' . ONBOARD_API_VERSION;
+        $route = $request->get_route();
+
+        // Only enrich errors from our own namespace.
+        if (strpos($route, '/' . $namespace) !== 0) {
+            return $response;
+        }
+
+        // Only enrich error responses (4xx/5xx).
+        $status = $response->get_status();
+        if ($status < 400) {
+            return $response;
+        }
+
+        $data = $response->get_data();
+
+        // Add metadata if not already present.
+        if (is_array($data) && !isset($data['plugin_version'])) {
+            $data['plugin_version'] = ONBOARD_PLUGIN_VERSION;
+            $data['timestamp'] = gmdate('c');
+            $data['log_hint'] = 'Check the plugin error logs or the Activity Logs page for details.';
+            $response->set_data($data);
+        }
+
+        return $response;
     }
 
     /**
