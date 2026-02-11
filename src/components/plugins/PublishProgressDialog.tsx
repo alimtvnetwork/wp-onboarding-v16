@@ -129,6 +129,7 @@ const STAGE_LABELS: Record<string, string> = {
   activate: "Activating Plugin",
   cleanup: "Cleaning Up",
   verify: "Verifying Deployment",
+  version_check: "Verifying Version",
 };
 
 const DEFAULT_STAGES: PublishStage[] = [
@@ -136,6 +137,7 @@ const DEFAULT_STAGES: PublishStage[] = [
   { name: "package", label: "Packaging Files", status: "pending" },
   { name: "upload", label: "Uploading to Site", status: "pending" },
   { name: "activate", label: "Activating Plugin", status: "pending" },
+  { name: "version_check", label: "Verifying Version", status: "pending" },
 ];
 
 export function PublishProgressDialog({
@@ -310,13 +312,64 @@ export function PublishProgressDialog({
             : `Publish failed: ${payload.error || payload.message || 'Unknown error'}`,
         }]);
         
+        // FORCE all stages to correct final state when complete
         if (payload.stages) {
-          setStages(payload.stages);
+          // If server provides stages, use them but ensure consistency
+          setStages(payload.stages.map(s => ({
+            ...s,
+            status: wasSuccessful && s.status !== "skipped" ? "success" : s.status,
+          })));
         } else {
+          // Mark ALL stages as success/error on completion
           setStages(prev => prev.map(s => ({
             ...s,
-            status: wasSuccessful ? "success" : (s.status === "running" ? "error" : s.status)
+            status: wasSuccessful ? "success" : (s.status === "running" || s.status === "pending" ? "error" : s.status)
           })));
+        }
+
+        // Post-publish version verification (like PS script does)
+        if (wasSuccessful && pluginId && siteId) {
+          setStages(prev => prev.map(s => 
+            s.name === "version_check" ? { ...s, status: "running", message: "Checking remote version..." } : s
+          ));
+          api.previewPublish(pluginId, siteId).then(response => {
+            if (response.success && response.data) {
+              const newRemote = response.data.remoteVersion;
+              const local = response.data.localVersion;
+              setRemoteVersion(newRemote || null);
+              setLocalVersion(local || null);
+              
+              const versionMatch = newRemote && local && newRemote === local;
+              setStages(prev => prev.map(s => 
+                s.name === "version_check" ? { 
+                  ...s, 
+                  status: versionMatch ? "success" : "error",
+                  message: versionMatch 
+                    ? `Verified: v${newRemote} deployed` 
+                    : `Version mismatch: remote=${newRemote || 'unknown'}, expected=${local}`
+                } : s
+              ));
+              if (versionMatch) {
+                setLogs(prev => [...prev, {
+                  timestamp: new Date().toISOString(),
+                  level: 'info',
+                  step: 'version_check',
+                  message: `✓ Version verified: remote is now v${newRemote}`,
+                }]);
+              } else {
+                setLogs(prev => [...prev, {
+                  timestamp: new Date().toISOString(),
+                  level: 'warn',
+                  step: 'version_check',
+                  message: `⚠ Version mismatch: remote=${newRemote || 'unknown'}, expected=${local}. OPcache may need flushing.`,
+                }]);
+              }
+            }
+          }).catch(() => {
+            setStages(prev => prev.map(s => 
+              s.name === "version_check" ? { ...s, status: "skipped", message: "Could not verify" } : s
+            ));
+          });
         }
 
         onComplete?.(wasSuccessful);
@@ -578,10 +631,16 @@ export function PublishProgressDialog({
             </ScrollArea>
           </TabsContent>
 
-          {/* Logs Tab */}
+          {/* Logs Tab - Filter verbose file-listing logs by default */}
           <TabsContent value="logs" className="flex-1 overflow-hidden mt-4">
             <LogViewer
-              logs={logs}
+              logs={logs.filter(l => {
+                // Hide verbose file-listing messages (e.g., "Adding file X", "Compressing file Y")
+                const msg = l.message.toLowerCase();
+                if (l.step === 'package' && (msg.includes('adding file') || msg.includes('compressing') || msg.includes('included in zip'))) return false;
+                if (l.step === 'file_list' || l.step === 'zip_contents') return false;
+                return true;
+              })}
               title="Execution Logs"
               height="h-[300px]"
               showToggle={false}
