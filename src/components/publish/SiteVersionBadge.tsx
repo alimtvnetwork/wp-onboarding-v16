@@ -14,6 +14,8 @@ import { api } from "@/lib/api";
 interface SiteVersionBadgeProps {
   pluginId: number;
   siteId: number;
+  /** Pass a known local version to display immediately without waiting for the API */
+  knownLocalVersion?: string;
   className?: string;
 }
 
@@ -25,8 +27,8 @@ export interface VersionInfo {
   isDowngrade: boolean;
 }
 
-export function SiteVersionBadge({ pluginId, siteId, className = "" }: SiteVersionBadgeProps) {
-  const [localVersion, setLocalVersion] = useState<string | null>(null);
+export function SiteVersionBadge({ pluginId, siteId, knownLocalVersion, className = "" }: SiteVersionBadgeProps) {
+  const [localVersion, setLocalVersion] = useState<string | null>(knownLocalVersion || null);
   const [remoteVersion, setRemoteVersion] = useState<string | null>(null);
   const [remoteLoaded, setRemoteLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
