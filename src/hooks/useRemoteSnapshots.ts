@@ -1,36 +1,77 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo, AvailableTable } from "@/lib/api";
+import { api, ApiResponse, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo, AvailableTable } from "@/lib/api";
 import { toast } from "sonner";
-import { useErrorStore } from "@/stores/errorStore";
-import { useMemo } from "react";
-import { toClipboardText } from "@/lib/logText";
+import { useErrorStore, CapturedError } from "@/stores/errorStore";
+import { useMemo, useCallback } from "react";
 
 const POLL_INTERVAL = 5000; // 5s when snapshots are running
 
-function snapshotErrorToast(title: string, err: Error) {
-  const errorText = `${title}: ${err.message}`;
-  toast.error(title, {
-    description: err.message,
-    action: {
-      label: "Check Logs",
-      onClick: () => { window.location.href = "/errors"; },
-    },
-  });
-  // Also copy error to clipboard for convenience
-  navigator.clipboard?.writeText(toClipboardText(errorText)).catch(() => {});
+/**
+ * Custom error that preserves the full API error response for rich error capture.
+ */
+class SnapshotApiError extends Error {
+  readonly apiResponse: ApiResponse<unknown>;
+  constructor(message: string, apiResponse: ApiResponse<unknown>) {
+    super(message);
+    this.name = "SnapshotApiError";
+    this.apiResponse = apiResponse;
+  }
+}
+
+/** Throw a SnapshotApiError if the response is not successful */
+function throwIfFailed<T>(res: ApiResponse<T>, fallbackMsg: string): T {
+  if (!res.success) {
+    throw new SnapshotApiError(res.error?.message || fallbackMsg, res as ApiResponse<unknown>);
+  }
+  return res.data as T;
 }
 
 export function useRemoteSnapshots(siteId: number, enabled = true) {
   const queryClient = useQueryClient();
-  const { captureError, captureException, openErrorModal } = useErrorStore();
+  const { captureException, openErrorModal } = useErrorStore();
   const queryKey = ["sites", siteId, "snapshots"];
+
+  /**
+   * Capture a snapshot error, show a toast with "View Error" to open the modal.
+   */
+  const handleSnapshotError = useCallback((title: string, err: Error) => {
+    // Extract rich context from SnapshotApiError
+    const apiErr = err instanceof SnapshotApiError ? err.apiResponse.error : undefined;
+    const ctx = apiErr?.context as Record<string, unknown> | undefined;
+
+    // Extract PHP stack frames from delegated server response
+    const delegated = ctx?.delegatedRequestServer as { StackTrace?: Array<{ File?: string; FileBase?: string; Line?: number; Function?: string; Class?: string }> } | undefined;
+    const phpStackFrames = delegated?.StackTrace?.map(f => ({
+      file: f.File,
+      fileBase: f.FileBase,
+      line: f.Line,
+      function: f.Function,
+      class: f.Class,
+    }));
+
+    const captured = captureException(err, {
+      source: `useRemoteSnapshots.${title.replace(/\s+/g, '_')}`,
+      endpoint: `/sites/${siteId}/snapshots`,
+      method: 'POST',
+      context: ctx,
+      phpStackFrames: phpStackFrames || undefined,
+      sessionId: typeof ctx?.sessionId === 'string' ? ctx.sessionId : undefined,
+    });
+
+    toast.error(title, {
+      description: err.message?.substring(0, 120),
+      action: {
+        label: "View Error",
+        onClick: () => openErrorModal(captured),
+      },
+    });
+  }, [captureException, openErrorModal, siteId]);
 
   const snapshotsQuery = useQuery({
     queryKey,
     queryFn: async () => {
       const res = await api.getRemoteSnapshots(siteId);
-      if (!res.success) throw new Error(res.error?.message || "Failed to fetch snapshots");
-      return (res.data || []) as SnapshotRecord[];
+      return throwIfFailed(res, "Failed to fetch snapshots") as SnapshotRecord[];
     },
     enabled,
     retry: 1,
@@ -47,8 +88,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     queryKey: [...queryKey, "settings"],
     queryFn: async () => {
       const res = await api.getRemoteSnapshotSettings(siteId);
-      if (!res.success) throw new Error(res.error?.message || "Failed to fetch settings");
-      return res.data as SnapshotSettings;
+      return throwIfFailed(res, "Failed to fetch settings") as SnapshotSettings;
     },
     enabled,
     retry: 1,
@@ -59,8 +99,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     queryKey: [...queryKey, "providers"],
     queryFn: async () => {
       const res = await api.getRemoteSnapshotProviders(siteId);
-      if (!res.success) throw new Error(res.error?.message || "Failed to fetch providers");
-      return (res.data || []) as SnapshotProviderInfo[];
+      return throwIfFailed(res, "Failed to fetch providers") as SnapshotProviderInfo[];
     },
     enabled,
     retry: 1,
@@ -71,121 +110,99 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     queryKey: [...queryKey, "tables"],
     queryFn: async () => {
       const res = await api.getRemoteAvailableTables(siteId);
-      if (!res.success) throw new Error(res.error?.message || "Failed to fetch tables");
-      return (res.data || []) as AvailableTable[];
+      return throwIfFailed(res, "Failed to fetch tables") as AvailableTable[];
     },
-    enabled: false, // Only fetch on demand
+    enabled: false,
   });
+
   const createMutation = useMutation({
     mutationFn: async (opts?: Record<string, unknown>) => {
       const res = await api.createRemoteSnapshot(siteId, opts);
-      if (!res.success) throw new Error(res.error?.message || "Failed to create snapshot");
-      return res.data;
+      return throwIfFailed(res, "Failed to create snapshot");
     },
     onSuccess: () => {
       toast.success("Snapshot creation initiated");
       queryClient.invalidateQueries({ queryKey });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Snapshot creation failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Snapshot creation failed", err),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (snapshotId: number) => {
       const res = await api.deleteRemoteSnapshot(siteId, snapshotId);
-      if (!res.success) throw new Error(res.error?.message || "Failed to delete snapshot");
-      return res.data;
+      return throwIfFailed(res, "Failed to delete snapshot");
     },
     onSuccess: () => {
       toast.success("Snapshot deleted");
       queryClient.invalidateQueries({ queryKey });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Delete failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Delete failed", err),
   });
 
   const restoreMutation = useMutation({
     mutationFn: async ({ snapshotId, opts }: { snapshotId: number; opts?: Record<string, unknown> }) => {
       const res = await api.restoreRemoteSnapshot(siteId, snapshotId, { confirm: true, ...opts });
-      if (!res.success) throw new Error(res.error?.message || "Failed to restore snapshot");
-      return res.data;
+      return throwIfFailed(res, "Failed to restore snapshot");
     },
     onSuccess: () => {
       toast.success("Snapshot restored successfully");
       queryClient.invalidateQueries({ queryKey });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Restore failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Restore failed", err),
   });
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (settings: Record<string, unknown>) => {
       const res = await api.updateRemoteSnapshotSettings(siteId, settings);
-      if (!res.success) throw new Error(res.error?.message || "Failed to update settings");
-      return res.data;
+      return throwIfFailed(res, "Failed to update settings");
     },
     onSuccess: () => {
       toast.success("Snapshot settings updated");
       queryClient.invalidateQueries({ queryKey: [...queryKey, "settings"] });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Settings update failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Settings update failed", err),
   });
 
   const fullBackupMutation = useMutation({
     mutationFn: async (opts?: Record<string, unknown>) => {
       const res = await api.fullBackupRemoteSnapshot(siteId, opts);
-      if (!res.success) throw new Error(res.error?.message || "Failed to trigger full backup");
-      return res.data;
+      return throwIfFailed(res, "Failed to trigger full backup");
     },
     onSuccess: () => {
       toast.success("Full backup initiated");
       queryClient.invalidateQueries({ queryKey });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Full backup failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Full backup failed", err),
   });
 
   const incrementalBackupMutation = useMutation({
     mutationFn: async (opts?: Record<string, unknown>) => {
       const res = await api.incrementalBackupRemoteSnapshot(siteId, opts);
-      if (!res.success) throw new Error(res.error?.message || "Failed to trigger incremental backup");
-      return res.data;
+      return throwIfFailed(res, "Failed to trigger incremental backup");
     },
     onSuccess: () => {
       toast.success("Incremental backup initiated");
       queryClient.invalidateQueries({ queryKey });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Incremental backup failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Incremental backup failed", err),
   });
 
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
       const res = await api.importRemoteSnapshot(siteId, file);
-      if (!res.success) throw new Error(res.error?.message || "Failed to import snapshot");
-      return res.data;
+      return throwIfFailed(res, "Failed to import snapshot");
     },
     onSuccess: () => {
       toast.success("Snapshot imported successfully");
       queryClient.invalidateQueries({ queryKey });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Import failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Import failed", err),
   });
 
   const cleanupMutation = useMutation({
     mutationFn: async (opts?: Record<string, unknown>) => {
       const res = await api.cleanupRemoteSnapshots(siteId, opts);
-      if (!res.success) throw new Error(res.error?.message || "Failed to run cleanup");
-      return res.data;
+      return throwIfFailed(res, "Failed to run cleanup");
     },
     onSuccess: (data) => {
       const d = data as Record<string, unknown> | undefined;
@@ -197,9 +214,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       });
       queryClient.invalidateQueries({ queryKey });
     },
-    onError: (err: Error) => {
-      snapshotErrorToast("Cleanup failed", err);
-    },
+    onError: (err: Error) => handleSnapshotError("Cleanup failed", err),
   });
 
   const hasRunningSnapshots = useMemo(() => {
