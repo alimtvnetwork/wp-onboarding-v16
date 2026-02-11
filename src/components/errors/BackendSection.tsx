@@ -219,6 +219,22 @@ function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent
         </div>
       )}
 
+      {/* Missing delegation warning: error message references a 3rd-party endpoint but envelope lacks delegation fields */}
+      {error.envelopeErrors && !error.requestDelegatedAt && !error.envelopeErrors?.DelegatedRequestServer && error.message && /\((?:GET|POST|PUT|DELETE|PATCH) \/[a-z].*\/v\d+\//.test(error.message) && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1">
+          <h4 className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+            <AlertTriangle className="h-3 w-3" />
+            Missing Delegation Data
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            The error references a third-party endpoint but the response envelope is missing{' '}
+            <code className="text-[10px] bg-muted px-1 rounded">Attributes.RequestDelegatedAt</code> and{' '}
+            <code className="text-[10px] bg-muted px-1 rounded">Errors.DelegatedRequestServer</code>.
+            This is a backend bug — the Go proxy must populate these fields when forwarding to downstream services.
+          </p>
+        </div>
+      )}
+
       {(error.requestedAt || error.requestDelegatedAt) && (
         <div className="rounded-md border p-3 space-y-1">
           <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Timing</h4>
