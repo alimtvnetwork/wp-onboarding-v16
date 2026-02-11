@@ -126,7 +126,7 @@ https://demoat.attoproperty.com.au
 
 ### Message
 
-[E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403
+[E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403
 
 ### Request
 
@@ -191,7 +191,7 @@ middleware.CORS.func1 at middleware.go:45
 ### Frontend Stack Trace
 
 ```
-Error: [E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403
+Error: [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403
     at queryFn (http://localhost:8080/assets/index-Bk9djDqy.js:1052:5917)
 ```
 
@@ -412,7 +412,7 @@ This is the **enhanced** error.log.txt format that includes the `Delegated Serve
     "IsSuccess": false,
     "IsFailed": true,
     "Code": 500,
-    "Message": "[E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403",
+    "Message": "[E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403",
     "Timestamp": "2026-02-11T16:53:35Z"
   },
   "Attributes": {
@@ -422,7 +422,7 @@ This is the **enhanced** error.log.txt format that includes the `Delegated Serve
   },
   "Results": [],
   "Errors": {
-    "BackendMessage": "[E3025] [E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403",
+    "BackendMessage": "[E3025] [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403",
     "Backend": [
       "handler_factory.go:107 handlers.init.handleSiteActionByID.func63",
       "session_logging.go:107 api.NewServer.SessionLogging.func3.1",
@@ -565,7 +565,7 @@ Fetched via `GET /api/v1/sessions/{sessionId}/diagnostics` (for diagnostics) and
   "startTime": "2026-02-11T16:58:26.000Z",
   "endTime": "2026-02-11T16:58:32.730Z",
   "durationMs": 6730,
-  "error": "[E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403"
+  "error": "[E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403"
 }
 ```
 

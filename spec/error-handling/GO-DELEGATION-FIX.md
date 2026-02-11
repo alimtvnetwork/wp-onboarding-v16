@@ -169,7 +169,7 @@ func extractLogHint(body interface{}) string {
 ## Frontend Detection
 
 The React frontend now shows a **"Missing Delegation Data"** warning (amber banner) in the error modal Overview tab when:
-1. The error message contains a third-party endpoint pattern (e.g., `(GET /riseup-asia-uploader/v1/...)`)
+1. The error message contains a third-party endpoint pattern (e.g., `(GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/...)`)
 2. But `RequestDelegatedAt` is empty/missing
 3. And `DelegatedRequestServer` is null/missing
 
