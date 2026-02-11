@@ -570,6 +570,63 @@ $upload_source_classes = array(
         border: 1px solid #c9a7e4;
     }
 
+    /* Snapshot action badges */
+    .action-snapshot_create {
+        background: rgba(20, 184, 166, 0.15);
+        color: #0f766e;
+        border: 1px solid rgba(20, 184, 166, 0.3);
+    }
+    .action-snapshot_restore {
+        background: rgba(245, 158, 11, 0.15);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .action-snapshot_delete {
+        background: rgba(244, 63, 94, 0.15);
+        color: #be123c;
+        border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .action-snapshot_export {
+        background: rgba(6, 182, 212, 0.15);
+        color: #0e7490;
+        border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .action-snapshot_import {
+        background: rgba(99, 102, 241, 0.15);
+        color: #4338ca;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .action-snapshot_cleanup {
+        background: rgba(100, 116, 139, 0.15);
+        color: #475569;
+        border: 1px solid rgba(100, 116, 139, 0.3);
+    }
+    .action-snapshot_full_backup {
+        background: rgba(16, 185, 129, 0.15);
+        color: #047857;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .action-snapshot_incremental {
+        background: rgba(132, 204, 22, 0.15);
+        color: #4d7c0f;
+        border: 1px solid rgba(132, 204, 22, 0.3);
+    }
+    .action-snapshot_restore_pertable {
+        background: rgba(217, 119, 6, 0.15);
+        color: #92400e;
+        border: 1px solid rgba(217, 119, 6, 0.3);
+    }
+    .action-snapshot_import_pertable {
+        background: rgba(79, 70, 229, 0.15);
+        color: #3730a3;
+        border: 1px solid rgba(79, 70, 229, 0.3);
+    }
+    .action-snapshot_settings_update {
+        background: rgba(168, 85, 247, 0.15);
+        color: #7e22ce;
+        border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
     /* Status badges - enhanced */
     .status-badge {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
