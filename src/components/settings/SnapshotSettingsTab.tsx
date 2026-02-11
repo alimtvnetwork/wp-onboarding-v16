@@ -5,6 +5,8 @@ import { SnapshotComparisonView } from "./SnapshotComparisonView";
 import { useSnapshotNotifications } from "./useSnapshotNotifications";
 import { SnapshotRetentionPolicy, type RetentionConfig } from "./SnapshotRetentionPolicy";
 import { SnapshotRestoreDialog } from "./SnapshotRestoreDialog";
+import { SnapshotStorageAnalytics } from "./SnapshotStorageAnalytics";
+import { SnapshotCalendarView } from "./SnapshotCalendarView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -942,6 +944,14 @@ function SnapshotHistoryViewer() {
     endpoint: "/sites/0/snapshots",
   });
 
+  const {
+    data: cronJobsData,
+  } = useApiQuery<SnapshotCronJob[]>({
+    queryKey: ["snapshot-cron-jobs-calendar"],
+    apiFn: () => api.getSnapshotCronJobs(0),
+    endpoint: "/sites/0/snapshots/cron",
+  });
+
   const [selectedSnapshot, setSelectedSnapshot] = useState<SnapshotRecord | null>(null);
 
   const records = snapshots ?? [];
@@ -1050,6 +1060,16 @@ function SnapshotHistoryViewer() {
         onClose={() => setSelectedSnapshot(null)}
         onRefresh={() => refetch()}
       />
+
+      {records.length > 0 && (
+        <>
+          <Separator />
+          <SnapshotStorageAnalytics snapshots={records} />
+
+          <Separator />
+          <SnapshotCalendarView snapshots={records} cronJobs={cronJobsData ?? []} />
+        </>
+      )}
     </div>
   );
 }
