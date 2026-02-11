@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { SnapshotComparisonView } from "./SnapshotComparisonView";
+import { useSnapshotNotifications } from "./useSnapshotNotifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -927,6 +929,14 @@ function SnapshotHistoryViewer() {
 
   const records = snapshots ?? [];
 
+  // Snapshot completion/failure notifications with link to view details
+  const handleViewFromNotification = useCallback((snapshotId: number) => {
+    const snap = records.find((s) => s.id === snapshotId);
+    if (snap) setSelectedSnapshot(snap);
+  }, [records]);
+
+  useSnapshotNotifications(handleViewFromNotification);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -934,16 +944,19 @@ function SnapshotHistoryViewer() {
           <History className="h-4 w-4" />
           Snapshot History
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="h-7 text-xs"
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isFetching && "animate-spin")} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <SnapshotComparisonView snapshots={records} />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-7 text-xs"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+        </div>
       </div>
       <p className="text-xs text-muted-foreground">
         Recent snapshot runs and their outcomes. Click a row for details.
