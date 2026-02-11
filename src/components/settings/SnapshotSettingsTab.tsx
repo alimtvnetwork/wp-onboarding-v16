@@ -3,6 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SnapshotComparisonView } from "./SnapshotComparisonView";
 import { useSnapshotNotifications } from "./useSnapshotNotifications";
+import { SnapshotRetentionPolicy, type RetentionConfig } from "./SnapshotRetentionPolicy";
+import { SnapshotRestoreDialog } from "./SnapshotRestoreDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -87,6 +89,13 @@ export function SnapshotSettingsTab() {
   const [workerCount, setWorkerCount] = useState(4);
   const [batchSize, setBatchSize] = useState(10);
   const [isDirty, setIsDirty] = useState(false);
+  const [retention, setRetention] = useState<RetentionConfig>({
+    enabled: false,
+    mode: "age",
+    maxAgeDays: 30,
+    maxCount: 50,
+    autoCleanup: false,
+  });
 
   useEffect(() => {
     if (settings?.snapshots) {
@@ -401,6 +410,14 @@ export function SnapshotSettingsTab() {
 
       {enabled && (
         <>
+          <Separator />
+
+          {/* Retention Policy */}
+          <SnapshotRetentionPolicy
+            config={retention}
+            onChange={(c) => { setRetention(c); markDirty(); }}
+          />
+
           <Separator />
           <CronJobsPanel />
         </>
@@ -1050,24 +1067,9 @@ function SnapshotDetailDrawer({
   onClose: () => void;
   onRefresh: () => void;
 }) {
-  const [restoring, setRestoring] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
 
   const tableList = snapshot?.tables?.split(",").filter(Boolean) ?? [];
-
-  const handleRestore = async () => {
-    if (!snapshot) return;
-    setRestoring(true);
-    try {
-      const res = await api.restoreRemoteSnapshot(0, snapshot.id);
-      requireSuccess(res, { endpoint: `/sites/0/snapshots/${snapshot.id}/restore`, method: "POST" });
-      toast.success("Snapshot restore initiated");
-      onRefresh();
-    } catch (err: any) {
-      toast.error(`Restore failed: ${err.message}`);
-    } finally {
-      setRestoring(false);
-    }
-  };
 
   const handleDownload = () => {
     if (!snapshot) return;
@@ -1076,124 +1078,129 @@ function SnapshotDetailDrawer({
   };
 
   return (
-    <Sheet open={!!snapshot} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Snapshot #{snapshot?.sequence}
-          </SheetTitle>
-          <SheetDescription>
-            {snapshot?.created_at
-              ? format(new Date(snapshot.created_at), "PPpp")
-              : "Unknown date"}
-          </SheetDescription>
-        </SheetHeader>
+    <>
+      <Sheet open={!!snapshot} onOpenChange={(open) => !open && onClose()}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Snapshot #{snapshot?.sequence}
+            </SheetTitle>
+            <SheetDescription>
+              {snapshot?.created_at
+                ? format(new Date(snapshot.created_at), "PPpp")
+                : "Unknown date"}
+            </SheetDescription>
+          </SheetHeader>
 
-        {snapshot && (
-          <div className="mt-6 space-y-5">
-            {/* Status & Overview */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg border p-3 space-y-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Status</p>
-                <StatusBadge status={snapshot.status} />
-              </div>
-              <div className="rounded-lg border p-3 space-y-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Scope</p>
-                <p className="text-sm font-medium capitalize">{snapshot.scope}</p>
-              </div>
-              <div className="rounded-lg border p-3 space-y-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Total Rows</p>
-                <p className="text-sm font-mono font-medium">{snapshot.total_rows?.toLocaleString() ?? "—"}</p>
-              </div>
-              <div className="rounded-lg border p-3 space-y-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">File Size</p>
-                <p className="text-sm font-mono font-medium">{snapshot.file_size ? formatBytes(snapshot.file_size) : "—"}</p>
-              </div>
-            </div>
-
-            {/* Provider & Filename */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Provider</span>
-                <span className="font-mono">{snapshot.provider || "—"}</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Filename</span>
-                <span className="font-mono text-[11px] truncate max-w-[250px]" title={snapshot.filename}>
-                  {snapshot.filename || "—"}
-                </span>
-              </div>
-            </div>
-
-            {/* Error Details */}
-            {snapshot.error && (
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                  <XCircle className="h-3.5 w-3.5" />
-                  Error Details
-                </p>
-                <div className="text-xs text-destructive bg-destructive/10 rounded-md p-3 border border-destructive/20 whitespace-pre-wrap break-words font-mono">
-                  {snapshot.error}
+          {snapshot && (
+            <div className="mt-6 space-y-5">
+              {/* Status & Overview */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Status</p>
+                  <StatusBadge status={snapshot.status} />
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Scope</p>
+                  <p className="text-sm font-medium capitalize">{snapshot.scope}</p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Total Rows</p>
+                  <p className="text-sm font-mono font-medium">{snapshot.total_rows?.toLocaleString() ?? "—"}</p>
+                </div>
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">File Size</p>
+                  <p className="text-sm font-mono font-medium">{snapshot.file_size ? formatBytes(snapshot.file_size) : "—"}</p>
                 </div>
               </div>
-            )}
 
-            <Separator />
+              {/* Provider & Filename */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Provider</span>
+                  <span className="font-mono">{snapshot.provider || "—"}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Filename</span>
+                  <span className="font-mono text-[11px] truncate max-w-[250px]" title={snapshot.filename}>
+                    {snapshot.filename || "—"}
+                  </span>
+                </div>
+              </div>
 
-            {/* Table List */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium flex items-center gap-1.5">
-                <Layers className="h-3.5 w-3.5" />
-                Tables ({tableList.length})
-              </p>
-              {tableList.length > 0 ? (
-                <div className="max-h-60 overflow-y-auto rounded-md border">
-                  <div className="divide-y">
-                    {tableList.map((table) => (
-                      <div key={table} className="flex items-center gap-2 px-3 py-2 text-xs">
-                        <Database className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="font-mono truncate">{table.trim()}</span>
-                      </div>
-                    ))}
+              {/* Error Details */}
+              {snapshot.error && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                    <XCircle className="h-3.5 w-3.5" />
+                    Error Details
+                  </p>
+                  <div className="text-xs text-destructive bg-destructive/10 rounded-md p-3 border border-destructive/20 whitespace-pre-wrap break-words font-mono">
+                    {snapshot.error}
                   </div>
                 </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">No table information available.</p>
               )}
-            </div>
 
-            <Separator />
+              <Separator />
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                className="flex-1 text-xs"
-              >
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                Download
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleRestore}
-                disabled={restoring || snapshot.status === "running" || snapshot.status === "in_progress"}
-                className="flex-1 text-xs"
-              >
-                {restoring ? (
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              {/* Table List */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium flex items-center gap-1.5">
+                  <Layers className="h-3.5 w-3.5" />
+                  Tables ({tableList.length})
+                </p>
+                {tableList.length > 0 ? (
+                  <div className="max-h-60 overflow-y-auto rounded-md border">
+                    <div className="divide-y">
+                      {tableList.map((table) => (
+                        <div key={table} className="flex items-center gap-2 px-3 py-2 text-xs">
+                          <Database className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="font-mono truncate">{table.trim()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ) : (
-                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  <p className="text-xs text-muted-foreground">No table information available.</p>
                 )}
-                Restore
-              </Button>
+              </div>
+
+              <Separator />
+
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="flex-1 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Download
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setRestoreDialogOpen(true)}
+                  disabled={snapshot.status === "running" || snapshot.status === "in_progress"}
+                  className="flex-1 text-xs"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Restore
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
-      </SheetContent>
-    </Sheet>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <SnapshotRestoreDialog
+        snapshot={snapshot}
+        open={restoreDialogOpen}
+        onOpenChange={setRestoreDialogOpen}
+        onRestoreComplete={onRefresh}
+      />
+    </>
   );
 }
