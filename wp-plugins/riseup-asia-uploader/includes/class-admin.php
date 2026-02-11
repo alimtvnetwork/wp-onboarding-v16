@@ -387,6 +387,13 @@ class Riseup_Admin {
                     'error_logs'   => array('label' => 'Error Logs', 'desc' => 'Fetch error log sessions'),
                 ),
             ),
+            'backup' => array(
+                'label' => __('Backups & Snapshots', 'riseup-asia-uploader'),
+                'icon'  => 'dashicons-database',
+                'endpoints' => array(
+                    'snapshots'    => array('label' => 'Snapshots', 'desc' => 'Database snapshot operations and scheduling'),
+                ),
+            ),
             'docs' => array(
                 'label' => __('Documentation', 'riseup-asia-uploader'),
                 'icon'  => 'dashicons-media-document',
