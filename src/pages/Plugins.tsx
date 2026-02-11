@@ -77,6 +77,7 @@ import {
   Zap,
   Files,
   MoreHorizontal,
+  Pin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
@@ -468,10 +469,17 @@ export default function Plugins() {
     );
   };
 
-  const filteredPlugins = plugins?.filter((plugin) => {
-    if (selectedCategories.length === 0) return true;
-    return plugin.category && selectedCategories.includes(plugin.category);
-  });
+  const filteredPlugins = plugins
+    ?.filter((plugin) => {
+      if (selectedCategories.length === 0) return true;
+      return plugin.category && selectedCategories.includes(plugin.category);
+    })
+    .sort((a, b) => {
+      // Pinned plugins always on top
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return 0;
+    });
 
   // Bulk selection handlers
   const togglePluginSelection = (pluginId: number) => {
@@ -868,6 +876,9 @@ export default function Plugins() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+                        {plugin.pinned && (
+                          <Pin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                        )}
                         <span className="truncate max-w-[200px]">{plugin.name}</span>
                         {plugin.version && (
                           <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
