@@ -1,104 +1,66 @@
-# Plan: Future Work Roadmap
 
-> **Updated:** 2026-02-09  
-> **Purpose:** Prioritized backlog for AI handoff and implementation planning
 
----
+## Plan: Snapshot Section Improvements + Config File Updates
 
-## Status Summary
-
-| Track | Status | Description |
-|-------|--------|-------------|
-| WP Plugin Publish (Core) | ✅ Done | All 14+ feature phases, 10 DRY phases, 18 suggestions |
-| Plugins Onboard | ✅ Done | v1.0.5 — WordPress remote plugin management |
-| Spec Builder v3 | 📝 Dormant | Referenced in CONTEXT-FOR-AI.md only |
+This plan covers 6 items from your request, executed sequentially.
 
 ---
 
-## Phase 1: Open Questions (Decision Required)
+### 1. Add `adminPageSlug` to Example Config Files
 
-These 3 items from the original implementation need user decisions before implementation:
-
-### Q-001: Remote Plugin Backups Storage
-- **Objective:** Decide whether remote plugin backups are stored on the WP site or downloaded locally
-- **Dependencies:** Backup service, storage architecture
-- **Expected outputs:** Updated `09-backup-service.md`, new storage endpoints if remote
-- **Acceptance criteria:** Clear storage strategy documented and implemented
-
-### Q-002: Bulk Quick Publish
-- **Objective:** Add "Quick Publish Selected" for multiple plugins simultaneously  
-- **Dependencies:** `useBulkQuickPublish.ts` hook (exists), UI flow design
-- **Expected outputs:** Updated `27-quick-publish.md`, multi-select UI component
-- **Acceptance criteria:** User can select multiple plugins and quick-publish in parallel
-
-### Q-003: True Diff Comparison
-- **Objective:** Compare local files with actual remote file contents (not just metadata)
-- **Dependencies:** Sync service, WP file hash endpoint
-- **Expected outputs:** Updated `07-sync-service.md`, accurate modified/deleted counts
-- **Acceptance criteria:** Diff shows byte-accurate file differences
+**Files to edit:**
+- `backend/scripts/wp-plugin-config.example.json` -- Add `"adminPageSlug": "your-plugin-slug"` field
+- `backend/config.example.json` -- Add `"adminPageSlug"` inside a `"wordpress"` section if relevant (or note it's a wp-plugin-config concern only)
 
 ---
 
-## Phase 2: Plugins Onboard — Future Enhancements (Backlog)
+### 2. Duplicate Snapshot Settings into the Snapshot Section (RemoteSnapshotsPanel)
 
-From `PRD.md` — these are enhancement ideas for the Plugins Onboard WordPress plugin:
+Currently, snapshot configuration (schedules, storage mode, worker pool, retention policy) lives **only** in `Settings > Snapshots`. The `RemoteSnapshotsPanel` (the per-site snapshot dialog) has a "Settings" tab but doesn't include the parallel execution or retention settings.
 
-| ID | Task | Priority | Dependencies | Expected Outputs |
-|----|------|----------|--------------|------------------|
-| PO-001 | Webhook notifications for plugin events | Medium | Audit logger | New webhook endpoint, event subscription UI |
-| PO-002 | Multi-site support | Medium | Core architecture | Network-aware plugin management |
-| PO-003 | Plugin dependency tracking | Low | Plugin manager | Dependency graph, conflict detection |
-| PO-004 | Scheduled plugin updates | Medium | Cron system | Schedule UI, auto-update runner |
-| PO-005 | API rate limit customization per application | Low | Rate limiter | Per-app config UI, admin override |
-| PO-006 | Two-factor authentication for admin actions | Medium | OAuth system | TOTP/SMS integration |
-| PO-007 | Plugin health monitoring | Medium | Remote API | Health check endpoints, dashboard |
-| PO-008 | Automated rollback on activation failure | High | Snapshot system | Auto-detect failure, restore previous version |
+**Action:** Extract the snapshot config controls (worker count, batch size, storage mode, retention policy) into a reusable component, then render it in both:
+- `src/components/settings/SnapshotSettingsTab.tsx` (existing location)
+- `src/components/sites/RemoteSnapshotsPanel.tsx` (Settings tab inside the snapshot dialog)
+
+**New file:** `src/components/settings/SnapshotConfigPanel.tsx` -- shared component containing:
+- Storage Mode selector (Single / Per-Table)
+- Worker Pool settings (Worker Count slider, Batch Size input)
+- Retention Policy (`SnapshotRetentionPolicy`)
 
 ---
 
-## Phase 3: Spec Builder v3 (Dormant)
+### 3. Improve Snapshot Error Messages with "Check Logs" Button
 
-Referenced in `CONTEXT-FOR-AI.md` but no implementation exists. Architecture concepts documented:
-- Split database system (4-tier SQLite)
-- Seedable configuration pattern
-- Resilient execution system
+When snapshot creation fails with a generic error like "The handler for the route is invalid", the toast/error should:
+- Show the actual error message
+- Include a **"Check Logs"** button that navigates to `/errors` (the error history page)
 
-**Status:** Needs full spec creation before implementation.
-
----
-
-## Next Task Selection
-
-> **Pick one of these to implement next:**
-
-### Ready Now (no blockers):
-1. **PO-008:** Automated rollback on activation failure — highest-value Plugins Onboard enhancement
-2. **Q-002:** Bulk Quick Publish UI — hook already exists, needs UI flow
-3. **Any new feature** — all specs are complete, codebase is clean
-
-### Needs Decision First:
-4. **Q-001:** Remote backup storage strategy (ask user)
-5. **Q-003:** True diff comparison scope (ask user)
-
-### Needs Full Spec:
-6. **Spec Builder v3** — requires PRD and spec creation from scratch
+**Files to edit:**
+- `src/hooks/useRemoteSnapshots.ts` -- Update `onError` callbacks for `createMutation`, `fullBackupMutation`, `restoreMutation`, etc. to use `toast.error()` with a custom action button
+- Pattern: Use `toast.error("...", { action: { label: "Check Logs", onClick: () => navigate("/errors") } })` or similar using `sonner`'s action API
 
 ---
 
-## Completed Tracks (Archive Reference)
+### 4. Add "Copy All Logs" Button to Error Toasts / Snapshot Error Display
 
-All completed plans are archived in `.lovable/plan/completed/`:
+Add a standardized copy button alongside error messages in the snapshot section:
+- In the `SnapshotDetailDrawer` error section (line ~1153-1162 of `SnapshotSettingsTab.tsx`), add a copy button next to the error text
+- In the `RemoteSnapshotsPanel` snapshot rows that show errors, add a small copy icon button
+- Uses existing `toClipboardText()` utility from `src/lib/logText.ts`
 
-| File | Content |
-|------|---------|
-| `01-dry-refactoring-phases-1-6.md` | DRY phases 1–6 |
-| `02-dry-refactoring-phases-7-10.md` | DRY phases 7–10 |
-| `03-error-diagnostics-v3.md` | Error diagnostics enhancement (6 phases) |
-| `04-frontend-pages.md` | Frontend pages (15 phases) |
-| `05-snapshot-backup-system.md` | Snapshot backup system (10 phases) |
-| `06-feature-phases-1-14.md` | Feature phases 1–14 |
-| `07-feature-phases-33-40.md` | Feature phases 33–40 |
+**Files to edit:**
+- `src/components/settings/SnapshotSettingsTab.tsx` -- Add copy button in `SnapshotDetailDrawer` error section
+- `src/components/sites/RemoteSnapshotsPanel.tsx` -- Add copy button in error display areas
+- `src/hooks/useRemoteSnapshots.ts` -- Enhanced error toasts with copy action
 
 ---
 
-*No active implementation phases. Ask user which task to implement next.*
+### Summary of Changes
+
+| # | Task | Files |
+|---|------|-------|
+| 1 | Add `adminPageSlug` to example configs | `backend/scripts/wp-plugin-config.example.json`, `backend/config.example.json` |
+| 2 | Shared snapshot config panel in both Settings and Snapshot dialog | New: `SnapshotConfigPanel.tsx`, Edit: `SnapshotSettingsTab.tsx`, `RemoteSnapshotsPanel.tsx` |
+| 3 | "Check Logs" button on snapshot errors | `useRemoteSnapshots.ts` |
+| 4 | Copy button for error logs | `SnapshotSettingsTab.tsx`, `RemoteSnapshotsPanel.tsx`, `useRemoteSnapshots.ts` |
+
