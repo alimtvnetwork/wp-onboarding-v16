@@ -289,8 +289,16 @@ export function PublishProgressDialog({
     const unsub2 = wsClient.on("publish_progress", (data: unknown) => {
       const payload = data as PublishProgressPayload;
       if (payload.pluginId === pluginId && payload.siteId === siteId && !publishCompletedRef.current) {
+        // Use provided log OR generate a synthetic one from the progress message
         if (payload.log) {
           addLog(payload.log);
+        } else if (payload.message) {
+          addLog({
+            timestamp: new Date().toISOString(),
+            level: payload.status === "error" || payload.status === "failed" ? "error" : "info",
+            step: payload.stage,
+            message: payload.message,
+          });
         }
         
         setStages(prev => prev.map(s => {
@@ -342,23 +350,31 @@ export function PublishProgressDialog({
             : `Publish failed: ${payload.error || payload.message || 'Unknown error'}`,
         });
         
-        // Force all stages to final state
-        if (payload.stages) {
-          setStages(payload.stages.map(s => ({
-            ...s,
-            status: s.name === "version_check" ? "pending" : (wasSuccessful && s.status !== "skipped" ? "success" : s.status),
-          })));
-        } else {
-          setStages(prev => prev.map(s => ({
-            ...s,
-            status: s.name === "version_check" ? "pending" : (wasSuccessful ? "success" : (s.status === "running" || s.status === "pending" ? "error" : s.status))
-          })));
-        }
+        // Force ALL stages to final state in a single setStages call
+        const finalizeStages = (prev: PublishStage[]): PublishStage[] => {
+          const base = payload.stages || prev;
+          return base.map(s => {
+            if (s.name === "version_check") {
+              return { ...s, status: "pending" as const };
+            }
+            if (wasSuccessful && s.status !== "skipped") {
+              return { ...s, status: "success" as const };
+            }
+            if (!wasSuccessful && (s.status === "running" || s.status === "pending")) {
+              return { ...s, status: "error" as const };
+            }
+            return s;
+          });
+        };
+        setStages(finalizeStages);
 
-        // Version verification
+        // IMMEDIATELY unsubscribe — no more WS events for this session
+        forceUnsubAll();
+
+        // Version verification (delayed, won't conflict since we use functional updater)
         if (wasSuccessful && pluginId && siteId) {
           setStages(prev => prev.map(s => 
-            s.name === "version_check" ? { ...s, status: "running", message: "Checking remote version..." } : s
+            s.name === "version_check" ? { ...s, status: "running" as const, message: "Checking remote version..." } : s
           ));
           api.previewPublish(pluginId, siteId).then(response => {
             if (response.success && response.data) {
@@ -371,7 +387,7 @@ export function PublishProgressDialog({
               setStages(prev => prev.map(s => 
                 s.name === "version_check" ? { 
                   ...s, 
-                  status: versionMatch ? "success" : "error",
+                  status: (versionMatch ? "success" : "error") as PublishStage["status"],
                   message: versionMatch 
                     ? `Verified: v${newRemote} deployed` 
                     : `Version mismatch: remote=${newRemote || 'unknown'}, expected=${local}`
@@ -388,16 +404,12 @@ export function PublishProgressDialog({
             }
           }).catch(() => {
             setStages(prev => prev.map(s => 
-              s.name === "version_check" ? { ...s, status: "skipped", message: "Could not verify" } : s
+              s.name === "version_check" ? { ...s, status: "skipped" as const, message: "Could not verify" } : s
             ));
           });
         }
 
         onCompleteRef.current?.(wasSuccessful);
-        
-        // FORCE unsubscribe all WS listeners after completion
-        // This prevents any backend re-publish events from reaching this dialog
-        setTimeout(() => forceUnsubAll(), 500);
       }
     });
 
@@ -519,9 +531,9 @@ export function PublishProgressDialog({
                     <span className="text-muted-foreground">
                       Stage {Math.min(activeStageCount + 1, totalStages)} of {totalStages}
                     </span>
-                    <span className="font-medium">{Math.round(overallProgress)}%</span>
+                    <span className="font-medium">{isComplete ? 100 : Math.round(overallProgress)}%</span>
                   </div>
-                  <Progress value={overallProgress} className="h-2" />
+                  <Progress value={isComplete ? 100 : overallProgress} className="h-2" />
                 </div>
 
                 {/* Stage List */}
