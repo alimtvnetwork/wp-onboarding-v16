@@ -1,6 +1,6 @@
 # Error Modal — Copy & Export Format Samples
 
-> **Version:** 1.0.0  
+> **Version:** 2.0.0  
 > **Updated:** 2026-02-11  
 > **Status:** Active  
 > **Purpose:** Complete, copy-pasteable samples of every error report format produced by the Global Error Modal. Any AI or developer receiving these samples can replicate the exact output.
@@ -544,7 +544,7 @@ This is the raw JSON response from the Go backend when an error occurs. See `spe
 
 ## 8. Session Diagnostics (JSON)
 
-Fetched via `GET /api/v1/request-sessions/{sessionId}` when `sessionId` is present.
+Fetched via `GET /api/v1/sessions/{sessionId}/diagnostics` (for diagnostics) and `GET /api/v1/sessions/{sessionId}/logs` (for logs) when `sessionId` is present. Raw session data also available via `GET /api/v1/request-sessions/{sessionId}`.
 
 ### Complete Sample
 

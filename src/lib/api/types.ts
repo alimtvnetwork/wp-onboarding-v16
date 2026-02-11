@@ -34,11 +34,22 @@ export interface EnvelopeNavigation {
   CloserLinks: string[];
 }
 
+export interface DelegatedRequestServer {
+  DelegatedEndpoint: string;
+  Method: string;
+  StatusCode: number;
+  RequestBody?: unknown;
+  Response?: unknown;
+  StackTrace?: string[];
+  AdditionalMessages?: string;
+}
+
 export interface EnvelopeErrors {
   BackendMessage: string;
   DelegatedServiceErrorStack?: string[];
   Backend?: string[];
   Frontend?: string[];
+  DelegatedRequestServer?: DelegatedRequestServer;
 }
 
 export interface EnvelopeMethodFrame {

@@ -360,37 +360,61 @@ Centralized Zustand store that captures:
 
 ```typescript
 interface CapturedError {
+  // Identity
+  id: string;
+  code: string;
+  level: 'error' | 'warn' | 'info';
   message: string;
-  component: string;          // React component name
-  action: string;             // User action that triggered it
-  trigger: string;            // Click/handler context
+  details?: string;
+  createdAt: string;
   
-  // Diagnostic data from envelope
-  backendMessage?: string;
-  delegatedServiceErrorStack?: string[];
-  methodsStack?: StackFrame[];
+  // API request context
+  endpoint?: string;
+  method?: string;
+  requestBody?: unknown;
+  responseStatus?: number;
+  
+  // Trigger context
+  triggerComponent?: string;
+  triggerAction?: string;
+  invocationChain?: string[];
+  
+  // Session-based logging
   sessionId?: string;
+  sessionType?: string;
   
-  // Delegated server details (NEW v2.0.0)
-  delegatedRequestServer?: DelegatedRequestServer;
+  // Universal Envelope diagnostic fields
+  requestedAt?: string;
+  requestDelegatedAt?: string;
+  envelopeErrors?: EnvelopeErrors;       // Contains DelegatedRequestServer (v2.0.0)
+  envelopeMethodsStack?: EnvelopeMethodsStack;
   
   // Frontend diagnostics
-  executionChain?: string;    // From React Execution Logger
-  clickPath?: string[];       // User interaction history
-  stackFrames?: ParsedFrame[];
+  parsedFrames?: StackFrame[];
+  uiClickPath?: ClickEvent[];
+  executionLogs?: ExecutionLogEntry[];
+  executionLogsFormatted?: string;
 }
 
-// NEW v2.0.0
-interface DelegatedRequestServer {
-  DelegatedEndpoint: string;
-  Method: string;
-  StatusCode: number;
-  RequestBody?: unknown;
-  Response?: unknown;
-  StackTrace?: string[];
-  AdditionalMessages?: string;
+// EnvelopeErrors contains DelegatedRequestServer (NEW v2.0.0)
+interface EnvelopeErrors {
+  BackendMessage: string;
+  DelegatedServiceErrorStack?: string[];  // Legacy PHP stack lines
+  Backend?: string[];
+  Frontend?: string[];
+  DelegatedRequestServer?: {              // NEW v2.0.0 — structured delegated error
+    DelegatedEndpoint: string;
+    Method: string;
+    StatusCode: number;
+    RequestBody?: unknown;
+    Response?: unknown;
+    StackTrace?: string[];
+    AdditionalMessages?: string;
+  };
 }
 ```
+
+> **Note:** `DelegatedRequestServer` is accessed via `error.envelopeErrors?.DelegatedRequestServer`, not as a top-level field on `CapturedError`. See `spec/error-modal/README.md` for the full interface.
 
 ### Envelope Parsing
 
