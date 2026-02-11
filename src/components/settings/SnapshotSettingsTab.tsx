@@ -12,7 +12,9 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
-import { SnapshotInterval, SnapshotSchedule } from "@/lib/api/types";
+import { SnapshotInterval, SnapshotSchedule, SnapshotRecord } from "@/lib/api/types";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { api } from "@/lib/api";
 import {
   Database,
   Plus,
@@ -22,10 +24,24 @@ import {
   Layers,
   Clock,
   Cpu,
+  History,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { formatDistanceToNow, format } from "date-fns";
 
 const INTERVAL_OPTIONS: { value: SnapshotInterval; label: string }[] = [
   { value: "hourly", label: "Every Hour" },
@@ -358,6 +374,150 @@ export function SnapshotSettingsTab() {
             )}
             Save Snapshot Settings
           </Button>
+        </div>
+      )}
+
+      <Separator />
+
+      {/* Snapshot History */}
+      <SnapshotHistoryViewer />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Snapshot History Viewer                                                    */
+/* -------------------------------------------------------------------------- */
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; className: string; label: string }> = {
+  completed: { icon: CheckCircle2, className: "text-emerald-500", label: "Completed" },
+  success: { icon: CheckCircle2, className: "text-emerald-500", label: "Success" },
+  failed: { icon: XCircle, className: "text-destructive", label: "Failed" },
+  error: { icon: XCircle, className: "text-destructive", label: "Error" },
+  running: { icon: RefreshCw, className: "text-blue-500 animate-spin", label: "Running" },
+  in_progress: { icon: RefreshCw, className: "text-blue-500 animate-spin", label: "In Progress" },
+  pending: { icon: AlertCircle, className: "text-amber-500", label: "Pending" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const config = STATUS_CONFIG[status?.toLowerCase()] ?? {
+    icon: AlertCircle,
+    className: "text-muted-foreground",
+    label: status || "Unknown",
+  };
+  const Icon = config.icon;
+  return (
+    <span className={cn("inline-flex items-center gap-1 text-xs font-medium", config.className)}>
+      <Icon className="h-3.5 w-3.5" />
+      {config.label}
+    </span>
+  );
+}
+
+function SnapshotHistoryViewer() {
+  // Use siteId=0 as a sentinel — the settings page isn't site-scoped.
+  // The backend's /snapshots/history endpoint returns global history.
+  const {
+    data: snapshots,
+    isLoading,
+    refetch,
+    isFetching,
+  } = useApiQuery<SnapshotRecord[]>({
+    queryKey: ["snapshot-history"],
+    apiFn: () => api.getRemoteSnapshots(0),
+    endpoint: "/sites/0/snapshots",
+  });
+
+  const records = snapshots ?? [];
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <History className="h-4 w-4" />
+          Snapshot History
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="h-7 text-xs"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5 mr-1", isFetching && "animate-spin")} />
+          Refresh
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Recent snapshot runs and their outcomes
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-10 text-muted-foreground text-xs gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading history…
+        </div>
+      ) : records.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground text-xs border rounded-md border-dashed">
+          No snapshot history yet. Snapshots will appear here after the first run.
+        </div>
+      ) : (
+        <div className="rounded-md border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40">
+                <TableHead className="text-xs w-[50px]">#</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
+                <TableHead className="text-xs">Scope</TableHead>
+                <TableHead className="text-xs hidden sm:table-cell">Tables</TableHead>
+                <TableHead className="text-xs hidden md:table-cell">Rows</TableHead>
+                <TableHead className="text-xs hidden md:table-cell">Size</TableHead>
+                <TableHead className="text-xs">Created</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {records.map((snap) => (
+                <TableRow key={snap.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {snap.sequence}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={snap.status} />
+                    {snap.error && (
+                      <p className="text-[10px] text-destructive mt-0.5 truncate max-w-[200px]" title={snap.error}>
+                        {snap.error}
+                      </p>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs capitalize">{snap.scope}</TableCell>
+                  <TableCell className="text-xs hidden sm:table-cell">
+                    <span className="font-mono">{snap.tables?.split(",").length ?? 0}</span>
+                  </TableCell>
+                  <TableCell className="text-xs font-mono hidden md:table-cell">
+                    {snap.total_rows?.toLocaleString() ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs font-mono hidden md:table-cell">
+                    {snap.file_size ? formatBytes(snap.file_size) : "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    <span title={snap.created_at ? format(new Date(snap.created_at), "PPpp") : ""}>
+                      {snap.created_at
+                        ? formatDistanceToNow(new Date(snap.created_at), { addSuffix: true })
+                        : "—"}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
