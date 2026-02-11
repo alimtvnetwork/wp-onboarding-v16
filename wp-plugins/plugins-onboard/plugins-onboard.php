@@ -3,7 +3,7 @@
  * Plugin Name: Plugins Onboard
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Manages plugin onboarding and snapshots with robust security, OAuth 2.0 authentication, and comprehensive audit logging.
- * Version: 1.53.0
+ * Version: 1.0.8
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL-2.0+
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define core plugin constants (these never change).
-define('ONBOARD_PLUGIN_VERSION', '1.53.0');
+define('ONBOARD_PLUGIN_VERSION', '1.0.8');
 define('ONBOARD_PLUGIN_FILE', __FILE__);
 define('ONBOARD_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ONBOARD_PLUGIN_URL', plugin_dir_url(__FILE__));
