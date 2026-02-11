@@ -42,6 +42,8 @@ export type {
   AvailableTable,
   PublishHistoryEntry,
   PublishHistoryStats,
+  SnapshotSchedule,
+  SnapshotInterval,
   RequestSessionRecord,
   RequestSessionListResponse,
 } from './types';
