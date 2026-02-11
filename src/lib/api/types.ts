@@ -126,6 +126,7 @@ export interface Plugin {
   name: string;
   path: string;
   version?: string;
+  pinned?: boolean;
   category: string | null;
   watchEnabled: boolean;
   autoPublish: boolean;

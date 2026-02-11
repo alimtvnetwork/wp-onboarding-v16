@@ -33,8 +33,8 @@ export function SiteVersionBadge({ pluginId, siteId, localVersion, className = "
           v{localVersion}
         </Badge>
       ) : (
-        <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5 text-muted-foreground">
-          local
+        <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5 text-muted-foreground italic">
+          unknown
         </Badge>
       )}
 
