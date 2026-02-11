@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Terminal, ChevronDown, ChevronUp, Copy } from "lucide-react";
+import { Terminal, ChevronDown, ChevronUp, Copy, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -48,8 +48,8 @@ export function LogViewer({
 
   const formatTs = (ts: string) => formatTime24h(ts);
 
-  const copyLogs = () => {
-    const text = logs
+  const formatLogText = () => {
+    return logs
       .map((l) => {
         const base = `[${formatTs(l.timestamp)}] [${l.level.toUpperCase()}] [${l.step}] ${unescapeEmbeddedNewlines(l.message)}`;
         if (l.details && Object.keys(l.details).length > 0) {
@@ -59,8 +59,25 @@ export function LogViewer({
         return base;
       })
       .join("\n\n");
-    navigator.clipboard.writeText(toClipboardText(text));
+  };
+
+  const copyLogs = () => {
+    navigator.clipboard.writeText(toClipboardText(formatLogText()));
     toast.success("Logs copied to clipboard");
+  };
+
+  const downloadLogs = () => {
+    const text = formatLogText();
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `publish-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Logs downloaded");
   };
 
   const getLevelColor = (level: LogEntry["level"]) => {
@@ -97,17 +114,32 @@ export function LogViewer({
         </div>
         <div className="flex items-center gap-2">
           {logs.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                copyLogs();
-              }}
-            >
-              <Copy className="h-3 w-3" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  downloadLogs();
+                }}
+                title="Download logs"
+              >
+                <Download className="h-3 w-3" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyLogs();
+                }}
+                title="Copy logs"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </>
           )}
           {showToggle && (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
