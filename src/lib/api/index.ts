@@ -11,6 +11,7 @@ export type {
   EnvelopeAttributes,
   EnvelopeNavigation,
   EnvelopeErrors,
+  DelegatedRequestServer,
   EnvelopeMethodFrame,
   EnvelopeMethodsStack,
   EnvelopeMeta,

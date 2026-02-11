@@ -144,8 +144,8 @@ export interface CapturedError {
   envelopeErrors?: EnvelopeErrors;         // Errors block from envelope
   envelopeMethodsStack?: EnvelopeMethodsStack; // MethodsStack block from envelope
 
-  // === Delegated Server Details (NEW v2.0.0) ===
-  delegatedRequestServer?: DelegatedRequestServer; // Full delegated server error info
+  // NOTE: DelegatedRequestServer data is accessed via envelopeErrors.DelegatedRequestServer
+  // There is no top-level delegatedRequestServer field — it lives inside the envelope Errors block.
 }
 ```
 
