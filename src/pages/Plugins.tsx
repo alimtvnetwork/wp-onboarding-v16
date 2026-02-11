@@ -409,7 +409,7 @@ export default function Plugins() {
         keepZipFiles,
       });
       if (response.success) {
-        toast.success(`Published ${response.data?.filesUpdated || 0} files`);
+        // Toast is handled by WebSocket PUBLISH_COMPLETE event — do not duplicate here
         // Set permanent cooldown — only user clicking publish again should reset this
         publishCooldownRef.current = Date.now();
         // Refresh data without triggering re-publish

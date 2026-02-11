@@ -139,11 +139,9 @@ export function useQuickPublish() {
     const successCount = results.filter(r => r.success).length;
     const failCount = results.filter(r => !r.success).length;
 
-    if (failCount === 0) {
-      toast.success(`Published ${plugin.name} to ${successCount} site(s)`);
-    } else if (successCount === 0) {
-      toast.error(`Failed to publish ${plugin.name} to all sites`);
-    } else {
+    // Individual toasts are handled by WebSocket PUBLISH_COMPLETE events — do not duplicate here
+    // Only show a summary toast for mixed results (partial failures)
+    if (failCount > 0 && successCount > 0) {
       toast.warning(`Published to ${successCount} sites, failed on ${failCount}`);
     }
 
