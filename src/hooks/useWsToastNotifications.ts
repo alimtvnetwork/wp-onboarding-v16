@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
-import { toast } from "sonner";
+import { dedupToast as toast } from "@/lib/dedupToast";
 import { useNotificationStore, type NotificationType } from "@/stores/notificationStore";
 
 /**
