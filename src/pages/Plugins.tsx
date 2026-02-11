@@ -869,6 +869,11 @@ export default function Plugins() {
                     <div className="min-w-0 flex-1">
                       <CardTitle className="text-base flex items-center gap-2 flex-wrap">
                         <span className="truncate max-w-[200px]">{plugin.name}</span>
+                        {plugin.version && (
+                          <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
+                            v{plugin.version}
+                          </Badge>
+                        )}
                         <CategoryBadge category={plugin.category} size="sm" />
                         {plugin.gitEnabled && (
                           <Badge variant="secondary" className="text-xs">
@@ -1363,7 +1368,7 @@ export default function Plugins() {
               Publish Plugin
             </DialogTitle>
             <DialogDescription>
-              Deploy <strong>{publishPlugin?.name}</strong> to a WordPress site.
+              Deploy <strong>{publishPlugin?.name}</strong>{publishPlugin?.version ? ` (v${publishPlugin.version})` : ""} to a WordPress site.
             </DialogDescription>
           </DialogHeader>
 
@@ -1385,6 +1390,7 @@ export default function Plugins() {
                       <SiteVersionBadge 
                         pluginId={publishPlugin.id} 
                         siteId={mapping.siteId}
+                        localVersion={publishPlugin.version}
                         className="mt-1.5"
                       />
                       <p className="text-xs text-muted-foreground truncate mt-1">{mapping.siteUrl}</p>
