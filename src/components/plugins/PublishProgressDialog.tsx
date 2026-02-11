@@ -463,21 +463,21 @@ export function PublishProgressDialog({
 
         {/* Tabbed content for better screen fit */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 flex-shrink-0">
-            <TabsTrigger value="progress" className="gap-1 text-xs sm:text-sm">
+          <TabsList className="w-full flex flex-shrink-0">
+            <TabsTrigger value="progress" className="flex-1 gap-1 text-xs sm:text-sm">
               <ListChecks className="h-3 w-3" />
               Progress
             </TabsTrigger>
-            <TabsTrigger value="logs" className="gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="logs" className="flex-1 gap-1 text-xs sm:text-sm">
               <Terminal className="h-3 w-3" />
               Logs
               <Badge variant="secondary" className="ml-1 text-[10px]">{logs.length}</Badge>
             </TabsTrigger>
-            <TabsTrigger value="diagnostics" className="gap-1 text-xs sm:text-sm">
+            <TabsTrigger value="diagnostics" className="flex-1 gap-1 text-xs sm:text-sm">
               <Activity className="h-3 w-3" />
               Diag
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-1 text-xs sm:text-sm" disabled={isComplete}>
+            <TabsTrigger value="settings" className="flex-1 gap-1 text-xs sm:text-sm" disabled={isComplete}>
               <Settings2 className="h-3 w-3" />
               Settings
             </TabsTrigger>
@@ -513,7 +513,21 @@ export function PublishProgressDialog({
                     >
                       {getStageIcon(stage)}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{stage.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{stage.label}</p>
+                          {/* Show local version on deploy stages, remote on version_check */}
+                          {stage.name !== "version_check" && localVersion && stage.status !== "pending" && (
+                            <Badge className="text-[10px] font-mono h-4 px-1.5 bg-primary/80 text-primary-foreground">
+                              v{localVersion}
+                            </Badge>
+                          )}
+                          {stage.name === "version_check" && remoteVersion && stage.status !== "pending" && (
+                            <Badge variant="outline" className="text-[10px] font-mono h-4 px-1.5 border-accent text-accent-foreground">
+                              v{remoteVersion}
+                              <span className="ml-1 text-muted-foreground font-normal">server</span>
+                            </Badge>
+                          )}
+                        </div>
                         {stage.message && (
                           <p className="text-xs text-muted-foreground truncate">
                             {stage.message}
@@ -521,12 +535,12 @@ export function PublishProgressDialog({
                         )}
                       </div>
                       {stage.status === "success" && (
-                        <Badge variant="outline" className="text-xs text-primary border-primary/30">
+                        <Badge variant="outline" className="text-xs text-primary border-primary/30 flex-shrink-0">
                           Done
                         </Badge>
                       )}
                       {stage.status === "error" && (
-                        <Badge variant="outline" className="text-xs text-destructive border-destructive/30">
+                        <Badge variant="outline" className="text-xs text-destructive border-destructive/30 flex-shrink-0">
                           Failed
                         </Badge>
                       )}
