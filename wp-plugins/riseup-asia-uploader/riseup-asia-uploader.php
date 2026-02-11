@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.54.0
+ * Version: 1.55.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -4165,6 +4165,15 @@ class Riseup_Asia {
     public function handle_create_snapshot($request) {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
+            $scope = isset($body['scope']) ? sanitize_key($body['scope']) : 'all';
+
+            // Log activity: snapshot creation initiated
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_CREATE,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated')
+            );
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $settings = $manager->getSettings();
@@ -4174,18 +4183,28 @@ class Riseup_Asia {
                 $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
                 $result = $orchestrator->executeFullBackup(array(
                     'title'            => $body['title'] ?? null,
-                    'scope'            => isset($body['scope']) ? sanitize_key($body['scope']) : null,
+                    'scope'            => $scope,
                     'include_plugins'  => $body['include_plugins'] ?? null,
                     'plugin_selection' => $body['plugin_selection'] ?? null,
                     'compression'      => $body['compression'] ?? null,
                 ));
+
+                // Log result
+                $this->logger->log_plugin_action(
+                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    'snapshot',
+                    $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                    array('scope' => $scope, 'mode' => 'per_table', 'phase' => 'complete'),
+                    $result['success'] ? null : ($result['error'] ?? 'Unknown error')
+                );
+
                 $status_code = $result['success'] ? 201 : 500;
                 return new WP_REST_Response($result, $status_code);
             }
 
             // Legacy single-db mode via provider
             $options = array(
-                'scope'   => isset($body['scope']) ? sanitize_key($body['scope']) : RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
+                'scope'   => $scope,
                 'trigger' => RISEUP_SNAPSHOT_TRIGGER_API,
                 'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
             );
@@ -4193,6 +4212,15 @@ class Riseup_Asia {
             $this->file_logger->info('Creating snapshot via API (legacy mode)', array('scope' => $options['scope']));
 
             $result = $manager->createSnapshot($options);
+
+            // Log result
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_CREATE,
+                'snapshot',
+                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                array('scope' => $scope, 'mode' => 'legacy', 'phase' => 'complete'),
+                $result['success'] ? null : ($result['error'] ?? 'Unknown error')
+            );
 
             $status_code = $result['success'] ? 201 : 500;
             return new WP_REST_Response($result, $status_code);
@@ -4243,6 +4271,15 @@ class Riseup_Asia {
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $result = $manager->deleteSnapshot($id);
 
+            // Log activity
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_DELETE,
+                'snapshot',
+                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                array('snapshot_id' => $id),
+                $result['success'] ? null : ($result['error'] ?? 'Delete failed')
+            );
+
             $status_code = $result['success'] ? 200 : 400;
             return new WP_REST_Response($result, $status_code);
         }, 'delete_snapshot');
@@ -4269,6 +4306,14 @@ class Riseup_Asia {
                 'apply_incrementals' => isset($body['applyIncrementals']) ? (bool) $body['applyIncrementals'] : true,
             );
 
+            // Log activity: restore initiated
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_RESTORE,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated')
+            );
+
             $this->file_logger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
@@ -4282,6 +4327,16 @@ class Riseup_Asia {
                     $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
                     $engine = RiseupRestoreEngine::getInstance($this->file_logger, $this->db, $orchestrator);
                     $result = $engine->execute($snapshot_dir, $options);
+
+                    // Log result
+                    $this->logger->log_plugin_action(
+                        RISEUP_ACTION_SNAPSHOT_RESTORE,
+                        'snapshot',
+                        $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                        array('snapshot_id' => $id, 'mode' => 'per_table', 'phase' => 'complete'),
+                        $result['success'] ? null : ($result['error'] ?? 'Restore failed')
+                    );
+
                     $status_code = $result['success'] ? 200 : 400;
                     return new WP_REST_Response($result, $status_code);
                 }
@@ -4289,6 +4344,15 @@ class Riseup_Asia {
 
             // Fallback to legacy single-file restore
             $result = $manager->restoreSnapshot($id, $options);
+
+            // Log result
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_RESTORE,
+                'snapshot',
+                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                array('snapshot_id' => $id, 'mode' => 'legacy', 'phase' => 'complete'),
+                $result['success'] ? null : ($result['error'] ?? 'Restore failed')
+            );
 
             $status_code = $result['success'] ? 200 : 400;
             return new WP_REST_Response($result, $status_code);
@@ -4355,14 +4419,37 @@ class Riseup_Asia {
             $result = $manager->exportSnapshot($id);
 
             if (RiseupBooleanHelpers::is_falsy($result['success'])) {
+                // Log failure
+                $this->logger->log_plugin_action(
+                    RISEUP_ACTION_SNAPSHOT_EXPORT,
+                    'snapshot',
+                    RISEUP_STATUS_FAILED,
+                    array('snapshot_id' => $id),
+                    $result['error'] ?? 'Export failed'
+                );
                 return $this->error_response($result['error'], 400);
             }
 
             // Stream the ZIP file as download
             $filepath = $result['filepath'];
             if (RiseupBooleanHelpers::is_file_missing($filepath)) {
+                $this->logger->log_plugin_action(
+                    RISEUP_ACTION_SNAPSHOT_EXPORT,
+                    'snapshot',
+                    RISEUP_STATUS_FAILED,
+                    array('snapshot_id' => $id),
+                    'Export file not found'
+                );
                 return $this->error_response('Export file not found', 500);
             }
+
+            // Log success
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_EXPORT,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('snapshot_id' => $id, 'filename' => $result['filename'], 'size' => $result['size'])
+            );
 
             // Return file info for client-side download
             return new WP_REST_Response(array(
@@ -4389,15 +4476,33 @@ class Riseup_Asia {
             }
 
             $tmp_file = $files['file']['tmp_name'];
+            $original_name = $files['file']['name'] ?? 'unknown';
             $this->file_logger->info('Importing snapshot from uploaded ZIP', array(
-                'originalName' => $files['file']['name'],
+                'originalName' => $original_name,
                 'size'         => $files['file']['size'],
             ));
+
+            // Log activity: import initiated
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_IMPORT,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
+            );
 
             // Use enhanced import engine that handles both legacy and per-table formats
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $importer = new RiseupSnapshotImport($this->file_logger, $this->db, $manager);
             $result = $importer->import($tmp_file);
+
+            // Log result
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_IMPORT,
+                'snapshot',
+                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                array('filename' => $original_name, 'phase' => 'complete'),
+                $result['success'] ? null : ($result['error'] ?? 'Import failed')
+            );
 
             $status_code = $result['success'] ? 201 : 400;
             return new WP_REST_Response($result, $status_code);
@@ -4435,6 +4540,14 @@ class Riseup_Asia {
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $updated = $manager->updateSettings($body);
+
+            // Log settings update
+            $this->logger->log_plugin_action(
+                'snapshot_settings_update',
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('keys' => array_keys($body))
+            );
 
             return new WP_REST_Response(array(
                 'success'  => true,
