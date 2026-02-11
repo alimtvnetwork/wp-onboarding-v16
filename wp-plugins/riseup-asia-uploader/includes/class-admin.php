@@ -41,6 +41,7 @@ class Riseup_Admin {
             'logs_stats'   => array('enabled' => true, 'auth_required' => true),
             'openapi'      => array('enabled' => true, 'auth_required' => true),
             'error_logs'   => array('enabled' => true, 'auth_required' => true),
+            'snapshots'    => array('enabled' => true, 'auth_required' => true),
         ),
         'log_retrieval' => array(
             'include_error_log'  => true,
