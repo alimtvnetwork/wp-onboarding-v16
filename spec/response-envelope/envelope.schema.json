@@ -78,7 +78,7 @@
         },
         "RequestDelegatedAt": {
           "type": "string",
-          "description": "Downstream endpoint (PHP/other) if request was proxied; empty if not delegated."
+          "description": "REQUIRED when the Go backend proxied/delegated the request to any downstream service. Must contain the full URL of the downstream endpoint (e.g., 'https://example.com/wp-json/...'). Empty string only when the request was NOT delegated."
         },
         "SessionId": {
           "type": "string",
@@ -165,7 +165,7 @@
             { "$ref": "#/$defs/DelegatedRequestServer" },
             { "type": "null" }
           ],
-          "description": "Structured error details from the delegated downstream server (PHP, Chrome extension, or any 3rd-party). Present only when the Go backend proxied a request that failed."
+          "description": "REQUIRED when IsFailed=true AND RequestDelegatedAt is non-empty. Must contain structured error details from the delegated downstream server (PHP, Chrome extension, or any 3rd-party). Omitting this when a delegated request failed is a backend bug."
         }
       }
     },
