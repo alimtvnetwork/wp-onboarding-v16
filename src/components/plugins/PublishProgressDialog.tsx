@@ -413,7 +413,31 @@ export function PublishProgressDialog({
       }
     });
 
-    unsubsRef.current = [unsub1, unsub2, unsub3];
+    // Listen for detailed log events (upload results, activate details, etc.)
+    const unsub4 = wsClient.on(WS_EVENTS.LOG, (data: unknown) => {
+      const payload = data as {
+        pluginId?: number;
+        siteId?: number;
+        operationType?: string;
+        log: {
+          timestamp: string;
+          level: string;
+          step: string;
+          message: string;
+          details?: Record<string, unknown>;
+        };
+      };
+      if (
+        payload.operationType === "publish" &&
+        payload.pluginId === pluginId &&
+        (payload.siteId === undefined || payload.siteId === siteId) &&
+        !publishCompletedRef.current
+      ) {
+        addLog({ ...payload.log, level: payload.log.level as LogEntry["level"] });
+      }
+    });
+
+    unsubsRef.current = [unsub1, unsub2, unsub3, unsub4];
 
     return () => {
       forceUnsubAll();
