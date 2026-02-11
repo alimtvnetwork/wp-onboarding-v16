@@ -74,7 +74,8 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       return throwIfFailed(res, "Failed to fetch snapshots") as SnapshotRecord[];
     },
     enabled,
-    retry: 1,
+    retry: false,
+    refetchOnWindowFocus: false,
     meta: { suppressGlobalError: true },
     refetchInterval: (query) => {
       const data = query.state.data as SnapshotRecord[] | undefined;
@@ -91,7 +92,8 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       return throwIfFailed(res, "Failed to fetch settings") as SnapshotSettings;
     },
     enabled,
-    retry: 1,
+    retry: false,
+    refetchOnWindowFocus: false,
     meta: { suppressGlobalError: true },
   });
 
@@ -102,7 +104,8 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       return throwIfFailed(res, "Failed to fetch providers") as SnapshotProviderInfo[];
     },
     enabled,
-    retry: 1,
+    retry: false,
+    refetchOnWindowFocus: false,
     meta: { suppressGlobalError: true },
   });
 
