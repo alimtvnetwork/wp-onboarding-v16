@@ -353,7 +353,30 @@ export interface Settings {
   pagination?: {
     defaultPerPage: number;
   };
+  snapshots?: {
+    enabled: boolean;
+    schedules: SnapshotSchedule[];
+    storageMode: "single" | "per-table";
+    workerCount: number;
+    batchSize: number;
+  };
 }
+
+export interface SnapshotSchedule {
+  id: string;
+  interval: SnapshotInterval;
+  enabled: boolean;
+}
+
+export type SnapshotInterval =
+  | "hourly"
+  | "3h"
+  | "6h"
+  | "12h"
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly";
 
 // Error History Types
 export interface ErrorHistoryInput {

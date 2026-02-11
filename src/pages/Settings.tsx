@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { api } from "@/lib/api";
-import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield } from "lucide-react";
+import { Eye, Archive, Palette, Loader2, Upload, Bug, RotateCcw, Zap, Info, ChevronRight, Shield, Database } from "lucide-react";
 import { AboutPanel } from "@/components/settings/AboutPanel";
+import { SnapshotSettingsTab } from "@/components/settings/SnapshotSettingsTab";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { useLocation } from "react-router-dom";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -26,7 +27,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useErrorStore } from "@/stores/errorStore";
 
-type SettingsTab = "watching" | "backups" | "publish" | "appearance" | "developer" | "about";
+type SettingsTab = "watching" | "backups" | "snapshots" | "publish" | "appearance" | "developer" | "about";
 
 interface TabItem {
   id: SettingsTab;
@@ -37,6 +38,7 @@ interface TabItem {
 const TABS: TabItem[] = [
   { id: "watching", label: "File Watching", icon: <Eye className="h-4 w-4" /> },
   { id: "backups", label: "Backups", icon: <Archive className="h-4 w-4" /> },
+  { id: "snapshots", label: "Snapshots", icon: <Database className="h-4 w-4" /> },
   { id: "publish", label: "Publish", icon: <Upload className="h-4 w-4" /> },
   { id: "appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
   { id: "developer", label: "Developer", icon: <Bug className="h-4 w-4" /> },
@@ -442,6 +444,9 @@ export default function Settings() {
             </div>
           </div>
         );
+        
+      case "snapshots":
+        return <SnapshotSettingsTab />;
         
       case "publish":
         return (
