@@ -3,7 +3,7 @@
  * Plugin Name: Riseup Asia Uploader
  * Plugin URI: https://rasia.pro/alim-r-profile-v1
  * Description: Remote plugin management, blog post publishing, delta file sync, auto-update with 301 redirect resolution, and audit logging via REST API with Application Password authentication.
- * Version: 1.53.0
+ * Version: 1.54.0
  * Author: MD ALIM UL KARIM
  * Author URI: https://rasia.pro/alim-r-profile-v1
  * License: GPL v2 or later
@@ -390,6 +390,10 @@ class Riseup_Asia {
         add_action('activated_plugin', array($this, 'on_plugin_activated'), 10, 2);
         add_action('deactivated_plugin', array($this, 'on_plugin_deactivated'), 10, 2);
         add_action('deleted_plugin', array($this, 'on_plugin_deleted'), 10, 2);
+
+        // Enrich error responses with plugin_version, timestamp, and log_hint
+        add_filter('rest_post_dispatch', array($this, 'enrich_error_response'), 10, 3);
+
         $this->file_logger->info('REST routes and lifecycle hooks registered (pre-init)');
 
         // =====================================================================
@@ -988,7 +992,118 @@ class Riseup_Asia {
             'permission_callback' => $this->build_permission_callback('error_logs', array($this, 'check_logs_permission')),
         ));
 
+        // =================================================================
+        // CATCH-ALL ROUTE FOR INVALID PATHS
+        // Returns structured error instead of generic WordPress error.
+        // =================================================================
+        $safe_register('(?P<invalid_path>.+)', array(
+            'methods'             => array('GET', 'POST', 'PUT', 'PATCH', 'DELETE'),
+            'callback'            => array($this, 'handle_invalid_route'),
+            'permission_callback' => '__return_true',
+        ));
+
         $this->file_logger->info("REST API route registration complete: $registered registered, $failed failed");
+    }
+
+    /**
+     * Handle requests to invalid/unrecognized routes within our namespace.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Structured 404 error response.
+     */
+    public function handle_invalid_route($request) {
+        $invalid_path = $request->get_param('invalid_path');
+        $method = $request->get_method();
+
+        $this->file_logger->warn('Invalid route requested', array(
+            'path'   => $invalid_path,
+            'method' => $method,
+        ));
+
+        // Generate stack trace for diagnostics
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
+        $frames = function_exists('riseup_backtrace_to_frames')
+            ? riseup_backtrace_to_frames($backtrace)
+            : array();
+
+        $trace_lines = array();
+        foreach ($backtrace as $i => $frame) {
+            $file = isset($frame['file']) ? basename($frame['file']) : '[internal]';
+            $line = isset($frame['line']) ? $frame['line'] : '?';
+            $func = isset($frame['function']) ? $frame['function'] : '';
+            $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
+            $trace_lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
+        }
+
+        return RiseupEnvelopeBuilder::error(
+            "No endpoint found for: {$method} /{$invalid_path}",
+            RISEUP_HTTP_NOT_FOUND
+        )
+            ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
+            ->setErrors(array(
+                'BackendMessage'              => "Route not found: {$method} /{$invalid_path}",
+                'DelegatedServiceErrorStack'  => $trace_lines,
+                'Backend'                     => array_map(function($f) {
+                    $file = isset($f['fileBase']) ? $f['fileBase'] : '';
+                    $line = isset($f['line']) ? $f['line'] : 0;
+                    $fn = isset($f['function']) ? $f['function'] : '';
+                    $cls = isset($f['class']) ? $f['class'] . '::' : '';
+                    return "{$file}:{$line} {$cls}{$fn}";
+                }, $frames),
+                'Frontend'                    => array(),
+            ))
+            ->toResponse();
+    }
+
+    /**
+     * Enrich error responses from our namespace with plugin metadata.
+     *
+     * Adds plugin_version, timestamp, and log_hint to all 4xx/5xx responses
+     * from the riseup-asia-uploader REST namespace.
+     *
+     * @param WP_REST_Response $response Response object.
+     * @param WP_REST_Server   $server   REST server.
+     * @param WP_REST_Request  $request  Request object.
+     * @return WP_REST_Response Modified response.
+     */
+    public function enrich_error_response($response, $server, $request) {
+        // Only process our namespace
+        $route = $request->get_route();
+        if (strpos($route, '/' . RISEUP_API_FULL_NAMESPACE) === false) {
+            return $response;
+        }
+
+        $status = $response->get_status();
+        if ($status < 400) {
+            return $response;
+        }
+
+        $data = $response->get_data();
+        if (!is_array($data)) {
+            return $response;
+        }
+
+        // Inject metadata into the response
+        if (!isset($data['plugin_version'])) {
+            $data['plugin_version'] = RISEUP_VERSION;
+        }
+        if (!isset($data['timestamp'])) {
+            $data['timestamp'] = gmdate('c');
+        }
+        if (!isset($data['log_hint'])) {
+            $data['log_hint'] = 'Check the plugin error logs or the Activity Logs page for details.';
+        }
+
+        // Log the error for audit trail
+        $this->file_logger->error('REST API error response', array(
+            'route'          => $route,
+            'status'         => $status,
+            'message'        => isset($data['message']) ? $data['message'] : (isset($data['Status']['Message']) ? $data['Status']['Message'] : 'Unknown'),
+            'plugin_version' => RISEUP_VERSION,
+        ));
+
+        $response->set_data($data);
+        return $response;
     }
 
     // =========================================================================
@@ -4029,6 +4144,16 @@ class Riseup_Asia {
                 'total'     => $snapshots['total'],
             ), 200);
         }, 'list_snapshots');
+    }
+
+    /**
+     * Handle scheduling a snapshot (alias for handle_create_snapshot).
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_schedule_snapshot($request) {
+        return $this->handle_create_snapshot($request);
     }
 
     /**
