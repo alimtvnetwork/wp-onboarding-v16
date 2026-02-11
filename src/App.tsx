@@ -85,6 +85,8 @@ function showGlobalError(error: unknown, context?: { endpoint?: string; method?:
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => {
+      // Skip global error modal for queries that opt out
+      if (query.meta?.suppressGlobalError) return;
       showGlobalError(error, { endpoint: String(query.queryKey?.[0] ?? "query") });
     },
   }),

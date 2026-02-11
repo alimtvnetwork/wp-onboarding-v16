@@ -595,6 +595,7 @@ function CronJobsPanel() {
     queryKey: ["snapshot-cron-jobs"],
     apiFn: () => api.getSnapshotCronJobs(0),
     endpoint: "/sites/0/snapshots/cron",
+    queryOptions: { retry: false, meta: { suppressGlobalError: true } },
   });
 
   const [syncing, setSyncing] = useState(false);
@@ -815,6 +816,7 @@ function SnapshotHistoryViewer() {
     queryKey: ["snapshot-history"],
     apiFn: () => api.getRemoteSnapshots(0),
     endpoint: "/sites/0/snapshots",
+    queryOptions: { retry: false, meta: { suppressGlobalError: true } },
   });
 
   const {
@@ -823,6 +825,7 @@ function SnapshotHistoryViewer() {
     queryKey: ["snapshot-cron-jobs-calendar"],
     apiFn: () => api.getSnapshotCronJobs(0),
     endpoint: "/sites/0/snapshots/cron",
+    queryOptions: { retry: false, meta: { suppressGlobalError: true } },
   });
 
   const [selectedSnapshot, setSelectedSnapshot] = useState<SnapshotRecord | null>(null);
