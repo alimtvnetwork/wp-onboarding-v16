@@ -511,7 +511,7 @@ When a session encounters an error, the backend writes a structured error log. T
   Requested To: GET http://localhost:8080/api/v1/sites/1/snapshots/settings
   Duration: 4.1904552s
   Error Code: 500
-  Error Message: [E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403
+  Error Message: [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403
   Backend Error: [E3025] [E3001] failed to fetch snapshot settings: ...
   Go Backend Stack:
     D:/.../handler_factory.go:107 handlers.init.handleSiteActionByID.func63

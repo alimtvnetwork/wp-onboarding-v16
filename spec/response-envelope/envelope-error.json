@@ -4,7 +4,7 @@
     "IsSuccess": false,
     "IsFailed": true,
     "Code": 500,
-    "Message": "[E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403",
+    "Message": "[E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403",
     "Timestamp": "2026-02-11T16:53:35Z"
   },
   "Attributes": {
@@ -21,7 +21,7 @@
   },
   "Results": [],
   "Errors": {
-    "BackendMessage": "[E3025] [E3001] failed to fetch snapshot settings: get snapshot settings (GET /riseup-asia-uploader/v1/snapshots/settings): status 403",
+    "BackendMessage": "[E3025] [E3001] failed to fetch snapshot settings: get snapshot settings (GET https://demoat.attoproperty.com.au/wp-json/riseup-asia-uploader/v1/snapshots/settings): status 403",
     "DelegatedServiceErrorStack": [
       "PHP Fatal error: Class 'PDO' not found in /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/plugin-manager.php on line 42",
       "Stack trace:",

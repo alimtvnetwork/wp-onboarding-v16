@@ -220,7 +220,7 @@ function OverviewContent({ error, formatTs, hasStackContent, hasExecutionContent
       )}
 
       {/* Missing delegation warning: error message references a 3rd-party endpoint but envelope lacks delegation fields */}
-      {error.envelopeErrors && !error.requestDelegatedAt && !error.envelopeErrors?.DelegatedRequestServer && error.message && /\((?:GET|POST|PUT|DELETE|PATCH) \/[a-z].*\/v\d+\//.test(error.message) && (
+      {error.envelopeErrors && !error.requestDelegatedAt && !error.envelopeErrors?.DelegatedRequestServer && error.message && /\((?:GET|POST|PUT|DELETE|PATCH) https?:\/\/[^\s)]+\/v\d+\//.test(error.message) && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3 space-y-1">
           <h4 className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
             <AlertTriangle className="h-3 w-3" />
