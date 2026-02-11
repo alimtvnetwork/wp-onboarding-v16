@@ -21,6 +21,11 @@ export function useSaveSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["settings"] });
+      // Cross-invalidate site snapshot settings & cron jobs to stay in sync
+      queryClient.invalidateQueries({ predicate: (q) => {
+        const key = q.queryKey;
+        return Array.isArray(key) && key.includes("snapshots") && (key.includes("settings") || key.includes("cron"));
+      }});
     },
   });
 }

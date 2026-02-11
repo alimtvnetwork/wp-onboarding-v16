@@ -156,9 +156,19 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
       const res = await api.updateRemoteSnapshotSettings(siteId, settings);
       return throwIfFailed(res, "Failed to update settings");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Snapshot settings updated");
+      // Invalidate both site-specific and global settings to keep them in sync
       queryClient.invalidateQueries({ queryKey: [...queryKey, "settings"] });
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      queryClient.invalidateQueries({ queryKey: ["snapshot-cron-jobs"] });
+      // Sync cron jobs to reflect schedule changes
+      try {
+        await api.syncSnapshotCronJobs(siteId);
+        queryClient.invalidateQueries({ queryKey: ["snapshot-cron-jobs"] });
+      } catch {
+        // silent — cron sync is best-effort
+      }
     },
     onError: (err: Error) => handleSnapshotError("Settings update failed", err),
   });
