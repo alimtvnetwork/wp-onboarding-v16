@@ -201,20 +201,17 @@ export function PublishProgressDialog({
       setBackendStackTrace(null);
       setLogs([]);
       setActiveTab("progress");
-      setLocalVersion(null);
       setRemoteVersion(null);
       
-      // Fetch version info immediately with high priority
+      // Fetch version info — local version comes back instantly from backend cache,
+      // remote version may take longer (network call to WP site)
       if (pluginId && siteId) {
-        // Use Promise.race with a timeout so UI never waits long
-        const versionPromise = api.previewPublish(pluginId, siteId).then(response => {
+        api.previewPublish(pluginId, siteId).then(response => {
           if (response.success && response.data) {
             setLocalVersion(response.data.localVersion || null);
             setRemoteVersion(response.data.remoteVersion || null);
           }
-        });
-        const timeoutPromise = new Promise(resolve => setTimeout(resolve, 3000));
-        Promise.race([versionPromise, timeoutPromise]).catch(() => {});
+        }).catch(() => {});
       }
     }
   }, [open, pluginId, siteId]);
@@ -287,6 +284,8 @@ export function PublishProgressDialog({
         setIsComplete(true);
         setIsSuccess(wasSuccessful);
         setFilesUpdated(payload.filesUpdated ?? null);
+        
+        // Force progress to 100% on completion — never leave it partial
         setOverallProgress(100);
         
         if (payload.error || (payload.message && !wasSuccessful)) {
@@ -312,18 +311,17 @@ export function PublishProgressDialog({
             : `Publish failed: ${payload.error || payload.message || 'Unknown error'}`,
         }]);
         
-        // FORCE all stages to correct final state when complete
+        // FORCE all stages (except version_check) to correct final state
         if (payload.stages) {
-          // If server provides stages, use them but ensure consistency
           setStages(payload.stages.map(s => ({
             ...s,
-            status: wasSuccessful && s.status !== "skipped" ? "success" : s.status,
+            // Keep version_check pending — it runs after completion
+            status: s.name === "version_check" ? "pending" : (wasSuccessful && s.status !== "skipped" ? "success" : s.status),
           })));
         } else {
-          // Mark ALL stages as success/error on completion
           setStages(prev => prev.map(s => ({
             ...s,
-            status: wasSuccessful ? "success" : (s.status === "running" || s.status === "pending" ? "error" : s.status)
+            status: s.name === "version_check" ? "pending" : (wasSuccessful ? "success" : (s.status === "running" || s.status === "pending" ? "error" : s.status))
           })));
         }
 
@@ -419,10 +417,16 @@ export function PublishProgressDialog({
           </DialogTitle>
           <DialogDescription className="flex items-center gap-2 flex-wrap min-h-0">
             <span className="truncate">Deploying <strong>{pluginName}</strong> to <strong className="truncate max-w-[200px] inline-block align-bottom">{siteName}</strong></span>
-            {(localVersion || remoteVersion) ? (
+            {localVersion ? (
               <span className="inline-flex items-center gap-1.5 text-xs flex-shrink-0">
+                {/* Local version (NEW) — highlighted */}
+                <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary text-primary-foreground font-bold">
+                  v{localVersion}
+                </Badge>
+                <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                {/* Remote version (OLD) — subtle */}
                 {remoteVersion ? (
-                  <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5">
+                  <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5 text-muted-foreground">
                     v{remoteVersion}
                   </Badge>
                 ) : (
@@ -430,21 +434,17 @@ export function PublishProgressDialog({
                     new install
                   </Badge>
                 )}
-                <ArrowRight className="h-3 w-3 text-primary flex-shrink-0" />
-                {localVersion ? (
-                  <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
-                    v{localVersion}
-                  </Badge>
-                ) : (
-                  <Badge className="text-[10px] font-mono h-5 px-1.5 bg-primary">
-                    latest
-                  </Badge>
-                )}
+              </span>
+            ) : remoteVersion ? (
+              <span className="inline-flex items-center gap-1.5 text-xs flex-shrink-0">
+                <Badge variant="outline" className="text-[10px] font-mono h-5 px-1.5 text-muted-foreground">
+                  v{remoteVersion}
+                </Badge>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
                 <div className="h-3 w-3 border border-muted-foreground/40 border-t-transparent rounded-full animate-spin" />
-                loading version...
+                loading...
               </span>
             )}
             {siteUrl && (

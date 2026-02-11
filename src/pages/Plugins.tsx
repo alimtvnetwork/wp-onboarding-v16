@@ -443,7 +443,11 @@ export default function Plugins() {
       });
     } finally {
       setIsPublishing(null);
-      publishGuardRef.current = false;
+      // Only reset guard on FAILURE so user can retry manually.
+      // On success, guard stays locked to prevent any re-trigger.
+      if (!publishCooldownRef.current) {
+        publishGuardRef.current = false;
+      }
     }
   };
 
