@@ -55,6 +55,7 @@ Every API response is a JSON object with the following top-level keys. All JSON 
     "HasAnyErrors": false,
     "IsSingle": false,
     "IsMultiple": true,
+    "IsEmpty": false,
     "TotalRecords": 47,
     "PerPage": 10,
     "TotalPages": 5,
@@ -70,6 +71,7 @@ Every API response is a JSON object with the following top-level keys. All JSON 
 | `HasAnyErrors` | bool | `true` if any errors occurred (even partial) |
 | `IsSingle` | bool | `true` if `Results` contains exactly one item |
 | `IsMultiple` | bool | `true` if `Results` contains multiple items |
+| `IsEmpty` | bool | `true` when `Results` is empty (`TotalRecords` is 0 or `Results` array has no items) |
 | `TotalRecords` | int | Total number of records across all pages |
 | `PerPage` | int | Number of records per page |
 | `TotalPages` | int | Total number of pages |

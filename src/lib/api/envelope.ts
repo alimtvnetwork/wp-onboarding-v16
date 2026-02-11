@@ -42,6 +42,14 @@ export function isEnvelope(obj: unknown): obj is RawEnvelope {
  * Envelope metadata is preserved on the .envelope property.
  */
 export function parseEnvelope<T>(env: RawEnvelope): ApiResponse<T> {
+  // Auto-derive IsEmpty if not provided by backend
+  if (env.Attributes.IsEmpty === undefined) {
+    env.Attributes.IsEmpty = !Array.isArray(env.Results) || env.Results.length === 0;
+  }
+  if (env.Attributes.IsEmpty && env.Attributes.TotalRecords === undefined) {
+    env.Attributes.TotalRecords = 0;
+  }
+
   const meta: EnvelopeMeta = {
     attributes: env.Attributes,
     navigation: env.Navigation ?? undefined,

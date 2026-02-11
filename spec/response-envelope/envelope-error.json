@@ -14,6 +14,7 @@
     "HasAnyErrors": true,
     "IsSingle": false,
     "IsMultiple": false,
+    "IsEmpty": true,
     "TotalRecords": 0,
     "PerPage": 0,
     "TotalPages": 0,

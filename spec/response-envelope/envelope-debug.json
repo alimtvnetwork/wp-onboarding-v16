@@ -13,6 +13,7 @@
     "HasAnyErrors": false,
     "IsSingle": true,
     "IsMultiple": false,
+    "IsEmpty": false,
     "TotalRecords": 1,
     "PerPage": 0,
     "TotalPages": 0,
