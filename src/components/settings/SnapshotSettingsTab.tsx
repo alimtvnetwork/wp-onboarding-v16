@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
 import { useSettings, useSaveSettings } from "@/hooks/useSettings";
 import { SnapshotInterval, SnapshotSchedule, SnapshotRecord, SnapshotCronJob } from "@/lib/api/types";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { api, requireSuccess } from "@/lib/api";
+import { wsClient, WS_EVENTS } from "@/lib/ws";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import {
   Database,
   Plus,
@@ -33,6 +42,10 @@ import {
   Pause,
   Zap,
   Radio,
+  Download,
+  RotateCcw,
+  Activity,
+  Server,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
@@ -106,11 +119,10 @@ export function SnapshotSettingsTab() {
               border: "none",
             },
           });
-          // Auto-sync cron jobs after saving schedules
           try {
             await api.syncSnapshotCronJobs(0);
           } catch {
-            // silent — cron panel will show stale state until refresh
+            // silent
           }
         },
         onError: (err) => toast.error(`Failed to save: ${err.message}`),
@@ -119,11 +131,9 @@ export function SnapshotSettingsTab() {
   };
 
   const addSchedule = () => {
-    // Pick first interval not already used
     const usedIntervals = new Set(schedules.map((s) => s.interval));
     const available = INTERVAL_OPTIONS.find((o) => !usedIntervals.has(o.value));
     const interval = available?.value || "daily";
-
     setSchedules((prev) => [
       ...prev,
       { id: generateId(), interval, enabled: true },
@@ -396,8 +406,277 @@ export function SnapshotSettingsTab() {
 
       <Separator />
 
+      {/* Live Progress Panel */}
+      <SnapshotProgressPanel />
+
+      <Separator />
+
       {/* Snapshot History */}
       <SnapshotHistoryViewer />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Phase 3: Live Worker-Pool Progress Panel                                  */
+/* -------------------------------------------------------------------------- */
+
+interface WorkerTableStatus {
+  table: string;
+  status: "pending" | "running" | "completed" | "failed";
+  rowsProcessed: number;
+  totalRows: number;
+  workerId?: number;
+  error?: string;
+}
+
+interface SnapshotProgress {
+  snapshotId?: number;
+  status: "idle" | "running" | "completed" | "failed";
+  totalTables: number;
+  completedTables: number;
+  totalRows: number;
+  processedRows: number;
+  activeWorkers: number;
+  tables: WorkerTableStatus[];
+  startedAt?: string;
+  error?: string;
+}
+
+function SnapshotProgressPanel() {
+  const [progress, setProgress] = useState<SnapshotProgress>({
+    status: "idle",
+    totalTables: 0,
+    completedTables: 0,
+    totalRows: 0,
+    processedRows: 0,
+    activeWorkers: 0,
+    tables: [],
+  });
+
+  useEffect(() => {
+    const unsubStarted = wsClient.on(WS_EVENTS.SNAPSHOT_STARTED, (data: unknown) => {
+      const d = data as {
+        snapshotId?: number;
+        totalTables: number;
+        totalRows: number;
+        tables: string[];
+        workerCount: number;
+      };
+      setProgress({
+        snapshotId: d.snapshotId,
+        status: "running",
+        totalTables: d.totalTables,
+        completedTables: 0,
+        totalRows: d.totalRows,
+        processedRows: 0,
+        activeWorkers: d.workerCount,
+        tables: d.tables.map((t) => ({
+          table: t,
+          status: "pending",
+          rowsProcessed: 0,
+          totalRows: 0,
+        })),
+        startedAt: new Date().toISOString(),
+      });
+    });
+
+    const unsubProgress = wsClient.on(WS_EVENTS.SNAPSHOT_PROGRESS, (data: unknown) => {
+      const d = data as {
+        table: string;
+        workerId: number;
+        rowsProcessed: number;
+        totalRows: number;
+        status: "running" | "completed" | "failed";
+        error?: string;
+      };
+      setProgress((prev) => {
+        if (prev.status !== "running") return prev;
+        const tables = prev.tables.map((t) =>
+          t.table === d.table
+            ? { ...t, status: d.status, rowsProcessed: d.rowsProcessed, totalRows: d.totalRows, workerId: d.workerId, error: d.error }
+            : t
+        );
+        const processedRows = tables.reduce((sum, t) => sum + t.rowsProcessed, 0);
+        const completedTables = tables.filter((t) => t.status === "completed" || t.status === "failed").length;
+        const activeWorkers = tables.filter((t) => t.status === "running").length;
+        return { ...prev, tables, processedRows, completedTables, activeWorkers };
+      });
+    });
+
+    const unsubTableComplete = wsClient.on(WS_EVENTS.SNAPSHOT_TABLE_COMPLETE, (data: unknown) => {
+      const d = data as { table: string; rowsProcessed: number; workerId: number };
+      setProgress((prev) => {
+        const tables = prev.tables.map((t) =>
+          t.table === d.table
+            ? { ...t, status: "completed" as const, rowsProcessed: d.rowsProcessed }
+            : t
+        );
+        const completedTables = tables.filter((t) => t.status === "completed" || t.status === "failed").length;
+        return { ...prev, tables, completedTables };
+      });
+    });
+
+    const unsubComplete = wsClient.on(WS_EVENTS.SNAPSHOT_COMPLETE, (data: unknown) => {
+      const d = data as { snapshotId?: number; success: boolean; error?: string; totalRows: number };
+      setProgress((prev) => ({
+        ...prev,
+        status: d.success ? "completed" : "failed",
+        processedRows: d.success ? prev.totalRows : prev.processedRows,
+        completedTables: d.success ? prev.totalTables : prev.completedTables,
+        activeWorkers: 0,
+        error: d.error,
+      }));
+    });
+
+    return () => {
+      unsubStarted();
+      unsubProgress();
+      unsubTableComplete();
+      unsubComplete();
+    };
+  }, []);
+
+  if (progress.status === "idle") {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Activity className="h-4 w-4" />
+          Live Progress
+        </div>
+        <div className="text-center py-6 text-muted-foreground text-xs border rounded-md border-dashed">
+          No snapshot running. Progress will appear here when a backup starts.
+        </div>
+      </div>
+    );
+  }
+
+  const overallPercent = progress.totalRows > 0
+    ? Math.round((progress.processedRows / progress.totalRows) * 100)
+    : progress.totalTables > 0
+      ? Math.round((progress.completedTables / progress.totalTables) * 100)
+      : 0;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Activity className={cn("h-4 w-4", progress.status === "running" && "animate-pulse text-blue-500")} />
+          Live Progress
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {progress.status === "running" && (
+            <>
+              <Server className="h-3.5 w-3.5" />
+              <span>{progress.activeWorkers} worker{progress.activeWorkers !== 1 ? "s" : ""} active</span>
+            </>
+          )}
+          <span
+            className={cn(
+              "text-[10px] uppercase font-medium tracking-wider",
+              progress.status === "running" && "text-blue-500",
+              progress.status === "completed" && "text-emerald-500",
+              progress.status === "failed" && "text-destructive",
+            )}
+          >
+            {progress.status}
+          </span>
+        </div>
+      </div>
+
+      {/* Overall progress bar */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{progress.completedTables}/{progress.totalTables} tables</span>
+          <span>{overallPercent}%</span>
+        </div>
+        <Progress value={overallPercent} className="h-2" />
+        <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>{progress.processedRows.toLocaleString()} / {progress.totalRows.toLocaleString()} rows</span>
+          {progress.startedAt && (
+            <span>Started {formatDistanceToNow(new Date(progress.startedAt), { addSuffix: true })}</span>
+          )}
+        </div>
+      </div>
+
+      {progress.error && (
+        <div className="text-xs text-destructive bg-destructive/10 rounded-md p-2 border border-destructive/20">
+          {progress.error}
+        </div>
+      )}
+
+      {/* Per-table worker status */}
+      {progress.tables.length > 0 && (
+        <div className="max-h-48 overflow-y-auto rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40">
+                <TableHead className="text-[11px] py-1.5">Table</TableHead>
+                <TableHead className="text-[11px] py-1.5 w-[60px]">Worker</TableHead>
+                <TableHead className="text-[11px] py-1.5">Progress</TableHead>
+                <TableHead className="text-[11px] py-1.5 w-[70px]">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {progress.tables.map((t) => {
+                const pct = t.totalRows > 0 ? Math.round((t.rowsProcessed / t.totalRows) * 100) : 0;
+                return (
+                  <TableRow key={t.table} className="text-xs">
+                    <TableCell className="py-1.5 font-mono text-[11px] truncate max-w-[150px]" title={t.table}>
+                      {t.table}
+                    </TableCell>
+                    <TableCell className="py-1.5 text-muted-foreground font-mono text-[11px]">
+                      {t.workerId != null ? `#${t.workerId}` : "—"}
+                    </TableCell>
+                    <TableCell className="py-1.5">
+                      <div className="flex items-center gap-2">
+                        <Progress value={t.status === "completed" ? 100 : pct} className="h-1.5 flex-1" />
+                        <span className="text-[10px] text-muted-foreground w-[30px] text-right">
+                          {t.status === "completed" ? "100%" : `${pct}%`}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-1.5">
+                      <span
+                        className={cn(
+                          "text-[10px] font-medium uppercase",
+                          t.status === "running" && "text-blue-500",
+                          t.status === "completed" && "text-emerald-500",
+                          t.status === "failed" && "text-destructive",
+                          t.status === "pending" && "text-muted-foreground",
+                        )}
+                      >
+                        {t.status}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {progress.status !== "running" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs h-7"
+          onClick={() =>
+            setProgress({
+              status: "idle",
+              totalTables: 0,
+              completedTables: 0,
+              totalRows: 0,
+              processedRows: 0,
+              activeWorkers: 0,
+              tables: [],
+            })
+          }
+        >
+          Dismiss
+        </Button>
+      )}
     </div>
   );
 }
@@ -596,7 +875,7 @@ function CronJobsPanel() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Snapshot History Viewer                                                    */
+/*  Snapshot History Viewer + Phase 4: Detail Drawer                           */
 /* -------------------------------------------------------------------------- */
 
 function formatBytes(bytes: number): string {
@@ -633,8 +912,6 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function SnapshotHistoryViewer() {
-  // Use siteId=0 as a sentinel — the settings page isn't site-scoped.
-  // The backend's /snapshots/history endpoint returns global history.
   const {
     data: snapshots,
     isLoading,
@@ -645,6 +922,8 @@ function SnapshotHistoryViewer() {
     apiFn: () => api.getRemoteSnapshots(0),
     endpoint: "/sites/0/snapshots",
   });
+
+  const [selectedSnapshot, setSelectedSnapshot] = useState<SnapshotRecord | null>(null);
 
   const records = snapshots ?? [];
 
@@ -667,7 +946,7 @@ function SnapshotHistoryViewer() {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Recent snapshot runs and their outcomes
+        Recent snapshot runs and their outcomes. Click a row for details.
       </p>
 
       {isLoading ? (
@@ -695,7 +974,11 @@ function SnapshotHistoryViewer() {
             </TableHeader>
             <TableBody>
               {records.map((snap) => (
-                <TableRow key={snap.id}>
+                <TableRow
+                  key={snap.id}
+                  className="cursor-pointer hover:bg-accent/40 transition-colors"
+                  onClick={() => setSelectedSnapshot(snap)}
+                >
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {snap.sequence}
                   </TableCell>
@@ -730,6 +1013,174 @@ function SnapshotHistoryViewer() {
           </Table>
         </div>
       )}
+
+      {/* Phase 4: Snapshot Detail Drawer */}
+      <SnapshotDetailDrawer
+        snapshot={selectedSnapshot}
+        onClose={() => setSelectedSnapshot(null)}
+        onRefresh={() => refetch()}
+      />
     </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Phase 4: Snapshot Detail Drawer                                           */
+/* -------------------------------------------------------------------------- */
+
+function SnapshotDetailDrawer({
+  snapshot,
+  onClose,
+  onRefresh,
+}: {
+  snapshot: SnapshotRecord | null;
+  onClose: () => void;
+  onRefresh: () => void;
+}) {
+  const [restoring, setRestoring] = useState(false);
+
+  const tableList = snapshot?.tables?.split(",").filter(Boolean) ?? [];
+
+  const handleRestore = async () => {
+    if (!snapshot) return;
+    setRestoring(true);
+    try {
+      const res = await api.restoreRemoteSnapshot(0, snapshot.id);
+      requireSuccess(res, { endpoint: `/sites/0/snapshots/${snapshot.id}/restore`, method: "POST" });
+      toast.success("Snapshot restore initiated");
+      onRefresh();
+    } catch (err: any) {
+      toast.error(`Restore failed: ${err.message}`);
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!snapshot) return;
+    const url = api.getRemoteSnapshotExportUrl(0, snapshot.id);
+    window.open(url, "_blank");
+  };
+
+  return (
+    <Sheet open={!!snapshot} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Snapshot #{snapshot?.sequence}
+          </SheetTitle>
+          <SheetDescription>
+            {snapshot?.created_at
+              ? format(new Date(snapshot.created_at), "PPpp")
+              : "Unknown date"}
+          </SheetDescription>
+        </SheetHeader>
+
+        {snapshot && (
+          <div className="mt-6 space-y-5">
+            {/* Status & Overview */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-lg border p-3 space-y-1">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Status</p>
+                <StatusBadge status={snapshot.status} />
+              </div>
+              <div className="rounded-lg border p-3 space-y-1">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Scope</p>
+                <p className="text-sm font-medium capitalize">{snapshot.scope}</p>
+              </div>
+              <div className="rounded-lg border p-3 space-y-1">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">Total Rows</p>
+                <p className="text-sm font-mono font-medium">{snapshot.total_rows?.toLocaleString() ?? "—"}</p>
+              </div>
+              <div className="rounded-lg border p-3 space-y-1">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">File Size</p>
+                <p className="text-sm font-mono font-medium">{snapshot.file_size ? formatBytes(snapshot.file_size) : "—"}</p>
+              </div>
+            </div>
+
+            {/* Provider & Filename */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Provider</span>
+                <span className="font-mono">{snapshot.provider || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Filename</span>
+                <span className="font-mono text-[11px] truncate max-w-[250px]" title={snapshot.filename}>
+                  {snapshot.filename || "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* Error Details */}
+            {snapshot.error && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                  <XCircle className="h-3.5 w-3.5" />
+                  Error Details
+                </p>
+                <div className="text-xs text-destructive bg-destructive/10 rounded-md p-3 border border-destructive/20 whitespace-pre-wrap break-words font-mono">
+                  {snapshot.error}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Table List */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" />
+                Tables ({tableList.length})
+              </p>
+              {tableList.length > 0 ? (
+                <div className="max-h-60 overflow-y-auto rounded-md border">
+                  <div className="divide-y">
+                    {tableList.map((table) => (
+                      <div key={table} className="flex items-center gap-2 px-3 py-2 text-xs">
+                        <Database className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="font-mono truncate">{table.trim()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">No table information available.</p>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="flex-1 text-xs"
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Download
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleRestore}
+                disabled={restoring || snapshot.status === "running" || snapshot.status === "in_progress"}
+                className="flex-1 text-xs"
+              >
+                {restoring ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Restore
+              </Button>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }

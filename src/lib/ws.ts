@@ -224,6 +224,11 @@ export const WS_EVENTS = {
   E2E_TEST_STARTED: "e2e_test_started",
   E2E_TEST_RESULT: "e2e_test_result",
   E2E_TEST_COMPLETE: "e2e_test_complete",
+  // Snapshot events
+  SNAPSHOT_STARTED: "snapshot_started",
+  SNAPSHOT_PROGRESS: "snapshot_progress",
+  SNAPSHOT_TABLE_COMPLETE: "snapshot_table_complete",
+  SNAPSHOT_COMPLETE: "snapshot_complete",
   ERROR: "error",
   CONNECTION: "connection",
   LOG: "log",
