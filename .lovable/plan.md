@@ -1,57 +1,124 @@
 
 
-## Plan: Improve Request Sessions UI, Store responseBody as Object, and Add `IsEmpty` to Envelope
+## Plan: Go Upload Performance Optimization + Core Plugin Dashboard
 
-This plan covers three areas: (1) enhanced request session visualization with copy functionality, (2) storing `responseBody` as a parsed object instead of a JSON string, and (3) adding an `IsEmpty` field to the envelope `Attributes`.
-
----
-
-### 1. Store `responseBody` (and `requestBody`) as parsed objects
-
-**Problem:** Currently `RequestSessionRecord.responseBody` and `requestBody` are typed as `string`. The backend returns JSON as a string, and the frontend re-parses it for display.
-
-**Changes:**
-- **`src/lib/api/types.ts`** -- Change `requestBody` and `responseBody` from `string` to `unknown` (object or null). This means the data is stored as a proper JS object, no re-parsing needed.
-- **`src/pages/RequestSessions.tsx`** -- Update the `JsonViewer` component to accept `unknown` instead of `string`. If the value is already an object, stringify it for display. Remove the try/catch JSON.parse since data is already an object.
-- **`src/lib/api/methods.ts`** (if needed) -- Ensure the API layer does not double-stringify response bodies.
-
-### 2. Enhanced Request Sessions UI with Copy Button
-
-**Changes to `src/pages/RequestSessions.tsx`:**
-
-- **Copy button on detail panel header** -- Add a "Copy" icon button next to the existing Download and Delete buttons. Clicking it copies the full session detail (formatted JSON) to clipboard with a toast confirmation.
-- **Copy button per tab** -- Add a small "Copy" button inside each tab (Response, Request, Headers) to copy just that section's content.
-- **Full path display** -- Confirm all paths render as absolute URLs using `toAbsoluteUrl()` (already done, will verify consistency).
-- **Improved `JsonViewer`** -- Add syntax-highlighted JSON display using the existing `highlight.js` dependency. Add line numbers and a copy button in the top-right corner of the code block.
-- **Headers tab** -- Add a copy button to copy all headers as formatted text.
-
-### 3. Add `IsEmpty` field to Envelope Attributes
-
-**Problem:** When Results is empty/null, there's no explicit `IsEmpty` flag. The user wants `IsEmpty: true` when `TotalRecords` is 0 or Results is empty.
-
-**Changes:**
-
-- **`spec/response-envelope/envelope.schema.json`** -- Add `IsEmpty` boolean to the Attributes definition: `"IsEmpty": { "type": "boolean", "description": "true when Results is empty (TotalRecords is 0 or Results array has no items)." }`
-- **`spec/response-envelope/README.md`** -- Document the `IsEmpty` field in the Attributes table.
-- **All sample JSON files** -- Add `"IsEmpty": true/false` to Attributes in:
-  - `envelope-minimal.json` (IsEmpty: true, since Results is empty)
-  - `envelope-single.json` (IsEmpty: false)
-  - `envelope-multiple.json` (IsEmpty: false)
-  - `envelope-error.json` (IsEmpty: true)
-  - `envelope-debug.json` (IsEmpty: false)
-- **`src/lib/api/types.ts`** -- Add `IsEmpty?: boolean` to `EnvelopeAttributes`.
-- **`src/lib/api/envelope.ts`** -- In `parseEnvelope`, auto-derive `IsEmpty` if not present from the backend: `env.Attributes.IsEmpty = env.Attributes.IsEmpty ?? (!Array.isArray(env.Results) || env.Results.length === 0)`. Also set `TotalRecords: 0` when IsEmpty is true and TotalRecords is undefined.
+> Created: 2026-02-12  
+> Status: **Ready for execution — awaiting user go-ahead per phase**
 
 ---
 
-### Technical Summary
+## Feature A: Go Upload Performance Optimization (5 fixes)
 
-| File | Change |
-|---|---|
-| `src/lib/api/types.ts` | `requestBody`/`responseBody` to `unknown`; add `IsEmpty` to `EnvelopeAttributes` |
-| `src/lib/api/envelope.ts` | Auto-derive `IsEmpty` in `parseEnvelope` |
-| `src/pages/RequestSessions.tsx` | Revamp `JsonViewer` (syntax highlighting, copy button); add copy buttons to detail panel; handle object-typed bodies |
-| `spec/response-envelope/envelope.schema.json` | Add `IsEmpty` to Attributes |
-| `spec/response-envelope/README.md` | Document `IsEmpty` |
-| `spec/response-envelope/envelope-*.json` (5 files) | Add `IsEmpty` field to all samples |
+### Problem Statement
+The Go backend upload pipeline is significantly slower than the PowerShell script. Root cause: base64 encoding (+33% payload), unnecessary pre-upload HTTP round-trip, max compression level, and verbose WebSocket broadcasting.
 
+### Phase A1: Switch upload from Base64 JSON to Multipart Form-Data ⭐ (Biggest impact)
+
+**Files:**
+- `backend/internal/wordpress/uploader.go` — `UploadPluginViaUploader()`
+
+**Current:** Reads entire ZIP → `base64.StdEncoding.EncodeToString()` → sends as JSON body  
+**Target:** Stream ZIP bytes directly as multipart/form-data
+
+**Changes:**
+1. Replace `os.ReadFile()` + `base64.StdEncoding.EncodeToString()` with `multipart.NewWriter` + `CreateFormFile`
+2. Stream the file using `io.Copy` instead of loading into memory
+3. Add `plugin_slug`, `activate`, `upload_source` as form fields
+4. Update `Content-Type` header to use `writer.FormDataContentType()`
+
+**Impact:** ~33% less data transmitted, no base64 CPU overhead, streaming instead of full-memory load
+
+**⚠️ PHP dependency:** The `riseup-asia-uploader` PHP `handle_upload()` currently expects `plugin_zip` as base64 in JSON. Must update PHP handler to also accept multipart uploads OR keep backward compatibility with both formats.
+
+### Phase A2: Remove Pre-Upload Status Check
+
+**Files:**
+- `backend/internal/wordpress/uploader.go` — lines 223-262
+
+**Current:** Extra `GET /status` round-trip before every upload  
+**Target:** Remove it. If the upload endpoint fails, the error surfaces directly.
+
+**Impact:** Save ~200-500ms per publish
+
+### Phase A3: Reduce ZIP Compression Level
+
+**Files:**
+- `backend/pkg/ziputil/ziputil.go` — `RegisterBestCompression()`
+- `backend/internal/services/publish/service.go` — `createFullZip()`, `createSelectiveZip()`
+
+**Current:** `flate.BestCompression` (level 9)  
+**Target:** `flate.DefaultCompression` (level 6) for publish ZIPs; keep BestCompression for export/archive bundles
+
+**Impact:** Faster ZIP creation, ~95% of the compression ratio
+
+### Phase A4: Reduce Verbose Broadcasting During Upload
+
+**Files:**
+- `backend/internal/services/publish/service.go` — upload stage (~lines 365-530)
+
+**Current:** ~10+ `broadcastStageLog` + `broadcastProgress` calls during upload  
+**Target:** Consolidate to 3 broadcasts: start, progress (50%), complete/error. Keep detailed info in file logger.
+
+### Phase A5: Update Memory
+
+Update `.lovable/memory/architecture/compression/zip-standards-and-logging.md` to reflect dual-level strategy.
+
+---
+
+## Feature B: Core Plugin Dashboard (Rise Up Asia Uploader Detail View)
+
+### Problem Statement
+The core Rise Up Asia Uploader plugin needs a dedicated dashboard showing health, version, deployment status — distinct from third-party plugin cards.
+
+### Phase B1: Core Plugin Dashboard Component
+
+**New file:** `src/components/plugins/CorePluginDashboard.tsx`
+
+**Sections:**
+1. **Header** — Plugin name, version badge, status indicator (active/inactive/error)
+2. **Health Panel** — Connection status per mapped site, last deploy time, uploader version vs expected
+3. **Version Info** — Local version, remote version per-site, update availability
+4. **Quick Actions** — Deploy to new site, Update all outdated sites, View activity log
+5. **Deployment History** — Recent publish history filtered to this plugin
+6. **Endpoint Status** — Health of key endpoints (status, upload, enable/disable)
+
+### Phase B2: Route + Navigation
+
+**Files:**
+- `src/App.tsx` — Add route `/plugins/core`
+- `src/pages/Plugins.tsx` — Visual distinction for core plugin card + link to dashboard
+
+### Phase B3: API Integration
+
+All data sources already exist:
+- `api.getPlugins()` — local plugin info
+- `api.getRemotePlugins(siteId)` — remote version per-site
+- `api.getPublishHistory()` — filtered by pluginId
+- `api.testConnection(siteId)` — endpoint health
+
+No new backend endpoints needed.
+
+---
+
+## Execution Order
+
+| Phase | Feature | Est. Complexity |
+|-------|---------|----------------|
+| A1 | Multipart upload (+ PHP check) | High |
+| A2 | Remove status pre-check | Low |
+| A3 | Compression level | Low |
+| A4 | Broadcast reduction | Medium |
+| A5 | Memory update | Trivial |
+| B1 | Dashboard component | High |
+| B2 | Route + navigation | Low |
+| B3 | API integration | Medium |
+
+---
+
+## Dependencies & Risks
+
+| Risk | Mitigation |
+|------|-----------|
+| PHP upload handler only accepts base64 JSON | Check PHP `handle_upload()` first — may need multipart support |
+| Reducing broadcasts may lose debug visibility | Keep file logger detail, only reduce WS broadcasts |
+| Core plugin dashboard needs design consistency | Reuse existing card/panel patterns from site detail view |
