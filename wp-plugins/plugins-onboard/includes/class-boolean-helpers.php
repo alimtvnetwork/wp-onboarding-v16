@@ -142,6 +142,7 @@ class OnboardBooleanHelpers {
     /**
      * Check if a value is empty.
      *
+     * @deprecated 1.19.0 Use native empty($value) instead.
      * @param mixed $value Value to check.
      * @return bool True if value is empty, false otherwise.
      */
@@ -152,6 +153,7 @@ class OnboardBooleanHelpers {
     /**
      * Check if a value has content.
      *
+     * @deprecated 1.19.0 Use native !empty($value) instead.
      * @param mixed $value Value to check.
      * @return bool True if value has content, false otherwise.
      */
@@ -162,6 +164,7 @@ class OnboardBooleanHelpers {
     /**
      * Check if a value is null.
      *
+     * @deprecated 1.19.0 Use native $value === null instead.
      * @param mixed $value Value to check.
      * @return bool True if value is null, false otherwise.
      */
@@ -172,6 +175,7 @@ class OnboardBooleanHelpers {
     /**
      * Check if a value is set (not null).
      *
+     * @deprecated 1.19.0 Use native $value !== null instead.
      * @param mixed $value Value to check.
      * @return bool True if value is set, false otherwise.
      */
