@@ -1668,19 +1668,58 @@ class Riseup_Asia {
         $this->file_logger->info('Upload endpoint called');
 
         try {
-            $data = $request->get_json_params();
+            // =====================================================================
+            // DUAL-FORMAT UPLOAD: Accept both multipart/form-data (preferred, faster)
+            // and JSON with base64-encoded ZIP (legacy, backward-compatible).
+            // Multipart avoids the 33% base64 overhead and allows streaming.
+            // =====================================================================
+            $files = $request->get_file_params();
+            $is_multipart = !empty($files['plugin_zip']);
 
-            if (RiseupBooleanHelpers::is_empty($data['plugin_zip'])) {
-                $this->file_logger->warn('Upload failed: plugin_zip required');
-                return $this->error_response(RISEUP_MSG_INVALID_REQUEST . ': plugin_zip is required', RISEUP_HTTP_BAD_REQUEST);
-            }
+            if ($is_multipart) {
+                // --- MULTIPART UPLOAD (new, preferred) ---
+                $this->file_logger->info('Processing multipart upload');
+                $upload = $files['plugin_zip'];
 
-            // Decode base64.
-            $this->file_logger->debug('Decoding base64 ZIP data');
-            $zip_content = base64_decode($data['plugin_zip']);
-            if ($zip_content === false) {
-                $this->file_logger->error('Invalid base64 data');
-                return $this->error_response('Invalid base64 data', RISEUP_HTTP_BAD_REQUEST);
+                if ($upload['error'] !== UPLOAD_ERR_OK) {
+                    $this->file_logger->error('Multipart upload error', array('code' => $upload['error']));
+                    return $this->error_response('File upload failed (error code: ' . $upload['error'] . ')', RISEUP_HTTP_BAD_REQUEST);
+                }
+
+                $zip_content = file_get_contents($upload['tmp_name']);
+                if ($zip_content === false) {
+                    $this->file_logger->error('Failed to read uploaded file');
+                    return $this->error_response('Failed to read uploaded file', RISEUP_HTTP_SERVER_ERROR);
+                }
+
+                // Read form fields from multipart body params
+                $body_params = $request->get_body_params();
+                $data = array(
+                    'slug'           => isset($body_params['slug']) ? $body_params['slug'] : '',
+                    'activate'       => isset($body_params['activate']) ? $body_params['activate'] : '',
+                    'upload_source'  => isset($body_params['upload_source']) ? $body_params['upload_source'] : UPLOAD_SOURCE_REST_API,
+                    'plugin_version' => isset($body_params['plugin_version']) ? $body_params['plugin_version'] : '',
+                );
+
+                $this->file_logger->debug('Multipart params', array(
+                    'file_size' => strlen($zip_content),
+                    'slug'      => $data['slug'],
+                ));
+            } else {
+                // --- BASE64 JSON UPLOAD (legacy, backward-compatible) ---
+                $data = $request->get_json_params();
+
+                if (RiseupBooleanHelpers::is_empty($data['plugin_zip'])) {
+                    $this->file_logger->warn('Upload failed: plugin_zip required');
+                    return $this->error_response(RISEUP_MSG_INVALID_REQUEST . ': plugin_zip is required (send as multipart file or base64 JSON)', RISEUP_HTTP_BAD_REQUEST);
+                }
+
+                $this->file_logger->info('Processing base64 JSON upload');
+                $zip_content = base64_decode($data['plugin_zip']);
+                if ($zip_content === false) {
+                    $this->file_logger->error('Invalid base64 data');
+                    return $this->error_response('Invalid base64 data', RISEUP_HTTP_BAD_REQUEST);
+                }
             }
 
             // Get optional parameters.
