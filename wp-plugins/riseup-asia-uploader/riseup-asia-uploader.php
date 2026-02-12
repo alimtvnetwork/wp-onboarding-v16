@@ -267,8 +267,15 @@ register_shutdown_function('riseup_fatal_error_handler');
 // LOAD DEPENDENCIES IN ORDER
 // =============================================================================
 
-// Foundation: enum classes (must load before constants.php which references them),
-// then constants, boolean helpers, init helpers (all loaded raw).
+// Foundation: PSR-4 namespaced enums (must load before constants.php and all classes)
+require_once __DIR__ . '/includes/Enums/UploadSource.php';
+require_once __DIR__ . '/includes/Enums/Capability.php';
+require_once __DIR__ . '/includes/Enums/HttpMethod.php';
+require_once __DIR__ . '/includes/Enums/Hook.php';
+require_once __DIR__ . '/includes/Enums/PathConst.php';
+require_once __DIR__ . '/includes/Enums/ErrorType.php';
+
+// Legacy enum classes (kept until all consumers are migrated in G3–G9)
 require_once __DIR__ . '/includes/class-hook-enum.php';
 require_once __DIR__ . '/includes/class-path-enum.php';
 require_once __DIR__ . '/includes/class-error-type-enum.php';
