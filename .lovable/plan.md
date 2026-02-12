@@ -371,8 +371,8 @@ includes/Enums/                         ← PSR-4 naming (NOT class-kebab-case.p
 |---|------|--------|--------|-------------|
 | G1 | **Create `includes/Enums/` folder + all 6 files** | ✅ Done | Medium | Created `UploadSource.php`, `Capability.php`, `HttpMethod.php`, `Hook.php`, `PathConst.php`, `ErrorType.php` with `RiseupAsia\Enums` namespace. PSR-4 file naming (file = definition name). |
 | G2 | **Update ErrorChecker** | ✅ Done | Small | Added `use RiseupAsia\Enums\ErrorType;` and changed all `ErrorTypeEnum::` → `ErrorType::`. Registered all 6 new enum files in bootstrap before legacy classes. |
-| G3 | **Update constants.php** | 🔵 Todo | Medium | Remove all `define()` constants that now live in enums (`UPLOAD_SOURCE_*`, `CAP_*`, log levels, HTTP status). Replace backward-compat aliases with enum references where still needed. Evaluate which remaining `define()` constants can be moved into enums or namespaced const classes. |
-| G4 | **Update class-file-logger.php** | 🔵 Todo | Small | Replace `LOG_LEVEL_*` define constants with a new `LogLevel` enum or `LogConst` class. Add `use` import. |
+| G3 | **Update constants.php** | ✅ Done | Medium | Replaced `CapabilityEnum::` → `\RiseupAsia\Enums\Capability::*->value` and `UploadSourceEnum::` → `\RiseupAsia\Enums\UploadSource::*->value` in backward-compat aliases. |
+| G4 | **Update class-file-logger.php** | ✅ Done | Small | Created `LogLevel` enum (`includes/Enums/LogLevel.php`). Replaced all `LOG_LEVEL_*` define constants with `LogLevel::*->value`. Added `use RiseupAsia\Enums\LogLevel;` import. Registered in bootstrap. |
 | G5 | **Update class-database.php** | 🔵 Todo | Medium | Replace `TABLE_*`, `STATUS_*`, `DEFAULT_LIMIT`, `MAX_LIMIT` references. Some may become a `TableName` const class or stay as defines — evaluate. |
 | G6 | **Update class-admin.php** | 🔵 Todo | Small | Replace `PLUGIN_VERSION` and `SNAPSHOT_WORKER_POOL_*` references. |
 | G7 | **Update class-logger.php** | 🔵 Todo | Small | Replace remaining `ACTION_*` and `STATUS_*` constant references. |
