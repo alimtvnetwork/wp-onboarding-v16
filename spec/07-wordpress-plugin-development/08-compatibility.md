@@ -24,6 +24,7 @@ if (version_compare(PHP_VERSION, '7.4', '<')) {
         echo 'Current version: ' . PHP_VERSION . '</p>';
         echo '</div>';
     });
+
     return;  // Stop plugin execution
 }
 ```
@@ -124,6 +125,7 @@ if (version_compare($wp_version, '5.6', '<')) {
         echo '<p><strong>My Plugin</strong> requires WordPress 5.6 or higher.</p>';
         echo '</div>';
     });
+
     return;
 }
 ```
@@ -191,6 +193,7 @@ class MyClass {
         if ($this->upload_dir === null) {
             $this->upload_dir = wp_upload_dir();
         }
+
         return $this->upload_dir;
     }
 }
@@ -201,6 +204,7 @@ function myplugin_get_url() {
     if ($url === null) {
         $url = plugin_dir_url(MYPLUGIN_FILE);
     }
+
     return $url;
 }
 ```
@@ -257,7 +261,7 @@ if (!extension_loaded('pdo_sqlite')) {
 try {
     $pdo = new PDO('sqlite:' . $db_path);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
+} catch (\Throwable $e) {
     // Handle missing SQLite support
 }
 ```
@@ -313,7 +317,9 @@ if (!function_exists('some_old_function')) {
 
 ```php
 // Only during initialization if needed
-if (!defined('WP_DEBUG') || !WP_DEBUG) {
+$is_production = !defined('WP_DEBUG') || !WP_DEBUG;
+
+if ($is_production) {
     error_reporting(E_ALL & ~E_DEPRECATED);
 }
 ```

@@ -260,6 +260,7 @@ class Riseup_Config {
     
     public static function get_all() {
         $options = get_option(RISEUP_OPTION_SETTINGS, []);
+
         return array_merge(self::$defaults, $options);
     }
 }
@@ -284,6 +285,7 @@ class Riseup_Config {
         if (defined('RISEUP_ALLOWED_IPS')) {
             return array_map('trim', explode(',', RISEUP_ALLOWED_IPS));
         }
+
         return self::get('allowed_ips', []);
     }
 }

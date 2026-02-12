@@ -223,7 +223,9 @@ class Test_Plugin extends WP_UnitTestCase {
 ```php
 // Add to plugin for development
 add_action('shutdown', function() {
-    if (defined('RISEUP_DEBUG') && RISEUP_DEBUG) {
+    $is_debug_enabled = defined('RISEUP_DEBUG') && RISEUP_DEBUG;
+
+    if ($is_debug_enabled) {
         error_log(sprintf(
             '[RISEUP] Memory: %s | Time: %ss',
             size_format(memory_get_peak_usage(true)),
