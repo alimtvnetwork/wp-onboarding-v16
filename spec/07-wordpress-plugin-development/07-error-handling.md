@@ -355,7 +355,7 @@ public function error_with_trace($message, $exception = null) {
 
 ## Fatal Error Handler
 
-Register a shutdown function to catch fatal errors:
+Register a shutdown function to catch fatal errors. Use `ErrorChecker::is_fatal_error()` instead of inline `in_array()` checks (see [PHP Standards](../04-php-standards/README.md)):
 
 ```php
 class Riseup_Asia_Uploader {
@@ -366,7 +366,7 @@ class Riseup_Asia_Uploader {
     public function handle_shutdown() {
         $error = error_get_last();
         
-        if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        if (ErrorChecker::is_fatal_error($error)) {
             $this->file_logger->error(
                 sprintf(
                     'Fatal error: %s in %s on line %d',

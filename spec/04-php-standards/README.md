@@ -1,7 +1,7 @@
 # PHP Coding Standards
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-09  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-12  
 > **Applies to:** WordPress companion plugins (PHP 7.4+)
 
 ---
@@ -15,6 +15,7 @@
 | Constants | UPPER_SNAKE_CASE | `RISEUP_VERSION`, `RISEUP_REST_NAMESPACE` |
 | File names | `class-{kebab-case}.php` | `class-envelope-builder.php` |
 | Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` |
+| Enum classes | PascalCase with `Enum` suffix | `HookEnum`, `PathEnum`, `ErrorTypeEnum` |
 
 ---
 
@@ -70,16 +71,58 @@ private function safe_execute(callable $callback) {
 
 ### Global Shutdown Handler
 
-Register a shutdown handler to catch fatal errors:
+Register a shutdown handler to catch fatal errors. **Delegate the type-check to a dedicated `ErrorChecker` class** so the logic is reusable and self-documenting:
 
 ```php
+// ❌ FORBIDDEN: Inline error-type checking
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        // ...
+    }
+});
+
+// ✅ REQUIRED: Use ErrorChecker for readable, centralized fatal-error detection
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if (ErrorChecker::is_fatal_error($error)) {
         // Log to fatal-errors.log with memory usage
         // Send JSON response before process dies
     }
 });
+```
+
+#### ErrorChecker Implementation
+
+```php
+/**
+ * Centralized error-type inspection.
+ *
+ * Encapsulates the raw E_* constant checks so callers never need to
+ * remember the specific list. Any new fatal category is added here once.
+ */
+class ErrorChecker {
+    /** Fatal error type constants that terminate PHP execution */
+    private const FATAL_ERROR_TYPES = [
+        E_ERROR,
+        E_PARSE,
+        E_CORE_ERROR,
+        E_COMPILE_ERROR,
+    ];
+
+    /**
+     * Determine whether the given error array represents a fatal PHP error.
+     *
+     * @param array|null $error  Value returned by error_get_last()
+     * @return bool  True when $error is non-null and its type is fatal.
+     */
+    public static function is_fatal_error(?array $error): bool {
+        if ($error === null) {
+            return false;
+        }
+        return in_array($error['type'], self::FATAL_ERROR_TYPES, true);
+    }
+}
 ```
 
 ---
@@ -126,11 +169,38 @@ public function log_exception(\Throwable $e, string $context = '') {
 
 ---
 
-## Constants — No Magic Strings
+## Constants & Enums — No Magic Strings
 
-### Rule: All strings in `constants.php`
+### Rule: All identifiers in `constants.php` or Enum classes
 
-Every endpoint path, action name, capability string, and option key must be defined in `includes/constants.php`:
+Every endpoint path, action name, capability string, option key, **hook name**, and **file path segment** must be defined centrally. Use PHP `constants.php` for simple values and **Enum classes** for categorized groups.
+
+### Hook Names — HookEnum
+
+```php
+// ❌ FORBIDDEN: Magic hook strings
+add_action('init', [$this, 'setup']);
+add_action('rest_api_init', [$this, 'register_routes']);
+add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
+
+// ✅ REQUIRED: Hook names from HookEnum
+class HookEnum {
+    public const INIT             = 'init';
+    public const REST_API_INIT    = 'rest_api_init';
+    public const PLUGINS_LOADED   = 'plugins_loaded';
+    public const ADMIN_INIT       = 'admin_init';
+    public const ADMIN_NOTICES    = 'admin_notices';
+    public const SHUTDOWN         = 'shutdown';
+    public const WP_AJAX_PREFIX   = 'wp_ajax_';
+}
+
+// Usage:
+add_action(HookEnum::INIT, [$this, 'setup']);
+add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
+add_action(HookEnum::PLUGINS_LOADED, [$this, 'on_plugins_loaded']);
+```
+
+### Action Names — Constants
 
 ```php
 // ❌ FORBIDDEN: Magic strings
@@ -143,7 +213,7 @@ define('RISEUP_REST_NAMESPACE', 'riseup-asia-uploader/v1');
 define('RISEUP_ACTION_UPLOAD', 'upload');
 
 // In handlers:
-add_action('wp_ajax_' . RISEUP_ACTION_UPLOAD, [$this, 'handle']);
+add_action(HookEnum::WP_AJAX_PREFIX . RISEUP_ACTION_UPLOAD, [$this, 'handle']);
 $url = rest_url(RISEUP_REST_NAMESPACE . '/' . RISEUP_ACTION_UPLOAD);
 ```
 
@@ -169,42 +239,104 @@ Throttle repeated initialization errors to prevent log bloat.
 
 ## File Path Resolution
 
-### Rule: Use typed path accessors
+### Rule: Use fully-typed path accessors with PathEnum constants
 
-Never construct file paths with string concatenation. Use `RiseupPathUtils`:
+Never construct file paths with string concatenation or partial accessors. Every path must resolve to a **single typed accessor method** that internally composes the directory with a `PathEnum` constant for the filename segment.
 
 ```php
 // ❌ FORBIDDEN: Manual path construction
 $path = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/data.db';
 
-// ✅ REQUIRED: Typed accessor
+// ❌ WRONG: Partial accessor — still has a magic string fragment
 $path = RiseupPathUtils::getDataDir() . '/data.db';
+
+// ✅ REQUIRED: Fully-typed accessor that encapsulates the filename
+$path = RiseupPathUtils::getRootDb();
 ```
+
+#### PathEnum Implementation
+
+```php
+/**
+ * Centralized file-name constants for all data files.
+ *
+ * Every file that the plugin reads or writes must have an entry here.
+ * Path accessors in RiseupPathUtils compose getDataDir() + PathEnum::*.
+ */
+class PathEnum {
+    /** Root SQLite database */
+    public const ROOT_DB         = '/a-root.db';
+
+    /** Activity log database */
+    public const ACTIVITY_DB     = '/activity.db';
+
+    /** Fatal error log */
+    public const FATAL_ERROR_LOG = '/fatal-errors.log';
+
+    /** Stack trace dump */
+    public const STACKTRACE_FILE = '/stacktrace.txt';
+
+    /** General log */
+    public const LOG_FILE        = '/log.txt';
+}
+```
+
+#### RiseupPathUtils Accessors
+
+```php
+class RiseupPathUtils {
+    /**
+     * Base data directory — all other paths derive from this.
+     */
+    public static function getDataDir(): string {
+        return WP_CONTENT_DIR . '/uploads/' . RISEUP_PLUGIN_SLUG;
+    }
+
+    /** Root SQLite database path */
+    public static function getRootDb(): string {
+        return self::getDataDir() . PathEnum::ROOT_DB;
+    }
+
+    /** Activity log database path */
+    public static function getActivityDb(): string {
+        return self::getDataDir() . PathEnum::ACTIVITY_DB;
+    }
+
+    /** Fatal error log path */
+    public static function getFatalErrorLog(): string {
+        return self::getDataDir() . PathEnum::FATAL_ERROR_LOG;
+    }
+
+    // ... one accessor per file, never expose raw concatenation
+}
+```
+
+> **Rule:** If a path does not have a typed accessor in `RiseupPathUtils`, create one before using it. Never concatenate `getDataDir()` with a string literal in business logic.
 
 ---
 
 ## Initialization — No WordPress Calls in Constructors
 
-### Rule: Lazy initialization
+### Rule: Lazy initialization with HookEnum
 
-Never call WordPress functions (`add_action`, `register_rest_route`, etc.) in class constructors:
+Never call WordPress functions (`add_action`, `register_rest_route`, etc.) in class constructors. All hook registrations must use `HookEnum` constants:
 
 ```php
-// ❌ FORBIDDEN: WordPress call in constructor
+// ❌ FORBIDDEN: WordPress call in constructor + magic string
 class MyPlugin {
     public function __construct() {
         add_action('init', [$this, 'setup']); // May fail if WP not loaded
     }
 }
 
-// ✅ REQUIRED: Lazy initialization
+// ✅ REQUIRED: Lazy initialization with HookEnum
 class MyPlugin {
     private $initialized = false;
     
     public function initialize() {
         if ($this->initialized) return;
         $this->initialized = true;
-        add_action('init', [$this, 'setup']);
+        add_action(HookEnum::INIT, [$this, 'setup']);
     }
 }
 ```
@@ -213,19 +345,32 @@ class MyPlugin {
 
 ## Boolean Logic
 
-### Rule: Use semantic helpers
+### Rule: Use semantic method names — no wrapper helpers
 
-Replace raw negation with `RiseupBooleanHelpers`:
+Boolean checks must be self-documenting through **semantic method names** on the object itself. Never use generic boolean helper classes (`isTruthy`, `isFalsy`) — they add indirection without clarity.
 
 ```php
-// ❌ Confusing negation
+// ❌ FORBIDDEN: Generic boolean helper — obscures intent
+if (RiseupBooleanHelpers::isFalsy($plugin->is_active())) { ... }
+if (RiseupBooleanHelpers::isTruthy($value)) { ... }
+
+// ❌ FORBIDDEN: Raw negation — easy to miss the "!"
 if (!$plugin->is_active()) { ... }
 if (!!$value) { ... }
 
-// ✅ Semantic boolean
-if (RiseupBooleanHelpers::isFalsy($plugin->is_active())) { ... }
-if (RiseupBooleanHelpers::isTruthy($value)) { ... }
+// ✅ REQUIRED: Semantic inverse methods on the object
+if ($plugin->is_disabled()) { ... }
+
+// ✅ REQUIRED: Descriptive boolean variable names (Is/Has prefix)
+if ($is_value) { ... }
+if ($has_permission) { ... }
 ```
+
+### Guidelines
+
+1. **Every `is_*()` method should have a semantic inverse** (e.g., `is_active()` ↔ `is_disabled()`) rather than relying on `!is_active()`.
+2. **Boolean variables must use `$is_*` or `$has_*` prefix** — never store a boolean in `$value` or `$result`.
+3. **Never create a generic "BooleanHelpers" utility class** — if the boolean check is complex, it belongs as a method on the domain object or a dedicated Checker class (like `ErrorChecker::is_fatal_error()`).
 
 ---
 
@@ -234,22 +379,28 @@ if (RiseupBooleanHelpers::isTruthy($value)) { ... }
 | Pattern | Why | Alternative |
 |---------|-----|-------------|
 | `catch (Exception $e)` | Misses PHP 7+ `Error` types | `catch (\Throwable $e)` |
+| Magic strings in hooks | Unmaintainable, typo-prone | `HookEnum` constants |
 | Magic strings in handlers | Unmaintainable | `constants.php` |
 | `wp_die()` in REST handlers | Breaks JSON responses | `wp_send_json_error()` |
-| Manual path concatenation | Fragile paths | `RiseupPathUtils` accessors |
+| Manual path concatenation | Fragile paths | `RiseupPathUtils` fully-typed accessors |
+| `getDataDir() . '/file.db'` | Partial accessor, still magic | Add a typed accessor to `RiseupPathUtils` |
 | Constructor WordPress calls | Load order issues | Lazy initialization |
 | `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
 | Unchecked `new PDO()` | Fatal if extension missing | `class_exists()` check first |
+| `RiseupBooleanHelpers` | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) |
+| `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
+| `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
+| `$value` for booleans | Ambiguous naming | `$is_value`, `$has_value` |
 
 ---
 
 ## Cross-References
 
-- [WordPress Plugin Development Spec](../wordpress-plugin-development/) — Full 10-document guide
-- [WordPress Plugin Coding Guidelines](../../wp-plugins/riseup-asia-uploader/CODING-GUIDELINES.md) — In-repo standards
-- [Error Trapping Strategy](../../.lovable/memory/architecture/wordpress-plugin/error-trapping-strategy) — Safe execution architecture
-- [DRY Principles](../coding-guidelines/dry-principles.md) — Cross-language DRY rules
+- [WordPress Plugin Development Spec](../07-wordpress-plugin-development/) — Full 10-document guide
+- [Error Handling Spec](../05-error-manage/01-error-handling/) — Cross-language error strategy
+- [Generic Enforce Spec](../12-generic-enforce/) — Type safety rules
+- [DRY Principles](../01-coding-guidelines/dry-principles.md) — Cross-language DRY rules
 
 ---
 
-*PHP standards specification created: 2026-02-09*
+*PHP standards specification v2.0.0 — 2026-02-12*
