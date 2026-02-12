@@ -4275,15 +4275,23 @@ class Riseup_Asia {
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $this->file_logger->info('Deleting snapshot', array('id' => $id));
 
+            // Log activity: delete initiated
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_DELETE,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
+            );
+
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $result = $manager->deleteSnapshot($id);
 
-            // Log activity
+            // Log activity: delete complete
             $this->logger->log_plugin_action(
                 RISEUP_ACTION_SNAPSHOT_DELETE,
                 'snapshot',
                 $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
-                array('snapshot_id' => $id),
+                array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Delete failed')
             );
 
@@ -4421,6 +4429,14 @@ class Riseup_Asia {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $this->file_logger->info('Exporting snapshot', array('id' => $id));
+
+            // Log activity: export initiated
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_EXPORT,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
+            );
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $result = $manager->exportSnapshot($id);
