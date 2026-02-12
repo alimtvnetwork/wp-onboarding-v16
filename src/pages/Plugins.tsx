@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useExecutionLoggerStore } from "@/hooks/useExecutionLogger";
 import { usePlugins, usePluginsPaginated } from "@/hooks/usePlugins";
 import { useSites } from "@/hooks/useSites";
@@ -78,9 +79,22 @@ import {
   Files,
   MoreHorizontal,
   Pin,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
+
+/** Identify the core uploader plugin by slug pattern */
+function isCorePlugin(plugin: Plugin): boolean {
+  const name = plugin.name.toLowerCase();
+  const path = plugin.path.toLowerCase();
+  return (
+    name.includes("riseup") ||
+    name.includes("rise up") ||
+    name.includes("uploader") ||
+    path.includes("riseup-asia-uploader")
+  );
+}
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
@@ -93,6 +107,7 @@ export default function Plugins() {
   const envelopeMeta = paginatedResult?.envelope;
   const { data: sites } = useSites();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { captureError, openErrorModal } = useErrorStore();
   const { quickPublishAll, hasActiveOperation } = useQuickPublish();
   const { bulkQuickPublish } = useBulkQuickPublish();
@@ -886,6 +901,19 @@ export default function Plugins() {
                           </Badge>
                         )}
                         <CategoryBadge category={plugin.category} size="sm" />
+                        {isCorePlugin(plugin) && (
+                          <Badge
+                            variant="default"
+                            className="text-xs cursor-pointer gap-1 hover:opacity-80 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("/plugins/core");
+                            }}
+                          >
+                            <Shield className="h-3 w-3" />
+                            Core Dashboard
+                          </Badge>
+                        )}
                         {plugin.gitEnabled && (
                           <Badge variant="secondary" className="text-xs">
                             <GitBranch className="h-3 w-3 mr-1" />
