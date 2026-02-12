@@ -62,10 +62,29 @@ type ApiError struct {
 
 ---
 
+## Framework vs Business Logic
+
+```go
+// ✅ FRAMEWORK — T stays open (defining a reusable tool)
+func Retry[T any](fn func() (T, error), attempts int) (T, error) { ... }
+type Cache[T any] struct { ... }
+
+// ✅ BUSINESS — T resolved, alias REQUIRED
+type PluginResponse = ApiResponse[Plugin]
+type SiteCache = Cache[SiteSettings]
+
+func GetPlugin(id int) PluginResponse { ... }
+
+// ❌ BAD — business code with raw generic
+func GetPlugin(id int) ApiResponse[Plugin] { ... }  // alias it!
+```
+
+---
+
 ## Replacing `interface{}` / `any` params
 
 ```go
-// ❌ Prohibited
+// ❌ Prohibited — even in framework code
 func Process(data interface{}) error { ... }
 
 // ✅ Use type constraints
@@ -80,6 +99,7 @@ func Process[T Processable](data T) error { ... }
 
 ## Go-Specific Notes
 
-- `any` (Go 1.18+) is syntactic sugar for `interface{}` — equally prohibited in struct fields
+- `any` (Go 1.18+) is syntactic sugar for `interface{}` — equally prohibited in struct fields and function params
 - Constraint interfaces are the idiomatic replacement for `any` in generic type params
+- `T` in framework/utility functions is acceptable; `interface{}` is never acceptable
 - Go has no `unknown` — the closest equivalent is `interface{}`, which is always prohibited

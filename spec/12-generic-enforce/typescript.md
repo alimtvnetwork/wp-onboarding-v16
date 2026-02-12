@@ -76,6 +76,29 @@ catch (err) {
 
 ---
 
+## Framework vs Business Logic
+
+```typescript
+// ✅ FRAMEWORK — T stays open (defining a reusable tool)
+async function retry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> { ... }
+class ResponseCache<T> { get(key: string): T | null { ... } }
+interface ApiResponse<T> { data: T; status: number; }
+
+// ✅ BUSINESS — T resolved, alias REQUIRED
+type PluginResponse = ApiResponse<Plugin>;
+type SiteSettingsCache = ResponseCache<SiteSettings>;
+
+function getPlugin(id: number): PluginResponse { ... }
+
+// ❌ BAD — business code with raw generic
+function getPlugin(id: number): ApiResponse<Plugin> { ... }  // alias it!
+
+// ✅ OK — retry is plumbing, T is pass-through
+const plugin = await retry<Plugin>(() => fetchPlugin(id));
+```
+
+---
+
 ## Placement Rules
 
 1. **Co-locate** aliases with their base generic (same `types.ts` file)
