@@ -274,6 +274,7 @@ require_once __DIR__ . '/includes/Enums/HttpMethod.php';
 require_once __DIR__ . '/includes/Enums/Hook.php';
 require_once __DIR__ . '/includes/Enums/PathConst.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
+require_once __DIR__ . '/includes/Enums/LogLevel.php';
 
 // Legacy enum classes (kept until all consumers are migrated in G3–G9)
 require_once __DIR__ . '/includes/class-hook-enum.php';

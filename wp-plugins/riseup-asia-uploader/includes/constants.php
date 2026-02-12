@@ -278,20 +278,20 @@ if (!defined('MSG_FILE_IGNORED')) {
 }
 
 // =============================================================================
-// CAPABILITIES — Now in CapabilityEnum, kept as aliases for backward compat
+// CAPABILITIES — Now in RiseupAsia\Enums\Capability, kept as aliases for backward compat
 // =============================================================================
 
 if (!defined('CAP_MANAGE_PLUGINS')) {
-    define('CAP_MANAGE_PLUGINS', CapabilityEnum::ACTIVATE_PLUGINS);
+    define('CAP_MANAGE_PLUGINS', \RiseupAsia\Enums\Capability::ActivatePlugins->value);
 }
 if (!defined('CAP_MANAGE_POSTS')) {
-    define('CAP_MANAGE_POSTS', CapabilityEnum::PUBLISH_POSTS);
+    define('CAP_MANAGE_POSTS', \RiseupAsia\Enums\Capability::PublishPosts->value);
 }
 if (!defined('CAP_UPLOAD_MEDIA')) {
-    define('CAP_UPLOAD_MEDIA', CapabilityEnum::UPLOAD_FILES);
+    define('CAP_UPLOAD_MEDIA', \RiseupAsia\Enums\Capability::UploadFiles->value);
 }
 if (!defined('CAP_VIEW_LOGS')) {
-    define('CAP_VIEW_LOGS', CapabilityEnum::MANAGE_OPTIONS);
+    define('CAP_VIEW_LOGS', \RiseupAsia\Enums\Capability::ManageOptions->value);
 }
 
 // =============================================================================
@@ -905,23 +905,23 @@ if (!defined('ENDPOINT_ERROR_SESSIONS')) {
 }
 
 // =============================================================================
-// UPLOAD SOURCE — Now in UploadSourceEnum, kept as aliases for backward compat
+// UPLOAD SOURCE — Now in RiseupAsia\Enums\UploadSource, kept as aliases for backward compat
 // =============================================================================
 
 if (!defined('UPLOAD_SOURCE_SCRIPT')) {
-    define('UPLOAD_SOURCE_SCRIPT', UploadSourceEnum::SCRIPT);
+    define('UPLOAD_SOURCE_SCRIPT', \RiseupAsia\Enums\UploadSource::Script->value);
 }
 if (!defined('UPLOAD_SOURCE_REST_API')) {
-    define('UPLOAD_SOURCE_REST_API', UploadSourceEnum::REST_API);
+    define('UPLOAD_SOURCE_REST_API', \RiseupAsia\Enums\UploadSource::RestApi->value);
 }
 if (!defined('UPLOAD_SOURCE_ADMIN_UI')) {
-    define('UPLOAD_SOURCE_ADMIN_UI', UploadSourceEnum::ADMIN_UI);
+    define('UPLOAD_SOURCE_ADMIN_UI', \RiseupAsia\Enums\UploadSource::AdminUi->value);
 }
 if (!defined('UPLOAD_SOURCE_WP_CLI')) {
-    define('UPLOAD_SOURCE_WP_CLI', UploadSourceEnum::WP_CLI);
+    define('UPLOAD_SOURCE_WP_CLI', \RiseupAsia\Enums\UploadSource::WpCli->value);
 }
 
 // Valid upload sources for validation
 if (!defined('UPLOAD_SOURCES_VALID')) {
-    define('UPLOAD_SOURCES_VALID', json_encode(UploadSourceEnum::VALID_SOURCES));
+    define('UPLOAD_SOURCES_VALID', json_encode(\RiseupAsia\Enums\UploadSource::valid_values()));
 }
