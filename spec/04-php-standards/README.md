@@ -342,7 +342,8 @@ if ($has_permission) { ... }
 
 ## Code Style — Braces, Nesting & Spacing
 
-> These rules apply across **all languages** (PHP, TypeScript, Go).
+> These rules apply across **all languages** (PHP, TypeScript, Go).  
+> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — this section repeats the rules with PHP-specific examples.
 
 ### Rule 1: Always use braces — no single-line returns
 
@@ -571,6 +572,7 @@ add_action(HookEnum::INIT, [$this, 'setup']);
 - [Error Handling Spec](../05-error-manage/01-error-handling/) — Cross-language error strategy
 - [Generic Enforce Spec](../12-generic-enforce/) — Type safety rules
 - [DRY Principles](../01-coding-guidelines/dry-principles.md) — Cross-language DRY rules
+- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
 
 ---
 
