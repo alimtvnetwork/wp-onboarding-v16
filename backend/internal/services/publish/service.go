@@ -372,22 +372,8 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			zipSize = info.Size()
 		}
 
-		// Log stage start with structured context
-		s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
-			What:  fmt.Sprintf("Uploading ZIP (%s) to WordPress", formatBytes(zipSize)),
-			Why:   fmt.Sprintf("Deploy %s plugin update to production", pluginInfo.Name),
-			Where: fmt.Sprintf("%s/wp-json/%s%s", siteInfo.URL, wordpress.RiseupAsiaNamespace, wordpress.EndpointUpload),
-			InnerData: map[string]interface{}{
-				"zipPath":    zipPath,
-				"zipSize":    zipSize,
-				"remoteSlug": mapping.RemoteSlug,
-				"targetSite": siteInfo.URL,
-				"method":     "POST",
-				"contentType": "multipart/form-data",
-			},
-		})
-
-		s.broadcastProgress(pluginID, siteID, "uploading", 60, "Uploading to WordPress...")
+		// Broadcast 1 of 3: Upload started
+		s.broadcastProgress(pluginID, siteID, "uploading", 60, fmt.Sprintf("Uploading %s to WordPress...", formatBytes(zipSize)))
 
 		// Use retry with exponential backoff for transient network failures
 		retryCfg := DefaultRetryConfig()
@@ -397,28 +383,9 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			activated    bool
 		}
 		uploadVal, retryResult := withRetry(ctx, retryCfg, "upload", func(attempt int) (uploadOut, error) {
-			if attempt > 1 {
-				s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "upload", StageContext{
-					What:   fmt.Sprintf("Retrying upload (attempt %d/%d)", attempt, retryCfg.MaxAttempts),
-					Why:    "Previous attempt failed with transient error",
-					Where:  siteInfo.URL,
-				})
-			}
 			p, ur, a, e := s.uploadPlugin(ctx, wpClient, zipPath, mapping.RemoteSlug)
 			return uploadOut{p, ur, a}, e
 		})
-
-		if retryResult.Attempts > 1 {
-			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", StageContext{
-				What:   "Upload retry summary",
-				Result: retryDescription(retryResult),
-				InnerData: map[string]interface{}{
-					"attempts":   retryResult.Attempts,
-					"totalDelay": retryResult.TotalDelay.Milliseconds(),
-					"succeeded":  retryResult.Succeeded,
-				},
-			})
-		}
 
 		performed := uploadVal.performed
 		uploadResult := uploadVal.uploadResult
@@ -426,49 +393,25 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		err = retryResult.LastError
 		
 
+		// Broadcast 2 of 3: Upload result (success, error, or simulated)
 		if err != nil {
-			// Build detailed error diagnostics with what/why/where/result
 			errorCtx := StageContext{
 				What:   fmt.Sprintf("Upload ZIP to %s", siteInfo.URL),
-				Why:    "Deploy plugin update",
-				Where:  siteInfo.URL,
 				Result: fmt.Sprintf("FAILED: %s", err.Error()),
 				InnerData: map[string]interface{}{
-					"zipPath":    zipPath,
 					"remoteSlug": mapping.RemoteSlug,
+					"attempts":   retryResult.Attempts,
 				},
 			}
-			
-			// Extract APIError details if available
 			if apiErr, ok := err.(*wordpress.APIError); ok {
-				errorCtx.InnerData["request"] = map[string]interface{}{
-					"method":   apiErr.Method,
-					"endpoint": apiErr.Endpoint,
-					"url":      apiErr.URL,
-				}
-				errorCtx.InnerData["response"] = map[string]interface{}{
-					"status": apiErr.StatusCode,
-					"body":   truncateString(apiErr.ResponseBody, 2000),
-				}
-				if apiErr.StackTrace != "" {
-					errorCtx.InnerData["stackTrace"] = apiErr.StackTrace
-				}
+				errorCtx.InnerData["status"] = apiErr.StatusCode
+				errorCtx.InnerData["response"] = truncateString(apiErr.ResponseBody, 2000)
 			} else if appErr, ok := err.(*apperror.AppError); ok {
 				errorCtx.InnerData["code"] = appErr.Code
-				if appErr.StackTrace != "" {
-					errorCtx.InnerData["stackTrace"] = appErr.StackTrace
-				}
 				if cause := appErr.Unwrap(); cause != nil {
 					if apiErr, ok := cause.(*wordpress.APIError); ok {
-						errorCtx.InnerData["request"] = map[string]interface{}{
-							"method":   apiErr.Method,
-							"endpoint": apiErr.Endpoint,
-							"url":      apiErr.URL,
-						}
-						errorCtx.InnerData["response"] = map[string]interface{}{
-							"status": apiErr.StatusCode,
-							"body":   truncateString(apiErr.ResponseBody, 2000),
-						}
+						errorCtx.InnerData["status"] = apiErr.StatusCode
+						errorCtx.InnerData["response"] = truncateString(apiErr.ResponseBody, 2000)
 					}
 				}
 			}
@@ -476,48 +419,33 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			return err
 		}
 
-		// Success logging with detailed result
 		if performed {
 			resultMsg := "Plugin uploaded successfully"
 			if alreadyActivated {
 				resultMsg = "Plugin uploaded and activated"
 			}
-			
 			successCtx := StageContext{
 				What:   fmt.Sprintf("Upload ZIP (%s)", formatBytes(zipSize)),
-				Why:    "Deploy plugin update",
-				Where:  siteInfo.URL,
 				Result: resultMsg,
 				InnerData: map[string]interface{}{
-					"remoteSlug":   mapping.RemoteSlug,
-					"activated":    alreadyActivated,
-					"durationMs":   time.Since(uploadStartTime).Milliseconds(),
+					"remoteSlug": mapping.RemoteSlug,
+					"activated":  alreadyActivated,
+					"durationMs": time.Since(uploadStartTime).Milliseconds(),
+					"attempts":   retryResult.Attempts,
 				},
 			}
 			if uploadResult != nil {
-				successCtx.InnerData["uploadResponse"] = map[string]interface{}{
-					"success":     uploadResult.Success,
-					"message":     uploadResult.Message,
-					"pluginName":  uploadResult.PluginName,
-					"version":     uploadResult.Version,
-					"overwritten": uploadResult.Overwritten,
-				}
+				successCtx.InnerData["version"] = uploadResult.Version
+				successCtx.InnerData["overwritten"] = uploadResult.Overwritten
 			}
 			s.broadcastStageLog(pluginID, siteID, sessionID, "info", "upload", successCtx)
 			return nil
 		}
 
-		// Companion plugin not installed - simulated upload
+		// Companion plugin not installed
 		s.broadcastStageLog(pluginID, siteID, sessionID, "warn", "upload", StageContext{
 			What:   "Upload ZIP to WordPress",
-			Why:    "Deploy plugin update",
-			Where:  siteInfo.URL,
 			Result: "SIMULATED - no companion plugin available",
-			InnerData: map[string]interface{}{
-				"zipPath":    zipPath,
-				"remoteSlug": mapping.RemoteSlug,
-				"hint":       "Install the Riseup Asia Uploader plugin on the target WordPress site to enable real uploads",
-			},
 		})
 		return nil
 	})
