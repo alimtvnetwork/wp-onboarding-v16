@@ -105,13 +105,41 @@ export interface ErrorDiagnosticContext {
   [key: string]: unknown;
 }
 
-/** Structured request payload — replaces Record<string, unknown> for request bodies */
+/** Structured request payload — named alias per GE-1 for request bodies */
 export interface RequestPayload {
+  /** Common fields observed across API request bodies */
+  pluginId?: number;
+  siteId?: number;
+  path?: string;
+  plugin?: string;
+  message?: string;
+  confirm?: boolean;
+  version?: string;
   [key: string]: unknown;
 }
 
-/** Log entry details — replaces Record<string, unknown> on log detail fields */
+/** Log entry details — named alias per GE-1 for structured log detail fields */
 export interface LogEntryDetails {
+  /** Fields consumed by LogViewer, PublishProgressDialog, ActivationDiagnostics */
+  source?: string;
+  level?: string;
+  message?: string;
+  step?: string;
+  context?: LogEntryDetails;
+  details?: LogEntryDetails;
+  zipStructure?: unknown;
+  request?: {
+    url?: string;
+    method?: string;
+    headers?: Record<string, string>;
+    body?: unknown;
+  };
+  response?: {
+    status?: number;
+    statusText?: string;
+    body?: unknown;
+    url?: string;
+  };
   [key: string]: unknown;
 }
 
