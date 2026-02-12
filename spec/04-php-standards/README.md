@@ -1,6 +1,6 @@
 # PHP Coding Standards
 
-> **Version:** 2.0.0  
+> **Version:** 3.0.0  
 > **Updated:** 2026-02-12  
 > **Applies to:** WordPress companion plugins (PHP 7.4+)
 
@@ -311,18 +311,63 @@ class MyPlugin {
 
 ## Boolean Logic
 
-### Rule: Use semantic method names — no wrapper helpers
+### Rule: Use semantic method names — no trivial wrapper helpers
 
-Boolean checks must be self-documenting through **semantic method names** on the object itself. Never use generic boolean helper classes (`isTruthy`, `isFalsy`) — they add indirection without clarity.
+Boolean checks must be self-documenting through **semantic method names** on the object itself. Trivial wrappers that merely restate native PHP operators are **prohibited** — they add indirection without clarity.
+
+### Prohibited Trivial Wrappers (deprecated since 1.19.0)
+
+The following `RiseupBooleanHelpers` methods are **deprecated and must not be used**. Use native PHP instead:
+
+| ❌ Deprecated method | ✅ Native replacement |
+|----------------------|----------------------|
+| `RiseupBooleanHelpers::is_falsy($x)` | `!$x` |
+| `RiseupBooleanHelpers::is_truthy($x)` | `(bool) $x` |
+| `RiseupBooleanHelpers::is_null($x)` | `$x === null` |
+| `RiseupBooleanHelpers::is_set($x)` | `$x !== null` |
+| `RiseupBooleanHelpers::is_empty($x)` | `empty($x)` |
+| `RiseupBooleanHelpers::has_content($x)` | `!empty($x)` |
 
 ```php
-// ❌ FORBIDDEN: Generic boolean helper — obscures intent
-if (RiseupBooleanHelpers::isFalsy($plugin->is_active())) { ... }
-if (RiseupBooleanHelpers::isTruthy($value)) { ... }
+// ❌ FORBIDDEN: Trivial wrappers — use native PHP
+if (RiseupBooleanHelpers::is_falsy($value)) { ... }
+if (RiseupBooleanHelpers::is_null($config)) { ... }
+if (RiseupBooleanHelpers::has_content($name)) { ... }
 
+// ✅ REQUIRED: Native PHP operators
+if (!$value) { ... }
+if ($config === null) { ... }
+if (!empty($name)) { ... }
+```
+
+### Allowed Domain-Specific Helpers
+
+The following `RiseupBooleanHelpers` methods **are allowed** because they encapsulate multi-step checks with safety guards (e.g., `empty()` + native function) that would be error-prone inline:
+
+| Method | Semantics | Internal logic |
+|--------|-----------|----------------|
+| `is_func_exists($name)` | Function is available | `function_exists($name)` |
+| `is_func_missing($name)` | Function is not available | `!function_exists($name)` |
+| `is_class_exists($name)` | Class is available | `class_exists($name)` |
+| `is_class_missing($name)` | Class is not available | `!class_exists($name)` |
+| `is_extension_loaded($name)` | PHP extension is loaded | `extension_loaded($name)` |
+| `is_extension_missing($name)` | PHP extension is not loaded | `!extension_loaded($name)` |
+| `is_dir_exists($path)` | Directory exists | `!empty($path) && is_dir($path)` |
+| `is_dir_missing($path)` | Directory does not exist | `empty($path) \|\| !is_dir($path)` |
+| `is_dir_writable($path)` | Directory exists and is writable | `!empty($path) && is_dir($path) && is_writable($path)` |
+| `is_dir_readonly($path)` | Directory missing or not writable | `empty($path) \|\| !is_dir($path) \|\| !is_writable($path)` |
+| `is_file_exists($path)` | File exists | `!empty($path) && file_exists($path)` |
+| `is_file_missing($path)` | File does not exist | `empty($path) \|\| !file_exists($path)` |
+| `is_db_connected($db)` | DB object is connected | `$db !== null && $db->is_connected()` |
+| `is_db_disconnected($db)` | DB object is not connected | `$db === null \|\| !$db->is_connected()` |
+
+> **Why these are allowed:** Each combines a null/empty guard with a native function call — a pattern that is easy to get wrong inline. The semantic method name (`is_dir_missing`) reads as a single intent.
+
+### Semantic Object Methods
+
+```php
 // ❌ FORBIDDEN: Raw negation — easy to miss the "!"
 if (!$plugin->is_active()) { ... }
-if (!!$value) { ... }
 
 // ✅ REQUIRED: Semantic inverse methods on the object
 if ($plugin->is_disabled()) { ... }
@@ -336,7 +381,7 @@ if ($has_permission) { ... }
 
 1. **Every `is_*()` method should have a semantic inverse** (e.g., `is_active()` ↔ `is_disabled()`) rather than relying on `!is_active()`.
 2. **Boolean variables must use `$is_*` or `$has_*` prefix** — never store a boolean in `$value` or `$result`.
-3. **Never create a generic "BooleanHelpers" utility class** — if the boolean check is complex, it belongs as a method on the domain object or a dedicated Checker class (like `ErrorChecker::is_fatal_error()`).
+3. **Never create new trivial wrapper helpers** — if the check is a single native operator (`!`, `empty()`, `=== null`), use PHP directly. Only create helpers for multi-step checks with safety guards.
 
 ---
 
@@ -557,7 +602,8 @@ add_action(HookEnum::INIT, [$this, 'setup']);
 | Nested `if` when conditions can combine | Hard to read, unnecessary depth | Flatten with combined condition or early return |
 | Inline multi-part `if` condition (2+ operators) | Hard to read, not reusable | Extract to named `$is_*` variable or dedicated method |
 | `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
-| `RiseupBooleanHelpers` | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) |
+| `RiseupBooleanHelpers::is_falsy/is_truthy/is_null/is_set/is_empty/has_content` | Trivial wrappers around native PHP (deprecated 1.19.0) | Native `!$x`, `(bool)$x`, `$x === null`, `$x !== null`, `empty($x)`, `!empty($x)` |
+| `RiseupBooleanHelpers` for generic boolean logic | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) or domain-specific helpers (`is_dir_missing()`) |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
 | Inline `E_*` → string mapping | Duplicated type-label arrays | `ErrorChecker::get_type_label($type)` via `ErrorTypeEnum::TYPE_LABELS` |
 | `$value` for booleans | Ambiguous naming | `$is_value`, `$has_value` |
@@ -576,4 +622,4 @@ add_action(HookEnum::INIT, [$this, 'setup']);
 
 ---
 
-*PHP standards specification v2.0.0 — 2026-02-12*
+*PHP standards specification v3.0.0 — 2026-02-12*

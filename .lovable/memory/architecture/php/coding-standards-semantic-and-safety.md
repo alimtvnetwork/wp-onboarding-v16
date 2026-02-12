@@ -1,22 +1,4 @@
 # Memory: architecture/php/coding-standards-semantic-and-safety
 Updated: 2026-02-12
 
-PHP development follows strict semantic logic and safety standards across four pillars:
-
-## 1. Boolean Logic
-Boolean checks must use semantic inverse methods (e.g., `$plugin->is_disabled()`) rather than negating positive checks or using wrapper helpers like `RiseupBooleanHelpers`. Variables use descriptive prefixes (`$is_value`, `$has_permission`).
-
-## 2. File Path Resolution
-Manual file path construction is prohibited. All paths use fully-typed accessors in `RiseupPathUtils` that internally compose directory methods + `PathEnum` constants. Callers never see the composition — only `RiseupPathUtils::getRootDb()`, never `getDataDir() . PathEnum::ROOT_DB`.
-
-## 3. Hook & Action Management
-WordPress hooks use `HookEnum` constants (e.g., `HookEnum::INIT`, `HookEnum::REST_API_INIT`) instead of magic strings in all `add_action()` and `add_filter()` calls.
-
-## 4. Error Detection
-Fatal error logic is centralized in `ErrorChecker::is_fatal_error($error)` which delegates to `ErrorTypeEnum::FATAL_TYPES`. No inline `in_array()` checks for `E_ERROR`, `E_PARSE`, etc.
-
-## PHP Enum Spec
-A dedicated enum specification at `spec/04-php-standards/enums.md` documents all Enum classes (`HookEnum`, `PathEnum`, `ErrorTypeEnum`) with complete constant listings, `RiseupPathUtils` typed accessors, and `ErrorChecker` implementation.
-
-## Catch Rule
-All try-catch blocks must catch `\Throwable`, not `Exception`, to capture PHP 7+ `Error` and `TypeError` types.
+PHP development follows strict semantic logic and safety standards (v3.0.0). Boolean logic requires semantic inverse methods (e.g., '$plugin->is_disabled()') and semantic guards (e.g., 'isDirMissing()') rather than complex compositions of helpers; trivial `RiseupBooleanHelpers` wrappers (`is_falsy`, `is_truthy`, `is_null`, `is_set`, `is_empty`, `has_content`) are deprecated since 1.19.0 and prohibited — use native PHP (`!$x`, `(bool)$x`, `$x === null`, `$x !== null`, `empty($x)`, `!empty($x)`) instead. Domain-specific helpers (`is_dir_missing`, `is_file_missing`, `is_func_missing`, `is_class_missing`, `is_dir_writable`, `is_dir_readonly`, `is_extension_loaded`, `is_extension_missing`, `is_db_connected`, `is_db_disconnected`) remain allowed because they encapsulate multi-step checks with safety guards. Path resolution is strictly handled via 'RiseupPathUtils' using typed accessors (e.g., 'getRootDb()') that internally compose directory paths and 'PathEnum' constants; no path fragments or manual concatenation are permitted at call sites. WordPress hooks, REST namespaces, and actions must use constants from 'HookEnum', 'CapabilityEnum', and 'HttpMethodEnum', with all 'RISEUP_' prefixes removed. Descriptively named composed constants (e.g., 'HOOK_AJAX_UPLOAD', 'REST_URL_UPLOAD') must be used at call sites to prevent inline concatenation. Error handling mandates 'catch (\\Throwable $e)', centralized fatal checks via 'ErrorChecker::is_fatal_error()', and type-label mapping via 'ErrorChecker::get_type_label()'. Runtime dependency checks (e.g., PDO/SQLite) must be centralized in 'ErrorChecker' (e.g., 'is_invalid_pdo_extension()').
