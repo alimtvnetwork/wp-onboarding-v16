@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -191,7 +192,7 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 }
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
-// This uses base64-encoded upload for reliability (like the PowerShell script).
+// Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
 // uploadSource should be one of the UploadSource* constants (e.g., UploadSourceRestAPI).
 func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource string) (*UploaderUploadResult, error) {
 	// CRITICAL: Always resolve to absolute path before any file operations
@@ -201,108 +202,81 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 			WithContext("path", zipPath)
 	}
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Reading %s for upload...", absZipPath), map[string]interface{}{
-		"zipPath":    absZipPath,
-		"zipPathRel": zipPath,
-	})
-
 	// Validate slug - must be provided and not include .zip extension
 	if slug == "" {
-		// Derive slug from ZIP filename (strip .zip extension)
 		slug = strings.TrimSuffix(filepath.Base(absZipPath), ".zip")
 	}
-	slug = strings.TrimSuffix(slug, ".zip") // Ensure no .zip extension
+	slug = strings.TrimSuffix(slug, ".zip")
 
-	// Read the ZIP file
-	fileBytes, err := os.ReadFile(absZipPath)
+	// Open the ZIP file for streaming (no full memory load)
+	zipFile, err := os.Open(absZipPath)
 	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrFSRead, "read zip file").
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "open zip file").
 			WithContext("path", pathutil.ForDisplay(absZipPath))
 	}
+	defer zipFile.Close()
 
-	// STEP 1: Check uploader status BEFORE attempting upload
+	// Get file size for progress reporting
+	fileInfo, err := zipFile.Stat()
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stat zip file").
+			WithContext("path", pathutil.ForDisplay(absZipPath))
+	}
+	zipSize := fileInfo.Size()
+
 	namespace := c.resolveNamespace()
-
-	// Get detailed status to verify endpoint is working
-	statusEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointStatus)
-	statusURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, statusEndpoint)
-	c.progress(ActionUpload, "running", fmt.Sprintf("Pre-upload status check: GET %s", statusURL), map[string]interface{}{
-		"endpoint": statusEndpoint,
-		"url":      statusURL,
-	})
-
-	statusResp, statusErr := c.request("GET", statusEndpoint, nil)
-	if statusErr != nil {
-		return nil, &APIError{
-			Operation:    "pre-upload status check",
-			Method:       "GET",
-			Endpoint:     statusEndpoint,
-			URL:          statusURL,
-			StatusCode:   0,
-			ResponseBody: statusErr.Error(),
-		}
-	}
-	defer statusResp.Body.Close()
-
-	if statusResp.StatusCode != http.StatusOK {
-		statusBody, _ := io.ReadAll(statusResp.Body)
-		return nil, &APIError{
-			Operation:    "pre-upload status check",
-			Method:       "GET",
-			Endpoint:     statusEndpoint,
-			URL:          statusURL,
-			StatusCode:   statusResp.StatusCode,
-			ResponseBody: truncateBody(string(statusBody), 2000),
-		}
-	}
-	c.progress(ActionUpload, "success", "Pre-upload status check passed", map[string]interface{}{
-		"endpoint": statusEndpoint,
-		"url":      statusURL,
-		"status":   statusResp.StatusCode,
-	})
-
-	// Encode to base64
-	base64Data := base64.StdEncoding.EncodeToString(fileBytes)
-
-	// STEP 2: Build and send upload request
 	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointUpload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %d bytes (base64) to %s", len(fileBytes), uploadURL), map[string]interface{}{
-		"zipSize":   len(fileBytes),
+	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), map[string]interface{}{
+		"zipSize":   zipSize,
 		"zipPath":   absZipPath,
 		"namespace": namespace,
 		"endpoint":  uploadEndpoint,
 		"url":       uploadURL,
+		"method":    "multipart/form-data",
 	})
 
-	// Build request body (JSON with base64-encoded ZIP) - match PowerShell script format
-	// PowerShell sends: plugin_zip (base64), slug (folder name, no .zip), activate (bool)
-	body := map[string]interface{}{
-		"plugin_zip":    base64Data,
-		"slug":          slug,
-		"activate":      activate,
-		"upload_source": uploadSource,
+	// Build multipart form body — stream the ZIP file directly
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+
+	// Add the ZIP file as a form file field
+	part, err := writer.CreateFormFile("plugin_zip", filepath.Base(absZipPath))
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "create multipart form file")
+	}
+	if _, err := io.Copy(part, zipFile); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrFSRead, "stream zip to multipart")
 	}
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Upload request body: slug=%s, activate=%v, zipSize=%d bytes", slug, activate, len(fileBytes)), map[string]interface{}{
+	// Add form fields
+	_ = writer.WriteField("slug", slug)
+	if activate {
+		_ = writer.WriteField("activate", "1")
+	} else {
+		_ = writer.WriteField("activate", "0")
+	}
+	_ = writer.WriteField("upload_source", uploadSource)
+
+	if err := writer.Close(); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
+	}
+
+	c.progress(ActionUpload, "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), map[string]interface{}{
 		"slug":     slug,
 		"activate": activate,
-		"zipSize":  len(fileBytes),
+		"zipSize":  zipSize,
+		"bodySize": requestBody.Len(),
 	})
 
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, apperror.Wrap(err, apperror.ErrInternal, "marshal upload request body")
-	}
-
-	req, err := http.NewRequest("POST", uploadURL, bytes.NewReader(jsonBody))
+	req, err := http.NewRequest("POST", uploadURL, &requestBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "create upload HTTP request").
 			WithContext("url", uploadURL)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON)
+	c.setStandardHeaders(req, writer.FormDataContentType())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -321,24 +295,20 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	})
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		// Capture stack trace for debugging
 		stackTrace := captureStackTraceN(2, c.stackTraceDepth)
-		
-		// Enhanced diagnostic for empty response body
+
 		diagnosticBody := truncateBody(respBody, 8192)
 		if diagnosticBody == "" {
 			diagnosticBody = "[EMPTY RESPONSE BODY - The WordPress server returned no content. " +
 				"This typically indicates a fatal PHP error that crashed before the error handler could respond. " +
 				"Check the WordPress debug.log, PHP error log, or wp-content/uploads/riseup-asia-uploader/fatal-errors.log for details.]"
 		}
-		
-		// Log detailed error for on-disk logs
-		fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n", 
+
+		fmt.Printf("[UPLOAD ERROR] POST %s\n  ZIP: %s\n  Status: %d\n  Response: %s\n--- Stack Trace ---\n%s--- End Stack Trace ---\n",
 			uploadURL, absZipPath, resp.StatusCode, truncateBody(respBody, 4000), stackTrace)
-		
-		// Extract PHP stack trace from WordPress error response
+
 		phpStackInfo := ExtractPHPStackTrace(respBytes)
-		
+
 		return nil, &APIError{
 			Operation:    "upload plugin via RiseupAsia Uploader",
 			Method:       "POST",
@@ -352,7 +322,6 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 
 	var result UploaderUploadResult
 	if err := json.Unmarshal(respBytes, &result); err != nil {
-		// If JSON parsing fails but status was OK, treat as success
 		result.Success = true
 		result.Message = "Upload completed"
 	}
