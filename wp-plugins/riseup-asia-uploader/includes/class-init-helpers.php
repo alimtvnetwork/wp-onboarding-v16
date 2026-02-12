@@ -96,14 +96,14 @@ class RiseupInitHelpers {
      * @return bool True on success.
      */
     public static function ensureDirNative($path, $secure = false) {
-        if (RiseupBooleanHelpers::is_empty($path)) {
+        if (empty($path)) {
             return false;
         }
 
         if (RiseupBooleanHelpers::is_dir_missing($path)) {
-            if (RiseupBooleanHelpers::is_falsy(@mkdir($path, 0755, true))) {
+            if (!@mkdir($path, 0755, true)) {
                 // Try wp_mkdir_p as fallback
-                if (function_exists('wp_mkdir_p') && RiseupBooleanHelpers::is_falsy(wp_mkdir_p($path))) {
+                if (function_exists('wp_mkdir_p') && !wp_mkdir_p($path)) {
                     return false;
                 }
             }
@@ -158,13 +158,13 @@ class RiseupInitHelpers {
      */
     public static function ensureSubDir($base_dir, $sub_dir, $secure = false) {
         // Ensure base
-        if (RiseupBooleanHelpers::is_falsy(self::ensureDir($base_dir, $secure))) {
+        if (!self::ensureDir($base_dir, $secure)) {
             return false;
         }
 
         // Build and ensure sub path
         $full_path = rtrim($base_dir, '/') . '/' . ltrim($sub_dir, '/');
-        if (RiseupBooleanHelpers::is_falsy(self::ensureDir($full_path, false))) {
+        if (!self::ensureDir($full_path, false)) {
             return false;
         }
 
@@ -208,7 +208,7 @@ class RiseupInitHelpers {
     public static function initSqliteConnection($db_path, $logger) {
         // Check PDO availability (warn only once per request to avoid log spam)
         if (RiseupBooleanHelpers::is_class_missing('PDO')) {
-            if (RiseupBooleanHelpers::is_falsy(self::$pdo_unavailable_warned)) {
+            if (!self::$pdo_unavailable_warned) {
                 $logger->warn('[INIT] PDO class not found - PHP PDO extension not installed. Database features will be skipped.');
                 self::$pdo_unavailable_warned = true;
             }
@@ -217,7 +217,7 @@ class RiseupInitHelpers {
 
         // Check SQLite driver (warn only once)
         if (RiseupBooleanHelpers::is_extension_missing('pdo_sqlite')) {
-            if (RiseupBooleanHelpers::is_falsy(self::$pdo_unavailable_warned)) {
+            if (!self::$pdo_unavailable_warned) {
                 $logger->warn('[INIT] PDO SQLite extension not loaded. Database features will be skipped.');
                 self::$pdo_unavailable_warned = true;
             }
@@ -279,7 +279,7 @@ class RiseupInitHelpers {
 
         self::$startup_results[] = array(
             'name'    => $name,
-            'success' => RiseupBooleanHelpers::is_null($error),
+            'success' => $error === null,
             'error'   => $error,
             'time_ms' => $elapsed_ms,
         );
@@ -303,7 +303,7 @@ class RiseupInitHelpers {
      */
     public static function getFailedStartups() {
         return array_filter(self::$startup_results, function ($r) {
-            return RiseupBooleanHelpers::is_falsy($r['success']);
+            return !$r['success'];
         });
     }
 
@@ -313,7 +313,7 @@ class RiseupInitHelpers {
      * @return bool True if no failures.
      */
     public static function allStartupsSucceeded() {
-        return RiseupBooleanHelpers::is_empty(self::getFailedStartups());
+        return empty(self::getFailedStartups());
     }
 
     /**

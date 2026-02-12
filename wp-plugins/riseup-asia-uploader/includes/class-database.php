@@ -61,7 +61,7 @@ class Riseup_Database {
      * @return Riseup_Database
      */
     public static function get_instance() {
-        if (RiseupBooleanHelpers::is_null(self::$instance)) {
+        if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -82,7 +82,7 @@ class Riseup_Database {
      */
     public function init() {
         if ($this->init_attempted) {
-            return RiseupBooleanHelpers::is_set($this->pdo);
+            return $this->pdo !== null;
         }
         
         $this->init_attempted = true;
@@ -136,7 +136,7 @@ class Riseup_Database {
             // Use centralized SQLite connection helper
             $this->pdo = RiseupInitHelpers::initSqliteConnection($this->db_path, $this->file_logger);
             
-            if (RiseupBooleanHelpers::is_null($this->pdo)) {
+            if ($this->pdo === null) {
                 // Warning already logged once by initSqliteConnection; no need to repeat
                 return false;
             }

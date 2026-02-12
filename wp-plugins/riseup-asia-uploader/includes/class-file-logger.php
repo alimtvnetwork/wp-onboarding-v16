@@ -95,7 +95,7 @@ class Riseup_File_Logger {
      * @return Riseup_File_Logger
      */
     public static function get_instance() {
-        if (RiseupBooleanHelpers::is_null(self::$instance)) {
+        if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -304,7 +304,7 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_base_dir() {
-        if (RiseupBooleanHelpers::is_null($this->base_dir)) {
+        if ($this->base_dir === null) {
             $this->initialize_paths();
         }
         return $this->base_dir;
@@ -316,7 +316,7 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_logs_dir() {
-        if (RiseupBooleanHelpers::is_null($this->logs_dir)) {
+        if ($this->logs_dir === null) {
             $this->initialize_paths();
         }
         return $this->logs_dir;
@@ -328,7 +328,7 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_log_file() {
-        if (RiseupBooleanHelpers::is_null($this->log_file)) {
+        if ($this->log_file === null) {
             $this->initialize_paths();
         }
         return $this->log_file;
@@ -340,7 +340,7 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_error_file() {
-        if (RiseupBooleanHelpers::is_null($this->error_file)) {
+        if ($this->error_file === null) {
             $this->initialize_paths();
         }
         return $this->error_file;
@@ -352,7 +352,7 @@ class Riseup_File_Logger {
      * @return string
      */
     public function get_stacktrace_file() {
-        if (RiseupBooleanHelpers::is_null($this->stacktrace_file)) {
+        if ($this->stacktrace_file === null) {
             $this->initialize_paths();
         }
         return $this->stacktrace_file;
@@ -383,7 +383,7 @@ class Riseup_File_Logger {
             $line
         );
         
-        if (RiseupBooleanHelpers::has_content($context)) {
+        if (!empty($context)) {
             $json_flags = defined('JSON_UNESCAPED_SLASHES') ? JSON_UNESCAPED_SLASHES : 0;
             $entry .= ' ' . json_encode($context, $json_flags);
         }
@@ -401,7 +401,7 @@ class Riseup_File_Logger {
      */
     private function write($entry, $is_error = false) {
         // Initialize paths on first write
-        if (RiseupBooleanHelpers::is_falsy($this->initialized)) {
+        if (!$this->initialized) {
             if (!$this->initialize_paths()) {
                 // Fallback to error_log if we can't write to file
                 error_log('[Riseup Asia] ' . trim($entry));
@@ -631,7 +631,7 @@ class Riseup_File_Logger {
             return;
         }
 
-        if (RiseupBooleanHelpers::is_falsy($this->initialized)) {
+        if (!$this->initialized) {
             if (!$this->initialize_paths()) {
                 return;
             }

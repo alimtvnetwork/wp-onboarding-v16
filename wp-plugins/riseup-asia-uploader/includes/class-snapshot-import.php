@@ -148,7 +148,7 @@ class RiseupSnapshotImport {
             }
 
             // Verify checksum if available
-            if (RiseupBooleanHelpers::has_content($table['checksum_md5'])) {
+            if (!empty($table['checksum_md5'])) {
                 $actualMd5 = md5_file($sqlitePath);
                 if ($actualMd5 !== $table['checksum_md5']) {
                     throw new Exception("Checksum mismatch for {$table['sqlite_file']}: expected {$table['checksum_md5']}, got {$actualMd5}");
@@ -187,7 +187,7 @@ class RiseupSnapshotImport {
                 continue;
             }
             // Verify checksum
-            if (RiseupBooleanHelpers::has_content($plugin['checksum_md5'])) {
+            if (!empty($plugin['checksum_md5'])) {
                 $actualMd5 = md5_file($zipPath);
                 if ($actualMd5 !== $plugin['checksum_md5']) {
                     throw new Exception("Plugin checksum mismatch for {$plugin['plugin_slug']}");

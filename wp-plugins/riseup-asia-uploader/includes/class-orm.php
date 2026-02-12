@@ -160,7 +160,7 @@ class Riseup_ORM {
      * @return array Results.
      */
     public static function raw_execute($sql, $params = array()) {
-        if (RiseupBooleanHelpers::is_falsy(self::$pdo)) {
+        if (!self::$pdo) {
             return array();
         }
 
