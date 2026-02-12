@@ -701,19 +701,101 @@ export interface E2ERunSummary {
 // Activity Feed Types
 export type ActivityType = "publish" | "snapshot" | "plugin" | "config" | "connection";
 
-export interface ActivityEntry {
+// ---------------------------------------------------------------------------
+// Per-type metadata interfaces (discriminated by ActivityEntry.type)
+// ---------------------------------------------------------------------------
+
+export interface PublishMetadata {
+  pluginName?: string;
+  version?: string;
+  filesUpdated?: number;
+  from?: string;
+  to?: string;
+  isSelfUpdate?: boolean;
+}
+
+export interface SnapshotMetadata {
+  snapshotType?: SnapshotType;
+  snapshotId?: number;
+  tables?: number | string[];
+  size?: number;
+  deltaTables?: number;
+  mode?: string;
+  cascadeCount?: number;
+  cached?: boolean;
+}
+
+export interface PluginMetadata {
+  pluginSlug?: string;
+  pluginName?: string;
+}
+
+export interface ConfigMetadata {
+  setting?: string;
+  value?: string | number | boolean;
+  time?: string;
+}
+
+export interface ConnectionMetadata {
+  wpVersion?: string;
+  reason?: string;
+}
+
+/** Union of all known metadata shapes */
+export type ActivityMetadata =
+  | PublishMetadata
+  | SnapshotMetadata
+  | PluginMetadata
+  | ConfigMetadata
+  | ConnectionMetadata;
+
+// ---------------------------------------------------------------------------
+// ActivityEntry — discriminated union on `type`
+// ---------------------------------------------------------------------------
+
+interface ActivityEntryBase {
   id: string;
   timestamp: string;
   siteId: number;
   siteName: string;
-  type: ActivityType;
   action: string;
   title: string;
-  metadata: Record<string, unknown>;
   source: "go" | "wordpress";
   machineName?: string;
   version?: string;
 }
+
+export interface PublishActivityEntry extends ActivityEntryBase {
+  type: "publish";
+  metadata: PublishMetadata;
+}
+
+export interface SnapshotActivityEntry extends ActivityEntryBase {
+  type: "snapshot";
+  metadata: SnapshotMetadata;
+}
+
+export interface PluginActivityEntry extends ActivityEntryBase {
+  type: "plugin";
+  metadata: PluginMetadata;
+}
+
+export interface ConfigActivityEntry extends ActivityEntryBase {
+  type: "config";
+  metadata: ConfigMetadata;
+}
+
+export interface ConnectionActivityEntry extends ActivityEntryBase {
+  type: "connection";
+  metadata: ConnectionMetadata;
+}
+
+export type ActivityEntry =
+  | PublishActivityEntry
+  | SnapshotActivityEntry
+  | PluginActivityEntry
+  | ConfigActivityEntry
+  | ConnectionActivityEntry;
 
 export interface ActivityFeedResponse {
   entries: ActivityEntry[];

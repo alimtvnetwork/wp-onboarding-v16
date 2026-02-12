@@ -27,6 +27,7 @@ import {
   getActivityTypeBadgeClasses,
   getActivityActionBadgeClasses,
   formatActivityAction,
+  getMetadataEntries,
   ACTIVITY_TYPE_OPTIONS,
 } from "@/lib/activityUtils";
 
@@ -269,7 +270,7 @@ export default function ActivityFeed() {
                               <span className="font-medium text-foreground">Version:</span> {entry.version}
                             </p>
                           )}
-                          {Object.entries(entry.metadata).map(([key, val]) => (
+                          {getMetadataEntries(entry.metadata).map(([key, val]) => (
                             <p key={key} className="text-muted-foreground">
                               <span className="font-medium text-foreground">{key}:</span>{" "}
                               {typeof val === "object" ? JSON.stringify(val) : String(val)}
