@@ -8,6 +8,7 @@ import {
   Play,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { E2ECaseStatusValues } from "@/lib/constants";
 
 interface TestResult {
   id: string;
@@ -33,13 +34,13 @@ interface TestResultRowProps {
 
 function getStatusIcon(status: string) {
   switch (status) {
-    case "passed":
+    case E2ECaseStatusValues.Passed:
       return <CheckCircle2 className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />;
-    case "failed":
+    case E2ECaseStatusValues.Failed:
       return <XCircle className="h-4 w-4 text-destructive" />;
-    case "running":
+    case E2ECaseStatusValues.Running:
       return <Loader2 className="h-4 w-4 text-primary animate-spin" />;
-    case "skipped":
+    case E2ECaseStatusValues.Skipped:
       return <Clock className="h-4 w-4 text-muted-foreground" />;
     case "error":
       return <AlertTriangle className="h-4 w-4 text-amber-500 dark:text-amber-400" />;
@@ -49,7 +50,7 @@ function getStatusIcon(status: string) {
 }
 
 export function TestResultRow({ result, onViewError, onRerun, isRerunning }: TestResultRowProps) {
-  const isFailed = result.status === "failed" || result.status === "error";
+  const isFailed = result.status === E2ECaseStatusValues.Failed || result.status === "error";
 
   return (
     <div

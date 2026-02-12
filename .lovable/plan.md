@@ -294,7 +294,7 @@ interface ActivityEntry {
 
 ## Feature F: Type Safety Remediation (CRITICAL PRIORITY)
 
-### Status: F1 ✅ Done, F2 ✅ Done, F3 ✅ Done, F4 ✅ Done, F5 ✅ Done — F6–F8 pending
+### Status: F1 ✅ Done, F2 ✅ Done, F3 ✅ Done, F4 ✅ Done, F5 ✅ Done, F6 ✅ Done, F7 ✅ Done — F8 pending
 
 ### Spec & Plan References
 - **Coding Standards:** `spec/02-typescript-standards/README.md` v2.0.0
@@ -317,8 +317,8 @@ interface ActivityEntry {
 | F3 | **`as any` elimination** | ✅ Done | Small | Fixed `as any` casts: `ThemeSelector` (FontSize/BorderRadius), `useTheme` (added `sidebarTheme` to Settings.appearance type), `useDashboardStats` (typed Site/Plugin/ErrorLog, removed `.entries as any`). Zero `as any` remaining. |
 | F4 | **Constants file** | ✅ Done | Small | Created `src/lib/constants.ts` with const object + type pattern for `ConnectionStatus`, `PublishStatus`, `SnapshotRunStatus`, `CronJobStatus`, `RemotePluginStatus`, `SessionStatus`, `FileChangeStatus`, `FileDirection`, plus timing constants (`POLL_INTERVAL_DASHBOARD_MS`, `STALE_TIME_DEFAULT_MS`, etc.). |
 | F5 | **Update methods.ts** | ✅ Done | Medium | All `Record<string, unknown>` and `request<unknown>` replaced with specific types |
-| F6 | **Generic envelope** | 🟡 High | Small | Make `RawEnvelope<T>` generic |
-| F7 | **Magic string migration** | 🟡 High | Large | Replace ~50+ inline string comparisons with enum refs |
+| F6 | **Generic envelope** | ✅ Done | Small | Made `RawEnvelope<T = unknown>` generic with typed `Results: T[]` |
+| F7 | **Magic string migration** | ✅ Done | Large | Migrated 50+ inline magic string comparisons across 12 files to use const references from `src/lib/constants.ts`. Added new const objects: `PublishOperationStatus`, `PublishStageName`, `PublishStageStatus`, `SyncStatus`, `DeployStatus`, `ConnectionTestStep`, `ConnectionTestStatus`, `PublishActionType`, `LogLevel`, `SessionType`. Updated: `publishStore.ts`, `GlobalPublishProgress.tsx`, `Sessions.tsx`, `PublishHistory.tsx`, `CorePluginDashboard.tsx`, `TestResultRow.tsx`, `LiveTestProgress.tsx`, `DeployUploaderDialog.tsx`, `useConnectionTestLogs.ts`, `RecentPublishes.tsx`, `publishHistoryUtils.ts`. |
 | F8 | **Activity metadata typing** | 🟡 High | Medium | Discriminated union for `ActivityEntry.metadata` |
 
 ### Execution Order

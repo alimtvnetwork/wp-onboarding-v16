@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SessionStatus } from "@/lib/constants";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, formatDistance } from "date-fns";
 import {
@@ -62,21 +63,21 @@ const SESSION_TYPE_LABELS: Record<string, string> = {
 
 function getStatusBadge(status: string) {
   switch (status) {
-    case "completed":
+    case SessionStatus.Completed:
       return (
         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
           <CheckCircle className="h-3 w-3 mr-1" />
           Completed
         </Badge>
       );
-    case "error":
+    case SessionStatus.Error:
       return (
         <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
           <XCircle className="h-3 w-3 mr-1" />
           Error
         </Badge>
       );
-    case "running":
+    case SessionStatus.Running:
       return (
         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -164,9 +165,9 @@ export default function Sessions() {
 
     const matchesTab =
       activeTab === "all" ||
-      (activeTab === "running" && session.status === "running") ||
-      (activeTab === "completed" && session.status === "completed") ||
-      (activeTab === "error" && session.status === "error");
+      (activeTab === SessionStatus.Running && session.status === SessionStatus.Running) ||
+      (activeTab === SessionStatus.Completed && session.status === SessionStatus.Completed) ||
+      (activeTab === SessionStatus.Error && session.status === SessionStatus.Error);
 
     return matchesSearch && matchesTab;
   });

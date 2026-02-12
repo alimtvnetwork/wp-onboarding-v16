@@ -223,7 +223,7 @@ function wsEventToLogEntry(message: { type: string; data: unknown; timestamp: st
       return {
         id,
         timestamp: message.timestamp,
-        level: data?.status === "error" ? "error" : data?.status === "warning" ? "warn" : "info",
+        level: data?.status === "error" ? "error" : data?.status === "warning" ? "warn" : "info" as const,
         source: "connection",
         message: `[${data?.step}] ${data?.message}`,
         details: data,

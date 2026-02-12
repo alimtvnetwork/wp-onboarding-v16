@@ -28,6 +28,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SyncStatus, PublishStatus } from "@/lib/constants";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState } from "react";
 
@@ -126,9 +127,9 @@ export default function CorePluginDashboard() {
   }
 
   const mappings = corePlugin.mappings ?? [];
-  const healthySites = mappings.filter((m) => m.syncStatus === "synced" || m.syncStatus === "ok");
-  const warningSites = mappings.filter((m) => m.syncStatus === "modified" || m.syncStatus === "pending");
-  const errorSites = mappings.filter((m) => m.syncStatus === "error" || m.syncStatus === "failed");
+  const healthySites = mappings.filter((m) => m.syncStatus === SyncStatus.Synced || m.syncStatus === SyncStatus.Ok);
+  const warningSites = mappings.filter((m) => m.syncStatus === SyncStatus.Modified || m.syncStatus === SyncStatus.Pending);
+  const errorSites = mappings.filter((m) => m.syncStatus === SyncStatus.Error || m.syncStatus === SyncStatus.Failed);
 
   return (
     <div className="space-y-6">
@@ -203,9 +204,9 @@ export default function CorePluginDashboard() {
               mappings.map((mapping) => {
                 const site = sites?.find((s) => s.id === mapping.siteId);
                 const statusColor =
-                  mapping.syncStatus === "synced" || mapping.syncStatus === "ok"
+                  mapping.syncStatus === SyncStatus.Synced || mapping.syncStatus === SyncStatus.Ok
                     ? "text-emerald-500"
-                    : mapping.syncStatus === "error" || mapping.syncStatus === "failed"
+                    : mapping.syncStatus === SyncStatus.Error || mapping.syncStatus === SyncStatus.Failed
                     ? "text-destructive"
                     : "text-yellow-500";
 
@@ -216,9 +217,9 @@ export default function CorePluginDashboard() {
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={cn("h-2.5 w-2.5 rounded-full", {
-                        "bg-emerald-500": mapping.syncStatus === "synced" || mapping.syncStatus === "ok",
-                        "bg-yellow-500": mapping.syncStatus === "modified" || mapping.syncStatus === "pending",
-                        "bg-destructive": mapping.syncStatus === "error" || mapping.syncStatus === "failed",
+                        "bg-emerald-500": mapping.syncStatus === SyncStatus.Synced || mapping.syncStatus === SyncStatus.Ok,
+                        "bg-yellow-500": mapping.syncStatus === SyncStatus.Modified || mapping.syncStatus === SyncStatus.Pending,
+                        "bg-destructive": mapping.syncStatus === SyncStatus.Error || mapping.syncStatus === SyncStatus.Failed,
                         "bg-muted-foreground": !mapping.syncStatus,
                       })} />
                       <div className="min-w-0">
@@ -340,9 +341,9 @@ export default function CorePluginDashboard() {
                   className="flex items-center justify-between p-3 rounded-lg border bg-muted/30"
                 >
                   <div className="flex items-center gap-3">
-                    {entry.status === "success" ? (
+                    {entry.status === PublishStatus.Success ? (
                       <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                    ) : entry.status === "failed" ? (
+                    ) : entry.status === PublishStatus.Failed ? (
                       <XCircle className="h-4 w-4 text-destructive shrink-0" />
                     ) : (
                       <AlertTriangle className="h-4 w-4 text-yellow-500 shrink-0" />

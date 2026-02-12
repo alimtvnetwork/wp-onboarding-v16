@@ -5,6 +5,7 @@ import { Rocket, CheckCircle2, XCircle, AlertTriangle, ArrowRight } from "lucide
 import { formatDistanceToNow } from "date-fns";
 import type { PublishHistoryEntry, PublishHistoryStats } from "@/lib/api";
 import { formatActionLabel, getActionBadgeClasses, getPluginBadgeClasses } from "@/lib/publishHistoryUtils";
+import { PublishStatus } from "@/lib/constants";
 
 interface RecentPublishesProps {
   entries: PublishHistoryEntry[];
@@ -60,8 +61,8 @@ export function RecentPublishes({ entries, stats }: RecentPublishesProps) {
                   className="flex items-center gap-2 sm:gap-3 p-2 rounded-lg border-l-2 border-l-transparent transition-colors hover:bg-secondary/50 hover:border-l-primary/60"
                 >
                   <StatusIcon className={`h-4 w-4 shrink-0 ${
-                    entry.status === "success" ? "text-emerald-600" :
-                    entry.status === "failed" ? "text-destructive" :
+                    entry.status === PublishStatus.Success ? "text-emerald-600" :
+                    entry.status === PublishStatus.Failed ? "text-destructive" :
                     "text-warning"
                   }`} />
                   <div className="flex-1 min-w-0">

@@ -12,10 +12,10 @@ import type {
 } from './types';
 
 /** Raw envelope shape as received from the backend */
-export interface RawEnvelope {
+export interface RawEnvelope<T = unknown> {
   Status: EnvelopeStatus;
   Attributes: EnvelopeAttributes;
-  Results: unknown[];
+  Results: T[];
   Navigation?: EnvelopeNavigation;
   Errors?: EnvelopeErrors;
   MethodsStack?: EnvelopeMethodsStack;
@@ -24,7 +24,7 @@ export interface RawEnvelope {
 /**
  * Detect whether a parsed JSON object is a PascalCase universal envelope.
  */
-export function isEnvelope(obj: unknown): obj is RawEnvelope {
+export function isEnvelope(obj: unknown): obj is RawEnvelope<unknown> {
   if (!obj || typeof obj !== 'object') return false;
   const o = obj as Record<string, unknown>;
   return (

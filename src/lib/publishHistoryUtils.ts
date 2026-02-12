@@ -1,3 +1,5 @@
+import { PublishActionType } from "@/lib/constants";
+
 /**
  * Converts action type strings (e.g., "PLUGIN_DISABLE", "UPLOAD_SCRIPT")
  * to Title Case labels (e.g., "Plugin Disabled", "Upload Script").
@@ -6,29 +8,29 @@ export function formatActionLabel(actionType: string): string {
   if (!actionType) return "Publish";
 
   const mapping: Record<string, string> = {
-    "PLUGIN_DISABLE": "Plugin Disabled",
+    [PublishActionType.PluginDisable]: "Plugin Disabled",
     "PLUGIN DISABLE": "Plugin Disabled",
-    "PLUGIN_ENABLE": "Plugin Enabled",
+    [PublishActionType.PluginEnable]: "Plugin Enabled",
     "PLUGIN ENABLE": "Plugin Enabled",
-    "PLUGIN_DELETE": "Plugin Deleted",
+    [PublishActionType.PluginDelete]: "Plugin Deleted",
     "PLUGIN DELETE": "Plugin Deleted",
-    "UPLOAD_SCRIPT": "Upload Script",
+    [PublishActionType.UploadScript]: "Upload Script",
     "UPLOAD SCRIPT": "Upload Script",
-    "PUBLISH": "Publish",
-    "SYNC": "Sync",
-    "BACKUP": "Backup",
-    "RESTORE": "Restore",
+    [PublishActionType.Publish]: "Publish",
+    [PublishActionType.Sync]: "Sync",
+    [PublishActionType.Backup]: "Backup",
+    [PublishActionType.Restore]: "Restore",
     // Snapshot actions
-    "SNAPSHOT_CREATE": "Snapshot Created",
-    "SNAPSHOT_RESTORE": "Snapshot Restored",
-    "SNAPSHOT_DELETE": "Snapshot Deleted",
-    "SNAPSHOT_EXPORT": "Snapshot Exported",
-    "SNAPSHOT_IMPORT": "Snapshot Imported",
-    "SNAPSHOT_CLEANUP": "Snapshot Cleanup",
-    "SNAPSHOT_FULL_BACKUP": "Full Backup",
-    "SNAPSHOT_INCREMENTAL": "Incremental Backup",
-    "SNAPSHOT_RESTORE_PERTABLE": "Per-Table Restore",
-    "SNAPSHOT_IMPORT_PERTABLE": "Per-Table Import",
+    [PublishActionType.SnapshotCreate]: "Snapshot Created",
+    [PublishActionType.SnapshotRestore]: "Snapshot Restored",
+    [PublishActionType.SnapshotDelete]: "Snapshot Deleted",
+    [PublishActionType.SnapshotExport]: "Snapshot Exported",
+    [PublishActionType.SnapshotImport]: "Snapshot Imported",
+    [PublishActionType.SnapshotCleanup]: "Snapshot Cleanup",
+    [PublishActionType.SnapshotFullBackup]: "Full Backup",
+    [PublishActionType.SnapshotIncremental]: "Incremental Backup",
+    [PublishActionType.SnapshotRestorePerTable]: "Per-Table Restore",
+    [PublishActionType.SnapshotImportPerTable]: "Per-Table Import",
   };
 
   const upper = actionType.toUpperCase().trim();

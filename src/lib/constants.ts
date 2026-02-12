@@ -27,6 +27,43 @@ export const PublishStatus = {
 export type PublishStatus = (typeof PublishStatus)[keyof typeof PublishStatus];
 
 // ---------------------------------------------------------------------------
+// Publish Operation (store-level status for live operations)
+// ---------------------------------------------------------------------------
+
+export const PublishOperationStatus = {
+  Pending: "pending",
+  Running: "running",
+  Success: "success",
+  Error: "error",
+} as const;
+
+export type PublishOperationStatus = (typeof PublishOperationStatus)[keyof typeof PublishOperationStatus];
+
+// ---------------------------------------------------------------------------
+// Publish Stage
+// ---------------------------------------------------------------------------
+
+export const PublishStageName = {
+  Backup: "backup",
+  Package: "package",
+  Upload: "upload",
+  Activate: "activate",
+  Cleanup: "cleanup",
+} as const;
+
+export type PublishStageName = (typeof PublishStageName)[keyof typeof PublishStageName];
+
+export const PublishStageStatus = {
+  Pending: "pending",
+  Running: "running",
+  Success: "success",
+  Error: "error",
+  Skipped: "skipped",
+} as const;
+
+export type PublishStageStatus = (typeof PublishStageStatus)[keyof typeof PublishStageStatus];
+
+// ---------------------------------------------------------------------------
 // Snapshot
 // ---------------------------------------------------------------------------
 
@@ -48,6 +85,53 @@ export const SnapshotExportStatus = {
 } as const;
 
 export type SnapshotExportStatus = (typeof SnapshotExportStatus)[keyof typeof SnapshotExportStatus];
+
+// ---------------------------------------------------------------------------
+// Sync Status (plugin mapping sync)
+// ---------------------------------------------------------------------------
+
+export const SyncStatus = {
+  Synced: "synced",
+  Ok: "ok",
+  Modified: "modified",
+  Pending: "pending",
+  Error: "error",
+  Failed: "failed",
+} as const;
+
+export type SyncStatus = (typeof SyncStatus)[keyof typeof SyncStatus];
+
+// ---------------------------------------------------------------------------
+// Deploy Status
+// ---------------------------------------------------------------------------
+
+export const DeployStatus = {
+  Idle: "idle",
+  Deploying: "deploying",
+  Completed: "completed",
+  Error: "error",
+} as const;
+
+export type DeployStatus = (typeof DeployStatus)[keyof typeof DeployStatus];
+
+// ---------------------------------------------------------------------------
+// Connection Test Steps
+// ---------------------------------------------------------------------------
+
+export const ConnectionTestStep = {
+  Start: "start",
+  Complete: "complete",
+} as const;
+
+export type ConnectionTestStepName = (typeof ConnectionTestStep)[keyof typeof ConnectionTestStep];
+
+export const ConnectionTestStatus = {
+  Running: "running",
+  Success: "success",
+  Error: "error",
+} as const;
+
+export type ConnectionTestStatus = (typeof ConnectionTestStatus)[keyof typeof ConnectionTestStatus];
 
 // ---------------------------------------------------------------------------
 // Cron Job
@@ -161,6 +245,9 @@ export const DASHBOARD_TREND_DAYS = 7 as const;
 export const DASHBOARD_TREND_LIMIT = 200 as const;
 export const RECENT_PUBLISHES_LIMIT = 5 as const;
 export const RECENT_ERRORS_LIMIT = 10 as const;
+export const PUBLISH_COOLDOWN_MS = 30_000 as const;
+export const PUBLISH_LOG_MAX = 500 as const;
+export const CLEANUP_DELAY_MS = 1_800_000 as const;
 
 // ---------------------------------------------------------------------------
 // Site Health
@@ -197,3 +284,58 @@ export const StorageModeValues = {
   Single: "single",
   PerTable: "per-table",
 } as const;
+
+// ---------------------------------------------------------------------------
+// Publish Action Types (for formatActionLabel / getActionBadgeClasses)
+// ---------------------------------------------------------------------------
+
+export const PublishActionType = {
+  PluginDisable: "PLUGIN_DISABLE",
+  PluginEnable: "PLUGIN_ENABLE",
+  PluginDelete: "PLUGIN_DELETE",
+  UploadScript: "UPLOAD_SCRIPT",
+  Publish: "PUBLISH",
+  Sync: "SYNC",
+  Backup: "BACKUP",
+  Restore: "RESTORE",
+  SnapshotCreate: "SNAPSHOT_CREATE",
+  SnapshotRestore: "SNAPSHOT_RESTORE",
+  SnapshotDelete: "SNAPSHOT_DELETE",
+  SnapshotExport: "SNAPSHOT_EXPORT",
+  SnapshotImport: "SNAPSHOT_IMPORT",
+  SnapshotCleanup: "SNAPSHOT_CLEANUP",
+  SnapshotFullBackup: "SNAPSHOT_FULL_BACKUP",
+  SnapshotIncremental: "SNAPSHOT_INCREMENTAL",
+  SnapshotRestorePerTable: "SNAPSHOT_RESTORE_PERTABLE",
+  SnapshotImportPerTable: "SNAPSHOT_IMPORT_PERTABLE",
+} as const;
+
+export type PublishActionType = (typeof PublishActionType)[keyof typeof PublishActionType];
+
+// ---------------------------------------------------------------------------
+// Log / Diagnostic Levels
+// ---------------------------------------------------------------------------
+
+export const LogLevel = {
+  Debug: "debug",
+  Info: "info",
+  Warn: "warn",
+  Error: "error",
+} as const;
+
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
+
+// ---------------------------------------------------------------------------
+// Session Type Labels
+// ---------------------------------------------------------------------------
+
+export const SessionType = {
+  Publish: "publish",
+  Sync: "sync",
+  Connect: "connect",
+  Backup: "backup",
+  BulkPublish: "bulk_publish",
+  RemotePluginAction: "remote_plugin_action",
+} as const;
+
+export type SessionType = (typeof SessionType)[keyof typeof SessionType];
