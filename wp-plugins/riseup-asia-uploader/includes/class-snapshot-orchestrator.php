@@ -112,13 +112,30 @@ class RiseupSnapshotOrchestrator {
         ));
 
         try {
-            // 2. Execute per-table export via worker
-            $worker_result = $this->worker->execute(array(
-                'title'    => $title,
-                'scope'    => $scope,
-                'type'     => 'full',
-                'settings' => $settings,
-            ));
+            // Apply worker pool size from settings
+            $pool_size = $settings['worker_pool_size'] ?? RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT;
+            $this->worker->setPoolSize($pool_size);
+
+            // Determine execution mode: async (cron) or sync
+            $async = $options['async'] ?? true;
+
+            if ($async) {
+                // 2a. Async: create job + schedule first cron batch
+                $worker_result = $this->worker->execute(array(
+                    'title'    => $title,
+                    'scope'    => $scope,
+                    'type'     => 'full',
+                    'settings' => $settings,
+                ));
+            } else {
+                // 2b. Sync: block until all tables exported
+                $worker_result = $this->worker->executeSynchronous(array(
+                    'title'    => $title,
+                    'scope'    => $scope,
+                    'type'     => 'full',
+                    'settings' => $settings,
+                ));
+            }
 
             if (RiseupBooleanHelpers::is_falsy($worker_result['success'])) {
                 return array(
@@ -129,6 +146,34 @@ class RiseupSnapshotOrchestrator {
             }
 
             $snapshot_dir = $worker_result['path'];
+
+            // For async jobs, return early with job_id for progress polling
+            if ($async && !empty($worker_result['job_id'])) {
+                $this->log('INFO', 'Async backup job created', array(
+                    'job_id'       => $worker_result['job_id'],
+                    'total_tables' => $worker_result['total_tables'],
+                    'pool_size'    => $worker_result['pool_size'],
+                    'directory'    => $worker_result['directory'],
+                ));
+
+                // Register snapshot record in pending state
+                $snapshot_id = $this->registerSnapshot(
+                    $title, $scope, $worker_result, array('count' => 0, 'total_size' => 0), $snapshot_dir
+                );
+
+                return array(
+                    'success'      => true,
+                    'async'        => true,
+                    'job_id'       => $worker_result['job_id'],
+                    'snapshot_id'  => $snapshot_id,
+                    'directory'    => $worker_result['directory'],
+                    'path'         => $snapshot_dir,
+                    'total_tables' => $worker_result['total_tables'],
+                    'pool_size'    => $worker_result['pool_size'],
+                    'status'       => $worker_result['status'],
+                );
+            }
+
             $this->log('INFO', 'Table export complete', array(
                 'tables'     => $worker_result['tables'],
                 'total_rows' => $worker_result['total_rows'],
