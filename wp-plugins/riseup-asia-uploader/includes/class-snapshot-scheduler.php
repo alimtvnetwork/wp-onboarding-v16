@@ -97,6 +97,9 @@ class RiseupSnapshotScheduler {
         add_action(RISEUP_CRON_SNAPSHOT_IMMEDIATE, array($this, 'executeImmediateSnapshot'));
         add_action(RISEUP_CRON_SNAPSHOT_CLEANUP, array($this, 'executeCleanup'));
 
+        // Register worker batch cron hook (Phase 2 - parallel worker pool)
+        add_action(RISEUP_CRON_SNAPSHOT_WORKER_BATCH, array($this, 'executeWorkerBatch'));
+
         // Schedule cleanup if not already scheduled
         $this->ensureCleanupScheduled();
 
@@ -104,6 +107,28 @@ class RiseupSnapshotScheduler {
         $this->syncScheduleWithSettings();
 
         $this->logger->info('[SCHEDULER] Scheduler initialized');
+    }
+
+    /**
+     * Execute a worker batch (called by WP-Cron from worker pool).
+     *
+     * Delegates to RiseupSnapshotWorker::processWorkerBatch().
+     *
+     * @param array $args { job_id: int }
+     */
+    public function executeWorkerBatch($args) {
+        $this->logger->info('[SCHEDULER] Executing worker batch', $args);
+
+        try {
+            require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+            $worker = RiseupSnapshotFactory::worker($this->logger, $this->db);
+            $worker->processWorkerBatch($args);
+        } catch (Exception $e) {
+            $this->logger->error('[SCHEDULER] Worker batch exception', array(
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ));
+        }
     }
 
     /**

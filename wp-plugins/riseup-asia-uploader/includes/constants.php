@@ -648,6 +648,46 @@ if (!defined('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT')) {
     define('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT', 10);
 }
 
+// Worker pool configuration
+if (!defined('RISEUP_SNAPSHOT_WORKER_POOL_MIN')) {
+    define('RISEUP_SNAPSHOT_WORKER_POOL_MIN', 1);
+}
+if (!defined('RISEUP_SNAPSHOT_WORKER_POOL_MAX')) {
+    define('RISEUP_SNAPSHOT_WORKER_POOL_MAX', 10);
+}
+if (!defined('RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT')) {
+    define('RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT', 5);
+}
+
+// Worker pool cron hook (processes a batch of tables)
+if (!defined('RISEUP_CRON_SNAPSHOT_WORKER_BATCH')) {
+    define('RISEUP_CRON_SNAPSHOT_WORKER_BATCH', 'riseup_snapshot_worker_batch');
+}
+
+// Snapshot job status values
+if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_QUEUED')) {
+    define('RISEUP_SNAPSHOT_JOB_STATUS_QUEUED', 'queued');
+}
+if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_PROCESSING')) {
+    define('RISEUP_SNAPSHOT_JOB_STATUS_PROCESSING', 'processing');
+}
+if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_COMPLETE')) {
+    define('RISEUP_SNAPSHOT_JOB_STATUS_COMPLETE', 'complete');
+}
+if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_FAILED')) {
+    define('RISEUP_SNAPSHOT_JOB_STATUS_FAILED', 'failed');
+}
+
+// Snapshot progress REST endpoint
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_PROGRESS')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_PROGRESS', 'snapshots/progress');
+}
+
+// Snapshot job table
+if (!defined('RISEUP_TABLE_SNAPSHOT_JOBS')) {
+    define('RISEUP_TABLE_SNAPSHOT_JOBS', 'snapshot_jobs');
+}
+
 // Snapshot cron hooks
 if (!defined('RISEUP_CRON_SNAPSHOT_SCHEDULED')) {
     define('RISEUP_CRON_SNAPSHOT_SCHEDULED', 'riseup_snapshot_scheduled');
