@@ -380,18 +380,6 @@ if (ErrorChecker::is_fatal_error($error)) {
     $this->logger->fatal($error);
 }
 
-// ❌ FORBIDDEN: Nested if — combinable conditions
-if ($request !== null) {
-    if ($request->has_param('file')) {
-        $this->process($request);
-    }
-}
-
-// ✅ REQUIRED: Combined condition
-if ($request !== null && $request->has_param('file')) {
-    $this->process($request);
-}
-
 // ✅ ALSO OK: Early return to flatten
 if ($request === null) {
     return;
@@ -402,7 +390,106 @@ if ($request->has_param('file')) {
 }
 ```
 
-### Rule 3: Blank line before `return` when preceded by other statements
+### Rule 3: Extract complex conditions — no inline multi-part checks
+
+When an `if` condition contains **two or more operators** (`&&`, `||`, `!`), it must be extracted into one of:
+
+1. **A named boolean variable** (`$is_*` / `$has_*`) — for local, one-off checks
+2. **A dedicated method/function** — for reusable or domain-meaningful checks
+3. **A named constant** — for static flag combinations
+
+The goal: every `if` reads as a **single intent**, not as implementation logic.
+
+```php
+// ── PHP ──────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN: Inline multi-part condition
+if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR], true)) {
+    $this->logger->fatal($error);
+}
+
+// ✅ REQUIRED: Extracted into a dedicated method
+if (ErrorChecker::is_fatal_error($error)) {
+    $this->logger->fatal($error);
+}
+
+// ❌ FORBIDDEN: Inline extension check
+if (!class_exists('PDO') || !extension_loaded('pdo_sqlite')) {
+    return $this->envelope->error('SQLite not available', 500);
+}
+
+// ✅ REQUIRED: Extracted into ErrorChecker
+if (ErrorChecker::is_invalid_pdo_extension()) {
+    return $this->envelope->error('SQLite not available', 500);
+}
+
+// ❌ FORBIDDEN: Combinable nested conditions left inline
+if ($request !== null && $request->has_param('file') && $request->get_param('file') !== '') {
+    $this->process($request);
+}
+
+// ✅ REQUIRED: Named boolean for clarity
+$has_file_param = $request !== null
+    && $request->has_param('file')
+    && $request->get_param('file') !== '';
+
+if ($has_file_param) {
+    $this->process($request);
+}
+```
+
+```typescript
+// ── TypeScript ───────────────────────────────────────────────
+
+// ❌ FORBIDDEN: Inline multi-part condition
+if (response && response.status >= 400 && response.data?.code?.startsWith('E8')) {
+    showDelegatedError(response);
+}
+
+// ✅ REQUIRED: Named boolean
+const isDelegatedError = response != null
+    && response.status >= 400
+    && response.data?.code?.startsWith('E8');
+
+if (isDelegatedError) {
+    showDelegatedError(response);
+}
+
+// ✅ ALSO OK: Dedicated function for reusable checks
+function isDelegatedError(res: ApiResponse | null): res is DelegatedErrorResponse {
+    return res != null && res.status >= 400 && res.data?.code?.startsWith('E8');
+}
+
+if (isDelegatedError(response)) {
+    showDelegatedError(response);
+}
+```
+
+```go
+// ── Go ───────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN: Inline multi-part condition
+if err != nil && resp != nil && resp.StatusCode >= 400 {
+    handleUpstreamError(resp)
+}
+
+// ✅ REQUIRED: Named boolean
+isUpstreamError := err != nil && resp != nil && resp.StatusCode >= 400
+
+if isUpstreamError {
+    handleUpstreamError(resp)
+}
+```
+
+#### When to use which extraction:
+
+| Complexity | Extraction | Example |
+|------------|-----------|---------|
+| 2 conditions, used once | Named `$is_*` / `$has_*` variable | `$has_file_param = $req !== null && $req->has_param('file');` |
+| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::is_fatal_error($error)` |
+| Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
+
+### Rule 4: Blank line before `return` when preceded by other statements
 
 If a block contains statements before `return`, insert **one blank line** before the `return`. If `return` is the **only statement**, no blank line is needed.
 
@@ -426,7 +513,7 @@ if ($error === null) {
 }
 ```
 
-### Rule 4: Blank line after closing `}` when followed by more code
+### Rule 5: Blank line after closing `}` when followed by more code
 
 If code continues after a closing `}` (i.e., not followed by another `}` or end of function), insert **one blank line** after it.
 
@@ -467,9 +554,10 @@ add_action(HookEnum::INIT, [$this, 'setup']);
 | Single-line `if (...) return;` | Easy to miss, inconsistent | Always use braces `{ }` |
 | No blank line after `}` before more code | Poor readability | Blank line after `}` when followed by more code |
 | Nested `if` when conditions can combine | Hard to read, unnecessary depth | Flatten with combined condition or early return |
+| Inline multi-part `if` condition (2+ operators) | Hard to read, not reusable | Extract to named `$is_*` variable or dedicated method |
+| `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
 | `RiseupBooleanHelpers` | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
-| `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
 | Inline `E_*` → string mapping | Duplicated type-label arrays | `ErrorChecker::get_type_label($type)` via `ErrorTypeEnum::TYPE_LABELS` |
 | `$value` for booleans | Ambiguous naming | `$is_value`, `$has_value` |
 | `current_user_can('manage_options')` | Magic capability string | `CapabilityEnum::MANAGE_OPTIONS` |

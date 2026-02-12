@@ -85,13 +85,24 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 ---
 
-## 6. Error Type Constants
+## 6. Condition Complexity (All Languages)
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
-| 6.1 | `[E_ERROR, E_PARSE, E_CORE_ERROR, ...]` inline | `ErrorTypeEnum::FATAL_TYPES` | Centralized; update one place for new PHP versions |
-| 6.2 | `[E_WARNING, E_NOTICE, ...]` inline | `ErrorTypeEnum::WARNING_TYPES` | Same principle |
-| 6.3 | Custom `error_type_to_string()` functions | `ErrorChecker::get_type_label($type)` | Uses `ErrorTypeEnum::TYPE_LABELS` map |
+| 6.1 | Inline `if` with 2+ operators (`&&`, `\|\|`, `!`) | Extract to named `$is_*`/`$has_*` variable or method | Reads as intent, not implementation |
+| 6.2 | `$error && in_array($error['type'], [...])` | `ErrorChecker::is_fatal_error($error)` | Reusable, self-documenting |
+| 6.3 | `!class_exists('PDO') \|\| !extension_loaded(...)` | `ErrorChecker::is_invalid_pdo_extension()` | Centralized check |
+| 6.4 | Nested `if` when outer check is handled by inner function | Use the function directly (it handles null) | Redundant guard |
+
+---
+
+## 7. Error Type Constants
+
+| # | ❌ Forbidden | ✅ Required | Why |
+|---|-------------|------------|-----|
+| 7.1 | `[E_ERROR, E_PARSE, E_CORE_ERROR, ...]` inline | `ErrorTypeEnum::FATAL_TYPES` | Centralized; update one place for new PHP versions |
+| 7.2 | `[E_WARNING, E_NOTICE, ...]` inline | `ErrorTypeEnum::WARNING_TYPES` | Same principle |
+| 7.3 | Custom `error_type_to_string()` functions | `ErrorChecker::get_type_label($type)` | Uses `ErrorTypeEnum::TYPE_LABELS` map |
 
 ---
 
@@ -115,6 +126,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] No single-line `if (...) return;` — always use braces
 [ ] Blank line after closing `}` when followed by more code
 [ ] No nested `if` — flatten with combined conditions or early returns
+[ ] No inline multi-part `if` (2+ operators) — extract to `$is_*` variable or method
 ```
 
 ---
