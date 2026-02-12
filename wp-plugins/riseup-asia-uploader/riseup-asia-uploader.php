@@ -965,6 +965,13 @@ class Riseup_Asia {
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
+        // Snapshot job progress endpoint (Phase 4)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_PROGRESS, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_snapshot_progress'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
         // Media upload endpoint
         try {
             if (defined('RISEUP_ENDPOINT_MEDIA')) {
@@ -4774,6 +4781,69 @@ class Riseup_Asia {
                 'errors'    => $result['errors'],
             ), 200);
         }, 'snapshot_cleanup');
+    }
+
+    /**
+     * Handle snapshot job progress polling (Phase 4).
+     *
+     * Returns real-time progress for a background snapshot job including
+     * batch status, table-by-table progress, and percentage complete.
+     *
+     * @param WP_REST_Request $request Request object with job_id in JSON body.
+     * @return WP_REST_Response Response with progress data.
+     */
+    public function handle_snapshot_progress($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+            $job_id = $body['job_id'] ?? null;
+
+            if (RiseupBooleanHelpers::is_empty($job_id)) {
+                return new WP_REST_Response(array(
+                    'IsSuccess'    => false,
+                    'HasAnyErrors' => true,
+                    'error'        => 'Missing required field: job_id',
+                ), RISEUP_HTTP_BAD_REQUEST);
+            }
+
+            require_once dirname(__FILE__) . '/includes/class-snapshot-factory.php';
+            $rootDb = RiseupRootDb::getInstance($this->file_logger, RiseupDependencyAnalyzer::getInstance($this->file_logger));
+            $worker = RiseupSnapshotWorker::getInstance(
+                $this->file_logger,
+                $this->db,
+                $rootDb,
+                RiseupDependencyAnalyzer::getInstance($this->file_logger)
+            );
+
+            $progress = $worker->getJobProgress((int) $job_id);
+
+            if (RiseupBooleanHelpers::is_falsy($progress)) {
+                return new WP_REST_Response(array(
+                    'IsSuccess'    => false,
+                    'HasAnyErrors' => true,
+                    'error'        => 'Job not found',
+                    'code'         => 'JOB_NOT_FOUND',
+                ), RISEUP_HTTP_NOT_FOUND);
+            }
+
+            return new WP_REST_Response(array(
+                'IsSuccess'       => true,
+                'HasAnyErrors'    => false,
+                'job_id'          => $progress['job_id'],
+                'status'          => $progress['status'],
+                'total_tables'    => $progress['total_tables'],
+                'tables_exported' => $progress['tables_exported'],
+                'total_rows'      => $progress['total_rows'],
+                'pool_size'       => $progress['pool_size'],
+                'total_batches'   => $progress['total_batches'],
+                'current_batch'   => $progress['current_batch'],
+                'percent'         => $progress['percent'],
+                'errors'          => $progress['errors'],
+                'table_progress'  => $progress['table_progress'],
+                'created_at'      => $progress['created_at'],
+                'updated_at'      => $progress['updated_at'],
+                'completed_at'    => $progress['completed_at'],
+            ), RISEUP_HTTP_OK);
+        }, 'snapshot_progress');
     }
 }
 
