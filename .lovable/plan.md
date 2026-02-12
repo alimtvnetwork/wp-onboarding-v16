@@ -4,7 +4,7 @@
 ## Plan: Go Upload Performance Optimization + Core Plugin Dashboard + Snapshot UX
 
 > Created: 2026-02-12  
-> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete.**
+> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete. Feature E1 complete.**
 
 ---
 
@@ -181,7 +181,32 @@ The new download endpoints will follow the same pattern.
 
 ---
 
-## Dependencies & Risks
+## Feature E1: Scheduled Auto-Snapshots
+
+### Status: ✅ COMPLETE (infrastructure) + UI badge added
+
+### What Already Existed
+- Cron job API endpoints: GET/sync/trigger/pause/resume (`/sites/{id}/snapshots/cron/*`)
+- `SnapshotCronJob` and `SnapshotCronSyncResult` types
+- `CronJobsPanel` UI in SnapshotSettingsTab with sync, trigger, pause/resume controls
+- Multi-schedule configuration (`SnapshotSchedule[]`) with hourly/3h/6h/12h/daily/weekly/monthly/yearly intervals
+- Calendar view with future schedule dot indicators
+- Retention policy settings (retention_type, retention_days, retention_max)
+- Cleanup endpoint (`POST /sites/{id}/snapshots/cleanup`) for retention pruning
+- Auto-sync of cron jobs after settings update
+
+### What Was Added (E1)
+
+| # | Task | Status | Description |
+|---|------|--------|-------------|
+| E1.1 | **Last Backup Badge on SiteCard** | ✅ Done | Shows "Last backup X ago" with Clock icon on each connected site card. Queries latest completed snapshot per site with 60s stale time. |
+| E1.2 | **Next Scheduled Badge on SiteCard** | ✅ Done | Shows "Next: in X" with Calendar icon from the earliest active cron job's `nextRunAt`. Only visible for connected sites with active schedules. |
+
+### Backend Requirements (PHP/Go — outside this React project)
+- E1.3: Auto-prune after scheduled backup completion (trigger cleanup endpoint after cron-driven backup finishes)
+- E1.4: Per-site cron job scoping (currently uses siteId=0 for global; per-site scoping needed for multi-site differentiation)
+
+---
 
 | Risk | Mitigation |
 |------|-----------|
