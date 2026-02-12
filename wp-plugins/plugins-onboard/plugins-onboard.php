@@ -423,7 +423,7 @@ class PluginsOnboard {
         foreach ($defaults as $key => $value) {
             try {
                 $existing = $this->db->get_setting($key);
-                if (OnboardBooleanHelpers::is_null($existing)) {
+                if ($existing === null) {
                     $this->db->save_setting($key, $value);
                 }
             } catch (Exception $e) {

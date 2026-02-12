@@ -121,7 +121,7 @@ class OnboardDatabase {
             OnboardLogger::debug('[DB] Getting database directory path...');
             $db_dir = $this->get_db_dir();
 
-            if (OnboardBooleanHelpers::is_empty($db_dir)) {
+            if (empty($db_dir)) {
                 $this->last_error = 'Database directory path is empty';
                 OnboardLogger::error('[DB] ' . $this->last_error);
                 return;
