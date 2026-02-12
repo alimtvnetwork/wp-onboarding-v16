@@ -533,6 +533,21 @@ class Riseup_Admin {
             $settings['batch_size'] = intval($_POST['batch_size']);
         }
 
+        // Worker Pool & Storage Mode (Phase 5)
+        if (isset($_POST['worker_pool_size'])) {
+            $settings['worker_pool_size'] = max(
+                RISEUP_SNAPSHOT_WORKER_POOL_MIN,
+                min(RISEUP_SNAPSHOT_WORKER_POOL_MAX, intval($_POST['worker_pool_size']))
+            );
+        }
+        if (isset($_POST['storage_mode'])) {
+            $valid_modes = array('single', 'per-table');
+            $mode = sanitize_text_field($_POST['storage_mode']);
+            if (in_array($mode, $valid_modes)) {
+                $settings['storage_mode'] = $mode;
+            }
+        }
+
         require_once dirname(__FILE__) . '/class-snapshot-factory.php';
         $detector = RiseupSnapshotFactory::detector();
         $result = $detector->updateSettings($settings);
