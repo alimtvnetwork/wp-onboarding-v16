@@ -147,7 +147,7 @@ Use PHP's `ZipArchive` with `ZipArchive::CM_DEFLATE` (highest level). The Go bac
 | D7 | **Go: Proxy download endpoint** | ✅ Done | `POST /sites/{id}/snapshots/download` — calls WP `POST /snapshots/download` for cached ZIP metadata, then streams ZIP via `StreamSnapshotZip()`. New `rawGet()` on WP client. Exposes `X-Snapshot-Cached` and `X-Snapshot-Size` headers. Service, adapter, handler, and route added. |
 | D8 | **React: Download ZIP button in SnapshotRow** | ✅ Done | Replaced old `<a>` download link with a `Download ZIP` button on full snapshots only. Uses `api.downloadSnapshotZip()` which POSTs to Go proxy, receives blob, triggers browser download. Shows spinner while building, toast with cached/size info on success, error toast on failure. |
 | D9 | **React: Download status in detail dialog** | ✅ Done | Extracted `SnapshotDetailContent` component. Full snapshots show a "ZIP Export" section with filename, size, and cached/fresh-build badge after download. Incremental snapshots fall back to legacy export. Download button shows spinner while building, re-download option after first use. |
-| D10 | **Memory + constants update** | Low | Add new constants to `constants.php`, update memory files for the export system architecture. |
+| D10 | **Memory + constants update** | ✅ Done | Created `.lovable/memory/architecture/snapshot-zip-export-system.md` (full architecture doc) and `.lovable/memory/features/snapshot-zip-export.md` (feature summary). Go constants already documented in `constants.go`. |
 
 ### Execution Order
 
