@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { DashboardStats } from "@/hooks/useDashboardStats";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { AddSiteDialog } from "@/components/sites/AddSiteDialog";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -63,7 +64,7 @@ export default function Dashboard() {
   // Build recent activity from sites + plugins data (fetched via stats hook)
   // Stats hook aggregates counts; for activity feed we still need the raw lists.
   // We piggyback on the cached queries populated by useDashboardStats.
-  const sitesData = queryClient.getQueryData<any>(["dashboard-stats"]);
+  const sitesData = queryClient.getQueryData<DashboardStats>(["dashboard-stats"]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
