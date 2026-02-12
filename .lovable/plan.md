@@ -1,10 +1,10 @@
 
 
 
-## Plan: Go Upload Performance Optimization + Core Plugin Dashboard + Snapshot UX
+## Plan: WP Plugin Publish — Feature Roadmap & Type Safety Remediation
 
 > Created: 2026-02-12  
-> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete. Feature E1 complete. Feature E2 in progress (E2.1 spec + E2.2–E2.4 scaffolded with mock data).**
+> Status: **Features A–E1 complete. E2 in progress. F (Type Safety Remediation) planned.**
 
 ---
 
@@ -292,6 +292,56 @@ interface ActivityEntry {
 
 ---
 
+## Feature F: Type Safety Remediation (CRITICAL PRIORITY)
+
+### Status: Planned — spec complete, remediation plan ready
+
+### Spec & Plan References
+- **Coding Standards:** `spec/02-typescript-standards/README.md` v2.0.0
+- **Remediation Plan:** `spec/02-typescript-standards/type-safety-remediation-plan.md`
+- **Memory:** `.lovable/memory/architecture/coding-standards/type-safety-rules`
+
+### Core Rules
+1. **Generics First** — all reusable code uses generics, never `any`/`unknown`/loose `Record`
+2. **Zero `any`** — prohibited everywhere, no exceptions
+3. **No Magic Strings** — `const enum` or named constants only
+4. **No Magic Numbers** — named `as const` constants only
+5. **Specific Types** — domain interfaces over `Record<string, unknown>`
+
+### Phases
+
+| # | Task | Priority | Effort | Description |
+|---|------|----------|--------|-------------|
+| F1 | **API type definitions** | 🔴 Critical | Medium | Create `CreateSnapshotOptions`, `SiteHealthCheck`, `E2ESuite`, etc. in `types.ts` |
+| F2 | **Catch block fixes** | 🔴 Critical | Small | Replace 11x `catch (err: any)` with bare `catch (err)` + `instanceof` narrowing |
+| F3 | **`as any` elimination** | 🔴 Critical | Small | Fix 5x `as any` casts with proper types |
+| F4 | **Constants file** | 🟡 High | Small | Create `src/lib/constants.ts` with `const enum` for all status/action strings |
+| F5 | **Update methods.ts** | 🟡 High | Medium | Replace all `Record<string, unknown>` and `request<unknown>` in API methods |
+| F6 | **Generic envelope** | 🟡 High | Small | Make `RawEnvelope<T>` generic |
+| F7 | **Magic string migration** | 🟡 High | Large | Replace ~50+ inline string comparisons with enum refs |
+| F8 | **Activity metadata typing** | 🟡 High | Medium | Discriminated union for `ActivityEntry.metadata` |
+
+### Execution Order
+1. F1 → F5 (types then methods)
+2. F2 + F3 (parallel — quick wins)
+3. F4 → F7 (constants then migration)
+4. F6 + F8 (parallel)
+
+---
+
+## Pending / Backlog
+
+| Item | Feature | Status | Description |
+|------|---------|--------|-------------|
+| E2.1 | Activity Feed | Spec complete | Go unified activity endpoint — needs backend implementation |
+| E2.6 | Activity Feed | Pending | WebSocket real-time updates for activity feed |
+| E2.7 | Activity Feed | Pending | Export activity log as CSV/JSON |
+| E3 | Cloud Offload | Proposed | S3/R2/GCS integration for snapshot long-term retention |
+| E4 | Audit Log | Superseded by E2 | Centralized audit log (merged into E2) |
+| E5 | Site Sync | Proposed | Side-by-side site comparison with one-click sync |
+
+---
+
 | Risk | Mitigation |
 |------|-----------|
 | PHP endpoint errors on first load | Use initial-load flag to suppress; show clean empty state |
@@ -302,3 +352,4 @@ interface ActivityEntry {
 | Go proxy memory for large ZIPs | Stream response body, don't buffer entire ZIP in memory |
 | Activity feed performance with many sites | Paginated API with cursor-based pagination; frontend virtualizes long lists |
 | Cross-source timestamp alignment | Go normalizes all timestamps to UTC ISO-8601 before returning |
+| Type remediation regression | Run `tsc --noEmit` + grep audit after each phase |

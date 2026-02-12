@@ -1,0 +1,22 @@
+# Memory: architecture/coding-standards/type-safety-rules
+Updated: 2026-02-12
+
+## Priority Rules (CRITICAL — override all other conventions)
+
+1. **Generics First**: All reusable functions, API methods, hooks, and utilities MUST use generics. Never use `any`, `unknown`, or `Record<string, unknown>` where a generic can express the constraint.
+
+2. **Zero `any` Tolerance**: The `any` type is PROHIBITED everywhere — catch blocks use bare `catch (err)` with `instanceof` narrowing, never `catch (err: any)`. No `as any` casts. No `<any>` generic params.
+
+3. **No Magic Strings**: All string literals used as identifiers (status checks, action types, event names) MUST come from `const enum`, string literal types, or named constants in `src/lib/constants.ts`.
+
+4. **No Magic Numbers**: All numeric literals with semantic meaning (timeouts, page sizes, intervals) MUST be named constants with `as const`.
+
+5. **Specific Types Over Loose Types**: API method params/returns use domain-specific interfaces (e.g., `CreateSnapshotOptions`) not `Record<string, unknown>`. Component props use explicit interfaces, not generic records.
+
+6. **`unknown` Only at Parse Boundaries**: `unknown` is acceptable ONLY in JSON parsing entry points and type guard functions where it is immediately narrowed. Never in public APIs, props, hooks, or store state.
+
+## Remediation Status
+- Spec: `spec/02-typescript-standards/README.md` v2.0.0
+- Plan: `spec/02-typescript-standards/type-safety-remediation-plan.md`
+- ~130 violations identified across 15 files
+- 8-phase fix plan created, ordered by priority
