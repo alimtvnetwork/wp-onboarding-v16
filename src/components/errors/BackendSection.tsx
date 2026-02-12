@@ -1,5 +1,5 @@
 import { CapturedError } from '@/stores/errorStore';
-import type { ErrorDiagnosticContext } from '@/lib/api';
+import type { ErrorDiagnosticContext, SessionStackFrame, SessionDiagnostics, EnvelopeMethodFrame } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -366,7 +366,7 @@ function ErrorLogContent({ error, errorLogContent, errorLogLoading, errorLogErro
 
 function ExecutionContent({ error, envelopeMethodsBackend, hasExecutionContent, copySection, formatTs }: {
   error: CapturedError;
-  envelopeMethodsBackend: CapturedError['envelopeMethodsStack'] extends { Backend: infer B } ? B : any;
+  envelopeMethodsBackend: EnvelopeMethodFrame[] | undefined;
   hasExecutionContent: boolean;
   copySection: (label: string, content: string) => void;
   formatTs: (ts: string) => string;
@@ -381,7 +381,7 @@ function ExecutionContent({ error, envelopeMethodsBackend, hasExecutionContent, 
               Go Call Chain ({envelopeMethodsBackend.length} frames)
             </h4>
             <Button variant="ghost" size="sm" onClick={() => {
-              const text = envelopeMethodsBackend.map((f: any, i: number) => 
+              const text = envelopeMethodsBackend.map((f: EnvelopeMethodFrame, i: number) => 
                 `#${i} ${f.Method} at ${f.File}:${f.LineNumber}`
               ).join('\n');
               copySection("Go call chain", text);
@@ -400,7 +400,7 @@ function ExecutionContent({ error, envelopeMethodsBackend, hasExecutionContent, 
                 </tr>
               </thead>
               <tbody>
-                {envelopeMethodsBackend.map((frame: any, index: number) => (
+                {envelopeMethodsBackend.map((frame: EnvelopeMethodFrame, index: number) => (
                   <tr key={index} className={cn("border-t border-border/50", index === 0 && "bg-primary/5")}>
                     <td className="p-2 font-mono text-muted-foreground">{index}</td>
                     <td className="p-2 font-mono font-semibold">{frame.Method}</td>
@@ -463,9 +463,9 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
   phpStackFrames: PHPStackFrame[];
   envelopeBackendStack: string[] | undefined;
   envelopeDelegatedStack: string[] | undefined;
-  sessionGoFrames: any[] | undefined;
-  sessionPhpFrames: any[] | undefined;
-  sessionDiag: any;
+  sessionGoFrames: SessionStackFrame[] | undefined;
+  sessionPhpFrames: SessionStackFrame[] | undefined;
+  sessionDiag: SessionDiagnostics | undefined;
   sessionLoading: boolean;
   hasStackContent: boolean;
   copySection: (label: string, content: string) => void;
@@ -629,7 +629,7 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
               Go Stack (Session) ({sessionGoFrames.length} frames)
             </h4>
             <Button variant="ghost" size="sm" onClick={() => {
-              const text = sessionGoFrames.map((f: any, i: number) => 
+              const text = sessionGoFrames.map((f: SessionStackFrame, i: number) => 
                 `#${i} ${f.class ? `${f.class}::` : ''}${f.function} at ${f.file || 'unknown'}:${f.line || '?'}`
               ).join('\n');
               copySection("Session Go stack", text);
@@ -639,7 +639,7 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
           </div>
           <ScrollArea className="h-[200px] rounded-md border bg-muted">
             <div className="p-3 space-y-1">
-              {sessionGoFrames.map((frame: any, i: number) => (
+              {sessionGoFrames.map((frame: SessionStackFrame, i: number) => (
                 <div key={i} className="text-xs font-mono leading-relaxed">
                   <span className="text-muted-foreground mr-1">#{i}</span>
                   <span className="font-semibold text-blue-500 dark:text-blue-400">
@@ -667,7 +667,7 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
           </div>
           <ScrollArea className="h-[200px] rounded-md border bg-orange-500/5">
             <div className="p-3 space-y-1">
-              {sessionPhpFrames.map((frame: any, i: number) => (
+              {sessionPhpFrames.map((frame: SessionStackFrame, i: number) => (
                 <div key={i} className="text-xs font-mono leading-relaxed">
                   <span className="text-muted-foreground mr-1">#{i}</span>
                   <span className="font-semibold text-orange-500 dark:text-orange-400">
