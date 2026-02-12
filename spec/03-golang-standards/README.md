@@ -202,4 +202,12 @@ func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { 
 
 ---
 
+## Cross-References
+
+- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
+- [DRY Principles](../01-coding-guidelines/dry-principles.md)
+- [TypeScript Standards](../02-typescript-standards/README.md)
+
+---
+
 *Golang standards specification created: 2026-02-09*

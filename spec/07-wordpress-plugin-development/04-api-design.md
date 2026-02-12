@@ -39,18 +39,18 @@ class My_Plugin {
             MYPLUGIN_API_NAMESPACE,
             '/' . MYPLUGIN_ENDPOINT_HEALTH,
             [
-                'methods' => WP_REST_Server::READABLE,  // GET
-                'callback' => [$this, 'handle_health'],
-                'permission_callback' => '__return_true',
-            ]
-        );
+            'methods' => HttpMethodEnum::GET,
+            'callback' => [$this, 'handle_health'],
+            'permission_callback' => '__return_true',
+        ]
+    );
         
         // Upload - requires authentication
         register_rest_route(
             MYPLUGIN_API_NAMESPACE,
             '/' . MYPLUGIN_ENDPOINT_UPLOAD,
             [
-                'methods' => WP_REST_Server::CREATABLE,  // POST
+                'methods' => HttpMethodEnum::POST,
                 'callback' => [$this, 'handle_upload'],
                 'permission_callback' => [$this, 'check_upload_permission'],
             ]
@@ -96,7 +96,7 @@ register_rest_route(
     MYPLUGIN_API_NAMESPACE,
     '/' . MYPLUGIN_ENDPOINT_PLUGINS,  // '/plugins'
     [
-        'methods' => 'GET',
+        'methods' => HttpMethodEnum::GET,
         'callback' => [$this, 'handle_list_plugins'],
         'permission_callback' => [$this, 'check_permission'],
     ]
@@ -107,7 +107,7 @@ register_rest_route(
     MYPLUGIN_API_NAMESPACE,
     '/' . MYPLUGIN_ENDPOINT_PLUGIN,  // '/plugin'
     [
-        'methods' => 'GET',
+        'methods' => HttpMethodEnum::GET,
         'callback' => [$this, 'handle_get_plugin'],
         'permission_callback' => [$this, 'check_permission'],
         'args' => [
@@ -133,9 +133,11 @@ register_rest_route(
 public function check_permission($request) {
     // Check for Application Password authentication
     $user = wp_get_current_user();
-    
-    if (!$user || $user->ID === 0) {
+    $is_unauthenticated = !$user || $user->ID === 0;
+
+    if ($is_unauthenticated) {
         $this->file_logger->log('Permission denied: not authenticated', __FILE__, __LINE__);
+
         return new WP_Error(
             'rest_forbidden',
             'Authentication required',
@@ -144,12 +146,13 @@ public function check_permission($request) {
     }
     
     // Check for specific capability
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can(CapabilityEnum::MANAGE_OPTIONS)) {
         $this->file_logger->log(
             sprintf('Permission denied: user %d lacks capability', $user->ID),
             __FILE__,
             __LINE__
         );
+
         return new WP_Error(
             'rest_forbidden',
             'Insufficient permissions',
@@ -173,13 +176,15 @@ public function check_permission_with_ip($request) {
     // First check IP whitelist
     $client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
     $allowed_ips = get_option('myplugin_allowed_ips', []);
-    
-    if (!empty($allowed_ips) && !in_array($client_ip, $allowed_ips)) {
+    $is_ip_blocked = !empty($allowed_ips) && !in_array($client_ip, $allowed_ips);
+
+    if ($is_ip_blocked) {
         $this->file_logger->log(
             sprintf('Permission denied: IP %s not whitelisted', $client_ip),
             __FILE__,
             __LINE__
         );
+
         return new WP_Error(
             'rest_forbidden',
             'IP not allowed',
@@ -226,7 +231,7 @@ public function handle_upload($request) {
             ],
         ], 200);
         
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         $this->file_logger->error(
             sprintf('Upload failed: %s', $e->getMessage()),
             __FILE__,
@@ -251,7 +256,7 @@ register_rest_route(
     MYPLUGIN_API_NAMESPACE,
     '/update',
     [
-        'methods' => 'POST',
+        'methods' => HttpMethodEnum::POST,
         'callback' => [$this, 'handle_update'],
         'permission_callback' => [$this, 'check_permission'],
         'args' => [
@@ -323,7 +328,7 @@ WordPress 5.6+ supports Application Passwords natively:
 // WordPress handles authentication automatically
 // Just check if user is logged in
 public function check_permission($request) {
-    return is_user_logged_in() && current_user_can('manage_options');
+    return is_user_logged_in() && current_user_can(CapabilityEnum::MANAGE_OPTIONS);
 }
 ```
 
@@ -398,7 +403,7 @@ public function register_routes() {
         RISEUP_API_NAMESPACE,
         '/' . RISEUP_ENDPOINT_HEALTH,
         [
-            'methods' => WP_REST_Server::READABLE,
+            'methods' => HttpMethodEnum::GET,
             'callback' => [$this, 'handle_health'],
             'permission_callback' => '__return_true',
         ]
@@ -409,7 +414,7 @@ public function register_routes() {
         RISEUP_API_NAMESPACE,
         '/' . RISEUP_ENDPOINT_UPLOAD,
         [
-            'methods' => WP_REST_Server::CREATABLE,
+            'methods' => HttpMethodEnum::POST,
             'callback' => [$this, 'handle_upload'],
             'permission_callback' => [$this, 'check_admin_permission'],
         ]
@@ -420,7 +425,7 @@ public function register_routes() {
         RISEUP_API_NAMESPACE,
         '/' . RISEUP_ENDPOINT_STATUS,
         [
-            'methods' => WP_REST_Server::READABLE,
+            'methods' => HttpMethodEnum::GET,
             'callback' => [$this, 'handle_status'],
             'permission_callback' => [$this, 'check_admin_permission'],
         ]

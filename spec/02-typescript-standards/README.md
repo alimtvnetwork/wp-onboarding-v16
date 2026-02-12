@@ -265,6 +265,7 @@ type ActivityMetadata = PublishMetadata | SnapshotMetadata | PluginMetadata | Co
 
 ## Cross-References
 
+- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
 - [Golang Standards](../03-golang-standards/README.md)
 - [Response Envelope Spec](../05-error-manage/05-response-envelope/envelope.schema.json)

@@ -13,14 +13,16 @@ The recommended method for REST API authentication:
 public function check_permission($request) {
     // WordPress handles Application Password auth automatically
     $user = wp_get_current_user();
-    
-    if (!$user || $user->ID === 0) {
+    $is_unauthenticated = !$user || $user->ID === 0;
+
+    if ($is_unauthenticated) {
         $this->file_logger->log('Permission denied: not authenticated', __FILE__, __LINE__);
+
         return new WP_Error('not_authenticated', 'Authentication required', ['status' => 401]);
     }
     
     // Check specific capability
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can(CapabilityEnum::MANAGE_OPTIONS)) {
         return new WP_Error('insufficient_permissions', 'Admin access required', ['status' => 403]);
     }
     

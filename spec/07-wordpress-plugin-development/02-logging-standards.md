@@ -141,10 +141,9 @@ class Riseup_File_Logger {
         $context = '';
         
         if ($file) {
+            $has_line_number = $line > 0;
             $context = ' (' . basename($file);
-            if ($line > 0) {
-                $context .= ':' . $line;
-            }
+            $context .= $has_line_number ? ':' . $line : '';
             $context .= ')';
         }
         
@@ -275,7 +274,9 @@ private function maybe_rotate_logs() {
     $max_size = 5 * 1024 * 1024; // 5MB
     
     $log_path = $this->get_log_path();
-    if (file_exists($log_path) && filesize($log_path) > $max_size) {
+    $is_oversized = file_exists($log_path) && filesize($log_path) > $max_size;
+
+    if ($is_oversized) {
         $backup = $log_path . '.' . date('Y-m-d-His') . '.bak';
         @rename($log_path, $backup);
         
@@ -311,7 +312,9 @@ public function log($message, $file = '', $line = 0) {
     @file_put_contents($this->log_path, $entry, FILE_APPEND | LOCK_EX);
     
     // Also write to WordPress debug log if enabled
-    if (defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG) {
+    $is_wp_debug_enabled = defined('WP_DEBUG') && WP_DEBUG && defined('WP_DEBUG_LOG') && WP_DEBUG_LOG;
+
+    if ($is_wp_debug_enabled) {
         error_log('[' . RISEUP_PLUGIN_SLUG . '] ' . $message);
     }
     
@@ -327,7 +330,9 @@ public function log($message, $file = '', $line = 0) {
 define('RISEUP_DEBUG', true);
 
 public function debug($message, $file = '', $line = 0) {
-    if (defined('RISEUP_DEBUG') && RISEUP_DEBUG) {
+    $is_debug_mode = defined('RISEUP_DEBUG') && RISEUP_DEBUG;
+
+    if ($is_debug_mode) {
         $this->log('[DEBUG] ' . $message, $file, $line);
     }
 }
@@ -339,7 +344,7 @@ public function debug($message, $file = '', $line = 0) {
 public function error($message, $file = '', $line = 0, $exception = null) {
     $full_message = '[ERROR] ' . $message;
     
-    if ($exception instanceof Exception) {
+    if ($exception instanceof \Throwable) {
         $full_message .= "\nStack trace:\n" . $exception->getTraceAsString();
     }
     
