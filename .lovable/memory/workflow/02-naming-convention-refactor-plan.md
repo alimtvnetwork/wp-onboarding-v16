@@ -1,42 +1,43 @@
 # Naming Convention Refactor Plan — Riseup Asia Uploader
 
-> **Version:** 1.0.0  
+> **Version:** 2.0.0  
 > **Created:** 2026-02-12  
-> **Status:** Planning  
+> **Status:** Phase 1 Complete (Enum v4.0.0 migration done)  
 > **Target:** `wp-plugins/riseup-asia-uploader/`
 
 ---
 
 ## Audit Summary
 
-| Category | Current State | Required State | Violation Count |
-|----------|--------------|----------------|-----------------|
-| Constants prefix | `RISEUP_*` everywhere | No `RISEUP_` prefix | ~200+ constants |
-| Method names | Mixed camelCase/snake_case | snake_case only | ~50+ methods |
-| Class names | `Riseup_Underscore_Style` | `PascalCase` (e.g., `RiseupDatabase`) | ~20 classes |
-| Enum classes | Most missing as separate files | Dedicated `class-*-enum.php` files | ~5 enums needed |
-| Hook usage | String literals in main file | `HookEnum::*` constants | ~10 call sites |
-| Path accessors | camelCase (`getRootDb`) | snake_case (`get_root_db`) | ~15 accessors |
+| Category | Current State | Required State | Status |
+|----------|--------------|----------------|--------|
+| Constants prefix | `RISEUP_*` everywhere | No `RISEUP_` prefix | 🔵 Pending (Phase 2) |
+| Method names | Mixed camelCase/snake_case | snake_case only | 🔵 Pending (Phase 4) |
+| Class names | `Riseup_Underscore_Style` | `PascalCase` (e.g., `RiseupDatabase`) | 🔵 Pending (Phase 3) |
+| Enum classes | ✅ PSR-4 `RiseupAsia\Enums` namespace | `includes/Enums/*.php` native backed enums | ✅ Done |
+| Hook usage | ✅ `Hook::*->value` enum cases | `Hook::*->value` at all call sites | ✅ Done |
+| Path accessors | camelCase (`getRootDb`) | snake_case (`get_root_db`) | 🔵 Pending (Phase 4) |
 | Boolean helpers | Trivial wrappers still referenced | Native PHP or semantic methods | Audit needed |
-| Upload source | `define()` constants | `UploadSourceEnum` class | 5 constants |
-| Error type mapping | `riseup_error_type_to_string()` | `ErrorChecker::get_type_label()` | 1 function |
+| Upload source | ✅ `UploadSource` backed enum | `UploadSource::Script->value` | ✅ Done |
+| Capability checks | ✅ `Capability` backed enum | `Capability::ManageOptions->value` | ✅ Done |
+| HTTP methods | ✅ `HttpMethod` backed enum | `HttpMethod::Post->value` | ✅ Done |
+| Error type mapping | ✅ `ErrorType` const class | `ErrorChecker::get_type_label()` via `ErrorType::TYPE_LABELS` | ✅ Done |
 
 ---
 
-## Phase 1 — Foundation: Enum Classes (No Breaking Changes)
+## Phase 1 — Foundation: Enum Classes ✅ COMPLETE
 
-**Goal:** Create all enum class files that don't exist yet as separate files, using the spec patterns.
+**Completed as Plan G (G1–G11).** All legacy `class-*-enum.php` files deleted. New enum files live in `includes/Enums/` under `RiseupAsia\Enums` namespace:
 
-### Tasks
-
-1. **Create `class-hook-enum.php`** — Move/verify `HookEnum` class into its own file
-2. **Create `class-path-enum.php`** — Move/verify `PathEnum` class into its own file
-3. **Create `class-error-type-enum.php`** — Move/verify `ErrorTypeEnum` class into its own file
-4. **Create `class-capability-enum.php`** — Extract `RISEUP_CAP_*` constants into `CapabilityEnum`
-5. **Create `class-http-method-enum.php`** — Extract HTTP method constants into `HttpMethodEnum`
-6. **Create `class-upload-source-enum.php`** — Convert `UPLOAD_SOURCE_*` defines into `UploadSourceEnum`
-7. **Create `class-error-checker.php`** — Move/verify `ErrorChecker` into its own file
-8. **Register all enum files in `RiseupDependencyLoader::loadManifest()`** as foundation files (loaded via raw `require_once` before the loader)
+| File | Type | Purpose |
+|------|------|---------|
+| `UploadSource.php` | `enum` | Upload origin identifiers |
+| `Capability.php` | `enum` | WordPress capability strings |
+| `HttpMethod.php` | `enum` | REST API HTTP methods |
+| `Hook.php` | `enum` | WordPress action/filter hook names |
+| `PathConst.php` | `final class` | File path fragment constants |
+| `ErrorType.php` | `final class` | PHP error type groupings |
+| `LogLevel.php` | `enum` | File logger severity levels |
 
 ### Acceptance Criteria
 
@@ -51,26 +52,22 @@
 
 **Goal:** Rename all `define()` constants to remove the `RISEUP_` prefix per spec.
 
-### Strategy
-
-This is the highest-risk phase. Constants are referenced across all files.
+**Status:** 🔵 Pending
 
 ### Tasks
 
 1. **Catalog all `RISEUP_*` constants** — Build a full mapping of old → new names
-2. **Migrate categorized constants to enum classes** (Phase 1 classes):
-   - `RISEUP_CAP_*` → `CapabilityEnum::*`
+2. **Migrate categorized constants to enum classes** where applicable:
    - `RISEUP_ENDPOINT_*` → remain as `define()` but without prefix (e.g., `ENDPOINT_STATUS`)
    - `RISEUP_ACTION_*` → remain as `define()` but without prefix (e.g., `ACTION_UPLOAD`)
-   - `RISEUP_HTTP_*` → `HttpStatusEnum::*` or keep as defines without prefix
-   - `RISEUP_LOG_LEVEL_*` → `LogLevelEnum::*`
-   - `RISEUP_SNAPSHOT_STATUS_*` → `SnapshotStatusEnum::*`
-   - `RISEUP_SNAPSHOT_PROVIDER_*` → `SnapshotProviderEnum::*`
-   - `RISEUP_ERR_*` → `ErrorCodeEnum::*`
-   - `RISEUP_TRIGGERED_BY_*` → `TriggerSourceEnum::*`
+   - `RISEUP_HTTP_*` → keep as defines without prefix (HTTP status codes)
+   - `RISEUP_SNAPSHOT_STATUS_*` → consider `SnapshotStatus` enum
+   - `RISEUP_SNAPSHOT_PROVIDER_*` → consider `SnapshotProvider` enum
+   - `RISEUP_ERR_*` → consider `ErrorCode` enum
+   - `RISEUP_TRIGGERED_BY_*` → consider `TriggerSource` enum
 3. **Update `constants.php`** — Remove prefix from remaining `define()` calls
 4. **Find-and-replace across all class files** — Update every reference
-5. **Compose named constants** for REST URLs and AJAX hooks per spec (e.g., `REST_URL_UPLOAD`, `HOOK_AJAX_UPLOAD`)
+5. **Compose named constants** for REST URLs and AJAX hooks per spec
 
 ### Acceptance Criteria
 
@@ -166,8 +163,8 @@ This is the highest-risk phase. Constants are referenced across all files.
 
 ### Tasks
 
-1. **Replace string literals in `add_action()`/`add_filter()` calls** with `HookEnum::*` constants
-2. **Replace `current_user_can('manage_options')` etc.** with `CapabilityEnum::*`
+1. ~~Replace string literals in `add_action()`/`add_filter()` calls with `Hook::*->value`~~ ✅ Done (G6, G8, G9)
+2. ~~Replace `current_user_can('manage_options')` etc. with `Capability::ManageOptions->value`~~ ✅ Done (G6)
 3. **Remove `riseup_error_type_to_string()` function** — replace with `ErrorChecker::get_type_label()`
 4. **Remove inline `$fatal_types` array** in `riseup_fatal_error_handler()` — use `ErrorChecker::is_fatal_error()`
 5. **Audit all manual path concatenation** — ensure all go through `RiseupPathUtils` typed accessors
