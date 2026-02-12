@@ -340,11 +340,13 @@ if ($has_permission) { ... }
 
 ---
 
-## Code Style — Braces & Spacing
+## Code Style — Braces, Nesting & Spacing
+
+> These rules apply across **all languages** (PHP, TypeScript, Go).
 
 ### Rule 1: Always use braces — no single-line returns
 
-Every `if`, `for`, `foreach`, `while` block must use curly braces, even for single-statement bodies. This applies across **all languages** (PHP, TypeScript, Go).
+Every `if`, `for`, `foreach`, `while` block must use curly braces, even for single-statement bodies.
 
 ```php
 // ❌ FORBIDDEN: Single-line return without braces
@@ -361,7 +363,46 @@ if ($error === null) {
 }
 ```
 
-### Rule 2: Blank line before `return` when preceded by other statements
+### Rule 2: No nested `if` — flatten with combined checks or early returns
+
+Nested `if` blocks reduce readability. Combine conditions into a single `if`, or use early returns to flatten the logic. If a helper function already handles the null/empty check internally (e.g., `ErrorChecker::is_fatal_error()` already returns `false` for `null`), rely on it — don't wrap it in a redundant outer guard.
+
+```php
+// ❌ FORBIDDEN: Nested if — redundant null guard
+if ($error !== null) {
+    if (ErrorChecker::is_fatal_error($error)) {
+        $this->logger->fatal($error);
+    }
+}
+
+// ✅ REQUIRED: Flat — is_fatal_error() handles null internally
+if (ErrorChecker::is_fatal_error($error)) {
+    $this->logger->fatal($error);
+}
+
+// ❌ FORBIDDEN: Nested if — combinable conditions
+if ($request !== null) {
+    if ($request->has_param('file')) {
+        $this->process($request);
+    }
+}
+
+// ✅ REQUIRED: Combined condition
+if ($request !== null && $request->has_param('file')) {
+    $this->process($request);
+}
+
+// ✅ ALSO OK: Early return to flatten
+if ($request === null) {
+    return;
+}
+
+if ($request->has_param('file')) {
+    $this->process($request);
+}
+```
+
+### Rule 3: Blank line before `return` when preceded by other statements
 
 If a block contains statements before `return`, insert **one blank line** before the `return`. If `return` is the **only statement**, no blank line is needed.
 
@@ -385,9 +426,9 @@ if ($error === null) {
 }
 ```
 
-### Rule 3: Blank line after closing `}` when followed by more code
+### Rule 4: Blank line after closing `}` when followed by more code
 
-If code continues after a closing `}` (i.e., it's not the last `}` in the method/function or not followed by another `}`), insert **one blank line** after it. No blank line is needed when `}` is followed by another `}` or is the final brace.
+If code continues after a closing `}` (i.e., not followed by another `}` or end of function), insert **one blank line** after it.
 
 ```php
 // ❌ FORBIDDEN: No blank line after block when code follows
@@ -404,13 +445,6 @@ if ($this->initialized) {
 
 $this->initialized = true;
 add_action(HookEnum::INIT, [$this, 'setup']);
-
-// ✅ OK: No blank line needed — next line is another closing brace
-if ($error !== null) {
-    if (ErrorChecker::is_fatal_error($error)) {
-        $this->logger->fatal($error);
-    }
-}
 ```
 
 ---
@@ -432,6 +466,7 @@ if ($error !== null) {
 | `return` without blank line after statements | Poor readability | Blank line before `return` when preceded by other statements |
 | Single-line `if (...) return;` | Easy to miss, inconsistent | Always use braces `{ }` |
 | No blank line after `}` before more code | Poor readability | Blank line after `}` when followed by more code |
+| Nested `if` when conditions can combine | Hard to read, unnecessary depth | Flatten with combined condition or early return |
 | `RiseupBooleanHelpers` | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
 | `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
