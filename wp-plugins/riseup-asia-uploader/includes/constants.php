@@ -698,10 +698,6 @@ if (!defined('RISEUP_CRON_SNAPSHOT_IMMEDIATE')) {
 if (!defined('RISEUP_CRON_SNAPSHOT_CLEANUP')) {
     define('RISEUP_CRON_SNAPSHOT_CLEANUP', 'riseup_snapshot_cleanup');
 }
-if (!defined('RISEUP_CRON_SNAPSHOT_TABLE')) {
-    define('RISEUP_CRON_SNAPSHOT_TABLE', 'riseup_snapshot_table');
-}
-
 // Cron hook for background restore operations
 if (!defined('RISEUP_CRON_SNAPSHOT_RESTORE')) {
     define('RISEUP_CRON_SNAPSHOT_RESTORE', 'riseup_snapshot_restore');
