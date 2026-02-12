@@ -46,6 +46,8 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | 2.13 | `add_action('wp_ajax_my_action', ...)` | `define('HOOK_AJAX_MY_ACTION', HookEnum::WP_AJAX_PREFIX . ACTION_MY_ACTION);` then `add_action(HOOK_AJAX_MY_ACTION, ...)` | Named composed constant |
 | 2.14 | `add_action(HookEnum::WP_AJAX_PREFIX . ACTION_X, ...)` | Compose a named constant first, then use it | No inline concatenation at call site |
 | 2.15 | `rest_url(REST_NAMESPACE . '/' . ACTION_X)` | `define('REST_URL_X', REST_NAMESPACE . '/' . ACTION_X);` then `rest_url(REST_URL_X)` | No inline concatenation at call site |
+| 2.16 | `current_user_can('manage_options')` | `current_user_can(CapabilityEnum::MANAGE_OPTIONS)` | `CapabilityEnum` |
+| 2.17 | `'POST'` or `WP_REST_Server::CREATABLE` in routes | `HttpMethodEnum::POST` | `HttpMethodEnum` |
 
 ---
 
