@@ -75,9 +75,29 @@ struct Event { payload: EventPayload }
 
 ---
 
+## Framework vs Business Logic
+
+```rust
+// ✅ FRAMEWORK — T stays open
+fn retry<T, F: Fn() -> Result<T, Error>>(f: F, attempts: u32) -> Result<T, Error> { ... }
+struct Cache<T: Clone> { ... }
+
+// ✅ BUSINESS — T resolved, alias REQUIRED
+type PluginResponse = ApiResponse<Plugin>;
+type SiteCache = Cache<SiteSettings>;
+
+fn get_plugin(id: i32) -> PluginResponse { ... }
+
+// ❌ BAD — business code with raw generic
+fn get_plugin(id: i32) -> ApiResponse<Plugin> { ... }  // alias it!
+```
+
+---
+
 ## Rust-Specific Notes
 
 - `type` aliases are zero-cost — erased at compile time
 - **Enums** (sum types) are the idiomatic replacement for `Box<dyn Any>` when variants are known
 - `serde_json::Value` is acceptable ONLY at deserialization boundaries, never in domain structs
 - Trait objects (`dyn Trait`) are for runtime polymorphism — prefer enums for known variant sets
+- `T` in framework/utility functions is acceptable; `Box<dyn Any>` is never acceptable in business logic

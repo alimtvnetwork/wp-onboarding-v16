@@ -78,14 +78,48 @@ Simple collections with **primitive-only** parameters do NOT require aliases unl
 ❌ BAD:    context: Record<string, unknown>         // unknown = zero domain meaning → ALWAYS alias
 ```
 
-### GE-5: Utility Generics Exception
+### GE-5: Framework vs Business Logic Boundary
 
-Pure utility/plumbing generics (e.g., `retry<T>`, `cache<T>`) where `T` is a **pass-through** type parameter do NOT require aliases at the call site. The rule applies when generic parameters are **resolved to concrete domain types**.
+This is the most important nuance. `T` is acceptable — but **only at the framework layer**.
+
+**Framework code** (libraries, utilities, infrastructure plumbing) **defines** generics. The type parameter `T` stays open because the framework doesn't know what domain type will fill it. This is correct and expected:
 
 ```
-✅ OK:     retry<Plugin>(() => fetchPlugin(id))   // T is pass-through plumbing
-❌ BAD:    field: Response<Plugin, SiteContext>     // domain-meaningful → alias it
-✅ GOOD:   alias PluginSiteResponse = Response<Plugin, SiteContext>
+// ✅ FRAMEWORK LAYER — T stays open (this is the definition)
+function retry<T>(fn: () => T, attempts: number): T { ... }
+class Cache<T> { get(key: string): T | null { ... } }
+struct ApiResponse<T> { data: T, status: number }
+```
+
+**Business logic** (your application, domain layer, features) **uses** those generics with concrete domain types. At this point, `T` is resolved and **MUST be aliased**:
+
+```
+// ✅ BUSINESS LAYER — T is resolved, alias required
+alias PluginResponse = ApiResponse<Plugin>
+alias SiteCache = Cache<SiteSettings>
+
+function getPlugin(): PluginResponse { ... }
+
+// ❌ BAD — business code using raw generic with concrete types
+function getPlugin(): ApiResponse<Plugin> { ... }    // alias it!
+result = retry<Plugin>(() => fetchPlugin(id))         // ✅ OK — retry is pure plumbing, T is pass-through
+```
+
+**The critical rule**: If you are at a **call site** in business code and the generic parameters encode **domain meaning** (not just pass-through plumbing), you MUST alias. The `T` exception exists ONLY at the **definition site** of framework/utility code.
+
+**What is NEVER acceptable — even in framework code:**
+
+```
+❌ interface{} / any / unknown / object / dynamic / Box<dyn Any>
+```
+
+These are not generics — they are type erasure. `T` is constrained and compiler-checked. `any` is a surrender. Even framework code must use `T` (or a constrained type parameter), never `any` or its equivalents. The hierarchy from worst to best:
+
+```
+WORST:  any / interface{} / unknown / object     → Zero type info, zero safety
+BAD:    Record<string, unknown> / map[string]any  → Container with no domain meaning  
+OK:     Generic<T>                                → Framework definition, T is open
+BEST:   alias SpecificName = Generic<DomainType>  → Fully resolved, self-documenting
 ```
 
 ---
@@ -207,9 +241,11 @@ Each guide covers ONLY the language-specific **mechanism** (syntax, idioms, limi
 
 ## 8. Architect's Notes
 
-1. **GE-5 is critical** — without the utility exception, you'd be aliasing `retry<Plugin>`, `cache<Settings>`, etc. which adds ceremony without value. The rule triggers when params encode *domain meaning*, not plumbing.
-2. **C# is the weakest link** — it requires inheritance (runtime cost) or file-scoped `using` (C# 12+, not truly global before that). GE-1 is a *convention* in C#, not compiler-enforced like TS/Go/Rust.
-3. **`Record<string, unknown>` is ALWAYS a violation** — it's never trivial because `unknown` carries zero domain meaning. There is no exception.
+1. **GE-5 is the heart of the spec** — The framework/business boundary is what makes this practical. Framework code (`retry<T>`, `cache<T>`) keeps `T` open because it's a tool definition. Business code resolves `T` to real domain types and MUST alias them. Without this distinction, teams either over-alias utility calls (ceremony without value) or under-alias domain types (the actual problem).
+2. **`T` ≠ `any`** — `T` is a constrained, compiler-checked type parameter. `any`/`interface{}`/`unknown`/`object` are type erasure. Even in framework code, `T` is the worst acceptable case — never `any`. The difference: `T` says "I don't know yet but the compiler will check"; `any` says "I gave up."
+3. **C# is the weakest link** — it requires inheritance (runtime cost) or file-scoped `using` (C# 12+, not truly global before that). GE-1 is a *convention* in C#, not compiler-enforced like TS/Go/Rust.
+4. **`Record<string, unknown>` is ALWAYS a violation** — it's never trivial because `unknown` carries zero domain meaning. There is no exception.
+5. **The boundary test**: Ask "am I defining a reusable tool, or am I using a tool with a specific domain type?" If defining → `T` stays. If using → alias it.
 
 ---
 

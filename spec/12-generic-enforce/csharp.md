@@ -62,9 +62,29 @@ public class ErrorContext {
 
 ---
 
+## Framework vs Business Logic
+
+```csharp
+// ✅ FRAMEWORK — T stays open
+public async Task<T> RetryAsync<T>(Func<Task<T>> fn, int attempts = 3) { ... }
+public class ResponseCache<T> where T : class { ... }
+
+// ✅ BUSINESS — T resolved, alias REQUIRED (via inheritance or global using)
+public record PluginResponse : ApiResponse<Plugin>;
+// or: global using PluginResponse = ApiResponse<Plugin>;  // C# 12+
+
+public PluginResponse GetPlugin(int id) { ... }
+
+// ❌ BAD — business code with raw generic
+public ApiResponse<Plugin> GetPlugin(int id) { ... }  // alias it!
+```
+
+---
+
 ## C#-Specific Notes
 
-- **`object` and `dynamic`** are C#'s equivalents of `any` — equally prohibited
+- **`object` and `dynamic`** are C#'s equivalents of `any` — equally prohibited, even in framework code use `T` instead
 - **Records** preferred over classes for data types (immutability, value equality)
 - GE-1 is a **convention** in pre-C# 12 — the compiler doesn't enforce alias usage over raw generics
 - Use **`global using`** (C# 12+) in a `GlobalUsings.cs` for project-wide aliases
+- `T` in framework definitions is fine; `object`/`dynamic` is never fine
