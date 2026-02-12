@@ -155,6 +155,21 @@ class RiseupSnapshotFactory {
     }
 
     /**
+     * Get the RiseupSnapshotExporter singleton.
+     *
+     * @param Riseup_File_Logger|null $logger Optional logger override.
+     * @param Riseup_Database|null    $db     Optional database override.
+     * @return RiseupSnapshotExporter
+     */
+    public static function exporter($logger = null, $db = null) {
+        require_once dirname(__FILE__) . '/class-snapshot-exporter.php';
+        return RiseupSnapshotExporter::getInstance(
+            $logger ?: Riseup_File_Logger::get_instance(),
+            $db ?: Riseup_Database::get_instance()
+        );
+    }
+
+    /**
      * Reset all cached instances (useful for testing).
      */
     public static function reset() {
