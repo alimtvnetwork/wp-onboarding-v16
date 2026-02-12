@@ -73,6 +73,64 @@ export interface EnvelopeMeta {
 }
 
 // ---------------------------------------------------------------------------
+// GE-1 Named Domain Types (replacing Record<string, unknown> violations)
+// See spec/12-generic-enforce/README.md
+// ---------------------------------------------------------------------------
+
+/** HTTP header map — named alias per GE-4 (used 3+ times across codebase) */
+export type HttpHeaders = Record<string, string>;
+
+/** Error count aggregation by category key (level, code, etc.) */
+export type ErrorCountMap = Record<string, number>;
+
+/** Structured error diagnostic context — replaces Record<string, unknown> on error objects */
+export interface ErrorDiagnosticContext {
+  source?: string;
+  triggerComponent?: string;
+  triggerAction?: string;
+  requestData?: unknown;
+  requestUrl?: string;
+  apiBase?: string;
+  apiBaseAbsolute?: string;
+  endpoint?: string;
+  statusCode?: number;
+  requestId?: string;
+  pluginId?: number;
+  sessionId?: string;
+  stackTraceFrames?: Array<{ file?: string; fileBase?: string; line?: number; function?: string; class?: string }>;
+  errorDetails?: {
+    stackTraceFrames?: Array<{ file?: string; fileBase?: string; line?: number; function?: string; class?: string }>;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+/** Structured request payload — replaces Record<string, unknown> for request bodies */
+export interface RequestPayload {
+  [key: string]: unknown;
+}
+
+/** Log entry details — replaces Record<string, unknown> on log detail fields */
+export interface LogEntryDetails {
+  [key: string]: unknown;
+}
+
+/** Session operation metadata — replaces Record<string, unknown> on SessionInfo.metadata */
+export interface SessionOperationMetadata {
+  pluginName?: string;
+  version?: string;
+  targetVersion?: string;
+  siteUrl?: string;
+  filesUpdated?: number;
+  snapshotType?: string;
+  tables?: string[];
+  scope?: string;
+  action?: string;
+  pluginSlug?: string;
+  [key: string]: unknown;
+}
+
+// ---------------------------------------------------------------------------
 // Core API types
 // ---------------------------------------------------------------------------
 
@@ -88,7 +146,7 @@ export interface ApiError {
   code: string;
   message: string;
   details?: string;
-  context?: Record<string, unknown>;
+  context?: ErrorDiagnosticContext;
   file?: string;
   line?: number;
   function?: string;
@@ -240,7 +298,7 @@ export interface ErrorLog {
   level: string;
   message: string;
   details?: string;
-  context?: Record<string, unknown>;
+  context?: ErrorDiagnosticContext;
   file?: string;
   line?: number;
   function?: string;
@@ -262,7 +320,7 @@ export interface SessionSummary {
 
 export interface SessionInfo extends SessionSummary {
   errorMsg?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: SessionOperationMetadata;
 }
 
 export interface SessionStackFrame {
@@ -276,14 +334,14 @@ export interface SessionDiagnostics {
   request?: {
     url: string;
     method: string;
-    headers?: Record<string, string>;
-    body?: Record<string, unknown>;
+    headers?: HttpHeaders;
+    body?: RequestPayload;
   };
   response?: {
     requestUrl: string;
     responseUrl: string;
     statusCode: number;
-    headers?: Record<string, string>;
+    headers?: HttpHeaders;
     body?: unknown;
   };
   stackTrace?: {
@@ -404,11 +462,11 @@ export interface ErrorHistoryInput {
   level: string;
   message: string;
   details?: string;
-  context?: Record<string, unknown>;
+  context?: ErrorDiagnosticContext;
   stackTrace?: string;
   endpoint?: string;
   method?: string;
-  requestBody?: Record<string, unknown>;
+  requestBody?: RequestPayload;
   responseStatus?: number;
   sessionId?: string;
   sessionType?: string;
@@ -430,11 +488,11 @@ export interface ErrorHistoryRecord {
   level: string;
   message: string;
   details?: string;
-  context?: Record<string, unknown>;
+  context?: ErrorDiagnosticContext;
   stackTrace?: string;
   endpoint?: string;
   method?: string;
-  requestBody?: Record<string, unknown>;
+  requestBody?: RequestPayload;
   responseStatus?: number;
   sessionId?: string;
   sessionType?: string;
@@ -459,8 +517,8 @@ export interface ErrorHistoryListResponse {
 
 export interface ErrorHistoryStats {
   total: number;
-  byLevel: Record<string, number>;
-  byCode: Record<string, number>;
+  byLevel: ErrorCountMap;
+  byCode: ErrorCountMap;
 }
 
 // Snapshot Types
@@ -828,8 +886,8 @@ export interface RequestSessionRecord {
   endedAt: string;
   durationMs: number;
   error?: string;
-  logs?: Array<{ timestamp: string; level: string; message: string; details?: Record<string, unknown> }>;
-  headers?: Record<string, string>;
+  logs?: Array<{ timestamp: string; level: string; message: string; details?: LogEntryDetails }>;
+  headers?: HttpHeaders;
 }
 
 export interface RequestSessionListResponse {

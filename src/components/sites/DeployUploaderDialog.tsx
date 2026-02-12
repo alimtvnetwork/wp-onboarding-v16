@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
+import type { LogEntryDetails } from "@/lib/api";
 import { CheckCircle, XCircle, Loader2, Upload, Copy } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
@@ -47,13 +48,13 @@ export function DeployUploaderDialog({
   // Listen for WebSocket log messages
   useEffect(() => {
     if (lastMessage?.type === "log" && status === DeployStatus.Deploying) {
-      const data = lastMessage.data as Record<string, unknown> | undefined;
+      const data = lastMessage.data as LogEntryDetails | undefined;
       const logEntry: LogEntry = {
         timestamp: new Date().toISOString(),
         level: (data?.level as LogEntry["level"]) || "info",
         step: (data?.step as string) || "deploy",
         message: (data?.message as string) || (lastMessage as { message?: string }).message || "",
-        details: data?.details as Record<string, unknown> | undefined,
+        details: data?.details as LogEntryDetails | undefined,
       };
       setLogs((prev) => [...prev, logEntry]);
     }

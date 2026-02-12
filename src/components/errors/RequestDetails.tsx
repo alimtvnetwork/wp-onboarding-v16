@@ -12,7 +12,7 @@ interface RequestDetailsProps {
 }
 
 export function RequestDetails({ error, copySection, sessionDiagnostics }: RequestDetailsProps) {
-  const ctx = (error.context || {}) as Record<string, unknown>;
+  const ctx = error.context || {};
   const requestUrl = typeof ctx.requestUrl === "string" ? ctx.requestUrl : undefined;
   const apiBase = typeof ctx.apiBase === "string" ? ctx.apiBase : undefined;
   const apiBaseAbsolute = typeof ctx.apiBaseAbsolute === "string" ? ctx.apiBaseAbsolute : undefined;

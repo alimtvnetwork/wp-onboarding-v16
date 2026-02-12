@@ -1,4 +1,5 @@
 import { CapturedError } from '@/stores/errorStore';
+import type { ErrorDiagnosticContext } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -722,10 +723,10 @@ function StackContent({ error, phpStackFrames, envelopeBackendStack, envelopeDel
 }
 
 function BackendLogEntry({ log, formatTs }: { log: CapturedError['backendLogs'][0]; formatTs: (ts: string) => string }) {
-  const details = log.details as Record<string, unknown> | undefined;
+  const details = log.details as ErrorDiagnosticContext | undefined;
   const hasDetails = details && Object.keys(details).length > 0;
-  const request = hasDetails && typeof details.request === "object" ? (details.request as Record<string, unknown>) : undefined;
-  const response = hasDetails && typeof details.response === "object" ? (details.response as Record<string, unknown>) : undefined;
+  const request = hasDetails && typeof details.request === "object" ? (details.request as ErrorDiagnosticContext) : undefined;
+  const response = hasDetails && typeof details.response === "object" ? (details.response as ErrorDiagnosticContext) : undefined;
   const method = request && typeof request.method === "string" ? request.method : undefined;
   const endpoint = request && typeof request.endpoint === "string" ? request.endpoint : undefined;
   const url = request && typeof request.url === "string" ? request.url : undefined;

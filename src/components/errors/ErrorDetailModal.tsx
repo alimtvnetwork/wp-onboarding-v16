@@ -8,20 +8,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { formatDateTimeUtc, toClipboardText } from "@/lib/logText";
-
-interface ErrorLog {
-  id: number;
-  code: string;
-  level: string;
-  message: string;
-  details?: string;
-  context?: Record<string, unknown>;
-  file?: string;
-  line?: number;
-  function?: string;
-  stackTrace?: string;
-  createdAt: string;
-}
+import type { ErrorLog } from "@/lib/api";
 
 interface ErrorDetailModalProps {
   open: boolean;

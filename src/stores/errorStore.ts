@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ApiError, EnvelopeErrors, EnvelopeMethodsStack, isApiClientError } from '@/lib/api';
+import { ApiError, EnvelopeErrors, EnvelopeMethodsStack, ErrorDiagnosticContext, isApiClientError } from '@/lib/api';
 import { getClickPathForError, ClickEvent } from '@/hooks/useClickTracker';
 import { getExecutionLogsForError, ExecutionLogEntry, CallChain } from '@/hooks/useExecutionLogger';
 import { getComponentForRoute } from '@/lib/routeComponentMap';
@@ -28,7 +28,7 @@ export interface ParsedStackTrace {
 /**
  * Error context required for all captureException calls
  */
-export interface ErrorContext {
+export interface ErrorCaptureContext {
   source: string;              // REQUIRED: "ComponentName.functionName"
   triggerComponent?: string;   // UI component (EditSiteDialog)
   triggerAction?: string;      // User action (save_clicked, button_click, form_submit)
@@ -36,7 +36,7 @@ export interface ErrorContext {
   endpoint?: string;
   method?: string;
   requestBody?: unknown;
-  context?: Record<string, unknown>;
+  context?: ErrorDiagnosticContext;
 }
 
 /**
@@ -47,7 +47,7 @@ export interface BackendLogEntry {
   level: 'debug' | 'info' | 'warn' | 'error';
   message: string;
   step?: string;
-  details?: Record<string, unknown>;
+  details?: ErrorDiagnosticContext;
 }
 
 /**
@@ -67,7 +67,7 @@ export interface CapturedError {
   level: 'error' | 'warn' | 'info';
   message: string;
   details?: string;
-  context?: Record<string, unknown>;
+  context?: ErrorDiagnosticContext;
   file?: string;
   line?: number;
   function?: string;
@@ -135,7 +135,7 @@ interface ErrorStore {
     method?: string; 
     requestBody?: unknown; 
     responseStatus?: number; 
-    context?: Record<string, unknown>;
+    context?: ErrorDiagnosticContext;
     backendLogs?: BackendLogEntry[];
     backendStackTrace?: string;
     siteUrl?: string;
@@ -147,12 +147,12 @@ interface ErrorStore {
   }) => CapturedError;
   captureException: (
     error: unknown,
-    context?: ErrorContext | {
+    context?: ErrorCaptureContext | {
       endpoint?: string;
       method?: string;
       requestBody?: unknown;
       source?: string;
-      context?: Record<string, unknown>;
+      context?: ErrorDiagnosticContext;
       backendLogs?: BackendLogEntry[];
       backendStackTrace?: string;
       siteUrl?: string;
@@ -338,7 +338,7 @@ interface BuildCapturedErrorInput {
   code: string;
   message: string;
   details?: string;
-  context?: Record<string, unknown>;
+  context?: ErrorDiagnosticContext;
   stack: string;
   parsed: ParsedStackTrace;
   stackInfo: { file?: string; line?: number; function?: string };
@@ -363,7 +363,7 @@ interface BuildCapturedErrorInput {
   errorFile?: string;
   errorLine?: number;
   // Envelope diagnostics (already extracted by caller)
-  envelopeContext?: Record<string, unknown>;
+  envelopeContext?: ErrorDiagnosticContext;
   // Override timestamp
   timestamp?: string;
 }
@@ -482,7 +482,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     const triggerComponent = typeof meta?.context?.triggerComponent === 'string' ? meta.context.triggerComponent : undefined;
     const triggerAction = typeof meta?.context?.triggerAction === 'string' ? meta.context.triggerAction : undefined;
     
-    const mergedContext: Record<string, unknown> = {
+    const mergedContext: ErrorDiagnosticContext = {
       ...error.context,
       ...(meta?.context || {}),
       ...(meta?.requestBody ? { requestData: meta.requestBody } : {}),
@@ -515,7 +515,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       phpStackFrames: meta?.phpStackFrames,
       errorFile: meta?.errorFile,
       errorLine: meta?.errorLine,
-      envelopeContext: error.context as Record<string, unknown> | undefined,
+      envelopeContext: error.context as ErrorDiagnosticContext | undefined,
       timestamp: error.timestamp,
     });
     
@@ -540,13 +540,13 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     // Extract enhanced context fields
     const source = context?.source;
     const triggerComponent = 'triggerComponent' in (context || {}) 
-      ? (context as ErrorContext).triggerComponent 
+      ? (context as ErrorCaptureContext).triggerComponent 
       : undefined;
     const triggerAction = 'triggerAction' in (context || {})
-      ? (context as ErrorContext).triggerAction
+      ? (context as ErrorCaptureContext).triggerAction
       : undefined;
     const parentSource = 'parentSource' in (context || {})
-      ? (context as ErrorContext).parentSource
+      ? (context as ErrorCaptureContext).parentSource
       : undefined;
     
     // Extract envelope data from ApiClientError if available
@@ -554,8 +554,8 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
     const apiErrorCode = isApiClientError(error) ? error.apiError.code : undefined;
     const apiResponseStatus = isApiClientError(error) ? (error.apiError as ApiError & { status?: number }).status : undefined;
     
-    const mergedContext: Record<string, unknown> | undefined = (() => {
-      const base: Record<string, unknown> = {
+    const mergedContext: ErrorDiagnosticContext | undefined = (() => {
+      const base: ErrorDiagnosticContext = {
         ...(apiErrorContext || {}),
         ...(context?.context || {}),
         ...(source ? { source } : {}),
@@ -597,7 +597,7 @@ export const useErrorStore = create<ErrorStore>((set, get) => ({
       phpStackFrames: 'phpStackFrames' in (context || {}) ? (context as { phpStackFrames?: PHPStackFrame[] }).phpStackFrames : undefined,
       errorFile: 'errorFile' in (context || {}) ? (context as { errorFile?: string }).errorFile : undefined,
       errorLine: 'errorLine' in (context || {}) ? (context as { errorLine?: number }).errorLine : undefined,
-      envelopeContext: apiErrorContext as Record<string, unknown> | undefined,
+      envelopeContext: apiErrorContext as ErrorDiagnosticContext | undefined,
     });
     
     commitErrorToStore(captured, set);

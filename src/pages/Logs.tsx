@@ -39,6 +39,7 @@ import { useVersionInfo } from "@/hooks/useWhatsNew";
 import { formatTime24h } from "@/lib/logText";
 import { HighlightedText } from "@/components/shared/HighlightedText";
 import { useNotificationStore, type NotificationType } from "@/stores/notificationStore";
+import type { LogEntryDetails } from "@/lib/api";
 
 interface LogEntry {
   id: string;
@@ -46,7 +47,7 @@ interface LogEntry {
   level: "info" | "warn" | "error" | "debug";
   source: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: LogEntryDetails;
 }
 
 const levelConfig = {
@@ -59,7 +60,7 @@ const levelConfig = {
 // Map WebSocket event types to log entries
 function wsEventToLogEntry(message: { type: string; data: unknown; timestamp: string }): LogEntry | null {
   const id = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-  const data = message.data as Record<string, unknown>;
+  const data = message.data as LogEntryDetails;
 
   switch (message.type) {
     // Connection events
@@ -235,9 +236,9 @@ function wsEventToLogEntry(message: { type: string; data: unknown; timestamp: st
         id,
         timestamp: message.timestamp,
         level: (data?.level as LogEntry["level"]) || "info",
-        source: (data?.context as Record<string, unknown>)?.source as string || "backend",
+        source: (data?.context as LogEntryDetails)?.source as string || "backend",
         message: data?.message as string || "Unknown log",
-        details: data?.context as Record<string, unknown>,
+        details: data?.context as LogEntryDetails,
       };
 
     // Error events

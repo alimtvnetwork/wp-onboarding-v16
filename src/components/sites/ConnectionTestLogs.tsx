@@ -17,7 +17,7 @@ interface ConnectionTestLogsProps {
  * Generates a curl command equivalent for a connection test step
  */
 function generateCurlCommand(step: ConnectionTestStep): string | null {
-  const details = step.details as Record<string, unknown> | undefined;
+  const details = step.details;
   
   // Generate curl commands for specific steps
   switch (step.step) {

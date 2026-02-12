@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { AlertCircle, CheckCircle2, ExternalLink, Activity, Server } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LogEntry } from "@/components/shared/LogViewer";
+import type { LogEntryDetails } from "@/lib/api";
 
 interface ActivationDiagnosticsProps {
   logs: LogEntry[];
@@ -14,7 +15,7 @@ interface DiagnosticEntry {
   type: "request" | "response" | "info" | "error";
   label: string;
   value: string;
-  details?: Record<string, unknown>;
+  details?: LogEntryDetails;
 }
 
 /**
@@ -33,7 +34,7 @@ export function ActivationDiagnostics({ logs, className }: ActivationDiagnostics
     for (const log of activateLogs) {
       // Extract resolved identifier
       if (log.message.includes("Resolved plugin identifier")) {
-        const details = log.details as Record<string, unknown> | undefined;
+        const details = log.details;
         if (details?.resolvedIdentifier) {
           entries.push({
             type: "info",
@@ -58,7 +59,7 @@ export function ActivationDiagnostics({ logs, className }: ActivationDiagnostics
 
       // Extract failed activation with API error details
       if (log.message.includes("Activation failed") || log.level === "error") {
-        const details = log.details as Record<string, unknown> | undefined;
+        const details = log.details;
         
         entries.push({
           type: "error",
@@ -68,7 +69,7 @@ export function ActivationDiagnostics({ logs, className }: ActivationDiagnostics
 
         // Extract request details if available
         if (details?.request) {
-          const req = details.request as Record<string, unknown>;
+          const req = details.request as LogEntryDetails;
           if (req.url) {
             entries.push({
               type: "request",
@@ -87,7 +88,7 @@ export function ActivationDiagnostics({ logs, className }: ActivationDiagnostics
 
         // Extract response details if available
         if (details?.response) {
-          const resp = details.response as Record<string, unknown>;
+          const resp = details.response as LogEntryDetails;
           if (resp.status !== undefined) {
             entries.push({
               type: "response",

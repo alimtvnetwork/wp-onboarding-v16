@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { api, requireSuccess } from "@/lib/api";
+import { api, requireSuccess, type CleanupSnapshotOptions } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Shield,
@@ -66,7 +66,7 @@ export function SnapshotRetentionPolicy({ config, onChange }: Props) {
   const handleCleanupNow = async () => {
     setCleaning(true);
     try {
-      const opts: Record<string, unknown> = {};
+      const opts: CleanupSnapshotOptions = {};
       if (config.mode === "age" || config.mode === "both") {
         opts.maxAgeDays = config.maxAgeDays;
       }

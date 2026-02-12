@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatTime24h, toClipboardText, unescapeEmbeddedNewlines } from "@/lib/logText";
+import type { LogEntryDetails } from "@/lib/api";
 
 export interface LogEntry {
   timestamp: string;
   level: "debug" | "info" | "warn" | "error";
   step: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: LogEntryDetails;
 }
 
 interface LogViewerProps {
