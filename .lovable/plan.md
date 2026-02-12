@@ -72,6 +72,115 @@ The snapshot panel (RemoteSnapshotsPanel) needs UX improvements: users should be
 
 ---
 
+## Feature D: Snapshot ZIP Export & Download System
+
+### Problem Statement
+
+Users need to download snapshot backups as ZIP files. The system should cache ZIPs to avoid redundant re-creation, invalidate automatically when new incremental backups are added, and expose the download through both the React dashboard (via Go proxy) and the WordPress admin UI.
+
+### Architecture
+
+#### User's Choices
+- **ZIP Contents**: DB files only (a-root.db + .sqlite files for full + incremental)
+- **ZIP Storage**: Separate `exports/` directory under snapshots root
+- **Download Method**: WordPress returns a temporary download URL
+- **Go Proxy Strategy**: Go downloads from WordPress and streams to React client
+
+#### Storage Layout
+
+```
+wp-content/uploads/riseup-asia-uploader/snapshots/
+├── exports/
+│   ├── full_backup-name_2026-02-12.zip       ← cached ZIP
+│   └── ...
+├── 2026-02-12_full_backup-name/
+│   ├── a-root.db
+│   ├── wp_posts.sqlite
+│   └── incremental/
+│       ├── 01_2026-02-12/
+│       └── 02_2026-02-13/
+└── ...
+```
+
+#### SQLite Schema: `snapshot_exports` Table
+
+```sql
+CREATE TABLE IF NOT EXISTS snapshot_exports (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    snapshot_id   INTEGER NOT NULL,           -- FK to snapshots.id (the full snapshot)
+    zip_filename  TEXT NOT NULL,              -- e.g. "full_backup-name_2026-02-12.zip"
+    zip_path      TEXT NOT NULL,              -- full filesystem path
+    zip_size      INTEGER NOT NULL DEFAULT 0, -- bytes
+    included_ids  TEXT NOT NULL,              -- JSON array of snapshot IDs in the ZIP [1, 3, 5]
+    incremental_count INTEGER NOT NULL DEFAULT 0, -- how many incrementals were included
+    created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at    TEXT,                        -- NULL = valid until invalidated
+    status        TEXT NOT NULL DEFAULT 'valid', -- 'valid' | 'expired' | 'building'
+    UNIQUE(snapshot_id)
+);
+```
+
+#### Invalidation Logic
+
+When a new incremental backup completes for a full snapshot:
+1. Query `snapshot_exports WHERE snapshot_id = <full_id> AND status = 'valid'`
+2. If found: delete the ZIP file from disk, set `status = 'expired'`
+3. Next download request triggers fresh ZIP creation
+
+When a full snapshot is deleted (cascade):
+1. Delete any matching `snapshot_exports` row + ZIP file
+
+#### ZIP Compression
+
+Use PHP's `ZipArchive` with `ZipArchive::CM_DEFLATE` (highest level). The Go backend already uses `flate.DefaultCompression` (Level 6) — WordPress should use the equivalent for parity.
+
+### Phases
+
+| # | Task | Priority | Description |
+|---|------|----------|-------------|
+| D1 | **PHP: `snapshot_exports` table + migration** | High | Add `snapshot_exports` table to the SQLite DB schema in `class-database.php`. Create via `CREATE TABLE IF NOT EXISTS`. Add constants `RISEUP_TABLE_SNAPSHOT_EXPORTS`, `RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD`, `RISEUP_ACTION_SNAPSHOT_ZIP_BUILD`, `RISEUP_ACTION_SNAPSHOT_ZIP_EXPIRE`. |
+| D2 | **PHP: `RiseupSnapshotExporter` class** | High | New class `class-snapshot-exporter.php`. Methods: `getOrBuildZip($fullSnapshotId)` — checks `snapshot_exports` for valid cached ZIP; if none, builds ZIP with all DB files (full + incremental children), inserts record, returns path. `invalidateZip($fullSnapshotId)` — deletes ZIP + marks expired. `getDownloadUrl($fullSnapshotId)` — returns temporary URL (wp-nonce signed, 1h expiry). Uses `ZipArchive::CM_DEFLATE`. |
+| D3 | **PHP: REST endpoint `POST /snapshots/download`** | High | Accepts `{ snapshot_id }`. Calls `getOrBuildZip()`. Returns JSON `{ url, filename, size, cached, included_ids }`. If ZIP is being built, returns `{ status: 'building', progress }`. Errors return structured response with stack trace. |
+| D4 | **PHP: Download file serve endpoint** | High | `GET /snapshots/download-file?token=<nonce>&id=<export_id>`. Validates nonce, streams ZIP file with `Content-Disposition: attachment`. Falls back to `readfile()` for small files, `fpassthru()` for large. |
+| D5 | **PHP: Auto-invalidation hook** | Medium | After incremental backup completes (in orchestrator/incremental-backup), call `$exporter->invalidateZip($parentId)`. After full snapshot delete (in cleaner), delete matching export record + file. |
+| D6 | **PHP: WordPress admin download button** | Medium | Add "Download ZIP" button to `admin-snapshots.php` dashboard for each full snapshot. Shows cached/building/expired badge. Uses AJAX to call the download endpoint and opens the URL in a new tab. Error responses show a modal with stack trace. |
+| D7 | **Go: Proxy download endpoint** | High | `POST /sites/{siteId}/snapshots/download` — proxies to WordPress. Returns `{ url }` or streams the ZIP binary back (since user chose "Proxy through Go"). Go fetches the WordPress download URL and pipes the response body to the client with `Content-Disposition`. |
+| D8 | **React: Download ZIP button in SnapshotRow** | High | Replace the current per-snapshot download link with a "Download ZIP" button on **full snapshots only**. Shows: cached (green, instant download) / building (amber, spinner) / expired (gray, "will rebuild"). Calls `POST /sites/{siteId}/snapshots/download` with `{ snapshot_id }`. On success, triggers browser download via blob URL. |
+| D9 | **React: Download status in detail dialog** | Low | In the snapshot detail dialog, show ZIP export metadata: last exported at, size, included snapshot IDs, cached vs expired status. |
+| D10 | **Memory + constants update** | Low | Add new constants to `constants.php`, update memory files for the export system architecture. |
+
+### Execution Order
+
+1. **D1** — Schema + constants
+2. **D2 + D3 + D4** — PHP exporter + endpoints (parallel dev)
+3. **D5** — Auto-invalidation hooks
+4. **D6** — WordPress admin UI
+5. **D7** — Go proxy
+6. **D8 + D9** — React UI
+7. **D10** — Documentation
+
+### Hierarchy Confirmation
+
+The snapshot list **already** correctly renders the hierarchy:
+- Full snapshots at top level with `FileText` icon
+- Incrementals nested underneath with `ml-6` indent, `border-l-2 border-l-primary/20`, and `GitBranch` icon
+- Incremental badge (`text-[10px]`) on each child
+- Cascade delete warning shows incremental count
+- Parent-child grouping uses `parent_dir` → `filename` mapping
+
+### Error Handling
+
+All WordPress PHP endpoints already use:
+- `rest_post_dispatch` filter for structured 4xx/5xx responses
+- Injected `plugin_version`, `timestamp`, `log_hint` metadata
+- Full stack trace in PHP error logs
+- Frontend error modal with purple-themed PHP Stack Trace section
+- `SnapshotApiError` capture in React with `useErrorStore`
+
+The new download endpoints will follow the same pattern.
+
+---
+
 ## Dependencies & Risks
 
 | Risk | Mitigation |
@@ -79,3 +188,6 @@ The snapshot panel (RemoteSnapshotsPanel) needs UX improvements: users should be
 | PHP endpoint errors on first load | Use initial-load flag to suppress; show clean empty state |
 | Progress endpoint may not be deployed on all sites | Graceful fallback to "Running…" badge if progress call fails |
 | Incremental parent picker needs completed full snapshots | Filter snapshot list to `status === "complete"` and `snapshot_type !== "incremental"` |
+| ZIP build timeout for large databases | Build asynchronously via WP-Cron if > threshold; return `building` status |
+| Stale ZIP cache after manual file edits | Invalidation only via incremental/delete hooks; manual edits are unsupported |
+| Go proxy memory for large ZIPs | Stream response body, don't buffer entire ZIP in memory |
