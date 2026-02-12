@@ -972,6 +972,20 @@ class Riseup_Asia {
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
+        // Snapshot ZIP download request (Feature D: returns URL or building status)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD, array(
+            'methods'             => 'POST',
+            'callback'            => array($this, 'handle_snapshot_download'),
+            'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
+        ));
+
+        // Snapshot ZIP file serve (Feature D: streams the ZIP via nonce-validated URL)
+        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD_FILE, array(
+            'methods'             => 'GET',
+            'callback'            => array($this, 'handle_snapshot_download_file'),
+            'permission_callback' => '__return_true', // Nonce-validated in handler
+        ));
+
         // Media upload endpoint
         try {
             if (defined('RISEUP_ENDPOINT_MEDIA')) {
@@ -4521,6 +4535,151 @@ class Riseup_Asia {
                 'downloadUrl' => rest_url(RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_SNAPSHOTS . '/' . $id . '/download'),
             ), 200);
         }, 'export_snapshot');
+    }
+
+    /**
+     * Handle ZIP download request (Feature D).
+     *
+     * Checks for a cached ZIP or builds a new one. Returns a download URL.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response Response.
+     */
+    public function handle_snapshot_download($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+            $snapshotId = isset($body['snapshot_id']) ? (int) $body['snapshot_id'] : 0;
+
+            if ($snapshotId <= 0) {
+                return $this->error_response('Missing or invalid snapshot_id', 400);
+            }
+
+            $this->file_logger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
+
+            // Log activity: download initiated
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
+            );
+
+            require_once dirname(__FILE__) . '/includes/class-snapshot-exporter.php';
+            $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
+            $result = $exporter->getOrBuildZip($snapshotId);
+
+            if (RiseupBooleanHelpers::is_falsy($result['success'])) {
+                $this->logger->log_plugin_action(
+                    RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+                    'snapshot',
+                    RISEUP_STATUS_FAILED,
+                    array('snapshot_id' => $snapshotId),
+                    $result['error'] ?? 'Download failed'
+                );
+                return $this->error_response($result['error'] ?? 'Export failed', 400);
+            }
+
+            $export = $result['export'];
+            $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
+
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array(
+                    'snapshot_id' => $snapshotId,
+                    'cached'      => $result['cached'] ?? false,
+                    'size'        => $export['zip_size'] ?? 0,
+                    'filename'    => $export['zip_filename'] ?? '',
+                )
+            );
+
+            return RiseupEnvelopeBuilder::success()
+                ->setResults(array(array(
+                    'url'               => $downloadUrl,
+                    'filename'          => $export['zip_filename'],
+                    'size'              => (int) $export['zip_size'],
+                    'cached'            => $result['cached'] ?? false,
+                    'included_ids'      => json_decode($export['included_ids'] ?? '[]', true),
+                    'incremental_count' => (int) ($export['incremental_count'] ?? 0),
+                    'created_at'        => $export['created_at'] ?? '',
+                    'status'            => $export['status'] ?? 'valid',
+                )))
+                ->setRequestedAt('/' . RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD)
+                ->toResponse();
+        }, 'snapshot_download');
+    }
+
+    /**
+     * Handle ZIP file download (Feature D).
+     *
+     * Validates nonce token and streams the ZIP file to the client.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response|void Response or direct file stream.
+     */
+    public function handle_snapshot_download_file($request) {
+        $exportId = (int) $request->get_param('id');
+        $token    = sanitize_text_field($request->get_param('token'));
+
+        if ($exportId <= 0 || empty($token)) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error'   => 'Missing id or token parameter',
+                'code'    => RISEUP_ERR_EXPORT_TOKEN_INVALID,
+            ), 400);
+        }
+
+        require_once dirname(__FILE__) . '/includes/class-snapshot-exporter.php';
+        $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
+        $export = $exporter->validateDownloadToken($exportId, $token);
+
+        if (!$export) {
+            return new WP_REST_Response(array(
+                'success' => false,
+                'error'   => 'Invalid or expired download token',
+                'code'    => RISEUP_ERR_EXPORT_TOKEN_INVALID,
+            ), 403);
+        }
+
+        $filepath = $export['zip_path'];
+        $filename = $export['zip_filename'];
+        $filesize = filesize($filepath);
+
+        // Log the download
+        $this->logger->log_plugin_action(
+            RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+            'snapshot',
+            RISEUP_STATUS_SUCCESS,
+            array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming')
+        );
+
+        // Stream the file
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . $filesize);
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+
+        // Flush output buffers
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        // Stream file to client
+        $handle = fopen($filepath, 'rb');
+        if ($handle) {
+            while (!feof($handle)) {
+                echo fread($handle, 8192);
+                flush();
+            }
+            fclose($handle);
+        } else {
+            // Fallback
+            readfile($filepath);
+        }
+
+        exit; // Stop WordPress from processing further
     }
 
     /**
