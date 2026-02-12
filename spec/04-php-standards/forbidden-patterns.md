@@ -21,7 +21,8 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | 1.3 | Inline `E_*` → string mapping arrays | `ErrorChecker::get_type_label($type)` | Uses `ErrorTypeEnum::TYPE_LABELS`; one place to update |
 | 1.4 | `wp_die()` in REST handlers | `wp_send_json_error()` or `$this->envelope->error()` | `wp_die()` breaks JSON response format |
 | 1.5 | `error_log()` for diagnostics | `RiseupLogger` / `$this->file_logger` | No structure, no stack trace, no audit trail |
-| 1.6 | Unchecked `new PDO()` | `class_exists('PDO')` check first | Fatal error if extension missing |
+| 1.6 | `!class_exists('PDO') \|\| !extension_loaded(...)` inline | `ErrorChecker::is_invalid_pdo_extension()` | Centralized; self-documenting |
+| 1.7 | Unchecked `new PDO()` without any guard | `ErrorChecker::is_invalid_pdo_extension()` check first | Fatal error if extension missing |
 | 1.7 | REST handler without `safe_execute` wrapper | Wrap in `$this->safe_execute(fn() => ...)` | Unhandled exceptions crash the endpoint |
 
 ---
@@ -107,7 +108,8 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] No `!$obj->is_active()` — use `$obj->is_disabled()`
 [ ] No boolean vars without `$is_*` / `$has_*` prefix
 [ ] No WordPress calls in constructors
-[ ] No unchecked `new PDO()` without `class_exists()` guard
+[ ] No inline `!class_exists('PDO')` — use `ErrorChecker::is_invalid_pdo_extension()`
+[ ] Blank line before `return` when preceded by other statements
 ```
 
 ---
