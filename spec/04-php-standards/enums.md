@@ -453,12 +453,15 @@ class ErrorChecker {
         if (self::is_fatal_error($error)) {
             return 'fatal';
         }
+
         if (self::is_warning($error)) {
             return 'warning';
         }
+
         if (self::is_recoverable($error)) {
             return 'recoverable';
         }
+
         return 'unknown';
     }
 
