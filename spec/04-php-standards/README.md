@@ -296,7 +296,10 @@ class MyPlugin {
     private $initialized = false;
     
     public function initialize() {
-        if ($this->initialized) return;
+        if ($this->initialized) {
+            return;
+        }
+
         $this->initialized = true;
         add_action(HookEnum::INIT, [$this, 'setup']);
     }
@@ -336,20 +339,39 @@ if ($has_permission) { ... }
 
 ---
 
-## Code Style — Blank Line Before `return`
+## Code Style — Braces & Spacing
 
-### Rule: Add a blank line before `return` when other statements precede it
+### Rule 1: Always use braces — no single-line returns
 
-If a block contains statements before `return`, insert **one blank line** before the `return` for visual separation. If `return` is the **only statement** in the block, no blank line is needed.
+Every `if`, `for`, `foreach`, `while` block must use curly braces, even for single-statement bodies. This applies across **all languages** (PHP, TypeScript, Go).
 
 ```php
-// ❌ FORBIDDEN: No blank line before return (when preceded by other statements)
+// ❌ FORBIDDEN: Single-line return without braces
+if ($this->initialized) return;
+if ($error === null) return false;
+
+// ✅ REQUIRED: Always use braces
+if ($this->initialized) {
+    return;
+}
+
+if ($error === null) {
+    return false;
+}
+```
+
+### Rule 2: Blank line before `return` when preceded by other statements
+
+If a block contains statements before `return`, insert **one blank line** before the `return`. If `return` is the **only statement**, no blank line is needed.
+
+```php
+// ❌ FORBIDDEN: No blank line before return
 if (ErrorChecker::is_invalid_pdo_extension()) {
     $this->logger->error('PDO/SQLite not available');
     return $this->envelope->error('SQLite support not available', 500);
 }
 
-// ✅ REQUIRED: Blank line before return separates logic from exit
+// ✅ REQUIRED: Blank line separates logic from exit
 if (ErrorChecker::is_invalid_pdo_extension()) {
     $this->logger->error('PDO/SQLite not available');
 
@@ -359,6 +381,34 @@ if (ErrorChecker::is_invalid_pdo_extension()) {
 // ✅ OK: Return is the only statement — no blank line needed
 if ($error === null) {
     return false;
+}
+```
+
+### Rule 3: Blank line after closing `}` when followed by more code
+
+If code continues after a closing `}` (i.e., it's not the last `}` in the method/function or not followed by another `}`), insert **one blank line** after it. No blank line is needed when `}` is followed by another `}` or is the final brace.
+
+```php
+// ❌ FORBIDDEN: No blank line after block when code follows
+if ($this->initialized) {
+    return;
+}
+$this->initialized = true;
+add_action(HookEnum::INIT, [$this, 'setup']);
+
+// ✅ REQUIRED: Blank line after block when code follows
+if ($this->initialized) {
+    return;
+}
+
+$this->initialized = true;
+add_action(HookEnum::INIT, [$this, 'setup']);
+
+// ✅ OK: No blank line needed — next line is another closing brace
+if ($error !== null) {
+    if (ErrorChecker::is_fatal_error($error)) {
+        $this->logger->fatal($error);
+    }
 }
 ```
 
@@ -379,6 +429,8 @@ if ($error === null) {
 | `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
 | Inline `!class_exists('PDO')` checks | Duplicated logic | `ErrorChecker::is_invalid_pdo_extension()` |
 | `return` without blank line after statements | Poor readability | Blank line before `return` when preceded by other statements |
+| Single-line `if (...) return;` | Easy to miss, inconsistent | Always use braces `{ }` |
+| No blank line after `}` before more code | Poor readability | Blank line after `}` when followed by more code |
 | `RiseupBooleanHelpers` | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
 | `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |

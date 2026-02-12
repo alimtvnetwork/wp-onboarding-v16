@@ -110,6 +110,8 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] No WordPress calls in constructors
 [ ] No inline `!class_exists('PDO')` — use `ErrorChecker::is_invalid_pdo_extension()`
 [ ] Blank line before `return` when preceded by other statements
+[ ] No single-line `if (...) return;` — always use braces
+[ ] Blank line after closing `}` when followed by more code
 ```
 
 ---
