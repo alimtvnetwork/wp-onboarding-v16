@@ -475,6 +475,14 @@ export interface SnapshotRecord {
   tables: string;
   created_at: string;
   error?: string;
+  /** 'full' | 'incremental' — derived from scope or tables_json metadata */
+  snapshot_type?: "full" | "incremental";
+  /** For incrementals: the parent full snapshot's ID */
+  parent_id?: number;
+  /** For incrementals: the master directory name */
+  parent_dir?: string;
+  /** For full snapshots: count of child incrementals */
+  incremental_count?: number;
 }
 
 export interface SnapshotSettings {

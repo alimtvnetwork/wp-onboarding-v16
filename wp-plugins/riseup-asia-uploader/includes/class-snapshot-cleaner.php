@@ -201,6 +201,8 @@ class RiseupSnapshotCleaner {
 
     /**
      * Delete a single snapshot (file + database record).
+     * If the snapshot is a full snapshot with an incremental/ subdirectory,
+     * cascade-delete all incremental children (files + DB records).
      *
      * @param array $snapshot Snapshot record.
      * @return array {
@@ -211,21 +213,47 @@ class RiseupSnapshotCleaner {
     private function deleteSnapshot($snapshot) {
         $bytes_freed = 0;
 
-        // Get file size before deletion
         $filepath = $snapshot['filepath'];
-        if (RiseupPathUtils::fileExists($filepath)) {
-            $bytes_freed = filesize($filepath);
-            if (!RiseupPathUtils::deleteFile($filepath)) {
-                $this->log('WARN', 'Failed to delete snapshot file', array('filepath' => $filepath));
-                return array('success' => false, 'bytes_freed' => 0);
-            }
-        }
+        $is_directory = is_dir($filepath);
 
-        // Delete ZIP if exists
-        $zip_path = $this->getZipPath($filepath);
-        if (RiseupPathUtils::fileExists($zip_path)) {
-            $bytes_freed += filesize($zip_path);
-            RiseupPathUtils::deleteFile($zip_path);
+        // --- Cascade delete: if this is a full snapshot directory, remove incrementals first ---
+        if ($is_directory) {
+            $incremental_dir = $filepath . '/incremental';
+            if (is_dir($incremental_dir)) {
+                $inc_size = $this->getDirectorySize($incremental_dir);
+                $this->deleteDirectoryRecursive($incremental_dir);
+                $bytes_freed += $inc_size;
+
+                // Delete all incremental DB records whose filepath starts with this directory
+                $this->cascadeDeleteIncrementalRecords($filepath);
+
+                $this->log('INFO', 'Cascade-deleted incremental children', array(
+                    'parent_id'    => $snapshot['id'],
+                    'parent_dir'   => basename($filepath),
+                    'bytes_freed'  => RiseupPathUtils::formatBytes($inc_size),
+                ));
+            }
+
+            // Delete the full snapshot directory
+            $dir_size = $this->getDirectorySize($filepath);
+            $this->deleteDirectoryRecursive($filepath);
+            $bytes_freed += $dir_size;
+        } else {
+            // Single-file snapshot (legacy .sqlite format)
+            if (RiseupPathUtils::fileExists($filepath)) {
+                $bytes_freed = filesize($filepath);
+                if (!RiseupPathUtils::deleteFile($filepath)) {
+                    $this->log('WARN', 'Failed to delete snapshot file', array('filepath' => $filepath));
+                    return array('success' => false, 'bytes_freed' => 0);
+                }
+            }
+
+            // Delete ZIP if exists
+            $zip_path = $this->getZipPath($filepath);
+            if (RiseupPathUtils::fileExists($zip_path)) {
+                $bytes_freed += filesize($zip_path);
+                RiseupPathUtils::deleteFile($zip_path);
+            }
         }
 
         // Delete database record
@@ -244,6 +272,80 @@ class RiseupSnapshotCleaner {
         ));
 
         return array('success' => true, 'bytes_freed' => $bytes_freed);
+    }
+
+    /**
+     * Cascade-delete all incremental snapshot DB records whose filepath
+     * is a child of the given parent directory.
+     *
+     * @param string $parent_dir Parent full snapshot directory path.
+     */
+    private function cascadeDeleteIncrementalRecords($parent_dir) {
+        try {
+            // Find all incremental records under this parent
+            $incrementals = $this->db->query_all(
+                'SELECT id FROM ' . RISEUP_TABLE_SNAPSHOTS .
+                " WHERE scope = 'incremental' AND filepath LIKE ?",
+                array($parent_dir . '/incremental/%')
+            ) ?: array();
+
+            foreach ($incrementals as $inc) {
+                $this->db->delete(RISEUP_TABLE_SNAPSHOTS, array('id' => $inc['id']));
+                $this->db->execute(
+                    'DELETE FROM ' . RISEUP_TABLE_SNAPSHOT_PROGRESS . ' WHERE snapshot_id = ?',
+                    array($inc['id'])
+                );
+            }
+
+            $this->log('DEBUG', 'Deleted incremental DB records', array(
+                'count' => count($incrementals),
+            ));
+        } catch (Exception $e) {
+            $this->log('ERROR', 'Failed to cascade-delete incremental records', array(
+                'error' => $e->getMessage(),
+            ));
+        }
+    }
+
+    /**
+     * Delete a directory recursively.
+     *
+     * @param string $dir Directory path.
+     */
+    private function deleteDirectoryRecursive($dir) {
+        if (!is_dir($dir)) return;
+
+        $items = array_diff(scandir($dir), array('.', '..'));
+        foreach ($items as $item) {
+            $path = $dir . '/' . $item;
+            if (is_dir($path)) {
+                $this->deleteDirectoryRecursive($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        @rmdir($dir);
+    }
+
+    /**
+     * Get total size of a directory recursively.
+     *
+     * @param string $dir Directory path.
+     * @return int Total size in bytes.
+     */
+    private function getDirectorySize($dir) {
+        $size = 0;
+        if (!is_dir($dir)) return 0;
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $size += $file->getSize();
+            }
+        }
+        return $size;
     }
 
     /**
