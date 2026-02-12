@@ -279,14 +279,8 @@ require_once __DIR__ . '/includes/Enums/PathConst.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
 require_once __DIR__ . '/includes/Enums/LogLevel.php';
 
-// Legacy enum classes (kept until all consumers are migrated in G3–G9)
-require_once __DIR__ . '/includes/class-hook-enum.php';
-require_once __DIR__ . '/includes/class-path-enum.php';
-require_once __DIR__ . '/includes/class-error-type-enum.php';
+// Error checker (uses RiseupAsia\Enums\ErrorType internally)
 require_once __DIR__ . '/includes/class-error-checker.php';
-require_once __DIR__ . '/includes/class-capability-enum.php';
-require_once __DIR__ . '/includes/class-http-method-enum.php';
-require_once __DIR__ . '/includes/class-upload-source-enum.php';
 require_once __DIR__ . '/includes/constants.php';
 require_once __DIR__ . '/includes/class-boolean-helpers.php';
 require_once __DIR__ . '/includes/class-init-helpers.php';
