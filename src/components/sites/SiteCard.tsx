@@ -88,6 +88,14 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
     meta: { suppressGlobalError: true },
   });
 
+  // Derive running backup
+  const runningBackup = useMemo(() => {
+    if (!snapshots?.length) return null;
+    return (snapshots as SnapshotRecord[]).find(
+      (s) => s.status === "in_progress" || s.status === "running" || s.status === "pending"
+    ) || null;
+  }, [snapshots]);
+
   // Derive last completed backup
   const lastBackup = useMemo(() => {
     if (!snapshots?.length) return null;
@@ -293,9 +301,15 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </p>
         )}
 
-        {/* Last backup & next schedule indicators */}
-        {site.connectionStatus === "connected" && (lastBackup || nextScheduledRun) && (
+        {/* Running backup, last backup & next schedule indicators */}
+        {site.connectionStatus === "connected" && (runningBackup || lastBackup || nextScheduledRun) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
+            {runningBackup && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                <span>Backup Running</span>
+              </span>
+            )}
             {lastBackup && (
               <span className="inline-flex items-center gap-1 text-muted-foreground">
                 <Clock className="h-3 w-3" />
