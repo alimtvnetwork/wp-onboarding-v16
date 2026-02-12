@@ -118,7 +118,7 @@ class Riseup_Database {
             throw new Exception('Failed to create data directory: ' . $base_dir);
         }
         
-        $db_path = $base_dir . '/' . RISEUP_DB_FILENAME;
+        $db_path = RiseupPathUtils::getDbPath();
         $this->file_logger->info('Database path set', array('path' => $db_path));
         
         return $db_path;
