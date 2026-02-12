@@ -5250,4 +5250,4 @@ function riseup_asia_init() {
 }
 
 // Initialize on plugins_loaded hook.
-add_action('plugins_loaded', 'riseup_asia_init');
+add_action(Hook::PluginsLoaded->value, 'riseup_asia_init');

@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\Hook;
+
 /**
  * Class Riseup_Update_Resolver
  *
@@ -74,8 +76,8 @@ class Riseup_Update_Resolver {
         // Register WordPress update hooks if auto-update is enabled
         $settings = $this->get_settings();
         if (!empty($settings['enabled'])) {
-            add_filter('pre_set_site_transient_update_plugins', array($this, 'check_for_plugin_update'));
-            add_filter('plugins_api', array($this, 'plugin_info'), 10, 3);
+            add_filter(Hook::PreSetSiteTransientUpdatePlugins->value, array($this, 'check_for_plugin_update'));
+            add_filter(Hook::PluginsApi->value, array($this, 'plugin_info'), 10, 3);
             $this->file_logger->info('Auto-update hooks registered');
         }
     }
