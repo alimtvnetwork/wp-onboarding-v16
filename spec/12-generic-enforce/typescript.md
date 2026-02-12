@@ -1,66 +1,55 @@
 # Generic Enforce — TypeScript
 
-**Applies to**: All `.ts` and `.tsx` files in the project.
+> This file covers **TypeScript-specific syntax and idioms only**.  
+> For rules, rationale, and the canonical example, see [`README.md`](./README.md).
 
 ---
 
-## Mechanism: `type` Aliases
-
-TypeScript supports first-class type aliases for generic instantiations:
+## Alias Mechanism
 
 ```typescript
-// Base generic
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: ApiError;
+type AliasName = GenericType<ConcreteA, ConcreteB>;
+```
+
+Zero runtime cost — erased at compile time.
+
+---
+
+## Student-Teacher in TypeScript
+
+```typescript
+interface Student<TRights, TKey extends string | number> {
+  id: TKey;
+  rights: TRights;
+  name: string;
+  enrolledAt: string;
 }
 
-// ✅ Named instantiations
-type PluginResponse = ApiResponse<Plugin>;
-type SiteListResponse = ApiResponse<Site[]>;
-type SettingsResponse = ApiResponse<Settings>;
+// Named instantiations
+type TeacherBasicRights = Student<BasicRights, number>;
+type TeacherBasicRightsV2 = Student<BasicRightsV2, number>;
+type StudentByUUID = Student<BasicRights, string>;
+
+function getTeacher(id: number): TeacherBasicRights { ... }
 ```
 
 ---
 
-## Prohibited Patterns
+## Replacing `Record<string, unknown>`
 
 ```typescript
-// ❌ NEVER: Raw Record with unknown
-context?: Record<string, unknown>;
-
-// ❌ NEVER: any
-catch (err: any) { ... }
-const data = response as any;
-
-// ❌ NEVER: unknown in public fields (except parse boundaries)
-metadata?: unknown;
-
-// ❌ NEVER: Bare object type
-function process(data: object): void { ... }
-```
-
-## Required Replacements
-
-### `Record<string, unknown>` → Named Domain Type
-
-```typescript
-// BEFORE (prohibited)
+// ❌ Prohibited
 interface ApiError {
   context?: Record<string, unknown>;
 }
 
-// AFTER (required)
-/** Contextual data attached to an API error for diagnostics. */
+// ✅ Required — define what context actually is
 interface ErrorContext {
   endpoint?: string;
   statusCode?: number;
   requestId?: string;
   pluginId?: number;
-  siteId?: number;
   sessionId?: string;
-  [key: string]: string | number | boolean | undefined;
 }
 
 interface ApiError {
@@ -68,30 +57,15 @@ interface ApiError {
 }
 ```
 
-### `Record<string, unknown>` for request/response bodies
+---
+
+## Catch Blocks
 
 ```typescript
-// BEFORE (prohibited)
-body?: Record<string, unknown>;
+// ❌ Prohibited
+catch (err: any) { console.error(err.message); }
 
-// AFTER: Use the actual request/response shape
-interface SessionRequestInfo {
-  url: string;
-  method: string;
-  headers?: HttpHeaders;
-  body?: RequestPayload;  // Define what the body actually contains
-}
-```
-
-### Catch blocks
-
-```typescript
-// BEFORE (prohibited)
-catch (err: any) {
-  console.error(err.message);
-}
-
-// AFTER (required)
+// ✅ Required
 catch (err) {
   if (err instanceof Error) {
     console.error(err.message);
@@ -102,52 +76,22 @@ catch (err) {
 
 ---
 
-## The Student-Teacher Pattern in TypeScript
-
-```typescript
-// Base generic
-interface Student<TRights, TKey extends string | number> {
-  id: TKey;
-  rights: TRights;
-  name: string;
-  enrolledAt: string;
-}
-
-// Rights types
-interface BasicRights {
-  canRead: boolean;
-  canWrite: boolean;
-}
-
-interface BasicRightsV2 extends BasicRights {
-  canAdmin: boolean;
-  canExport: boolean;
-}
-
-// ✅ Named instantiations (REQUIRED)
-type TeacherBasicRights = Student<BasicRights, number>;
-type TeacherBasicRightsV2 = Student<BasicRightsV2, number>;
-type StudentByUUID = Student<BasicRights, string>;
-
-// ✅ Usage — clean, DRY, discoverable
-function getTeacher(id: number): TeacherBasicRights { ... }
-function getTeacherV2(id: number): TeacherBasicRightsV2 { ... }
-function getStudentByUUID(uuid: string): StudentByUUID { ... }
-```
-
----
-
 ## Placement Rules
 
-1. **Co-locate with base type**: If the generic is in `types.ts`, the named aliases go there too
-2. **Domain grouping**: Group aliases by domain area (errors, sessions, plugins)
-3. **Export all aliases**: Named aliases MUST be exported for reuse
-4. **Document the alias**: A one-line JSDoc comment explains what this specific instantiation represents
+1. **Co-locate** aliases with their base generic (same `types.ts` file)
+2. **Export** all aliases — they are part of the public API
+3. **JSDoc** each alias with a one-line description
 
 ```typescript
 /** API response containing a single Plugin entity. */
 export type PluginResponse = ApiResponse<Plugin>;
-
-/** API response containing paginated list of error history records. */
-export type ErrorHistoryResponse = ApiResponse<ErrorHistoryListResponse>;
 ```
+
+---
+
+## TS-Specific Notes
+
+- `type` aliases are the primary mechanism — no inheritance needed
+- `interface extends` works for adding fields but NOT for generic instantiation aliases
+- `as const` assertions complement GE by eliminating magic strings/numbers
+- Template literal types can generate alias families: `type ${Name}Response = ApiResponse<${Name}>`
