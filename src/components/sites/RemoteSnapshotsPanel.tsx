@@ -56,6 +56,7 @@ import {
   ArrowRight,
   Copy,
   Cpu,
+  Archive,
 } from "lucide-react";
 import { Site, SnapshotRecord, SnapshotSchedule, SnapshotInterval, api } from "@/lib/api";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
@@ -298,6 +299,184 @@ function SnapshotRow({
             <Copy className="h-3 w-3" />
           </Button>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Detail dialog content with ZIP export metadata section */
+function SnapshotDetailContent({ snapshot, siteId }: { snapshot: SnapshotRecord; siteId: number }) {
+  const [zipMeta, setZipMeta] = useState<{ cached: boolean; size: number; filename: string } | null>(null);
+  const [zipLoading, setZipLoading] = useState(false);
+  const [zipError, setZipError] = useState<string | null>(null);
+
+  const isIncremental = snapshot.snapshot_type === "incremental" || snapshot.scope === "incremental";
+
+  const handleDownload = async () => {
+    setZipLoading(true);
+    setZipError(null);
+    try {
+      const { blob, filename, cached, size } = await api.downloadSnapshotZip(siteId, snapshot.id);
+      setZipMeta({ cached, size, filename });
+      // Trigger browser download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+      toast.success(`ZIP downloaded${cached ? " (cached)" : ""} — ${formatBytes(size)}`);
+    } catch (err: any) {
+      setZipError(err.message);
+      toast.error(`Download failed: ${err.message}`);
+    } finally {
+      setZipLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="text-muted-foreground">Status</div>
+        <div className="font-medium capitalize">{snapshot.status}</div>
+        <div className="text-muted-foreground">Scope</div>
+        <div className="font-medium capitalize">{snapshot.scope}</div>
+        <div className="text-muted-foreground">Provider</div>
+        <div className="font-medium">{snapshot.provider}</div>
+        {snapshot.file_size > 0 && (
+          <>
+            <div className="text-muted-foreground">File Size</div>
+            <div className="font-medium">{formatBytes(snapshot.file_size)}</div>
+          </>
+        )}
+        {snapshot.total_rows > 0 && (
+          <>
+            <div className="text-muted-foreground">Total Rows</div>
+            <div className="font-medium">{snapshot.total_rows.toLocaleString()}</div>
+          </>
+        )}
+        <div className="text-muted-foreground">Created</div>
+        <div className="font-medium">{relativeTime(snapshot.created_at)}</div>
+        {snapshot.snapshot_type && (
+          <>
+            <div className="text-muted-foreground">Type</div>
+            <div className="font-medium capitalize">{snapshot.snapshot_type}</div>
+          </>
+        )}
+        {snapshot.incremental_count != null && snapshot.incremental_count > 0 && (
+          <>
+            <div className="text-muted-foreground">Incrementals</div>
+            <div className="font-medium">{snapshot.incremental_count}</div>
+          </>
+        )}
+      </div>
+
+      {/* Tables list */}
+      {snapshot.tables && (
+        <div className="space-y-1.5">
+          <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+            <Table className="h-3 w-3" />
+            Tables Included
+          </div>
+          <div className="bg-muted/50 rounded-md p-2 max-h-40 overflow-y-auto">
+            <div className="flex flex-wrap gap-1">
+              {(typeof snapshot.tables === "string"
+                ? snapshot.tables.split(",").map((t) => t.trim()).filter(Boolean)
+                : Array.isArray(snapshot.tables) ? snapshot.tables : []
+              ).map((table, i) => (
+                <Badge key={i} variant="outline" className="text-[10px] h-5 font-mono">
+                  {table}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {snapshot.error && (
+        <div className="flex items-center gap-1.5">
+          <div className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1.5 flex-1">
+            {snapshot.error}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
+            onClick={() => {
+              navigator.clipboard.writeText(toClipboardText(snapshot.error || ""));
+              toast.success("Error copied to clipboard");
+            }}
+            title="Copy error"
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* ZIP Export Metadata — full snapshots only */}
+      {snapshot.status === "complete" && !isIncremental && (
+        <div className="space-y-2 border-t pt-3">
+          <div className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+            <Archive className="h-3.5 w-3.5" />
+            ZIP Export
+          </div>
+
+          {zipMeta && (
+            <div className="bg-muted/40 rounded-md p-2.5 space-y-1.5">
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <span className="text-muted-foreground">Filename</span>
+                <span className="font-mono truncate text-[11px]" title={zipMeta.filename}>{zipMeta.filename}</span>
+                <span className="text-muted-foreground">Size</span>
+                <span className="font-medium">{formatBytes(zipMeta.size)}</span>
+                <span className="text-muted-foreground">Status</span>
+                <span>
+                  {zipMeta.cached ? (
+                    <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] h-4 px-1.5">
+                      <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
+                      Cached
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px] h-4 px-1.5">
+                      Fresh Build
+                    </Badge>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {zipError && (
+            <div className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1.5">
+              {zipError}
+            </div>
+          )}
+
+          <Button
+            size="sm"
+            className="w-full"
+            onClick={handleDownload}
+            disabled={zipLoading}
+          >
+            {zipLoading ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            {zipLoading ? "Building ZIP…" : zipMeta ? "Re-download ZIP" : "Download ZIP"}
+          </Button>
+        </div>
+      )}
+
+      {/* Fallback download for incremental snapshots — use legacy export */}
+      {snapshot.status === "complete" && isIncremental && (
+        <Button size="sm" className="w-full" asChild>
+          <a href={api.getRemoteSnapshotExportUrl(siteId, snapshot.id)} download>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            Export Snapshot
+          </a>
+        </Button>
       )}
     </div>
   );
@@ -1533,81 +1712,10 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
             <DialogDescription>{detailTarget?.filename}</DialogDescription>
           </DialogHeader>
           {detailTarget && (
-            <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="text-muted-foreground">Status</div>
-                <div className="font-medium capitalize">{detailTarget.status}</div>
-                <div className="text-muted-foreground">Scope</div>
-                <div className="font-medium capitalize">{detailTarget.scope}</div>
-                <div className="text-muted-foreground">Provider</div>
-                <div className="font-medium">{detailTarget.provider}</div>
-                {detailTarget.file_size > 0 && (
-                  <>
-                    <div className="text-muted-foreground">File Size</div>
-                    <div className="font-medium">{formatBytes(detailTarget.file_size)}</div>
-                  </>
-                )}
-                {detailTarget.total_rows > 0 && (
-                  <>
-                    <div className="text-muted-foreground">Total Rows</div>
-                    <div className="font-medium">{detailTarget.total_rows.toLocaleString()}</div>
-                  </>
-                )}
-                <div className="text-muted-foreground">Created</div>
-                <div className="font-medium">{relativeTime(detailTarget.created_at)}</div>
-              </div>
-
-              {/* Tables list */}
-              {detailTarget.tables && (
-                <div className="space-y-1.5">
-                  <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Table className="h-3 w-3" />
-                    Tables Included
-                  </div>
-                  <div className="bg-muted/50 rounded-md p-2 max-h-40 overflow-y-auto">
-                    <div className="flex flex-wrap gap-1">
-                      {(typeof detailTarget.tables === "string"
-                        ? detailTarget.tables.split(",").map((t) => t.trim()).filter(Boolean)
-                        : Array.isArray(detailTarget.tables) ? detailTarget.tables : []
-                      ).map((table, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px] h-5 font-mono">
-                          {table}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {detailTarget.error && (
-                <div className="flex items-center gap-1.5">
-                  <div className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1.5 flex-1">
-                    {detailTarget.error}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
-                    onClick={() => {
-                      navigator.clipboard.writeText(toClipboardText(detailTarget.error || ""));
-                      toast.success("Error copied to clipboard");
-                    }}
-                    title="Copy error"
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-
-              {detailTarget.status === "complete" && (
-                <Button size="sm" className="w-full" asChild>
-                  <a href={api.getRemoteSnapshotExportUrl(site.id, detailTarget.id)} download>
-                    <Download className="h-3.5 w-3.5 mr-1.5" />
-                    Download ZIP
-                  </a>
-                </Button>
-              )}
-            </div>
+            <SnapshotDetailContent
+              snapshot={detailTarget}
+              siteId={site.id}
+            />
           )}
         </DialogContent>
       </Dialog>
