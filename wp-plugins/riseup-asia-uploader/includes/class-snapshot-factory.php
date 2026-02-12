@@ -100,6 +100,61 @@ class RiseupSnapshotFactory {
     }
 
     /**
+     * Get the RiseupSnapshotManager singleton.
+     *
+     * Delegates to the manager's own getInstance() method.
+     *
+     * @param Riseup_File_Logger|null $logger Optional logger override.
+     * @param Riseup_Database|null    $db     Optional database override.
+     * @return RiseupSnapshotManager
+     */
+    public static function manager($logger = null, $db = null) {
+        require_once dirname(__FILE__) . '/class-snapshot-manager.php';
+        return RiseupSnapshotManager::getInstance(
+            $logger ?: Riseup_File_Logger::get_instance(),
+            $db ?: Riseup_Database::get_instance()
+        );
+    }
+
+    /**
+     * Get the RiseupSnapshotWorker singleton.
+     *
+     * Delegates to the worker's own getInstance() method.
+     * Requires RiseupRootDb and RiseupDependencyAnalyzer as additional dependencies.
+     *
+     * @param Riseup_File_Logger|null $logger Optional logger override.
+     * @param Riseup_Database|null    $db     Optional database override.
+     * @return RiseupSnapshotWorker
+     */
+    public static function worker($logger = null, $db = null) {
+        require_once dirname(__FILE__) . '/class-snapshot-worker.php';
+        require_once dirname(__FILE__) . '/class-dependency-analyzer.php';
+        require_once dirname(__FILE__) . '/class-root-db.php';
+        $l = $logger ?: Riseup_File_Logger::get_instance();
+        $d = $db ?: Riseup_Database::get_instance();
+        $analyzer = RiseupDependencyAnalyzer::getInstance($l);
+        $rootDb   = RiseupRootDb::getInstance($l, $analyzer);
+        return RiseupSnapshotWorker::getInstance($l, $d, $rootDb, $analyzer);
+    }
+
+    /**
+     * Get the RiseupSnapshotOrchestrator singleton.
+     *
+     * Delegates to the orchestrator's own getInstance() method.
+     * Automatically resolves the manager dependency.
+     *
+     * @param Riseup_File_Logger|null $logger Optional logger override.
+     * @param Riseup_Database|null    $db     Optional database override.
+     * @return RiseupSnapshotOrchestrator
+     */
+    public static function orchestrator($logger = null, $db = null) {
+        require_once dirname(__FILE__) . '/class-snapshot-orchestrator.php';
+        $l = $logger ?: Riseup_File_Logger::get_instance();
+        $d = $db ?: Riseup_Database::get_instance();
+        return RiseupSnapshotOrchestrator::getInstance($l, $d, self::manager($l, $d));
+    }
+
+    /**
      * Reset all cached instances (useful for testing).
      */
     public static function reset() {
