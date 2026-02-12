@@ -354,6 +354,7 @@ export interface Settings {
     borderRadius: string;
     compactMode: boolean;
     animationsEnabled: boolean;
+    sidebarTheme?: string;
   };
   publish?: {
     uploaderHelperPath?: string;

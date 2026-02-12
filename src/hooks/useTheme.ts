@@ -88,7 +88,7 @@ export function useTheme() {
         borderRadius: (appearance.borderRadius as BorderRadius) || defaultThemeConfig.borderRadius,
         compactMode: appearance.compactMode ?? defaultThemeConfig.compactMode,
         animationsEnabled: appearance.animationsEnabled ?? defaultThemeConfig.animationsEnabled,
-        sidebarTheme: ((appearance as any).sidebarTheme as SidebarTheme) || defaultThemeConfig.sidebarTheme,
+        sidebarTheme: (appearance.sidebarTheme as SidebarTheme) || defaultThemeConfig.sidebarTheme,
       });
     }
   }, [settings]);
