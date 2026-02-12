@@ -267,8 +267,15 @@ register_shutdown_function('riseup_fatal_error_handler');
 // LOAD DEPENDENCIES IN ORDER
 // =============================================================================
 
-// Foundation: constants, boolean helpers, init helpers (must be loaded raw).
+// Foundation: constants, enum classes, boolean helpers, init helpers (must be loaded raw).
 require_once __DIR__ . '/includes/constants.php';
+require_once __DIR__ . '/includes/class-hook-enum.php';
+require_once __DIR__ . '/includes/class-path-enum.php';
+require_once __DIR__ . '/includes/class-error-type-enum.php';
+require_once __DIR__ . '/includes/class-error-checker.php';
+require_once __DIR__ . '/includes/class-capability-enum.php';
+require_once __DIR__ . '/includes/class-http-method-enum.php';
+require_once __DIR__ . '/includes/class-upload-source-enum.php';
 require_once __DIR__ . '/includes/class-boolean-helpers.php';
 require_once __DIR__ . '/includes/class-init-helpers.php';
 
