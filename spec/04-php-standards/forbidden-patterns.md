@@ -114,6 +114,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] Blank line before `return` when preceded by other statements
 [ ] No single-line `if (...) return;` — always use braces
 [ ] Blank line after closing `}` when followed by more code
+[ ] No nested `if` — flatten with combined conditions or early returns
 ```
 
 ---
