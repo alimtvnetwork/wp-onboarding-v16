@@ -457,6 +457,57 @@ if (!defined('ABSPATH')) {
     </div>
 </div>
 
+<!-- Download Error Modal -->
+<div id="download_error_modal" class="riseup-modal" style="display: none;">
+    <div class="riseup-modal-overlay"></div>
+    <div class="riseup-modal-content" style="max-width: 640px;">
+        <h2>
+            <span class="dashicons dashicons-warning" style="color: #d63638;"></span>
+            <?php esc_html_e('Download Failed', 'riseup-asia-uploader'); ?>
+        </h2>
+        <div id="download_error_summary" style="margin-bottom: 12px;">
+            <p id="download_error_message" style="color: #d63638; font-weight: 500;"></p>
+            <table class="form-table" style="margin: 0;">
+                <tr>
+                    <th scope="row" style="padding: 6px 10px 6px 0; width: 120px;"><?php esc_html_e('HTTP Status', 'riseup-asia-uploader'); ?></th>
+                    <td style="padding: 6px 0;"><code id="download_error_status"></code></td>
+                </tr>
+                <tr>
+                    <th scope="row" style="padding: 6px 10px 6px 0;"><?php esc_html_e('Plugin Version', 'riseup-asia-uploader'); ?></th>
+                    <td style="padding: 6px 0;"><code id="download_error_version"></code></td>
+                </tr>
+                <tr>
+                    <th scope="row" style="padding: 6px 10px 6px 0;"><?php esc_html_e('Timestamp', 'riseup-asia-uploader'); ?></th>
+                    <td style="padding: 6px 0;"><code id="download_error_timestamp"></code></td>
+                </tr>
+            </table>
+        </div>
+        <div id="download_error_stack_section" style="display: none;">
+            <h3 style="margin: 10px 0 6px; font-size: 13px; color: #7b1fa2;">
+                <span class="dashicons dashicons-editor-code" style="vertical-align: middle; color: #7b1fa2;"></span>
+                <?php esc_html_e('PHP Stack Trace', 'riseup-asia-uploader'); ?>
+            </h3>
+            <pre id="download_error_stack" class="riseup-stack-trace"></pre>
+        </div>
+        <div id="download_error_backend_section" style="display: none;">
+            <h3 style="margin: 10px 0 6px; font-size: 13px; color: #b45309;">
+                <span class="dashicons dashicons-admin-tools" style="vertical-align: middle; color: #b45309;"></span>
+                <?php esc_html_e('Backend Details', 'riseup-asia-uploader'); ?>
+            </h3>
+            <pre id="download_error_backend" class="riseup-stack-trace" style="border-color: #fbbf24; background: #fffbeb;"></pre>
+        </div>
+        <p class="riseup-modal-actions">
+            <button type="button" id="btn_copy_download_error" class="button button-secondary">
+                <span class="dashicons dashicons-clipboard" style="font-size: 14px; width: 14px; height: 14px; vertical-align: middle;"></span>
+                <?php esc_html_e('Copy Report', 'riseup-asia-uploader'); ?>
+            </button>
+            <button type="button" id="btn_close_download_error" class="button button-primary">
+                <?php esc_html_e('Close', 'riseup-asia-uploader'); ?>
+            </button>
+        </p>
+    </div>
+</div>
+
 <!-- Delete Confirmation Modal (for cascade warnings) -->
 <div id="delete_modal" class="riseup-modal" style="display: none;">
     <div class="riseup-modal-overlay"></div>
@@ -879,8 +930,13 @@ jQuery(document).ready(function($) {
         if (s.status === 'complete' || !s.status) {
             html += '<button class="button button-small btn-restore" data-id="' + s.id + '" data-name="' + (s.filename || '#' + s.id) + '" data-type="' + (s.snapshot_type || 'full') + '" title="Restore">';
             html += '<span class="dashicons dashicons-database-import"></span></button> ';
-            html += '<button class="button button-small btn-export" data-id="' + s.id + '" title="Export ZIP">';
-            html += '<span class="dashicons dashicons-download"></span></button> ';
+
+            // Download ZIP button — only for full snapshots
+            if (!isIncr) {
+                html += '<button class="button button-small btn-download-zip" data-id="' + s.id + '" title="Download ZIP">';
+                html += '<span class="dashicons dashicons-download"></span>';
+                html += '</button> ';
+            }
         }
         if (!isRunning) {
             html += '<button class="button button-small btn-delete-snapshot" data-id="' + s.id + '" data-type="' + (s.snapshot_type || 'full') + '" data-name="' + (s.filename || '#' + s.id) + '" data-incr-count="' + incrCount + '" title="Delete">';
@@ -1220,46 +1276,115 @@ jQuery(document).ready(function($) {
     });
 
     // =========================================================================
-    // EXPORT
+    // DOWNLOAD ZIP (via new cached exporter endpoint)
     // =========================================================================
 
-    $(document).on('click', '.btn-export', function() {
+    var currentDownloadDiagnostic = '';
+
+    $(document).on('click', '.btn-download-zip', function() {
         var id = $(this).data('id');
         var $btn = $(this);
-        $btn.prop('disabled', true);
+        var origHtml = $btn.html();
+
+        // Show building state
+        $btn.prop('disabled', true).html(
+            '<span class="dashicons dashicons-update riseup-spin" style="font-size:14px;width:14px;height:14px;"></span>'
+        );
+
         $.ajax({
-            url: restBase + '/snapshots/export',
+            url: restBase + '/snapshots/download',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ id: id }),
-            xhrFields: { responseType: 'blob' },
             beforeSend: function(xhr) {
                 xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce('wp_rest'); ?>');
             },
-            success: function(blob, status, xhr) {
-                var filename = 'snapshot-' + id + '.zip';
-                var disposition = xhr.getResponseHeader('Content-Disposition');
-                if (disposition && disposition.indexOf('filename=') !== -1) {
-                    var matches = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                    if (matches && matches[1]) filename = matches[1].replace(/['"]/g, '');
+            success: function(response) {
+                var downloadUrl = response.url || (response.data && response.data.url);
+                var filename = response.filename || (response.data && response.data.filename) || 'snapshot-' + id + '.zip';
+                var cached = response.cached || (response.data && response.data.cached) || false;
+                var size = response.size || (response.data && response.data.size) || 0;
+
+                if (!downloadUrl) {
+                    showStatus($status, '✗ No download URL returned', true);
+                    return;
                 }
-                var url = window.URL.createObjectURL(blob);
+
+                // Show cached badge briefly
+                var badgeColor = cached ? '#d1e4dd' : '#fff3cd';
+                var badgeText = cached ? 'Cached' : 'Built';
+                var badgeTextColor = cached ? '#0a7a4d' : '#664d03';
+                showStatus($status,
+                    '✓ ZIP ready ' +
+                    '<span class="riseup-badge" style="background:' + badgeColor + ';color:' + badgeTextColor + ';font-size:10px;padding:1px 6px;">' + badgeText + '</span>' +
+                    (size ? ' (' + formatBytes(size) + ')' : ''),
+                    false
+                );
+
+                // Open download URL in new tab
                 var a = document.createElement('a');
-                a.href = url;
+                a.href = downloadUrl;
                 a.download = filename;
+                a.target = '_blank';
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
                 a.remove();
-                showStatus($status, '✓ Export downloaded', false);
             },
             error: function(xhr) {
-                showErrorStatus($status, xhr, 'Export failed');
+                var err = extractErrorDetails(xhr);
+                currentDownloadDiagnostic = err.diagnostic;
+
+                // Populate error modal
+                $('#download_error_message').text(err.message);
+                $('#download_error_status').text(err.status);
+                $('#download_error_version').text(err.pluginVersion);
+                $('#download_error_timestamp').text(err.timestamp);
+
+                if (err.stackTrace) {
+                    $('#download_error_stack').text(err.stackTrace);
+                    $('#download_error_stack_section').show();
+                } else {
+                    $('#download_error_stack_section').hide();
+                }
+
+                if (err.backendErrors) {
+                    $('#download_error_backend').text(err.backendErrors);
+                    $('#download_error_backend_section').show();
+                } else {
+                    $('#download_error_backend_section').hide();
+                }
+
+                $('#download_error_modal').show();
             },
             complete: function() {
-                $btn.prop('disabled', false);
+                $btn.prop('disabled', false).html(origHtml);
             }
         });
+    });
+
+    // Download error modal actions
+    $('#btn_close_download_error, #download_error_modal .riseup-modal-overlay').on('click', function() {
+        $('#download_error_modal').hide();
+    });
+
+    $('#btn_copy_download_error').on('click', function() {
+        var $btn = $(this);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(currentDownloadDiagnostic).then(function() {
+                $btn.text('Copied!');
+                setTimeout(function() {
+                    $btn.html('<span class="dashicons dashicons-clipboard" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Copy Report');
+                }, 2000);
+            });
+        } else {
+            var $temp = $('<textarea>').val(currentDownloadDiagnostic).appendTo('body').select();
+            document.execCommand('copy');
+            $temp.remove();
+            $btn.text('Copied!');
+            setTimeout(function() {
+                $btn.html('<span class="dashicons dashicons-clipboard" style="font-size:14px;width:14px;height:14px;vertical-align:middle;"></span> Copy Report');
+            }, 2000);
+        }
     });
 
     // =========================================================================
@@ -2049,5 +2174,20 @@ jQuery(document).ready(function($) {
     margin-top: 10px;
     padding-top: 8px;
     border-top: 1px solid #eee;
+}
+/* Stack trace in download error modal */
+.riseup-stack-trace {
+    background: #faf5ff;
+    border: 1px solid #d8b4fe;
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    line-height: 1.5;
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: #581c87;
 }
 </style>
