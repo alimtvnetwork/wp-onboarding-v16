@@ -59,6 +59,7 @@ import {
   Archive,
 } from "lucide-react";
 import { Site, SnapshotRecord, SnapshotSchedule, SnapshotInterval, SnapshotSettings, SnapshotScope, CreateSnapshotOptions, RestoreSnapshotOptions, api } from "@/lib/api";
+import { SnapshotRunStatus, SnapshotTypeValues } from "@/lib/constants";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
 import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
@@ -117,8 +118,8 @@ function SnapshotRow({
   isNested?: boolean;
 }) {
   const [downloading, setDownloading] = useState(false);
-  const isRunning = snapshot.status === "running" || snapshot.status === "in_progress";
-  const isIncremental = snapshot.snapshot_type === "incremental" || snapshot.scope === "incremental";
+  const isRunning = snapshot.status === SnapshotRunStatus.Running || snapshot.status === SnapshotRunStatus.InProgress;
+  const isIncremental = snapshot.snapshot_type === SnapshotTypeValues.Incremental || snapshot.scope === "incremental";
 
   const statusBadge = (() => {
     switch (snapshot.status) {

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api, Site, PluginMapping, SnapshotRecord, SnapshotCronJob } from "@/lib/api";
+import { ConnectionStatus, STALE_TIME_DEFAULT_MS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useErrorStore } from "@/stores/errorStore";
@@ -68,8 +69,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
       if (res.success) return res.data || [];
       return [];
     },
-    enabled: site.connectionStatus === "connected",
-    staleTime: 60_000,
+    enabled: site.connectionStatus === ConnectionStatus.Connected,
+    staleTime: STALE_TIME_DEFAULT_MS,
     retry: false,
     meta: { suppressGlobalError: true },
   });
@@ -82,8 +83,8 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
       if (res.success) return res.data || [];
       return [];
     },
-    enabled: site.connectionStatus === "connected",
-    staleTime: 60_000,
+    enabled: site.connectionStatus === ConnectionStatus.Connected,
+    staleTime: STALE_TIME_DEFAULT_MS,
     retry: false,
     meta: { suppressGlobalError: true },
   });
@@ -258,7 +259,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           </div>
           
           {/* Retest Button - Always visible for connected sites */}
-          {site.connectionStatus === "connected" && (
+          {site.connectionStatus === ConnectionStatus.Connected && (
             <Button
               variant="ghost"
               size="sm"
@@ -276,7 +277,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
           )}
           
           {/* Test Button - For disconnected or unknown */}
-          {site.connectionStatus !== "connected" && (
+          {site.connectionStatus !== ConnectionStatus.Connected && (
             <Button
               variant="outline"
               size="sm"
@@ -302,7 +303,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         )}
 
         {/* Running backup, last backup & next schedule indicators */}
-        {site.connectionStatus === "connected" && (runningBackup || lastBackup || nextScheduledRun) && (
+        {site.connectionStatus === ConnectionStatus.Connected && (runningBackup || lastBackup || nextScheduledRun) && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {runningBackup && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">

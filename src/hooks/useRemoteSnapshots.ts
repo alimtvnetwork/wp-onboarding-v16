@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, ApiResponse, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo, AvailableTable, CreateSnapshotOptions, ErrorDiagnosticContext } from "@/lib/api";
+import { SnapshotRunStatus, POLL_INTERVAL_RUNNING_SNAPSHOT_MS } from "@/lib/constants";
 import { toast } from "sonner";
 import { useErrorStore, CapturedError } from "@/stores/errorStore";
 import { useMemo, useCallback } from "react";
 
-const POLL_INTERVAL = 5000; // 5s when snapshots are running
+const POLL_INTERVAL = POLL_INTERVAL_RUNNING_SNAPSHOT_MS;
 
 /**
  * Custom error that preserves the full API error response for rich error capture.
@@ -80,7 +81,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
     refetchInterval: (query) => {
       const data = query.state.data as SnapshotRecord[] | undefined;
       if (!data) return false;
-      const hasRunning = data.some((s) => s.status === "running" || s.status === "in_progress");
+      const hasRunning = data.some((s) => s.status === SnapshotRunStatus.Running || s.status === SnapshotRunStatus.InProgress);
       return hasRunning ? POLL_INTERVAL : false;
     },
   });
@@ -231,7 +232,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const hasRunningSnapshots = useMemo(() => {
-    return (snapshotsQuery.data || []).some((s) => s.status === "running" || s.status === "in_progress");
+    return (snapshotsQuery.data || []).some((s) => s.status === SnapshotRunStatus.Running || s.status === SnapshotRunStatus.InProgress);
   }, [snapshotsQuery.data]);
 
   return {

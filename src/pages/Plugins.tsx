@@ -83,6 +83,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, Plugin } from "@/lib/api";
+import { ConnectionStatus } from "@/lib/constants";
 
 /** Identify the core uploader plugin by slug pattern */
 function isCorePlugin(plugin: Plugin): boolean {
@@ -1360,9 +1361,9 @@ export default function Plugins() {
                       <span
                         className={cn(
                           "w-2 h-2 rounded-full flex-shrink-0",
-                          site.connectionStatus === "connected"
+                          site.connectionStatus === ConnectionStatus.Connected
                             ? "bg-primary"
-                            : site.connectionStatus === "disconnected"
+                            : site.connectionStatus === ConnectionStatus.Disconnected
                             ? "bg-destructive"
                             : "bg-muted-foreground"
                         )}
