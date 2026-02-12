@@ -60,8 +60,8 @@ The snapshot panel (RemoteSnapshotsPanel) needs UX improvements: users should be
 | C2 | **Unified Create Form (Type Selector)** | High | Replace the separate "Create" + "Full Backup" + "Incremental" buttons with a single create form that has a Type dropdown (Full / Incremental). When "Incremental" is selected, show a parent snapshot picker (list of completed full snapshots). |
 | C3 | **Inline Worker Pool Quick-Set** | ✅ Done | Compact slider in create form area showing current worker count (1–10) with instant save to settings. |
 | C4 | **Progress Indicator** | ✅ Done | Real-time WebSocket-driven progress banner with per-table badge status, overall progress bar, worker count, and dismiss on completion. |
-| C5 | **Error Suppression on First Load** | Low | Suppress "Failed to load" errors on the very first fetch (initial load pattern) — show empty state instead of error. Already documented in memory but may not be fully applied. |
-| C6 | **Tab Layout Stability** | Low | Verify tabs render correctly at all dialog widths. Current `grid grid-cols-3` should be fine but confirm no overflow issues. |
+| C5 | **Error Suppression on First Load** | ✅ Done | Initial load flag via `useRef` suppresses error state on first fetch, showing empty state instead. |
+| C6 | **Tab Layout Stability** | ✅ Done | Added `shrink-0 overflow-hidden` to TabsList to prevent overflow at narrow widths. |
 
 ### Execution Order
 
