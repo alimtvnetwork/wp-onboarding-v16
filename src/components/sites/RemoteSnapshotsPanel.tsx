@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -53,6 +55,7 @@ import {
   GitBranch,
   ArrowRight,
   Copy,
+  Cpu,
 } from "lucide-react";
 import { Site, SnapshotRecord, SnapshotSchedule, SnapshotInterval, api } from "@/lib/api";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
@@ -60,6 +63,7 @@ import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
 import { SnapshotConfigPanel } from "@/components/settings/SnapshotConfigPanel";
 import { useErrorStore } from "@/stores/errorStore";
+import { wsClient, WS_EVENTS } from "@/lib/ws";
 
 interface RemoteSnapshotsPanelProps {
   site: Site;
@@ -610,6 +614,37 @@ function SnapshotSettingsTab({
   );
 }
 
+// --- C4: Snapshot Progress Types ---
+interface SnapshotProgressState {
+  snapshotId?: number;
+  status: "idle" | "running" | "completed" | "failed";
+  totalTables: number;
+  completedTables: number;
+  totalRows: number;
+  processedRows: number;
+  activeWorkers: number;
+  tables: Array<{
+    table: string;
+    status: "pending" | "running" | "completed" | "failed";
+    rowsProcessed: number;
+    totalRows: number;
+    workerId?: number;
+    error?: string;
+  }>;
+  startedAt?: string;
+  error?: string;
+}
+
+const INITIAL_PROGRESS: SnapshotProgressState = {
+  status: "idle",
+  totalTables: 0,
+  completedTables: 0,
+  totalRows: 0,
+  processedRows: 0,
+  activeWorkers: 0,
+  tables: [],
+};
+
 export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapshotsPanelProps) {
   const {
     snapshots,
@@ -618,12 +653,15 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
     error: snapshotError,
     refetch,
     hasRunningSnapshots,
+    settings,
     createSnapshot,
     isCreating,
     deleteSnapshot,
     isDeleting,
     restoreSnapshot,
     isRestoring,
+    updateSettings,
+    isUpdatingSettings,
     availableTables,
     isLoadingTables,
     fetchTables,
@@ -649,6 +687,75 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   const [showTablePicker, setShowTablePicker] = useState(false);
   const [restoreMode, setRestoreMode] = useState<"full" | "selective">("full");
   const [restoreTables, setRestoreTables] = useState<string[]>([]);
+
+  // C3: Inline worker count from settings
+  const currentWorkerCount = (settings as unknown as Record<string, unknown> | undefined)?.worker_count as number || 4;
+
+  // C4: Real-time progress via WebSocket
+  const [progress, setProgress] = useState<SnapshotProgressState>(INITIAL_PROGRESS);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const unsubStarted = wsClient.on(WS_EVENTS.SNAPSHOT_STARTED, (data: unknown) => {
+      const d = data as { snapshotId?: number; totalTables: number; totalRows: number; tables: string[]; workerCount: number };
+      setProgress({
+        snapshotId: d.snapshotId,
+        status: "running",
+        totalTables: d.totalTables,
+        completedTables: 0,
+        totalRows: d.totalRows,
+        processedRows: 0,
+        activeWorkers: d.workerCount,
+        tables: d.tables.map((t) => ({ table: t, status: "pending", rowsProcessed: 0, totalRows: 0 })),
+        startedAt: new Date().toISOString(),
+      });
+    });
+
+    const unsubProgress = wsClient.on(WS_EVENTS.SNAPSHOT_PROGRESS, (data: unknown) => {
+      const d = data as { table: string; workerId: number; rowsProcessed: number; totalRows: number; status: "running" | "completed" | "failed"; error?: string };
+      setProgress((prev) => {
+        if (prev.status !== "running") return prev;
+        const tables = prev.tables.map((t) =>
+          t.table === d.table ? { ...t, status: d.status, rowsProcessed: d.rowsProcessed, totalRows: d.totalRows, workerId: d.workerId, error: d.error } : t
+        );
+        const processedRows = tables.reduce((sum, t) => sum + t.rowsProcessed, 0);
+        const completedTables = tables.filter((t) => t.status === "completed" || t.status === "failed").length;
+        const activeWorkers = tables.filter((t) => t.status === "running").length;
+        return { ...prev, tables, processedRows, completedTables, activeWorkers };
+      });
+    });
+
+    const unsubTableComplete = wsClient.on(WS_EVENTS.SNAPSHOT_TABLE_COMPLETE, (data: unknown) => {
+      const d = data as { table: string; rowsProcessed: number; workerId: number };
+      setProgress((prev) => {
+        const tables = prev.tables.map((t) =>
+          t.table === d.table ? { ...t, status: "completed" as const, rowsProcessed: d.rowsProcessed } : t
+        );
+        const completedTables = tables.filter((t) => t.status === "completed" || t.status === "failed").length;
+        return { ...prev, tables, completedTables };
+      });
+    });
+
+    const unsubComplete = wsClient.on(WS_EVENTS.SNAPSHOT_COMPLETE, (data: unknown) => {
+      const d = data as { snapshotId?: number; success: boolean; error?: string; totalRows: number };
+      setProgress((prev) => ({
+        ...prev,
+        status: d.success ? "completed" : "failed",
+        processedRows: d.success ? prev.totalRows : prev.processedRows,
+        completedTables: d.success ? prev.totalTables : prev.completedTables,
+        activeWorkers: 0,
+        error: d.error,
+      }));
+    });
+
+    return () => {
+      unsubStarted();
+      unsubProgress();
+      unsubTableComplete();
+      unsubComplete();
+    };
+  }, [open]);
 
   // Available parent snapshots for incremental backups (completed full snapshots only)
   const completedFullSnapshots = useMemo(
@@ -943,6 +1050,87 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                   </div>
                 )}
               </div>
+
+              {/* C3: Inline Worker Pool Quick-Set */}
+              <div className="flex items-center gap-3 py-2 px-1">
+                <Cpu className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Label className="text-xs text-muted-foreground shrink-0">Workers</Label>
+                <Slider
+                  value={[currentWorkerCount]}
+                  onValueChange={([v]) => {
+                    updateSettings({ worker_count: v });
+                  }}
+                  min={1}
+                  max={10}
+                  step={1}
+                  className="flex-1 max-w-[120px]"
+                  disabled={isUpdatingSettings}
+                />
+                <span className="text-xs font-mono text-muted-foreground w-5 text-right">{currentWorkerCount}</span>
+              </div>
+
+              {/* C4: Progress Banner */}
+              {(progress.status === "running" || progress.status === "completed" || progress.status === "failed") && (
+                <div className="border rounded-lg p-3 space-y-2 animate-fade-in bg-accent/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-medium">
+                      {progress.status === "running" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      ) : progress.status === "completed" ? (
+                        <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                      )}
+                      <span>
+                        {progress.status === "running" ? "Snapshot in progress…" :
+                         progress.status === "completed" ? "Snapshot completed" : "Snapshot failed"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                      {progress.activeWorkers > 0 && (
+                        <span>{progress.activeWorkers} worker{progress.activeWorkers !== 1 ? "s" : ""}</span>
+                      )}
+                      <span>{progress.completedTables}/{progress.totalTables} tables</span>
+                      {progress.status !== "running" && (
+                        <Button variant="ghost" size="sm" className="h-5 px-1 text-[10px]" onClick={() => setProgress(INITIAL_PROGRESS)}>
+                          Dismiss
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <Progress
+                    value={
+                      progress.totalRows > 0
+                        ? Math.round((progress.processedRows / progress.totalRows) * 100)
+                        : progress.totalTables > 0
+                        ? Math.round((progress.completedTables / progress.totalTables) * 100)
+                        : 0
+                    }
+                    className="h-1.5"
+                  />
+                  {progress.tables.length > 0 && progress.status === "running" && (
+                    <div className="flex flex-wrap gap-1">
+                      {progress.tables.map((t) => (
+                        <Badge
+                          key={t.table}
+                          variant="outline"
+                          className={`text-[9px] h-4 px-1 font-mono ${
+                            t.status === "completed" ? "border-primary/30 text-primary/70" :
+                            t.status === "running" ? "border-primary bg-primary/10 text-primary animate-pulse" :
+                            t.status === "failed" ? "border-destructive/30 text-destructive" :
+                            "text-muted-foreground"
+                          }`}
+                        >
+                          {t.table.replace(/^wp_/, "")}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {progress.error && (
+                    <p className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1">{progress.error}</p>
+                  )}
+                </div>
+              )}
 
               {/* Snapshot List */}
               <ScrollArea className="flex-1 min-h-0">
