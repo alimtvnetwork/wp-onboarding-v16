@@ -406,6 +406,10 @@ class RiseupSnapshotDetector {
             // Limits
             'max_snapshot_size_mb' => RISEUP_SNAPSHOT_MAX_SIZE_MB,
             'batch_size' => RISEUP_SNAPSHOT_BATCH_SIZE,
+
+            // Worker pool (Phase 5)
+            'worker_pool_size' => RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT,
+            'storage_mode' => 'per-table',
         );
 
         $saved = get_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, array());
@@ -488,6 +492,18 @@ class RiseupSnapshotDetector {
         $settings['schedule_day'] = max(1, min(28, intval($settings['schedule_day'])));
         $settings['max_snapshot_size_mb'] = max(50, min(2000, intval($settings['max_snapshot_size_mb'])));
         $settings['batch_size'] = max(100, min(10000, intval($settings['batch_size'])));
+
+        // Worker pool size (Phase 5)
+        $settings['worker_pool_size'] = max(
+            RISEUP_SNAPSHOT_WORKER_POOL_MIN,
+            min(RISEUP_SNAPSHOT_WORKER_POOL_MAX, intval($settings['worker_pool_size'] ?? RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT))
+        );
+
+        // Storage mode (Phase 5)
+        $valid_storage_modes = array('single', 'per-table');
+        if (!in_array($settings['storage_mode'] ?? 'per-table', $valid_storage_modes)) {
+            $settings['storage_mode'] = 'per-table';
+        }
 
         // Sanitize booleans
         $settings['schedule_enabled'] = (bool) $settings['schedule_enabled'];

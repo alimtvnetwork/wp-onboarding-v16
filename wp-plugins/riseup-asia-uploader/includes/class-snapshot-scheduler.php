@@ -358,10 +358,25 @@ class RiseupSnapshotScheduler {
                     'snapshot_id' => $result['snapshot_id'] ?? null,
                     'async'       => $result['async'] ?? false,
                 ));
+                // Audit trail (Phase 6)
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    'snapshot', null, '', null, '',
+                    array('trigger' => 'cron', 'snapshot_id' => $result['snapshot_id'] ?? null, 'job_id' => $result['job_id'] ?? null),
+                    RISEUP_STATUS_SUCCESS, null,
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                );
             } else {
                 $this->logger->error('[SCHEDULER] Scheduled snapshot failed', array(
                     'error' => $result['error'] ?? 'Unknown',
                 ));
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    'snapshot', null, '', null, '',
+                    array('trigger' => 'cron'),
+                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                );
             }
 
         } catch (Exception $e) {
@@ -410,10 +425,28 @@ class RiseupSnapshotScheduler {
                     'snapshot_id' => $result['snapshot_id'] ?? null,
                     'type'        => $snapshot_type,
                 ));
+                // Audit trail (Phase 6)
+                $action = $snapshot_type === RISEUP_SNAPSHOT_TYPE_INCREMENTAL
+                    ? RISEUP_ACTION_SNAPSHOT_INCREMENTAL
+                    : RISEUP_ACTION_SNAPSHOT_FULL_BACKUP;
+                $this->db->log_transaction(
+                    $action,
+                    'snapshot', null, '', null, '',
+                    array('trigger' => 'manual', 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshot_type),
+                    RISEUP_STATUS_SUCCESS, null,
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_DASHBOARD)
+                );
             } else {
                 $this->logger->error('[SCHEDULER] Immediate snapshot failed', array(
                     'error' => $result['error'] ?? 'Unknown',
                 ));
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    'snapshot', null, '', null, '',
+                    array('trigger' => 'manual', 'type' => $snapshot_type),
+                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_DASHBOARD)
+                );
             }
 
         } catch (Exception $e) {
@@ -453,11 +486,26 @@ class RiseupSnapshotScheduler {
                     'rows'        => $result['rows'] ?? 0,
                     'duration'    => round($result['duration'] ?? 0, 2) . 's',
                 ));
+                // Audit trail (Phase 6)
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_RESTORE,
+                    'snapshot', null, '', null, '',
+                    array('snapshot_id' => $args['snapshot_id'], 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0),
+                    RISEUP_STATUS_SUCCESS, null,
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                );
             } else {
                 $this->logger->error('[SCHEDULER] Cron restore failed', array(
                     'snapshot_id' => $args['snapshot_id'],
                     'error'       => $result['error'] ?? 'Unknown',
                 ));
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_RESTORE,
+                    'snapshot', null, '', null, '',
+                    array('snapshot_id' => $args['snapshot_id']),
+                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                );
             }
 
         } catch (Exception $e) {
@@ -491,10 +539,25 @@ class RiseupSnapshotScheduler {
                     'tables_changed' => $result['tables_changed'] ?? 0,
                     'total_new_rows' => $result['total_new_rows'] ?? 0,
                 ));
+                // Audit trail (Phase 6)
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                    'snapshot', null, '', null, '',
+                    array('tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0),
+                    RISEUP_STATUS_SUCCESS, null,
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                );
             } else {
                 $this->logger->error('[SCHEDULER] Cron incremental backup failed', array(
                     'error' => $result['error'] ?? 'Unknown',
                 ));
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                    'snapshot', null, '', null, '',
+                    array(),
+                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                );
             }
 
         } catch (Exception $e) {
@@ -529,6 +592,23 @@ class RiseupSnapshotScheduler {
                 'space_freed' => RiseupPathUtils::formatBytes($result['space_freed_bytes']),
                 'errors_count' => count($result['errors']),
             ));
+
+            // Audit trail (Phase 6)
+            $total_deleted = ($result['deleted_by_policy'] ?? 0) + ($result['deleted_orphans'] ?? 0) + ($result['deleted_failed'] ?? 0);
+            if ($total_deleted > 0) {
+                $this->db->log_transaction(
+                    RISEUP_ACTION_SNAPSHOT_CLEANUP,
+                    'snapshot', null, '', null, '',
+                    array(
+                        'deleted_by_policy' => $result['deleted_by_policy'] ?? 0,
+                        'deleted_orphans'   => $result['deleted_orphans'] ?? 0,
+                        'deleted_failed'    => $result['deleted_failed'] ?? 0,
+                        'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
+                    ),
+                    RISEUP_STATUS_SUCCESS, null,
+                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                );
+            }
 
         } catch (Exception $e) {
             $this->logger->error('[SCHEDULER] Exception during cleanup', array(
