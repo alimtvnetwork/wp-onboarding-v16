@@ -331,9 +331,7 @@ interface ActivityEntry {
 
 ## Feature G: PHP 8.1+ Enum Migration (ACTIVE)
 
-### Status: G1 in progress
-
-### Problem Statement
+### Status: G1 ✅ Done
 
 The plugin currently uses **class-based fake enums** (`class FooEnum { public const BAR = '...'; }`) and `define()` constants. PHP 8.1+ provides native backed enums with type safety, `tryFrom()` validation, and `cases()` introspection. All enum-like constants must be migrated to real `enum` types under the `RiseupAsia\Enums` namespace in `includes/Enums/`.
 
@@ -371,7 +369,7 @@ includes/Enums/                         ← PSR-4 naming (NOT class-kebab-case.p
 
 | # | Task | Status | Effort | Description |
 |---|------|--------|--------|-------------|
-| G1 | **Create `includes/Enums/` folder + all 6 files** | 🔵 Todo | Medium | Create `UploadSource.php`, `Capability.php`, `HttpMethod.php`, `Hook.php`, `PathConst.php`, `ErrorType.php` with proper namespaces. Register them in main plugin bootstrap via `require_once`. |
+| G1 | **Create `includes/Enums/` folder + all 6 files** | ✅ Done | Medium | Created `UploadSource.php`, `Capability.php`, `HttpMethod.php`, `Hook.php`, `PathConst.php`, `ErrorType.php` with `RiseupAsia\Enums` namespace. PSR-4 file naming (file = definition name). |
 | G2 | **Update ErrorChecker** | 🔵 Todo | Small | Add `use RiseupAsia\Enums\ErrorType;` and change `ErrorTypeEnum::` → `ErrorType::`. |
 | G3 | **Update constants.php** | 🔵 Todo | Medium | Remove all `define()` constants that now live in enums (`UPLOAD_SOURCE_*`, `CAP_*`, log levels, HTTP status). Replace backward-compat aliases with enum references where still needed. Evaluate which remaining `define()` constants can be moved into enums or namespaced const classes. |
 | G4 | **Update class-file-logger.php** | 🔵 Todo | Small | Replace `LOG_LEVEL_*` define constants with a new `LogLevel` enum or `LogConst` class. Add `use` import. |
