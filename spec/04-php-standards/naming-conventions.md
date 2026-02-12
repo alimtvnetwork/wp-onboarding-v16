@@ -140,29 +140,82 @@ namespace App\Infrastructure\Http;
 
 ## Files
 
-Match class or enum name exactly.
+File names follow **PSR-4 autoloading** — the file name must match the class, enum, or interface inside it exactly.
+
+### Class / Enum / Interface / Trait files
+
+Use **PascalCase** and match the symbol name 1:1.
 
 ```
 UploadSource.php
 UploadManager.php
+HttpClient.php
 CacheDriver.php
 ```
 
-Autoloaders rely on this.
+**Rules:**
+
+- One class or enum per file
+- File name equals class name exactly
+- Case-sensitive on Linux servers
+- No underscores, no `snake_case`
+
+```php
+// ❌ Bad
+upload_source.php
+Upload_Source.php
+uploadsource.php
+
+// ✅ Good
+UploadSource.php
+```
+
+### Namespaced directory structure
+
+Directory structure mirrors the namespace:
+
+```php
+namespace App\Domain\Upload;
+```
+
+```
+App/
+  Domain/
+    Upload/
+      UploadSource.php
+```
+
+Autoloaders depend on this mapping.
+
+### Files without classes (rare)
+
+For procedural or config files, use **lowercase with underscores**:
+
+```
+bootstrap.php
+config.php
+helpers.php
+upload_functions.php
+```
+
+These are exceptions and should be minimal in modern architecture.
 
 ---
 
 ## Summary Table
 
-| Element              | Convention       |
-|----------------------|------------------|
-| Class / Enum / Interface | PascalCase   |
-| Method / Function    | camelCase        |
-| Variable             | camelCase        |
-| Constant             | UPPER_SNAKE_CASE |
-| Enum case            | PascalCase       |
-| Namespace            | PascalCase       |
-| File name            | PascalCase       |
+| Element                    | Convention                     |
+|----------------------------|--------------------------------|
+| Class / Enum / Interface   | PascalCase                     |
+| Trait                      | PascalCase                     |
+| Method / Function          | camelCase                      |
+| Variable                   | camelCase                      |
+| Constant                   | UPPER_SNAKE_CASE               |
+| Enum case                  | PascalCase                     |
+| Namespace                  | PascalCase                     |
+| File (class/enum/trait)    | PascalCase.php                 |
+| File (config/procedural)   | lowercase_with_underscores.php |
+| Directory (namespaced)     | PascalCase                     |
 
 ---
 
