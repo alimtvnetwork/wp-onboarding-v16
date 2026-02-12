@@ -52,7 +52,7 @@ class RiseupIncrementalBackup {
      * @return RiseupIncrementalBackup
      */
     public static function getInstance($logger = null, $db = null, $rootDb = null) {
-        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db && $rootDb) {
+        if (self::$instance === null && $logger && $db && $rootDb) {
             self::$instance = new self($logger, $db, $rootDb);
         }
         return self::$instance;
@@ -425,7 +425,7 @@ class RiseupIncrementalBackup {
         $stmt->execute(array($table_name));
         $filename = $stmt->fetchColumn();
 
-        if (RiseupBooleanHelpers::is_falsy($filename)) {
+        if (!$filename) {
             return null;
         }
 

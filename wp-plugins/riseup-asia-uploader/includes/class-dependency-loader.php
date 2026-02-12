@@ -90,7 +90,7 @@ class RiseupDependencyLoader {
         foreach ($manifest as $entry) {
             $label = $entry[0];
             $path  = $entry[1];
-            if (RiseupBooleanHelpers::is_falsy(self::load($label, $path))) {
+            if (!self::load($label, $path)) {
                 $failures++;
             }
         }
@@ -113,7 +113,7 @@ class RiseupDependencyLoader {
      */
     public static function getFailures() {
         return array_filter(self::$results, function ($r) {
-            return RiseupBooleanHelpers::is_falsy($r['success']);
+            return !$r['success'];
         });
     }
 
@@ -123,7 +123,7 @@ class RiseupDependencyLoader {
      * @return bool True if no failures.
      */
     public static function allLoaded() {
-        return RiseupBooleanHelpers::is_empty(self::getFailures());
+        return empty(self::getFailures());
     }
 
     /**

@@ -107,7 +107,7 @@ class RiseupPathUtils {
      */
     public static function join(...$segments) {
         $filtered = array_filter($segments, function($seg) {
-            return RiseupBooleanHelpers::is_set($seg) && $seg !== '';
+            return $seg !== null && $seg !== '';
         });
 
         if (empty($filtered)) {
@@ -222,7 +222,7 @@ class RiseupPathUtils {
         self::safeLog('info', '[PATH] Creating directory', array('path' => $path, 'secure' => $secure));
 
         // Use wp_mkdir_p for WordPress compatibility
-        if (RiseupBooleanHelpers::is_falsy(wp_mkdir_p($path))) {
+        if (!wp_mkdir_p($path)) {
             $error = error_get_last();
             self::safeLog('error', '[PATH] Directory creation failed', array(
                 'path' => $path,
@@ -355,7 +355,7 @@ class RiseupPathUtils {
         // Check if path starts with base
         $is_safe = strpos($real_path, $real_base) === 0;
 
-        if (RiseupBooleanHelpers::is_falsy($is_safe)) {
+        if (!$is_safe) {
             self::safeLog('error', '[PATH] Path traversal attempt detected', array(
                 'path' => $path,
                 'resolved' => $real_path,
@@ -374,7 +374,7 @@ class RiseupPathUtils {
      */
     public static function fileExists($path) {
         $path = self::join($path);
-        return RiseupBooleanHelpers::has_content($path) && is_file($path);
+        return !empty($path) && is_file($path);
     }
 
     /**
@@ -385,7 +385,7 @@ class RiseupPathUtils {
      */
     public static function dirExists($path) {
         $path = self::join($path);
-        return RiseupBooleanHelpers::has_content($path) && is_dir($path);
+        return !empty($path) && is_dir($path);
     }
 
     /**
@@ -396,7 +396,7 @@ class RiseupPathUtils {
      */
     public static function isWritable($path) {
         $path = self::join($path);
-        return RiseupBooleanHelpers::has_content($path) && is_writable($path);
+        return !empty($path) && is_writable($path);
     }
 
     /**
@@ -436,12 +436,12 @@ class RiseupPathUtils {
             return true;
         }
 
-        if (RiseupBooleanHelpers::is_falsy(is_file($path))) {
+        if (!is_file($path)) {
             self::safeLog('error', '[PATH] Path is not a file', array('path' => $path));
             return false;
         }
 
-        if (RiseupBooleanHelpers::is_falsy(@unlink($path))) {
+        if (!@unlink($path)) {
             $error = error_get_last();
             self::safeLog('error', '[PATH] Failed to delete file', array(
                 'path' => $path,
@@ -473,7 +473,7 @@ class RiseupPathUtils {
             return true;
         }
 
-        if (RiseupBooleanHelpers::is_falsy(is_dir($path))) {
+        if (!is_dir($path)) {
             self::safeLog('error', '[PATH] Path is not a directory', array('path' => $path));
             return false;
         }
@@ -493,7 +493,7 @@ class RiseupPathUtils {
             }
         }
 
-        if (RiseupBooleanHelpers::is_falsy(@rmdir($path))) {
+        if (!@rmdir($path)) {
             $error = error_get_last();
             self::safeLog('error', '[PATH] Failed to delete directory', array(
                 'path' => $path,
@@ -516,11 +516,11 @@ class RiseupPathUtils {
         $path = self::join($path);
 
         // Find existing directory in path
-        while (RiseupBooleanHelpers::is_dir_missing($path) && $path !== dirname($path)) {
+        while (!is_dir($path) && $path !== dirname($path)) {
             $path = dirname($path);
         }
 
-        if (RiseupBooleanHelpers::is_dir_missing($path)) {
+        if (!is_dir($path)) {
             return false;
         }
 

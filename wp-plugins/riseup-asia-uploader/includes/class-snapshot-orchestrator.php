@@ -61,7 +61,7 @@ class RiseupSnapshotOrchestrator {
      * @return RiseupSnapshotOrchestrator
      */
     public static function getInstance($logger = null, $db = null, $manager = null) {
-        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db && $manager) {
+        if (self::$instance === null && $logger && $db && $manager) {
             self::$instance = new self($logger, $db, $manager);
         }
         return self::$instance;
@@ -137,7 +137,7 @@ class RiseupSnapshotOrchestrator {
                 ));
             }
 
-            if (RiseupBooleanHelpers::is_falsy($worker_result['success'])) {
+            if (!$worker_result['success']) {
                 return array(
                     'success' => false,
                     'error'   => 'Table export failed: ' . ($worker_result['error'] ?? 'Unknown error'),
@@ -512,7 +512,7 @@ class RiseupSnapshotOrchestrator {
      */
     private function registerSnapshot($title, $scope, $worker_result, $plugin_stats, $snapshot_dir) {
         $pdo = $this->db->get_pdo();
-        if (RiseupBooleanHelpers::is_falsy($pdo)) {
+        if (!$pdo) {
             return false;
         }
 
