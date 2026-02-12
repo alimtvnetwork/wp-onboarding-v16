@@ -67,6 +67,7 @@ class Riseup_Admin {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
@@ -151,6 +152,7 @@ class Riseup_Admin {
         if ($unseen > 0) {
             $error_bubble = sprintf(' <span class="riseup-error-bubble">%d</span>', $unseen);
         }
+
         add_submenu_page(
             'riseup-asia-uploader',
             __('Error Log', 'riseup-asia-uploader'),
@@ -176,7 +178,7 @@ class Riseup_Admin {
             'riseup-admin-styles',
             plugins_url('assets/admin.css', dirname(__FILE__)),
             array(),
-            RISEUP_VERSION
+            PLUGIN_VERSION
         );
     }
 
@@ -268,6 +270,7 @@ class Riseup_Admin {
      */
     public static function get_settings() {
         $settings = get_option(self::OPTION_NAME, array());
+
         return wp_parse_args($settings, self::$defaults);
     }
 
@@ -279,6 +282,7 @@ class Riseup_Admin {
      */
     public static function is_endpoint_enabled($endpoint) {
         $settings = self::get_settings();
+
         return !empty($settings['endpoints'][$endpoint]['enabled']);
     }
 
@@ -290,6 +294,7 @@ class Riseup_Admin {
      */
     public static function is_auth_required($endpoint) {
         $settings = self::get_settings();
+
         return !empty($settings['endpoints'][$endpoint]['auth_required']);
     }
 
@@ -494,12 +499,15 @@ class Riseup_Admin {
         if (isset($_POST['schedule_enabled'])) {
             $settings['schedule_enabled'] = ($_POST['schedule_enabled'] === '1');
         }
+
         if (isset($_POST['schedule_frequency'])) {
             $settings['schedule_frequency'] = sanitize_text_field($_POST['schedule_frequency']);
         }
+
         if (isset($_POST['schedule_time'])) {
             $settings['schedule_time'] = sanitize_text_field($_POST['schedule_time']);
         }
+
         if (isset($_POST['schedule_day'])) {
             $settings['schedule_day'] = intval($_POST['schedule_day']);
         }
@@ -513,9 +521,11 @@ class Riseup_Admin {
         if (isset($_POST['retention_type'])) {
             $settings['retention_type'] = sanitize_text_field($_POST['retention_type']);
         }
+
         if (isset($_POST['retention_days'])) {
             $settings['retention_days'] = intval($_POST['retention_days']);
         }
+
         if (isset($_POST['retention_count'])) {
             $settings['retention_count'] = intval($_POST['retention_count']);
         }
@@ -529,6 +539,7 @@ class Riseup_Admin {
         if (isset($_POST['max_snapshot_size_mb'])) {
             $settings['max_snapshot_size_mb'] = intval($_POST['max_snapshot_size_mb']);
         }
+
         if (isset($_POST['batch_size'])) {
             $settings['batch_size'] = intval($_POST['batch_size']);
         }
@@ -536,10 +547,11 @@ class Riseup_Admin {
         // Worker Pool & Storage Mode (Phase 5)
         if (isset($_POST['worker_pool_size'])) {
             $settings['worker_pool_size'] = max(
-                RISEUP_SNAPSHOT_WORKER_POOL_MIN,
-                min(RISEUP_SNAPSHOT_WORKER_POOL_MAX, intval($_POST['worker_pool_size']))
+                SNAPSHOT_WORKER_POOL_MIN,
+                min(SNAPSHOT_WORKER_POOL_MAX, intval($_POST['worker_pool_size']))
             );
         }
+
         if (isset($_POST['storage_mode'])) {
             $valid_modes = array('single', 'per-table');
             $mode = sanitize_text_field($_POST['storage_mode']);
@@ -665,6 +677,7 @@ class Riseup_Admin {
                         $where[] = 'level = ?';
                         $params[] = $filter_level;
                     }
+
                     if (!empty($filter_search)) {
                         $where[] = 'message LIKE ?';
                         $params[] = '%' . $filter_search . '%';
@@ -717,9 +730,11 @@ class Riseup_Admin {
             if (!$pdo) {
                 return 0;
             }
+
             $last_seen = $this->get_flash_value('last_seen_error_id', 0);
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
             $stmt->execute(array($last_seen));
+
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
             return 0;
@@ -740,9 +755,11 @@ class Riseup_Admin {
             if (!$pdo) {
                 return $default;
             }
+
             $stmt = $pdo->prepare('SELECT value FROM flash_state WHERE key = ?');
             $stmt->execute(array($key));
             $val = $stmt->fetchColumn();
+
             return ($val !== false) ? $val : $default;
         } catch (Throwable $e) {
             return $default;
@@ -751,7 +768,6 @@ class Riseup_Admin {
 
     /**
      * Render global admin notice when there are unseen errors.
-     * Shows on ALL admin pages, not just the plugin pages.
      */
     public function render_global_error_notice() {
         $unseen = $this->get_unseen_error_count();
@@ -844,8 +860,6 @@ class Riseup_Admin {
 
     /**
      * AJAX handler: Read a log file's contents.
-     *
-     * Expects POST params: nonce, file_type (log|error|stacktrace).
      */
     public function ajax_read_log_file() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
@@ -890,8 +904,6 @@ class Riseup_Admin {
 
     /**
      * AJAX handler: Clear (truncate) a log file.
-     *
-     * Expects POST params: nonce, file_type (log|error|stacktrace).
      */
     public function ajax_clear_log_file() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');

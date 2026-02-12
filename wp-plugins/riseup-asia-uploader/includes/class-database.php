@@ -20,6 +20,23 @@ if (!defined('ABSPATH')) {
  */
 class Riseup_Database {
 
+    /** Database table constants */
+    public const TABLE_TRANSACTIONS      = 'transactions';
+    public const TABLE_SNAPSHOTS         = 'snapshots';
+    public const TABLE_SNAPSHOT_PROGRESS = 'snapshot_progress';
+    public const TABLE_FILE_CACHE        = 'file_cache';
+    public const TABLE_SNAPSHOT_EXPORTS  = 'snapshot_exports';
+
+    /** Snapshot export status constants */
+    public const SNAPSHOT_EXPORT_STATUS_VALID = 'valid';
+
+    /** Transaction status constants */
+    public const STATUS_SUCCESS = 'success';
+
+    /** Default and max limits for queries */
+    public const DEFAULT_LIMIT = 50;
+    public const MAX_LIMIT     = 1000;
+
     /**
      * PDO instance.
      *
@@ -64,6 +81,7 @@ class Riseup_Database {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
@@ -95,6 +113,7 @@ class Riseup_Database {
             return $this->init_database();
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Database init failed');
+
             return false;
         }
     }
@@ -151,20 +170,24 @@ class Riseup_Database {
             $this->create_tables();
             
             $this->file_logger->info('Database initialization complete');
+
             return true;
             
         } catch (PDOException $e) {
             $this->file_logger->log_exception($e, 'PDO initialization failed');
             $this->pdo = null;
+
             return false;
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Database initialization failed');
             $this->pdo = null;
+
             return false;
         } catch (Error $e) {
             // Catch PHP 7+ fatal errors (like class not found)
             $this->file_logger->error('Fatal error during database init: ' . $e->getMessage());
             $this->pdo = null;
+
             return false;
         }
     }
@@ -179,7 +202,7 @@ class Riseup_Database {
         $this->file_logger->info('Running database migration - creating/updating tables');
         
         try {
-            $table_name = RISEUP_TABLE_TRANSACTIONS;
+            $table_name = self::TABLE_TRANSACTIONS;
             $this->file_logger->debug('Migrating table', array('table' => $table_name));
             
             // Schema version tracking
@@ -289,20 +312,16 @@ class Riseup_Database {
                 $this->file_logger->info('Applying migration v3: enhanced transaction fields');
                 
                 // Add new columns to transactions table for richer logging
-                // plugin_file: Full plugin file path (e.g., "akismet/akismet.php")
-                // was_active: Previous active state before enable/disable
-                // triggered_by: Source of the action (api, dashboard, agent_push, cron)
-                // agent_site_id: If action was pushed from a master site
                 $columns = array(
                     'plugin_file'    => 'TEXT',
-                    'was_active'     => 'INTEGER', // 0/1 for boolean
-                    'triggered_by'   => 'TEXT',    // api, dashboard, agent_push, cron
-                    'agent_site_id'  => 'INTEGER', // FK to agent_sites if agent triggered
+                    'was_active'     => 'INTEGER',
+                    'triggered_by'   => 'TEXT',
+                    'agent_site_id'  => 'INTEGER',
                 );
                 
                 foreach ($columns as $column => $type) {
                     try {
-                        $this->pdo->exec("ALTER TABLE " . RISEUP_TABLE_TRANSACTIONS . " ADD COLUMN {$column} {$type}");
+                        $this->pdo->exec("ALTER TABLE " . self::TABLE_TRANSACTIONS . " ADD COLUMN {$column} {$type}");
                         $this->file_logger->debug("Column added: {$column}");
                     } catch (PDOException $e) {
                         // Column might already exist
@@ -311,7 +330,7 @@ class Riseup_Database {
                 }
                 
                 // Create index for triggered_by queries
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_triggered_by ON " . RISEUP_TABLE_TRANSACTIONS . "(triggered_by)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_triggered_by ON " . self::TABLE_TRANSACTIONS . "(triggered_by)");
                 
                 // Record migration
                 $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (3, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
@@ -322,19 +341,15 @@ class Riseup_Database {
             if ($current_version < 4) {
                 $this->file_logger->info('Applying migration v4: source machine tracking');
                 
-                // Add source_machine column to track which server triggered the action
                 try {
-                    $this->pdo->exec("ALTER TABLE " . RISEUP_TABLE_TRANSACTIONS . " ADD COLUMN source_machine TEXT");
+                    $this->pdo->exec("ALTER TABLE " . self::TABLE_TRANSACTIONS . " ADD COLUMN source_machine TEXT");
                     $this->file_logger->debug("Column added: source_machine");
                 } catch (PDOException $e) {
-                    // Column might already exist
                     $this->file_logger->debug("Column might exist: source_machine", array('error' => $e->getMessage()));
                 }
                 
-                // Create index for source_machine queries
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_source_machine ON " . RISEUP_TABLE_TRANSACTIONS . "(source_machine)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_source_machine ON " . self::TABLE_TRANSACTIONS . "(source_machine)");
                 
-                // Record migration
                 $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (4, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
                 $this->file_logger->info('Migration v4 applied successfully');
             }
@@ -343,8 +358,7 @@ class Riseup_Database {
             if ($current_version < 5) {
                 $this->file_logger->info('Applying migration v5: snapshot system tables');
                 
-                // Snapshots table - stores metadata about each snapshot
-                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_SNAPSHOTS . " (
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOTS . " (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     sequence INTEGER NOT NULL,
                     filename TEXT NOT NULL UNIQUE,
@@ -365,8 +379,7 @@ class Riseup_Database {
                 )");
                 $this->file_logger->debug('Table created: snapshots');
                 
-                // Snapshot progress table - tracks per-table export progress
-                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_SNAPSHOT_PROGRESS . " (
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOT_PROGRESS . " (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER NOT NULL,
                     table_name TEXT NOT NULL,
@@ -380,13 +393,11 @@ class Riseup_Database {
                 )");
                 $this->file_logger->debug('Table created: snapshot_progress');
                 
-                // Indexes for snapshot tables
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_created ON " . RISEUP_TABLE_SNAPSHOTS . "(created_at DESC)");
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_status ON " . RISEUP_TABLE_SNAPSHOTS . "(status)");
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_provider ON " . RISEUP_TABLE_SNAPSHOTS . "(provider)");
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_progress_snapshot ON " . RISEUP_TABLE_SNAPSHOT_PROGRESS . "(snapshot_id)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_created ON " . self::TABLE_SNAPSHOTS . "(created_at DESC)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_status ON " . self::TABLE_SNAPSHOTS . "(status)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_provider ON " . self::TABLE_SNAPSHOTS . "(provider)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_progress_snapshot ON " . self::TABLE_SNAPSHOT_PROGRESS . "(snapshot_id)");
                 
-                // Record migration
                 $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (5, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
                 $this->file_logger->info('Migration v5 applied successfully');
             }
@@ -412,7 +423,7 @@ class Riseup_Database {
             if ($current_version < 7) {
                 $this->file_logger->info('Applying migration v7: file hash cache table');
                 
-                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_FILE_CACHE . " (
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_FILE_CACHE . " (
                     plugin_slug TEXT NOT NULL,
                     relative_path TEXT NOT NULL,
                     md5_hash TEXT NOT NULL,
@@ -422,8 +433,7 @@ class Riseup_Database {
                     PRIMARY KEY (plugin_slug, relative_path)
                 )");
                 
-                // Indexes for efficient lookups
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_file_cache_slug ON " . RISEUP_TABLE_FILE_CACHE . "(plugin_slug)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_file_cache_slug ON " . self::TABLE_FILE_CACHE . "(plugin_slug)");
                 
                 $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (7, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
                 $this->file_logger->info('Migration v7 applied successfully');
@@ -473,7 +483,6 @@ class Riseup_Database {
             if ($current_version < 9) {
                 $this->file_logger->info('Applying migration v9: error sessions and flash state');
                 
-                // Error sessions table - persists every error/warn from the file logger
                 $this->pdo->exec("CREATE TABLE IF NOT EXISTS error_sessions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     level TEXT NOT NULL,
@@ -487,14 +496,12 @@ class Riseup_Database {
                 $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_error_sessions_level ON error_sessions(level)");
                 $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_error_sessions_created ON error_sessions(created_at DESC)");
                 
-                // Flash state table - tracks whether admin has seen latest errors
                 $this->pdo->exec("CREATE TABLE IF NOT EXISTS flash_state (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 )");
                 
-                // Seed initial flash state
                 $now = gmdate('Y-m-d\TH:i:s\Z');
                 $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '0', '{$now}')");
                 $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
@@ -508,22 +515,21 @@ class Riseup_Database {
                 $this->file_logger->info('Applying migration v10: plugin version and upload source columns');
                 
                 $columns = array(
-                    'plugin_version' => 'TEXT',    // Version of the plugin that was uploaded (e.g., "1.34.1")
-                    'upload_source'  => 'TEXT',    // How the upload was performed (upload_script, rest_api, admin_ui, wp_cli)
+                    'plugin_version' => 'TEXT',
+                    'upload_source'  => 'TEXT',
                 );
                 
                 foreach ($columns as $column => $type) {
                     try {
-                        $this->pdo->exec("ALTER TABLE " . RISEUP_TABLE_TRANSACTIONS . " ADD COLUMN {$column} {$type}");
+                        $this->pdo->exec("ALTER TABLE " . self::TABLE_TRANSACTIONS . " ADD COLUMN {$column} {$type}");
                         $this->file_logger->debug("Column added: {$column}");
                     } catch (PDOException $e) {
                         $this->file_logger->debug("Column might exist: {$column}", array('error' => $e->getMessage()));
                     }
                 }
                 
-                // Create indexes for new columns
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_plugin_version ON " . RISEUP_TABLE_TRANSACTIONS . "(plugin_version)");
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_upload_source ON " . RISEUP_TABLE_TRANSACTIONS . "(upload_source)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_plugin_version ON " . self::TABLE_TRANSACTIONS . "(plugin_version)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_upload_source ON " . self::TABLE_TRANSACTIONS . "(upload_source)");
                 
                 $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (10, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
                 $this->file_logger->info('Migration v10 applied successfully');
@@ -533,7 +539,7 @@ class Riseup_Database {
             if ($current_version < 11) {
                 $this->file_logger->info('Applying migration v11: snapshot exports table');
                 
-                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_SNAPSHOT_EXPORTS . " (
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOT_EXPORTS . " (
                     id              INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id     INTEGER NOT NULL,
                     zip_filename    TEXT NOT NULL,
@@ -543,14 +549,13 @@ class Riseup_Database {
                     incremental_count INTEGER NOT NULL DEFAULT 0,
                     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
                     expires_at      TEXT,
-                    status          TEXT NOT NULL DEFAULT '" . RISEUP_SNAPSHOT_EXPORT_STATUS_VALID . "',
+                    status          TEXT NOT NULL DEFAULT '" . self::SNAPSHOT_EXPORT_STATUS_VALID . "',
                     UNIQUE(snapshot_id)
                 )");
                 $this->file_logger->debug('Table created: snapshot_exports');
                 
-                // Indexes for efficient lookups
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_snapshot ON " . RISEUP_TABLE_SNAPSHOT_EXPORTS . "(snapshot_id)");
-                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_status ON " . RISEUP_TABLE_SNAPSHOT_EXPORTS . "(status)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_snapshot ON " . self::TABLE_SNAPSHOT_EXPORTS . "(snapshot_id)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_status ON " . self::TABLE_SNAPSHOT_EXPORTS . "(status)");
                 
                 $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (11, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
                 $this->file_logger->info('Migration v11 applied successfully');
@@ -573,6 +578,7 @@ class Riseup_Database {
         if (!$this->init_attempted) {
             $this->init();
         }
+
         return $this->pdo;
     }
 
@@ -585,20 +591,21 @@ class Riseup_Database {
         if (!$this->init_attempted) {
             $this->init();
         }
+
         return $this->pdo !== null;
     }
 
     /**
      * Log a transaction using ORM.
      *
-     * @param string      $action         Action type (use RISEUP_ACTION_* constants).
+     * @param string      $action         Action type (use ACTION_* constants).
      * @param string|null $plugin_slug    Plugin slug (for plugin operations).
      * @param int|null    $post_id        Post ID (for post operations).
      * @param string      $user_login     WordPress username.
      * @param int|null    $user_id        WordPress user ID.
      * @param string      $ip_address     Client IP address.
      * @param array       $details        Additional details (will be JSON encoded).
-     * @param string      $status         Status (use RISEUP_STATUS_* constants).
+     * @param string      $status         Status (use STATUS_* constants).
      * @param string|null $error_msg      Error message if failed.
      * @param array       $enhanced       Enhanced fields: plugin_file, was_active, triggered_by, agent_site_id.
      *
@@ -612,12 +619,13 @@ class Riseup_Database {
         $user_id = null,
         $ip_address = '',
         $details = array(),
-        $status = RISEUP_STATUS_SUCCESS,
+        $status = self::STATUS_SUCCESS,
         $error_msg = null,
         $enhanced = array()
     ) {
         if (!$this->is_ready()) {
             $this->file_logger->warn('Database not ready, cannot log transaction');
+
             return false;
         }
 
@@ -628,7 +636,7 @@ class Riseup_Database {
                 'enhanced' => $enhanced,
             ));
             
-            $record = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $record = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
                 ->create()
                 ->set('action', $action)
                 ->set('plugin_slug', $plugin_slug)
@@ -645,21 +653,27 @@ class Riseup_Database {
             if (!empty($enhanced['plugin_file'])) {
                 $record->set('plugin_file', $enhanced['plugin_file']);
             }
+
             if (isset($enhanced['was_active'])) {
                 $record->set('was_active', $enhanced['was_active'] ? 1 : 0);
             }
+
             if (!empty($enhanced['triggered_by'])) {
                 $record->set('triggered_by', $enhanced['triggered_by']);
             }
+
             if (!empty($enhanced['agent_site_id'])) {
                 $record->set('agent_site_id', (int) $enhanced['agent_site_id']);
             }
+
             if (!empty($enhanced['source_machine'])) {
                 $record->set('source_machine', $enhanced['source_machine']);
             }
+
             if (!empty($enhanced['plugin_version'])) {
                 $record->set('plugin_version', $enhanced['plugin_version']);
             }
+
             if (!empty($enhanced['upload_source'])) {
                 $record->set('upload_source', $enhanced['upload_source']);
             }
@@ -667,10 +681,12 @@ class Riseup_Database {
             $result = $record->save();
                 
             $this->file_logger->info('Transaction logged', array('id' => $result));
+
             return $result;
             
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to log transaction');
+
             return false;
         }
     }
@@ -690,7 +706,7 @@ class Riseup_Database {
             $params['user_id'] ?? null,
             $params['ip_address'] ?? '',
             $params['details'] ?? array(),
-            $params['status'] ?? RISEUP_STATUS_SUCCESS,
+            $params['status'] ?? self::STATUS_SUCCESS,
             $params['error_msg'] ?? null,
             array(
                 'plugin_file'    => $params['plugin_file'] ?? null,
@@ -712,22 +728,23 @@ class Riseup_Database {
      *
      * @return array Array with 'total' and 'logs' keys.
      */
-    public function query_transactions($filters = array(), $limit = RISEUP_DEFAULT_LIMIT, $offset = 0) {
+    public function query_transactions($filters = array(), $limit = self::DEFAULT_LIMIT, $offset = 0) {
         if (!$this->is_ready()) {
             $this->file_logger->warn('Database not ready for query');
+
             return array('total' => 0, 'logs' => array());
         }
 
         // Sanitize limit
-        $limit = min(max(1, (int) $limit), RISEUP_MAX_LIMIT);
+        $limit = min(max(1, (int) $limit), self::MAX_LIMIT);
         $offset = max(0, (int) $offset);
 
         try {
             $this->file_logger->debug('Querying transactions', array('filters' => $filters));
             
             // Build count query
-            $count_query = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
-            $data_query = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS);
+            $count_query = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS);
+            $data_query = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS);
 
             // Apply filters to both queries
             $this->apply_filters($count_query, $filters);
@@ -758,6 +775,7 @@ class Riseup_Database {
             );
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to query transactions');
+
             return array('total' => 0, 'logs' => array());
         }
     }
@@ -800,6 +818,7 @@ class Riseup_Database {
         if (!empty($filters['from'])) {
             $query->where_gte('created_at', $filters['from'] . 'T00:00:00Z');
         }
+
         if (!empty($filters['to'])) {
             $query->where_lte('created_at', $filters['to'] . 'T23:59:59Z');
         }
@@ -833,7 +852,7 @@ class Riseup_Database {
         }
 
         try {
-            $log = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $log = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
                 ->find_one((int) $id);
 
             if ($log && !empty($log['details'])) {
@@ -843,6 +862,7 @@ class Riseup_Database {
             return $log;
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to get transaction');
+
             return null;
         }
     }
@@ -861,11 +881,11 @@ class Riseup_Database {
             $stats = array();
 
             // Total transactions
-            $stats['total_transactions'] = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)->count();
+            $stats['total_transactions'] = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)->count();
 
             // Transactions by action
             $by_action = Riseup_ORM::raw_execute(
-                "SELECT action, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY action"
+                "SELECT action, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY action"
             );
             $stats['by_action'] = array();
             foreach ($by_action as $row) {
@@ -874,7 +894,7 @@ class Riseup_Database {
 
             // Transactions by status
             $by_status = Riseup_ORM::raw_execute(
-                "SELECT status, COUNT(*) as count FROM " . RISEUP_TABLE_TRANSACTIONS . " GROUP BY status"
+                "SELECT status, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY status"
             );
             $stats['by_status'] = array();
             foreach ($by_status as $row) {
@@ -883,13 +903,14 @@ class Riseup_Database {
 
             // Last 24 hours
             $yesterday = gmdate('Y-m-d\TH:i:s\Z', time() - 86400);
-            $stats['last_24h'] = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $stats['last_24h'] = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
                 ->where_gte('created_at', $yesterday)
                 ->count();
 
             return $stats;
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to get stats');
+
             return array();
         }
     }
@@ -909,14 +930,16 @@ class Riseup_Database {
         try {
             $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($days_to_keep * 86400));
             
-            $deleted = Riseup_ORM::for_table(RISEUP_TABLE_TRANSACTIONS)
+            $deleted = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
                 ->where_lt('created_at', $cutoff)
                 ->delete();
                 
             $this->file_logger->info('Cleanup complete', array('deleted' => $deleted));
+
             return $deleted;
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to cleanup transactions');
+
             return 0;
         }
     }
