@@ -42,7 +42,9 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | 2.10 | `add_action('deleted_plugin', ...)` | `add_action(HookEnum::DELETED_PLUGIN, ...)` | `HookEnum::DELETED_PLUGIN` |
 | 2.11 | `add_filter('rest_post_dispatch', ...)` | `add_filter(HookEnum::REST_POST_DISPATCH, ...)` | `HookEnum::REST_POST_DISPATCH` |
 | 2.12 | `add_filter('cron_schedules', ...)` | `add_filter(HookEnum::CRON_SCHEDULES, ...)` | `HookEnum::CRON_SCHEDULES` |
-| 2.13 | `add_action('wp_ajax_my_action', ...)` | `add_action(HookEnum::WP_AJAX_PREFIX . 'my_action', ...)` | `HookEnum::WP_AJAX_PREFIX` |
+| 2.13 | `add_action('wp_ajax_my_action', ...)` | `define('HOOK_AJAX_MY_ACTION', HookEnum::WP_AJAX_PREFIX . ACTION_MY_ACTION);` then `add_action(HOOK_AJAX_MY_ACTION, ...)` | Named composed constant |
+| 2.14 | `add_action(HookEnum::WP_AJAX_PREFIX . ACTION_X, ...)` | Compose a named constant first, then use it | No inline concatenation at call site |
+| 2.15 | `rest_url(REST_NAMESPACE . '/' . ACTION_X)` | `define('REST_URL_X', REST_NAMESPACE . '/' . ACTION_X);` then `rest_url(REST_URL_X)` | No inline concatenation at call site |
 
 ---
 
@@ -99,6 +101,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] No `wp_die()` in REST handlers
 [ ] No `error_log()` — use structured logger
 [ ] No string literals in add_action/add_filter — use `HookEnum`
+[ ] No inline concatenation at call sites — compose named constants first
 [ ] No manual path concatenation — use `RiseupPathUtils` accessors
 [ ] No `RiseupBooleanHelpers` — use semantic methods
 [ ] No `!$obj->is_active()` — use `$obj->is_disabled()`
