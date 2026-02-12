@@ -1,6 +1,6 @@
 # Generic Enforce Specification
 
-**Version**: 1.1.0  
+**Version**: 1.1.1  
 **Status**: Active  
 **Applies to**: Any language with generics / parametric polymorphism
 

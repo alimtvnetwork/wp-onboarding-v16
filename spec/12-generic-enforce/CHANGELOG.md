@@ -4,6 +4,14 @@ All notable changes to the Generic Enforce specification are documented here.
 
 ---
 
+## v1.1.1 — 2026-02-12
+
+### Added
+- **`scripts/lint-ge.sh`** — Grep-based CI enforcement script that flags `any`, `Record<string, unknown>`, `interface{}`, `Dictionary<string, object>`, `serde_json::Value`, and `Box<dyn Any>` across TS/Go/C#/Rust with GE-5 framework exemptions.
+- `--fix-guide` flag for remediation guidance output.
+
+---
+
 ## v1.1.0 — 2026-02-12
 
 ### Added
