@@ -13,37 +13,37 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class Riseup_Post_Manager
+ * Class RiseupPostManager
  *
  * Provides methods for creating and updating posts and categories.
  */
-class Riseup_Post_Manager {
+class RiseupPostManager {
 
     /**
      * Logger instance.
      *
-     * @var Riseup_Logger
+     * @var RiseupLogger
      */
     private $logger;
 
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $file_logger;
 
     /**
      * Singleton instance.
      *
-     * @var Riseup_Post_Manager|null
+     * @var RiseupPostManager|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return Riseup_Post_Manager
+     * @return RiseupPostManager
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -56,8 +56,8 @@ class Riseup_Post_Manager {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = Riseup_File_Logger::get_instance();
-        $this->logger = Riseup_Logger::get_instance();
+        $this->file_logger = RiseupFileLogger::get_instance();
+        $this->logger = RiseupLogger::get_instance();
         $this->file_logger->info('Post manager initialized');
     }
 

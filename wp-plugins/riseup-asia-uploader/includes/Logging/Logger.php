@@ -13,14 +13,14 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class Riseup_Logger
+ * Class RiseupLogger
  *
  * Provides convenient methods for logging transactions.
  */
-class Riseup_Logger {
+class RiseupLogger {
 
     /**
-     * @var Riseup_Logger
+     * @var RiseupLogger
      */
     private static $_this;
 
@@ -30,14 +30,14 @@ class Riseup_Logger {
     private $options;
 
     /**
-     * Riseup_Logger constructor.
+     * RiseupLogger constructor.
      */
     public function __construct() {
         self::$_this = $this;
     }
 
     /**
-     * @return Riseup_Logger
+     * @return RiseupLogger
      */
     public static function get_instance() {
         if (is_null(self::$_this)) {
@@ -50,28 +50,28 @@ class Riseup_Logger {
     /**
      * Database instance.
      *
-     * @var Riseup_Database|null
+     * @var RiseupDatabase|null
      */
     private $db = null;
 
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $file_logger;
 
     /**
      * Singleton instance.
      *
-     * @var Riseup_Logger|null
+     * @var RiseupLogger|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return Riseup_Logger
+     * @return RiseupLogger
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -84,7 +84,7 @@ class Riseup_Logger {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = Riseup_File_Logger::get_instance();
+        $this->file_logger = RiseupFileLogger::get_instance();
         // NOTE: We get the database instance lazily to avoid circular dependency
         $this->file_logger->info('Transaction logger initialized');
     }
@@ -92,11 +92,11 @@ class Riseup_Logger {
     /**
      * Get database instance (lazy loading).
      *
-     * @return Riseup_Database
+     * @return RiseupDatabase
      */
     private function get_db() {
         if ($this->db === null) {
-            $this->db = Riseup_Database::get_instance();
+            $this->db = RiseupDatabase::get_instance();
         }
         return $this->db;
     }

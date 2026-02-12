@@ -49,16 +49,16 @@ class RiseupSnapshotFactory {
     /**
      * Get or create the RiseupSnapshotDetector singleton.
      *
-     * @param Riseup_File_Logger|null $logger Optional logger override.
-     * @param Riseup_Database|null    $db     Optional database override.
+     * @param RiseupFileLogger|null $logger Optional logger override.
+     * @param RiseupDatabase|null    $db     Optional database override.
      * @return RiseupSnapshotDetector
      */
     public static function detector($logger = null, $db = null) {
         if (self::$detector === null) {
             require_once dirname(__FILE__) . '/SnapshotDetector.php';
             self::$detector = new RiseupSnapshotDetector(
-                $logger ?: Riseup_File_Logger::get_instance(),
-                $db ?: Riseup_Database::get_instance()
+                $logger ?: RiseupFileLogger::get_instance(),
+                $db ?: RiseupDatabase::get_instance()
             );
         }
         return self::$detector;
@@ -67,16 +67,16 @@ class RiseupSnapshotFactory {
     /**
      * Get or create the RiseupSnapshotCleaner singleton.
      *
-     * @param Riseup_File_Logger|null $logger Optional logger override.
-     * @param Riseup_Database|null    $db     Optional database override.
+     * @param RiseupFileLogger|null $logger Optional logger override.
+     * @param RiseupDatabase|null    $db     Optional database override.
      * @return RiseupSnapshotCleaner
      */
     public static function cleaner($logger = null, $db = null) {
         if (self::$cleaner === null) {
             require_once dirname(__FILE__) . '/SnapshotCleaner.php';
             self::$cleaner = new RiseupSnapshotCleaner(
-                $logger ?: Riseup_File_Logger::get_instance(),
-                $db ?: Riseup_Database::get_instance()
+                $logger ?: RiseupFileLogger::get_instance(),
+                $db ?: RiseupDatabase::get_instance()
             );
         }
         return self::$cleaner;
@@ -87,15 +87,15 @@ class RiseupSnapshotFactory {
      *
      * Delegates to the scheduler's own getInstance() method.
      *
-     * @param Riseup_File_Logger|null $logger Optional logger override.
-     * @param Riseup_Database|null    $db     Optional database override.
+     * @param RiseupFileLogger|null $logger Optional logger override.
+     * @param RiseupDatabase|null    $db     Optional database override.
      * @return RiseupSnapshotScheduler
      */
     public static function scheduler($logger = null, $db = null) {
         require_once dirname(__FILE__) . '/SnapshotScheduler.php';
         return RiseupSnapshotScheduler::getInstance(
-            $logger ?: Riseup_File_Logger::get_instance(),
-            $db ?: Riseup_Database::get_instance()
+            $logger ?: RiseupFileLogger::get_instance(),
+            $db ?: RiseupDatabase::get_instance()
         );
     }
 
@@ -104,15 +104,15 @@ class RiseupSnapshotFactory {
      *
      * Delegates to the manager's own getInstance() method.
      *
-     * @param Riseup_File_Logger|null $logger Optional logger override.
-     * @param Riseup_Database|null    $db     Optional database override.
+     * @param RiseupFileLogger|null $logger Optional logger override.
+     * @param RiseupDatabase|null    $db     Optional database override.
      * @return RiseupSnapshotManager
      */
     public static function manager($logger = null, $db = null) {
         require_once dirname(__FILE__) . '/SnapshotManager.php';
         return RiseupSnapshotManager::getInstance(
-            $logger ?: Riseup_File_Logger::get_instance(),
-            $db ?: Riseup_Database::get_instance()
+            $logger ?: RiseupFileLogger::get_instance(),
+            $db ?: RiseupDatabase::get_instance()
         );
     }
 
@@ -122,16 +122,16 @@ class RiseupSnapshotFactory {
      * Delegates to the worker's own getInstance() method.
      * Requires RiseupRootDb and RiseupDependencyAnalyzer as additional dependencies.
      *
-     * @param Riseup_File_Logger|null $logger Optional logger override.
-     * @param Riseup_Database|null    $db     Optional database override.
+     * @param RiseupFileLogger|null $logger Optional logger override.
+     * @param RiseupDatabase|null    $db     Optional database override.
      * @return RiseupSnapshotWorker
      */
     public static function worker($logger = null, $db = null) {
         require_once dirname(__FILE__) . '/SnapshotWorker.php';
         require_once dirname(__FILE__) . '/DependencyAnalyzer.php';
         require_once dirname(__FILE__) . '/../Database/RootDb.php';
-        $l = $logger ?: Riseup_File_Logger::get_instance();
-        $d = $db ?: Riseup_Database::get_instance();
+        $l = $logger ?: RiseupFileLogger::get_instance();
+        $d = $db ?: RiseupDatabase::get_instance();
         $analyzer = RiseupDependencyAnalyzer::getInstance($l);
         $rootDb   = RiseupRootDb::getInstance($l, $analyzer);
         return RiseupSnapshotWorker::getInstance($l, $d, $rootDb, $analyzer);
@@ -143,29 +143,29 @@ class RiseupSnapshotFactory {
      * Delegates to the orchestrator's own getInstance() method.
      * Automatically resolves the manager dependency.
      *
-     * @param Riseup_File_Logger|null $logger Optional logger override.
-     * @param Riseup_Database|null    $db     Optional database override.
+     * @param RiseupFileLogger|null $logger Optional logger override.
+     * @param RiseupDatabase|null    $db     Optional database override.
      * @return RiseupSnapshotOrchestrator
      */
     public static function orchestrator($logger = null, $db = null) {
         require_once dirname(__FILE__) . '/SnapshotOrchestrator.php';
-        $l = $logger ?: Riseup_File_Logger::get_instance();
-        $d = $db ?: Riseup_Database::get_instance();
+        $l = $logger ?: RiseupFileLogger::get_instance();
+        $d = $db ?: RiseupDatabase::get_instance();
         return RiseupSnapshotOrchestrator::getInstance($l, $d, self::manager($l, $d));
     }
 
     /**
      * Get the RiseupSnapshotExporter singleton.
      *
-     * @param Riseup_File_Logger|null $logger Optional logger override.
-     * @param Riseup_Database|null    $db     Optional database override.
+     * @param RiseupFileLogger|null $logger Optional logger override.
+     * @param RiseupDatabase|null    $db     Optional database override.
      * @return RiseupSnapshotExporter
      */
     public static function exporter($logger = null, $db = null) {
         require_once dirname(__FILE__) . '/SnapshotExporter.php';
         return RiseupSnapshotExporter::getInstance(
-            $logger ?: Riseup_File_Logger::get_instance(),
-            $db ?: Riseup_Database::get_instance()
+            $logger ?: RiseupFileLogger::get_instance(),
+            $db ?: RiseupDatabase::get_instance()
         );
     }
 

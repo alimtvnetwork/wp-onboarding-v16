@@ -32,22 +32,22 @@ class RiseupFileCache {
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     private $db;
 
     /**
      * Get singleton instance.
      *
-     * @param Riseup_File_Logger $logger File logger.
-     * @param Riseup_Database    $db     Database instance.
+     * @param RiseupFileLogger $logger File logger.
+     * @param RiseupDatabase    $db     Database instance.
      * @return RiseupFileCache
      */
     public static function getInstance($logger, $db) {
@@ -60,8 +60,8 @@ class RiseupFileCache {
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger $logger File logger.
-     * @param Riseup_Database    $db     Database instance.
+     * @param RiseupFileLogger $logger File logger.
+     * @param RiseupDatabase    $db     Database instance.
      */
     private function __construct($logger, $db) {
         $this->logger = $logger;

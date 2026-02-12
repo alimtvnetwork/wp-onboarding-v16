@@ -20,16 +20,16 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevel;
 
 /**
- * Class Riseup_File_Logger
+ * Class RiseupFileLogger
  *
  * Provides file-based logging with detailed context and MD5 deduplication.
  */
-class Riseup_File_Logger {
+class RiseupFileLogger {
 
     /**
      * Singleton instance.
      *
-     * @var Riseup_File_Logger|null
+     * @var RiseupFileLogger|null
      */
     private static $instance = null;
 
@@ -94,7 +94,7 @@ class Riseup_File_Logger {
     /**
      * Get singleton instance.
      *
-     * @return Riseup_File_Logger
+     * @return RiseupFileLogger
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -597,12 +597,12 @@ class Riseup_File_Logger {
      */
     private function persist_to_error_sessions($level, $message, $file, $line, $context = array(), $stack_trace = '') {
         try {
-            // Guard: Riseup_Database may not be loaded yet during early bootstrap
-            if (!class_exists('Riseup_Database', false)) {
+            // Guard: RiseupDatabase may not be loaded yet during early bootstrap
+            if (!class_exists('RiseupDatabase', false)) {
                 return;
             }
 
-            $db = Riseup_Database::get_instance();
+            $db = RiseupDatabase::get_instance();
             $pdo = $db->get_pdo();
             if (!$pdo) {
                 return;

@@ -14,11 +14,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class Riseup_Database
+ * Class RiseupDatabase
  *
  * Handles all SQLite database operations for transaction logging.
  */
-class Riseup_Database {
+class RiseupDatabase {
 
     /** Database table constants */
     public const TABLE_TRANSACTIONS      = 'transactions';
@@ -54,14 +54,14 @@ class Riseup_Database {
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $file_logger;
 
     /**
      * Singleton instance.
      *
-     * @var Riseup_Database|null
+     * @var RiseupDatabase|null
      */
     private static $instance = null;
 
@@ -75,7 +75,7 @@ class Riseup_Database {
     /**
      * Get singleton instance.
      *
-     * @return Riseup_Database
+     * @return RiseupDatabase
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -89,7 +89,7 @@ class Riseup_Database {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = Riseup_File_Logger::get_instance();
+        $this->file_logger = RiseupFileLogger::get_instance();
         $this->file_logger->info('Database constructor called');
     }
 
@@ -163,7 +163,7 @@ class Riseup_Database {
 
             // Configure the ORM with our PDO instance
             $this->file_logger->debug('Configuring ORM');
-            Riseup_ORM::configure($this->pdo);
+            RiseupORM::configure($this->pdo);
             $this->file_logger->info('ORM configured');
 
             // Create tables
@@ -636,7 +636,7 @@ class Riseup_Database {
                 'enhanced' => $enhanced,
             ));
             
-            $record = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
+            $record = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
                 ->create()
                 ->set('action', $action)
                 ->set('plugin_slug', $plugin_slug)
@@ -743,8 +743,8 @@ class Riseup_Database {
             $this->file_logger->debug('Querying transactions', array('filters' => $filters));
             
             // Build count query
-            $count_query = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS);
-            $data_query = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS);
+            $count_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
+            $data_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
 
             // Apply filters to both queries
             $this->apply_filters($count_query, $filters);
@@ -783,7 +783,7 @@ class Riseup_Database {
     /**
      * Apply filters to an ORM query.
      *
-     * @param Riseup_ORM $query   ORM query instance.
+     * @param RiseupORM $query   ORM query instance.
      * @param array      $filters Filters to apply.
      *
      * @return void
@@ -852,7 +852,7 @@ class Riseup_Database {
         }
 
         try {
-            $log = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
+            $log = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
                 ->find_one((int) $id);
 
             if ($log && !empty($log['details'])) {
@@ -881,10 +881,10 @@ class Riseup_Database {
             $stats = array();
 
             // Total transactions
-            $stats['total_transactions'] = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)->count();
+            $stats['total_transactions'] = RiseupORM::for_table(self::TABLE_TRANSACTIONS)->count();
 
             // Transactions by action
-            $by_action = Riseup_ORM::raw_execute(
+            $by_action = RiseupORM::raw_execute(
                 "SELECT action, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY action"
             );
             $stats['by_action'] = array();
@@ -893,7 +893,7 @@ class Riseup_Database {
             }
 
             // Transactions by status
-            $by_status = Riseup_ORM::raw_execute(
+            $by_status = RiseupORM::raw_execute(
                 "SELECT status, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY status"
             );
             $stats['by_status'] = array();
@@ -903,7 +903,7 @@ class Riseup_Database {
 
             // Last 24 hours
             $yesterday = gmdate('Y-m-d\TH:i:s\Z', time() - 86400);
-            $stats['last_24h'] = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
+            $stats['last_24h'] = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
                 ->where_gte('created_at', $yesterday)
                 ->count();
 
@@ -930,7 +930,7 @@ class Riseup_Database {
         try {
             $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($days_to_keep * 86400));
             
-            $deleted = Riseup_ORM::for_table(self::TABLE_TRANSACTIONS)
+            $deleted = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
                 ->where_lt('created_at', $cutoff)
                 ->delete();
                 

@@ -24,10 +24,10 @@ if (!defined('ABSPATH')) {
  */
 class RiseupSnapshotExporter {
 
-    /** @var Riseup_File_Logger */
+    /** @var RiseupFileLogger */
     private $logger;
 
-    /** @var Riseup_Database */
+    /** @var RiseupDatabase */
     private $db;
 
     /** @var RiseupSnapshotExporter|null */
@@ -36,8 +36,8 @@ class RiseupSnapshotExporter {
     /**
      * Get singleton instance.
      *
-     * @param Riseup_File_Logger|null $logger Logger.
-     * @param Riseup_Database|null    $db     Database.
+     * @param RiseupFileLogger|null $logger Logger.
+     * @param RiseupDatabase|null    $db     Database.
      * @return RiseupSnapshotExporter
      */
     public static function getInstance($logger = null, $db = null) {
@@ -50,8 +50,8 @@ class RiseupSnapshotExporter {
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger $logger Logger.
-     * @param Riseup_Database    $db     Database.
+     * @param RiseupFileLogger $logger Logger.
+     * @param RiseupDatabase    $db     Database.
      */
     private function __construct($logger, $db) {
         $this->logger = $logger;

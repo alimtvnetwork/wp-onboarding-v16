@@ -31,22 +31,22 @@ class RiseupSnapshotCleaner {
     /**
      * Logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     private $db;
 
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger $logger Logger instance.
-     * @param Riseup_Database    $db     Database instance.
+     * @param RiseupFileLogger $logger Logger instance.
+     * @param RiseupDatabase    $db     Database instance.
      */
     public function __construct($logger, $db) {
         $this->logger = $logger;
