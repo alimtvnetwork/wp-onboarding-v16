@@ -267,8 +267,8 @@ register_shutdown_function('riseup_fatal_error_handler');
 // LOAD DEPENDENCIES IN ORDER
 // =============================================================================
 
-// Foundation: constants, enum classes, boolean helpers, init helpers (must be loaded raw).
-require_once __DIR__ . '/includes/constants.php';
+// Foundation: enum classes (must load before constants.php which references them),
+// then constants, boolean helpers, init helpers (all loaded raw).
 require_once __DIR__ . '/includes/class-hook-enum.php';
 require_once __DIR__ . '/includes/class-path-enum.php';
 require_once __DIR__ . '/includes/class-error-type-enum.php';
@@ -276,6 +276,7 @@ require_once __DIR__ . '/includes/class-error-checker.php';
 require_once __DIR__ . '/includes/class-capability-enum.php';
 require_once __DIR__ . '/includes/class-http-method-enum.php';
 require_once __DIR__ . '/includes/class-upload-source-enum.php';
+require_once __DIR__ . '/includes/constants.php';
 require_once __DIR__ . '/includes/class-boolean-helpers.php';
 require_once __DIR__ . '/includes/class-init-helpers.php';
 
@@ -383,7 +384,7 @@ class Riseup_Asia {
     private function __construct() {
         // Initialize file logger first (it doesn't depend on anything else).
         $this->file_logger = Riseup_File_Logger::get_instance();
-        $this->file_logger->info('Plugin constructor starting', array('version' => RISEUP_VERSION));
+        $this->file_logger->info('Plugin constructor starting', array('version' => PLUGIN_VERSION));
 
         // Log dependency loading results from structured loader
         RiseupDependencyLoader::logSummary($this->file_logger);
@@ -479,9 +480,9 @@ class Riseup_Asia {
             ));
 
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_ENABLE,
+                ACTION_ENABLE,
                 $slug,
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array(
                     'plugin_file'   => $plugin,
                     'network_wide'  => $network_wide,
@@ -520,9 +521,9 @@ class Riseup_Asia {
             ));
 
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_DISABLE,
+                ACTION_DISABLE,
                 $slug,
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array(
                     'plugin_file'          => $plugin,
                     'network_deactivating' => $network_deactivating,
@@ -565,9 +566,9 @@ class Riseup_Asia {
             ));
 
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_DELETE,
+                ACTION_DELETE,
                 $slug,
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array(
                     'plugin_file'  => $plugin,
                     'triggered_by' => $triggered_by,
@@ -582,26 +583,26 @@ class Riseup_Asia {
     /**
      * Detect the source that triggered the current action.
      *
-     * @return string One of the RISEUP_TRIGGERED_BY_* constants.
+     * @return string One of the TRIGGERED_BY_* constants.
      */
     private function detect_trigger_source() {
         // Check if running from WP-CLI
         if (defined('WP_CLI') && WP_CLI) {
-            return RISEUP_TRIGGERED_BY_CLI;
+            return TRIGGERED_BY_CLI;
         }
 
         // Check if this is a cron job
         if (defined('DOING_CRON') && DOING_CRON) {
-            return RISEUP_TRIGGERED_BY_CRON;
+            return TRIGGERED_BY_CRON;
         }
 
         // Check if this is a REST API request (should be caught earlier, but just in case)
         if ($this->is_rest_request()) {
-            return RISEUP_TRIGGERED_BY_API;
+            return TRIGGERED_BY_API;
         }
 
         // Default to dashboard (admin UI action)
-        return RISEUP_TRIGGERED_BY_DASHBOARD;
+        return TRIGGERED_BY_DASHBOARD;
     }
 
     /**

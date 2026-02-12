@@ -5,6 +5,10 @@
  * All string constants centralized to avoid magic strings.
  * These can be overridden by defining them before this file is loaded.
  *
+ * NAMING CONVENTION: Constants do NOT use the RISEUP_ prefix.
+ * Categorized constants live in Enum classes (HookEnum, CapabilityEnum, etc.).
+ * Only non-categorized constants remain here as define() calls.
+ *
  * @package RiseupAsiaUploader
  * @since   1.4.0
  */
@@ -17,486 +21,478 @@ if (!defined('ABSPATH')) {
 // PLUGIN IDENTITY
 // =============================================================================
 
-if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.57.0');
+if (!defined('PLUGIN_VERSION')) {
+    define('PLUGIN_VERSION', '1.57.0');
 }
-if (!defined('RISEUP_SLUG')) {
-    define('RISEUP_SLUG', 'riseup-asia-uploader');
+if (!defined('PLUGIN_SLUG')) {
+    define('PLUGIN_SLUG', 'riseup-asia-uploader');
 }
-if (!defined('RISEUP_NAME')) {
-    define('RISEUP_NAME', 'Riseup Asia Uploader');
+if (!defined('PLUGIN_NAME')) {
+    define('PLUGIN_NAME', 'Riseup Asia Uploader');
 }
-if (!defined('RISEUP_MIN_WP_VERSION')) {
-    define('RISEUP_MIN_WP_VERSION', '5.6');
+if (!defined('MIN_WP_VERSION')) {
+    define('MIN_WP_VERSION', '5.6');
 }
-if (!defined('RISEUP_MIN_PHP_VERSION')) {
-    define('RISEUP_MIN_PHP_VERSION', '7.4');
+if (!defined('MIN_PHP_VERSION')) {
+    define('MIN_PHP_VERSION', '7.4');
 }
 
 // =============================================================================
 // PATHS - All relative to wp-content/uploads/{plugin-slug}/
 // =============================================================================
 
-if (!defined('RISEUP_UPLOADS_SUBDIR')) {
-    define('RISEUP_UPLOADS_SUBDIR', 'riseup-asia-uploader');
+if (!defined('UPLOADS_SUBDIR')) {
+    define('UPLOADS_SUBDIR', 'riseup-asia-uploader');
 }
-if (!defined('RISEUP_LOGS_SUBDIR')) {
-    define('RISEUP_LOGS_SUBDIR', 'logs');
+if (!defined('LOGS_SUBDIR')) {
+    define('LOGS_SUBDIR', 'logs');
 }
-if (!defined('RISEUP_LOG_FILENAME')) {
-    define('RISEUP_LOG_FILENAME', 'log.txt');
+if (!defined('LOG_FILENAME')) {
+    define('LOG_FILENAME', 'log.txt');
 }
-if (!defined('RISEUP_ERROR_LOG_FILENAME')) {
-    define('RISEUP_ERROR_LOG_FILENAME', 'error.txt');
+if (!defined('ERROR_LOG_FILENAME')) {
+    define('ERROR_LOG_FILENAME', 'error.txt');
 }
-if (!defined('RISEUP_STACKTRACE_FILENAME')) {
-    define('RISEUP_STACKTRACE_FILENAME', 'stacktrace.txt');
+if (!defined('STACKTRACE_FILENAME')) {
+    define('STACKTRACE_FILENAME', 'stacktrace.txt');
 }
-if (!defined('RISEUP_DB_FILENAME')) {
-    define('RISEUP_DB_FILENAME', 'riseup-asia-uploader.db');
+if (!defined('DB_FILENAME')) {
+    define('DB_FILENAME', 'riseup-asia-uploader.db');
 }
-if (!defined('RISEUP_TEMP_SUBDIR')) {
-    define('RISEUP_TEMP_SUBDIR', 'temp');
+if (!defined('TEMP_SUBDIR')) {
+    define('TEMP_SUBDIR', 'temp');
 }
 
 // =============================================================================
 // REST API CONFIGURATION
 // =============================================================================
 
-if (!defined('RISEUP_API_NAMESPACE')) {
-    define('RISEUP_API_NAMESPACE', 'riseup-asia-uploader');
+if (!defined('API_NAMESPACE')) {
+    define('API_NAMESPACE', 'riseup-asia-uploader');
 }
-if (!defined('RISEUP_API_VERSION')) {
-    define('RISEUP_API_VERSION', 'v1');
+if (!defined('API_VERSION')) {
+    define('API_VERSION', 'v1');
 }
-if (!defined('RISEUP_API_FULL_NAMESPACE')) {
-    define('RISEUP_API_FULL_NAMESPACE', RISEUP_API_NAMESPACE . '/' . RISEUP_API_VERSION);
+if (!defined('API_FULL_NAMESPACE')) {
+    define('API_FULL_NAMESPACE', API_NAMESPACE . '/' . API_VERSION);
 }
 
 // Legacy namespace support (for backward compatibility)
-if (!defined('RISEUP_LEGACY_NAMESPACE')) {
-    define('RISEUP_LEGACY_NAMESPACE', 'riseup-uploader/v1');
+if (!defined('LEGACY_NAMESPACE')) {
+    define('LEGACY_NAMESPACE', 'riseup-uploader/v1');
 }
 
 // =============================================================================
 // REST API ENDPOINTS (plain strings, no regex)
 // =============================================================================
 
-if (!defined('RISEUP_ENDPOINT_STATUS')) {
-    define('RISEUP_ENDPOINT_STATUS', 'status');
+if (!defined('ENDPOINT_STATUS')) {
+    define('ENDPOINT_STATUS', 'status');
 }
-if (!defined('RISEUP_ENDPOINT_UPLOAD')) {
-    define('RISEUP_ENDPOINT_UPLOAD', 'upload');
+if (!defined('ENDPOINT_UPLOAD')) {
+    define('ENDPOINT_UPLOAD', 'upload');
 }
-if (!defined('RISEUP_ENDPOINT_PLUGINS')) {
-    define('RISEUP_ENDPOINT_PLUGINS', 'plugins');
+if (!defined('ENDPOINT_PLUGINS')) {
+    define('ENDPOINT_PLUGINS', 'plugins');
 }
-if (!defined('RISEUP_ENDPOINT_EXPORT_SELF')) {
-    define('RISEUP_ENDPOINT_EXPORT_SELF', 'export-self');
+if (!defined('ENDPOINT_EXPORT_SELF')) {
+    define('ENDPOINT_EXPORT_SELF', 'export-self');
 }
-if (!defined('RISEUP_ENDPOINT_POSTS')) {
-    define('RISEUP_ENDPOINT_POSTS', 'posts');
+if (!defined('ENDPOINT_POSTS')) {
+    define('ENDPOINT_POSTS', 'posts');
 }
-if (!defined('RISEUP_ENDPOINT_CATEGORIES')) {
-    define('RISEUP_ENDPOINT_CATEGORIES', 'categories');
+if (!defined('ENDPOINT_CATEGORIES')) {
+    define('ENDPOINT_CATEGORIES', 'categories');
 }
-if (!defined('RISEUP_ENDPOINT_LOGS')) {
-    define('RISEUP_ENDPOINT_LOGS', 'logs');
+if (!defined('ENDPOINT_LOGS')) {
+    define('ENDPOINT_LOGS', 'logs');
 }
-if (!defined('RISEUP_ENDPOINT_LOGS_STATS')) {
-    define('RISEUP_ENDPOINT_LOGS_STATS', 'logs/stats');
+if (!defined('ENDPOINT_LOGS_STATS')) {
+    define('ENDPOINT_LOGS_STATS', 'logs/stats');
 }
-// Plugin files listing endpoint - fixed URL, slug passed in JSON body
-if (!defined('RISEUP_ENDPOINT_PLUGIN_FILES')) {
-    define('RISEUP_ENDPOINT_PLUGIN_FILES', 'plugins/files');
+if (!defined('ENDPOINT_PLUGIN_FILES')) {
+    define('ENDPOINT_PLUGIN_FILES', 'plugins/files');
 }
-// Plugin file content endpoint - fixed URL, slug passed in JSON body
-if (!defined('RISEUP_ENDPOINT_PLUGIN_FILE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_FILE', 'plugins/file');
+if (!defined('ENDPOINT_PLUGIN_FILE')) {
+    define('ENDPOINT_PLUGIN_FILE', 'plugins/file');
 }
-// Plugin enable/disable/delete endpoints - fixed URLs, slug passed in JSON body
-if (!defined('RISEUP_ENDPOINT_PLUGIN_ENABLE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_ENABLE', 'plugins/enable');
+if (!defined('ENDPOINT_PLUGIN_ENABLE')) {
+    define('ENDPOINT_PLUGIN_ENABLE', 'plugins/enable');
 }
-if (!defined('RISEUP_ENDPOINT_PLUGIN_DISABLE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_DISABLE', 'plugins/disable');
+if (!defined('ENDPOINT_PLUGIN_DISABLE')) {
+    define('ENDPOINT_PLUGIN_DISABLE', 'plugins/disable');
 }
-if (!defined('RISEUP_ENDPOINT_PLUGIN_DELETE')) {
-    define('RISEUP_ENDPOINT_PLUGIN_DELETE', 'plugins/delete');
+if (!defined('ENDPOINT_PLUGIN_DELETE')) {
+    define('ENDPOINT_PLUGIN_DELETE', 'plugins/delete');
 }
-// Plugin existence check endpoint - lightweight pre-flight check, slug in JSON body
-if (!defined('RISEUP_ENDPOINT_PLUGIN_EXISTS')) {
-    define('RISEUP_ENDPOINT_PLUGIN_EXISTS', 'plugins/exists');
+if (!defined('ENDPOINT_PLUGIN_EXISTS')) {
+    define('ENDPOINT_PLUGIN_EXISTS', 'plugins/exists');
 }
-// Plugin export endpoint - fixed URL, slug passed in JSON body
-if (!defined('RISEUP_ENDPOINT_PLUGIN_EXPORT')) {
-    define('RISEUP_ENDPOINT_PLUGIN_EXPORT', 'plugins/export');
+if (!defined('ENDPOINT_PLUGIN_EXPORT')) {
+    define('ENDPOINT_PLUGIN_EXPORT', 'plugins/export');
 }
-// OpenAPI specification endpoint
-if (!defined('RISEUP_ENDPOINT_OPENAPI')) {
-    define('RISEUP_ENDPOINT_OPENAPI', 'openapi');
+if (!defined('ENDPOINT_OPENAPI')) {
+    define('ENDPOINT_OPENAPI', 'openapi');
 }
-// OPcache reset endpoint (used after self-updates to flush stale bytecode)
-if (!defined('RISEUP_ENDPOINT_OPCACHE_RESET')) {
-    define('RISEUP_ENDPOINT_OPCACHE_RESET', 'opcache-reset');
+if (!defined('ENDPOINT_OPCACHE_RESET')) {
+    define('ENDPOINT_OPCACHE_RESET', 'opcache-reset');
 }
 
 // =============================================================================
 // DATABASE CONFIGURATION
 // =============================================================================
 
-if (!defined('RISEUP_TABLE_TRANSACTIONS')) {
-    define('RISEUP_TABLE_TRANSACTIONS', 'transactions');
+if (!defined('TABLE_TRANSACTIONS')) {
+    define('TABLE_TRANSACTIONS', 'transactions');
 }
-if (!defined('RISEUP_DB_WAL_MODE')) {
-    define('RISEUP_DB_WAL_MODE', true);
+if (!defined('DB_WAL_MODE')) {
+    define('DB_WAL_MODE', true);
 }
 
 // =============================================================================
 // ACTIONS (used for transaction logging)
 // =============================================================================
 
-if (!defined('RISEUP_ACTION_UPLOAD')) {
-    define('RISEUP_ACTION_UPLOAD', 'upload');
+if (!defined('ACTION_UPLOAD')) {
+    define('ACTION_UPLOAD', 'upload');
 }
-if (!defined('RISEUP_ACTION_UPLOAD_ACTIVE')) {
-    define('RISEUP_ACTION_UPLOAD_ACTIVE', 'upload_active');
+if (!defined('ACTION_UPLOAD_ACTIVE')) {
+    define('ACTION_UPLOAD_ACTIVE', 'upload_active');
 }
-if (!defined('RISEUP_ACTION_ENABLE')) {
-    define('RISEUP_ACTION_ENABLE', 'enable');
+if (!defined('ACTION_ENABLE')) {
+    define('ACTION_ENABLE', 'enable');
 }
-if (!defined('RISEUP_ACTION_DISABLE')) {
-    define('RISEUP_ACTION_DISABLE', 'disable');
+if (!defined('ACTION_DISABLE')) {
+    define('ACTION_DISABLE', 'disable');
 }
-if (!defined('RISEUP_ACTION_DELETE')) {
-    define('RISEUP_ACTION_DELETE', 'delete');
+if (!defined('ACTION_DELETE')) {
+    define('ACTION_DELETE', 'delete');
 }
-if (!defined('RISEUP_ACTION_FILE_REPLACE')) {
-    define('RISEUP_ACTION_FILE_REPLACE', 'file_replace');
+if (!defined('ACTION_FILE_REPLACE')) {
+    define('ACTION_FILE_REPLACE', 'file_replace');
 }
-if (!defined('RISEUP_ACTION_FILE_DELETE')) {
-    define('RISEUP_ACTION_FILE_DELETE', 'file_delete');
+if (!defined('ACTION_FILE_DELETE')) {
+    define('ACTION_FILE_DELETE', 'file_delete');
 }
-if (!defined('RISEUP_ACTION_SYNC')) {
-    define('RISEUP_ACTION_SYNC', 'sync');
+if (!defined('ACTION_SYNC')) {
+    define('ACTION_SYNC', 'sync');
 }
-if (!defined('RISEUP_ACTION_POST_CREATE')) {
-    define('RISEUP_ACTION_POST_CREATE', 'post_create');
+if (!defined('ACTION_POST_CREATE')) {
+    define('ACTION_POST_CREATE', 'post_create');
 }
-if (!defined('RISEUP_ACTION_POST_UPDATE')) {
-    define('RISEUP_ACTION_POST_UPDATE', 'post_update');
+if (!defined('ACTION_POST_UPDATE')) {
+    define('ACTION_POST_UPDATE', 'post_update');
 }
-if (!defined('RISEUP_ACTION_CATEGORY_CREATE')) {
-    define('RISEUP_ACTION_CATEGORY_CREATE', 'category_create');
+if (!defined('ACTION_CATEGORY_CREATE')) {
+    define('ACTION_CATEGORY_CREATE', 'category_create');
 }
-if (!defined('RISEUP_ACTION_MEDIA_UPLOAD')) {
-    define('RISEUP_ACTION_MEDIA_UPLOAD', 'media_upload');
+if (!defined('ACTION_MEDIA_UPLOAD')) {
+    define('ACTION_MEDIA_UPLOAD', 'media_upload');
 }
-if (!defined('RISEUP_ACTION_AUTH_FAILED')) {
-    define('RISEUP_ACTION_AUTH_FAILED', 'auth_failed');
+if (!defined('ACTION_AUTH_FAILED')) {
+    define('ACTION_AUTH_FAILED', 'auth_failed');
 }
-if (!defined('RISEUP_ACTION_EXPORT_SELF')) {
-    define('RISEUP_ACTION_EXPORT_SELF', 'export_self');
+if (!defined('ACTION_EXPORT_SELF')) {
+    define('ACTION_EXPORT_SELF', 'export_self');
 }
-if (!defined('RISEUP_ACTION_EXPORT_PLUGIN')) {
-    define('RISEUP_ACTION_EXPORT_PLUGIN', 'export_plugin');
+if (!defined('ACTION_EXPORT_PLUGIN')) {
+    define('ACTION_EXPORT_PLUGIN', 'export_plugin');
 }
-if (!defined('RISEUP_ACTION_UPLOAD_INITIATED')) {
-    define('RISEUP_ACTION_UPLOAD_INITIATED', 'upload_initiated');
+if (!defined('ACTION_UPLOAD_INITIATED')) {
+    define('ACTION_UPLOAD_INITIATED', 'upload_initiated');
 }
 
 // =============================================================================
 // STATUS VALUES
 // =============================================================================
 
-if (!defined('RISEUP_STATUS_SUCCESS')) {
-    define('RISEUP_STATUS_SUCCESS', 'success');
+if (!defined('STATUS_SUCCESS')) {
+    define('STATUS_SUCCESS', 'success');
 }
-if (!defined('RISEUP_STATUS_FAILED')) {
-    define('RISEUP_STATUS_FAILED', 'failed');
+if (!defined('STATUS_FAILED')) {
+    define('STATUS_FAILED', 'failed');
 }
 
 // =============================================================================
 // POST STATUS VALUES
 // =============================================================================
 
-if (!defined('RISEUP_POST_STATUS_PUBLISH')) {
-    define('RISEUP_POST_STATUS_PUBLISH', 'publish');
+if (!defined('POST_STATUS_PUBLISH')) {
+    define('POST_STATUS_PUBLISH', 'publish');
 }
-if (!defined('RISEUP_POST_STATUS_DRAFT')) {
-    define('RISEUP_POST_STATUS_DRAFT', 'draft');
+if (!defined('POST_STATUS_DRAFT')) {
+    define('POST_STATUS_DRAFT', 'draft');
 }
-if (!defined('RISEUP_POST_STATUS_PENDING')) {
-    define('RISEUP_POST_STATUS_PENDING', 'pending');
+if (!defined('POST_STATUS_PENDING')) {
+    define('POST_STATUS_PENDING', 'pending');
 }
 
 // =============================================================================
 // RESPONSE MESSAGES
 // =============================================================================
 
-if (!defined('RISEUP_MSG_SUCCESS')) {
-    define('RISEUP_MSG_SUCCESS', 'Operation completed successfully');
+if (!defined('MSG_SUCCESS')) {
+    define('MSG_SUCCESS', 'Operation completed successfully');
 }
-if (!defined('RISEUP_MSG_UNAUTHORIZED')) {
-    define('RISEUP_MSG_UNAUTHORIZED', 'Authentication required');
+if (!defined('MSG_UNAUTHORIZED')) {
+    define('MSG_UNAUTHORIZED', 'Authentication required');
 }
-if (!defined('RISEUP_MSG_FORBIDDEN')) {
-    define('RISEUP_MSG_FORBIDDEN', 'Insufficient permissions');
+if (!defined('MSG_FORBIDDEN')) {
+    define('MSG_FORBIDDEN', 'Insufficient permissions');
 }
-if (!defined('RISEUP_MSG_INVALID_REQUEST')) {
-    define('RISEUP_MSG_INVALID_REQUEST', 'Invalid request data');
+if (!defined('MSG_INVALID_REQUEST')) {
+    define('MSG_INVALID_REQUEST', 'Invalid request data');
 }
-if (!defined('RISEUP_MSG_PLUGIN_NOT_FOUND')) {
-    define('RISEUP_MSG_PLUGIN_NOT_FOUND', 'Plugin not found');
+if (!defined('MSG_PLUGIN_NOT_FOUND')) {
+    define('MSG_PLUGIN_NOT_FOUND', 'Plugin not found');
 }
-if (!defined('RISEUP_MSG_UPLOAD_FAILED')) {
-    define('RISEUP_MSG_UPLOAD_FAILED', 'Upload failed');
+if (!defined('MSG_UPLOAD_FAILED')) {
+    define('MSG_UPLOAD_FAILED', 'Upload failed');
 }
-if (!defined('RISEUP_MSG_ACTIVATION_FAILED')) {
-    define('RISEUP_MSG_ACTIVATION_FAILED', 'Plugin activation failed');
+if (!defined('MSG_ACTIVATION_FAILED')) {
+    define('MSG_ACTIVATION_FAILED', 'Plugin activation failed');
 }
-if (!defined('RISEUP_MSG_DEACTIVATION_FAILED')) {
-    define('RISEUP_MSG_DEACTIVATION_FAILED', 'Plugin deactivation failed');
+if (!defined('MSG_DEACTIVATION_FAILED')) {
+    define('MSG_DEACTIVATION_FAILED', 'Plugin deactivation failed');
 }
-if (!defined('RISEUP_MSG_DELETE_FAILED')) {
-    define('RISEUP_MSG_DELETE_FAILED', 'Plugin deletion failed');
+if (!defined('MSG_DELETE_FAILED')) {
+    define('MSG_DELETE_FAILED', 'Plugin deletion failed');
 }
-if (!defined('RISEUP_MSG_POST_CREATE_FAILED')) {
-    define('RISEUP_MSG_POST_CREATE_FAILED', 'Post creation failed');
+if (!defined('MSG_POST_CREATE_FAILED')) {
+    define('MSG_POST_CREATE_FAILED', 'Post creation failed');
 }
-if (!defined('RISEUP_MSG_POST_UPDATE_FAILED')) {
-    define('RISEUP_MSG_POST_UPDATE_FAILED', 'Post update failed');
+if (!defined('MSG_POST_UPDATE_FAILED')) {
+    define('MSG_POST_UPDATE_FAILED', 'Post update failed');
 }
-if (!defined('RISEUP_MSG_CATEGORY_CREATE_FAILED')) {
-    define('RISEUP_MSG_CATEGORY_CREATE_FAILED', 'Category creation failed');
+if (!defined('MSG_CATEGORY_CREATE_FAILED')) {
+    define('MSG_CATEGORY_CREATE_FAILED', 'Category creation failed');
 }
-if (!defined('RISEUP_MSG_MEDIA_UPLOAD_FAILED')) {
-    define('RISEUP_MSG_MEDIA_UPLOAD_FAILED', 'Media upload failed');
+if (!defined('MSG_MEDIA_UPLOAD_FAILED')) {
+    define('MSG_MEDIA_UPLOAD_FAILED', 'Media upload failed');
 }
-if (!defined('RISEUP_MSG_DB_ERROR')) {
-    define('RISEUP_MSG_DB_ERROR', 'Database error');
+if (!defined('MSG_DB_ERROR')) {
+    define('MSG_DB_ERROR', 'Database error');
 }
-if (!defined('RISEUP_MSG_FILE_IGNORED')) {
-    define('RISEUP_MSG_FILE_IGNORED', 'File ignored by .uploadignore');
+if (!defined('MSG_FILE_IGNORED')) {
+    define('MSG_FILE_IGNORED', 'File ignored by .uploadignore');
 }
 
 // =============================================================================
-// CAPABILITIES
+// CAPABILITIES — Now in CapabilityEnum, kept as aliases for backward compat
 // =============================================================================
 
-if (!defined('RISEUP_CAP_MANAGE_PLUGINS')) {
-    define('RISEUP_CAP_MANAGE_PLUGINS', 'activate_plugins');
+if (!defined('CAP_MANAGE_PLUGINS')) {
+    define('CAP_MANAGE_PLUGINS', CapabilityEnum::ACTIVATE_PLUGINS);
 }
-if (!defined('RISEUP_CAP_MANAGE_POSTS')) {
-    define('RISEUP_CAP_MANAGE_POSTS', 'publish_posts');
+if (!defined('CAP_MANAGE_POSTS')) {
+    define('CAP_MANAGE_POSTS', CapabilityEnum::PUBLISH_POSTS);
 }
-if (!defined('RISEUP_CAP_UPLOAD_MEDIA')) {
-    define('RISEUP_CAP_UPLOAD_MEDIA', 'upload_files');
+if (!defined('CAP_UPLOAD_MEDIA')) {
+    define('CAP_UPLOAD_MEDIA', CapabilityEnum::UPLOAD_FILES);
 }
-if (!defined('RISEUP_CAP_VIEW_LOGS')) {
-    define('RISEUP_CAP_VIEW_LOGS', 'manage_options');
+if (!defined('CAP_VIEW_LOGS')) {
+    define('CAP_VIEW_LOGS', CapabilityEnum::MANAGE_OPTIONS);
 }
 
 // =============================================================================
 // PAGINATION DEFAULTS
 // =============================================================================
 
-if (!defined('RISEUP_DEFAULT_LIMIT')) {
-    define('RISEUP_DEFAULT_LIMIT', 50);
+if (!defined('DEFAULT_LIMIT')) {
+    define('DEFAULT_LIMIT', 50);
 }
-if (!defined('RISEUP_MAX_LIMIT')) {
-    define('RISEUP_MAX_LIMIT', 500);
+if (!defined('MAX_LIMIT')) {
+    define('MAX_LIMIT', 500);
 }
 
 // =============================================================================
 // IGNORE FILE
 // =============================================================================
 
-if (!defined('RISEUP_IGNORE_FILENAME')) {
-    define('RISEUP_IGNORE_FILENAME', '.uploadignore');
+if (!defined('IGNORE_FILENAME')) {
+    define('IGNORE_FILENAME', '.uploadignore');
 }
 
 // =============================================================================
 // HTTP STATUS CODES
 // =============================================================================
 
-if (!defined('RISEUP_HTTP_OK')) {
-    define('RISEUP_HTTP_OK', 200);
+if (!defined('HTTP_OK')) {
+    define('HTTP_OK', 200);
 }
-if (!defined('RISEUP_HTTP_CREATED')) {
-    define('RISEUP_HTTP_CREATED', 201);
+if (!defined('HTTP_CREATED')) {
+    define('HTTP_CREATED', 201);
 }
-if (!defined('RISEUP_HTTP_BAD_REQUEST')) {
-    define('RISEUP_HTTP_BAD_REQUEST', 400);
+if (!defined('HTTP_BAD_REQUEST')) {
+    define('HTTP_BAD_REQUEST', 400);
 }
-if (!defined('RISEUP_HTTP_UNAUTHORIZED')) {
-    define('RISEUP_HTTP_UNAUTHORIZED', 401);
+if (!defined('HTTP_UNAUTHORIZED')) {
+    define('HTTP_UNAUTHORIZED', 401);
 }
-if (!defined('RISEUP_HTTP_FORBIDDEN')) {
-    define('RISEUP_HTTP_FORBIDDEN', 403);
+if (!defined('HTTP_FORBIDDEN')) {
+    define('HTTP_FORBIDDEN', 403);
 }
-if (!defined('RISEUP_HTTP_NOT_FOUND')) {
-    define('RISEUP_HTTP_NOT_FOUND', 404);
+if (!defined('HTTP_NOT_FOUND')) {
+    define('HTTP_NOT_FOUND', 404);
 }
-if (!defined('RISEUP_HTTP_SERVER_ERROR')) {
-    define('RISEUP_HTTP_SERVER_ERROR', 500);
+if (!defined('HTTP_SERVER_ERROR')) {
+    define('HTTP_SERVER_ERROR', 500);
 }
 
 // =============================================================================
 // LOG LEVELS
 // =============================================================================
 
-if (!defined('RISEUP_LOG_LEVEL_DEBUG')) {
-    define('RISEUP_LOG_LEVEL_DEBUG', 'DEBUG');
+if (!defined('LOG_LEVEL_DEBUG')) {
+    define('LOG_LEVEL_DEBUG', 'DEBUG');
 }
-if (!defined('RISEUP_LOG_LEVEL_INFO')) {
-    define('RISEUP_LOG_LEVEL_INFO', 'INFO');
+if (!defined('LOG_LEVEL_INFO')) {
+    define('LOG_LEVEL_INFO', 'INFO');
 }
-if (!defined('RISEUP_LOG_LEVEL_WARN')) {
-    define('RISEUP_LOG_LEVEL_WARN', 'WARN');
+if (!defined('LOG_LEVEL_WARN')) {
+    define('LOG_LEVEL_WARN', 'WARN');
 }
-if (!defined('RISEUP_LOG_LEVEL_ERROR')) {
-    define('RISEUP_LOG_LEVEL_ERROR', 'ERROR');
+if (!defined('LOG_LEVEL_ERROR')) {
+    define('LOG_LEVEL_ERROR', 'ERROR');
 }
 
 // =============================================================================
 // LOGGING PREFIX
 // =============================================================================
 
-if (!defined('RISEUP_LOG_PREFIX')) {
-    define('RISEUP_LOG_PREFIX', '[Riseup Asia]');
+if (!defined('LOG_PREFIX')) {
+    define('LOG_PREFIX', '[Riseup Asia]');
 }
 
 // =============================================================================
 // AUTO-UPDATE CONFIGURATION
 // =============================================================================
 
-if (!defined('RISEUP_UPDATE_CACHE_DAYS_DEFAULT')) {
-    define('RISEUP_UPDATE_CACHE_DAYS_DEFAULT', 7);
+if (!defined('UPDATE_CACHE_DAYS_DEFAULT')) {
+    define('UPDATE_CACHE_DAYS_DEFAULT', 7);
 }
-if (!defined('RISEUP_UPDATE_MAX_REDIRECTS')) {
-    define('RISEUP_UPDATE_MAX_REDIRECTS', 5);
+if (!defined('UPDATE_MAX_REDIRECTS')) {
+    define('UPDATE_MAX_REDIRECTS', 5);
 }
 
 // =============================================================================
 // AUTO-UPDATE ACTIONS (for transaction logging)
 // =============================================================================
 
-if (!defined('RISEUP_ACTION_UPDATE_CHECK')) {
-    define('RISEUP_ACTION_UPDATE_CHECK', 'update_check');
+if (!defined('ACTION_UPDATE_CHECK')) {
+    define('ACTION_UPDATE_CHECK', 'update_check');
 }
-if (!defined('RISEUP_ACTION_UPDATE_RESOLVE')) {
-    define('RISEUP_ACTION_UPDATE_RESOLVE', 'update_resolve');
+if (!defined('ACTION_UPDATE_RESOLVE')) {
+    define('ACTION_UPDATE_RESOLVE', 'update_resolve');
 }
-if (!defined('RISEUP_ACTION_UPDATE_DOWNLOAD')) {
-    define('RISEUP_ACTION_UPDATE_DOWNLOAD', 'update_download');
+if (!defined('ACTION_UPDATE_DOWNLOAD')) {
+    define('ACTION_UPDATE_DOWNLOAD', 'update_download');
 }
-if (!defined('RISEUP_ACTION_UPDATE_INSTALL')) {
-    define('RISEUP_ACTION_UPDATE_INSTALL', 'update_install');
+if (!defined('ACTION_UPDATE_INSTALL')) {
+    define('ACTION_UPDATE_INSTALL', 'update_install');
 }
 
 // =============================================================================
 // AGENT MANAGEMENT CONSTANTS
 // =============================================================================
 
-if (!defined('RISEUP_TABLE_AGENT_SITES')) {
-    define('RISEUP_TABLE_AGENT_SITES', 'agent_sites');
+if (!defined('TABLE_AGENT_SITES')) {
+    define('TABLE_AGENT_SITES', 'agent_sites');
 }
-if (!defined('RISEUP_TABLE_AGENT_ACTIONS')) {
-    define('RISEUP_TABLE_AGENT_ACTIONS', 'agent_actions');
+if (!defined('TABLE_AGENT_ACTIONS')) {
+    define('TABLE_AGENT_ACTIONS', 'agent_actions');
 }
 
 // Agent action types
-if (!defined('RISEUP_ACTION_AGENT_ADD')) {
-    define('RISEUP_ACTION_AGENT_ADD', 'agent_add');
+if (!defined('ACTION_AGENT_ADD')) {
+    define('ACTION_AGENT_ADD', 'agent_add');
 }
-if (!defined('RISEUP_ACTION_AGENT_REMOVE')) {
-    define('RISEUP_ACTION_AGENT_REMOVE', 'agent_remove');
+if (!defined('ACTION_AGENT_REMOVE')) {
+    define('ACTION_AGENT_REMOVE', 'agent_remove');
 }
-if (!defined('RISEUP_ACTION_AGENT_TEST')) {
-    define('RISEUP_ACTION_AGENT_TEST', 'agent_test');
+if (!defined('ACTION_AGENT_TEST')) {
+    define('ACTION_AGENT_TEST', 'agent_test');
 }
-if (!defined('RISEUP_ACTION_AGENT_SYNC')) {
-    define('RISEUP_ACTION_AGENT_SYNC', 'agent_sync');
+if (!defined('ACTION_AGENT_SYNC')) {
+    define('ACTION_AGENT_SYNC', 'agent_sync');
 }
-if (!defined('RISEUP_ACTION_AGENT_PLUGIN_ENABLE')) {
-    define('RISEUP_ACTION_AGENT_PLUGIN_ENABLE', 'agent_plugin_enable');
+if (!defined('ACTION_AGENT_PLUGIN_ENABLE')) {
+    define('ACTION_AGENT_PLUGIN_ENABLE', 'agent_plugin_enable');
 }
-if (!defined('RISEUP_ACTION_AGENT_PLUGIN_DISABLE')) {
-    define('RISEUP_ACTION_AGENT_PLUGIN_DISABLE', 'agent_plugin_disable');
+if (!defined('ACTION_AGENT_PLUGIN_DISABLE')) {
+    define('ACTION_AGENT_PLUGIN_DISABLE', 'agent_plugin_disable');
 }
-if (!defined('RISEUP_ACTION_AGENT_PLUGIN_DELETE')) {
-    define('RISEUP_ACTION_AGENT_PLUGIN_DELETE', 'agent_plugin_delete');
+if (!defined('ACTION_AGENT_PLUGIN_DELETE')) {
+    define('ACTION_AGENT_PLUGIN_DELETE', 'agent_plugin_delete');
 }
-if (!defined('RISEUP_ACTION_AGENT_PLUGIN_UPDATE')) {
-    define('RISEUP_ACTION_AGENT_PLUGIN_UPDATE', 'agent_plugin_update');
+if (!defined('ACTION_AGENT_PLUGIN_UPDATE')) {
+    define('ACTION_AGENT_PLUGIN_UPDATE', 'agent_plugin_update');
 }
 
 // Agent status values
-if (!defined('RISEUP_AGENT_STATUS_PENDING')) {
-    define('RISEUP_AGENT_STATUS_PENDING', 'pending');
+if (!defined('AGENT_STATUS_PENDING')) {
+    define('AGENT_STATUS_PENDING', 'pending');
 }
-if (!defined('RISEUP_AGENT_STATUS_CONNECTED')) {
-    define('RISEUP_AGENT_STATUS_CONNECTED', 'connected');
+if (!defined('AGENT_STATUS_CONNECTED')) {
+    define('AGENT_STATUS_CONNECTED', 'connected');
 }
-if (!defined('RISEUP_AGENT_STATUS_ERROR')) {
-    define('RISEUP_AGENT_STATUS_ERROR', 'error');
+if (!defined('AGENT_STATUS_ERROR')) {
+    define('AGENT_STATUS_ERROR', 'error');
 }
 
 // Agent REST endpoints - ALL fixed paths, IDs passed in JSON body
-if (!defined('RISEUP_ENDPOINT_AGENTS')) {
-    define('RISEUP_ENDPOINT_AGENTS', 'agents');
+if (!defined('ENDPOINT_AGENTS')) {
+    define('ENDPOINT_AGENTS', 'agents');
 }
-if (!defined('RISEUP_ENDPOINT_AGENT_TEST')) {
-    define('RISEUP_ENDPOINT_AGENT_TEST', 'agents/test');
+if (!defined('ENDPOINT_AGENT_TEST')) {
+    define('ENDPOINT_AGENT_TEST', 'agents/test');
 }
-if (!defined('RISEUP_ENDPOINT_AGENT_SYNC')) {
-    define('RISEUP_ENDPOINT_AGENT_SYNC', 'agents/sync');
+if (!defined('ENDPOINT_AGENT_SYNC')) {
+    define('ENDPOINT_AGENT_SYNC', 'agents/sync');
 }
-if (!defined('RISEUP_ENDPOINT_AGENT_ACTION')) {
-    define('RISEUP_ENDPOINT_AGENT_ACTION', 'agents/action');
+if (!defined('ENDPOINT_AGENT_ACTION')) {
+    define('ENDPOINT_AGENT_ACTION', 'agents/action');
 }
-if (!defined('RISEUP_ENDPOINT_AGENT_HISTORY')) {
-    define('RISEUP_ENDPOINT_AGENT_HISTORY', 'agents/history');
+if (!defined('ENDPOINT_AGENT_HISTORY')) {
+    define('ENDPOINT_AGENT_HISTORY', 'agents/history');
 }
-// Plural aliases used by register_routes (must match exactly)
-if (!defined('RISEUP_ENDPOINT_AGENTS_LIST')) {
-    define('RISEUP_ENDPOINT_AGENTS_LIST', 'agents');
+if (!defined('ENDPOINT_AGENTS_LIST')) {
+    define('ENDPOINT_AGENTS_LIST', 'agents');
 }
-if (!defined('RISEUP_ENDPOINT_AGENTS_ADD')) {
-    define('RISEUP_ENDPOINT_AGENTS_ADD', 'agents/add');
+if (!defined('ENDPOINT_AGENTS_ADD')) {
+    define('ENDPOINT_AGENTS_ADD', 'agents/add');
 }
-if (!defined('RISEUP_ENDPOINT_AGENTS_REMOVE')) {
-    define('RISEUP_ENDPOINT_AGENTS_REMOVE', 'agents/remove');
+if (!defined('ENDPOINT_AGENTS_REMOVE')) {
+    define('ENDPOINT_AGENTS_REMOVE', 'agents/remove');
 }
-if (!defined('RISEUP_ENDPOINT_AGENTS_TEST')) {
-    define('RISEUP_ENDPOINT_AGENTS_TEST', 'agents/test');
+if (!defined('ENDPOINT_AGENTS_TEST')) {
+    define('ENDPOINT_AGENTS_TEST', 'agents/test');
 }
-if (!defined('RISEUP_ENDPOINT_AGENTS_SYNC')) {
-    define('RISEUP_ENDPOINT_AGENTS_SYNC', 'agents/sync');
+if (!defined('ENDPOINT_AGENTS_SYNC')) {
+    define('ENDPOINT_AGENTS_SYNC', 'agents/sync');
 }
-if (!defined('RISEUP_ENDPOINT_AGENTS_PLUGINS')) {
-    define('RISEUP_ENDPOINT_AGENTS_PLUGINS', 'agents/plugins');
+if (!defined('ENDPOINT_AGENTS_PLUGINS')) {
+    define('ENDPOINT_AGENTS_PLUGINS', 'agents/plugins');
 }
 
 // =============================================================================
 // TRIGGERED_BY VALUES (for enhanced transaction logging)
 // =============================================================================
 
-if (!defined('RISEUP_TRIGGERED_BY_API')) {
-    define('RISEUP_TRIGGERED_BY_API', 'api');
+if (!defined('TRIGGERED_BY_API')) {
+    define('TRIGGERED_BY_API', 'api');
 }
-if (!defined('RISEUP_TRIGGERED_BY_DASHBOARD')) {
-    define('RISEUP_TRIGGERED_BY_DASHBOARD', 'dashboard');
+if (!defined('TRIGGERED_BY_DASHBOARD')) {
+    define('TRIGGERED_BY_DASHBOARD', 'dashboard');
 }
-if (!defined('RISEUP_TRIGGERED_BY_AGENT')) {
-    define('RISEUP_TRIGGERED_BY_AGENT', 'agent_push');
+if (!defined('TRIGGERED_BY_AGENT')) {
+    define('TRIGGERED_BY_AGENT', 'agent_push');
 }
-if (!defined('RISEUP_TRIGGERED_BY_CRON')) {
-    define('RISEUP_TRIGGERED_BY_CRON', 'cron');
+if (!defined('TRIGGERED_BY_CRON')) {
+    define('TRIGGERED_BY_CRON', 'cron');
 }
-if (!defined('RISEUP_TRIGGERED_BY_CLI')) {
-    define('RISEUP_TRIGGERED_BY_CLI', 'cli');
+if (!defined('TRIGGERED_BY_CLI')) {
+    define('TRIGGERED_BY_CLI', 'cli');
 }
 
 // =============================================================================
@@ -504,464 +500,428 @@ if (!defined('RISEUP_TRIGGERED_BY_CLI')) {
 // =============================================================================
 
 // Snapshot providers
-if (!defined('RISEUP_SNAPSHOT_PROVIDER_WP_RESET')) {
-    define('RISEUP_SNAPSHOT_PROVIDER_WP_RESET', 'wp_reset');
+if (!defined('SNAPSHOT_PROVIDER_WP_RESET')) {
+    define('SNAPSHOT_PROVIDER_WP_RESET', 'wp_reset');
 }
-if (!defined('RISEUP_SNAPSHOT_PROVIDER_UPDRAFT')) {
-    define('RISEUP_SNAPSHOT_PROVIDER_UPDRAFT', 'updraft');
+if (!defined('SNAPSHOT_PROVIDER_UPDRAFT')) {
+    define('SNAPSHOT_PROVIDER_UPDRAFT', 'updraft');
 }
-if (!defined('RISEUP_SNAPSHOT_PROVIDER_NATIVE')) {
-    define('RISEUP_SNAPSHOT_PROVIDER_NATIVE', 'native');
+if (!defined('SNAPSHOT_PROVIDER_NATIVE')) {
+    define('SNAPSHOT_PROVIDER_NATIVE', 'native');
 }
-if (!defined('RISEUP_SNAPSHOT_PROVIDER_AUTO')) {
-    define('RISEUP_SNAPSHOT_PROVIDER_AUTO', 'auto');
+if (!defined('SNAPSHOT_PROVIDER_AUTO')) {
+    define('SNAPSHOT_PROVIDER_AUTO', 'auto');
 }
 
 // Snapshot status values
-if (!defined('RISEUP_SNAPSHOT_STATUS_PENDING')) {
-    define('RISEUP_SNAPSHOT_STATUS_PENDING', 'pending');
+if (!defined('SNAPSHOT_STATUS_PENDING')) {
+    define('SNAPSHOT_STATUS_PENDING', 'pending');
 }
-if (!defined('RISEUP_SNAPSHOT_STATUS_SCHEDULED')) {
-    define('RISEUP_SNAPSHOT_STATUS_SCHEDULED', 'scheduled');
+if (!defined('SNAPSHOT_STATUS_SCHEDULED')) {
+    define('SNAPSHOT_STATUS_SCHEDULED', 'scheduled');
 }
-if (!defined('RISEUP_SNAPSHOT_STATUS_RUNNING')) {
-    define('RISEUP_SNAPSHOT_STATUS_RUNNING', 'running');
+if (!defined('SNAPSHOT_STATUS_RUNNING')) {
+    define('SNAPSHOT_STATUS_RUNNING', 'running');
 }
-if (!defined('RISEUP_SNAPSHOT_STATUS_COMPLETE')) {
-    define('RISEUP_SNAPSHOT_STATUS_COMPLETE', 'complete');
+if (!defined('SNAPSHOT_STATUS_COMPLETE')) {
+    define('SNAPSHOT_STATUS_COMPLETE', 'complete');
 }
-if (!defined('RISEUP_SNAPSHOT_STATUS_FAILED')) {
-    define('RISEUP_SNAPSHOT_STATUS_FAILED', 'failed');
+if (!defined('SNAPSHOT_STATUS_FAILED')) {
+    define('SNAPSHOT_STATUS_FAILED', 'failed');
 }
 
 // Snapshot scope values
-if (!defined('RISEUP_SNAPSHOT_SCOPE_ALL')) {
-    define('RISEUP_SNAPSHOT_SCOPE_ALL', 'all');
+if (!defined('SNAPSHOT_SCOPE_ALL')) {
+    define('SNAPSHOT_SCOPE_ALL', 'all');
 }
-if (!defined('RISEUP_SNAPSHOT_SCOPE_WORDPRESS')) {
-    define('RISEUP_SNAPSHOT_SCOPE_WORDPRESS', 'wordpress');
+if (!defined('SNAPSHOT_SCOPE_WORDPRESS')) {
+    define('SNAPSHOT_SCOPE_WORDPRESS', 'wordpress');
 }
-if (!defined('RISEUP_SNAPSHOT_SCOPE_CONTENT')) {
-    define('RISEUP_SNAPSHOT_SCOPE_CONTENT', 'content');
+if (!defined('SNAPSHOT_SCOPE_CONTENT')) {
+    define('SNAPSHOT_SCOPE_CONTENT', 'content');
 }
-if (!defined('RISEUP_SNAPSHOT_SCOPE_CUSTOM')) {
-    define('RISEUP_SNAPSHOT_SCOPE_CUSTOM', 'custom');
+if (!defined('SNAPSHOT_SCOPE_CUSTOM')) {
+    define('SNAPSHOT_SCOPE_CUSTOM', 'custom');
 }
 
 // Snapshot schedule frequencies
-if (!defined('RISEUP_SNAPSHOT_FREQ_MANUAL')) {
-    define('RISEUP_SNAPSHOT_FREQ_MANUAL', 'manual');
+if (!defined('SNAPSHOT_FREQ_MANUAL')) {
+    define('SNAPSHOT_FREQ_MANUAL', 'manual');
 }
-if (!defined('RISEUP_SNAPSHOT_FREQ_DAILY')) {
-    define('RISEUP_SNAPSHOT_FREQ_DAILY', 'daily');
+if (!defined('SNAPSHOT_FREQ_DAILY')) {
+    define('SNAPSHOT_FREQ_DAILY', 'daily');
 }
-if (!defined('RISEUP_SNAPSHOT_FREQ_WEEKLY')) {
-    define('RISEUP_SNAPSHOT_FREQ_WEEKLY', 'weekly');
+if (!defined('SNAPSHOT_FREQ_WEEKLY')) {
+    define('SNAPSHOT_FREQ_WEEKLY', 'weekly');
 }
-if (!defined('RISEUP_SNAPSHOT_FREQ_MONTHLY')) {
-    define('RISEUP_SNAPSHOT_FREQ_MONTHLY', 'monthly');
+if (!defined('SNAPSHOT_FREQ_MONTHLY')) {
+    define('SNAPSHOT_FREQ_MONTHLY', 'monthly');
 }
 
 // Snapshot actions (for transaction logging)
-if (!defined('RISEUP_ACTION_SNAPSHOT_CREATE')) {
-    define('RISEUP_ACTION_SNAPSHOT_CREATE', 'snapshot_create');
+if (!defined('ACTION_SNAPSHOT_CREATE')) {
+    define('ACTION_SNAPSHOT_CREATE', 'snapshot_create');
 }
-if (!defined('RISEUP_ACTION_SNAPSHOT_RESTORE')) {
-    define('RISEUP_ACTION_SNAPSHOT_RESTORE', 'snapshot_restore');
+if (!defined('ACTION_SNAPSHOT_RESTORE')) {
+    define('ACTION_SNAPSHOT_RESTORE', 'snapshot_restore');
 }
-if (!defined('RISEUP_ACTION_SNAPSHOT_DELETE')) {
-    define('RISEUP_ACTION_SNAPSHOT_DELETE', 'snapshot_delete');
+if (!defined('ACTION_SNAPSHOT_DELETE')) {
+    define('ACTION_SNAPSHOT_DELETE', 'snapshot_delete');
 }
-if (!defined('RISEUP_ACTION_SNAPSHOT_EXPORT')) {
-    define('RISEUP_ACTION_SNAPSHOT_EXPORT', 'snapshot_export');
+if (!defined('ACTION_SNAPSHOT_EXPORT')) {
+    define('ACTION_SNAPSHOT_EXPORT', 'snapshot_export');
 }
-if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT')) {
-    define('RISEUP_ACTION_SNAPSHOT_IMPORT', 'snapshot_import');
+if (!defined('ACTION_SNAPSHOT_IMPORT')) {
+    define('ACTION_SNAPSHOT_IMPORT', 'snapshot_import');
 }
 
-// Snapshot REST endpoints - ALL fixed paths, IDs passed in JSON body
-if (!defined('RISEUP_ENDPOINT_SNAPSHOTS')) {
-    define('RISEUP_ENDPOINT_SNAPSHOTS', 'snapshots/list');
+// Snapshot REST endpoints
+if (!defined('ENDPOINT_SNAPSHOTS')) {
+    define('ENDPOINT_SNAPSHOTS', 'snapshots/list');
 }
-// Alias used by register_routes
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_LIST')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_LIST', 'snapshots/list');
+if (!defined('ENDPOINT_SNAPSHOT_LIST')) {
+    define('ENDPOINT_SNAPSHOT_LIST', 'snapshots/list');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE', 'snapshots/schedule');
+if (!defined('ENDPOINT_SNAPSHOT_SCHEDULE')) {
+    define('ENDPOINT_SNAPSHOT_SCHEDULE', 'snapshots/schedule');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_INFO')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_INFO', 'snapshots/info');
+if (!defined('ENDPOINT_SNAPSHOT_INFO')) {
+    define('ENDPOINT_SNAPSHOT_INFO', 'snapshots/info');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DELETE')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_DELETE', 'snapshots/delete');
+if (!defined('ENDPOINT_SNAPSHOT_DELETE')) {
+    define('ENDPOINT_SNAPSHOT_DELETE', 'snapshots/delete');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_RESTORE')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_RESTORE', 'snapshots/restore');
+if (!defined('ENDPOINT_SNAPSHOT_RESTORE')) {
+    define('ENDPOINT_SNAPSHOT_RESTORE', 'snapshots/restore');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_EXPORT')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_EXPORT', 'snapshots/export');
+if (!defined('ENDPOINT_SNAPSHOT_EXPORT')) {
+    define('ENDPOINT_SNAPSHOT_EXPORT', 'snapshots/export');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_IMPORT')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_IMPORT', 'snapshots/import');
+if (!defined('ENDPOINT_SNAPSHOT_IMPORT')) {
+    define('ENDPOINT_SNAPSHOT_IMPORT', 'snapshots/import');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_SETTINGS')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_SETTINGS', 'snapshots/settings');
+if (!defined('ENDPOINT_SNAPSHOT_SETTINGS')) {
+    define('ENDPOINT_SNAPSHOT_SETTINGS', 'snapshots/settings');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS', 'snapshots/providers');
+if (!defined('ENDPOINT_SNAPSHOT_PROVIDERS')) {
+    define('ENDPOINT_SNAPSHOT_PROVIDERS', 'snapshots/providers');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_TABLES')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_TABLES', 'snapshots/tables');
+if (!defined('ENDPOINT_SNAPSHOT_TABLES')) {
+    define('ENDPOINT_SNAPSHOT_TABLES', 'snapshots/tables');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DEPENDENCIES')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_DEPENDENCIES', 'snapshots/dependencies');
+if (!defined('ENDPOINT_SNAPSHOT_DEPENDENCIES')) {
+    define('ENDPOINT_SNAPSHOT_DEPENDENCIES', 'snapshots/dependencies');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_EXPORT_PERTABLE')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_EXPORT_PERTABLE', 'snapshots/export-pertable');
+if (!defined('ENDPOINT_SNAPSHOT_EXPORT_PERTABLE')) {
+    define('ENDPOINT_SNAPSHOT_EXPORT_PERTABLE', 'snapshots/export-pertable');
 }
 
 // Snapshot table names
-if (!defined('RISEUP_TABLE_SNAPSHOTS')) {
-    define('RISEUP_TABLE_SNAPSHOTS', 'snapshots');
+if (!defined('TABLE_SNAPSHOTS')) {
+    define('TABLE_SNAPSHOTS', 'snapshots');
 }
-if (!defined('RISEUP_TABLE_SNAPSHOT_PROGRESS')) {
-    define('RISEUP_TABLE_SNAPSHOT_PROGRESS', 'snapshot_progress');
+if (!defined('TABLE_SNAPSHOT_PROGRESS')) {
+    define('TABLE_SNAPSHOT_PROGRESS', 'snapshot_progress');
 }
 
 // Snapshot folders
-if (!defined('RISEUP_SNAPSHOTS_SUBDIR')) {
-    define('RISEUP_SNAPSHOTS_SUBDIR', 'snapshots');
+if (!defined('SNAPSHOTS_SUBDIR')) {
+    define('SNAPSHOTS_SUBDIR', 'snapshots');
 }
 
 // Snapshot defaults
-if (!defined('RISEUP_SNAPSHOT_BATCH_SIZE')) {
-    define('RISEUP_SNAPSHOT_BATCH_SIZE', 1000);
+if (!defined('SNAPSHOT_BATCH_SIZE')) {
+    define('SNAPSHOT_BATCH_SIZE', 1000);
 }
-if (!defined('RISEUP_SNAPSHOT_MAX_SIZE_MB')) {
-    define('RISEUP_SNAPSHOT_MAX_SIZE_MB', 500);
+if (!defined('SNAPSHOT_MAX_SIZE_MB')) {
+    define('SNAPSHOT_MAX_SIZE_MB', 500);
 }
-if (!defined('RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT')) {
-    define('RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT', 30);
+if (!defined('SNAPSHOT_RETENTION_DAYS_DEFAULT')) {
+    define('SNAPSHOT_RETENTION_DAYS_DEFAULT', 30);
 }
-if (!defined('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT')) {
-    define('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT', 10);
+if (!defined('SNAPSHOT_RETENTION_COUNT_DEFAULT')) {
+    define('SNAPSHOT_RETENTION_COUNT_DEFAULT', 10);
 }
 
 // Worker pool configuration
-if (!defined('RISEUP_SNAPSHOT_WORKER_POOL_MIN')) {
-    define('RISEUP_SNAPSHOT_WORKER_POOL_MIN', 1);
+if (!defined('SNAPSHOT_WORKER_POOL_MIN')) {
+    define('SNAPSHOT_WORKER_POOL_MIN', 1);
 }
-if (!defined('RISEUP_SNAPSHOT_WORKER_POOL_MAX')) {
-    define('RISEUP_SNAPSHOT_WORKER_POOL_MAX', 10);
+if (!defined('SNAPSHOT_WORKER_POOL_MAX')) {
+    define('SNAPSHOT_WORKER_POOL_MAX', 10);
 }
-if (!defined('RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT')) {
-    define('RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT', 5);
+if (!defined('SNAPSHOT_WORKER_POOL_DEFAULT')) {
+    define('SNAPSHOT_WORKER_POOL_DEFAULT', 5);
 }
 
-// Worker pool cron hook (processes a batch of tables)
-if (!defined('RISEUP_CRON_SNAPSHOT_WORKER_BATCH')) {
-    define('RISEUP_CRON_SNAPSHOT_WORKER_BATCH', 'riseup_snapshot_worker_batch');
+// Worker pool cron hook
+if (!defined('CRON_SNAPSHOT_WORKER_BATCH')) {
+    define('CRON_SNAPSHOT_WORKER_BATCH', 'riseup_snapshot_worker_batch');
 }
 
 // Snapshot job status values
-if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_QUEUED')) {
-    define('RISEUP_SNAPSHOT_JOB_STATUS_QUEUED', 'queued');
+if (!defined('SNAPSHOT_JOB_STATUS_QUEUED')) {
+    define('SNAPSHOT_JOB_STATUS_QUEUED', 'queued');
 }
-if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_PROCESSING')) {
-    define('RISEUP_SNAPSHOT_JOB_STATUS_PROCESSING', 'processing');
+if (!defined('SNAPSHOT_JOB_STATUS_PROCESSING')) {
+    define('SNAPSHOT_JOB_STATUS_PROCESSING', 'processing');
 }
-if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_COMPLETE')) {
-    define('RISEUP_SNAPSHOT_JOB_STATUS_COMPLETE', 'complete');
+if (!defined('SNAPSHOT_JOB_STATUS_COMPLETE')) {
+    define('SNAPSHOT_JOB_STATUS_COMPLETE', 'complete');
 }
-if (!defined('RISEUP_SNAPSHOT_JOB_STATUS_FAILED')) {
-    define('RISEUP_SNAPSHOT_JOB_STATUS_FAILED', 'failed');
+if (!defined('SNAPSHOT_JOB_STATUS_FAILED')) {
+    define('SNAPSHOT_JOB_STATUS_FAILED', 'failed');
 }
 
 // Snapshot progress REST endpoint
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_PROGRESS')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_PROGRESS', 'snapshots/progress');
+if (!defined('ENDPOINT_SNAPSHOT_PROGRESS')) {
+    define('ENDPOINT_SNAPSHOT_PROGRESS', 'snapshots/progress');
 }
 
 // Snapshot job table
-if (!defined('RISEUP_TABLE_SNAPSHOT_JOBS')) {
-    define('RISEUP_TABLE_SNAPSHOT_JOBS', 'snapshot_jobs');
+if (!defined('TABLE_SNAPSHOT_JOBS')) {
+    define('TABLE_SNAPSHOT_JOBS', 'snapshot_jobs');
 }
 
 // Snapshot cron hooks
-if (!defined('RISEUP_CRON_SNAPSHOT_SCHEDULED')) {
-    define('RISEUP_CRON_SNAPSHOT_SCHEDULED', 'riseup_snapshot_scheduled');
+if (!defined('CRON_SNAPSHOT_SCHEDULED')) {
+    define('CRON_SNAPSHOT_SCHEDULED', 'riseup_snapshot_scheduled');
 }
-if (!defined('RISEUP_CRON_SNAPSHOT_IMMEDIATE')) {
-    define('RISEUP_CRON_SNAPSHOT_IMMEDIATE', 'riseup_snapshot_immediate');
+if (!defined('CRON_SNAPSHOT_IMMEDIATE')) {
+    define('CRON_SNAPSHOT_IMMEDIATE', 'riseup_snapshot_immediate');
 }
-if (!defined('RISEUP_CRON_SNAPSHOT_CLEANUP')) {
-    define('RISEUP_CRON_SNAPSHOT_CLEANUP', 'riseup_snapshot_cleanup');
+if (!defined('CRON_SNAPSHOT_CLEANUP')) {
+    define('CRON_SNAPSHOT_CLEANUP', 'riseup_snapshot_cleanup');
 }
-// Cron hook for background restore operations
-if (!defined('RISEUP_CRON_SNAPSHOT_RESTORE')) {
-    define('RISEUP_CRON_SNAPSHOT_RESTORE', 'riseup_snapshot_restore');
+if (!defined('CRON_SNAPSHOT_RESTORE')) {
+    define('CRON_SNAPSHOT_RESTORE', 'riseup_snapshot_restore');
 }
-
-// Cron hook for background incremental backup
-if (!defined('RISEUP_CRON_SNAPSHOT_INCREMENTAL')) {
-    define('RISEUP_CRON_SNAPSHOT_INCREMENTAL', 'riseup_snapshot_incremental');
+if (!defined('CRON_SNAPSHOT_INCREMENTAL')) {
+    define('CRON_SNAPSHOT_INCREMENTAL', 'riseup_snapshot_incremental');
 }
 
 // Snapshot error codes
-if (!defined('RISEUP_ERR_SNAPSHOT_LOCK_EXISTS')) {
-    define('RISEUP_ERR_SNAPSHOT_LOCK_EXISTS', 'SNAPSHOT_LOCK_EXISTS');
+if (!defined('ERR_SNAPSHOT_LOCK_EXISTS')) {
+    define('ERR_SNAPSHOT_LOCK_EXISTS', 'SNAPSHOT_LOCK_EXISTS');
 }
-if (!defined('RISEUP_ERR_SNAPSHOT_NOT_FOUND')) {
-    define('RISEUP_ERR_SNAPSHOT_NOT_FOUND', 'SNAPSHOT_NOT_FOUND');
+if (!defined('ERR_SNAPSHOT_NOT_FOUND')) {
+    define('ERR_SNAPSHOT_NOT_FOUND', 'SNAPSHOT_NOT_FOUND');
 }
-if (!defined('RISEUP_ERR_SNAPSHOT_CORRUPT')) {
-    define('RISEUP_ERR_SNAPSHOT_CORRUPT', 'SNAPSHOT_CORRUPT');
+if (!defined('ERR_SNAPSHOT_CORRUPT')) {
+    define('ERR_SNAPSHOT_CORRUPT', 'SNAPSHOT_CORRUPT');
 }
-if (!defined('RISEUP_ERR_SNAPSHOT_TOO_LARGE')) {
-    define('RISEUP_ERR_SNAPSHOT_TOO_LARGE', 'SNAPSHOT_TOO_LARGE');
+if (!defined('ERR_SNAPSHOT_TOO_LARGE')) {
+    define('ERR_SNAPSHOT_TOO_LARGE', 'SNAPSHOT_TOO_LARGE');
 }
-if (!defined('RISEUP_ERR_RESTORE_FAILED')) {
-    define('RISEUP_ERR_RESTORE_FAILED', 'RESTORE_FAILED');
+if (!defined('ERR_RESTORE_FAILED')) {
+    define('ERR_RESTORE_FAILED', 'RESTORE_FAILED');
 }
-if (!defined('RISEUP_ERR_RESTORE_NO_CONFIRM')) {
-    define('RISEUP_ERR_RESTORE_NO_CONFIRM', 'RESTORE_NO_CONFIRM');
+if (!defined('ERR_RESTORE_NO_CONFIRM')) {
+    define('ERR_RESTORE_NO_CONFIRM', 'RESTORE_NO_CONFIRM');
 }
-if (!defined('RISEUP_ERR_PROVIDER_NOT_AVAILABLE')) {
-    define('RISEUP_ERR_PROVIDER_NOT_AVAILABLE', 'PROVIDER_NOT_AVAILABLE');
+if (!defined('ERR_PROVIDER_NOT_AVAILABLE')) {
+    define('ERR_PROVIDER_NOT_AVAILABLE', 'PROVIDER_NOT_AVAILABLE');
 }
 
 // Snapshot trigger sources
-if (!defined('RISEUP_SNAPSHOT_TRIGGER_MANUAL')) {
-    define('RISEUP_SNAPSHOT_TRIGGER_MANUAL', 'manual');
+if (!defined('SNAPSHOT_TRIGGER_MANUAL')) {
+    define('SNAPSHOT_TRIGGER_MANUAL', 'manual');
 }
-if (!defined('RISEUP_SNAPSHOT_TRIGGER_CRON')) {
-    define('RISEUP_SNAPSHOT_TRIGGER_CRON', 'cron');
+if (!defined('SNAPSHOT_TRIGGER_CRON')) {
+    define('SNAPSHOT_TRIGGER_CRON', 'cron');
 }
-if (!defined('RISEUP_SNAPSHOT_TRIGGER_API')) {
-    define('RISEUP_SNAPSHOT_TRIGGER_API', 'api');
+if (!defined('SNAPSHOT_TRIGGER_API')) {
+    define('SNAPSHOT_TRIGGER_API', 'api');
 }
 
 // WordPress options key for snapshot settings
-if (!defined('RISEUP_OPTION_SNAPSHOT_SETTINGS')) {
-    define('RISEUP_OPTION_SNAPSHOT_SETTINGS', 'riseup_snapshot_settings');
+if (!defined('OPTION_SNAPSHOT_SETTINGS')) {
+    define('OPTION_SNAPSHOT_SETTINGS', 'riseup_snapshot_settings');
 }
 
 // =============================================================================
 // SNAPSHOT CLEANUP CONSTANTS
 // =============================================================================
 
-// Cleanup timing
-if (!defined('RISEUP_SNAPSHOT_STUCK_HOURS')) {
-    define('RISEUP_SNAPSHOT_STUCK_HOURS', 24);
+if (!defined('SNAPSHOT_STUCK_HOURS')) {
+    define('SNAPSHOT_STUCK_HOURS', 24);
 }
 
-// Retention type options
-if (!defined('RISEUP_RETENTION_TYPE_DAYS')) {
-    define('RISEUP_RETENTION_TYPE_DAYS', 'days');
+if (!defined('RETENTION_TYPE_DAYS')) {
+    define('RETENTION_TYPE_DAYS', 'days');
 }
-if (!defined('RISEUP_RETENTION_TYPE_COUNT')) {
-    define('RISEUP_RETENTION_TYPE_COUNT', 'count');
+if (!defined('RETENTION_TYPE_COUNT')) {
+    define('RETENTION_TYPE_COUNT', 'count');
 }
-if (!defined('RISEUP_RETENTION_TYPE_NONE')) {
-    define('RISEUP_RETENTION_TYPE_NONE', 'none');
+if (!defined('RETENTION_TYPE_NONE')) {
+    define('RETENTION_TYPE_NONE', 'none');
 }
 
-// Cleanup action for transaction logging
-if (!defined('RISEUP_ACTION_SNAPSHOT_CLEANUP')) {
-    define('RISEUP_ACTION_SNAPSHOT_CLEANUP', 'snapshot_cleanup');
+if (!defined('ACTION_SNAPSHOT_CLEANUP')) {
+    define('ACTION_SNAPSHOT_CLEANUP', 'snapshot_cleanup');
 }
 
 // =============================================================================
 // FILE CACHE CONSTANTS (Phase 41 - Sync System)
 // =============================================================================
 
-// File cache table name
-if (!defined('RISEUP_TABLE_FILE_CACHE')) {
-    define('RISEUP_TABLE_FILE_CACHE', 'file_cache');
+if (!defined('TABLE_FILE_CACHE')) {
+    define('TABLE_FILE_CACHE', 'file_cache');
 }
 
-// Sync manifest endpoint - fixed URL, slug passed in JSON body
-if (!defined('RISEUP_ENDPOINT_SYNC_MANIFEST')) {
-    define('RISEUP_ENDPOINT_SYNC_MANIFEST', 'plugins/sync-manifest');
+if (!defined('ENDPOINT_SYNC_MANIFEST')) {
+    define('ENDPOINT_SYNC_MANIFEST', 'plugins/sync-manifest');
 }
 
-// Sync push endpoint - fixed URL, slug + files in JSON body
-if (!defined('RISEUP_ENDPOINT_SYNC')) {
-    define('RISEUP_ENDPOINT_SYNC', 'plugins/sync');
+if (!defined('ENDPOINT_SYNC')) {
+    define('ENDPOINT_SYNC', 'plugins/sync');
 }
 
-// Sync file actions
-if (!defined('RISEUP_SYNC_ACTION_REPLACE')) {
-    define('RISEUP_SYNC_ACTION_REPLACE', 'replace');
+if (!defined('SYNC_ACTION_REPLACE')) {
+    define('SYNC_ACTION_REPLACE', 'replace');
 }
-if (!defined('RISEUP_SYNC_ACTION_DELETE')) {
-    define('RISEUP_SYNC_ACTION_DELETE', 'delete');
+if (!defined('SYNC_ACTION_DELETE')) {
+    define('SYNC_ACTION_DELETE', 'delete');
 }
 
-// Sync action for transaction logging
-if (!defined('RISEUP_ACTION_SYNC_DELETE')) {
-    define('RISEUP_ACTION_SYNC_DELETE', 'sync_delete');
+if (!defined('ACTION_SYNC_DELETE')) {
+    define('ACTION_SYNC_DELETE', 'sync_delete');
 }
 
 // =============================================================================
 // SNAPSHOT SETTINGS TABLE
 // =============================================================================
 
-if (!defined('RISEUP_TABLE_SNAPSHOT_SETTINGS')) {
-    define('RISEUP_TABLE_SNAPSHOT_SETTINGS', 'snapshot_settings');
+if (!defined('TABLE_SNAPSHOT_SETTINGS')) {
+    define('TABLE_SNAPSHOT_SETTINGS', 'snapshot_settings');
 }
 
-// Full backup endpoint
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP', 'snapshots/full-backup');
+if (!defined('ENDPOINT_SNAPSHOT_FULL_BACKUP')) {
+    define('ENDPOINT_SNAPSHOT_FULL_BACKUP', 'snapshots/full-backup');
 }
 
-// Snapshot actions for orchestrator
-if (!defined('RISEUP_ACTION_SNAPSHOT_FULL_BACKUP')) {
-    define('RISEUP_ACTION_SNAPSHOT_FULL_BACKUP', 'snapshot_full_backup');
+if (!defined('ACTION_SNAPSHOT_FULL_BACKUP')) {
+    define('ACTION_SNAPSHOT_FULL_BACKUP', 'snapshot_full_backup');
 }
 
-// Incremental backup endpoint (Phase 6)
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL', 'snapshots/incremental');
+if (!defined('ENDPOINT_SNAPSHOT_INCREMENTAL')) {
+    define('ENDPOINT_SNAPSHOT_INCREMENTAL', 'snapshots/incremental');
 }
 
-// Incremental backup action for transaction logging
-if (!defined('RISEUP_ACTION_SNAPSHOT_INCREMENTAL')) {
-    define('RISEUP_ACTION_SNAPSHOT_INCREMENTAL', 'snapshot_incremental');
+if (!defined('ACTION_SNAPSHOT_INCREMENTAL')) {
+    define('ACTION_SNAPSHOT_INCREMENTAL', 'snapshot_incremental');
 }
 
-// Snapshot type values (full vs incremental)
-if (!defined('RISEUP_SNAPSHOT_TYPE_FULL')) {
-    define('RISEUP_SNAPSHOT_TYPE_FULL', 'full');
+if (!defined('SNAPSHOT_TYPE_FULL')) {
+    define('SNAPSHOT_TYPE_FULL', 'full');
 }
-if (!defined('RISEUP_SNAPSHOT_TYPE_INCREMENTAL')) {
-    define('RISEUP_SNAPSHOT_TYPE_INCREMENTAL', 'incremental');
-}
-
-// Error: incremental restore requires parent full snapshot
-if (!defined('RISEUP_ERR_INCREMENTAL_NO_PARENT')) {
-    define('RISEUP_ERR_INCREMENTAL_NO_PARENT', 'INCREMENTAL_NO_PARENT');
+if (!defined('SNAPSHOT_TYPE_INCREMENTAL')) {
+    define('SNAPSHOT_TYPE_INCREMENTAL', 'incremental');
 }
 
-// Restore engine action for per-table restore (Phase 7)
-if (!defined('RISEUP_ACTION_SNAPSHOT_RESTORE_PERTABLE')) {
-    define('RISEUP_ACTION_SNAPSHOT_RESTORE_PERTABLE', 'snapshot_restore_pertable');
+if (!defined('ERR_INCREMENTAL_NO_PARENT')) {
+    define('ERR_INCREMENTAL_NO_PARENT', 'INCREMENTAL_NO_PARENT');
 }
 
-// Import per-table action (Phase 8)
-if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT_PERTABLE')) {
-    define('RISEUP_ACTION_SNAPSHOT_IMPORT_PERTABLE', 'snapshot_import_pertable');
+if (!defined('ACTION_SNAPSHOT_RESTORE_PERTABLE')) {
+    define('ACTION_SNAPSHOT_RESTORE_PERTABLE', 'snapshot_restore_pertable');
 }
 
-// Cleanup endpoint (Phase 10)
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP', 'snapshots/cleanup');
+if (!defined('ACTION_SNAPSHOT_IMPORT_PERTABLE')) {
+    define('ACTION_SNAPSHOT_IMPORT_PERTABLE', 'snapshot_import_pertable');
+}
+
+if (!defined('ENDPOINT_SNAPSHOT_CLEANUP')) {
+    define('ENDPOINT_SNAPSHOT_CLEANUP', 'snapshots/cleanup');
 }
 
 // =============================================================================
 // SNAPSHOT ZIP EXPORT SYSTEM (Feature D)
 // =============================================================================
 
-// Table for cached ZIP export metadata
-if (!defined('RISEUP_TABLE_SNAPSHOT_EXPORTS')) {
-    define('RISEUP_TABLE_SNAPSHOT_EXPORTS', 'snapshot_exports');
+if (!defined('TABLE_SNAPSHOT_EXPORTS')) {
+    define('TABLE_SNAPSHOT_EXPORTS', 'snapshot_exports');
 }
 
-// REST endpoints for ZIP download
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD', 'snapshots/download');
+if (!defined('ENDPOINT_SNAPSHOT_DOWNLOAD')) {
+    define('ENDPOINT_SNAPSHOT_DOWNLOAD', 'snapshots/download');
 }
-if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD_FILE')) {
-    define('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD_FILE', 'snapshots/download-file');
-}
-
-// Export actions for transaction logging
-if (!defined('RISEUP_ACTION_SNAPSHOT_ZIP_BUILD')) {
-    define('RISEUP_ACTION_SNAPSHOT_ZIP_BUILD', 'snapshot_zip_build');
-}
-if (!defined('RISEUP_ACTION_SNAPSHOT_ZIP_EXPIRE')) {
-    define('RISEUP_ACTION_SNAPSHOT_ZIP_EXPIRE', 'snapshot_zip_expire');
-}
-if (!defined('RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD')) {
-    define('RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD', 'snapshot_zip_download');
+if (!defined('ENDPOINT_SNAPSHOT_DOWNLOAD_FILE')) {
+    define('ENDPOINT_SNAPSHOT_DOWNLOAD_FILE', 'snapshots/download-file');
 }
 
-// Export status values
-if (!defined('RISEUP_SNAPSHOT_EXPORT_STATUS_VALID')) {
-    define('RISEUP_SNAPSHOT_EXPORT_STATUS_VALID', 'valid');
+if (!defined('ACTION_SNAPSHOT_ZIP_BUILD')) {
+    define('ACTION_SNAPSHOT_ZIP_BUILD', 'snapshot_zip_build');
 }
-if (!defined('RISEUP_SNAPSHOT_EXPORT_STATUS_EXPIRED')) {
-    define('RISEUP_SNAPSHOT_EXPORT_STATUS_EXPIRED', 'expired');
+if (!defined('ACTION_SNAPSHOT_ZIP_EXPIRE')) {
+    define('ACTION_SNAPSHOT_ZIP_EXPIRE', 'snapshot_zip_expire');
 }
-if (!defined('RISEUP_SNAPSHOT_EXPORT_STATUS_BUILDING')) {
-    define('RISEUP_SNAPSHOT_EXPORT_STATUS_BUILDING', 'building');
-}
-
-// Exports subdirectory within snapshots folder
-if (!defined('RISEUP_SNAPSHOT_EXPORTS_SUBDIR')) {
-    define('RISEUP_SNAPSHOT_EXPORTS_SUBDIR', 'exports');
+if (!defined('ACTION_SNAPSHOT_ZIP_DOWNLOAD')) {
+    define('ACTION_SNAPSHOT_ZIP_DOWNLOAD', 'snapshot_zip_download');
 }
 
-// Error codes for export system
-if (!defined('RISEUP_ERR_EXPORT_NOT_FOUND')) {
-    define('RISEUP_ERR_EXPORT_NOT_FOUND', 'EXPORT_NOT_FOUND');
+if (!defined('SNAPSHOT_EXPORT_STATUS_VALID')) {
+    define('SNAPSHOT_EXPORT_STATUS_VALID', 'valid');
 }
-if (!defined('RISEUP_ERR_EXPORT_BUILD_FAILED')) {
-    define('RISEUP_ERR_EXPORT_BUILD_FAILED', 'EXPORT_BUILD_FAILED');
+if (!defined('SNAPSHOT_EXPORT_STATUS_EXPIRED')) {
+    define('SNAPSHOT_EXPORT_STATUS_EXPIRED', 'expired');
 }
-if (!defined('RISEUP_ERR_EXPORT_TOKEN_INVALID')) {
-    define('RISEUP_ERR_EXPORT_TOKEN_INVALID', 'EXPORT_TOKEN_INVALID');
+if (!defined('SNAPSHOT_EXPORT_STATUS_BUILDING')) {
+    define('SNAPSHOT_EXPORT_STATUS_BUILDING', 'building');
+}
+
+if (!defined('SNAPSHOT_EXPORTS_SUBDIR')) {
+    define('SNAPSHOT_EXPORTS_SUBDIR', 'exports');
+}
+
+if (!defined('ERR_EXPORT_NOT_FOUND')) {
+    define('ERR_EXPORT_NOT_FOUND', 'EXPORT_NOT_FOUND');
+}
+if (!defined('ERR_EXPORT_BUILD_FAILED')) {
+    define('ERR_EXPORT_BUILD_FAILED', 'EXPORT_BUILD_FAILED');
+}
+if (!defined('ERR_EXPORT_TOKEN_INVALID')) {
+    define('ERR_EXPORT_TOKEN_INVALID', 'EXPORT_TOKEN_INVALID');
 }
 
 // =============================================================================
 // PHP LOG RETRIEVAL ENDPOINT
 // =============================================================================
 
-// Error logs endpoint - returns error.txt and log.txt content as JSON
-if (!defined('RISEUP_ENDPOINT_ERROR_LOGS')) {
-    define('RISEUP_ENDPOINT_ERROR_LOGS', 'error-logs');
+if (!defined('ENDPOINT_ERROR_LOGS')) {
+    define('ENDPOINT_ERROR_LOGS', 'error-logs');
 }
 
-// Log retrieval settings option name
-if (!defined('RISEUP_OPTION_LOG_RETRIEVAL')) {
-    define('RISEUP_OPTION_LOG_RETRIEVAL', 'riseup_log_retrieval_settings');
+if (!defined('OPTION_LOG_RETRIEVAL')) {
+    define('OPTION_LOG_RETRIEVAL', 'riseup_log_retrieval_settings');
 }
 
-// Default max lines to return from log files
-if (!defined('RISEUP_LOG_RETRIEVAL_MAX_LINES')) {
-    define('RISEUP_LOG_RETRIEVAL_MAX_LINES', 500);
+if (!defined('LOG_RETRIEVAL_MAX_LINES')) {
+    define('LOG_RETRIEVAL_MAX_LINES', 500);
 }
 
-// Error sessions endpoint - returns structured error entries from SQLite
-if (!defined('RISEUP_ENDPOINT_ERROR_SESSIONS')) {
-    define('RISEUP_ENDPOINT_ERROR_SESSIONS', 'error-sessions');
+if (!defined('ENDPOINT_ERROR_SESSIONS')) {
+    define('ENDPOINT_ERROR_SESSIONS', 'error-sessions');
 }
 
 // =============================================================================
-// UPLOAD SOURCE ENUM
+// UPLOAD SOURCE — Now in UploadSourceEnum, kept as aliases for backward compat
 // =============================================================================
 
 if (!defined('UPLOAD_SOURCE_SCRIPT')) {
-    define('UPLOAD_SOURCE_SCRIPT', 'upload_script');
+    define('UPLOAD_SOURCE_SCRIPT', UploadSourceEnum::SCRIPT);
 }
 if (!defined('UPLOAD_SOURCE_REST_API')) {
-    define('UPLOAD_SOURCE_REST_API', 'rest_api');
+    define('UPLOAD_SOURCE_REST_API', UploadSourceEnum::REST_API);
 }
 if (!defined('UPLOAD_SOURCE_ADMIN_UI')) {
-    define('UPLOAD_SOURCE_ADMIN_UI', 'admin_ui');
+    define('UPLOAD_SOURCE_ADMIN_UI', UploadSourceEnum::ADMIN_UI);
 }
 if (!defined('UPLOAD_SOURCE_WP_CLI')) {
-    define('UPLOAD_SOURCE_WP_CLI', 'wp_cli');
+    define('UPLOAD_SOURCE_WP_CLI', UploadSourceEnum::WP_CLI);
 }
 
 // Valid upload sources for validation
 if (!defined('UPLOAD_SOURCES_VALID')) {
-    define('UPLOAD_SOURCES_VALID', json_encode(array(
-        UPLOAD_SOURCE_SCRIPT,
-        UPLOAD_SOURCE_REST_API,
-        UPLOAD_SOURCE_ADMIN_UI,
-        UPLOAD_SOURCE_WP_CLI,
-    )));
+    define('UPLOAD_SOURCES_VALID', json_encode(UploadSourceEnum::VALID_SOURCES));
 }
