@@ -93,14 +93,18 @@ spec/wp-plugin/<plugin-name>/
 ### File Naming
 | Type | Convention | Example |
 |------|------------|---------|
-| Class file | `class-{class-name}.php` | `class-exam-manager.php` |
+| Class file (non-namespaced) | `class-{kebab-case}.php` | `class-exam-manager.php` |
+| Enum/const file (namespaced, `Enums/`) | `{DefinitionName}.php` (PascalCase, PSR-4) | `UploadSource.php`, `Capability.php` |
 | Template | `{template-name}.php` | `single-exam.php` |
+
+> **Dual convention:** WordPress `class-kebab-case.php` applies to `includes/` classes. Namespaced types in `includes/Enums/` use PSR-4: file name = definition name, PascalCase, no prefix/hyphens/underscores.
 
 ### Class Naming
 | Type | Convention | Example |
 |------|------------|---------|
-| Main class | `{Plugin_Name}` | `Exam_Manager` |
-| Admin class | `{Plugin_Name}_Admin` | `Exam_Manager_Admin` |
+| Main class | `{PluginName}` | `ExamManager` |
+| Admin class | `{PluginName}_Admin` | `ExamManager_Admin` |
+| Enum (PHP 8.1+) | PascalCase, no `Enum` suffix | `UploadSource`, `Capability` |
 
 ### Security Requirements
 - Always use nonces for forms
