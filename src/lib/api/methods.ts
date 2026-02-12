@@ -6,6 +6,8 @@ import { isEnvelope, parseEnvelope, looksLikeJson } from './envelope';
 import type { SiteHealthSummary, SiteHealthStats } from '@/types/siteHealth';
 import type {
   ApiResponse,
+  PluginInstallResponse,
+  PublishResponse,
   Site,
   Plugin,
   PluginMapping,
@@ -167,7 +169,7 @@ export const api = {
     const formData = new FormData();
     formData.append("plugin_zip", file);
     formData.append("activate", String(activate));
-    return request<{ installed: boolean; plugin: string; activated: boolean }>(
+    return request<PluginInstallResponse>(
       `/sites/${siteId}/remote-plugins/upload`,
       {
         method: "POST",
@@ -185,7 +187,7 @@ export const api = {
     file: File,
     activate: boolean,
     onProgress: (percent: number) => void
-  ): Promise<ApiResponse<{ installed: boolean; plugin: string; activated: boolean }>> => {
+  ): Promise<ApiResponse<PluginInstallResponse>> => {
     return new Promise((resolve) => {
       const formData = new FormData();
       formData.append("plugin_zip", file);
@@ -408,7 +410,7 @@ export const api = {
             message: "A publish is already in progress for this plugin and site",
             timestamp: new Date().toISOString(),
           },
-        } as ApiResponse<{ filesUpdated: number; backupId?: number }>);
+        } as ApiResponse<PublishResponse>);
       }
       // Block if within cooldown period
       const lastSuccess = cooldowns.get(key);
@@ -422,10 +424,10 @@ export const api = {
             message: `Publish cooldown active (${secsLeft}s remaining). Please wait before re-publishing.`,
             timestamp: new Date().toISOString(),
           },
-        } as ApiResponse<{ filesUpdated: number; backupId?: number }>);
+        } as ApiResponse<PublishResponse>);
       }
       inFlight.add(key);
-      return request<{ filesUpdated: number; backupId?: number }>(`/plugins/${pluginId}/sites/${siteId}/publish`, {
+      return request<PublishResponse>(`/plugins/${pluginId}/sites/${siteId}/publish`, {
         method: "POST",
         body: JSON.stringify(options),
       }).then(response => {

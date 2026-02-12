@@ -14,6 +14,9 @@ export type {
   RequestPayload,
   LogEntryDetails,
   SessionOperationMetadata,
+  // GE-2 named response types
+  PluginInstallResponse,
+  PublishResponse,
   // Envelope types
   EnvelopeStatus,
   EnvelopeAttributes,
