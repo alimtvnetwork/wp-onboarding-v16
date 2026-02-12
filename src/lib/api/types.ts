@@ -131,6 +131,23 @@ export interface SessionOperationMetadata {
 }
 
 // ---------------------------------------------------------------------------
+// GE-2 Named Response Types (replacing inline ApiResponse<{...}> in methods.ts)
+// ---------------------------------------------------------------------------
+
+/** Response from plugin install/upload operations */
+export interface PluginInstallResponse {
+  installed: boolean;
+  plugin: string;
+  activated: boolean;
+}
+
+/** Response from plugin publish operations */
+export interface PublishResponse {
+  filesUpdated: number;
+  backupId?: number;
+}
+
+// ---------------------------------------------------------------------------
 // Core API types
 // ---------------------------------------------------------------------------
 
