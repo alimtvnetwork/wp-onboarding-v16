@@ -75,10 +75,11 @@ export function SnapshotRetentionPolicy({ config, onChange }: Props) {
       }
       const res = await api.cleanupRemoteSnapshots(0, opts);
       const result = requireSuccess(res, { endpoint: "/sites/0/snapshots/cleanup", method: "POST" });
-      const deleted = (result as any)?.deleted ?? 0;
+      const deleted = result?.deleted ?? 0;
       toast.success(`Cleanup complete: ${deleted} snapshot${deleted !== 1 ? "s" : ""} removed`);
-    } catch (err: any) {
-      toast.error(`Cleanup failed: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Cleanup failed: ${message}`);
     } finally {
       setCleaning(false);
     }

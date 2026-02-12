@@ -420,8 +420,9 @@ export function SyncProgressDialog({
                   } else {
                     toast.error("Push failed: " + (res.data?.errorMessage || "Unknown error"));
                   }
-                } catch (err: any) {
-                  toast.error("Push failed: " + (err?.message || "Unknown error"));
+                } catch (err: unknown) {
+                  const message = err instanceof Error ? err.message : String(err);
+                  toast.error("Push failed: " + message);
                 }
               }}
             >

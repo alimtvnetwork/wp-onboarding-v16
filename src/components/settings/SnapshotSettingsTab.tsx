@@ -610,8 +610,9 @@ function CronJobsPanel() {
       const result = requireSuccess(res, { endpoint: "/sites/0/snapshots/cron/sync", method: "POST" });
       toast.success(`Cron sync: ${result.created} created, ${result.updated} updated, ${result.removed} removed`);
       refetch();
-    } catch (err: any) {
-      toast.error(`Cron sync failed: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Cron sync failed: ${message}`);
     } finally {
       setSyncing(false);
     }
@@ -624,8 +625,9 @@ function CronJobsPanel() {
       requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${cronId}/trigger`, method: "POST" });
       toast.success("Snapshot triggered");
       refetch();
-    } catch (err: any) {
-      toast.error(`Trigger failed: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Trigger failed: ${message}`);
     } finally {
       setActionLoading(null);
     }
@@ -639,8 +641,9 @@ function CronJobsPanel() {
       requireSuccess(res, { endpoint: `/sites/0/snapshots/cron/${job.id}/${job.status === "paused" ? "resume" : "pause"}`, method: "POST" });
       toast.success(job.status === "paused" ? "Cron job resumed" : "Cron job paused");
       refetch();
-    } catch (err: any) {
-      toast.error(`Action failed: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Action failed: ${message}`);
     } finally {
       setActionLoading(null);
     }

@@ -64,8 +64,9 @@ export function SnapshotRestoreDialog({ snapshot, open, onOpenChange, onRestoreC
       toast.success(`Snapshot #${snapshot.sequence} restore initiated successfully`);
       onOpenChange(false);
       onRestoreComplete();
-    } catch (err: any) {
-      toast.error(`Restore failed: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Restore failed: ${message}`);
     } finally {
       setRestoring(false);
     }

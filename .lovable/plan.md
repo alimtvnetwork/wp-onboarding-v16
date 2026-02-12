@@ -294,7 +294,7 @@ interface ActivityEntry {
 
 ## Feature F: Type Safety Remediation (CRITICAL PRIORITY)
 
-### Status: Planned — spec complete, remediation plan ready
+### Status: F1 ✅ Done, F2 ✅ Done — F3–F8 pending
 
 ### Spec & Plan References
 - **Coding Standards:** `spec/02-typescript-standards/README.md` v2.0.0
@@ -312,11 +312,11 @@ interface ActivityEntry {
 
 | # | Task | Priority | Effort | Description |
 |---|------|----------|--------|-------------|
-| F1 | **API type definitions** | 🔴 Critical | Medium | Create `CreateSnapshotOptions`, `SiteHealthCheck`, `E2ESuite`, etc. in `types.ts` |
-| F2 | **Catch block fixes** | 🔴 Critical | Small | Replace 11x `catch (err: any)` with bare `catch (err)` + `instanceof` narrowing |
-| F3 | **`as any` elimination** | 🔴 Critical | Small | Fix 5x `as any` casts with proper types |
+| F1 | **API type definitions** | ✅ Done | Medium | Created `CreateSnapshotOptions`, `SnapshotOperationResult`, `RestoreSnapshotOptions`, `CleanupSnapshotOptions`, `CleanupSnapshotResult`, `SnapshotImportResult`, `SnapshotScope`, `SnapshotType`, `SiteHealthCheckResult`, `E2ESuite`, `E2ECase`, `E2ERun`, `E2ERunSummary`, `E2ETestResult` in `types.ts`. Updated all method signatures in `methods.ts`. |
+| F2 | **Catch block fixes** | ✅ Done | Small | Replaced all 11x `catch (err: any)` with `catch (err: unknown)` + `instanceof Error` narrowing across 6 files. Zero `catch (err: any)` remaining. |
+| F3 | **`as any` elimination** | 🔴 Critical | Small | Fix remaining `as any` casts in `ThemeSelector`, `useDashboardStats`, `useTheme`, `Dashboard`, `BackendSection` |
 | F4 | **Constants file** | 🟡 High | Small | Create `src/lib/constants.ts` with `const enum` for all status/action strings |
-| F5 | **Update methods.ts** | 🟡 High | Medium | Replace all `Record<string, unknown>` and `request<unknown>` in API methods |
+| F5 | **Update methods.ts** | ✅ Done | Medium | All `Record<string, unknown>` and `request<unknown>` replaced with specific types |
 | F6 | **Generic envelope** | 🟡 High | Small | Make `RawEnvelope<T>` generic |
 | F7 | **Magic string migration** | 🟡 High | Large | Replace ~50+ inline string comparisons with enum refs |
 | F8 | **Activity metadata typing** | 🟡 High | Medium | Discriminated union for `ActivityEntry.metadata` |

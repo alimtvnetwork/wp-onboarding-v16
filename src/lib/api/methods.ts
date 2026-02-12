@@ -3,6 +3,7 @@
 import { resolveApiBase, resolveApiUrl, toAbsoluteUrl } from "@/lib/endpoints";
 import { request } from './client';
 import { isEnvelope, parseEnvelope, looksLikeJson } from './envelope';
+import type { SiteHealthSummary, SiteHealthStats } from '@/types/siteHealth';
 import type {
   ApiResponse,
   Site,
@@ -26,6 +27,12 @@ import type {
   SnapshotSettings,
   SnapshotProviderInfo,
   AvailableTable,
+  CreateSnapshotOptions,
+  SnapshotOperationResult,
+  RestoreSnapshotOptions,
+  CleanupSnapshotOptions,
+  CleanupSnapshotResult,
+  SnapshotImportResult,
   ErrorHistoryInput,
   ErrorHistoryRecord,
   ErrorHistoryListResponse,
@@ -36,6 +43,11 @@ import type {
   SnapshotCronSyncResult,
   ActivityFeedResponse,
   ActivityFeedParams,
+  SiteHealthCheckResult,
+  E2ESuite,
+  E2ECase,
+  E2ERun,
+  E2ERunSummary,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -436,13 +448,13 @@ export const api = {
   deletePublishHistoryEntry: (id: number) => request<void>(`/publish-history/${id}`, { method: "DELETE" }),
   clearPublishHistory: () => request<void>("/publish-history", { method: "DELETE", body: JSON.stringify({ confirm: true }) }),
 
-  // Site Health
-  checkSiteHealth: (siteId: number) => request<unknown>(`/site-health/sites/${siteId}/check`, { method: "POST" }),
-  checkAllSitesHealth: () => request<unknown>("/site-health/check-all", { method: "POST" }),
-  getSiteHealthSummaries: () => request<unknown>("/site-health/summaries"),
-  getSiteHealthStats: () => request<unknown>("/site-health/stats"),
+  // Site Health — canonical types from src/types/siteHealth.ts
+  checkSiteHealth: (siteId: number) => request<SiteHealthCheckResult>(`/site-health/sites/${siteId}/check`, { method: "POST" }),
+  checkAllSitesHealth: () => request<SiteHealthCheckResult[]>("/site-health/check-all", { method: "POST" }),
+  getSiteHealthSummaries: () => request<SiteHealthSummary[]>("/site-health/summaries"),
+  getSiteHealthStats: () => request<SiteHealthStats>("/site-health/stats"),
   getSiteHealthHistory: (params?: { siteId?: number; limit?: number }) =>
-    request<unknown>(`/site-health/history${buildQuery(params || {})}`),
+    request<SiteHealthCheckResult[]>(`/site-health/history${buildQuery(params || {})}`),
 
   // Backups
   getBackups: (pluginId: number) => request<Backup[]>(`/plugins/${pluginId}/backups`),
@@ -511,8 +523,8 @@ export const api = {
     ),
 
   // E2E Testing
-  getE2ESuites: () => request<unknown[]>("/e2e/suites"),
-  getE2ECases: (suiteId: string) => request<unknown[]>(`/e2e/suites/${suiteId}/cases`),
+  getE2ESuites: () => request<E2ESuite[]>("/e2e/suites"),
+  getE2ECases: (suiteId: string) => request<E2ECase[]>(`/e2e/suites/${suiteId}/cases`),
   startE2ERun: (opts: { suites?: string[]; cases?: string[]; parallel: boolean; stopOnFailure: boolean }) =>
     request<{ runId: string; status: string; totalTests: number }>("/e2e/run", { 
       method: "POST", 
@@ -521,9 +533,9 @@ export const api = {
   abortE2ERun: (runId: string) =>
     request<void>(`/e2e/runs/${runId}/abort`, { method: "POST" }),
   getE2ERuns: (limit?: number) =>
-    request<unknown[]>(`/e2e/runs${limit ? `?limit=${limit}` : ""}`),
+    request<E2ERun[]>(`/e2e/runs${limit ? `?limit=${limit}` : ""}`),
   getE2ERun: (runId: string) =>
-    request<unknown>(`/e2e/runs/${runId}`),
+    request<E2ERunSummary>(`/e2e/runs/${runId}`),
   deleteE2ERun: (runId: string) =>
     request<void>(`/e2e/runs/${runId}`, { method: "DELETE" }),
   rerunE2ECase: (caseId: string) =>
@@ -537,21 +549,21 @@ export const api = {
     request<SnapshotRecord[]>(`/sites/${siteId}/snapshots`),
   getRemoteSnapshot: (siteId: number, snapshotId: number) =>
     request<SnapshotRecord>(`/sites/${siteId}/snapshots/${snapshotId}`),
-  createRemoteSnapshot: (siteId: number, opts?: Record<string, unknown>) =>
-    request<Record<string, unknown>>(`/sites/${siteId}/snapshots`, {
+  createRemoteSnapshot: (siteId: number, opts?: CreateSnapshotOptions) =>
+    request<SnapshotOperationResult>(`/sites/${siteId}/snapshots`, {
       method: "POST",
       body: JSON.stringify(opts || {}),
     }),
   deleteRemoteSnapshot: (siteId: number, snapshotId: number) =>
     request<{ deleted: boolean }>(`/sites/${siteId}/snapshots/${snapshotId}`, { method: "DELETE" }),
-  restoreRemoteSnapshot: (siteId: number, snapshotId: number, opts?: Record<string, unknown>) =>
-    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/${snapshotId}/restore`, {
+  restoreRemoteSnapshot: (siteId: number, snapshotId: number, opts?: RestoreSnapshotOptions) =>
+    request<SnapshotOperationResult>(`/sites/${siteId}/snapshots/${snapshotId}/restore`, {
       method: "POST",
       body: JSON.stringify(opts || {}),
     }),
   getRemoteSnapshotSettings: (siteId: number) =>
     request<SnapshotSettings>(`/sites/${siteId}/snapshots/settings`),
-  updateRemoteSnapshotSettings: (siteId: number, settings: Record<string, unknown>) =>
+  updateRemoteSnapshotSettings: (siteId: number, settings: Partial<SnapshotSettings>) =>
     request<SnapshotSettings>(`/sites/${siteId}/snapshots/settings`, {
       method: "PUT",
       body: JSON.stringify(settings),
@@ -595,21 +607,21 @@ export const api = {
     request<AvailableTable[]>(`/sites/${siteId}/snapshots/tables`),
 
   // Full backup orchestration
-  fullBackupRemoteSnapshot: (siteId: number, opts?: Record<string, unknown>) =>
-    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/full-backup`, {
+  fullBackupRemoteSnapshot: (siteId: number, opts?: CreateSnapshotOptions) =>
+    request<SnapshotOperationResult>(`/sites/${siteId}/snapshots/full-backup`, {
       method: "POST",
       body: JSON.stringify(opts || {}),
     }),
 
   // Incremental backup
-  incrementalBackupRemoteSnapshot: (siteId: number, opts?: Record<string, unknown>) =>
-    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/incremental`, {
+  incrementalBackupRemoteSnapshot: (siteId: number, opts?: CreateSnapshotOptions) =>
+    request<SnapshotOperationResult>(`/sites/${siteId}/snapshots/incremental`, {
       method: "POST",
       body: JSON.stringify(opts || {}),
     }),
 
   // Import snapshot from ZIP
-  importRemoteSnapshot: async (siteId: number, file: File): Promise<ApiResponse<Record<string, unknown>>> => {
+  importRemoteSnapshot: async (siteId: number, file: File): Promise<ApiResponse<SnapshotImportResult>> => {
     const formData = new FormData();
     formData.append("file", file);
     const url = resolveApiUrl(`/sites/${siteId}/snapshots/import`);
@@ -620,14 +632,14 @@ export const api = {
     }
     const parsed = JSON.parse(text);
     if (isEnvelope(parsed)) {
-      return parseEnvelope<Record<string, unknown>>(parsed);
+      return parseEnvelope<SnapshotImportResult>(parsed);
     }
-    return parsed as ApiResponse<Record<string, unknown>>;
+    return parsed as ApiResponse<SnapshotImportResult>;
   },
 
   // Snapshot cleanup
-  cleanupRemoteSnapshots: (siteId: number, opts?: Record<string, unknown>) =>
-    request<Record<string, unknown>>(`/sites/${siteId}/snapshots/cleanup`, {
+  cleanupRemoteSnapshots: (siteId: number, opts?: CleanupSnapshotOptions) =>
+    request<CleanupSnapshotResult>(`/sites/${siteId}/snapshots/cleanup`, {
       method: "POST",
       body: JSON.stringify(opts || {}),
     }),

@@ -893,8 +893,9 @@ export default function Settings() {
                           border: "none",
                         },
                       });
-                    } catch (err: any) {
-                      toast.error(`Failed: ${err.message}`);
+                    } catch (err: unknown) {
+                      const message = err instanceof Error ? err.message : String(err);
+                      toast.error(`Failed: ${message}`);
                     }
                   }}
                   className="w-full sm:w-auto text-xs"
