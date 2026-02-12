@@ -20,6 +20,34 @@ if (!defined('ABSPATH')) {
 class Riseup_Logger {
 
     /**
+     * @var Riseup_Logger
+     */
+    private static $_this;
+
+    /**
+     * @var array
+     */
+    private $options;
+
+    /**
+     * Riseup_Logger constructor.
+     */
+    public function __construct() {
+        self::$_this = $this;
+    }
+
+    /**
+     * @return Riseup_Logger
+     */
+    public static function get_instance() {
+        if (is_null(self::$_this)) {
+            self::$_this = new self();
+        }
+
+        return self::$_this;
+    }
+
+    /**
      * Database instance.
      *
      * @var Riseup_Database|null
@@ -106,7 +134,7 @@ class Riseup_Logger {
         $header_key = 'HTTP_X_RISEUP_SOURCE_MACHINE';
         if (!empty($_SERVER[$header_key])) {
             // Sanitize: allow alphanumeric, dots, hyphens, underscores
-            $machine = preg_replace('/[^a-zA-Z0-9.\-_]/', '', $_SERVER[$header_key]);
+            $machine = preg_replace('/[^a-zA-Z0-9.\\\\-_]/', '', $_SERVER[$header_key]);
 
             return !empty($machine) ? $machine : null;
         }
@@ -151,7 +179,7 @@ class Riseup_Logger {
      *
      * @return int|false Insert ID or false.
      */
-    public function log_plugin_action($action, $plugin_slug, $status = RISEUP_STATUS_SUCCESS, $details = array(), $error_msg = null, $extra_enhanced = array()) {
+    public function log_plugin_action($action, $plugin_slug, $status = STATUS_SUCCESS, $details = array(), $error_msg = null, $extra_enhanced = array()) {
         $this->file_logger->info('Logging plugin action', array(
             'action' => $action,
             'plugin' => $plugin_slug,
@@ -167,11 +195,11 @@ class Riseup_Logger {
             $enhanced['source_machine'] = $source_machine;
         }
         
-        // Always include plugin_version — use RISEUP_VERSION as fallback
+        // Always include plugin_version — use PLUGIN_VERSION as fallback
         // This ensures every action (enable, disable, delete, etc.) records which
         // version of the uploader plugin performed the operation.
-        if (empty($enhanced['plugin_version']) && defined('RISEUP_VERSION')) {
-            $enhanced['plugin_version'] = RISEUP_VERSION;
+        if (empty($enhanced['plugin_version']) && defined('PLUGIN_VERSION')) {
+            $enhanced['plugin_version'] = PLUGIN_VERSION;
         }
         
         // Merge any extra enhanced fields (plugin_version, upload_source, etc.)
@@ -205,7 +233,7 @@ class Riseup_Logger {
      *
      * @return int|false Insert ID or false.
      */
-    public function log_post_action($action, $post_id, $status = RISEUP_STATUS_SUCCESS, $details = array(), $error_msg = null) {
+    public function log_post_action($action, $post_id, $status = STATUS_SUCCESS, $details = array(), $error_msg = null) {
         $this->file_logger->info('Logging post action', array(
             'action'  => $action,
             'post_id' => $post_id,
@@ -222,8 +250,8 @@ class Riseup_Logger {
         }
         
         // Always include plugin_version for audit trail
-        if (defined('RISEUP_VERSION')) {
-            $enhanced['plugin_version'] = RISEUP_VERSION;
+        if (defined('PLUGIN_VERSION')) {
+            $enhanced['plugin_version'] = PLUGIN_VERSION;
         }
         
         return $this->get_db()->log_transaction(
@@ -262,19 +290,19 @@ class Riseup_Logger {
         }
         
         // Always include plugin_version for audit trail
-        if (defined('RISEUP_VERSION')) {
-            $enhanced['plugin_version'] = RISEUP_VERSION;
+        if (defined('PLUGIN_VERSION')) {
+            $enhanced['plugin_version'] = PLUGIN_VERSION;
         }
         
         return $this->get_db()->log_transaction(
-            RISEUP_ACTION_AUTH_FAILED,
+            ACTION_AUTH_FAILED,
             null,
             null,
             $provided_user,
             null,
             $this->get_client_ip(),
             $details,
-            RISEUP_STATUS_FAILED,
+            STATUS_FAILED,
             $reason,
             $enhanced
         );
@@ -290,7 +318,7 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_upload_initiated($plugin_slug, $details = array(), $extra_enhanced = array()) {
-        return $this->log_plugin_action(RISEUP_ACTION_UPLOAD_INITIATED, $plugin_slug, RISEUP_STATUS_SUCCESS, $details, null, $extra_enhanced);
+        return $this->log_plugin_action(ACTION_UPLOAD_INITIATED, $plugin_slug, STATUS_SUCCESS, $details, null, $extra_enhanced);
     }
 
     /**
@@ -302,7 +330,7 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_upload($plugin_slug, $details = array(), $extra_enhanced = array()) {
-        return $this->log_plugin_action(RISEUP_ACTION_UPLOAD, $plugin_slug, RISEUP_STATUS_SUCCESS, $details, null, $extra_enhanced);
+        return $this->log_plugin_action(ACTION_UPLOAD, $plugin_slug, STATUS_SUCCESS, $details, null, $extra_enhanced);
     }
 
     /**
@@ -316,7 +344,7 @@ class Riseup_Logger {
      */
     public function log_upload_failed($plugin_slug, $error, $details = array()) {
         $this->file_logger->error('Upload failed', array('plugin' => $plugin_slug, 'error' => $error));
-        return $this->log_plugin_action(RISEUP_ACTION_UPLOAD, $plugin_slug, RISEUP_STATUS_FAILED, $details, $error);
+        return $this->log_plugin_action(ACTION_UPLOAD, $plugin_slug, STATUS_FAILED, $details, $error);
     }
 
     /**
@@ -328,7 +356,7 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_enable($plugin_slug, $details = array()) {
-        return $this->log_plugin_action(RISEUP_ACTION_ENABLE, $plugin_slug, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_plugin_action(ACTION_ENABLE, $plugin_slug, STATUS_SUCCESS, $details);
     }
 
     /**
@@ -340,7 +368,7 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_disable($plugin_slug, $details = array()) {
-        return $this->log_plugin_action(RISEUP_ACTION_DISABLE, $plugin_slug, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_plugin_action(ACTION_DISABLE, $plugin_slug, STATUS_SUCCESS, $details);
     }
 
     /**
@@ -352,7 +380,7 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_delete($plugin_slug, $details = array()) {
-        return $this->log_plugin_action(RISEUP_ACTION_DELETE, $plugin_slug, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_plugin_action(ACTION_DELETE, $plugin_slug, STATUS_SUCCESS, $details);
     }
 
     /**
@@ -366,7 +394,7 @@ class Riseup_Logger {
      */
     public function log_file_replace($plugin_slug, $file_path, $details = array()) {
         $details['file_path'] = $file_path;
-        return $this->log_plugin_action(RISEUP_ACTION_FILE_REPLACE, $plugin_slug, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_plugin_action(ACTION_FILE_REPLACE, $plugin_slug, STATUS_SUCCESS, $details);
     }
 
     /**
@@ -380,7 +408,7 @@ class Riseup_Logger {
      */
     public function log_file_delete($plugin_slug, $file_path, $details = array()) {
         $details['file_path'] = $file_path;
-        return $this->log_plugin_action(RISEUP_ACTION_FILE_DELETE, $plugin_slug, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_plugin_action(ACTION_FILE_DELETE, $plugin_slug, STATUS_SUCCESS, $details);
     }
 
     /**
@@ -392,7 +420,7 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_post_create($post_id, $details = array()) {
-        return $this->log_post_action(RISEUP_ACTION_POST_CREATE, $post_id, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_post_action(ACTION_POST_CREATE, $post_id, STATUS_SUCCESS, $details);
     }
 
     /**
@@ -404,7 +432,7 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_post_update($post_id, $details = array()) {
-        return $this->log_post_action(RISEUP_ACTION_POST_UPDATE, $post_id, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_post_action(ACTION_POST_UPDATE, $post_id, STATUS_SUCCESS, $details);
     }
 
     /**
@@ -416,6 +444,6 @@ class Riseup_Logger {
      * @return int|false Insert ID or false.
      */
     public function log_category_create($term_id, $details = array()) {
-        return $this->log_post_action(RISEUP_ACTION_CATEGORY_CREATE, $term_id, RISEUP_STATUS_SUCCESS, $details);
+        return $this->log_post_action(ACTION_CATEGORY_CREATE, $term_id, STATUS_SUCCESS, $details);
     }
 }
