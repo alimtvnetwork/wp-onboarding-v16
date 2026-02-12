@@ -492,14 +492,19 @@ class ErrorChecker {
 ```php
 // ❌ FORBIDDEN: Inline fatal type arrays
 $fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
-if (!in_array($error['type'], $fatal_types)) { return; }
+if (!in_array($error['type'], $fatal_types)) {
+    return;
+}
 
 // ✅ REQUIRED: Centralized check
-if (!ErrorChecker::is_fatal_error($error)) { return; }
+if (!ErrorChecker::is_fatal_error($error)) {
+    return;
+}
 
 // ❌ FORBIDDEN: Inline type-to-string mapping
 function riseup_error_type_to_string($type) {
     $types = array(E_ERROR => 'E_ERROR', E_PARSE => 'E_PARSE', ...);
+
     return isset($types[$type]) ? $types[$type] : 'UNKNOWN_ERROR_TYPE';
 }
 
@@ -509,16 +514,164 @@ $label = ErrorChecker::get_type_label($error['type']);
 
 ---
 
+## CapabilityEnum — WordPress Capability Strings
+
+Centralizes WordPress capability strings used in `current_user_can()`, `register_rest_route()` permission callbacks, and `add_menu_page()`.
+
+```php
+/**
+ * WordPress capability string constants.
+ *
+ * Every current_user_can() or permission_callback check MUST
+ * reference a constant from this class instead of a string literal.
+ */
+class CapabilityEnum {
+
+    // ── Admin Capabilities ──────────────────────────────────────
+    /** Full administrator access */
+    public const MANAGE_OPTIONS     = 'manage_options';
+
+    /** Can install/activate/update/delete plugins */
+    public const ACTIVATE_PLUGINS   = 'activate_plugins';
+
+    /** Can install/activate/switch themes */
+    public const SWITCH_THEMES      = 'switch_themes';
+
+    /** Can manage other users */
+    public const MANAGE_USERS       = 'manage_users' ;
+
+    // ── Content Capabilities ────────────────────────────────────
+    /** Can edit own posts */
+    public const EDIT_POSTS         = 'edit_posts';
+
+    /** Can publish posts */
+    public const PUBLISH_POSTS      = 'publish_posts';
+
+    /** Can upload files */
+    public const UPLOAD_FILES       = 'upload_files';
+
+    // ── Network / Multisite ─────────────────────────────────────
+    /** Super admin on multisite */
+    public const MANAGE_NETWORK     = 'manage_network';
+}
+```
+
+### Usage Examples
+
+```php
+// ❌ FORBIDDEN: Magic capability strings
+if (current_user_can('manage_options')) { ... }
+
+add_menu_page('Settings', 'Settings', 'manage_options', ...);
+
+register_rest_route(REST_NAMESPACE, '/config', [
+    'permission_callback' => function() {
+        return current_user_can('manage_options');
+    },
+]);
+
+// ✅ REQUIRED: CapabilityEnum constants
+if (current_user_can(CapabilityEnum::MANAGE_OPTIONS)) { ... }
+
+add_menu_page('Settings', 'Settings', CapabilityEnum::MANAGE_OPTIONS, ...);
+
+register_rest_route(REST_NAMESPACE, '/config', [
+    'permission_callback' => function() {
+        return current_user_can(CapabilityEnum::MANAGE_OPTIONS);
+    },
+]);
+```
+
+---
+
+## HttpMethodEnum — REST Method Constants
+
+Centralizes HTTP method strings used in `register_rest_route()` and request handling.
+
+```php
+/**
+ * HTTP method constants for REST route registration.
+ *
+ * Every register_rest_route() call MUST use these constants
+ * instead of WP_REST_Server constants or string literals.
+ */
+class HttpMethodEnum {
+
+    /** Safe, idempotent read */
+    public const GET     = 'GET';
+
+    /** Create a new resource */
+    public const POST    = 'POST';
+
+    /** Full replacement of a resource */
+    public const PUT     = 'PUT';
+
+    /** Partial update of a resource */
+    public const PATCH   = 'PATCH';
+
+    /** Remove a resource */
+    public const DELETE  = 'DELETE';
+
+    // ── Composite Methods ───────────────────────────────────────
+    /** Read-only routes (alias for GET) */
+    public const READABLE  = 'GET';
+
+    /** Write routes (alias for POST) */
+    public const CREATABLE = 'POST';
+
+    /** Update routes (PUT + PATCH) */
+    public const EDITABLE  = 'PUT, PATCH';
+
+    /** Delete routes (alias for DELETE) */
+    public const DELETABLE = 'DELETE';
+}
+```
+
+### Usage Examples
+
+```php
+// ❌ FORBIDDEN: Magic method strings or WP_REST_Server constants
+register_rest_route(REST_NAMESPACE, '/upload', [
+    'methods'  => 'POST',
+    'callback' => [$this, 'handle_upload'],
+]);
+
+register_rest_route(REST_NAMESPACE, '/plugins', [
+    'methods'  => WP_REST_Server::READABLE,
+    'callback' => [$this, 'get_plugins'],
+]);
+
+// ✅ REQUIRED: HttpMethodEnum constants
+register_rest_route(REST_NAMESPACE, '/upload', [
+    'methods'  => HttpMethodEnum::POST,
+    'callback' => [$this, 'handle_upload'],
+]);
+
+register_rest_route(REST_NAMESPACE, '/plugins', [
+    'methods'  => HttpMethodEnum::GET,
+    'callback' => [$this, 'get_plugins'],
+]);
+
+register_rest_route(REST_NAMESPACE, '/config', [
+    'methods'  => HttpMethodEnum::EDITABLE,
+    'callback' => [$this, 'update_config'],
+]);
+```
+
+---
+
 ## Adding New Enum Constants — Checklist
 
-When you need a new hook name, file path, or error type:
+When you need a new hook name, file path, capability, HTTP method, or error type:
 
 1. **Add the constant** to the appropriate Enum class
 2. **Add a PHPDoc comment** explaining what the constant represents
 3. **If PathEnum:** Add a corresponding typed accessor to `RiseupPathUtils`
 4. **If HookEnum:** Update all `add_action`/`add_filter` calls that used the string literal
-5. **If ErrorTypeEnum:** Add to the appropriate group array AND to `TYPE_LABELS`
-6. **Never skip the enum** — even for "one-time" usage
+5. **If CapabilityEnum:** Update all `current_user_can()` and permission callbacks
+6. **If HttpMethodEnum:** Update all `register_rest_route()` calls
+7. **If ErrorTypeEnum:** Add to the appropriate group array AND to `TYPE_LABELS`
+8. **Never skip the enum** — even for "one-time" usage
 
 ---
 
@@ -531,4 +684,4 @@ When you need a new hook name, file path, or error type:
 
 ---
 
-*PHP Enum specification v2.0.0 — 2026-02-12*
+*PHP Enum specification v3.0.0 — 2026-02-12*

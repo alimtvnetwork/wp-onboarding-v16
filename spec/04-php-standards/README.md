@@ -15,7 +15,7 @@
 | Constants | UPPER_SNAKE_CASE (no `RISEUP_` prefix) | `REST_NAMESPACE`, `ACTION_UPLOAD` |
 | File names | `class-{kebab-case}.php` | `class-envelope-builder.php` |
 | Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` |
-| Enum classes | PascalCase with `Enum` suffix | `HookEnum`, `PathEnum`, `ErrorTypeEnum` |
+| Enum classes | PascalCase with `Enum` suffix | `HookEnum`, `PathEnum`, `ErrorTypeEnum`, `CapabilityEnum`, `HttpMethodEnum` |
 
 ---
 
@@ -64,6 +64,7 @@ private function safe_execute(callable $callback) {
         return $callback();
     } catch (\Throwable $e) {
         $this->logger->log_exception($e, 'endpoint_error');
+
         return $this->envelope->error($e->getMessage(), 500);
     }
 }
@@ -143,7 +144,7 @@ public function log_exception(\Throwable $e, string $context = '') {
 
 ### Rule: All identifiers in `constants.php` or Enum classes
 
-Every endpoint path, action name, capability string, option key, **hook name**, and **file path segment** must be defined centrally. Use PHP `constants.php` for simple values and **Enum classes** for categorized groups.
+Every endpoint path, action name, capability string, option key, **hook name**, **file path segment**, **HTTP method**, and **WordPress capability** must be defined centrally. Use PHP `constants.php` for simple values and **Enum classes** for categorized groups.
 
 ### Hook Names — HookEnum
 
@@ -436,6 +437,8 @@ if ($error !== null) {
 | `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
 | Inline `E_*` → string mapping | Duplicated type-label arrays | `ErrorChecker::get_type_label($type)` via `ErrorTypeEnum::TYPE_LABELS` |
 | `$value` for booleans | Ambiguous naming | `$is_value`, `$has_value` |
+| `current_user_can('manage_options')` | Magic capability string | `CapabilityEnum::MANAGE_OPTIONS` |
+| `'POST'` or `WP_REST_Server::CREATABLE` in routes | Inconsistent method refs | `HttpMethodEnum::POST` |
 
 ---
 
