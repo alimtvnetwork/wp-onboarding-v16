@@ -343,17 +343,18 @@ The plugin currently uses **class-based fake enums** (`class FooEnum { public co
 ### Architecture
 
 ```
-includes/Enums/
-├── UploadSource.php    ← enum UploadSource: string
-├── Capability.php      ← enum Capability: string
-├── HttpMethod.php      ← enum HttpMethod: string
-├── Hook.php            ← enum Hook: string
-├── PathConst.php       ← final class PathConst (arrays/fragments, not enum)
-└── ErrorType.php       ← final class ErrorType (array groupings, not enum)
+includes/Enums/                         ← PSR-4 naming (NOT class-kebab-case.php)
+├── UploadSource.php    ← enum UploadSource: string    (file = definition name)
+├── Capability.php      ← enum Capability: string      (file = definition name)
+├── HttpMethod.php      ← enum HttpMethod: string      (file = definition name)
+├── Hook.php            ← enum Hook: string             (file = definition name)
+├── PathConst.php       ← final class PathConst         (file = definition name)
+└── ErrorType.php       ← final class ErrorType         (file = definition name)
 ```
 
 **Namespace:** `RiseupAsia\Enums`  
-**Naming:** PascalCase filenames (PSR-4 style), no `Enum` suffix, PascalCase cases.
+**Naming:** File name = definition name, PascalCase, no prefix/suffix/hyphens/underscores.  
+**Why not `class-kebab-case.php`?** The `Enums/` folder uses PSR-4 because these are namespaced types, not WordPress procedural classes.
 
 ### Classification
 

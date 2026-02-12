@@ -14,16 +14,23 @@ is **deprecated** and must be migrated.
 
 ### Architectural Rules
 
-1. **All enums live in `includes/Enums/`** — one file per enum, PascalCase filenames (PSR-4 style).
-2. **Namespace:** `RiseupAsia\\Enums` — every enum file declares this namespace.
-3. **No `Enum` suffix** in the enum name — use `UploadSource`, not `UploadSourceEnum`.
-4. **String-backed** (`enum Foo: string`) for all enums whose values are strings.
-5. **Case names use PascalCase** — `case RestApi`, not `case REST_API`.
-6. **No `RISEUP_` prefix** on anything — namespace provides scoping.
-7. **`define()` constants are prohibited** for values that belong in an enum.
-8. **Access pattern:** `UploadSource::Script` (the enum case) or `UploadSource::Script->value` (the raw string).
-9. **Validation helpers** go as `static` methods on the enum itself.
-10. **Non-enum constants classes** (PathConst, ErrorType) use the same namespace and folder but remain `final class` with `public const` — they hold arrays/maps that can't be enum cases.
+1. **All enums live in `includes/Enums/`** — one file per enum.
+2. **File name = Definition name** — the filename MUST match the enum/class name exactly, PascalCase, no prefix, no hyphens, no underscores.
+   - ✅ `UploadSource.php` → contains `enum UploadSource: string`
+   - ✅ `PathConst.php` → contains `final class PathConst`
+   - ❌ `class-upload-source.php` (WordPress class convention — NOT used in `Enums/`)
+   - ❌ `upload_source.php` (snake_case — NOT used in `Enums/`)
+   - ❌ `UploadSourceEnum.php` (no `Enum` suffix)
+   - **Rationale:** The `Enums/` folder uses PSR-4 naming because these are namespaced types under `RiseupAsia\Enums`, not WordPress procedural classes. The `class-kebab-case.php` convention applies only to non-namespaced classes in `includes/`.
+3. **Namespace:** `RiseupAsia\\Enums` — every enum file declares this namespace.
+4. **No `Enum` suffix** in the enum name — use `UploadSource`, not `UploadSourceEnum`.
+5. **String-backed** (`enum Foo: string`) for all enums whose values are strings.
+6. **Case names use PascalCase** — `case RestApi`, not `case REST_API`.
+7. **No `RISEUP_` prefix** on anything — namespace provides scoping.
+8. **`define()` constants are prohibited** for values that belong in an enum.
+9. **Access pattern:** `UploadSource::Script` (the enum case) or `UploadSource::Script->value` (the raw string).
+10. **Validation helpers** go as `static` methods on the enum itself.
+11. **Non-enum constants classes** (PathConst, ErrorType) use the same namespace and folder but remain `final class` with `public const` — they hold arrays/maps that can't be enum cases.
 
 ### File Loading
 
