@@ -472,6 +472,18 @@ class ErrorChecker {
     public static function get_type_label(int $type): string {
         return ErrorTypeEnum::TYPE_LABELS[$type] ?? 'UNKNOWN_ERROR_TYPE';
     }
+
+    // ── Runtime Dependency Checks ───────────────────────────────
+
+    /**
+     * Check whether the PDO/SQLite extension is unavailable.
+     * Replaces inline `!class_exists('PDO') || !extension_loaded('pdo_sqlite')`.
+     *
+     * @return bool  True when PDO or pdo_sqlite is missing.
+     */
+    public static function is_invalid_pdo_extension(): bool {
+        return !class_exists('PDO') || !extension_loaded('pdo_sqlite');
+    }
 }
 ```
 

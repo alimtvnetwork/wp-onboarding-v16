@@ -205,14 +205,21 @@ $url = rest_url(REST_URL_UPLOAD);
 
 ## Dependency Checks
 
-### Rule: Check before using
+### Rule: Delegate to ErrorChecker — no inline extension checks
 
-Before using external dependencies (PDO, extensions), verify availability:
+Before using external dependencies (PDO, extensions), verify availability via `ErrorChecker`. Never write inline `class_exists()` / `extension_loaded()` checks in business logic.
 
 ```php
-// ✅ Runtime dependency check
+// ❌ FORBIDDEN: Inline extension checks in business logic
 if (!class_exists('PDO') || !extension_loaded('pdo_sqlite')) {
     $this->logger->error('PDO/SQLite not available');
+    return $this->envelope->error('SQLite support not available', 500);
+}
+
+// ✅ REQUIRED: Centralized check via ErrorChecker
+if (ErrorChecker::is_invalid_pdo_extension()) {
+    $this->logger->error('PDO/SQLite not available');
+
     return $this->envelope->error('SQLite support not available', 500);
 }
 ```
@@ -329,6 +336,34 @@ if ($has_permission) { ... }
 
 ---
 
+## Code Style — Blank Line Before `return`
+
+### Rule: Add a blank line before `return` when other statements precede it
+
+If a block contains statements before `return`, insert **one blank line** before the `return` for visual separation. If `return` is the **only statement** in the block, no blank line is needed.
+
+```php
+// ❌ FORBIDDEN: No blank line before return (when preceded by other statements)
+if (ErrorChecker::is_invalid_pdo_extension()) {
+    $this->logger->error('PDO/SQLite not available');
+    return $this->envelope->error('SQLite support not available', 500);
+}
+
+// ✅ REQUIRED: Blank line before return separates logic from exit
+if (ErrorChecker::is_invalid_pdo_extension()) {
+    $this->logger->error('PDO/SQLite not available');
+
+    return $this->envelope->error('SQLite support not available', 500);
+}
+
+// ✅ OK: Return is the only statement — no blank line needed
+if ($error === null) {
+    return false;
+}
+```
+
+---
+
 ## Forbidden Patterns
 
 | Pattern | Why | Alternative |
@@ -342,7 +377,8 @@ if ($has_permission) { ... }
 | `getDataDir() . '/file.db'` | Partial accessor, still magic | Add a typed accessor to `RiseupPathUtils` |
 | Constructor WordPress calls | Load order issues | Lazy initialization |
 | `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
-| Unchecked `new PDO()` | Fatal if extension missing | `class_exists()` check first |
+| Inline `!class_exists('PDO')` checks | Duplicated logic | `ErrorChecker::is_invalid_pdo_extension()` |
+| `return` without blank line after statements | Poor readability | Blank line before `return` when preceded by other statements |
 | `RiseupBooleanHelpers` | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
 | `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
