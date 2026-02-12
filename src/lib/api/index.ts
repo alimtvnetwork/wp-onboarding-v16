@@ -70,6 +70,17 @@ export type {
   ActivityFeedResponse,
   ActivityFeedParams,
   ActivityType,
+  ActivityMetadata,
+  PublishMetadata,
+  SnapshotMetadata,
+  PluginMetadata,
+  ConfigMetadata,
+  ConnectionMetadata,
+  PublishActivityEntry,
+  SnapshotActivityEntry,
+  PluginActivityEntry,
+  ConfigActivityEntry,
+  ConnectionActivityEntry,
 } from './types';
 
 // Envelope utilities

@@ -1,4 +1,9 @@
-import type { ActivityType } from "@/lib/api";
+import type { ActivityType, ActivityMetadata } from "@/lib/api";
+
+/** Extract metadata entries as string key-value pairs for display */
+export function getMetadataEntries(metadata: ActivityMetadata): [string, unknown][] {
+  return Object.entries(metadata);
+}
 
 /** Color-coded badge classes per activity type, following existing snapshot color conventions */
 export function getActivityTypeBadgeClasses(type: ActivityType): string {
