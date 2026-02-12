@@ -8,14 +8,17 @@
 
 ## Naming Conventions
 
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Class names | PascalCase | `RiseupEnvelopeBuilder`, `RiseupSnapshotFactory` |
-| Method names | camelCase | `buildResponse()`, `getPluginInfo()` |
-| Constants | UPPER_SNAKE_CASE (no `RISEUP_` prefix) | `REST_NAMESPACE`, `ACTION_UPLOAD` |
-| File names | `class-{kebab-case}.php` | `class-envelope-builder.php` |
-| Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` |
-| Enum classes | PascalCase with `Enum` suffix | `HookEnum`, `PathEnum`, `ErrorTypeEnum`, `CapabilityEnum`, `HttpMethodEnum` |
+> **Baseline:** [PSR-12 PHP Naming Conventions](./naming-conventions.md)  
+> The table below lists **project-specific overrides** that take precedence over PSR-12 defaults.
+
+| Element | Convention | Example | Override reason |
+|---------|-----------|---------|-----------------|
+| Class names | PascalCase | `RiseupEnvelopeBuilder`, `RiseupSnapshotFactory` | _(matches PSR-12)_ |
+| Method names | snake_case | `build_response()`, `get_plugin_info()` | WordPress convention |
+| Constants | UPPER_SNAKE_CASE (no `RISEUP_` prefix) | `REST_NAMESPACE`, `ACTION_UPLOAD` | _(matches PSR-12)_ |
+| File names | `class-{kebab-case}.php` | `class-envelope-builder.php` | WordPress convention |
+| Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` | _(matches PSR-12)_ |
+| Enum classes | PascalCase with `Enum` suffix | `HookEnum`, `PathEnum`, `ErrorTypeEnum` | Project convention |
 
 ---
 
