@@ -4669,6 +4669,14 @@ class Riseup_Asia {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
 
+            // Log activity: full backup initiated (Phase 6)
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_FULL_BACKUP,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? null, 'phase' => 'initiated')
+            );
+
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
 
@@ -4679,6 +4687,21 @@ class Riseup_Asia {
                 'plugin_selection' => $body['plugin_selection'] ?? null,
                 'compression'      => $body['compression'] ?? null,
             ));
+
+            // Log activity: full backup result (Phase 6)
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_FULL_BACKUP,
+                'snapshot',
+                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                array(
+                    'snapshot_id' => $result['snapshot_id'] ?? null,
+                    'tables'      => $result['tables'] ?? 0,
+                    'total_rows'  => $result['total_rows'] ?? 0,
+                    'duration'    => $result['duration'] ?? 0,
+                    'phase'       => 'complete',
+                ),
+                $result['success'] ? null : ($result['error'] ?? 'Full backup failed')
+            );
 
             $status = $result['success'] ? 201 : 500;
 
@@ -4711,6 +4734,14 @@ class Riseup_Asia {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
 
+            // Log activity: incremental backup initiated (Phase 6)
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                'snapshot',
+                RISEUP_STATUS_SUCCESS,
+                array('title' => $body['title'] ?? null, 'phase' => 'initiated')
+            );
+
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
             $rootDb = RiseupRootDb::getInstance($this->file_logger, RiseupDependencyAnalyzer::getInstance($this->file_logger));
             $incremental = RiseupIncrementalBackup::getInstance($this->file_logger, $this->db, $rootDb);
@@ -4732,6 +4763,21 @@ class Riseup_Asia {
             $result = $incremental->execute($master_dir, array(
                 'title' => $body['title'] ?? null,
             ));
+
+            // Log activity: incremental backup result (Phase 6)
+            $this->logger->log_plugin_action(
+                RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                'snapshot',
+                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                array(
+                    'snapshot_id'    => $result['snapshot_id'] ?? null,
+                    'tables_changed' => $result['tables_changed'] ?? 0,
+                    'total_new_rows' => $result['total_new_rows'] ?? 0,
+                    'duration'       => $result['duration'] ?? 0,
+                    'phase'          => 'complete',
+                ),
+                $result['success'] ? null : ($result['error'] ?? 'Incremental backup failed')
+            );
 
             $status = $result['success'] ? 201 : 500;
 
@@ -4770,6 +4816,22 @@ class Riseup_Asia {
                 'retention_count' => $body['retention_count'] ?? null,
                 'dry_run'         => $body['dry_run'] ?? false,
             ));
+
+            // Log activity: cleanup result (Phase 6)
+            if (!($body['dry_run'] ?? false)) {
+                $this->logger->log_plugin_action(
+                    RISEUP_ACTION_SNAPSHOT_CLEANUP,
+                    'snapshot',
+                    $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                    array(
+                        'retention_removed' => $result['retention']['removed'] ?? 0,
+                        'orphans_removed'   => $result['orphans']['removed'] ?? 0,
+                        'stuck_marked'      => $result['stuck']['marked'] ?? 0,
+                        'duration'          => $result['duration'] ?? 0,
+                    ),
+                    $result['success'] ? null : 'Cleanup encountered errors'
+                );
+            }
 
             return new WP_REST_Response(array(
                 'success'   => $result['success'],
