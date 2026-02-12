@@ -1,10 +1,26 @@
 # Memory: issues-fixed/retry-debounce-dedup-anti-patterns
 Updated: 2026-02-12
 
+## ⛔ ABSOLUTE BAN — Never Suggest or Write This Code
+
+**NEVER suggest adding `retry: true`, `retry: 1`, `retry: 2`, `retry: 3`, or any positive retry value to ANY React Query configuration in this project.** This was the ROOT CAUSE of cascading failures: React Query's default `retry: 3` caused triple error toasts, triple API calls on failure, and invisible network storms. The fix was setting `retry: false` globally and it must NEVER be reverted or overridden.
+
+**NEVER suggest adding `refetchOnWindowFocus: true` to ANY query.** This caused 10-20+ simultaneous API requests every time the user switched browser tabs, triggering rate limiting and stale error modals reappearing. The fix was `refetchOnWindowFocus: false` globally.
+
+**These settings are INTENTIONAL and PERMANENT. Do not "improve" them. Do not add retry logic "for reliability." The project explicitly chose manual-refresh-only as its data fetching strategy.**
+
+### Root Cause Summary
+The original bugs were introduced by AI assistants who added `retry` and `refetchOnWindowFocus` settings thinking they would improve reliability. Instead, they caused:
+- **Triple error toasts** from a single API failure (retry 3× = 3 error callbacks)
+- **Tab-switch refetch storms** (10-20 queries firing simultaneously on focus)
+- **Auto-publish infinite loops** (publish success → file watcher detects changes → auto-publish → repeat)
+- **Duplicate WebSocket events** (useEffect re-subscribing every render due to unstable deps)
+- **Ghost progress jumps** (late events from previous sessions processed by new dialog instances)
+
 ## NEVER DO — Retry & Deduplication Anti-Patterns
 
 ### 1. React Query Defaults
-NEVER use default QueryClient settings. Always set `retry: false` and `refetchOnWindowFocus: false` globally. Data refreshes must be explicit user actions only.
+NEVER use default QueryClient settings. Always set `retry: false` and `refetchOnWindowFocus: false` globally. Data refreshes must be explicit user actions only. NEVER suggest reverting this.
 
 ### 2. WebSocket useEffect Dependencies
 NEVER put callbacks, computed strings, or dynamic labels in `useEffect` dependency arrays for WebSocket listeners. Move them into `useRef` to prevent re-subscription on every render, which causes duplicate/triple event processing and progress jumps.
@@ -25,4 +41,4 @@ NEVER fire polling queries for speculative targets (e.g., siteId=0) without `met
 Always wrap polling and health-check calls in the circuit breaker (`withCircuitBreaker`) to prevent error storms against persistently failing endpoints.
 
 ## Related
-- Full retrospective: `spec/error-resolution/02-retry-debounce-dedup-fixes.md`
+- Full retrospective with code examples: `spec/error-resolution/02-retry-debounce-dedup-fixes.md`
