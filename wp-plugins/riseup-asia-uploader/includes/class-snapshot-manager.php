@@ -125,6 +125,9 @@ class RiseupSnapshotManager {
     /**
      * Restore from a snapshot with safety checks.
      *
+     * For incremental snapshots, validates that the parent full snapshot exists
+     * before allowing the restore to proceed.
+     *
      * @param int   $snapshot_id Snapshot ID.
      * @param array $options     Restore options.
      * @return array Result with success status.
@@ -156,6 +159,29 @@ class RiseupSnapshotManager {
                 'error' => 'Snapshot not found',
                 'code' => RISEUP_ERR_SNAPSHOT_NOT_FOUND,
             );
+        }
+
+        // --- Incremental restore guard: parent full snapshot must exist ---
+        if (isset($snapshot['scope']) && $snapshot['scope'] === 'incremental') {
+            $tables_meta = json_decode($snapshot['tables_json'] ?? '{}', true);
+            $master_dirname = $tables_meta['master'] ?? null;
+
+            if ($master_dirname) {
+                // Resolve master directory from filepath (incremental path is master_dir/incremental/folder)
+                $master_dir = dirname(dirname($snapshot['filepath']));
+                if (!is_dir($master_dir) || !file_exists($master_dir . '/a-root.db')) {
+                    $this->log(RISEUP_LOG_LEVEL_ERROR, 'Incremental restore blocked: parent full snapshot missing', array(
+                        'snapshot_id'   => $snapshot_id,
+                        'master_dir'    => $master_dirname,
+                        'expected_path' => $master_dir,
+                    ));
+                    return array(
+                        'success' => false,
+                        'error'   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
+                        'code'    => RISEUP_ERR_INCREMENTAL_NO_PARENT,
+                    );
+                }
+            }
         }
 
         $this->log(RISEUP_LOG_LEVEL_INFO, 'Starting snapshot restore', array(

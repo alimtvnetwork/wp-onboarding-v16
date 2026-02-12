@@ -100,6 +100,7 @@ function SnapshotRow({
   onViewDetail,
   isRestoring,
   isDeleting,
+  isNested = false,
 }: {
   snapshot: SnapshotRecord;
   siteId: number;
@@ -108,6 +109,7 @@ function SnapshotRow({
   onViewDetail: (s: SnapshotRecord) => void;
   isRestoring: boolean;
   isDeleting: boolean;
+  isNested?: boolean;
 }) {
   const isRunning = snapshot.status === "running" || snapshot.status === "in_progress";
 
@@ -147,15 +149,26 @@ function SnapshotRow({
     custom: "bg-orange-500/10 text-orange-600 border-orange-500/20",
   };
 
+  const isIncremental = snapshot.snapshot_type === "incremental" || snapshot.scope === "incremental";
+
   return (
-    <div className="border rounded-lg p-3 space-y-2 hover:bg-muted/30 transition-colors animate-fade-in">
+    <div className={`border rounded-lg p-3 space-y-2 hover:bg-muted/30 transition-colors animate-fade-in ${isNested ? "ml-6 border-l-2 border-l-primary/20" : ""}`}>
       {/* Row 1: Name + Status + Actions */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+          {isIncremental ? (
+            <GitBranch className="h-4 w-4 text-primary/60 shrink-0" />
+          ) : (
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+          )}
           <span className="text-sm font-medium truncate">
             #{snapshot.sequence} — {snapshot.filename}
           </span>
+          {isIncremental && (
+            <Badge variant="outline" className="text-[10px] h-4 px-1 border-primary/30 text-primary/70">
+              incremental
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {statusBadge}
@@ -917,18 +930,82 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                   </div>
                 ) : (
                   <div className="space-y-2 pr-2">
-                    {snapshots.map((snapshot) => (
-                      <SnapshotRow
-                        key={snapshot.id}
-                        snapshot={snapshot}
-                        siteId={site.id}
-                        onRestore={handleOpenRestore}
-                        onDelete={setDeleteTarget}
-                        onViewDetail={setDetailTarget}
-                        isRestoring={isRestoring}
-                        isDeleting={isDeleting}
-                      />
-                    ))}
+                    {(() => {
+                      // Group snapshots: full snapshots at top level, incrementals nested under parent
+                      const fullSnapshots = snapshots.filter(
+                        (s) => s.snapshot_type !== "incremental" && s.scope !== "incremental"
+                      );
+                      const incrementals = snapshots.filter(
+                        (s) => s.snapshot_type === "incremental" || s.scope === "incremental"
+                      );
+
+                      // Build a map from parent directory to incremental snapshots
+                      const incrementalsByParent = new Map<string, SnapshotRecord[]>();
+                      for (const inc of incrementals) {
+                        const parentDir = inc.parent_dir || "";
+                        if (!incrementalsByParent.has(parentDir)) {
+                          incrementalsByParent.set(parentDir, []);
+                        }
+                        incrementalsByParent.get(parentDir)!.push(inc);
+                      }
+
+                      // Unmatched incrementals (no parent_dir or parent not found)
+                      const unmatchedIncrementals = incrementals.filter(
+                        (inc) => !inc.parent_dir
+                      );
+
+                      return (
+                        <>
+                          {fullSnapshots.map((snapshot) => {
+                            const children = incrementalsByParent.get(snapshot.filename) || [];
+                            return (
+                              <div key={snapshot.id}>
+                                <SnapshotRow
+                                  snapshot={snapshot}
+                                  siteId={site.id}
+                                  onRestore={handleOpenRestore}
+                                  onDelete={setDeleteTarget}
+                                  onViewDetail={setDetailTarget}
+                                  isRestoring={isRestoring}
+                                  isDeleting={isDeleting}
+                                />
+                                {children.length > 0 && (
+                                  <div className="space-y-1.5 mt-1.5">
+                                    {children.map((child) => (
+                                      <SnapshotRow
+                                        key={child.id}
+                                        snapshot={child}
+                                        siteId={site.id}
+                                        onRestore={handleOpenRestore}
+                                        onDelete={setDeleteTarget}
+                                        onViewDetail={setDetailTarget}
+                                        isRestoring={isRestoring}
+                                        isDeleting={isDeleting}
+                                        isNested
+                                      />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {/* Render any unmatched incrementals at the end */}
+                          {unmatchedIncrementals.map((snapshot) => (
+                            <SnapshotRow
+                              key={snapshot.id}
+                              snapshot={snapshot}
+                              siteId={site.id}
+                              onRestore={handleOpenRestore}
+                              onDelete={setDeleteTarget}
+                              onViewDetail={setDetailTarget}
+                              isRestoring={isRestoring}
+                              isDeleting={isDeleting}
+                              isNested
+                            />
+                          ))}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </ScrollArea>
@@ -1059,8 +1136,15 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Snapshot</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete snapshot #{deleteTarget?.sequence} ({deleteTarget?.filename})? This cannot be undone.
+            <AlertDialogDescription className="space-y-2">
+              <span>
+                Delete snapshot #{deleteTarget?.sequence} ({deleteTarget?.filename})? This cannot be undone.
+              </span>
+              {deleteTarget && deleteTarget.snapshot_type !== "incremental" && deleteTarget.scope !== "incremental" && (deleteTarget.incremental_count ?? 0) > 0 && (
+                <span className="block text-destructive font-medium">
+                  ⚠ This is a full snapshot with {deleteTarget.incremental_count} incremental backup(s). Deleting it will also remove all its incremental children.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

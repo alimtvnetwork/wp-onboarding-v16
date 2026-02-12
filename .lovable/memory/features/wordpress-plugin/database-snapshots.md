@@ -1,19 +1,41 @@
 # Memory: features/wordpress-plugin/database-snapshots
-Updated: 2026-02-06
+Updated: 2026-02-12
 
 ## Overview
 
-The Database Snapshot System provides automated MySQL → SQLite backups for WordPress sites. It integrates with WP Reset/Updraft when available, or uses a native SQLite export engine as fallback. Cleanup and retention are handled by a dedicated cleaner class.
+The Database Snapshot System provides automated MySQL → SQLite backups for WordPress sites. It supports both **full** and **incremental** snapshot types with a parent-child hierarchy, parallel worker-pool exports, and cron-based execution.
 
 ## Key Architecture
+
+### Snapshot Types
+
+- **Full Snapshot**: Self-contained backup stored as a directory with `a-root.db` metadata and per-table `.sqlite` files
+- **Incremental Snapshot**: Delta-only backup stored inside the parent full snapshot's `incremental/` subdirectory. Requires the parent full snapshot for restore.
+
+### Cascade Delete Rule
+
+Deleting a full snapshot **cascade-deletes** all its incremental children (both files and DB records). The cleaner checks for `incremental/` subdirectory and removes it recursively, then deletes all DB records whose `filepath LIKE parent_dir/incremental/%`.
+
+### Incremental Restore Guard
+
+Restoring an incremental snapshot is blocked if the parent full snapshot's directory or `a-root.db` is missing. Returns `INCREMENTAL_NO_PARENT` error code.
 
 ### Storage Location
 
 ```
 wp-content/uploads/riseup-asia-uploader/snapshots/
-├── manifest.json
-├── 001_2026-02-06_143022.sqlite
-├── 001_2026-02-06_143022.zip
+├── 2026-02-12_full_backup-name/
+│   ├── a-root.db
+│   ├── wp_posts.sqlite
+│   ├── wp_options.sqlite
+│   ├── plugins/
+│   │   └── plugin-name.zip
+│   └── incremental/
+│       ├── 01_2026-02-12/
+│       │   ├── wp_posts.sqlite  (delta only)
+│       │   └── ...
+│       └── 02_2026-02-13/
+│           └── ...
 └── ...
 ```
 
@@ -36,78 +58,40 @@ All snapshot operations run via WP-Cron, even "Snapshot Now":
 All snapshot classes use PascalCase (no underscores):
 - `RiseupSnapshotScheduler` - WP-Cron management
 - `RiseupSnapshotDetector` - Provider detection
-- `RiseupSnapshotCleaner` - Retention & cleanup logic
+- `RiseupSnapshotCleaner` - Retention, cleanup, **cascade delete**
+- `RiseupSnapshotOrchestrator` - Full & incremental backup orchestration
+- `RiseupSnapshotWorker` - Per-table MySQL → SQLite export
+- `RiseupIncrementalBackup` - Delta row export against a master snapshot
 - `RiseupSnapshotProviderInterface` - Abstract base class
 - `RiseupSnapshotProviderNative` - Native SQLite export
 - `RiseupSnapshotProviderWPReset` - WP Reset integration
 - `RiseupSnapshotProviderUpdraft` - UpdraftPlus integration
 
-## WP-Cron Hooks
+## Constants (from constants.php)
 
-| Hook | Description |
-|------|-------------|
-| `riseup_snapshot_scheduled` | Runs scheduled snapshots (daily/weekly/monthly) |
-| `riseup_snapshot_immediate` | Runs "Snapshot Now" operations |
-| `riseup_snapshot_cleanup` | Daily cleanup of old snapshots |
+| Constant | Value |
+|----------|-------|
+| `RISEUP_SNAPSHOT_TYPE_FULL` | `full` |
+| `RISEUP_SNAPSHOT_TYPE_INCREMENTAL` | `incremental` |
+| `RISEUP_ERR_INCREMENTAL_NO_PARENT` | `INCREMENTAL_NO_PARENT` |
 
-## Table Scope Options
+## React UI: Snapshot Hierarchy Display
 
-| Scope | Description |
-|-------|-------------|
-| `all` | All database tables |
-| `wordpress` | Core WP tables only |
-| `content` | Posts, terms, comments |
-| `custom` | User-selected tables |
-
-## Scheduling Options
-
-- Daily at configurable time
-- Weekly on configurable day
-- Monthly on configurable date
-- Manual only (no automatic)
-
-## Retention Policies
-
-- Days-based: Keep snapshots for N days
-- Count-based: Keep last N snapshots
-- None: Manual cleanup only
-
-## Cleanup Features (RiseupSnapshotCleaner)
-
-The cleaner class provides comprehensive cleanup:
-- **Policy cleanup**: Enforces days or count retention
-- **Orphan cleanup**: Removes files without database records
-- **Failed cleanup**: Deletes stuck/failed snapshots older than 24 hours
-- **Storage stats**: Reports total size, count, oldest/newest, disk free space
-- **Cleanup estimates**: Preview what would be deleted without action
-
-## REST API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/snapshots` | List all |
-| POST | `/snapshots/schedule` | Create snapshot |
-| GET | `/snapshots/{id}` | Get details |
-| DELETE | `/snapshots/{id}` | Remove |
-| POST | `/snapshots/{id}/restore` | Restore DB |
-| GET | `/snapshots/{id}/export` | Download ZIP |
-| POST | `/snapshots/import` | Upload ZIP |
-| GET | `/snapshots/settings` | Get settings |
-| PUT | `/snapshots/settings` | Update settings |
-| GET | `/snapshots/providers` | List providers |
-
-## Safety Features
-
-- Pre-restore backup (automatic)
-- Transaction-wrapped table restores
-- Integrity validation on import
-- Confirmation required for restore
+The `RemoteSnapshotsPanel` groups snapshots visually:
+- Full snapshots at the top level
+- Incremental snapshots nested underneath with `ml-6` indent, left accent border, and `GitBranch` icon
+- Delete dialog warns about cascade deletion when a full snapshot has incremental children
+- `SnapshotRecord` type includes: `snapshot_type`, `parent_id`, `parent_dir`, `incremental_count`
 
 ## Related Files
 
 - Spec: `spec/wordpress-plugin/database-snapshots.md`
-- Scheduler: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-scheduler.php`
+- Orchestrator: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-orchestrator.php`
+- Worker: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-worker.php`
+- Incremental: `wp-plugins/riseup-asia-uploader/includes/class-incremental-backup.php`
 - Cleaner: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-cleaner.php`
-- Detector: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-detector.php`
-- Interface: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-provider-interface.php`
-- Native: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-provider-native.php`
+- Manager: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-manager.php`
+- Scheduler: `wp-plugins/riseup-asia-uploader/includes/class-snapshot-scheduler.php`
+- Constants: `wp-plugins/riseup-asia-uploader/includes/constants.php`
+- React Panel: `src/components/sites/RemoteSnapshotsPanel.tsx`
+- React Types: `src/lib/api/types.ts`

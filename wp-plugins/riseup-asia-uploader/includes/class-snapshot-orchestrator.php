@@ -521,6 +521,71 @@ class RiseupSnapshotOrchestrator {
     }
 
     /**
+     * Execute an incremental backup against the latest full snapshot.
+     *
+     * Delegates to RiseupIncrementalBackup after locating the master directory.
+     *
+     * @param array $options Options: title, master_snapshot_id (optional).
+     * @return array Result with success, path, tables_changed, total_new_rows, etc.
+     */
+    public function executeIncrementalBackup($options = array()) {
+        $this->log('INFO', 'Starting incremental backup orchestration', $options);
+
+        try {
+            // Locate the master (full) snapshot directory
+            $incremental = RiseupIncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
+
+            // If a specific master ID was provided, resolve its filepath
+            $master_dir = null;
+            if (!empty($options['master_snapshot_id'])) {
+                $pdo = $this->db->get_pdo();
+                if ($pdo) {
+                    $stmt = $pdo->prepare("SELECT filepath FROM " . RISEUP_TABLE_SNAPSHOTS . " WHERE id = ? AND status = ?");
+                    $stmt->execute(array($options['master_snapshot_id'], RISEUP_SNAPSHOT_STATUS_COMPLETE));
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && is_dir($row['filepath']) && file_exists($row['filepath'] . '/a-root.db')) {
+                        $master_dir = $row['filepath'];
+                    }
+                }
+            }
+
+            // Fallback: find the latest full snapshot
+            if (!$master_dir) {
+                $master_dir = $incremental->findLatestMasterSnapshot();
+            }
+
+            if (!$master_dir) {
+                return array(
+                    'success' => false,
+                    'error'   => 'No full snapshot found. A full backup is required before creating an incremental.',
+                    'phase'   => 'incremental_lookup',
+                );
+            }
+
+            $result = $incremental->execute($master_dir, $options);
+
+            $this->log('INFO', 'Incremental backup orchestration ' . ($result['success'] ? 'complete' : 'failed'), array(
+                'master'         => basename($master_dir),
+                'tables_changed' => $result['tables_changed'] ?? 0,
+                'total_new_rows' => $result['total_new_rows'] ?? 0,
+            ));
+
+            return $result;
+
+        } catch (Exception $e) {
+            $this->log('ERROR', 'Incremental backup orchestration failed', array(
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ));
+            return array(
+                'success' => false,
+                'error'   => $e->getMessage(),
+                'phase'   => 'incremental_orchestration',
+            );
+        }
+    }
+
+    /**
      * Get total size of a directory recursively.
      *
      * @param string $dir Directory path.

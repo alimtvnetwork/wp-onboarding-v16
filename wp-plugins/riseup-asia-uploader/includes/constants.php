@@ -786,6 +786,19 @@ if (!defined('RISEUP_ACTION_SNAPSHOT_INCREMENTAL')) {
     define('RISEUP_ACTION_SNAPSHOT_INCREMENTAL', 'snapshot_incremental');
 }
 
+// Snapshot type values (full vs incremental)
+if (!defined('RISEUP_SNAPSHOT_TYPE_FULL')) {
+    define('RISEUP_SNAPSHOT_TYPE_FULL', 'full');
+}
+if (!defined('RISEUP_SNAPSHOT_TYPE_INCREMENTAL')) {
+    define('RISEUP_SNAPSHOT_TYPE_INCREMENTAL', 'incremental');
+}
+
+// Error: incremental restore requires parent full snapshot
+if (!defined('RISEUP_ERR_INCREMENTAL_NO_PARENT')) {
+    define('RISEUP_ERR_INCREMENTAL_NO_PARENT', 'INCREMENTAL_NO_PARENT');
+}
+
 // Restore engine action for per-table restore (Phase 7)
 if (!defined('RISEUP_ACTION_SNAPSHOT_RESTORE_PERTABLE')) {
     define('RISEUP_ACTION_SNAPSHOT_RESTORE_PERTABLE', 'snapshot_restore_pertable');
