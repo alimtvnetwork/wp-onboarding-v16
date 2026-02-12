@@ -63,6 +63,7 @@ class Riseup_Database {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
     
@@ -90,7 +91,7 @@ class Riseup_Database {
             $this->initialized = true;
             
             $this->file_logger->log('Database init complete', __FILE__, __LINE__);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $this->file_logger->error(
                 'Database init failed: ' . $e->getMessage(),
                 __FILE__,
@@ -108,6 +109,7 @@ class Riseup_Database {
             $upload_dir = wp_upload_dir();
             $this->db_path = $upload_dir['basedir'] . '/' . RISEUP_PLUGIN_SLUG . '/' . RISEUP_DB_FILENAME;
         }
+
         return $this->db_path;
     }
     
@@ -124,10 +126,8 @@ class Riseup_Database {
             __LINE__
         );
         
-        if (!is_dir($data_dir)) {
-            if (!@mkdir($data_dir, 0755, true) && !is_dir($data_dir)) {
-                throw new Exception("Failed to create data directory: {$data_dir}");
-            }
+        if (!is_dir($data_dir) && !@mkdir($data_dir, 0755, true) && !is_dir($data_dir)) {
+            throw new Exception("Failed to create data directory: {$data_dir}");
         }
         
         // Security: prevent direct access
@@ -180,6 +180,7 @@ class Riseup_Database {
         if ($this->pdo === null) {
             $this->connect();
         }
+
         return $this->pdo;
     }
     
@@ -209,13 +210,14 @@ class Riseup_Database {
                     )
                 ");
                 $this->file_logger->log('Created schema_version table', __FILE__, __LINE__);
+
                 return 0;
             }
-            
+
             // Get current version
             $stmt = $this->pdo->query("SELECT MAX(version) as version FROM schema_version");
             $row = $stmt->fetch();
-            
+
             return $row['version'] ?? 0;
         } catch (PDOException $e) {
             $this->file_logger->error(
@@ -223,6 +225,7 @@ class Riseup_Database {
                 __FILE__,
                 __LINE__
             );
+
             return 0;
         }
     }
@@ -535,7 +538,7 @@ public function batch_insert($records) {
         $pdo->commit();
         $this->file_logger->log('Batch insert committed', __FILE__, __LINE__);
         
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         $pdo->rollBack();
         $this->file_logger->error('Batch insert rolled back', __FILE__, __LINE__);
         throw $e;

@@ -99,7 +99,7 @@ public function register_routes() {
         MYPLUGIN_API_NAMESPACE,
         '/' . MYPLUGIN_ENDPOINT_HEALTH,
         [
-            'methods' => 'GET',
+            'methods' => HttpMethodEnum::GET,
             'callback' => [$this, 'health_check'],
             'permission_callback' => '__return_true',
         ]
@@ -123,6 +123,7 @@ class My_Component {
         if ($this->upload_dir === null) {
             $this->upload_dir = wp_upload_dir();
         }
+
         return $this->upload_dir;
     }
     
@@ -134,6 +135,7 @@ class My_Component {
             $upload = $this->get_upload_dir();
             $this->data_path = $upload['basedir'] . '/' . MYPLUGIN_SLUG . '/data/';
         }
+
         return $this->data_path;
     }
     
@@ -141,12 +143,10 @@ class My_Component {
      * Ensure directory exists - called when actually needed
      */
     private function ensure_directory($path) {
-        if (!file_exists($path)) {
-            // Use native PHP, not wp_mkdir_p during uncertain phase
-            if (!@mkdir($path, 0755, true) && !is_dir($path)) {
-                throw new Exception("Failed to create directory: {$path}");
-            }
+        if (!file_exists($path) && !@mkdir($path, 0755, true) && !is_dir($path)) {
+            throw new Exception("Failed to create directory: {$path}");
         }
+
         return $path;
     }
 }
@@ -307,6 +307,7 @@ class My_Plugin {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
     
@@ -333,7 +334,7 @@ class My_Plugin {
             $this->logger = new My_Logger($this->file_logger);
             
             $this->file_logger->log('Plugin loaded successfully', __FILE__, __LINE__);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $this->file_logger->error('Plugin init failed: ' . $e->getMessage(), __FILE__, __LINE__);
         }
     }
@@ -343,7 +344,7 @@ class My_Plugin {
         $this->file_logger->log('Registering REST routes', __FILE__, __LINE__);
         
         register_rest_route(MYPLUGIN_API_NAMESPACE, '/health', [
-            'methods' => 'GET',
+            'methods' => HttpMethodEnum::GET,
             'callback' => [$this, 'health_check'],
             'permission_callback' => '__return_true',
         ]);
@@ -372,6 +373,7 @@ function myplugin_get_url() {
     if ($url === null) {
         $url = plugin_dir_url(MYPLUGIN_FILE);
     }
+
     return $url;
 }
 ```
@@ -393,6 +395,7 @@ private function get_pdo() {
     if ($this->pdo === null) {
         $this->pdo = new PDO('sqlite:' . $this->get_db_path());
     }
+
     return $this->pdo;
 }
 ```

@@ -93,6 +93,7 @@ private function safe_execute(callable $callback) {
         return $callback();
     } catch (\Throwable $e) {
         $this->logger->log_exception($e, 'endpoint_error');
+
         return $this->envelope->error($e->getMessage(), 500);
     }
 }
@@ -163,8 +164,14 @@ class ErrorChecker {
      * @return string 'fatal', 'warning', or 'unknown'
      */
     public static function get_severity_label(?array $error): string {
-        if (self::is_fatal_error($error)) return 'fatal';
-        if (self::is_warning($error))     return 'warning';
+        if (self::is_fatal_error($error)) {
+            return 'fatal';
+        }
+
+        if (self::is_warning($error)) {
+            return 'warning';
+        }
+
         return 'unknown';
     }
 }
@@ -295,6 +302,7 @@ public function insert_record($data) {
 
         $id = $pdo->lastInsertId();
         $this->file_logger->log(sprintf('Inserted record ID: %d', $id), __FILE__, __LINE__);
+
         return $id;
 
     } catch (PDOException $e) {
@@ -323,10 +331,8 @@ public function save_file($path, $content) {
     try {
         $dir = dirname($path);
 
-        if (!is_dir($dir)) {
-            if (!@mkdir($dir, 0755, true)) {
-                throw new \RuntimeException("Failed to create directory: {$dir}");
-            }
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+            throw new \RuntimeException("Failed to create directory: {$dir}");
         }
 
         $bytes = @file_put_contents($path, $content, LOCK_EX);
@@ -336,6 +342,7 @@ public function save_file($path, $content) {
         }
 
         $this->file_logger->log(sprintf('Saved %d bytes to %s', $bytes, $path), __FILE__, __LINE__);
+
         return true;
 
     } catch (\Throwable $e) {
@@ -450,6 +457,7 @@ class Riseup_Logger {
                     __FILE__, __LINE__
                 );
                 $this->is_db_available = false;
+
                 return null;
             }
         }
@@ -463,7 +471,9 @@ class Riseup_Logger {
 
         // Try database if available
         $db = $this->get_db();
-        if ($db && $db->is_ready()) {
+        $is_db_ready = $db !== null && $db->is_ready();
+
+        if ($is_db_ready) {
             try {
                 $db->insert_log($message, $level);
             } catch (\Throwable $e) {
