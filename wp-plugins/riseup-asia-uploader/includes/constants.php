@@ -702,6 +702,16 @@ if (!defined('RISEUP_CRON_SNAPSHOT_TABLE')) {
     define('RISEUP_CRON_SNAPSHOT_TABLE', 'riseup_snapshot_table');
 }
 
+// Cron hook for background restore operations
+if (!defined('RISEUP_CRON_SNAPSHOT_RESTORE')) {
+    define('RISEUP_CRON_SNAPSHOT_RESTORE', 'riseup_snapshot_restore');
+}
+
+// Cron hook for background incremental backup
+if (!defined('RISEUP_CRON_SNAPSHOT_INCREMENTAL')) {
+    define('RISEUP_CRON_SNAPSHOT_INCREMENTAL', 'riseup_snapshot_incremental');
+}
+
 // Snapshot error codes
 if (!defined('RISEUP_ERR_SNAPSHOT_LOCK_EXISTS')) {
     define('RISEUP_ERR_SNAPSHOT_LOCK_EXISTS', 'SNAPSHOT_LOCK_EXISTS');
