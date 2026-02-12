@@ -16,11 +16,11 @@ use RiseupAsia\Enums\Capability;
 use RiseupAsia\Enums\Hook;
 
 /**
- * Class Riseup_Admin
+ * Class RiseupAdmin
  *
  * Handles admin menu pages and settings.
  */
-class Riseup_Admin {
+class RiseupAdmin {
 
     /**
      * Option name for plugin settings.
@@ -57,14 +57,14 @@ class Riseup_Admin {
     /**
      * Singleton instance.
      *
-     * @var Riseup_Admin|null
+     * @var RiseupAdmin|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return Riseup_Admin
+     * @return RiseupAdmin
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -198,7 +198,7 @@ class Riseup_Admin {
         // Register auto-update settings
         register_setting(
             'riseup_asia_settings_group',
-            Riseup_Update_Resolver::OPTION_NAME,
+            RiseupUpdateResolver::OPTION_NAME,
             array($this, 'sanitize_update_settings')
         );
     }
@@ -241,7 +241,7 @@ class Riseup_Admin {
      * @return array Sanitized settings.
      */
     public function sanitize_update_settings($input) {
-        $current = get_option(Riseup_Update_Resolver::OPTION_NAME, array());
+        $current = get_option(RiseupUpdateResolver::OPTION_NAME, array());
         
         $sanitized = array(
             'enabled'      => !empty($input['enabled']),
@@ -323,7 +323,7 @@ class Riseup_Admin {
         $offset = ($page - 1) * $per_page;
 
         // Get logs from database
-        $db = Riseup_Database::get_instance();
+        $db = RiseupDatabase::get_instance();
         $result = $db->query_transactions($filters, $per_page, $offset);
         $logs = $result['logs'];
         $total = $result['total'];
@@ -356,7 +356,7 @@ class Riseup_Admin {
      */
     public function render_settings_page() {
         $settings = self::get_settings();
-        $update_settings = Riseup_Update_Resolver::get_instance()->get_settings();
+        $update_settings = RiseupUpdateResolver::get_instance()->get_settings();
 
         // Snapshot settings
         require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
@@ -432,7 +432,7 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
         
-        $resolver = Riseup_Update_Resolver::get_instance();
+        $resolver = RiseupUpdateResolver::get_instance();
         $result = $resolver->test_connection();
         
         if ($result['success']) {
@@ -452,7 +452,7 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
         
-        $resolver = Riseup_Update_Resolver::get_instance();
+        $resolver = RiseupUpdateResolver::get_instance();
         $resolver->clear_cache();
         
         wp_send_json_success(array('message' => 'Cache cleared successfully'));
@@ -468,7 +468,7 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
         
-        $resolver = Riseup_Update_Resolver::get_instance();
+        $resolver = RiseupUpdateResolver::get_instance();
         $result = $resolver->fetch_update_info(true);
         
         if (is_wp_error($result)) {
@@ -655,7 +655,7 @@ class Riseup_Admin {
         $db_error_message = '';
 
         try {
-            $db = Riseup_Database::get_instance();
+            $db = RiseupDatabase::get_instance();
             $pdo = $db->get_pdo();
 
             if (!$pdo) {
@@ -728,7 +728,7 @@ class Riseup_Admin {
      */
     private function get_unseen_error_count() {
         try {
-            $db = Riseup_Database::get_instance();
+            $db = RiseupDatabase::get_instance();
             $pdo = $db->get_pdo();
             if (!$pdo) {
                 return 0;
@@ -753,7 +753,7 @@ class Riseup_Admin {
      */
     private function get_flash_value($key, $default = '') {
         try {
-            $db = Riseup_Database::get_instance();
+            $db = RiseupDatabase::get_instance();
             $pdo = $db->get_pdo();
             if (!$pdo) {
                 return $default;
@@ -807,7 +807,7 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        $db = Riseup_Database::get_instance();
+        $db = RiseupDatabase::get_instance();
         $pdo = $db->get_pdo();
 
         // Get max error ID
@@ -830,7 +830,7 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        $db = Riseup_Database::get_instance();
+        $db = RiseupDatabase::get_instance();
         $pdo = $db->get_pdo();
 
         $pdo->exec('DELETE FROM error_sessions');
@@ -848,7 +848,7 @@ class Riseup_Admin {
      * @return string|false File path or false if invalid type.
      */
     private function resolve_log_file_path($type) {
-        $logger = Riseup_File_Logger::get_instance();
+        $logger = RiseupFileLogger::get_instance();
         switch ($type) {
             case 'log':
                 return $logger->get_log_file();

@@ -14,11 +14,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class Riseup_ORM
+ * Class RiseupORM
  *
  * Fluent query builder with method chaining support.
  */
-class Riseup_ORM {
+class RiseupORM {
 
     /**
      * PDO instance (shared across all ORM instances).
@@ -143,7 +143,7 @@ class Riseup_ORM {
      *
      * @param string $table_name Table name.
      *
-     * @return Riseup_ORM
+     * @return RiseupORM
      */
     public static function for_table($table_name) {
         $orm = new self();

@@ -202,7 +202,7 @@ class RiseupInitHelpers {
      * and sets standard attributes. Returns null on failure with error details.
      *
      * @param string              $db_path     Path to SQLite database file.
-     * @param Riseup_File_Logger  $logger      Logger for diagnostics.
+     * @param RiseupFileLogger  $logger      Logger for diagnostics.
      * @return PDO|null PDO instance on success, null on failure.
      */
     public static function initSqliteConnection($db_path, $logger) {
@@ -332,7 +332,7 @@ class RiseupInitHelpers {
     /**
      * Log a summary of all startup results to the provided logger.
      *
-     * @param Riseup_File_Logger $logger Logger instance.
+     * @param RiseupFileLogger $logger Logger instance.
      * @return void
      */
     public static function logStartupSummary($logger) {

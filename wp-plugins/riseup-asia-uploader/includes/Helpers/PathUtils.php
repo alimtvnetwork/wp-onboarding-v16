@@ -25,7 +25,7 @@ class RiseupPathUtils {
     /**
      * Logger instance (lazy loaded).
      *
-     * @var Riseup_File_Logger|null
+     * @var RiseupFileLogger|null
      */
     private static $logger = null;
 
@@ -57,13 +57,13 @@ class RiseupPathUtils {
         if (self::$logger === null) {
             // Use native class_exists — RiseupBooleanHelpers may not be loaded yet
             // during very early initialization.
-            if (!class_exists('Riseup_File_Logger', false)) {
+            if (!class_exists('RiseupFileLogger', false)) {
                 return null;
             }
 
             self::$bootstrapping = true;
             try {
-                self::$logger = Riseup_File_Logger::get_instance();
+                self::$logger = RiseupFileLogger::get_instance();
             } catch (\Throwable $e) {
                 // Logger init failed — stay in fallback mode
                 error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());

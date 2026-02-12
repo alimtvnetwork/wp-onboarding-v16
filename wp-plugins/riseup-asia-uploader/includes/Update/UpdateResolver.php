@@ -17,11 +17,11 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\Hook;
 
 /**
- * Class Riseup_Update_Resolver
+ * Class RiseupUpdateResolver
  *
  * Manages plugin auto-updates with 301 redirect resolution.
  */
-class Riseup_Update_Resolver {
+class RiseupUpdateResolver {
 
     /**
      * Option name for update settings (stored in WordPress options).
@@ -36,28 +36,28 @@ class Riseup_Update_Resolver {
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $file_logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     private $db;
 
     /**
      * Singleton instance.
      *
-     * @var Riseup_Update_Resolver|null
+     * @var RiseupUpdateResolver|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return Riseup_Update_Resolver
+     * @return RiseupUpdateResolver
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -70,8 +70,8 @@ class Riseup_Update_Resolver {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = Riseup_File_Logger::get_instance();
-        $this->db = Riseup_Database::get_instance();
+        $this->file_logger = RiseupFileLogger::get_instance();
+        $this->db = RiseupDatabase::get_instance();
         
         // Register WordPress update hooks if auto-update is enabled
         $settings = $this->get_settings();

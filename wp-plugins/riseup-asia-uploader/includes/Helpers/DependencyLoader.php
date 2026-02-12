@@ -129,7 +129,7 @@ class RiseupDependencyLoader {
     /**
      * Log a summary of load results to the provided logger.
      *
-     * @param Riseup_File_Logger $logger Logger instance.
+     * @param RiseupFileLogger $logger Logger instance.
      * @return void
      */
     public static function logSummary($logger) {

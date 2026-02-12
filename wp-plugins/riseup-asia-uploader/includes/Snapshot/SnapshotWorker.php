@@ -28,7 +28,7 @@ class RiseupSnapshotWorker {
     /** @var RiseupFileLogger */
     private $logger;
 
-    /** @var Riseup_Database */
+    /** @var RiseupDatabase */
     private $db;
 
     /** @var RiseupRootDb */
@@ -53,7 +53,7 @@ class RiseupSnapshotWorker {
      * Get singleton instance.
      *
      * @param RiseupFileLogger|null         $logger   Logger.
-     * @param Riseup_Database|null          $db       Plugin database.
+     * @param RiseupDatabase|null          $db       Plugin database.
      * @param RiseupRootDb|null             $rootDb   Root DB manager.
      * @param RiseupDependencyAnalyzer|null $analyzer Dependency analyzer.
      * @return RiseupSnapshotWorker
@@ -69,7 +69,7 @@ class RiseupSnapshotWorker {
      * Constructor.
      *
      * @param RiseupFileLogger         $logger   Logger.
-     * @param Riseup_Database          $db       Plugin database.
+     * @param RiseupDatabase          $db       Plugin database.
      * @param RiseupRootDb             $rootDb   Root DB manager.
      * @param RiseupDependencyAnalyzer $analyzer Dependency analyzer.
      */

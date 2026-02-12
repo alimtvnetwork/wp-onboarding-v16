@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 /**
  * Upload Ignore Parser class.
  */
-class Riseup_Upload_Ignore {
+class RiseupUploadIgnore {
 
     /**
      * Include patterns (files to ignore).
@@ -41,7 +41,7 @@ class Riseup_Upload_Ignore {
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $file_logger;
 
@@ -49,7 +49,7 @@ class Riseup_Upload_Ignore {
      * Constructor.
      */
     public function __construct() {
-        $this->file_logger = Riseup_File_Logger::get_instance();
+        $this->file_logger = RiseupFileLogger::get_instance();
     }
 
     /**
@@ -244,7 +244,7 @@ class Riseup_Upload_Ignore {
      *
      * @param string $plugin_dir The plugin directory.
      *
-     * @return Riseup_Upload_Ignore The instance.
+     * @return RiseupUploadIgnore The instance.
      */
     public static function from_directory($plugin_dir) {
         $instance = new self();

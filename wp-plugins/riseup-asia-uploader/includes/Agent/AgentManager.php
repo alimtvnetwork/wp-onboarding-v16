@@ -14,11 +14,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class Riseup_Agent_Manager
+ * Class RiseupAgentManager
  *
  * Handles CRUD operations for agent sites and remote plugin control.
  */
-class Riseup_Agent_Manager {
+class RiseupAgentManager {
 
     /**
      * Encryption key for app passwords (derived from WordPress salts).
@@ -28,28 +28,28 @@ class Riseup_Agent_Manager {
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $file_logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     private $db;
 
     /**
      * Singleton instance.
      *
-     * @var Riseup_Agent_Manager|null
+     * @var RiseupAgentManager|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return Riseup_Agent_Manager
+     * @return RiseupAgentManager
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -62,8 +62,8 @@ class Riseup_Agent_Manager {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = Riseup_File_Logger::get_instance();
-        $this->db = Riseup_Database::get_instance();
+        $this->file_logger = RiseupFileLogger::get_instance();
+        $this->db = RiseupDatabase::get_instance();
         
         // Derive encryption key from WordPress salts
         $this->encryption_key = substr(hash('sha256', AUTH_KEY . SECURE_AUTH_KEY), 0, 32);
