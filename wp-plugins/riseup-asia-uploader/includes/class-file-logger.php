@@ -98,6 +98,7 @@ class Riseup_File_Logger {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
@@ -126,10 +127,10 @@ class Riseup_File_Logger {
         // Build logs dir path using ONLY native string concatenation.
         // CRITICAL: Do NOT call RiseupPathUtils::getLogsDir() here — it would
         // trigger safeLog() → getLogger() → back to this constructor = infinite loop.
-        $this->logs_dir        = rtrim($this->base_dir, '/') . '/' . RISEUP_LOGS_SUBDIR;
-        $this->log_file        = $this->logs_dir . '/' . RISEUP_LOG_FILENAME;
-        $this->error_file      = $this->logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
-        $this->stacktrace_file = $this->logs_dir . '/' . RISEUP_STACKTRACE_FILENAME;
+        $this->logs_dir        = rtrim($this->base_dir, '/') . '/' . LOGS_SUBDIR;
+        $this->log_file        = $this->logs_dir . '/' . LOG_FILENAME;
+        $this->error_file      = $this->logs_dir . '/' . ERROR_LOG_FILENAME;
+        $this->stacktrace_file = $this->logs_dir . '/' . STACKTRACE_FILENAME;
 
         // Create directories via native PHP only — avoids circular dependency
         return $this->ensure_directories();
@@ -142,9 +143,6 @@ class Riseup_File_Logger {
      */
     private function ensure_directories() {
         // CRITICAL: Use native PHP directory creation to avoid circular dependency.
-        // RiseupInitHelpers::ensureDir() delegates to RiseupPathUtils::ensureDir()
-        // which calls getLogger() which tries to create *this* logger instance → infinite loop.
-        // ensureDirNative() uses only raw PHP (mkdir / wp_mkdir_p), no logger involved.
         if (!RiseupInitHelpers::ensureDirNative($this->base_dir, true)) {
             error_log('[Riseup Asia] Failed to create base directory: ' . $this->base_dir);
 
@@ -158,15 +156,12 @@ class Riseup_File_Logger {
         }
         
         $this->initialized = true;
+
         return true;
     }
 
     /**
      * Check if a log entry is a duplicate using MD5 hashing.
-     *
-     * Generates an MD5 hash from (level + message + file + line) and checks if it
-     * has already been logged in this request lifecycle. If so, returns true (duplicate).
-     * Otherwise, registers the hash and returns false (new entry).
      *
      * @param string $level   Log level.
      * @param string $message Log message.
@@ -184,6 +179,7 @@ class Riseup_File_Logger {
         }
 
         $this->dedup_hashes[$hash] = true;
+
         return false;
     }
 
@@ -206,6 +202,7 @@ class Riseup_File_Logger {
                 'script'  => isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : 'unknown',
             );
             $this->request_metadata_cache = $meta;
+
             return $meta;
         }
 
@@ -223,6 +220,7 @@ class Riseup_File_Logger {
         );
 
         $this->request_metadata_cache = $meta;
+
         return $meta;
     }
 
@@ -238,16 +236,13 @@ class Riseup_File_Logger {
         if (!isset($context['_request'])) {
             $context = array_merge($meta, $context);
         }
+
         return $context;
     }
 
     /**
      * Prepare context for logging by enriching with request metadata and
      * optionally building an invocation chain from a backtrace.
-     *
-     * This is the single entry point for all context enrichment, eliminating
-     * duplicated enrich_context_with_request() + invocation chain logic
-     * across warn(), error(), log_at(), and log_exception().
      *
      * @param array      $context          Existing context array.
      * @param array|null $trace            Optional debug_backtrace result for invocation chain.
@@ -262,22 +257,29 @@ class Riseup_File_Logger {
         if ($include_chain && $trace !== null && !isset($context['_invocation_chain'])) {
             $chain = array();
             foreach ($trace as $i => $frame) {
-                if ($i === 0) continue; // skip self
+                if ($i === 0) {
+                    continue; // skip self
+                }
+
                 $entry = array();
                 if (isset($frame['class'])) {
                     $entry['class'] = $frame['class'];
                 }
+
                 if (isset($frame['function'])) {
                     $entry['function'] = $frame['function'];
                 }
+
                 if (isset($frame['file'])) {
                     $entry['file'] = basename($frame['file']);
                     $entry['line'] = isset($frame['line']) ? $frame['line'] : 0;
                 }
+
                 if (!empty($entry)) {
                     $chain[] = $entry;
                 }
             }
+
             if (!empty($chain)) {
                 $context['_invocation_chain'] = $chain;
             }
@@ -288,13 +290,13 @@ class Riseup_File_Logger {
 
     /**
      * Clear the deduplication hash map.
-     * After calling this, previously suppressed entries will be logged again.
      *
      * @return int Number of hashes that were cleared.
      */
     public function clear_dedup_hashes() {
         $count = count($this->dedup_hashes);
         $this->dedup_hashes = array();
+
         return $count;
     }
 
@@ -307,6 +309,7 @@ class Riseup_File_Logger {
         if ($this->base_dir === null) {
             $this->initialize_paths();
         }
+
         return $this->base_dir;
     }
 
@@ -319,6 +322,7 @@ class Riseup_File_Logger {
         if ($this->logs_dir === null) {
             $this->initialize_paths();
         }
+
         return $this->logs_dir;
     }
 
@@ -331,6 +335,7 @@ class Riseup_File_Logger {
         if ($this->log_file === null) {
             $this->initialize_paths();
         }
+
         return $this->log_file;
     }
 
@@ -343,6 +348,7 @@ class Riseup_File_Logger {
         if ($this->error_file === null) {
             $this->initialize_paths();
         }
+
         return $this->error_file;
     }
 
@@ -355,6 +361,7 @@ class Riseup_File_Logger {
         if ($this->stacktrace_file === null) {
             $this->initialize_paths();
         }
+
         return $this->stacktrace_file;
     }
 
@@ -370,7 +377,6 @@ class Riseup_File_Logger {
      * @return string Formatted log entry.
      */
     private function format_entry($level, $message, $file, $line, $context = array()) {
-        // Use date() instead of gmdate() with .v for PHP 7.4 compatibility
         $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
         $basename  = basename($file);
         
@@ -405,6 +411,7 @@ class Riseup_File_Logger {
             if (!$this->initialize_paths()) {
                 // Fallback to error_log if we can't write to file
                 error_log('[Riseup Asia] ' . trim($entry));
+
                 return false;
             }
         }
@@ -434,11 +441,12 @@ class Riseup_File_Logger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(RISEUP_LOG_LEVEL_DEBUG, $message, $file, $line)) {
+        if ($this->is_duplicate(LOG_LEVEL_DEBUG, $message, $file, $line)) {
             return true; // Silently skip duplicate
         }
         
-        $entry = $this->format_entry(RISEUP_LOG_LEVEL_DEBUG, $message, $file, $line, $context);
+        $entry = $this->format_entry(LOG_LEVEL_DEBUG, $message, $file, $line, $context);
+
         return $this->write($entry, false);
     }
 
@@ -456,11 +464,12 @@ class Riseup_File_Logger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(RISEUP_LOG_LEVEL_INFO, $message, $file, $line)) {
+        if ($this->is_duplicate(LOG_LEVEL_INFO, $message, $file, $line)) {
             return true;
         }
         
-        $entry = $this->format_entry(RISEUP_LOG_LEVEL_INFO, $message, $file, $line, $context);
+        $entry = $this->format_entry(LOG_LEVEL_INFO, $message, $file, $line, $context);
+
         return $this->write($entry, false);
     }
 
@@ -478,7 +487,7 @@ class Riseup_File_Logger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(RISEUP_LOG_LEVEL_WARN, $message, $file, $line)) {
+        if ($this->is_duplicate(LOG_LEVEL_WARN, $message, $file, $line)) {
             return true;
         }
 
@@ -487,8 +496,9 @@ class Riseup_File_Logger {
         // Capture abbreviated stack trace for warn-level too
         $formatted_trace = $this->format_backtrace($trace);
 
-        $entry = $this->format_entry(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context);
-        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_WARN, $message, $file, $line, $context, $formatted_trace);
+        $entry = $this->format_entry(LOG_LEVEL_WARN, $message, $file, $line, $context);
+        $this->persist_to_error_sessions(LOG_LEVEL_WARN, $message, $file, $line, $context, $formatted_trace);
+
         return $this->write($entry, false);
     }
 
@@ -506,16 +516,17 @@ class Riseup_File_Logger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line)) {
+        if ($this->is_duplicate(LOG_LEVEL_ERROR, $message, $file, $line)) {
             return true;
         }
 
         $context = $this->prepare_context($context, $trace, true);
         
-        $entry = $this->format_entry(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context);
+        $entry = $this->format_entry(LOG_LEVEL_ERROR, $message, $file, $line, $context);
         $formatted_trace = $this->format_backtrace($trace);
-        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $file, $line, $context, $formatted_trace);
+        $this->persist_to_error_sessions(LOG_LEVEL_ERROR, $message, $file, $line, $context, $formatted_trace);
         $this->write_stacktrace($message, $file, $line, $formatted_trace);
+
         return $this->write($entry, true);
     }
 
@@ -537,8 +548,9 @@ class Riseup_File_Logger {
 
         $context = $this->prepare_context($context);
 
-        $is_error = ($level === RISEUP_LOG_LEVEL_ERROR);
+        $is_error = ($level === LOG_LEVEL_ERROR);
         $entry = $this->format_entry($level, $message, $file, $line, $context);
+
         return $this->write($entry, $is_error);
     }
 
@@ -551,30 +563,28 @@ class Riseup_File_Logger {
      * @return bool
      */
     public function log_exception($e, $context = '') {
-        if ($this->is_duplicate(RISEUP_LOG_LEVEL_ERROR, $e->getMessage(), $e->getFile(), $e->getLine())) {
+        if ($this->is_duplicate(LOG_LEVEL_ERROR, $e->getMessage(), $e->getFile(), $e->getLine())) {
             return true;
         }
 
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
         $ctx = $this->prepare_context(array('trace' => $e->getTraceAsString()));
         $entry = $this->format_entry(
-            RISEUP_LOG_LEVEL_ERROR,
+            LOG_LEVEL_ERROR,
             $message,
             $e->getFile(),
             $e->getLine(),
             $ctx
         );
-        $this->persist_to_error_sessions(RISEUP_LOG_LEVEL_ERROR, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
+        $this->persist_to_error_sessions(LOG_LEVEL_ERROR, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
         $this->write_stacktrace($message, $e->getFile(), $e->getLine(), $e->getTraceAsString());
+
         return $this->write($entry, true);
     }
 
     /**
      * Persist an error/warn entry to the error_sessions SQLite table
      * and mark flash state as having unseen errors.
-     *
-     * Uses defensive coding: if the DB is unavailable (e.g., during early
-     * bootstrap), the error is silently skipped (already written to file).
      *
      * @param string $level       Log level (ERROR or WARN).
      * @param string $message     Error message.
@@ -614,7 +624,6 @@ class Riseup_File_Logger {
             $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '1', '{$now}')");
         } catch (Throwable $e) {
             // Silently ignore - we're in the logger, can't recurse
-            // The error is already written to the file log
         }
     }
 
@@ -663,6 +672,7 @@ class Riseup_File_Logger {
             $func = isset($frame['function']) ? $frame['function'] : '<unknown>';
             $lines[] = sprintf('#%d %s(%d): %s%s()', $i, $file, $line, $class, $func);
         }
+
         return implode(PHP_EOL, $lines);
     }
 }
