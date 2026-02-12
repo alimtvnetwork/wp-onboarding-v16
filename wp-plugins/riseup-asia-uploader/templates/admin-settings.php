@@ -75,7 +75,7 @@ if (!defined('ABSPATH')) {
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="update_enabled"
-                                   name="<?php echo esc_attr(Riseup_Update_Resolver::OPTION_NAME); ?>[enabled]" 
+                                   name="<?php echo esc_attr(RiseupUpdateResolver::OPTION_NAME); ?>[enabled]" 
                                    value="1" 
                                    <?php checked(!empty($update_settings['enabled'])); ?>>
                             <span class="toggle-slider"></span>
@@ -90,7 +90,7 @@ if (!defined('ABSPATH')) {
                     <td>
                         <input type="url" 
                                id="master_url"
-                               name="<?php echo esc_attr(Riseup_Update_Resolver::OPTION_NAME); ?>[master_url]" 
+                               name="<?php echo esc_attr(RiseupUpdateResolver::OPTION_NAME); ?>[master_url]" 
                                value="<?php echo esc_attr($update_settings['master_url']); ?>" 
                                class="regular-text"
                                placeholder="https://updates.example.com/plugin">
@@ -102,7 +102,7 @@ if (!defined('ABSPATH')) {
                         <label for="cache_days"><?php esc_html_e('Cache Duration', 'riseup-asia-uploader'); ?></label>
                     </th>
                     <td>
-                        <select id="cache_days" name="<?php echo esc_attr(Riseup_Update_Resolver::OPTION_NAME); ?>[cache_days]">
+                        <select id="cache_days" name="<?php echo esc_attr(RiseupUpdateResolver::OPTION_NAME); ?>[cache_days]">
                             <option value="1" <?php selected($update_settings['cache_days'], 1); ?>>1 <?php esc_html_e('day', 'riseup-asia-uploader'); ?></option>
                             <option value="7" <?php selected($update_settings['cache_days'], 7); ?>>7 <?php esc_html_e('days', 'riseup-asia-uploader'); ?></option>
                             <option value="14" <?php selected($update_settings['cache_days'], 14); ?>>14 <?php esc_html_e('days', 'riseup-asia-uploader'); ?></option>
@@ -220,7 +220,7 @@ if (!defined('ABSPATH')) {
                                 <td class="column-enabled">
                                     <label class="toggle-switch">
                                         <input type="checkbox" 
-                                               name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][enabled]" 
+                                               name="<?php echo esc_attr(RiseupAdmin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][enabled]" 
                                                value="1" 
                                                <?php checked(!empty($settings['endpoints'][$endpoint]['enabled'])); ?>>
                                         <span class="toggle-slider"></span>
@@ -229,7 +229,7 @@ if (!defined('ABSPATH')) {
                                 <td class="column-auth">
                                     <label class="toggle-switch">
                                         <input type="checkbox" 
-                                               name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][auth_required]" 
+                                               name="<?php echo esc_attr(RiseupAdmin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][auth_required]" 
                                                value="1" 
                                                <?php checked(!empty($settings['endpoints'][$endpoint]['auth_required'])); ?>>
                                         <span class="toggle-slider"></span>
@@ -508,7 +508,7 @@ if (!defined('ABSPATH')) {
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="log_include_error"
-                                   name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[log_retrieval][include_error_log]" 
+                                   name="<?php echo esc_attr(RiseupAdmin::OPTION_NAME); ?>[log_retrieval][include_error_log]" 
                                    value="1" 
                                    <?php checked(!empty($settings['log_retrieval']['include_error_log'])); ?>>
                             <span class="toggle-slider"></span>
@@ -526,7 +526,7 @@ if (!defined('ABSPATH')) {
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="log_include_full"
-                                   name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[log_retrieval][include_full_log]" 
+                                   name="<?php echo esc_attr(RiseupAdmin::OPTION_NAME); ?>[log_retrieval][include_full_log]" 
                                    value="1" 
                                    <?php checked(!empty($settings['log_retrieval']['include_full_log'])); ?>>
                             <span class="toggle-slider"></span>
@@ -544,7 +544,7 @@ if (!defined('ABSPATH')) {
                         <label class="toggle-switch">
                             <input type="checkbox" 
                                    id="log_include_stacktrace"
-                                   name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[log_retrieval][include_stacktrace]" 
+                                   name="<?php echo esc_attr(RiseupAdmin::OPTION_NAME); ?>[log_retrieval][include_stacktrace]" 
                                    value="1" 
                                    <?php checked(!empty($settings['log_retrieval']['include_stacktrace'])); ?>>
                             <span class="toggle-slider"></span>
@@ -561,7 +561,7 @@ if (!defined('ABSPATH')) {
                     <td>
                         <input type="number" 
                                id="log_max_lines"
-                               name="<?php echo esc_attr(Riseup_Admin::OPTION_NAME); ?>[log_retrieval][max_lines]" 
+                               name="<?php echo esc_attr(RiseupAdmin::OPTION_NAME); ?>[log_retrieval][max_lines]" 
                                value="<?php echo esc_attr($settings['log_retrieval']['max_lines']); ?>" 
                                min="50" max="5000" step="50"
                                class="small-text">
