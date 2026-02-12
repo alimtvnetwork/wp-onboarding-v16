@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { api, requireSuccess, PublishHistoryStats, PublishHistoryEntry, ErrorLog } from "@/lib/api";
+import { api, requireSuccess, PublishHistoryStats, PublishHistoryEntry, ErrorLog, Site, Plugin } from "@/lib/api";
 import type { SparklinePoint } from "@/components/dashboard/SparklineChart";
+import { ConnectionStatus, POLL_INTERVAL_DASHBOARD_MS, RECENT_ERRORS_LIMIT, RECENT_PUBLISHES_LIMIT, DASHBOARD_TREND_LIMIT } from "@/lib/constants";
 
 export interface DashboardTrends {
   publishes: SparklinePoint[];
@@ -40,11 +41,11 @@ export function useDashboardStats() {
         await Promise.all([
           api.getSites(),
           api.getPlugins(),
-          api.getErrors(10),
+          api.getErrors(RECENT_ERRORS_LIMIT),
           api.getPublishHistoryStats(),
-          api.getPublishHistory({ limit: 5 }),
+          api.getPublishHistory({ limit: RECENT_PUBLISHES_LIMIT }),
           // Fetch enough entries for 7-day trend
-          api.getPublishHistory({ limit: 200 }),
+          api.getPublishHistory({ limit: DASHBOARD_TREND_LIMIT }),
         ]);
 
       const sites = sitesRes.success ? (sitesRes.data ?? []) : [];
@@ -62,31 +63,31 @@ export function useDashboardStats() {
 
       const recentPublishes =
         recentPublishesRes.success && recentPublishesRes.data
-          ? ((recentPublishesRes.data as any).entries ?? []) as PublishHistoryEntry[]
+          ? (recentPublishesRes.data.entries ?? [])
           : [];
 
       // Build trend sparklines
       const allPublishes =
         trendPublishesRes.success && trendPublishesRes.data
-          ? ((trendPublishesRes.data as any).entries ?? []) as PublishHistoryEntry[]
+          ? (trendPublishesRes.data.entries ?? [])
           : [];
 
       const trends: DashboardTrends = {
         publishes: buildDailyBuckets(allPublishes),
         errors: buildDailyBuckets(
-          errorsList.map((e: any) => ({ createdAt: e.createdAt || e.timestamp || new Date().toISOString() }))
+          errorsList.map((e: ErrorLog) => ({ createdAt: e.createdAt }))
         ),
       };
 
       return {
         sites: {
           total: sitesList.length,
-          connected: sitesList.filter((s: any) => s.connectionStatus === "connected").length,
+          connected: sitesList.filter((s: Site) => s.connectionStatus === ConnectionStatus.Connected).length,
         },
         plugins: {
           total: pluginsList.length,
-          watching: pluginsList.filter((p: any) => p.watchEnabled).length,
-          pendingChanges: pluginsList.reduce((acc: number, p: any) => acc + (p.modifiedCount || 0), 0),
+          watching: pluginsList.filter((p: Plugin) => p.watchEnabled).length,
+          pendingChanges: pluginsList.reduce((acc: number, p: Plugin) => acc + (p.modifiedCount || 0), 0),
         },
         errors: { recent: errorsList.length },
         publish: publishStats,
@@ -94,6 +95,6 @@ export function useDashboardStats() {
         trends,
       };
     },
-    refetchInterval: 30000,
+    refetchInterval: POLL_INTERVAL_DASHBOARD_MS,
   });
 }

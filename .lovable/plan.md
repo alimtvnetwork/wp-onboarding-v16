@@ -294,7 +294,7 @@ interface ActivityEntry {
 
 ## Feature F: Type Safety Remediation (CRITICAL PRIORITY)
 
-### Status: F1 ✅ Done, F2 ✅ Done — F3–F8 pending
+### Status: F1 ✅ Done, F2 ✅ Done, F3 ✅ Done, F4 ✅ Done, F5 ✅ Done — F6–F8 pending
 
 ### Spec & Plan References
 - **Coding Standards:** `spec/02-typescript-standards/README.md` v2.0.0
@@ -314,8 +314,8 @@ interface ActivityEntry {
 |---|------|----------|--------|-------------|
 | F1 | **API type definitions** | ✅ Done | Medium | Created `CreateSnapshotOptions`, `SnapshotOperationResult`, `RestoreSnapshotOptions`, `CleanupSnapshotOptions`, `CleanupSnapshotResult`, `SnapshotImportResult`, `SnapshotScope`, `SnapshotType`, `SiteHealthCheckResult`, `E2ESuite`, `E2ECase`, `E2ERun`, `E2ERunSummary`, `E2ETestResult` in `types.ts`. Updated all method signatures in `methods.ts`. |
 | F2 | **Catch block fixes** | ✅ Done | Small | Replaced all 11x `catch (err: any)` with `catch (err: unknown)` + `instanceof Error` narrowing across 6 files. Zero `catch (err: any)` remaining. |
-| F3 | **`as any` elimination** | 🔴 Critical | Small | Fix remaining `as any` casts in `ThemeSelector`, `useDashboardStats`, `useTheme`, `Dashboard`, `BackendSection` |
-| F4 | **Constants file** | 🟡 High | Small | Create `src/lib/constants.ts` with `const enum` for all status/action strings |
+| F3 | **`as any` elimination** | ✅ Done | Small | Fixed `as any` casts: `ThemeSelector` (FontSize/BorderRadius), `useTheme` (added `sidebarTheme` to Settings.appearance type), `useDashboardStats` (typed Site/Plugin/ErrorLog, removed `.entries as any`). Zero `as any` remaining. |
+| F4 | **Constants file** | ✅ Done | Small | Created `src/lib/constants.ts` with const object + type pattern for `ConnectionStatus`, `PublishStatus`, `SnapshotRunStatus`, `CronJobStatus`, `RemotePluginStatus`, `SessionStatus`, `FileChangeStatus`, `FileDirection`, plus timing constants (`POLL_INTERVAL_DASHBOARD_MS`, `STALE_TIME_DEFAULT_MS`, etc.). |
 | F5 | **Update methods.ts** | ✅ Done | Medium | All `Record<string, unknown>` and `request<unknown>` replaced with specific types |
 | F6 | **Generic envelope** | 🟡 High | Small | Make `RawEnvelope<T>` generic |
 | F7 | **Magic string migration** | 🟡 High | Large | Replace ~50+ inline string comparisons with enum refs |

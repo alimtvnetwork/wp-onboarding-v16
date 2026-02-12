@@ -1,4 +1,4 @@
-import { useTheme, Theme, AccentColor, type SidebarTheme } from "@/hooks/useTheme";
+import { useTheme, Theme, AccentColor, type SidebarTheme, type FontSize, type BorderRadius } from "@/hooks/useTheme";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -146,7 +146,7 @@ export function ThemeSelector() {
             <Type className="h-4 w-4" />
             Font Size
           </Label>
-          <Select value={fontSize} onValueChange={(v) => setFontSize(v as any)}>
+          <Select value={fontSize} onValueChange={(v) => setFontSize(v as FontSize)}>
             <SelectTrigger id="fontSize">
               <SelectValue placeholder="Select size" />
             </SelectTrigger>
@@ -166,7 +166,7 @@ export function ThemeSelector() {
             <Square className="h-4 w-4" />
             Border Radius
           </Label>
-          <Select value={borderRadius} onValueChange={(v) => setBorderRadius(v as any)}>
+          <Select value={borderRadius} onValueChange={(v) => setBorderRadius(v as BorderRadius)}>
             <SelectTrigger id="borderRadius">
               <SelectValue placeholder="Select radius" />
             </SelectTrigger>
