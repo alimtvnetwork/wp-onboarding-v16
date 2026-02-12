@@ -188,7 +188,7 @@ class RiseupInitHelpers {
             return dirname(__DIR__) . '/data';
         }
 
-        return $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR;
+        return $upload_dir['basedir'] . '/' . UPLOADS_SUBDIR;
     }
 
     // =========================================================================
@@ -230,7 +230,7 @@ class RiseupInitHelpers {
             $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
             // Enable WAL mode for better concurrency
-            if (defined('RISEUP_DB_WAL_MODE') && RISEUP_DB_WAL_MODE) {
+            if (defined('DB_WAL_MODE') && DB_WAL_MODE) {
                 $pdo->exec('PRAGMA journal_mode = WAL');
             }
 

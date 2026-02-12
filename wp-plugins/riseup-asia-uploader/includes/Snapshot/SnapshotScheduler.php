@@ -95,18 +95,18 @@ class RiseupSnapshotScheduler {
         add_filter(Hook::CronSchedules->value, array($this, 'registerCronSchedules'));
 
         // Register cron action hooks
-        add_action(RISEUP_CRON_SNAPSHOT_SCHEDULED, array($this, 'executeScheduledSnapshot'));
-        add_action(RISEUP_CRON_SNAPSHOT_IMMEDIATE, array($this, 'executeImmediateSnapshot'));
-        add_action(RISEUP_CRON_SNAPSHOT_CLEANUP, array($this, 'executeCleanup'));
+        add_action(CRON_SNAPSHOT_SCHEDULED, array($this, 'executeScheduledSnapshot'));
+        add_action(CRON_SNAPSHOT_IMMEDIATE, array($this, 'executeImmediateSnapshot'));
+        add_action(CRON_SNAPSHOT_CLEANUP, array($this, 'executeCleanup'));
 
         // Register worker batch cron hook (Phase 2 - parallel worker pool)
-        add_action(RISEUP_CRON_SNAPSHOT_WORKER_BATCH, array($this, 'executeWorkerBatch'));
+        add_action(CRON_SNAPSHOT_WORKER_BATCH, array($this, 'executeWorkerBatch'));
 
         // Register cron hook for background restore (Phase 3)
-        add_action(RISEUP_CRON_SNAPSHOT_RESTORE, array($this, 'executeCronRestore'));
+        add_action(CRON_SNAPSHOT_RESTORE, array($this, 'executeCronRestore'));
 
         // Register cron hook for background incremental backup (Phase 3)
-        add_action(RISEUP_CRON_SNAPSHOT_INCREMENTAL, array($this, 'executeCronIncremental'));
+        add_action(CRON_SNAPSHOT_INCREMENTAL, array($this, 'executeCronIncremental'));
 
         // Schedule cleanup if not already scheduled
         $this->ensureCleanupScheduled();
@@ -147,16 +147,16 @@ class RiseupSnapshotScheduler {
      */
     public function registerCronSchedules($schedules) {
         // Weekly schedule
-        if (!isset($schedules[RISEUP_SNAPSHOT_FREQ_WEEKLY])) {
-            $schedules[RISEUP_SNAPSHOT_FREQ_WEEKLY] = array(
+        if (!isset($schedules[SNAPSHOT_FREQ_WEEKLY])) {
+            $schedules[SNAPSHOT_FREQ_WEEKLY] = array(
                 'interval' => WEEK_IN_SECONDS,
                 'display' => __('Once Weekly', 'riseup-asia-uploader'),
             );
         }
 
         // Monthly schedule (30 days)
-        if (!isset($schedules[RISEUP_SNAPSHOT_FREQ_MONTHLY])) {
-            $schedules[RISEUP_SNAPSHOT_FREQ_MONTHLY] = array(
+        if (!isset($schedules[SNAPSHOT_FREQ_MONTHLY])) {
+            $schedules[SNAPSHOT_FREQ_MONTHLY] = array(
                 'interval' => 30 * DAY_IN_SECONDS,
                 'display' => __('Once Monthly', 'riseup-asia-uploader'),
             );
@@ -169,10 +169,10 @@ class RiseupSnapshotScheduler {
      * Ensure cleanup cron is scheduled.
      */
     private function ensureCleanupScheduled() {
-        if (!wp_next_scheduled(RISEUP_CRON_SNAPSHOT_CLEANUP)) {
+        if (!wp_next_scheduled(CRON_SNAPSHOT_CLEANUP)) {
             // Schedule daily cleanup at 4 AM
             $timestamp = strtotime('tomorrow 04:00:00');
-            wp_schedule_event($timestamp, 'daily', RISEUP_CRON_SNAPSHOT_CLEANUP);
+            wp_schedule_event($timestamp, 'daily', CRON_SNAPSHOT_CLEANUP);
             
             $this->logger->info('[SCHEDULER] Cleanup cron scheduled', array(
                 'next_run' => date('c', $timestamp),
@@ -198,7 +198,7 @@ class RiseupSnapshotScheduler {
         }
 
         // Don't schedule for manual-only
-        if ($settings['schedule_frequency'] === RISEUP_SNAPSHOT_FREQ_MANUAL) {
+        if ($settings['schedule_frequency'] === SNAPSHOT_FREQ_MANUAL) {
             $this->logger->debug('[SCHEDULER] Frequency set to manual - no cron scheduling');
             return;
         }
@@ -214,7 +214,7 @@ class RiseupSnapshotScheduler {
         $recurrence = $this->mapFrequencyToRecurrence($settings['schedule_frequency']);
 
         // Schedule the event
-        $result = wp_schedule_event($next_run, $recurrence, RISEUP_CRON_SNAPSHOT_SCHEDULED);
+        $result = wp_schedule_event($next_run, $recurrence, CRON_SNAPSHOT_SCHEDULED);
 
         if ($result) {
             $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
@@ -231,9 +231,9 @@ class RiseupSnapshotScheduler {
      * Clear scheduled snapshot cron.
      */
     public function clearScheduledSnapshot() {
-        $timestamp = wp_next_scheduled(RISEUP_CRON_SNAPSHOT_SCHEDULED);
+        $timestamp = wp_next_scheduled(CRON_SNAPSHOT_SCHEDULED);
         if ($timestamp) {
-            wp_unschedule_event($timestamp, RISEUP_CRON_SNAPSHOT_SCHEDULED);
+            wp_unschedule_event($timestamp, CRON_SNAPSHOT_SCHEDULED);
             $this->logger->debug('[SCHEDULER] Cleared scheduled snapshot cron');
         }
     }
@@ -253,7 +253,7 @@ class RiseupSnapshotScheduler {
         $minute = intval($minute);
 
         switch ($frequency) {
-            case RISEUP_SNAPSHOT_FREQ_DAILY:
+            case SNAPSHOT_FREQ_DAILY:
                 // Next occurrence of the specified time
                 $next = strtotime("today {$hour}:{$minute}:00");
                 if ($next <= $now) {
@@ -261,7 +261,7 @@ class RiseupSnapshotScheduler {
                 }
                 return $next;
 
-            case RISEUP_SNAPSHOT_FREQ_WEEKLY:
+            case SNAPSHOT_FREQ_WEEKLY:
                 // Day 1 = Monday, 7 = Sunday
                 $day_name = $this->getDayName($day);
                 $next = strtotime("next {$day_name} {$hour}:{$minute}:00");
@@ -275,7 +275,7 @@ class RiseupSnapshotScheduler {
                 }
                 return $next;
 
-            case RISEUP_SNAPSHOT_FREQ_MONTHLY:
+            case SNAPSHOT_FREQ_MONTHLY:
                 // Day of month (1-28)
                 $day = min(28, max(1, $day)); // Clamp to valid range
                 $current_month = date('Y-m');
@@ -320,12 +320,12 @@ class RiseupSnapshotScheduler {
      */
     private function mapFrequencyToRecurrence($frequency) {
         switch ($frequency) {
-            case RISEUP_SNAPSHOT_FREQ_DAILY:
+            case SNAPSHOT_FREQ_DAILY:
                 return 'daily';
-            case RISEUP_SNAPSHOT_FREQ_WEEKLY:
-                return RISEUP_SNAPSHOT_FREQ_WEEKLY;
-            case RISEUP_SNAPSHOT_FREQ_MONTHLY:
-                return RISEUP_SNAPSHOT_FREQ_MONTHLY;
+            case SNAPSHOT_FREQ_WEEKLY:
+                return SNAPSHOT_FREQ_WEEKLY;
+            case SNAPSHOT_FREQ_MONTHLY:
+                return SNAPSHOT_FREQ_MONTHLY;
             default:
                 return 'daily';
         }
@@ -348,8 +348,8 @@ class RiseupSnapshotScheduler {
             $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
 
             $result = $orchestrator->executeFullBackup(array(
-                'scope'   => $settings['default_scope'] ?? RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
-                'trigger' => RISEUP_SNAPSHOT_TRIGGER_CRON,
+                'scope'   => $settings['default_scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
+                'trigger' => SNAPSHOT_TRIGGER_CRON,
                 'title'   => 'Scheduled Backup ' . date('Y-m-d H:i'),
                 'async'   => true,
             ));
@@ -362,22 +362,22 @@ class RiseupSnapshotScheduler {
                 ));
                 // Audit trail (Phase 6)
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    ACTION_SNAPSHOT_CREATE,
                     'snapshot', null, '', null, '',
                     array('trigger' => 'cron', 'snapshot_id' => $result['snapshot_id'] ?? null, 'job_id' => $result['job_id'] ?? null),
-                    RISEUP_STATUS_SUCCESS, null,
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                    STATUS_SUCCESS, null,
+                    array('triggered_by' => TRIGGERED_BY_CRON)
                 );
             } else {
                 $this->logger->error('[SCHEDULER] Scheduled snapshot failed', array(
                     'error' => $result['error'] ?? 'Unknown',
                 ));
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    ACTION_SNAPSHOT_CREATE,
                     'snapshot', null, '', null, '',
                     array('trigger' => 'cron'),
-                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                    STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => TRIGGERED_BY_CRON)
                 );
             }
 
@@ -405,9 +405,9 @@ class RiseupSnapshotScheduler {
             $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
             $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
 
-            $snapshot_type = $args['snapshot_type'] ?? RISEUP_SNAPSHOT_TYPE_FULL;
+            $snapshot_type = $args['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
 
-            if ($snapshot_type === RISEUP_SNAPSHOT_TYPE_INCREMENTAL) {
+            if ($snapshot_type === SNAPSHOT_TYPE_INCREMENTAL) {
                 $result = $orchestrator->executeIncrementalBackup(array(
                     'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
                     'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
@@ -415,8 +415,8 @@ class RiseupSnapshotScheduler {
             } else {
                 $result = $orchestrator->executeFullBackup(array(
                     'title'   => $args['title'] ?? 'Manual Backup ' . date('Y-m-d H:i'),
-                    'scope'   => $args['scope'] ?? RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
-                    'trigger' => RISEUP_SNAPSHOT_TRIGGER_MANUAL,
+                    'scope'   => $args['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
+                    'trigger' => SNAPSHOT_TRIGGER_MANUAL,
                     'async'   => true,
                 ));
             }
@@ -428,26 +428,26 @@ class RiseupSnapshotScheduler {
                     'type'        => $snapshot_type,
                 ));
                 // Audit trail (Phase 6)
-                $action = $snapshot_type === RISEUP_SNAPSHOT_TYPE_INCREMENTAL
-                    ? RISEUP_ACTION_SNAPSHOT_INCREMENTAL
-                    : RISEUP_ACTION_SNAPSHOT_FULL_BACKUP;
+                $action = $snapshot_type === SNAPSHOT_TYPE_INCREMENTAL
+                    ? ACTION_SNAPSHOT_INCREMENTAL
+                    : ACTION_SNAPSHOT_FULL_BACKUP;
                 $this->db->log_transaction(
                     $action,
                     'snapshot', null, '', null, '',
                     array('trigger' => 'manual', 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshot_type),
-                    RISEUP_STATUS_SUCCESS, null,
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_DASHBOARD)
+                    STATUS_SUCCESS, null,
+                    array('triggered_by' => TRIGGERED_BY_DASHBOARD)
                 );
             } else {
                 $this->logger->error('[SCHEDULER] Immediate snapshot failed', array(
                     'error' => $result['error'] ?? 'Unknown',
                 ));
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    ACTION_SNAPSHOT_CREATE,
                     'snapshot', null, '', null, '',
                     array('trigger' => 'manual', 'type' => $snapshot_type),
-                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_DASHBOARD)
+                    STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => TRIGGERED_BY_DASHBOARD)
                 );
             }
 
@@ -490,11 +490,11 @@ class RiseupSnapshotScheduler {
                 ));
                 // Audit trail (Phase 6)
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_RESTORE,
+                    ACTION_SNAPSHOT_RESTORE,
                     'snapshot', null, '', null, '',
                     array('snapshot_id' => $args['snapshot_id'], 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0),
-                    RISEUP_STATUS_SUCCESS, null,
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                    STATUS_SUCCESS, null,
+                    array('triggered_by' => TRIGGERED_BY_CRON)
                 );
             } else {
                 $this->logger->error('[SCHEDULER] Cron restore failed', array(
@@ -502,11 +502,11 @@ class RiseupSnapshotScheduler {
                     'error'       => $result['error'] ?? 'Unknown',
                 ));
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_RESTORE,
+                    ACTION_SNAPSHOT_RESTORE,
                     'snapshot', null, '', null, '',
                     array('snapshot_id' => $args['snapshot_id']),
-                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                    STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => TRIGGERED_BY_CRON)
                 );
             }
 
@@ -543,22 +543,22 @@ class RiseupSnapshotScheduler {
                 ));
                 // Audit trail (Phase 6)
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                    ACTION_SNAPSHOT_INCREMENTAL,
                     'snapshot', null, '', null, '',
                     array('tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0),
-                    RISEUP_STATUS_SUCCESS, null,
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                    STATUS_SUCCESS, null,
+                    array('triggered_by' => TRIGGERED_BY_CRON)
                 );
             } else {
                 $this->logger->error('[SCHEDULER] Cron incremental backup failed', array(
                     'error' => $result['error'] ?? 'Unknown',
                 ));
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                    ACTION_SNAPSHOT_INCREMENTAL,
                     'snapshot', null, '', null, '',
                     array(),
-                    RISEUP_STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                    STATUS_FAILED, $result['error'] ?? 'Unknown',
+                    array('triggered_by' => TRIGGERED_BY_CRON)
                 );
             }
 
@@ -599,7 +599,7 @@ class RiseupSnapshotScheduler {
             $total_deleted = ($result['deleted_by_policy'] ?? 0) + ($result['deleted_orphans'] ?? 0) + ($result['deleted_failed'] ?? 0);
             if ($total_deleted > 0) {
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SNAPSHOT_CLEANUP,
+                    ACTION_SNAPSHOT_CLEANUP,
                     'snapshot', null, '', null, '',
                     array(
                         'deleted_by_policy' => $result['deleted_by_policy'] ?? 0,
@@ -607,8 +607,8 @@ class RiseupSnapshotScheduler {
                         'deleted_failed'    => $result['deleted_failed'] ?? 0,
                         'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
                     ),
-                    RISEUP_STATUS_SUCCESS, null,
-                    array('triggered_by' => RISEUP_TRIGGERED_BY_CRON)
+                    STATUS_SUCCESS, null,
+                    array('triggered_by' => TRIGGERED_BY_CRON)
                 );
             }
 

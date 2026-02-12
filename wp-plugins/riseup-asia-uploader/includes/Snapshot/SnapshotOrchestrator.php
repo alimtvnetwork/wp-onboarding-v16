@@ -98,7 +98,7 @@ class RiseupSnapshotOrchestrator {
         // 1. Read settings (merge with overrides)
         $settings = $this->manager->getSettings();
         $title = $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i'));
-        $scope = $options['scope'] ?? $settings['scope'] ?? RISEUP_SNAPSHOT_SCOPE_WORDPRESS;
+        $scope = $options['scope'] ?? $settings['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
         $include_plugins = $options['include_plugins'] ?? $settings['include_plugins'] ?? true;
         $plugin_selection = $options['plugin_selection'] ?? $settings['plugin_selection'] ?? 'all';
         $compression = $options['compression'] ?? $settings['compression'] ?? true;
@@ -113,7 +113,7 @@ class RiseupSnapshotOrchestrator {
 
         try {
             // Apply worker pool size from settings
-            $pool_size = $settings['worker_pool_size'] ?? RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT;
+            $pool_size = $settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT;
             $this->worker->setPoolSize($pool_size);
 
             // Determine execution mode: async (cron) or sync
@@ -288,7 +288,7 @@ class RiseupSnapshotOrchestrator {
             }
 
             // Skip self
-            if ($slug === RISEUP_SLUG) {
+            if ($slug === PLUGIN_SLUG) {
                 continue;
             }
 
@@ -518,7 +518,7 @@ class RiseupSnapshotOrchestrator {
 
         try {
             // Get next sequence
-            $seq_result = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . RISEUP_TABLE_SNAPSHOTS);
+            $seq_result = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TABLE_SNAPSHOTS);
             $row = $seq_result->fetch(PDO::FETCH_ASSOC);
             $sequence = ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
 
@@ -585,8 +585,8 @@ class RiseupSnapshotOrchestrator {
             if (!empty($options['master_snapshot_id'])) {
                 $pdo = $this->db->get_pdo();
                 if ($pdo) {
-                    $stmt = $pdo->prepare("SELECT filepath FROM " . RISEUP_TABLE_SNAPSHOTS . " WHERE id = ? AND status = ?");
-                    $stmt->execute(array($options['master_snapshot_id'], RISEUP_SNAPSHOT_STATUS_COMPLETE));
+                    $stmt = $pdo->prepare("SELECT filepath FROM " . TABLE_SNAPSHOTS . " WHERE id = ? AND status = ?");
+                    $stmt->execute(array($options['master_snapshot_id'], SNAPSHOT_STATUS_COMPLETE));
                     $row = $stmt->fetch(PDO::FETCH_ASSOC);
                     if ($row && is_dir($row['filepath']) && file_exists($row['filepath'] . '/a-root.db')) {
                         $master_dir = $row['filepath'];
