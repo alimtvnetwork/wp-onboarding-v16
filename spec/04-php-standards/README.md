@@ -12,7 +12,7 @@
 |---------|-----------|---------|
 | Class names | PascalCase | `RiseupEnvelopeBuilder`, `RiseupSnapshotFactory` |
 | Method names | camelCase | `buildResponse()`, `getPluginInfo()` |
-| Constants | UPPER_SNAKE_CASE | `RISEUP_VERSION`, `RISEUP_REST_NAMESPACE` |
+| Constants | UPPER_SNAKE_CASE (no `RISEUP_` prefix) | `REST_NAMESPACE`, `ACTION_UPLOAD` |
 | File names | `class-{kebab-case}.php` | `class-envelope-builder.php` |
 | Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` |
 | Enum classes | PascalCase with `Enum` suffix | `HookEnum`, `PathEnum`, `ErrorTypeEnum` |
@@ -170,22 +170,36 @@ add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
 add_action(HookEnum::PLUGINS_LOADED, [$this, 'on_plugins_loaded']);
 ```
 
-### Action Names — Constants
+### Action Names — Named Composed Constants
+
+Inline concatenation at call sites is **forbidden** — even when using centralized base constants. Instead, compose descriptively named constants from base constants, then use those named constants directly.
 
 ```php
 // ❌ FORBIDDEN: Magic strings
 add_action('wp_ajax_my_action', [$this, 'handle']);
 $url = rest_url('riseup-asia-uploader/v1/upload');
 
-// ✅ REQUIRED: Centralized constants
+// ❌ FORBIDDEN: Inline concatenation at call site (even with constants)
 // In constants.php:
-define('RISEUP_REST_NAMESPACE', 'riseup-asia-uploader/v1');
-define('RISEUP_ACTION_UPLOAD', 'upload');
-
+define('REST_NAMESPACE', 'riseup-asia-uploader/v1');
+define('ACTION_UPLOAD', 'upload');
 // In handlers:
-add_action(HookEnum::WP_AJAX_PREFIX . RISEUP_ACTION_UPLOAD, [$this, 'handle']);
-$url = rest_url(RISEUP_REST_NAMESPACE . '/' . RISEUP_ACTION_UPLOAD);
+add_action(HookEnum::WP_AJAX_PREFIX . ACTION_UPLOAD, [$this, 'handle']);
+$url = rest_url(REST_NAMESPACE . '/' . ACTION_UPLOAD);
+
+// ✅ REQUIRED: Compose named constants, then use them directly
+// In constants.php:
+define('REST_NAMESPACE', 'riseup-asia-uploader/v1');
+define('ACTION_UPLOAD', 'upload');
+define('REST_URL_UPLOAD', REST_NAMESPACE . '/' . ACTION_UPLOAD);
+define('HOOK_AJAX_UPLOAD', HookEnum::WP_AJAX_PREFIX . ACTION_UPLOAD);
+
+// In handlers — clean, readable, no concatenation:
+add_action(HOOK_AJAX_UPLOAD, [$this, 'handle']);
+$url = rest_url(REST_URL_UPLOAD);
 ```
+
+> **Naming:** Constants must NOT use the `RISEUP_` prefix. Use descriptive names that convey purpose: `HOOK_AJAX_UPLOAD`, `REST_URL_UPLOAD`, `REST_NAMESPACE`.
 
 ---
 
@@ -321,6 +335,7 @@ if ($has_permission) { ... }
 |---------|-----|-------------|
 | `catch (Exception $e)` | Misses PHP 7+ `Error` types | `catch (\Throwable $e)` |
 | Magic strings in hooks | Unmaintainable, typo-prone | `HookEnum` constants |
+| Inline concatenation at call site | Hard to read, duplicated | Compose a named constant first |
 | Magic strings in handlers | Unmaintainable | `constants.php` |
 | `wp_die()` in REST handlers | Breaks JSON responses | `wp_send_json_error()` |
 | Manual path concatenation | Fragile paths | `RiseupPathUtils` fully-typed accessors |

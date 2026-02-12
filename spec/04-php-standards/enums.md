@@ -129,11 +129,19 @@ add_action(RISEUP_CRON_SNAPSHOT_CLEANUP, [$this, 'executeCleanup']);
 ### AJAX Hook Pattern
 
 ```php
-// ❌ FORBIDDEN
+// ❌ FORBIDDEN: Magic string
 add_action('wp_ajax_riseup_test_connection', [$this, 'ajax_test']);
 
-// ✅ REQUIRED: Compose using prefix constant
+// ❌ FORBIDDEN: Inline concatenation at call site
 add_action(HookEnum::WP_AJAX_PREFIX . 'riseup_test_connection', [$this, 'ajax_test']);
+
+// ✅ REQUIRED: Compose a named constant, then use it
+// In constants.php:
+define('ACTION_TEST_CONNECTION', 'riseup_test_connection');
+define('HOOK_AJAX_TEST_CONNECTION', HookEnum::WP_AJAX_PREFIX . ACTION_TEST_CONNECTION);
+
+// In handlers:
+add_action(HOOK_AJAX_TEST_CONNECTION, [$this, 'ajax_test']);
 ```
 
 ---
