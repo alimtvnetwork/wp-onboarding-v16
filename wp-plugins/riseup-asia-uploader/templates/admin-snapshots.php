@@ -174,6 +174,88 @@ if (!defined('ABSPATH')) {
         </div>
     </div>
 
+    <!-- Storage Analytics & Calendar Row -->
+    <div class="riseup-analytics-row">
+        <!-- Storage Analytics Chart -->
+        <div class="riseup-card riseup-analytics-chart-card">
+            <h2>
+                <span class="dashicons dashicons-chart-bar"></span>
+                <?php esc_html_e('Storage Analytics', 'riseup-asia-uploader'); ?>
+            </h2>
+            <div id="analytics_loading">
+                <span class="spinner is-active" style="float: none;"></span>
+                <?php esc_html_e('Loading analytics...', 'riseup-asia-uploader'); ?>
+            </div>
+            <div id="analytics_content" style="display: none;">
+                <div class="riseup-analytics-summary">
+                    <div class="riseup-stat-card">
+                        <span class="riseup-stat-value" id="stat_total_size">—</span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Total Size', 'riseup-asia-uploader'); ?></span>
+                    </div>
+                    <div class="riseup-stat-card">
+                        <span class="riseup-stat-value" id="stat_total_count">—</span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Snapshots', 'riseup-asia-uploader'); ?></span>
+                    </div>
+                    <div class="riseup-stat-card">
+                        <span class="riseup-stat-value" id="stat_avg_size">—</span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Avg Size', 'riseup-asia-uploader'); ?></span>
+                    </div>
+                    <div class="riseup-stat-card">
+                        <span class="riseup-stat-value" id="stat_largest">—</span>
+                        <span class="riseup-stat-label"><?php esc_html_e('Largest', 'riseup-asia-uploader'); ?></span>
+                    </div>
+                </div>
+                <div class="riseup-chart-container">
+                    <div class="riseup-chart-y-axis" id="chart_y_axis"></div>
+                    <div class="riseup-chart-bars" id="chart_bars"></div>
+                </div>
+                <div class="riseup-chart-legend">
+                    <span class="riseup-legend-item"><span class="riseup-legend-dot" style="background:#2271b1;"></span> <?php esc_html_e('Full', 'riseup-asia-uploader'); ?></span>
+                    <span class="riseup-legend-item"><span class="riseup-legend-dot" style="background:#7b1fa2;"></span> <?php esc_html_e('Incremental', 'riseup-asia-uploader'); ?></span>
+                </div>
+            </div>
+            <div id="analytics_empty" style="display: none;">
+                <p><em><?php esc_html_e('No snapshot data available for analytics.', 'riseup-asia-uploader'); ?></em></p>
+            </div>
+        </div>
+
+        <!-- Monthly Calendar View -->
+        <div class="riseup-card riseup-calendar-card">
+            <h2>
+                <span class="dashicons dashicons-calendar-alt"></span>
+                <?php esc_html_e('Backup Calendar', 'riseup-asia-uploader'); ?>
+            </h2>
+            <div class="riseup-calendar-nav">
+                <button type="button" id="cal_prev" class="button button-small">
+                    <span class="dashicons dashicons-arrow-left-alt2"></span>
+                </button>
+                <strong id="cal_month_label"></strong>
+                <button type="button" id="cal_next" class="button button-small">
+                    <span class="dashicons dashicons-arrow-right-alt2"></span>
+                </button>
+            </div>
+            <table class="riseup-calendar-table">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Sun', 'riseup-asia-uploader'); ?></th>
+                        <th><?php esc_html_e('Mon', 'riseup-asia-uploader'); ?></th>
+                        <th><?php esc_html_e('Tue', 'riseup-asia-uploader'); ?></th>
+                        <th><?php esc_html_e('Wed', 'riseup-asia-uploader'); ?></th>
+                        <th><?php esc_html_e('Thu', 'riseup-asia-uploader'); ?></th>
+                        <th><?php esc_html_e('Fri', 'riseup-asia-uploader'); ?></th>
+                        <th><?php esc_html_e('Sat', 'riseup-asia-uploader'); ?></th>
+                    </tr>
+                </thead>
+                <tbody id="cal_body"></tbody>
+            </table>
+            <div class="riseup-calendar-legend">
+                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-full"></span> <?php esc_html_e('Full', 'riseup-asia-uploader'); ?></span>
+                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-incr"></span> <?php esc_html_e('Incremental', 'riseup-asia-uploader'); ?></span>
+                <span class="riseup-legend-item"><span class="riseup-cal-dot riseup-cal-dot-scheduled"></span> <?php esc_html_e('Scheduled', 'riseup-asia-uploader'); ?></span>
+            </div>
+        </div>
+    </div>
+
     <!-- Snapshot Settings -->
     <div class="riseup-card">
         <h2>
@@ -1300,6 +1382,187 @@ jQuery(document).ready(function($) {
     // INITIAL LOAD
     // =========================================================================
 
+    // =========================================================================
+    // STORAGE ANALYTICS
+    // =========================================================================
+
+    function buildAnalytics(snapshots) {
+        if (!snapshots || snapshots.length === 0) {
+            $('#analytics_loading').hide();
+            $('#analytics_empty').show();
+            return;
+        }
+
+        var totalSize = 0;
+        var largest = 0;
+        snapshots.forEach(function(s) {
+            var sz = parseInt(s.file_size) || 0;
+            totalSize += sz;
+            if (sz > largest) largest = sz;
+        });
+        var avgSize = Math.round(totalSize / snapshots.length);
+
+        $('#stat_total_size').text(formatBytes(totalSize));
+        $('#stat_total_count').text(snapshots.length);
+        $('#stat_avg_size').text(formatBytes(avgSize));
+        $('#stat_largest').text(formatBytes(largest));
+
+        // Group by day for chart (last 30 entries max)
+        var byDay = {};
+        snapshots.forEach(function(s) {
+            if (!s.created_at) return;
+            var day = s.created_at.substring(0, 10);
+            if (!byDay[day]) byDay[day] = { full: 0, incr: 0 };
+            var sz = parseInt(s.file_size) || 0;
+            var isIncr = (s.snapshot_type === 'incremental' || s.scope === 'incremental');
+            if (isIncr) { byDay[day].incr += sz; } else { byDay[day].full += sz; }
+        });
+
+        var days = Object.keys(byDay).sort().slice(-30);
+        if (days.length === 0) {
+            $('#analytics_loading').hide();
+            $('#analytics_empty').show();
+            return;
+        }
+
+        var maxVal = 0;
+        days.forEach(function(d) { var t = byDay[d].full + byDay[d].incr; if (t > maxVal) maxVal = t; });
+        if (maxVal === 0) maxVal = 1;
+
+        // Y-axis labels
+        var yHtml = '';
+        for (var i = 4; i >= 0; i--) {
+            yHtml += '<span>' + formatBytes(Math.round(maxVal * i / 4)) + '</span>';
+        }
+        $('#chart_y_axis').html(yHtml);
+
+        // Bars
+        var barsHtml = '';
+        days.forEach(function(d) {
+            var fullPct = Math.round((byDay[d].full / maxVal) * 100);
+            var incrPct = Math.round((byDay[d].incr / maxVal) * 100);
+            var label = d.substring(5); // MM-DD
+            barsHtml += '<div class="riseup-bar-group" title="' + d + ': ' + formatBytes(byDay[d].full + byDay[d].incr) + '">';
+            barsHtml += '<div class="riseup-bar-stack">';
+            if (incrPct > 0) barsHtml += '<div class="riseup-bar riseup-bar-incr" style="height:' + incrPct + '%;"></div>';
+            if (fullPct > 0) barsHtml += '<div class="riseup-bar riseup-bar-full" style="height:' + fullPct + '%;"></div>';
+            barsHtml += '</div>';
+            barsHtml += '<span class="riseup-bar-label">' + label + '</span>';
+            barsHtml += '</div>';
+        });
+        $('#chart_bars').html(barsHtml);
+
+        $('#analytics_loading').hide();
+        $('#analytics_content').show();
+    }
+
+    // =========================================================================
+    // MONTHLY CALENDAR
+    // =========================================================================
+
+    var calYear, calMonth;
+    (function() {
+        var now = new Date();
+        calYear = now.getFullYear();
+        calMonth = now.getMonth();
+    })();
+
+    var monthNames = [
+        'January','February','March','April','May','June',
+        'July','August','September','October','November','December'
+    ];
+
+    function buildCalendar(snapshots) {
+        $('#cal_month_label').text(monthNames[calMonth] + ' ' + calYear);
+
+        // Index snapshots by date
+        var byDate = {};
+        (snapshots || []).forEach(function(s) {
+            if (!s.created_at) return;
+            var day = s.created_at.substring(0, 10);
+            if (!byDate[day]) byDate[day] = [];
+            byDate[day].push(s);
+        });
+
+        var firstDay = new Date(calYear, calMonth, 1).getDay();
+        var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        var today = new Date();
+        var todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+        var html = '';
+        var day = 1;
+        for (var row = 0; row < 6; row++) {
+            if (day > daysInMonth) break;
+            html += '<tr>';
+            for (var col = 0; col < 7; col++) {
+                if (row === 0 && col < firstDay) {
+                    html += '<td class="riseup-cal-empty"></td>';
+                } else if (day > daysInMonth) {
+                    html += '<td class="riseup-cal-empty"></td>';
+                } else {
+                    var dateStr = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                    var isToday = (dateStr === todayStr);
+                    var cellClass = isToday ? 'riseup-cal-today' : '';
+                    var entries = byDate[dateStr] || [];
+
+                    html += '<td class="riseup-cal-day ' + cellClass + '">';
+                    html += '<span class="riseup-cal-num">' + day + '</span>';
+                    if (entries.length > 0) {
+                        var hasFull = false, hasIncr = false;
+                        entries.forEach(function(e) {
+                            if (e.snapshot_type === 'incremental' || e.scope === 'incremental') hasIncr = true;
+                            else hasFull = true;
+                        });
+                        html += '<div class="riseup-cal-dots">';
+                        if (hasFull) html += '<span class="riseup-cal-dot riseup-cal-dot-full" title="Full backup"></span>';
+                        if (hasIncr) html += '<span class="riseup-cal-dot riseup-cal-dot-incr" title="Incremental"></span>';
+                        html += '</div>';
+                        html += '<span class="riseup-cal-count">' + entries.length + '</span>';
+                    }
+                    html += '</td>';
+                    day++;
+                }
+            }
+            html += '</tr>';
+        }
+        $('#cal_body').html(html);
+    }
+
+    $('#cal_prev').on('click', function() {
+        calMonth--;
+        if (calMonth < 0) { calMonth = 11; calYear--; }
+        buildCalendar(allSnapshots);
+    });
+    $('#cal_next').on('click', function() {
+        calMonth++;
+        if (calMonth > 11) { calMonth = 0; calYear++; }
+        buildCalendar(allSnapshots);
+    });
+
+    // Hook into snapshot load to build analytics + calendar
+    var _origLoadSuccess = null;
+    // We patch after initial load by observing allSnapshots changes
+    function refreshAnalyticsAndCalendar() {
+        buildAnalytics(allSnapshots);
+        buildCalendar(allSnapshots);
+    }
+
+    // Override loadSnapshots success to also refresh analytics
+    var _origLoad = loadSnapshots;
+    loadSnapshots = function(page) {
+        _origLoad(page);
+    };
+
+    // Use MutationObserver on tbody to detect when snapshots are rendered
+    var snapshotObserver = new MutationObserver(function() {
+        refreshAnalyticsAndCalendar();
+    });
+    snapshotObserver.observe(document.getElementById('snapshots_tbody'), { childList: true });
+
+    // =========================================================================
+    // INITIAL LOAD
+    // =========================================================================
+
     loadSnapshots(1);
     loadSettings();
     loadProviders();
@@ -1531,5 +1794,206 @@ jQuery(document).ready(function($) {
     font-weight: 700;
     min-width: 30px;
     text-align: center;
+}
+/* Analytics Row Layout */
+.riseup-analytics-row {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    margin-bottom: 0;
+}
+@media (max-width: 1100px) {
+    .riseup-analytics-row { grid-template-columns: 1fr; }
+}
+
+/* Stat Cards */
+.riseup-analytics-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.riseup-stat-card {
+    flex: 1;
+    min-width: 90px;
+    background: #f6f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 12px 14px;
+    text-align: center;
+}
+.riseup-stat-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1d2327;
+    font-family: monospace;
+}
+.riseup-stat-label {
+    display: block;
+    font-size: 11px;
+    color: #646970;
+    margin-top: 2px;
+}
+
+/* Chart */
+.riseup-chart-container {
+    display: flex;
+    gap: 6px;
+    height: 160px;
+    margin-bottom: 8px;
+}
+.riseup-chart-y-axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 55px;
+    text-align: right;
+    padding-right: 6px;
+}
+.riseup-chart-y-axis span {
+    font-size: 10px;
+    color: #888;
+    font-family: monospace;
+    line-height: 1;
+}
+.riseup-chart-bars {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    border-left: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    padding: 0 4px 0 6px;
+    overflow-x: auto;
+}
+.riseup-bar-group {
+    flex: 1;
+    min-width: 14px;
+    max-width: 36px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.riseup-bar-stack {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 130px;
+}
+.riseup-bar {
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+    transition: height 0.3s;
+}
+.riseup-bar-full { background: #2271b1; }
+.riseup-bar-incr { background: #7b1fa2; }
+.riseup-bar-label {
+    font-size: 9px;
+    color: #888;
+    margin-top: 3px;
+    transform: rotate(-45deg);
+    white-space: nowrap;
+}
+.riseup-chart-legend,
+.riseup-calendar-legend {
+    display: flex;
+    gap: 14px;
+    font-size: 11px;
+    color: #646970;
+    margin-top: 6px;
+}
+.riseup-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.riseup-legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+/* Calendar */
+.riseup-calendar-card {
+    min-width: 300px;
+}
+.riseup-calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.riseup-calendar-nav .button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+.riseup-calendar-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.riseup-calendar-table th {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #646970;
+    padding: 4px 0;
+    border-bottom: 1px solid #ddd;
+}
+.riseup-calendar-table td {
+    text-align: center;
+    vertical-align: top;
+    height: 42px;
+    padding: 3px 2px;
+    border: 1px solid #f0f0f1;
+    position: relative;
+}
+.riseup-cal-empty {
+    background: #fafafa;
+}
+.riseup-cal-num {
+    font-size: 12px;
+    font-weight: 500;
+    color: #1d2327;
+}
+.riseup-cal-today {
+    background: #f0f6fc !important;
+    border-color: #2271b1 !important;
+}
+.riseup-cal-today .riseup-cal-num {
+    color: #2271b1;
+    font-weight: 700;
+}
+.riseup-cal-dots {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 2px;
+}
+.riseup-cal-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+.riseup-cal-dot-full { background: #2271b1; }
+.riseup-cal-dot-incr { background: #7b1fa2; }
+.riseup-cal-dot-scheduled { background: #dba617; }
+.riseup-cal-count {
+    display: block;
+    font-size: 9px;
+    color: #888;
+    font-family: monospace;
+}
+.riseup-calendar-legend {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
 }
 </style>
