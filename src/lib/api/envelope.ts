@@ -41,7 +41,7 @@ export function isEnvelope(obj: unknown): obj is RawEnvelope<unknown> {
  * For lists (IsMultiple), data = Results (as T).
  * Envelope metadata is preserved on the .envelope property.
  */
-export function parseEnvelope<T>(env: RawEnvelope): ApiResponse<T> {
+export function parseEnvelope<T>(env: RawEnvelope<unknown>): ApiResponse<T> {
   // Auto-derive IsEmpty if not provided by backend
   if (env.Attributes.IsEmpty === undefined) {
     env.Attributes.IsEmpty = !Array.isArray(env.Results) || env.Results.length === 0;
