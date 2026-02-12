@@ -33,7 +33,12 @@ export interface RetryContext {
   /** Component name (for logging) */
   component?: string;
   /** Additional context for logging */
-  context?: Record<string, unknown>;
+  context?: RetryLogContext;
+}
+
+/** Structured retry log context — replaces Record<string, unknown> per GE-1 */
+export interface RetryLogContext {
+  [key: string]: unknown;
 }
 
 const DEFAULT_CONFIG: RetryConfig = {

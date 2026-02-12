@@ -2,11 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
 import { ConnectionTestStep as ConnectionTestStepConst, ConnectionTestStatus } from "@/lib/constants";
 
+/** Connection test step details — replaces Record<string, unknown> per GE-1 */
+export interface ConnectionTestStepDetails {
+  [key: string]: unknown;
+}
+
 export interface ConnectionTestStep {
   step: string;
   status: ConnectionTestStatus;
   message: string;
-  details?: Record<string, unknown>;
+  details?: ConnectionTestStepDetails;
   timestamp: Date;
 }
 
@@ -30,7 +35,7 @@ export function useConnectionTestLogs() {
         step: string;
         status: ConnectionTestStatus;
         message: string;
-        details?: Record<string, unknown>;
+        details?: ConnectionTestStepDetails;
       };
 
       setState((prev) => {

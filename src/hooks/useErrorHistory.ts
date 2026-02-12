@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, ErrorHistoryRecord, ErrorHistoryInput, ApiResponse } from "@/lib/api";
+import { api, ErrorHistoryRecord, ErrorHistoryInput, ApiResponse, RequestPayload } from "@/lib/api";
 import { useErrorStore, CapturedError } from "@/stores/errorStore";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -60,7 +60,7 @@ export function useErrorHistory() {
       stackTrace: captured.stackTrace,
       endpoint: captured.endpoint,
       method: captured.method,
-      requestBody: captured.requestBody as Record<string, unknown> | undefined,
+      requestBody: captured.requestBody as RequestPayload | undefined,
       responseStatus: captured.responseStatus,
       sessionId: captured.sessionId,
       sessionType: captured.sessionType,
@@ -128,7 +128,7 @@ export function useErrorHistorySync() {
       stackTrace: captured.stackTrace,
       endpoint: captured.endpoint,
       method: captured.method,
-      requestBody: captured.requestBody as Record<string, unknown> | undefined,
+      requestBody: captured.requestBody as RequestPayload | undefined,
       responseStatus: captured.responseStatus,
       sessionId: captured.sessionId,
       sessionType: captured.sessionType,

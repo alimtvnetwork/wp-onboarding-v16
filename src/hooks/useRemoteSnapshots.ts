@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, ApiResponse, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo, AvailableTable } from "@/lib/api";
+import { api, ApiResponse, SnapshotRecord, SnapshotSettings, SnapshotProviderInfo, AvailableTable, CreateSnapshotOptions, ErrorDiagnosticContext } from "@/lib/api";
 import { toast } from "sonner";
 import { useErrorStore, CapturedError } from "@/stores/errorStore";
 import { useMemo, useCallback } from "react";
@@ -37,7 +37,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   const handleSnapshotError = useCallback((title: string, err: Error) => {
     // Extract rich context from SnapshotApiError
     const apiErr = err instanceof SnapshotApiError ? err.apiResponse.error : undefined;
-    const ctx = apiErr?.context as Record<string, unknown> | undefined;
+    const ctx = apiErr?.context;
 
     // Extract PHP stack frames from delegated server response
     const delegated = ctx?.delegatedRequestServer as { StackTrace?: Array<{ File?: string; FileBase?: string; Line?: number; Function?: string; Class?: string }> } | undefined;
@@ -119,7 +119,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (opts?: Record<string, unknown>) => {
+    mutationFn: async (opts?: CreateSnapshotOptions) => {
       const res = await api.createRemoteSnapshot(siteId, opts);
       return throwIfFailed(res, "Failed to create snapshot");
     },
@@ -155,7 +155,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const updateSettingsMutation = useMutation({
-    mutationFn: async (settings: Record<string, unknown>) => {
+    mutationFn: async (settings: Partial<SnapshotSettings>) => {
       const res = await api.updateRemoteSnapshotSettings(siteId, settings);
       return throwIfFailed(res, "Failed to update settings");
     },
@@ -177,7 +177,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const fullBackupMutation = useMutation({
-    mutationFn: async (opts?: Record<string, unknown>) => {
+    mutationFn: async (opts?: CreateSnapshotOptions) => {
       const res = await api.fullBackupRemoteSnapshot(siteId, opts);
       return throwIfFailed(res, "Failed to trigger full backup");
     },
@@ -189,7 +189,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const incrementalBackupMutation = useMutation({
-    mutationFn: async (opts?: Record<string, unknown>) => {
+    mutationFn: async (opts?: CreateSnapshotOptions) => {
       const res = await api.incrementalBackupRemoteSnapshot(siteId, opts);
       return throwIfFailed(res, "Failed to trigger incremental backup");
     },

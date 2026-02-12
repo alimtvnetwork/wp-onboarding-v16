@@ -21,8 +21,13 @@ export interface LogEntry {
   duration?: number;
   filePath?: string;
   lineNumber?: number;
-  context?: Record<string, unknown>;
+  context?: LogContext;
   stack?: string;
+}
+
+/** Structured context for log entries — replaces Record<string, unknown> per GE-1 */
+export interface LogContext {
+  [key: string]: unknown;
 }
 
 interface LoggerConfig {
@@ -163,7 +168,7 @@ function log(
     functionName?: string;
     action?: 'enter' | 'exit';
     duration?: number;
-    context?: Record<string, unknown>;
+    context?: LogContext;
     error?: unknown;
   }
 ): void {
@@ -205,7 +210,7 @@ export const logger = {
   /**
    * Track function entry/exit with automatic duration measurement
    */
-  trace(functionName: string, action: 'enter' | 'exit', context?: Record<string, unknown>): void {
+  trace(functionName: string, action: 'enter' | 'exit', context?: LogContext): void {
     const key = `${functionName}-${Math.random().toString(36).slice(2, 9)}`;
     
     if (action === 'enter') {
@@ -222,28 +227,28 @@ export const logger = {
   /**
    * Debug level log
    */
-  debug(message: string, context?: Record<string, unknown>): void {
+  debug(message: string, context?: LogContext): void {
     log('debug', message, { context });
   },
 
   /**
    * Info level log
    */
-  info(message: string, context?: Record<string, unknown>): void {
+  info(message: string, context?: LogContext): void {
     log('info', message, { context });
   },
 
   /**
    * Warning level log
    */
-  warn(message: string, context?: Record<string, unknown>): void {
+  warn(message: string, context?: LogContext): void {
     log('warn', message, { context });
   },
 
   /**
    * Error level log
    */
-  error(message: string, error?: unknown, context?: Record<string, unknown>): void {
+  error(message: string, error?: unknown, context?: LogContext): void {
     log('error', message, { error, context });
   },
 

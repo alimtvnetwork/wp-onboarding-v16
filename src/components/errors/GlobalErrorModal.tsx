@@ -36,10 +36,10 @@ export function GlobalErrorModal() {
   
   // Extract PHP stack trace frames from error context
   const phpStackFrames: PHPStackFrame[] = (() => {
-    const ctx = selectedError?.context as Record<string, unknown> | undefined;
+    const ctx = selectedError?.context;
     if (!ctx) return [];
     if (Array.isArray(ctx.stackTraceFrames)) return ctx.stackTraceFrames as PHPStackFrame[];
-    const errorDetails = ctx.errorDetails as Record<string, unknown> | undefined;
+    const errorDetails = ctx.errorDetails;
     if (errorDetails && Array.isArray(errorDetails.stackTraceFrames)) return errorDetails.stackTraceFrames as PHPStackFrame[];
     return [];
   })();

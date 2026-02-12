@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { wsClient, WS_EVENTS } from '@/lib/ws';
+import type { LogEntryDetails } from '@/lib/api';
 import {
   PublishOperationStatus,
   PublishStageName,
@@ -18,7 +19,7 @@ export interface PublishLogEntry {
   level: LogLevel;
   step: string;
   message: string;
-  details?: Record<string, unknown>;
+  details?: LogEntryDetails;
 }
 
 /**
@@ -364,7 +365,7 @@ export function initializePublishWebSocketListeners() {
         level: string;
         step: string;
         message: string;
-        details?: Record<string, unknown>;
+        details?: LogEntryDetails;
       };
     };
     

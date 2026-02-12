@@ -4,7 +4,7 @@ import { resolveApiBase, resolveApiOrigin, resolveApiUrl, toAbsoluteUrl } from "
 import { logger } from "@/lib/logger";
 import { withCircuitBreaker } from "@/lib/circuitBreaker";
 import { logApiCall } from "@/hooks/useExecutionLogger";
-import type { ApiResponse, ApiError, ApiMethod, ApiCallMeta } from './types';
+import type { ApiResponse, ApiError, ApiMethod, ApiCallMeta, ErrorDiagnosticContext } from './types';
 import { isEnvelope, parseEnvelope, looksLikeJson } from './envelope';
 
 // Re-export looksLikeJson so methods.ts can use it
@@ -83,7 +83,7 @@ async function fetchRequest<T>(
     const requestUrl = toAbsoluteUrl(url);
 
     /** Builds the shared diagnostic context object for error responses. */
-    const buildDiagnosticContext = (extras?: Record<string, unknown>) => ({
+    const buildDiagnosticContext = (extras?: ErrorDiagnosticContext) => ({
       requestUrl,
       apiBase,
       apiBaseAbsolute: toAbsoluteUrl(apiBase),

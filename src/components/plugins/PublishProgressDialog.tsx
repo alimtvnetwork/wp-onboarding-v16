@@ -21,7 +21,7 @@ import { useErrorStore, BackendLogEntry } from "@/stores/errorStore";
 import { toast } from "sonner";
 import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import { ActivationDiagnostics } from "@/components/plugins/ActivationDiagnostics";
-import { api } from "@/lib/api";
+import { api, type LogEntryDetails } from "@/lib/api";
 import { compareVersions } from "@/lib/versionUtils";
 
 export interface PublishStage {
@@ -205,7 +205,7 @@ export function PublishProgressDialog({
   });
 
   // Helper: strip zipStructure from log details (it's huge and not useful in UI)
-  const sanitizeLogDetails = (details?: Record<string, unknown>): Record<string, unknown> | undefined => {
+  const sanitizeLogDetails = (details?: LogEntryDetails): LogEntryDetails | undefined => {
     if (!details) return details;
     const { zipStructure, ...rest } = details;
     return Object.keys(rest).length > 0 ? rest : undefined;
@@ -424,7 +424,7 @@ export function PublishProgressDialog({
           level: string;
           step: string;
           message: string;
-          details?: Record<string, unknown>;
+          details?: LogEntryDetails;
         };
       };
       if (

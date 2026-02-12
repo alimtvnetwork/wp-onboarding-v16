@@ -7,6 +7,14 @@ export type {
   ApiError,
   ApiMethod,
   ApiCallMeta,
+  // GE-1 named domain types
+  HttpHeaders,
+  ErrorCountMap,
+  ErrorDiagnosticContext,
+  RequestPayload,
+  LogEntryDetails,
+  SessionOperationMetadata,
+  // Envelope types
   EnvelopeStatus,
   EnvelopeAttributes,
   EnvelopeNavigation,

@@ -58,7 +58,7 @@ import {
   Cpu,
   Archive,
 } from "lucide-react";
-import { Site, SnapshotRecord, SnapshotSchedule, SnapshotInterval, api } from "@/lib/api";
+import { Site, SnapshotRecord, SnapshotSchedule, SnapshotInterval, SnapshotSettings, SnapshotScope, CreateSnapshotOptions, RestoreSnapshotOptions, api } from "@/lib/api";
 import { useRemoteSnapshots } from "@/hooks/useRemoteSnapshots";
 import { toClipboardText } from "@/lib/logText";
 import { toast } from "sonner";
@@ -501,13 +501,13 @@ function SnapshotSettingsTab({
     isCleaningUp,
   } = useRemoteSnapshots(siteId);
 
-  const [localSettings, setLocalSettings] = useState<Record<string, unknown> | null>(null);
+  const [localSettings, setLocalSettings] = useState<Partial<SnapshotSettings> | null>(null);
 
   // Use local overrides if user has edited, otherwise show fetched settings
-  const current = localSettings || (settings as unknown as Record<string, unknown>);
+  const current = localSettings || (settings as Partial<SnapshotSettings> | undefined);
 
   const handleChange = (key: string, value: unknown) => {
-    setLocalSettings((prev) => ({ ...(prev || (settings as unknown as Record<string, unknown>) || {}), [key]: value }));
+    setLocalSettings((prev) => ({ ...(prev || (settings as Partial<SnapshotSettings>) || {}), [key]: value }));
   };
 
   const handleSave = () => {
@@ -907,7 +907,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   }, [isLoading]);
 
   // C3: Inline worker count from settings
-  const currentWorkerCount = (settings as unknown as Record<string, unknown> | undefined)?.worker_count as number || 4;
+  const currentWorkerCount = (settings as SnapshotSettings | undefined)?.worker_count as number || 4;
 
   // C4: Real-time progress via WebSocket
   const [progress, setProgress] = useState<SnapshotProgressState>(INITIAL_PROGRESS);
@@ -992,17 +992,17 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   }, [availableTables.length, fetchTables]);
 
   const handleCreate = () => {
-    const opts: Record<string, unknown> = {};
+    const opts: CreateSnapshotOptions = {};
     if (createName.trim()) opts.name = createName.trim();
     if (createScope === "custom" && customTables.length > 0) {
       opts.scope = "custom";
       opts.tables = customTables;
     } else {
-      opts.scope = createScope;
+      opts.scope = createScope as SnapshotScope;
     }
 
     if (createType === "incremental") {
-      if (parentSnapshotId) opts.parent_id = Number(parentSnapshotId);
+      if (parentSnapshotId) opts.parentId = Number(parentSnapshotId);
       incrementalBackup(opts);
     } else {
       fullBackup(opts);
@@ -1019,11 +1019,11 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
 
   const handleRestore = () => {
     if (restoreTarget) {
-      const opts: Record<string, unknown> = { snapshotId: restoreTarget.id };
+      const restoreOpts: { snapshotId: number; opts?: Omit<RestoreSnapshotOptions, "confirm"> } = { snapshotId: restoreTarget.id };
       if (restoreMode === "selective" && restoreTables.length > 0) {
-        opts.opts = { mode: "selective", tables: restoreTables };
+        restoreOpts.opts = { mode: "selective" as const, tables: restoreTables };
       }
-      restoreSnapshot(opts as { snapshotId: number; opts?: Record<string, unknown> });
+      restoreSnapshot(restoreOpts);
       setRestoreTarget(null);
       setRestoreMode("full");
       setRestoreTables([]);
