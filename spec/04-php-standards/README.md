@@ -71,7 +71,7 @@ private function safe_execute(callable $callback) {
 
 ### Global Shutdown Handler
 
-Register a shutdown handler to catch fatal errors. **Delegate the type-check to a dedicated `ErrorChecker` class** so the logic is reusable and self-documenting:
+Register a shutdown handler to catch fatal errors. **Delegate the type-check to `ErrorChecker`** which uses `ErrorTypeEnum::FATAL_TYPES` (see [PHP Enum Spec](./enums.md)):
 
 ```php
 // ❌ FORBIDDEN: Inline error-type checking
@@ -86,44 +86,14 @@ register_shutdown_function(function() {
 register_shutdown_function(function() {
     $error = error_get_last();
     if (ErrorChecker::is_fatal_error($error)) {
-        // Log to fatal-errors.log with memory usage
-        // Send JSON response before process dies
+        // Log to fatal-errors.log via RiseupPathUtils::getFatalErrorLog()
+        // Include memory_get_peak_usage() for diagnostics
+        // Send JSON response before process dies (if REST_REQUEST)
     }
 });
 ```
 
-#### ErrorChecker Implementation
-
-```php
-/**
- * Centralized error-type inspection.
- *
- * Encapsulates the raw E_* constant checks so callers never need to
- * remember the specific list. Any new fatal category is added here once.
- */
-class ErrorChecker {
-    /** Fatal error type constants that terminate PHP execution */
-    private const FATAL_ERROR_TYPES = [
-        E_ERROR,
-        E_PARSE,
-        E_CORE_ERROR,
-        E_COMPILE_ERROR,
-    ];
-
-    /**
-     * Determine whether the given error array represents a fatal PHP error.
-     *
-     * @param array|null $error  Value returned by error_get_last()
-     * @return bool  True when $error is non-null and its type is fatal.
-     */
-    public static function is_fatal_error(?array $error): bool {
-        if ($error === null) {
-            return false;
-        }
-        return in_array($error['type'], self::FATAL_ERROR_TYPES, true);
-    }
-}
-```
+> **Implementation:** `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` for the constant list. See [enums.md](./enums.md) for the full `ErrorChecker`, `ErrorTypeEnum`, and `get_severity_label()` implementations.
 
 ---
 
@@ -239,79 +209,50 @@ Throttle repeated initialization errors to prevent log bloat.
 
 ## File Path Resolution
 
-### Rule: Use fully-typed path accessors with PathEnum constants
+### Rule: Use fully-typed path accessors backed by PathEnum constants
 
-Never construct file paths with string concatenation or partial accessors. Every path must resolve to a **single typed accessor method** that internally composes the directory with a `PathEnum` constant for the filename segment.
+Never construct file paths with string concatenation or partial accessors. Every path must resolve to a **single typed accessor method** that internally composes a directory method + a `PathEnum` constant.
+
+### How It Works (Internal Architecture)
+
+```
+Caller code          →  RiseupPathUtils::getRootDb()
+                              ↓
+Accessor internals   →  self::getDataDir() + PathEnum::ROOT_DB
+                              ↓                    ↓
+Directory method     →  WP_CONTENT_DIR + ...   '/a-root.db'
+                              ↓
+Final path           →  '/var/www/.../uploads/riseup-asia-uploader/a-root.db'
+```
+
+**The caller only ever sees the accessor.** The composition of directory + constant is an internal implementation detail.
+
+### Forbidden vs Required
 
 ```php
-// ❌ FORBIDDEN: Manual path construction
+// ❌ FORBIDDEN: Manual path construction with string literals
 $path = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/data.db';
 
-// ❌ WRONG: Partial accessor — still has a magic string fragment
+// ❌ FORBIDDEN: Partial accessor — caller still concatenates a magic string
 $path = RiseupPathUtils::getDataDir() . '/data.db';
 
-// ✅ REQUIRED: Fully-typed accessor that encapsulates the filename
+// ❌ FORBIDDEN: Using PathEnum directly in business logic (leaks internals)
+$path = RiseupPathUtils::getDataDir() . PathEnum::ROOT_DB;
+
+// ✅ REQUIRED: Single typed accessor — no path fragments visible to caller
 $path = RiseupPathUtils::getRootDb();
 ```
 
-#### PathEnum Implementation
+### Why This Matters
 
-```php
-/**
- * Centralized file-name constants for all data files.
- *
- * Every file that the plugin reads or writes must have an entry here.
- * Path accessors in RiseupPathUtils compose getDataDir() + PathEnum::*.
- */
-class PathEnum {
-    /** Root SQLite database */
-    public const ROOT_DB         = '/a-root.db';
+| If you use... | Problem |
+|---------------|---------|
+| Manual concatenation | Filename is a magic string; renaming requires find-and-replace |
+| `getDataDir() . '/file.db'` | Partial accessor; magic string still exists at the call site |
+| `getDataDir() . PathEnum::X` | Leaks the composition pattern; callers shouldn't know how paths are built |
+| `getRootDb()` ✅ | Filename lives in `PathEnum`, directory in `getDataDir()`, both hidden from caller |
 
-    /** Activity log database */
-    public const ACTIVITY_DB     = '/activity.db';
-
-    /** Fatal error log */
-    public const FATAL_ERROR_LOG = '/fatal-errors.log';
-
-    /** Stack trace dump */
-    public const STACKTRACE_FILE = '/stacktrace.txt';
-
-    /** General log */
-    public const LOG_FILE        = '/log.txt';
-}
-```
-
-#### RiseupPathUtils Accessors
-
-```php
-class RiseupPathUtils {
-    /**
-     * Base data directory — all other paths derive from this.
-     */
-    public static function getDataDir(): string {
-        return WP_CONTENT_DIR . '/uploads/' . RISEUP_PLUGIN_SLUG;
-    }
-
-    /** Root SQLite database path */
-    public static function getRootDb(): string {
-        return self::getDataDir() . PathEnum::ROOT_DB;
-    }
-
-    /** Activity log database path */
-    public static function getActivityDb(): string {
-        return self::getDataDir() . PathEnum::ACTIVITY_DB;
-    }
-
-    /** Fatal error log path */
-    public static function getFatalErrorLog(): string {
-        return self::getDataDir() . PathEnum::FATAL_ERROR_LOG;
-    }
-
-    // ... one accessor per file, never expose raw concatenation
-}
-```
-
-> **Rule:** If a path does not have a typed accessor in `RiseupPathUtils`, create one before using it. Never concatenate `getDataDir()` with a string literal in business logic.
+> **Rule:** If a path does not have a typed accessor in `RiseupPathUtils`, create one before using it. See [PHP Enum Spec](./enums.md) for full `PathEnum` and `RiseupPathUtils` listings.
 
 ---
 
