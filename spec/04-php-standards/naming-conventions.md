@@ -70,7 +70,7 @@ $uploadSource = UploadSource::Script;
 - Clear intent over short names
 - Avoid Hungarian notation
 - Avoid `snake_case` for variables in modern PHP
-- Boolean variables must use `$is_*` or `$has_*` prefix
+- Boolean variables must use `$is` or `$has` prefix in **camelCase** (e.g., `$isActive`, `$hasErrors`) — not `$is_active` or `$has_errors`. The prefix follows the same camelCase rule as all other variables
 
 ---
 
