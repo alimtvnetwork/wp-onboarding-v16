@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once dirname(__FILE__) . '/class-snapshot-provider-interface.php';
+require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 
 /**
  * Native SQLite Snapshot Provider.

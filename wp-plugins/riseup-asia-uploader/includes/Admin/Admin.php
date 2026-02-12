@@ -359,7 +359,7 @@ class Riseup_Admin {
         $update_settings = Riseup_Update_Resolver::get_instance()->get_settings();
 
         // Snapshot settings
-        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
         $detector = RiseupSnapshotFactory::detector();
         $snapshot_settings = $detector->getSettings();
         $snapshot_providers = $detector->detectAvailableProviders();
@@ -563,7 +563,7 @@ class Riseup_Admin {
             }
         }
 
-        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
         $detector = RiseupSnapshotFactory::detector();
         $result = $detector->updateSettings($settings);
 
@@ -590,7 +590,7 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
         $scheduler = RiseupSnapshotFactory::scheduler();
         $result = $scheduler->runManualCleanup();
 
@@ -616,7 +616,7 @@ class Riseup_Admin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
         $scheduler = RiseupSnapshotFactory::scheduler();
         $stats = $scheduler->getStorageStats();
 

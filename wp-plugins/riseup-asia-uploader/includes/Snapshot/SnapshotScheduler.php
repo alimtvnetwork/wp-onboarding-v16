@@ -79,7 +79,7 @@ class RiseupSnapshotScheduler {
         $this->logger = $logger ?: Riseup_File_Logger::get_instance();
         $this->db = $db ?: Riseup_Database::get_instance();
         
-        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        require_once dirname(__FILE__) . '/SnapshotFactory.php';
         $this->detector = RiseupSnapshotFactory::detector($this->logger, $this->db);
     }
 
@@ -128,7 +128,7 @@ class RiseupSnapshotScheduler {
         $this->logger->info('[SCHEDULER] Executing worker batch', $args);
 
         try {
-            require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+            require_once dirname(__FILE__) . '/SnapshotFactory.php';
             $worker = RiseupSnapshotFactory::worker($this->logger, $this->db);
             $worker->processWorkerBatch($args);
         } catch (Exception $e) {
@@ -343,7 +343,7 @@ class RiseupSnapshotScheduler {
         try {
             $settings = $this->detector->getSettings();
 
-            require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+            require_once dirname(__FILE__) . '/SnapshotFactory.php';
             $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
             $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
 
@@ -401,7 +401,7 @@ class RiseupSnapshotScheduler {
         $this->logger->info('[SCHEDULER] Executing immediate snapshot via orchestrator', $args);
 
         try {
-            require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+            require_once dirname(__FILE__) . '/SnapshotFactory.php';
             $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
             $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
 
@@ -473,7 +473,7 @@ class RiseupSnapshotScheduler {
         }
 
         try {
-            require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+            require_once dirname(__FILE__) . '/SnapshotFactory.php';
             $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
 
             $restore_options = $args['options'] ?? array();
@@ -527,7 +527,7 @@ class RiseupSnapshotScheduler {
         $this->logger->info('[SCHEDULER] Executing cron-based incremental backup', $args);
 
         try {
-            require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+            require_once dirname(__FILE__) . '/SnapshotFactory.php';
             $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
             $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
 

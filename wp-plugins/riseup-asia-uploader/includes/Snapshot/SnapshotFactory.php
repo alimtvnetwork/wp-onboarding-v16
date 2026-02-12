@@ -55,7 +55,7 @@ class RiseupSnapshotFactory {
      */
     public static function detector($logger = null, $db = null) {
         if (self::$detector === null) {
-            require_once dirname(__FILE__) . '/class-snapshot-detector.php';
+            require_once dirname(__FILE__) . '/SnapshotDetector.php';
             self::$detector = new RiseupSnapshotDetector(
                 $logger ?: Riseup_File_Logger::get_instance(),
                 $db ?: Riseup_Database::get_instance()
@@ -73,7 +73,7 @@ class RiseupSnapshotFactory {
      */
     public static function cleaner($logger = null, $db = null) {
         if (self::$cleaner === null) {
-            require_once dirname(__FILE__) . '/class-snapshot-cleaner.php';
+            require_once dirname(__FILE__) . '/SnapshotCleaner.php';
             self::$cleaner = new RiseupSnapshotCleaner(
                 $logger ?: Riseup_File_Logger::get_instance(),
                 $db ?: Riseup_Database::get_instance()
@@ -92,7 +92,7 @@ class RiseupSnapshotFactory {
      * @return RiseupSnapshotScheduler
      */
     public static function scheduler($logger = null, $db = null) {
-        require_once dirname(__FILE__) . '/class-snapshot-scheduler.php';
+        require_once dirname(__FILE__) . '/SnapshotScheduler.php';
         return RiseupSnapshotScheduler::getInstance(
             $logger ?: Riseup_File_Logger::get_instance(),
             $db ?: Riseup_Database::get_instance()
@@ -109,7 +109,7 @@ class RiseupSnapshotFactory {
      * @return RiseupSnapshotManager
      */
     public static function manager($logger = null, $db = null) {
-        require_once dirname(__FILE__) . '/class-snapshot-manager.php';
+        require_once dirname(__FILE__) . '/SnapshotManager.php';
         return RiseupSnapshotManager::getInstance(
             $logger ?: Riseup_File_Logger::get_instance(),
             $db ?: Riseup_Database::get_instance()
@@ -127,9 +127,9 @@ class RiseupSnapshotFactory {
      * @return RiseupSnapshotWorker
      */
     public static function worker($logger = null, $db = null) {
-        require_once dirname(__FILE__) . '/class-snapshot-worker.php';
-        require_once dirname(__FILE__) . '/class-dependency-analyzer.php';
-        require_once dirname(__FILE__) . '/class-root-db.php';
+        require_once dirname(__FILE__) . '/SnapshotWorker.php';
+        require_once dirname(__FILE__) . '/DependencyAnalyzer.php';
+        require_once dirname(__FILE__) . '/../Database/RootDb.php';
         $l = $logger ?: Riseup_File_Logger::get_instance();
         $d = $db ?: Riseup_Database::get_instance();
         $analyzer = RiseupDependencyAnalyzer::getInstance($l);
@@ -148,7 +148,7 @@ class RiseupSnapshotFactory {
      * @return RiseupSnapshotOrchestrator
      */
     public static function orchestrator($logger = null, $db = null) {
-        require_once dirname(__FILE__) . '/class-snapshot-orchestrator.php';
+        require_once dirname(__FILE__) . '/SnapshotOrchestrator.php';
         $l = $logger ?: Riseup_File_Logger::get_instance();
         $d = $db ?: Riseup_Database::get_instance();
         return RiseupSnapshotOrchestrator::getInstance($l, $d, self::manager($l, $d));
@@ -162,7 +162,7 @@ class RiseupSnapshotFactory {
      * @return RiseupSnapshotExporter
      */
     public static function exporter($logger = null, $db = null) {
-        require_once dirname(__FILE__) . '/class-snapshot-exporter.php';
+        require_once dirname(__FILE__) . '/SnapshotExporter.php';
         return RiseupSnapshotExporter::getInstance(
             $logger ?: Riseup_File_Logger::get_instance(),
             $db ?: Riseup_Database::get_instance()

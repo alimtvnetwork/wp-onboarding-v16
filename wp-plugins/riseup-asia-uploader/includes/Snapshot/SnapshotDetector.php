@@ -352,18 +352,18 @@ class RiseupSnapshotDetector {
         $instance = null;
         switch ($provider_id) {
             case RISEUP_SNAPSHOT_PROVIDER_WP_RESET:
-                require_once dirname(__FILE__) . '/class-snapshot-provider-wp-reset.php';
+                require_once dirname(__FILE__) . '/SnapshotProviderWpReset.php';
                 $instance = new RiseupSnapshotProviderWPReset($this->logger, $this->db);
                 break;
 
             case RISEUP_SNAPSHOT_PROVIDER_UPDRAFT:
-                require_once dirname(__FILE__) . '/class-snapshot-provider-updraft.php';
+                require_once dirname(__FILE__) . '/SnapshotProviderUpdraft.php';
                 $instance = new RiseupSnapshotProviderUpdraft($this->logger, $this->db);
                 break;
 
             case RISEUP_SNAPSHOT_PROVIDER_NATIVE:
             default:
-                require_once dirname(__FILE__) . '/class-snapshot-provider-native.php';
+                require_once dirname(__FILE__) . '/SnapshotProviderNative.php';
                 $instance = new RiseupSnapshotProviderNative($this->logger, $this->db);
                 break;
         }

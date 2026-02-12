@@ -280,14 +280,14 @@ require_once __DIR__ . '/includes/Enums/ErrorType.php';
 require_once __DIR__ . '/includes/Enums/LogLevel.php';
 
 // Error checker (uses RiseupAsia\Enums\ErrorType internally)
-require_once __DIR__ . '/includes/class-error-checker.php';
+require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';
 require_once __DIR__ . '/includes/constants.php';
 require_once __DIR__ . '/includes/constants-compat.php'; // RISEUP_* aliases — remove after consumer migration
-require_once __DIR__ . '/includes/class-boolean-helpers.php';
-require_once __DIR__ . '/includes/class-init-helpers.php';
+require_once __DIR__ . '/includes/Helpers/BooleanHelpers.php';
+require_once __DIR__ . '/includes/Helpers/InitHelpers.php';
 
 // Load dependency loader (uses BooleanHelpers, so must be after it).
-require_once __DIR__ . '/includes/class-dependency-loader.php';
+require_once __DIR__ . '/includes/Helpers/DependencyLoader.php';
 
 // Load all remaining dependencies via structured loader with error tracking.
 $__includes = __DIR__ . '/includes';
@@ -296,35 +296,35 @@ RiseupDependencyLoader::loadManifest(array(
     // "Class not found" errors. The logger's ensureDirNative() path avoids
     // the circular dependency, but PathUtils must still be available for
     // all subsequent code that calls RiseupPathUtils methods.
-    array('PathUtils',           $__includes . '/class-path-utils.php'),
-    array('FileLogger',          $__includes . '/class-file-logger.php'),
-    array('ORM',                 $__includes . '/class-orm.php'),
-    array('Database',            $__includes . '/class-database.php'),
-    array('EnvelopeBuilder',     $__includes . '/class-envelope-builder.php'),
-    array('TransactionLogger',   $__includes . '/class-logger.php'),
+    array('PathUtils',           $__includes . '/Helpers/PathUtils.php'),
+    array('FileLogger',          $__includes . '/Logging/FileLogger.php'),
+    array('ORM',                 $__includes . '/Database/Orm.php'),
+    array('Database',            $__includes . '/Database/Database.php'),
+    array('EnvelopeBuilder',     $__includes . '/Helpers/EnvelopeBuilder.php'),
+    array('TransactionLogger',   $__includes . '/Logging/Logger.php'),
 
     // Snapshot system
-    array('SnapshotDetector',    $__includes . '/class-snapshot-detector.php'),
-    array('SnapshotScheduler',   $__includes . '/class-snapshot-scheduler.php'),
-    array('SnapshotCleaner',     $__includes . '/class-snapshot-cleaner.php'),
-    array('SnapshotManager',     $__includes . '/class-snapshot-manager.php'),
-    array('DependencyAnalyzer',  $__includes . '/class-dependency-analyzer.php'),
-    array('RootDb',              $__includes . '/class-root-db.php'),
-    array('SnapshotWorker',      $__includes . '/class-snapshot-worker.php'),
-    array('SnapshotOrchestrator',$__includes . '/class-snapshot-orchestrator.php'),
-    array('IncrementalBackup',   $__includes . '/class-incremental-backup.php'),
-    array('RestoreEngine',       $__includes . '/class-restore-engine.php'),
-    array('SnapshotImport',      $__includes . '/class-snapshot-import.php'),
+    array('SnapshotDetector',    $__includes . '/Snapshot/SnapshotDetector.php'),
+    array('SnapshotScheduler',   $__includes . '/Snapshot/SnapshotScheduler.php'),
+    array('SnapshotCleaner',     $__includes . '/Snapshot/SnapshotCleaner.php'),
+    array('SnapshotManager',     $__includes . '/Snapshot/SnapshotManager.php'),
+    array('DependencyAnalyzer',  $__includes . '/Snapshot/DependencyAnalyzer.php'),
+    array('RootDb',              $__includes . '/Database/RootDb.php'),
+    array('SnapshotWorker',      $__includes . '/Snapshot/SnapshotWorker.php'),
+    array('SnapshotOrchestrator',$__includes . '/Snapshot/SnapshotOrchestrator.php'),
+    array('IncrementalBackup',   $__includes . '/Snapshot/IncrementalBackup.php'),
+    array('RestoreEngine',       $__includes . '/Snapshot/RestoreEngine.php'),
+    array('SnapshotImport',      $__includes . '/Snapshot/SnapshotImport.php'),
 
     // Sync system
-    array('FileCache',           $__includes . '/class-file-cache.php'),
+    array('FileCache',           $__includes . '/Database/FileCache.php'),
 
     // Other classes
-    array('PostManager',         $__includes . '/class-post-manager.php'),
-    array('UploadIgnore',        $__includes . '/class-upload-ignore.php'),
-    array('Admin',               $__includes . '/class-admin.php'),
-    array('UpdateResolver',      $__includes . '/class-update-resolver.php'),
-    array('AgentManager',        $__includes . '/class-agent-manager.php'),
+    array('PostManager',         $__includes . '/Post/PostManager.php'),
+    array('UploadIgnore',        $__includes . '/Upload/UploadIgnore.php'),
+    array('Admin',               $__includes . '/Admin/Admin.php'),
+    array('UpdateResolver',      $__includes . '/Update/UpdateResolver.php'),
+    array('AgentManager',        $__includes . '/Agent/AgentManager.php'),
 ));
 unset($__includes);
 
@@ -4578,7 +4578,7 @@ class Riseup_Asia {
                 array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
             );
 
-            require_once dirname(__FILE__) . '/includes/class-snapshot-exporter.php';
+            require_once dirname(__FILE__) . '/includes/Snapshot/SnapshotExporter.php';
             $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
             $result = $exporter->getOrBuildZip($snapshotId);
 
@@ -4644,7 +4644,7 @@ class Riseup_Asia {
             ), 400);
         }
 
-        require_once dirname(__FILE__) . '/includes/class-snapshot-exporter.php';
+        require_once dirname(__FILE__) . '/includes/Snapshot/SnapshotExporter.php';
         $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
         $export = $exporter->validateDownloadToken($exportId, $token);
 
@@ -5095,7 +5095,7 @@ class Riseup_Asia {
                 ), RISEUP_HTTP_BAD_REQUEST);
             }
 
-            require_once dirname(__FILE__) . '/includes/class-snapshot-factory.php';
+            require_once dirname(__FILE__) . '/includes/Snapshot/SnapshotFactory.php';
             $rootDb = RiseupRootDb::getInstance($this->file_logger, RiseupDependencyAnalyzer::getInstance($this->file_logger));
             $worker = RiseupSnapshotWorker::getInstance(
                 $this->file_logger,
