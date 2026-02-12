@@ -4,7 +4,7 @@
 ## Plan: Go Upload Performance Optimization + Core Plugin Dashboard + Snapshot UX
 
 > Created: 2026-02-12  
-> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete. Feature E1 complete.**
+> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete. Feature E1 complete. Feature E2 planned.**
 
 ---
 
@@ -208,6 +208,90 @@ The new download endpoints will follow the same pattern.
 
 ---
 
+## Feature E2: Centralized Activity Audit Log
+
+### Problem Statement
+
+Activity data is currently fragmented: publish history lives on the Publish History page (filterable by site), snapshot events appear in the snapshot timeline tab, and WordPress admin logs are only visible server-side. Users need a single, unified view of **all actions across their entire fleet** — publishes, snapshots, plugin changes, config updates — with powerful filtering and search.
+
+### What Already Exists
+
+| Component | Location | Data Source |
+|-----------|----------|-------------|
+| Publish History page | `/publish-history` | Go backend session history |
+| Per-site activity link | SiteCard → Activity button | Filters publish history by `siteId` |
+| Snapshot Timeline tab | RemoteSnapshotsPanel → Timeline | WordPress REST API per-site |
+| WordPress admin logs | WP Admin only | PHP activity_logs table |
+| Request Sessions page | `/request-sessions` | Go backend session store |
+
+### Architecture
+
+#### Unified API Approach
+
+The Go backend will aggregate activity from multiple sources into a single paginated endpoint:
+
+```
+GET /api/v1/activity?page=1&limit=50&siteId=&type=&from=&to=&search=
+```
+
+Returns a normalized `ActivityEntry[]`:
+```ts
+interface ActivityEntry {
+  id: string;
+  timestamp: string;
+  siteId: number;
+  siteName: string;
+  type: "publish" | "snapshot" | "plugin" | "config" | "connection";
+  action: string;           // e.g. "create", "restore", "upload", "delete"
+  title: string;            // Human-readable summary
+  metadata: Record<string, unknown>; // Action-specific details
+  source: "go" | "wordpress";
+  machineName?: string;
+  version?: string;
+}
+```
+
+### Phases
+
+| # | Task | Priority | Description |
+|---|------|----------|-------------|
+| E2.1 | **Go: Unified activity endpoint** | High | Aggregate publish sessions + snapshot events + plugin actions into `/api/v1/activity`. Paginated, filterable by siteId, type, date range. Normalize into `ActivityEntry` schema. |
+| E2.2 | **React: ActivityEntry type + API method** | High | Add `ActivityEntry` interface and `api.getActivityFeed()` method to `lib/api.ts`. |
+| E2.3 | **React: Activity Feed page** | High | New `/activity` route with a filterable, paginated timeline. Filters: site selector, action type multi-select, date range picker. Each entry shows site badge, action badge (color-coded per existing conventions), timestamp, and expandable detail row. |
+| E2.4 | **React: Navigation link** | Medium | Add "Activity" item to main navigation/sidebar with `Activity` icon. |
+| E2.5 | **React: Fleet summary header** | Medium | Top-of-page stats bar: total actions today, most active site, last action timestamp. Uses same endpoint with aggregation params. |
+| E2.6 | **React: Real-time updates via WebSocket** | Low | Listen to existing WS events (publish_complete, snapshot_complete) to prepend new entries to the feed without polling. |
+| E2.7 | **React: Export activity log** | Low | Download filtered results as CSV/JSON for compliance or reporting. |
+
+### Execution Order
+
+1. **E2.1** — Go backend endpoint (outside this React project)
+2. **E2.2 + E2.3 + E2.4** — React types, page, and navigation (parallel)
+3. **E2.5** — Summary header
+4. **E2.6** — WebSocket live updates
+5. **E2.7** — Export feature
+
+### Action Badge Color Coding (from existing conventions)
+
+| Type | Color | Examples |
+|------|-------|----------|
+| Publish | Primary (teal) | Deploy, Upload, Self-Update |
+| Snapshot Create | Teal | Full Backup, Incremental Backup |
+| Snapshot Restore | Amber | Restore Full, Restore Selective |
+| Snapshot Delete | Rose | Delete, Cascade Delete |
+| Snapshot Export | Cyan | ZIP Build, Download |
+| Plugin | Indigo | Install, Activate, Deactivate, Delete |
+| Config | Slate | Settings Change, Schedule Update |
+| Connection | Primary | Test, Connect, Disconnect |
+
+### Dependencies
+
+- E2.1 (Go endpoint) must be built before E2.3 can fetch real data
+- E2.3 can scaffold with mock data initially, then swap to real API
+- E2.6 leverages existing WebSocket infrastructure (no new WS events needed)
+
+---
+
 | Risk | Mitigation |
 |------|-----------|
 | PHP endpoint errors on first load | Use initial-load flag to suppress; show clean empty state |
@@ -216,3 +300,5 @@ The new download endpoints will follow the same pattern.
 | ZIP build timeout for large databases | Build asynchronously via WP-Cron if > threshold; return `building` status |
 | Stale ZIP cache after manual file edits | Invalidation only via incremental/delete hooks; manual edits are unsupported |
 | Go proxy memory for large ZIPs | Stream response body, don't buffer entire ZIP in memory |
+| Activity feed performance with many sites | Paginated API with cursor-based pagination; frontend virtualizes long lists |
+| Cross-source timestamp alignment | Go normalizes all timestamps to UTC ISO-8601 before returning |
