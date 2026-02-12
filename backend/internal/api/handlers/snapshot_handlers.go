@@ -198,6 +198,65 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, resp.Body)
 }
 
+// DownloadSnapshotZip proxies a cached ZIP download: requests build from WordPress, then streams the ZIP binary to the client.
+func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
+	if Services == nil || Services.SiteService == nil {
+		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		return
+	}
+
+	siteID, err := getIDParam(r, "id")
+	if err != nil {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		return
+	}
+
+	// Read snapshot_id from POST body
+	var body struct {
+		SnapshotID int64 `json:"snapshot_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotID <= 0 {
+		respondError(w, http.StatusBadRequest, "E1002", "Invalid or missing snapshot_id")
+		return
+	}
+
+	zipResp, meta, err := Services.SiteService.DownloadSnapshotZip(r.Context(), siteID, body.SnapshotID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "E3040", err.Error())
+		return
+	}
+	defer zipResp.Body.Close()
+
+	// Set download headers
+	filename, _ := meta["filename"].(string)
+	if filename == "" {
+		filename = fmt.Sprintf("snapshot-%d.zip", body.SnapshotID)
+	}
+
+	if ct := zipResp.Header.Get("Content-Type"); ct != "" {
+		w.Header().Set("Content-Type", ct)
+	} else {
+		w.Header().Set("Content-Type", "application/zip")
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	if cl := zipResp.Header.Get("Content-Length"); cl != "" {
+		w.Header().Set("Content-Length", cl)
+	}
+
+	// Expose metadata as custom headers so React can read them
+	if cached, ok := meta["cached"].(bool); ok && cached {
+		w.Header().Set("X-Snapshot-Cached", "true")
+	} else {
+		w.Header().Set("X-Snapshot-Cached", "false")
+	}
+	if size, ok := meta["size"].(float64); ok {
+		w.Header().Set("X-Snapshot-Size", strconv.FormatInt(int64(size), 10))
+	}
+
+	w.WriteHeader(http.StatusOK)
+	io.Copy(w, zipResp.Body)
+}
+
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting
 var GetRemoteAvailableTables = handleSiteActionByID("E3029",
 	func(ctx context.Context, siteID int64) (interface{}, error) {

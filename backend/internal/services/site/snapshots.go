@@ -184,6 +184,42 @@ func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 	return resp, nil
 }
 
+// DownloadSnapshotZip requests a cached ZIP build for a snapshot, then streams the ZIP file back.
+// The Go proxy fetches the download URL from WordPress and pipes the binary response to the caller.
+func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, map[string]interface{}, error) {
+	client, err := s.createWPClient(ctx, siteID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Step 1: Request cached ZIP metadata + download URL from WordPress
+	meta, err := client.DownloadSnapshotZip(snapshotID)
+	if err != nil {
+		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to request snapshot download").
+			WithContext("siteId", siteID).
+			WithContext("snapshotId", snapshotID)
+	}
+
+	downloadURL, _ := meta["url"].(string)
+	if downloadURL == "" {
+		return nil, nil, apperror.New(apperror.ErrInternal, "no download URL in response").
+			WithContext("siteId", siteID).
+			WithContext("snapshotId", snapshotID)
+	}
+
+	// Step 2: Stream the ZIP file from the download URL
+	zipResp, err := client.StreamSnapshotZip(downloadURL)
+	if err != nil {
+		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
+			WithContext("siteId", siteID).
+			WithContext("snapshotId", snapshotID).
+			WithContext("downloadUrl", downloadURL)
+	}
+
+	s.log.Info("Remote snapshot ZIP download started", "siteId", siteID, "snapshotId", snapshotID, "cached", meta["cached"])
+	return zipResp, meta, nil
+}
+
 // createWPClient is a helper that creates a WordPress client for a site.
 func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.Client, error) {
 	site, err := s.GetByID(ctx, siteID)

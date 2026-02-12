@@ -137,6 +137,12 @@ const (
 
 	// EndpointSnapshotsCleanup triggers cleanup of old/orphan/stuck snapshots.
 	EndpointSnapshotsCleanup = "/snapshots/cleanup"
+
+	// EndpointSnapshotsDownload requests a cached ZIP download URL for a snapshot.
+	EndpointSnapshotsDownload = "/snapshots/download"
+
+	// EndpointSnapshotsDownloadFile serves the actual ZIP file with nonce validation.
+	EndpointSnapshotsDownloadFile = "/snapshots/download-file"
 )
 // =============================================================================
 // ACTION TYPES (match PHP constants)

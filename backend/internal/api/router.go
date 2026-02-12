@@ -130,6 +130,7 @@ func NewServer(cfg ServerConfig) *Server {
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}", handlers.DeleteRemoteSnapshot).Methods("DELETE")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}/restore", handlers.RestoreRemoteSnapshot).Methods("POST")
 	api.HandleFunc("/sites/{id}/snapshots/{snapshotId}/export", handlers.ExportRemoteSnapshot).Methods("GET")
+	api.HandleFunc("/sites/{id}/snapshots/download", handlers.DownloadSnapshotZip).Methods("POST")
 
 	// Plugins endpoints
 	api.HandleFunc("/plugins", handlers.GetPlugins).Methods("GET")
