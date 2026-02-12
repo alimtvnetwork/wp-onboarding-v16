@@ -38,7 +38,7 @@ export function useSessionDiagnostics(sessionId?: string) {
           ? (logsRes.error?.message || "Failed to fetch session data")
           : null,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       setState({
         logs: null,
         diagnostics: null,

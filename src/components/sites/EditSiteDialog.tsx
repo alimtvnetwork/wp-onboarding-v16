@@ -126,7 +126,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
       } else {
         toast.error(response.data?.message || "Connection failed");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureException(error, { 
         source: "EditSiteDialog.handleTestConnection",
         triggerComponent: "EditSiteDialog",
@@ -195,7 +195,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
           requestBody: { ...formData, password: formData.password ? "***" : undefined },
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureException(error, {
         source: "EditSiteDialog.handleEditSite",
         triggerComponent: "EditSiteDialog",

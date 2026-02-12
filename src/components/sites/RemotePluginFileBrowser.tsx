@@ -290,8 +290,8 @@ export function RemotePluginFileBrowser({
         method: "POST",
       });
       setFileContent(data.content);
-    } catch (err) {
-      toast.error("Failed to load file content");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to load file content");
       setFileContent(null);
     } finally {
       setLoadingContent(false);

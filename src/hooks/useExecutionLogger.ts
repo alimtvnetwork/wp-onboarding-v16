@@ -305,7 +305,7 @@ export function loggedFunction<T extends (...args: unknown[]) => unknown>(
       });
       popDepth();
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const duration = Math.round(performance.now() - startTime);
       state.log({
         type,

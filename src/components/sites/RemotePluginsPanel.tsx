@@ -188,7 +188,7 @@ export function RemotePluginsPanel({ site, open, onOpenChange }: RemotePluginsPa
         return false;
       }
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       // If pre-flight check itself fails, log but allow the action to proceed
       // (the actual action will produce its own error if the plugin is missing)
       console.warn(`[guard] Pre-flight check failed for "${pluginIdentifier}", proceeding with ${actionLabel}:`, err);

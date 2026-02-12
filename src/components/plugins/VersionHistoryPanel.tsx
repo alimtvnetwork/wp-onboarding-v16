@@ -68,8 +68,8 @@ export function VersionHistoryPanel({ plugin, siteId }: VersionHistoryPanelProps
       } else {
         toast.error(response.error?.message || "Rollback failed");
       }
-    } catch (err) {
-      toast.error("Failed to rollback version");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to rollback version");
     } finally {
       setIsRollingBack(null);
     }
@@ -86,8 +86,8 @@ export function VersionHistoryPanel({ plugin, siteId }: VersionHistoryPanelProps
       } else {
         toast.error(response.error?.message || "Delete failed");
       }
-    } catch (err) {
-      toast.error("Failed to delete version");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete version");
     }
   };
 

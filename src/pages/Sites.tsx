@@ -57,7 +57,7 @@ export default function Sites() {
           duration: 10000,
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureException(error, { endpoint: `/sites/${id}`, method: "DELETE" });
       toast.error("Failed to delete site", {
         description: "Click for details",

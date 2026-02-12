@@ -209,8 +209,8 @@ export default function Plugins() {
         });
         openErrorModal(captured);
       }
-    } catch (error) {
-      toast.error("Failed to register plugin");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to register plugin");
     } finally {
       setIsSubmitting(false);
     }
@@ -241,7 +241,7 @@ export default function Plugins() {
         });
         openErrorModal(captured);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const { captureException, openErrorModal: showModal } = useErrorStore.getState();
       const captured = captureException(error, {
         source: "Plugins.handleDeletePlugin",
@@ -267,8 +267,8 @@ export default function Plugins() {
       } else {
         toast.error(response.error?.message || "Git pull failed");
       }
-    } catch (error) {
-      toast.error("Git pull failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Git pull failed");
     }
   };
 
@@ -282,8 +282,8 @@ export default function Plugins() {
       } else {
         toast.error(response.error?.message || "Git pull failed");
       }
-    } catch (error) {
-      toast.error("Git pull failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Git pull failed");
     } finally {
       setIsPulling(null);
     }
@@ -300,8 +300,8 @@ export default function Plugins() {
       } else {
         toast.error(response.error?.message || "Scan failed");
       }
-    } catch (error) {
-      toast.error("Scan failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Scan failed");
     } finally {
       setIsScanning(null);
     }
@@ -318,8 +318,8 @@ export default function Plugins() {
       } else {
         toast.error(response.error?.message || "Scan failed");
       }
-    } catch (error) {
-      toast.error("Scan failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Scan failed");
     } finally {
       setIsScanningAll(false);
     }
@@ -353,7 +353,7 @@ export default function Plugins() {
       } else {
         execLogger.endChain(chainId);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       execLogger.endChain(chainId, error instanceof Error ? error.message : 'Sync failed');
       toast.error("Sync check failed");
     } finally {
@@ -444,7 +444,7 @@ export default function Plugins() {
         });
         openErrorModal(captured);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const { captureException, openErrorModal: showModal } = useErrorStore.getState();
       const captured = captureException(error, {
         source: "Plugins.handlePublish",
@@ -531,8 +531,8 @@ export default function Plugins() {
       toast.success(`Enabled watching on ${successCount} plugins`);
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
       clearSelection();
-    } catch (error) {
-      toast.error("Failed to update plugins");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update plugins");
     } finally {
       setIsBulkProcessing(false);
     }
@@ -550,8 +550,8 @@ export default function Plugins() {
       toast.success(`Disabled watching on ${successCount} plugins`);
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
       clearSelection();
-    } catch (error) {
-      toast.error("Failed to update plugins");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update plugins");
     } finally {
       setIsBulkProcessing(false);
     }
@@ -580,7 +580,7 @@ export default function Plugins() {
       toast.success(`Sync complete: ${totalChanges} total changes detected`);
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
       clearSelection();
-    } catch (error) {
+    } catch (error: unknown) {
       execLogger.endChain(chainId, error instanceof Error ? error.message : 'Bulk sync failed');
       toast.error("Failed to sync plugins");
     } finally {
@@ -604,8 +604,8 @@ export default function Plugins() {
       toast.success(`Git pull complete: ${successCount} plugins updated`);
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
       clearSelection();
-    } catch (error) {
-      toast.error("Git pull failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Git pull failed");
     } finally {
       setIsBulkProcessing(false);
     }
@@ -624,8 +624,8 @@ export default function Plugins() {
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
       clearSelection();
       setShowBulkDeleteConfirm(false);
-    } catch (error) {
-      toast.error("Failed to delete plugins");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete plugins");
     } finally {
       setIsBulkProcessing(false);
     }
@@ -638,8 +638,8 @@ export default function Plugins() {
       const selectedPlugins = plugins?.filter((p) => ids.includes(p.id)) || [];
       await bulkQuickPublish(selectedPlugins, { concurrency: 2 });
       clearSelection();
-    } catch (error) {
-      toast.error("Failed to deploy plugins");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to deploy plugins");
     } finally {
       setIsBulkDeploying(false);
     }
@@ -688,8 +688,8 @@ export default function Plugins() {
       }
       
       clearSelection();
-    } catch (error) {
-      toast.error("Failed to scan directories");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to scan directories");
     } finally {
       setIsBulkScanning(false);
     }
@@ -750,8 +750,8 @@ export default function Plugins() {
         });
         openErrorModal(captured);
       }
-    } catch (error) {
-      toast.error("Failed to update mappings");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update mappings");
     } finally {
       setIsSubmitting(false);
     }

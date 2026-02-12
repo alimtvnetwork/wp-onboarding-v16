@@ -109,7 +109,7 @@ export function DeployUploaderDialog({
       } else {
         toast.warning(`Deployed to ${succeeded}/${sites.length} sites`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       setStatus(DeployStatus.Error);
       setLogs((prev) => [
         ...prev,

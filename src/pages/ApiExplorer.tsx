@@ -74,7 +74,7 @@ export default function ApiExplorer() {
         const response = await api.getSiteCredentials(parseInt(selectedSiteId));
         const creds = requireSuccess(response, { endpoint: `/sites/${selectedSiteId}/credentials`, method: "GET" });
         setCredentials(creds);
-      } catch (err) {
+      } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Failed to fetch site credentials");
         setCredentials(null);
       } finally {
@@ -138,7 +138,7 @@ export default function ApiExplorer() {
       setSpec(data);
       setAuthenticated(true);
       setLastRefreshed(new Date());
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to fetch OpenAPI specification");
     } finally {
       setLoading(false);
@@ -180,7 +180,7 @@ export default function ApiExplorer() {
 
       setBackendSpec(data);
       setLastRefreshed(new Date());
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to fetch backend OpenAPI spec");
     } finally {
       setLoading(false);

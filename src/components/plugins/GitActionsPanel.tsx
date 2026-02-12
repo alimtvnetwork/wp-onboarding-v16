@@ -55,8 +55,8 @@ export function GitActionsPanel({ plugin }: GitActionsPanelProps) {
       } else {
         toast.error(response.error?.message || "Failed to get git status");
       }
-    } catch (error) {
-      toast.error("Failed to refresh git status");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to refresh git status");
     } finally {
       setIsRefreshing(false);
     }
@@ -73,8 +73,8 @@ export function GitActionsPanel({ plugin }: GitActionsPanelProps) {
       } else {
         toast.error(response.error?.message || "Git pull failed");
       }
-    } catch (error) {
-      toast.error("Git pull failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Git pull failed");
     } finally {
       setIsPulling(false);
     }
@@ -95,8 +95,8 @@ export function GitActionsPanel({ plugin }: GitActionsPanelProps) {
       } else {
         toast.error(response.error?.message || "Commit failed");
       }
-    } catch (error) {
-      toast.error("Commit failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Commit failed");
     } finally {
       setIsCommitting(false);
     }
@@ -112,8 +112,8 @@ export function GitActionsPanel({ plugin }: GitActionsPanelProps) {
       } else {
         toast.error(response.error?.message || "Push failed");
       }
-    } catch (error) {
-      toast.error("Push failed");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Push failed");
     } finally {
       setIsPushing(false);
     }

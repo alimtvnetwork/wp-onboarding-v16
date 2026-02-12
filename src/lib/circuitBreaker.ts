@@ -264,7 +264,7 @@ export async function withCircuitBreaker<T>(
     const result = await operation();
     circuitBreaker.recordSuccess(functionKey);
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     circuitBreaker.recordFailure(functionKey, error);
     throw error;
   }

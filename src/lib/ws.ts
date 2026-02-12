@@ -75,7 +75,7 @@ class WebSocketClient {
           if (typeHandlers) {
             typeHandlers.forEach((handler) => handler(data));
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('[WS] Failed to parse message', error);
         }
       };
@@ -93,7 +93,7 @@ class WebSocketClient {
       this.ws.onerror = (error) => {
         logger.error('[WS] Error', error, { url: this.url, attempt: this.reconnectAttempts });
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[WS] Failed to connect', error, { url: this.url });
       if (this.isReconnectEnabled) {
         this.scheduleReconnect();

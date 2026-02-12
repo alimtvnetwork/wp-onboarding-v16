@@ -77,7 +77,7 @@ export function BackendStatus({ pollInterval = 10000 }: BackendStatusProps) {
         setLastError(errorInfo);
         setIsConnected(false);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       // Case 3: Network error - fetch failed
       const errorInfo = {
         code: "E9003",

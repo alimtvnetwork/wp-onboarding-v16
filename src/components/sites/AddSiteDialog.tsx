@@ -68,7 +68,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
       try {
         const response = await api.getPlugins();
         return response.success ? response.data || [] : [];
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn("[AddSiteDialog] Failed to fetch plugins:", e);
         return [];
       }
@@ -145,7 +145,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
         setCredentialsTestResult({ success: false, message: response.error.message });
         showErrorWithModal(response.error, { endpoint: "/sites/test", method: "POST" });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureException(error, { 
         source: "AddSiteDialog.handleTestCredentials",
         triggerComponent: "AddSiteDialog",
@@ -217,7 +217,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
                   });
                 }
               }
-            } catch (e) {
+            } catch (e: unknown) {
               console.warn(`[AddSiteDialog] Failed to create mapping for plugin ${pluginId}:`, e);
             }
           }
@@ -235,7 +235,7 @@ export function AddSiteDialog({ open, onOpenChange, debugMode = false }: AddSite
           requestBody: { ...requestBody, applicationPassword: "***" },
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureException(error, {
         source: "AddSiteDialog.handleAddSite",
         triggerComponent: "AddSiteDialog",

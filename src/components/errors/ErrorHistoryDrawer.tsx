@@ -98,8 +98,8 @@ export function ErrorHistoryDrawer({ open, onOpenChange }: ErrorHistoryDrawerPro
       } else {
         toast.error("No report data returned");
       }
-    } catch (err) {
-      toast.error("Failed to export errors");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to export errors");
     }
   };
   

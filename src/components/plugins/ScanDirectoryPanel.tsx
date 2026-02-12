@@ -75,8 +75,8 @@
        } else {
          toast.error(response.error?.message || "Scan failed");
        }
-     } catch (error) {
-       toast.error("Failed to scan directory");
+     } catch (error: unknown) {
+       toast.error(error instanceof Error ? error.message : "Failed to scan directory");
      } finally {
        setIsScanning(false);
      }
@@ -118,8 +118,8 @@
            toast.error(response.error.message);
          }
        }
-     } catch (error) {
-       toast.error("Failed to register plugin");
+     } catch (error: unknown) {
+       toast.error(error instanceof Error ? error.message : "Failed to register plugin");
      } finally {
        setIsAdding(false);
      }

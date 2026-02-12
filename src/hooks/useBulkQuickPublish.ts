@@ -109,7 +109,7 @@ export function useBulkQuickPublish() {
           failed++;
           completeOperation(task.operationId, false, response.error?.message);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         failed++;
         completeOperation(
           task.operationId,
