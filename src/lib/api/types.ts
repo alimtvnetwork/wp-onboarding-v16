@@ -463,6 +463,55 @@ export interface ErrorHistoryStats {
 }
 
 // Snapshot Types
+export type SnapshotScope = "all" | "wordpress" | "content" | "custom";
+export type SnapshotType = "full" | "incremental";
+
+export interface CreateSnapshotOptions {
+  name?: string;
+  scope?: SnapshotScope;
+  snapshotType?: SnapshotType;
+  parentId?: number;
+  tables?: string[];
+  workerCount?: number;
+}
+
+export interface SnapshotOperationResult {
+  id?: number;
+  status: string;
+  message?: string;
+  snapshotId?: number;
+  filename?: string;
+}
+
+export interface RestoreSnapshotOptions {
+  confirm?: boolean;
+  mode?: "full" | "selective";
+  tables?: string[];
+  preBackup?: boolean;
+}
+
+export interface CleanupSnapshotOptions {
+  dryRun?: boolean;
+  maxAgeDays?: number;
+  maxCount?: number;
+}
+
+export interface CleanupSnapshotResult {
+  deleted?: number;
+  dryRun?: boolean;
+  candidates?: string[];
+  retention?: { deleted: number; expired: number };
+  orphans?: { removed: number };
+  stuck?: { cleaned: number };
+}
+
+export interface SnapshotImportResult {
+  id: number;
+  filename: string;
+  tables: number;
+  totalRows: number;
+}
+
 export interface SnapshotRecord {
   id: number;
   sequence: number;
@@ -476,7 +525,7 @@ export interface SnapshotRecord {
   created_at: string;
   error?: string;
   /** 'full' | 'incremental' — derived from scope or tables_json metadata */
-  snapshot_type?: "full" | "incremental";
+  snapshot_type?: SnapshotType;
   /** For incrementals: the parent full snapshot's ID */
   parent_id?: number;
   /** For incrementals: the master directory name */
@@ -571,6 +620,81 @@ export interface SnapshotCronSyncResult {
   updated: number;
   removed: number;
   active: SnapshotCronJob[];
+}
+
+// Site Health Types
+// NOTE: Canonical site health types live in src/types/siteHealth.ts
+// The API methods use those types via the hook layer.
+// These are lightweight types for the raw API response shape.
+export type SiteHealthStatus = "healthy" | "degraded" | "down" | "unknown";
+
+export interface SiteHealthCheckResult {
+  siteId: number;
+  status: string;
+  responseMs?: number;
+  checkedAt: string;
+  error?: string;
+}
+
+// E2E Testing Types
+export type E2ECaseStatus = "pending" | "running" | "passed" | "failed" | "skipped";
+export type E2ERunStatus = "pending" | "running" | "completed" | "aborted" | "failed";
+
+export interface E2ESuite {
+  id: string;
+  name: string;
+  description?: string;
+  caseCount: number;
+}
+
+export interface E2ECase {
+  id: string;
+  suiteId: string;
+  name: string;
+  status: E2ECaseStatus;
+  duration?: number;
+  error?: string;
+}
+
+export interface E2ETestResult {
+  id: string;
+  runId: string;
+  suiteId: string;
+  caseId: string;
+  caseName: string;
+  suiteName?: string;
+  status: E2ECaseStatus | "error";
+  durationMs: number;
+  duration?: number;
+  error?: string;
+  errorMessage?: string;
+  errorDetails?: string;
+  requestData?: string;
+  responseData?: string;
+  logs?: string;
+}
+
+export interface E2ERun {
+  id: string;
+  runId?: string;
+  startedAt: string;
+  completedAt?: string;
+  status: E2ERunStatus;
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  skippedTests: number;
+  durationMs: number;
+  passed?: number;
+  failed?: number;
+  skipped?: number;
+  endedAt?: string;
+  results?: E2ETestResult[];
+}
+
+export interface E2ERunSummary {
+  run: E2ERun;
+  results: E2ETestResult[];
 }
 
 // Activity Feed Types

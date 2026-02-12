@@ -214,8 +214,9 @@ function SnapshotRow({
                       toast.success(
                         `ZIP downloaded${cached ? " (cached)" : ""} — ${formatBytes(size)}`,
                       );
-                    } catch (err: any) {
-                      toast.error(`Download failed: ${err.message}`);
+                    } catch (err: unknown) {
+                      const message = err instanceof Error ? err.message : String(err);
+                      toast.error(`Download failed: ${message}`);
                     } finally {
                       setDownloading(false);
                     }
@@ -328,9 +329,10 @@ function SnapshotDetailContent({ snapshot, siteId }: { snapshot: SnapshotRecord;
       URL.revokeObjectURL(url);
       a.remove();
       toast.success(`ZIP downloaded${cached ? " (cached)" : ""} — ${formatBytes(size)}`);
-    } catch (err: any) {
-      setZipError(err.message);
-      toast.error(`Download failed: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setZipError(message);
+      toast.error(`Download failed: ${message}`);
     } finally {
       setZipLoading(false);
     }

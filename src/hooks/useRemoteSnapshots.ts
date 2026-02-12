@@ -143,7 +143,7 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async ({ snapshotId, opts }: { snapshotId: number; opts?: Record<string, unknown> }) => {
+    mutationFn: async ({ snapshotId, opts }: { snapshotId: number; opts?: Omit<import("@/lib/api").RestoreSnapshotOptions, "confirm"> }) => {
       const res = await api.restoreRemoteSnapshot(siteId, snapshotId, { confirm: true, ...opts });
       return throwIfFailed(res, "Failed to restore snapshot");
     },
@@ -213,15 +213,15 @@ export function useRemoteSnapshots(siteId: number, enabled = true) {
   });
 
   const cleanupMutation = useMutation({
-    mutationFn: async (opts?: Record<string, unknown>) => {
+    mutationFn: async (opts?: import("@/lib/api").CleanupSnapshotOptions) => {
       const res = await api.cleanupRemoteSnapshots(siteId, opts);
       return throwIfFailed(res, "Failed to run cleanup");
     },
     onSuccess: (data) => {
-      const d = data as Record<string, unknown> | undefined;
-      const retention = (d?.retention as Record<string, number>) || {};
-      const orphans = (d?.orphans as Record<string, number>) || {};
-      const stuck = (d?.stuck as Record<string, number>) || {};
+      const d = data as import("@/lib/api").CleanupSnapshotResult | undefined;
+      const retention = d?.retention || { deleted: 0 };
+      const orphans = d?.orphans || { removed: 0 };
+      const stuck = d?.stuck || { cleaned: 0 };
       toast.success("Snapshot cleanup completed", {
         description: `${retention.deleted || 0} expired, ${orphans.removed || 0} orphans, ${stuck.cleaned || 0} stuck`,
       });
