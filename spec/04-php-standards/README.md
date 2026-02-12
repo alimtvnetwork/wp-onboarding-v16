@@ -93,7 +93,7 @@ register_shutdown_function(function() {
 });
 ```
 
-> **Implementation:** `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` for the constant list. See [enums.md](./enums.md) for the full `ErrorChecker`, `ErrorTypeEnum`, and `get_severity_label()` implementations.
+> **Implementation:** `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` for the constant list. Use `ErrorChecker::get_type_label($error['type'])` to convert any `E_*` integer to a human-readable string (e.g., `'E_ERROR'`) — this replaces all inline type-mapping arrays like `riseup_error_type_to_string()`. See [enums.md](./enums.md) for the full `ErrorChecker`, `ErrorTypeEnum`, `get_severity_label()`, and `TYPE_LABELS` implementations.
 
 ---
 
@@ -331,6 +331,7 @@ if ($has_permission) { ... }
 | `RiseupBooleanHelpers` | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
 | `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
+| Inline `E_*` → string mapping | Duplicated type-label arrays | `ErrorChecker::get_type_label($type)` via `ErrorTypeEnum::TYPE_LABELS` |
 | `$value` for booleans | Ambiguous naming | `$is_value`, `$has_value` |
 
 ---
