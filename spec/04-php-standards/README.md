@@ -186,7 +186,7 @@ $url = rest_url('riseup-asia-uploader/v1/upload');
 define('REST_NAMESPACE', 'riseup-asia-uploader/v1');
 define('ACTION_UPLOAD', 'upload');
 // In handlers:
-add_action(HookEnum::WP_AJAX_PREFIX . ACTION_UPLOAD, [$this, 'handle']);
+add_action(Hook::ajax('upload') , [$this, 'handle']);  // ← still inline concat
 $url = rest_url(REST_NAMESPACE . '/' . ACTION_UPLOAD);
 
 // ✅ REQUIRED: Compose named constants, then use them directly
@@ -194,7 +194,7 @@ $url = rest_url(REST_NAMESPACE . '/' . ACTION_UPLOAD);
 define('REST_NAMESPACE', 'riseup-asia-uploader/v1');
 define('ACTION_UPLOAD', 'upload');
 define('REST_URL_UPLOAD', REST_NAMESPACE . '/' . ACTION_UPLOAD);
-define('HOOK_AJAX_UPLOAD', HookEnum::WP_AJAX_PREFIX . ACTION_UPLOAD);
+define('HOOK_AJAX_UPLOAD', Hook::ajax(ACTION_UPLOAD));
 
 // In handlers — clean, readable, no concatenation:
 add_action(HOOK_AJAX_UPLOAD, [$this, 'handle']);
@@ -232,16 +232,16 @@ Throttle repeated initialization errors to prevent log bloat.
 
 ## File Path Resolution
 
-### Rule: Use fully-typed path accessors backed by PathEnum constants
+### Rule: Use fully-typed path accessors backed by PathConst constants
 
-Never construct file paths with string concatenation or partial accessors. Every path must resolve to a **single typed accessor method** that internally composes a directory method + a `PathEnum` constant.
+Never construct file paths with string concatenation or partial accessors. Every path must resolve to a **single typed accessor method** that internally composes a directory method + a `PathConst` constant.
 
 ### How It Works (Internal Architecture)
 
 ```
 Caller code          →  RiseupPathUtils::getRootDb()
                               ↓
-Accessor internals   →  self::getDataDir() + PathEnum::ROOT_DB
+Accessor internals   →  self::getDataDir() + PathConst::ROOT_DB
                               ↓                    ↓
 Directory method     →  WP_CONTENT_DIR + ...   '/a-root.db'
                               ↓
@@ -259,8 +259,8 @@ $path = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/data.db';
 // ❌ FORBIDDEN: Partial accessor — caller still concatenates a magic string
 $path = RiseupPathUtils::getDataDir() . '/data.db';
 
-// ❌ FORBIDDEN: Using PathEnum directly in business logic (leaks internals)
-$path = RiseupPathUtils::getDataDir() . PathEnum::ROOT_DB;
+// ❌ FORBIDDEN: Using PathConst directly in business logic (leaks internals)
+$path = RiseupPathUtils::getDataDir() . PathConst::ROOT_DB;
 
 // ✅ REQUIRED: Single typed accessor — no path fragments visible to caller
 $path = RiseupPathUtils::getRootDb();
@@ -272,8 +272,8 @@ $path = RiseupPathUtils::getRootDb();
 |---------------|---------|
 | Manual concatenation | Filename is a magic string; renaming requires find-and-replace |
 | `getDataDir() . '/file.db'` | Partial accessor; magic string still exists at the call site |
-| `getDataDir() . PathEnum::X` | Leaks the composition pattern; callers shouldn't know how paths are built |
-| `getRootDb()` ✅ | Filename lives in `PathEnum`, directory in `getDataDir()`, both hidden from caller |
+| `getDataDir() . PathConst::X` | Leaks the composition pattern; callers shouldn't know how paths are built |
+| `getRootDb()` ✅ | Filename lives in `PathConst`, directory in `getDataDir()`, both hidden from caller |
 
 > **Rule:** If a path does not have a typed accessor in `RiseupPathUtils`, create one before using it. See [PHP Enum Spec](./enums.md) for full `PathEnum` and `RiseupPathUtils` listings.
 
@@ -281,9 +281,9 @@ $path = RiseupPathUtils::getRootDb();
 
 ## Initialization — No WordPress Calls in Constructors
 
-### Rule: Lazy initialization with HookEnum
+### Rule: Lazy initialization with Hook enum
 
-Never call WordPress functions (`add_action`, `register_rest_route`, etc.) in class constructors. All hook registrations must use `HookEnum` constants:
+Never call WordPress functions (`add_action`, `register_rest_route`, etc.) in class constructors. All hook registrations must use `Hook` enum cases:
 
 ```php
 // ❌ FORBIDDEN: WordPress call in constructor + magic string
@@ -293,7 +293,9 @@ class MyPlugin {
     }
 }
 
-// ✅ REQUIRED: Lazy initialization with HookEnum
+// ✅ REQUIRED: Lazy initialization with Hook enum
+use RiseupAsia\Enums\Hook;
+
 class MyPlugin {
     private $initialized = false;
     
@@ -303,7 +305,7 @@ class MyPlugin {
         }
 
         $this->initialized = true;
-        add_action(HookEnum::INIT, [$this, 'setup']);
+        add_action(Hook::Init->value, [$this, 'setup']);
     }
 }
 ```
@@ -570,7 +572,7 @@ if ($this->initialized) {
     return;
 }
 $this->initialized = true;
-add_action(HookEnum::INIT, [$this, 'setup']);
+add_action(Hook::Init->value, [$this, 'setup']);
 
 // ✅ REQUIRED: Blank line after block when code follows
 if ($this->initialized) {
@@ -578,7 +580,7 @@ if ($this->initialized) {
 }
 
 $this->initialized = true;
-add_action(HookEnum::INIT, [$this, 'setup']);
+add_action(Hook::Init->value, [$this, 'setup']);
 ```
 
 ---
@@ -588,7 +590,7 @@ add_action(HookEnum::INIT, [$this, 'setup']);
 | Pattern | Why | Alternative |
 |---------|-----|-------------|
 | `catch (Exception $e)` | Misses PHP 7+ `Error` types | `catch (\Throwable $e)` |
-| Magic strings in hooks | Unmaintainable, typo-prone | `HookEnum` constants |
+| Magic strings in hooks | Unmaintainable, typo-prone | `Hook::*->value` enum cases |
 | Inline concatenation at call site | Hard to read, duplicated | Compose a named constant first |
 | Magic strings in handlers | Unmaintainable | `constants.php` |
 | `wp_die()` in REST handlers | Breaks JSON responses | `wp_send_json_error()` |
@@ -606,10 +608,10 @@ add_action(HookEnum::INIT, [$this, 'setup']);
 | `RiseupBooleanHelpers::is_falsy/is_truthy/is_null/is_set/is_empty/has_content` | Trivial wrappers around native PHP (deprecated 1.19.0) | Native `!$x`, `(bool)$x`, `$x === null`, `$x !== null`, `empty($x)`, `!empty($x)` |
 | `RiseupBooleanHelpers` for generic boolean logic | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) or domain-specific helpers (`is_dir_missing()`) |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
-| Inline `E_*` → string mapping | Duplicated type-label arrays | `ErrorChecker::get_type_label($type)` via `ErrorTypeEnum::TYPE_LABELS` |
+| Inline `E_*` → string mapping | Duplicated type-label arrays | `ErrorChecker::get_type_label($type)` via `ErrorType::TYPE_LABELS` |
 | `$value` for booleans | Ambiguous naming | `$is_value`, `$has_value` |
-| `current_user_can('manage_options')` | Magic capability string | `CapabilityEnum::MANAGE_OPTIONS` |
-| `'POST'` or `WP_REST_Server::CREATABLE` in routes | Inconsistent method refs | `HttpMethodEnum::POST` |
+| `current_user_can('manage_options')` | Magic capability string | `Capability::ManageOptions->value` |
+| `'POST'` or `WP_REST_Server::CREATABLE` in routes | Inconsistent method refs | `HttpMethod::Post->value` |
 
 ---
 
