@@ -81,7 +81,7 @@ class RiseupSnapshotManager {
     private function __construct($logger, $db) {
         $this->logger = $logger;
         $this->db = $db;
-        require_once dirname(__FILE__) . '/class-snapshot-factory.php';
+        require_once dirname(__FILE__) . '/SnapshotFactory.php';
         $this->detector = RiseupSnapshotFactory::detector($logger, $db);
 
         global $wpdb;

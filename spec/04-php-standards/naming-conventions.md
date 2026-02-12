@@ -147,10 +147,10 @@ File names follow **PSR-4 autoloading** — the file name must match the class, 
 Use **PascalCase** and match the symbol name 1:1.
 
 ```
-UploadSource.php
 UploadManager.php
 HttpClient.php
 CacheDriver.php
+SnapshotFactory.php
 ```
 
 **Rules:**
@@ -158,16 +158,38 @@ CacheDriver.php
 - One class or enum per file
 - File name equals class name exactly
 - Case-sensitive on Linux servers
-- No underscores, no `snake_case`
+- No underscores, no `snake_case`, no `class-kebab-case` prefixes
 
 ```php
 // ❌ Bad
+class-upload-manager.php
 upload_source.php
 Upload_Source.php
 uploadsource.php
 
 // ✅ Good
+UploadManager.php
 UploadSource.php
+```
+
+### Domain-based directory structure
+
+Files are organized into **domain folders** within `includes/`:
+
+```
+includes/
+  Admin/           — Admin UI and settings
+  Agent/           — Agent management
+  Database/        — Database, ORM, caching
+  Enums/           — Backed enums (PSR-4 namespace)
+  Helpers/         — Utility classes (path, envelope, error checking)
+  Logging/         — Logger implementations
+  Post/            — Post/content management
+  Snapshot/        — Snapshot system (backup, restore, providers)
+  Update/          — Auto-update resolver
+  Upload/          — Upload ignore rules
+  constants.php    — Global constants
+  constants-compat.php — Legacy RISEUP_* aliases (temporary)
 ```
 
 ### Namespaced directory structure
@@ -175,14 +197,15 @@ UploadSource.php
 Directory structure mirrors the namespace:
 
 ```php
-namespace App\Domain\Upload;
+namespace RiseupAsia\Enums;
 ```
 
 ```
-App/
-  Domain/
-    Upload/
-      UploadSource.php
+includes/
+  Enums/
+    Capability.php
+    ErrorType.php
+    Hook.php
 ```
 
 Autoloaders depend on this mapping.
@@ -192,10 +215,8 @@ Autoloaders depend on this mapping.
 For procedural or config files, use **lowercase with underscores**:
 
 ```
-bootstrap.php
-config.php
-helpers.php
-upload_functions.php
+constants.php
+constants-compat.php
 ```
 
 These are exceptions and should be minimal in modern architecture.

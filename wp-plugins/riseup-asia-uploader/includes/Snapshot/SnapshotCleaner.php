@@ -362,7 +362,7 @@ class RiseupSnapshotCleaner {
 
         // Feature D: Remove cached ZIP exports for this snapshot
         try {
-            require_once dirname(__FILE__) . '/class-snapshot-exporter.php';
+            require_once dirname(__FILE__) . '/SnapshotExporter.php';
             $exporter = RiseupSnapshotExporter::getInstance($this->logger, $this->db);
             if ($exporter) {
                 $exporter->removeExports((int) $snapshot['id']);

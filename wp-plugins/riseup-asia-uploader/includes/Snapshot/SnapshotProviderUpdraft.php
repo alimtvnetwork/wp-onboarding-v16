@@ -1,8 +1,8 @@
 <?php
 /**
- * Riseup Asia Uploader - WP Reset Snapshot Provider
+ * Riseup Asia Uploader - UpdraftPlus Snapshot Provider
  *
- * Integrates with WP Reset plugin for full site snapshots.
+ * Integrates with UpdraftPlus plugin for database backups.
  *
  * PHP class naming follows PascalCase convention without underscores.
  *
@@ -14,38 +14,38 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once dirname(__FILE__) . '/class-snapshot-provider-interface.php';
+require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 
 /**
- * WP Reset Snapshot Provider.
+ * UpdraftPlus Snapshot Provider.
  * 
- * Leverages WP Reset's snapshot functionality for full site backups.
- * Only available when WP Reset plugin is installed and active.
+ * Leverages UpdraftPlus's backup functionality for database snapshots.
+ * Only available when UpdraftPlus plugin is installed and active.
  *
  * PHP class naming follows PascalCase convention without underscores.
  */
-class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
+class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
 
     /**
      * Provider ID.
      *
      * @var string
      */
-    protected $provider_id = RISEUP_SNAPSHOT_PROVIDER_WP_RESET;
+    protected $provider_id = RISEUP_SNAPSHOT_PROVIDER_UPDRAFT;
 
     /**
      * Provider name.
      *
      * @var string
      */
-    protected $provider_name = 'WP Reset';
+    protected $provider_name = 'UpdraftPlus';
 
     /**
-     * WP Reset instance.
+     * UpdraftPlus instance.
      *
-     * @var WP_Reset|null
+     * @var UpdraftPlus|null
      */
-    private $wp_reset = null;
+    private $updraft = null;
 
     /**
      * Constructor.
@@ -56,20 +56,20 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
     public function __construct($logger, $db) {
         parent::__construct($logger, $db);
         
-        // Get WP Reset instance if available
-        if (class_exists('WP_Reset')) {
-            global $wp_reset;
-            $this->wp_reset = $wp_reset;
+        // Get UpdraftPlus instance if available
+        if (class_exists('UpdraftPlus')) {
+            global $updraftplus;
+            $this->updraft = $updraftplus;
         }
     }
 
     /**
      * Check if provider is available.
      *
-     * @return bool True if WP Reset is installed and active.
+     * @return bool True if UpdraftPlus is installed and active.
      */
     public function isAvailable() {
-        return class_exists('WP_Reset') || class_exists('WP_Reset_Pro');
+        return class_exists('UpdraftPlus') || isset($GLOBALS['updraftplus']);
     }
 
     /**
@@ -78,13 +78,15 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @return array Capabilities array.
      */
     public function getCapabilities() {
-        $is_pro = class_exists('WP_Reset_Pro');
+        // Check if premium version
+        $is_premium = defined('UPDRAFTPLUS_VERSION') && 
+                      strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
         
         return array(
             'full_site' => true,
             'database_only' => true,
-            'selective' => true,
-            'scheduled' => $is_pro, // Only Pro has scheduling
+            'selective' => $is_premium,
+            'scheduled' => true, // UpdraftPlus has built-in scheduling
             'restore' => true,
             'export' => true,
             'import' => true,
@@ -92,7 +94,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
     }
 
     /**
-     * Create a snapshot using WP Reset.
+     * Create a snapshot using UpdraftPlus.
      *
      * @param array $options Snapshot options.
      * @return array Snapshot result.
@@ -101,25 +103,25 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
         if (!$this->isAvailable()) {
             return array(
                 'success' => false,
-                'error' => 'WP Reset is not available',
+                'error' => 'UpdraftPlus is not available',
                 'code' => RISEUP_ERR_PROVIDER_NOT_AVAILABLE,
             );
         }
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Creating snapshot via WP Reset', $options);
+        $this->log(RISEUP_LOG_LEVEL_INFO, 'Creating snapshot via UpdraftPlus', $options);
 
         try {
-            // TODO: Implement WP Reset integration
-            // This requires calling WP Reset's internal snapshot methods
-            // which may vary between free and pro versions
+            // TODO: Implement UpdraftPlus integration
+            // This requires calling UpdraftPlus's internal backup methods
+            // Using do_action('updraftplus_backup_now_all') or similar
             
             return array(
                 'success' => false,
-                'error' => 'WP Reset integration not yet implemented',
+                'error' => 'UpdraftPlus integration not yet implemented',
             );
 
         } catch (Exception $e) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'WP Reset snapshot failed', array(
+            $this->log(RISEUP_LOG_LEVEL_ERROR, 'UpdraftPlus snapshot failed', array(
                 'error' => $e->getMessage(),
             ));
 
@@ -131,17 +133,17 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
     }
 
     /**
-     * Restore from a WP Reset snapshot.
+     * Restore from an UpdraftPlus snapshot.
      *
      * @param int   $snapshot_id Snapshot ID.
      * @param array $options     Restore options.
      * @return array Restore result.
      */
     public function restoreSnapshot($snapshot_id, $options) {
-        // TODO: Implement WP Reset restore
+        // TODO: Implement UpdraftPlus restore
         return array(
             'success' => false,
-            'error' => 'WP Reset restore not yet implemented',
+            'error' => 'UpdraftPlus restore not yet implemented',
         );
     }
 
@@ -152,10 +154,10 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @return array Delete result.
      */
     public function deleteSnapshot($snapshot_id) {
-        // TODO: Implement WP Reset delete
+        // TODO: Implement UpdraftPlus delete
         return array(
             'success' => false,
-            'error' => 'WP Reset delete not yet implemented',
+            'error' => 'UpdraftPlus delete not yet implemented',
         );
     }
 
@@ -166,10 +168,10 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @return array Export result.
      */
     public function exportSnapshot($snapshot_id) {
-        // TODO: Implement WP Reset export
+        // TODO: Implement UpdraftPlus export
         return array(
             'success' => false,
-            'error' => 'WP Reset export not yet implemented',
+            'error' => 'UpdraftPlus export not yet implemented',
         );
     }
 
@@ -180,10 +182,10 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @return array Import result.
      */
     public function importSnapshot($filepath) {
-        // TODO: Implement WP Reset import
+        // TODO: Implement UpdraftPlus import
         return array(
             'success' => false,
-            'error' => 'WP Reset import not yet implemented',
+            'error' => 'UpdraftPlus import not yet implemented',
         );
     }
 
@@ -230,7 +232,6 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @return array Tables list.
      */
     public function getAvailableTables() {
-        // WP Reset handles all tables internally
         global $wpdb;
         $tables = array();
         $all_tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
