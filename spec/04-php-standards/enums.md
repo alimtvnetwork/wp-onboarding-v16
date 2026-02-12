@@ -276,6 +276,24 @@ class RiseupPathUtils {
     public static function getDetectionFile(): string {
         return self::getDataDir() . PathEnum::DETECTION_FILE;
     }
+
+    // ── Directory Guard ─────────────────────────────────────────
+
+    /**
+     * Check if a directory is missing (cannot be ensured).
+     *
+     * Attempts to create the directory (with optional security files).
+     * Returns true when creation FAILED — the semantic inverse of ensureDir().
+     *
+     * Usage:
+     *   if (RiseupPathUtils::isDirMissing($dir, true)) { handle failure }
+     *
+     * Replaces the verbose pattern:
+     *   if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($dir, true)))
+     */
+    public static function isDirMissing(string $path, bool $secure = false): bool {
+        return !self::ensureDir($path, $secure);
+    }
 }
 ```
 

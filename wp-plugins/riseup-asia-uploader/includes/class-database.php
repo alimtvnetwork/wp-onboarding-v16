@@ -113,7 +113,7 @@ class Riseup_Database {
         $this->file_logger->debug('Base directory', array('dir' => $base_dir));
         
         // Ensure base directory exists with security files (idempotent)
-        if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($base_dir, true))) {
+        if (RiseupPathUtils::isDirMissing($base_dir, true)) {
             $this->file_logger->error('Failed to create base directory', array('dir' => $base_dir));
             throw new Exception('Failed to create data directory: ' . $base_dir);
         }

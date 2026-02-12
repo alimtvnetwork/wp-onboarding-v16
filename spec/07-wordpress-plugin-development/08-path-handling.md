@@ -94,19 +94,19 @@ class Riseup_Path_Utils {
 ### 2.2 Usage Pattern
 
 ```php
-// CORRECT: Using path utility with constants
-$snapshots_dir = Riseup_Path_Utils::ensure_path(
-    true, // secure with .htaccess
-    Riseup_Path_Utils::get_base_dir(),
-    RISEUP_SNAPSHOTS_SUBDIR
-);
+// CORRECT: Guard with isDirMissing — single semantic call
+$snapshots_dir = RiseupPathUtils::getSnapshotsDir();
 
-if ($snapshots_dir === false) {
+if (RiseupPathUtils::isDirMissing($snapshots_dir, true)) {
     $this->logger->error('Failed to create snapshots directory');
+
     return false;
 }
 
-$snapshot_file = Riseup_Path_Utils::join($snapshots_dir, $filename);
+$snapshot_file = RiseupPathUtils::join($snapshots_dir, $filename);
+
+// INCORRECT: Verbose two-helper composition
+if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($dir, true))) { ... }
 
 // INCORRECT: Raw concatenation
 $bad_path = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/snapshots/' . $filename;

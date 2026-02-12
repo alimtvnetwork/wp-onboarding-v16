@@ -176,6 +176,21 @@ class RiseupPathUtils {
     }
 
     /**
+     * Check if a directory is missing (cannot be ensured).
+     *
+     * Attempts to create the directory (with optional security files).
+     * Returns true when the directory does NOT exist after the attempt,
+     * i.e. creation failed. This is the semantic inverse of ensureDir().
+     *
+     * @param string $path   Directory path.
+     * @param bool   $secure Add .htaccess and index.php for security.
+     * @return bool True if directory is MISSING (creation failed).
+     */
+    public static function isDirMissing($path, $secure = false) {
+        return !self::ensureDir($path, $secure);
+    }
+
+    /**
      * Ensure a directory exists, creating it if necessary.
      *
      * @param string $path   Directory path.
@@ -289,7 +304,7 @@ class RiseupPathUtils {
             return false;
         }
 
-        if (RiseupBooleanHelpers::is_falsy(self::ensureDir($path, $secure))) {
+        if (self::isDirMissing($path, $secure)) {
             return false;
         }
 
