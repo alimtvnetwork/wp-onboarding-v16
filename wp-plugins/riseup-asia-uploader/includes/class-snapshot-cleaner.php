@@ -137,7 +137,7 @@ class RiseupSnapshotCleaner {
 
         $this->log('INFO', 'Cleanup complete', array(
             'deleted_total'    => $total_deleted,
-            'space_freed'      => RiseupPathUtils::formatBytes($results['space_freed_bytes']),
+            'space_freed'      => RiseupPathUtils::format_bytes($results['space_freed_bytes']),
             'duration'         => $results['duration'],
             'dry_run'          => $dry_run,
         ));
@@ -325,7 +325,7 @@ class RiseupSnapshotCleaner {
                 $this->log('INFO', 'Cascade-deleted incremental children', array(
                     'parent_id'    => $snapshot['id'],
                     'parent_dir'   => basename($filepath),
-                    'bytes_freed'  => RiseupPathUtils::formatBytes($inc_size),
+                    'bytes_freed'  => RiseupPathUtils::format_bytes($inc_size),
                 ));
             }
 
@@ -335,9 +335,9 @@ class RiseupSnapshotCleaner {
             $bytes_freed += $dir_size;
         } else {
             // Single-file snapshot (legacy .sqlite format)
-            if (RiseupPathUtils::fileExists($filepath)) {
+            if (RiseupPathUtils::file_exists($filepath)) {
                 $bytes_freed = filesize($filepath);
-                if (!RiseupPathUtils::deleteFile($filepath)) {
+                if (!RiseupPathUtils::delete_file($filepath)) {
                     $this->log('WARN', 'Failed to delete snapshot file', array('filepath' => $filepath));
                     return array('success' => false, 'bytes_freed' => 0);
                 }
@@ -345,9 +345,9 @@ class RiseupSnapshotCleaner {
 
             // Delete ZIP if exists
             $zip_path = $this->getZipPath($filepath);
-            if (RiseupPathUtils::fileExists($zip_path)) {
+            if (RiseupPathUtils::file_exists($zip_path)) {
                 $bytes_freed += filesize($zip_path);
-                RiseupPathUtils::deleteFile($zip_path);
+                RiseupPathUtils::delete_file($zip_path);
             }
         }
 
@@ -377,7 +377,7 @@ class RiseupSnapshotCleaner {
         $this->log('DEBUG', 'Deleted snapshot', array(
             'id' => $snapshot['id'],
             'filename' => $snapshot['filename'] ?? '',
-            'bytes_freed' => RiseupPathUtils::formatBytes($bytes_freed),
+            'bytes_freed' => RiseupPathUtils::format_bytes($bytes_freed),
         ));
 
         return array('success' => true, 'bytes_freed' => $bytes_freed);
@@ -432,8 +432,8 @@ class RiseupSnapshotCleaner {
             'bytes_freed' => 0,
         );
 
-        $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
-        if (!RiseupPathUtils::dirExists($snapshots_dir)) {
+        $snapshots_dir = RiseupPathUtils::get_snapshots_dir();
+        if (!RiseupPathUtils::dir_exists($snapshots_dir)) {
             return $result;
         }
 
@@ -459,16 +459,16 @@ class RiseupSnapshotCleaner {
                     $bytes = filesize($file);
 
                     if (!$dry_run) {
-                        if (RiseupPathUtils::deleteFile($file)) {
+                        if (RiseupPathUtils::delete_file($file)) {
                             $result['removed']++;
                             $result['bytes_freed'] += $bytes;
                             $this->log('DEBUG', 'Deleted orphan file', array('file' => basename($file)));
 
                             // Also delete matching ZIP
                             $zip_path = $this->getZipPath($file);
-                            if (RiseupPathUtils::fileExists($zip_path)) {
+                            if (RiseupPathUtils::file_exists($zip_path)) {
                                 $result['bytes_freed'] += filesize($zip_path);
-                                RiseupPathUtils::deleteFile($zip_path);
+                                RiseupPathUtils::delete_file($zip_path);
                             }
                         }
                     } else {
@@ -605,7 +605,7 @@ class RiseupSnapshotCleaner {
             if ($db_stats) {
                 $stats['total_snapshots'] = intval($db_stats['count']);
                 $stats['total_size_bytes'] = intval($db_stats['total_size']);
-                $stats['total_size_formatted'] = RiseupPathUtils::formatBytes($stats['total_size_bytes']);
+                $stats['total_size_formatted'] = RiseupPathUtils::format_bytes($stats['total_size_bytes']);
 
                 if ($db_stats['oldest']) {
                     $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);
@@ -616,13 +616,13 @@ class RiseupSnapshotCleaner {
             }
 
             // Get disk free space
-            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
+            $snapshots_dir = RiseupPathUtils::get_snapshots_dir();
 
-            if (RiseupPathUtils::dirExists($snapshots_dir)) {
-                $free = RiseupPathUtils::getFreeSpace($snapshots_dir);
+            if (RiseupPathUtils::dir_exists($snapshots_dir)) {
+                $free = RiseupPathUtils::get_free_space($snapshots_dir);
                 if ($free !== false) {
                     $stats['disk_free_bytes'] = $free;
-                    $stats['disk_free_formatted'] = RiseupPathUtils::formatBytes($free);
+                    $stats['disk_free_formatted'] = RiseupPathUtils::format_bytes($free);
                 }
             }
 

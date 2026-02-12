@@ -76,7 +76,7 @@ class RiseupInitHelpers {
 
         // Delegate to RiseupPathUtils if available (preferred)
         if (RiseupBooleanHelpers::is_class_exists('RiseupPathUtils')) {
-            $result = RiseupPathUtils::ensureDir($path, $secure);
+            $result = RiseupPathUtils::ensure_dir($path, $secure);
             self::$ensured_dirs[$normalized] = $result;
             return $result;
         }

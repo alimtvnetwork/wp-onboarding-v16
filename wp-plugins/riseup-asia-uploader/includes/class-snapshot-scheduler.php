@@ -589,7 +589,7 @@ class RiseupSnapshotScheduler {
                 'deleted_by_policy' => $result['deleted_by_policy'],
                 'deleted_orphans' => $result['deleted_orphans'],
                 'deleted_failed' => $result['deleted_failed'],
-                'space_freed' => RiseupPathUtils::formatBytes($result['space_freed_bytes']),
+                'space_freed' => RiseupPathUtils::format_bytes($result['space_freed_bytes']),
                 'errors_count' => count($result['errors']),
             ));
 
