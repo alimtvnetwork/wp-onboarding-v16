@@ -195,7 +195,7 @@ class OnboardIncludeFiles {
      * @return bool
      */
     public static function allLoaded() {
-        return OnboardBooleanHelpers::is_empty(self::getFailures());
+        return empty(self::getFailures());
     }
 
     /**

@@ -52,7 +52,7 @@ class OnboardInitHelpers {
             OnboardLogger::debug('[Directories] Creating all required directories...');
             $success = OnboardPaths::create_all_directories();
 
-            if (OnboardBooleanHelpers::is_empty($success)) {
+            if (empty($success)) {
                 OnboardLogger::error('[Directories] Failed to create some directories');
                 return false;
             }
@@ -68,7 +68,7 @@ class OnboardInitHelpers {
                 OnboardLogger::debug("[Directories] Verifying: {$dir_type}");
 
                 // Check if path is empty.
-                if (OnboardBooleanHelpers::is_empty($dir_path)) {
+                if (empty($dir_path)) {
                     OnboardLogger::error("[Directories]   ✗ Path is empty for: {$dir_type}");
                     $failed++;
                     continue;
@@ -155,10 +155,10 @@ class OnboardInitHelpers {
             // STEP 5: Create tables if needed.
             OnboardLogger::debug('[Database] Step 5: Ensuring tables exist...');
             $tables_created = $db->create_tables();
-            if (OnboardBooleanHelpers::is_empty($tables_created)) {
+            if (empty($tables_created)) {
                 OnboardLogger::error('[Database] Failed to create tables');
             }
-            if (OnboardBooleanHelpers::has_content($tables_created)) {
+            if (!empty($tables_created)) {
                 OnboardLogger::debug('[Database] ✓ Tables ready');
             }
 

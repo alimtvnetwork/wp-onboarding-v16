@@ -14,7 +14,7 @@ $this->oauth = new OnboardOAuth($this->db, $this->audit_logger);
 OnboardLogger::debug('OAuth initialized');
 
 // ❌ WRONG: Unnecessary conditionals at call site
-if (OnboardBooleanHelpers::is_class_exists('OnboardOAuth') && OnboardBooleanHelpers::is_set($this->audit_logger)) {
+if (OnboardBooleanHelpers::is_class_exists('OnboardOAuth') && $this->audit_logger !== null) {
     $this->oauth = new OnboardOAuth($this->db, $this->audit_logger);
     OnboardLogger::debug('OAuth initialized');
 }
@@ -230,7 +230,7 @@ $this->ip_whitelist = new OnboardIPWhitelist($this->db, $this->audit_logger);
 
 // ❌ WRONG: Unnecessary checks everywhere
 if (OnboardBooleanHelpers::is_class_exists('OnboardOAuth')) {
-    if (OnboardBooleanHelpers::is_set($this->audit_logger)) {
+    if ($this->audit_logger !== null) {
         $this->oauth = new OnboardOAuth($this->db, $this->audit_logger);
     }
 }
@@ -279,7 +279,7 @@ $this->api = new OnboardAPI($this->db, $this->oauth, $this->mutation_token);
 ```php
 // ✅ CORRECT: Early returns
 public function process() {
-    if (OnboardBooleanHelpers::is_empty($data)) {
+    if (empty($data)) {
         return false;
     }
 
