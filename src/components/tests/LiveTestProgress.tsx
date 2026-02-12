@@ -10,6 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { E2ECaseStatusValues } from "@/lib/constants";
 import type { E2ERunProgress, LiveTestResult } from "@/hooks/useE2ETestStream";
 
 interface LiveTestProgressProps {
@@ -89,9 +90,9 @@ export function LiveTestProgress({
                 key={r.caseId}
                 className={cn(
                   "flex items-center justify-between px-2 py-1 rounded text-sm",
-                  r.status === "failed" || r.status === "error"
+                  r.status === E2ECaseStatusValues.Failed || r.status === "error"
                     ? "bg-destructive/10"
-                    : r.status === "passed"
+                    : r.status === E2ECaseStatusValues.Passed
                     ? "bg-emerald-500/5"
                     : ""
                 )}

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { PublishOperationStatus, PublishStageStatus } from "@/lib/constants";
 
 /**
  * Global publish progress indicator shown in the header/sidebar.
@@ -44,10 +45,10 @@ export function GlobalPublishProgress() {
     initializePublishWebSocketListeners();
   }, []);
   
-  const activeOps = operations.filter(op => op.status === 'running' || op.status === 'pending');
-  const completedOps = operations.filter(op => op.status === 'success' || op.status === 'error');
-  const hasErrors = operations.some(op => op.status === 'error');
-  const allSuccess = completedOps.length > 0 && completedOps.every(op => op.status === 'success') && activeOps.length === 0;
+  const activeOps = operations.filter(op => op.status === PublishOperationStatus.Running || op.status === PublishOperationStatus.Pending);
+  const completedOps = operations.filter(op => op.status === PublishOperationStatus.Success || op.status === PublishOperationStatus.Error);
+  const hasErrors = operations.some(op => op.status === PublishOperationStatus.Error);
+  const allSuccess = completedOps.length > 0 && completedOps.every(op => op.status === PublishOperationStatus.Success) && activeOps.length === 0;
   
   // Calculate overall progress
   const overallProgress = activeOps.length > 0
@@ -152,9 +153,9 @@ interface OperationCardProps {
 }
 
 function OperationCard({ operation, onRemove }: OperationCardProps) {
-  const isActive = operation.status === 'running' || operation.status === 'pending';
-  const isSuccess = operation.status === 'success';
-  const isError = operation.status === 'error';
+  const isActive = operation.status === PublishOperationStatus.Running || operation.status === PublishOperationStatus.Pending;
+  const isSuccess = operation.status === PublishOperationStatus.Success;
+  const isError = operation.status === PublishOperationStatus.Error;
   
   return (
     <div className={cn(
@@ -211,13 +212,13 @@ function OperationCard({ operation, onRemove }: OperationCardProps) {
                   key={stage.name}
                   className={cn(
                     "capitalize",
-                    stage.status === 'running' && "text-primary font-medium",
-                    stage.status === 'success' && "text-green-600",
-                    stage.status === 'error' && "text-destructive",
-                    stage.status === 'pending' && "text-muted-foreground"
+                    stage.status === PublishStageStatus.Running && "text-primary font-medium",
+                    stage.status === PublishStageStatus.Success && "text-green-600",
+                    stage.status === PublishStageStatus.Error && "text-destructive",
+                    stage.status === PublishStageStatus.Pending && "text-muted-foreground"
                   )}
                 >
-                  {stage.status === 'running' && '● '}
+                  {stage.status === PublishStageStatus.Running && '● '}
                   {stage.name}
                 </span>
               ))}

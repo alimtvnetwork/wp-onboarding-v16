@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
+import { ConnectionTestStep as ConnectionTestStepConst, ConnectionTestStatus } from "@/lib/constants";
 
 export interface ConnectionTestStep {
   step: string;
-  status: "running" | "success" | "error";
+  status: ConnectionTestStatus;
   message: string;
   details?: Record<string, unknown>;
   timestamp: Date;
@@ -27,14 +28,14 @@ export function useConnectionTestLogs() {
       const { siteId, step, status, message, details } = data as {
         siteId: number;
         step: string;
-        status: "running" | "success" | "error";
+        status: ConnectionTestStatus;
         message: string;
         details?: Record<string, unknown>;
       };
 
       setState((prev) => {
         // Start a new test session - clear previous logs
-        if (step === "start") {
+        if (step === ConnectionTestStepConst.Start) {
           return {
             siteId,
             isActive: true,
@@ -43,9 +44,9 @@ export function useConnectionTestLogs() {
         }
 
         // Complete the test - update the "start" step to show final status
-        if (step === "complete") {
+        if (step === ConnectionTestStepConst.Complete) {
           const updatedSteps = prev.steps.map((s) =>
-            s.step === "start" && s.status === "running"
+            s.step === ConnectionTestStepConst.Start && s.status === ConnectionTestStatus.Running
               ? { ...s, status, timestamp: new Date() }
               : s
           );
@@ -58,7 +59,7 @@ export function useConnectionTestLogs() {
 
         // Check if this step already exists with "running" status - update it in-place
         const existingIndex = prev.steps.findIndex(
-          (s) => s.step === step && s.status === "running"
+          (s) => s.step === step && s.status === ConnectionTestStatus.Running
         );
 
         if (existingIndex !== -1) {

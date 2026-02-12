@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { EnvelopePagination } from "@/components/shared/EnvelopePagination";
 import { formatActionLabel, getActionBadgeClasses, getPluginBadgeClasses } from "@/lib/publishHistoryUtils";
+import { PublishStatus } from "@/lib/constants";
 
 export default function PublishHistory() {
   const [searchParams] = useSearchParams();
@@ -172,7 +173,7 @@ export default function PublishHistory() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {statusIcon(e.status)}
-                      <Badge variant={e.status === "success" ? "default" : e.status === "failed" ? "destructive" : "secondary"} className="text-xs">
+                      <Badge variant={e.status === PublishStatus.Success ? "default" : e.status === PublishStatus.Failed ? "destructive" : "secondary"} className="text-xs">
                         {e.status}
                       </Badge>
                     </div>
@@ -236,7 +237,7 @@ export default function PublishHistory() {
                   </TableCell>
                   <TableCell>
                     {e.rollbackStatus && e.rollbackStatus !== "" && (
-                      <Badge variant={e.rollbackStatus === "success" ? "default" : e.rollbackStatus === "failed" ? "destructive" : "outline"} className="text-xs">
+                      <Badge variant={e.rollbackStatus === PublishStatus.Success ? "default" : e.rollbackStatus === PublishStatus.Failed ? "destructive" : "outline"} className="text-xs">
                         {e.rollbackStatus}
                       </Badge>
                     )}

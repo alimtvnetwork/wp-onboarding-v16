@@ -391,7 +391,7 @@ export const api = {
   publishPlugin: (() => {
     const inFlight = new Set<string>();
     const cooldowns = new Map<string, number>();
-    const COOLDOWN_MS = 30_000; // 30s cooldown after success
+    const COOLDOWN_MS = 30_000;
     return (
       pluginId: number,
       siteId: number,

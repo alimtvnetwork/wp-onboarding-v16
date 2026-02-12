@@ -11,6 +11,7 @@ import { LogViewer, LogEntry } from "@/components/shared/LogViewer";
 import { CheckCircle, XCircle, Loader2, Upload, Copy } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
+import { DeployStatus } from "@/lib/constants";
 
 interface DeploySiteResult {
   siteId: number;
@@ -37,7 +38,7 @@ export function DeployUploaderDialog({
   title = "Deploy Riseup Asia Uploader",
 }: DeployUploaderDialogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [status, setStatus] = useState<"idle" | "deploying" | "completed" | "error">("idle");
+  const [status, setStatus] = useState<DeployStatus>(DeployStatus.Idle);
   const [results, setResults] = useState<DeploySiteResult[]>([]);
   const [currentTab, setCurrentTab] = useState("progress");
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -45,7 +46,7 @@ export function DeployUploaderDialog({
 
   // Listen for WebSocket log messages
   useEffect(() => {
-    if (lastMessage?.type === "log" && status === "deploying") {
+    if (lastMessage?.type === "log" && status === DeployStatus.Deploying) {
       const data = lastMessage.data as Record<string, unknown> | undefined;
       const logEntry: LogEntry = {
         timestamp: new Date().toISOString(),
@@ -68,13 +69,13 @@ export function DeployUploaderDialog({
     if (open) {
       setLogs([]);
       setResults([]);
-      setStatus("idle");
+      setStatus(DeployStatus.Idle);
       setCurrentTab("progress");
     }
   }, [open]);
 
   const handleDeploy = async () => {
-    setStatus("deploying");
+    setStatus(DeployStatus.Deploying);
     setLogs([{
       timestamp: new Date().toISOString(),
       level: "info",
@@ -100,7 +101,7 @@ export function DeployUploaderDialog({
         },
       ]);
 
-      setStatus(failed > 0 ? "error" : "completed");
+      setStatus(failed > 0 ? DeployStatus.Error : DeployStatus.Completed);
       
       if (failed === 0) {
         toast.success(`Deployed to ${succeeded} site(s) successfully`);
@@ -108,7 +109,7 @@ export function DeployUploaderDialog({
         toast.warning(`Deployed to ${succeeded}/${sites.length} sites`);
       }
     } catch (error) {
-      setStatus("error");
+      setStatus(DeployStatus.Error);
       setLogs((prev) => [
         ...prev,
         {
@@ -130,11 +131,11 @@ export function DeployUploaderDialog({
 
   const getStatusIcon = () => {
     switch (status) {
-      case "deploying":
+      case DeployStatus.Deploying:
         return <Loader2 className="h-5 w-5 animate-spin text-primary" />;
-      case "completed":
+      case DeployStatus.Completed:
         return <CheckCircle className="h-5 w-5 text-primary" />;
-      case "error":
+      case DeployStatus.Error:
         return <XCircle className="h-5 w-5 text-destructive" />;
       default:
         return <Upload className="h-5 w-5 text-muted-foreground" />;
@@ -143,11 +144,11 @@ export function DeployUploaderDialog({
 
   const getStatusText = () => {
     switch (status) {
-      case "deploying":
+      case DeployStatus.Deploying:
         return "Deploying...";
-      case "completed":
+      case DeployStatus.Completed:
         return "Deployment Complete";
-      case "error":
+      case DeployStatus.Error:
         return "Deployment Failed";
       default:
         return "Ready to Deploy";
@@ -203,7 +204,7 @@ export function DeployUploaderDialog({
                           <XCircle className="h-4 w-4 text-destructive" />
                         )
                       )}
-                      {status === "deploying" && !result && (
+                      {status === DeployStatus.Deploying && !result && (
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       )}
                     </div>
@@ -256,18 +257,18 @@ export function DeployUploaderDialog({
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          {status === "idle" && (
+          {status === DeployStatus.Idle && (
             <Button onClick={handleDeploy} disabled={sites.length === 0}>
               <Upload className="h-4 w-4 mr-2" />
               Deploy to {sites.length} Site(s)
             </Button>
           )}
-          {(status === "completed" || status === "error") && (
+          {(status === DeployStatus.Completed || status === DeployStatus.Error) && (
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Close
             </Button>
           )}
-          {status === "deploying" && (
+          {status === DeployStatus.Deploying && (
             <Button disabled>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Deploying...

@@ -1,12 +1,21 @@
 import { create } from 'zustand';
 import { wsClient, WS_EVENTS } from '@/lib/ws';
+import {
+  PublishOperationStatus,
+  PublishStageName,
+  PublishStageStatus,
+  LogLevel,
+  SessionType,
+  PUBLISH_LOG_MAX,
+  CLEANUP_DELAY_MS,
+} from '@/lib/constants';
 
 /**
  * Log entry from backend publish operations
  */
 export interface PublishLogEntry {
   timestamp: string;
-  level: 'debug' | 'info' | 'warn' | 'error';
+  level: LogLevel;
   step: string;
   message: string;
   details?: Record<string, unknown>;
@@ -16,8 +25,8 @@ export interface PublishLogEntry {
  * Stage status for publish pipeline
  */
 export interface PublishStage {
-  name: 'backup' | 'package' | 'upload' | 'activate' | 'cleanup';
-  status: 'pending' | 'running' | 'success' | 'error' | 'skipped';
+  name: PublishStageName;
+  status: PublishStageStatus;
   message?: string;
 }
 
@@ -32,7 +41,7 @@ export interface PublishOperation {
   siteId: number;
   siteName: string;
   siteUrl: string;
-  status: 'pending' | 'running' | 'success' | 'error';
+  status: PublishOperationStatus;
   progress: number; // 0-100
   stages: PublishStage[];
   logs: PublishLogEntry[];
@@ -86,15 +95,12 @@ interface PublishStore {
 }
 
 const DEFAULT_STAGES: PublishStage[] = [
-  { name: 'backup', status: 'pending' },
-  { name: 'package', status: 'pending' },
-  { name: 'upload', status: 'pending' },
-  { name: 'activate', status: 'pending' },
-  { name: 'cleanup', status: 'pending' },
+  { name: PublishStageName.Backup, status: PublishStageStatus.Pending },
+  { name: PublishStageName.Package, status: PublishStageStatus.Pending },
+  { name: PublishStageName.Upload, status: PublishStageStatus.Pending },
+  { name: PublishStageName.Activate, status: PublishStageStatus.Pending },
+  { name: PublishStageName.Cleanup, status: PublishStageStatus.Pending },
 ];
-
-// Auto-cleanup completed operations after 30 minutes
-const CLEANUP_DELAY_MS = 30 * 60 * 1000;
 
 export const usePublishStore = create<PublishStore>((set, get) => ({
   operations: new Map(),
@@ -107,7 +113,7 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
     const operation: PublishOperation = {
       ...op,
       id,
-      status: 'pending',
+      status: PublishOperationStatus.Pending,
       progress: 0,
       stages: DEFAULT_STAGES.map(s => ({ ...s })),
       logs: [],
@@ -151,16 +157,16 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
       
       // Calculate progress based on stage completion
       const completedStages = newStages.filter(s => 
-        s.status === 'success' || s.status === 'skipped'
+        s.status === PublishStageStatus.Success || s.status === PublishStageStatus.Skipped
       ).length;
       const progress = Math.round((completedStages / newStages.length) * 100);
       
       // Determine overall status
       let operationStatus = op.status;
-      if (status === 'running') {
-        operationStatus = 'running';
-      } else if (status === 'error') {
-        operationStatus = 'error';
+      if (status === PublishStageStatus.Running) {
+        operationStatus = PublishOperationStatus.Running;
+      } else if (status === PublishStageStatus.Error) {
+        operationStatus = PublishOperationStatus.Error;
       }
       
       const newOps = new Map(state.operations);
@@ -182,7 +188,7 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
       const newOps = new Map(state.operations);
       newOps.set(id, { 
         ...op, 
-        logs: [...op.logs, log].slice(-500), // Keep last 500 logs
+        logs: [...op.logs, log].slice(-PUBLISH_LOG_MAX),
       });
       return { operations: newOps };
     });
@@ -196,7 +202,7 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
       const newOps = new Map(state.operations);
       newOps.set(id, { 
         ...op, 
-        status: success ? 'success' : 'error',
+        status: success ? PublishOperationStatus.Success : PublishOperationStatus.Error,
         progress: 100,
         error,
         filesUpdated,
@@ -205,7 +211,7 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
       
       // Update active plugin IDs
       const remainingActiveForPlugin = Array.from(newOps.values()).some(
-        o => o.pluginId === op.pluginId && o.status === 'running'
+        o => o.pluginId === op.pluginId && o.status === PublishOperationStatus.Running
       );
       const newActiveIds = new Set(state.activePluginIds);
       if (!remainingActiveForPlugin) {
@@ -231,7 +237,7 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
       const newActiveIds = new Set(state.activePluginIds);
       if (op) {
         const stillActive = Array.from(newOps.values()).some(
-          o => o.pluginId === op.pluginId && (o.status === 'running' || o.status === 'pending')
+          o => o.pluginId === op.pluginId && (o.status === PublishOperationStatus.Running || o.status === PublishOperationStatus.Pending)
         );
         if (!stillActive) {
           newActiveIds.delete(op.pluginId);
@@ -246,7 +252,7 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
     set((state) => {
       const newOps = new Map(state.operations);
       for (const [id, op] of newOps) {
-        if (op.status === 'success' || op.status === 'error') {
+        if (op.status === PublishOperationStatus.Success || op.status === PublishOperationStatus.Error) {
           newOps.delete(id);
         }
       }
@@ -272,14 +278,14 @@ export const usePublishStore = create<PublishStore>((set, get) => ({
     return Array.from(operations.values()).some(op => 
       op.pluginId === pluginId && 
       (siteId === undefined || op.siteId === siteId) &&
-      (op.status === 'running' || op.status === 'pending')
+      (op.status === PublishOperationStatus.Running || op.status === PublishOperationStatus.Pending)
     );
   },
   
   getActiveCount: () => {
     const { operations } = get();
     return Array.from(operations.values()).filter(
-      op => op.status === 'running' || op.status === 'pending'
+      op => op.status === PublishOperationStatus.Running || op.status === PublishOperationStatus.Pending
     ).length;
   },
 }));
@@ -308,9 +314,9 @@ export function initializePublishWebSocketListeners() {
     // Find matching operation and update sessionId
     const operations = usePublishStore.getState().operations;
     for (const [id, op] of operations) {
-      if (op.pluginId === pluginId && op.siteId === siteId && op.status === 'pending') {
+      if (op.pluginId === pluginId && op.siteId === siteId && op.status === PublishOperationStatus.Pending) {
         usePublishStore.getState().updateOperation(id, { 
-          status: 'running',
+          status: PublishOperationStatus.Running,
           sessionId,
         });
         break;
@@ -332,7 +338,7 @@ export function initializePublishWebSocketListeners() {
     // Find matching operation
     const operations = usePublishStore.getState().operations;
     for (const [id, op] of operations) {
-      if (op.pluginId === pluginId && op.siteId === siteId && op.status === 'running') {
+      if (op.pluginId === pluginId && op.siteId === siteId && op.status === PublishOperationStatus.Running) {
         usePublishStore.getState().updateStage(
           id, 
           stage, 
@@ -362,12 +368,12 @@ export function initializePublishWebSocketListeners() {
       };
     };
     
-    if (operationType !== 'publish' || !pluginId) return;
+    if (operationType !== SessionType.Publish || !pluginId) return;
     
     // Find matching operation
     const operations = usePublishStore.getState().operations;
     for (const [id, op] of operations) {
-      if (op.pluginId === pluginId && (siteId === undefined || op.siteId === siteId) && op.status === 'running') {
+      if (op.pluginId === pluginId && (siteId === undefined || op.siteId === siteId) && op.status === PublishOperationStatus.Running) {
         usePublishStore.getState().addLog(id, {
           timestamp: log.timestamp,
           level: log.level as PublishLogEntry['level'],
@@ -393,7 +399,7 @@ export function initializePublishWebSocketListeners() {
     // Find matching operation
     const operations = usePublishStore.getState().operations;
     for (const [id, op] of operations) {
-      if (op.pluginId === pluginId && op.siteId === siteId && op.status === 'running') {
+      if (op.pluginId === pluginId && op.siteId === siteId && op.status === PublishOperationStatus.Running) {
         usePublishStore.getState().completeOperation(id, success, error, filesUpdated);
         break;
       }
