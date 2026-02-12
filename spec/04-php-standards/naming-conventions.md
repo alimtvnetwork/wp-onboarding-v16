@@ -188,8 +188,7 @@ includes/
   Snapshot/        — Snapshot system (backup, restore, providers)
   Update/          — Auto-update resolver
   Upload/          — Upload ignore rules
-  constants.php    — Global constants
-  constants-compat.php — Legacy RISEUP_* aliases (temporary)
+  constants.php    — Global constants (unprefixed)
 ```
 
 ### Namespaced directory structure
@@ -225,18 +224,19 @@ These are exceptions and should be minimal in modern architecture.
 
 ## Summary Table
 
-| Element                    | Convention                     |
-|----------------------------|--------------------------------|
-| Class / Enum / Interface   | PascalCase                     |
-| Trait                      | PascalCase                     |
-| Method / Function          | camelCase                      |
-| Variable                   | camelCase                      |
-| Constant                   | UPPER_SNAKE_CASE               |
-| Enum case                  | PascalCase                     |
-| Namespace                  | PascalCase                     |
-| File (class/enum/trait)    | PascalCase.php                 |
-| File (config/procedural)   | lowercase_with_underscores.php |
-| Directory (namespaced)     | PascalCase                     |
+| Element                    | Convention                     | Example                          |
+|----------------------------|--------------------------------|----------------------------------|
+| Class / Enum / Interface   | PascalCase                     | `SnapshotFactory`                |
+| Trait                      | PascalCase                     | `HasTimestamps`                  |
+| Method / Function          | camelCase                      | `processUpload()`                |
+| Variable                   | camelCase                      | `$maxRetries`                    |
+| Boolean variable           | `$is` / `$has` + camelCase     | `$isActive`, `$hasErrors`        |
+| Constant                   | UPPER_SNAKE_CASE               | `MAX_RETRIES`                    |
+| Enum case                  | PascalCase                     | `RestApi`                        |
+| Namespace                  | PascalCase                     | `RiseupAsia\Enums`               |
+| File (class/enum/trait)    | PascalCase.php                 | `SnapshotFactory.php`            |
+| File (config/procedural)   | lowercase_with_underscores.php | `constants.php`                  |
+| Directory (domain folder)  | PascalCase                     | `Snapshot/`, `Database/`         |
 
 ---
 
