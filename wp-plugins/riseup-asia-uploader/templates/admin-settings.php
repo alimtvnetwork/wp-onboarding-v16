@@ -384,6 +384,51 @@ if (!defined('ABSPATH')) {
                 </tr>
             </table>
 
+            <!-- Worker Pool & Storage Mode (Phase 5) -->
+            <h3>
+                <span class="dashicons dashicons-performance" style="font-size: 16px; margin-right: 4px;"></span>
+                <?php esc_html_e('Worker Pool & Storage', 'riseup-asia-uploader'); ?>
+            </h3>
+            <table class="form-table">
+                <tr>
+                    <th scope="row">
+                        <label for="snap_storage_mode"><?php esc_html_e('Storage Mode', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <div class="riseup-storage-mode-cards" style="display: flex; gap: 12px; max-width: 520px;">
+                            <label class="riseup-mode-card" id="mode_card_single" style="flex: 1; cursor: pointer; padding: 12px; border: 2px solid <?php echo $snapshot_settings['storage_mode'] === 'single' ? '#2271b1' : '#dcdcde'; ?>; border-radius: 8px; background: <?php echo $snapshot_settings['storage_mode'] === 'single' ? '#f0f6fc' : '#fff'; ?>; transition: all 0.2s;">
+                                <input type="radio" name="snap_storage_mode" value="single" <?php checked($snapshot_settings['storage_mode'], 'single'); ?> style="display: none;">
+                                <span class="dashicons dashicons-database" style="color: #2271b1; font-size: 20px;"></span>
+                                <strong style="display: block; margin: 4px 0 2px;"><?php esc_html_e('Single File', 'riseup-asia-uploader'); ?></strong>
+                                <span style="font-size: 12px; color: #646970;"><?php esc_html_e('All tables in one SQLite database. Simpler management.', 'riseup-asia-uploader'); ?></span>
+                            </label>
+                            <label class="riseup-mode-card" id="mode_card_pertable" style="flex: 1; cursor: pointer; padding: 12px; border: 2px solid <?php echo $snapshot_settings['storage_mode'] === 'per-table' ? '#2271b1' : '#dcdcde'; ?>; border-radius: 8px; background: <?php echo $snapshot_settings['storage_mode'] === 'per-table' ? '#f0f6fc' : '#fff'; ?>; transition: all 0.2s;">
+                                <input type="radio" name="snap_storage_mode" value="per-table" <?php checked($snapshot_settings['storage_mode'], 'per-table'); ?> style="display: none;">
+                                <span class="dashicons dashicons-grid-view" style="color: #2271b1; font-size: 20px;"></span>
+                                <strong style="display: block; margin: 4px 0 2px;"><?php esc_html_e('Per-Table Files', 'riseup-asia-uploader'); ?></strong>
+                                <span style="font-size: 12px; color: #646970;"><?php esc_html_e('Separate SQLite file per table. Parallel backup via worker pool.', 'riseup-asia-uploader'); ?></span>
+                            </label>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">
+                        <label for="snap_worker_pool_size"><?php esc_html_e('Worker Pool Size', 'riseup-asia-uploader'); ?></label>
+                    </th>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 12px; max-width: 340px;">
+                            <input type="range" id="snap_worker_pool_size" 
+                                   min="<?php echo esc_attr(RISEUP_SNAPSHOT_WORKER_POOL_MIN); ?>" 
+                                   max="<?php echo esc_attr(RISEUP_SNAPSHOT_WORKER_POOL_MAX); ?>" 
+                                   value="<?php echo esc_attr($snapshot_settings['worker_pool_size']); ?>" 
+                                   style="flex: 1; accent-color: #2271b1;">
+                            <span id="snap_worker_pool_value" style="font-family: monospace; font-size: 14px; min-width: 24px; text-align: center; font-weight: 600; color: #2271b1;"><?php echo esc_html($snapshot_settings['worker_pool_size']); ?></span>
+                        </div>
+                        <p class="description"><?php printf(esc_html__('Number of concurrent backup workers (%d–%d). Higher values export faster but use more resources.', 'riseup-asia-uploader'), RISEUP_SNAPSHOT_WORKER_POOL_MIN, RISEUP_SNAPSHOT_WORKER_POOL_MAX); ?></p>
+                    </td>
+                </tr>
+            </table>
+
             <!-- Safety & Limits -->
             <h3><?php esc_html_e('Safety & Limits', 'riseup-asia-uploader'); ?></h3>
             <table class="form-table">
@@ -655,6 +700,24 @@ jQuery(document).ready(function($) {
         $('#snap_retention_count_row').toggle(type === 'count');
     });
 
+    // Storage mode card selection
+    $('input[name="snap_storage_mode"]').on('change', function() {
+        var val = $(this).val();
+        $('#mode_card_single').css({
+            'border-color': val === 'single' ? '#2271b1' : '#dcdcde',
+            'background': val === 'single' ? '#f0f6fc' : '#fff'
+        });
+        $('#mode_card_pertable').css({
+            'border-color': val === 'per-table' ? '#2271b1' : '#dcdcde',
+            'background': val === 'per-table' ? '#f0f6fc' : '#fff'
+        });
+    });
+
+    // Worker pool slider live value update
+    $('#snap_worker_pool_size').on('input', function() {
+        $('#snap_worker_pool_value').text($(this).val());
+    });
+
     // Load storage stats on page load
     function loadStorageStats() {
         $.post(ajaxurl, {
@@ -696,7 +759,9 @@ jQuery(document).ready(function($) {
             retention_count: $('#snap_retention_count').val(),
             pre_restore_backup: $('#snap_pre_restore_backup').is(':checked') ? '1' : '0',
             max_snapshot_size_mb: $('#snap_max_size').val(),
-            batch_size: $('#snap_batch_size').val()
+            batch_size: $('#snap_batch_size').val(),
+            storage_mode: $('input[name="snap_storage_mode"]:checked').val(),
+            worker_pool_size: $('#snap_worker_pool_size').val()
         }, function(response) {
             showSnapStatus('✓ ' + (response.data ? response.data.message : 'Saved'), false);
         }).fail(function() {
