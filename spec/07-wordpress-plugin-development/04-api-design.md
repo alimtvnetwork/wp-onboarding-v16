@@ -28,7 +28,7 @@ Register routes during `rest_api_init` hook:
 ```php
 class My_Plugin {
     public function __construct() {
-        add_action('rest_api_init', [$this, 'register_routes']);
+        add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
     }
     
     public function register_routes() {

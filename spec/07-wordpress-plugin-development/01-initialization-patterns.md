@@ -60,10 +60,10 @@ Register hooks to defer work until WordPress is ready:
 // After class includes
 $my_plugin = new My_Plugin();
 
-// Register for later execution
-add_action('plugins_loaded', [$my_plugin, 'on_plugins_loaded']);
-add_action('init', [$my_plugin, 'on_init']);
-add_action('rest_api_init', [$my_plugin, 'register_routes']);
+// Register for later execution — hook names from HookEnum (see PHP Standards)
+add_action(HookEnum::PLUGINS_LOADED, [$my_plugin, 'on_plugins_loaded']);
+add_action(HookEnum::INIT, [$my_plugin, 'on_init']);
+add_action(HookEnum::REST_API_INIT, [$my_plugin, 'register_routes']);
 ```
 
 ### Phase 4: plugins_loaded Hook
@@ -317,9 +317,9 @@ class My_Plugin {
     }
     
     public function init() {
-        // Phase 3: Register hooks
-        add_action('plugins_loaded', [$this, 'on_plugins_loaded'], 5);
-        add_action('rest_api_init', [$this, 'register_routes']);
+        // Phase 3: Register hooks — use HookEnum constants
+        add_action(HookEnum::PLUGINS_LOADED, [$this, 'on_plugins_loaded'], 5);
+        add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
     }
     
     public function on_plugins_loaded() {
@@ -405,8 +405,8 @@ if (is_admin()) {
     require_once 'admin/class-admin.php';
 }
 
-// ✅ CORRECT - Defer to appropriate hook
-add_action('admin_init', function() {
+// ✅ CORRECT - Defer to appropriate hook (use HookEnum)
+add_action(HookEnum::ADMIN_INIT, function() {
     require_once MYPLUGIN_DIR . 'admin/class-admin.php';
 });
 ```
