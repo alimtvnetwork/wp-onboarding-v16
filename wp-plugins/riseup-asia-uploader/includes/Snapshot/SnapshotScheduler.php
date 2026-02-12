@@ -30,14 +30,14 @@ class RiseupSnapshotScheduler {
     /**
      * Logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     private $db;
 
@@ -58,8 +58,8 @@ class RiseupSnapshotScheduler {
     /**
      * Get singleton instance.
      *
-     * @param Riseup_File_Logger|null $logger Logger instance.
-     * @param Riseup_Database|null    $db     Database instance.
+     * @param RiseupFileLogger|null $logger Logger instance.
+     * @param RiseupDatabase|null    $db     Database instance.
      * @return RiseupSnapshotScheduler
      */
     public static function getInstance($logger = null, $db = null) {
@@ -72,12 +72,12 @@ class RiseupSnapshotScheduler {
     /**
      * Constructor.
      *
-     * @param Riseup_File_Logger|null $logger Logger instance.
-     * @param Riseup_Database|null    $db     Database instance.
+     * @param RiseupFileLogger|null $logger Logger instance.
+     * @param RiseupDatabase|null    $db     Database instance.
      */
     private function __construct($logger = null, $db = null) {
-        $this->logger = $logger ?: Riseup_File_Logger::get_instance();
-        $this->db = $db ?: Riseup_Database::get_instance();
+        $this->logger = $logger ?: RiseupFileLogger::get_instance();
+        $this->db = $db ?: RiseupDatabase::get_instance();
         
         require_once dirname(__FILE__) . '/SnapshotFactory.php';
         $this->detector = RiseupSnapshotFactory::detector($this->logger, $this->db);

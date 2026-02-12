@@ -78,7 +78,7 @@ class RiseupFileCache {
      *
      * @param string               $pluginSlug Plugin slug.
      * @param string               $pluginDir  Absolute path to plugin directory.
-     * @param Riseup_Upload_Ignore $ignore     Upload ignore patterns.
+     * @param RiseupUploadIgnore   $ignore     Upload ignore patterns.
      * @return array{files: array, cached: int, computed: int, removed: int}
      */
     public function getManifest($pluginSlug, $pluginDir, $ignore) {
@@ -184,7 +184,7 @@ class RiseupFileCache {
         }
 
         try {
-            $deleted = Riseup_ORM::for_table(RISEUP_TABLE_FILE_CACHE)
+            $deleted = RiseupORM::for_table(RISEUP_TABLE_FILE_CACHE)
                 ->where('plugin_slug', $pluginSlug)
                 ->delete();
 
@@ -211,7 +211,7 @@ class RiseupFileCache {
      */
     private function loadCachedEntries($pluginSlug) {
         try {
-            $rows = Riseup_ORM::for_table(RISEUP_TABLE_FILE_CACHE)
+            $rows = RiseupORM::for_table(RISEUP_TABLE_FILE_CACHE)
                 ->where('plugin_slug', $pluginSlug)
                 ->find_many();
 
@@ -270,7 +270,7 @@ class RiseupFileCache {
      */
     private function deleteCacheEntry($pluginSlug, $path) {
         try {
-            Riseup_ORM::for_table(RISEUP_TABLE_FILE_CACHE)
+            RiseupORM::for_table(RISEUP_TABLE_FILE_CACHE)
                 ->where('plugin_slug', $pluginSlug)
                 ->where('relative_path', $path)
                 ->delete();
@@ -287,7 +287,7 @@ class RiseupFileCache {
      *
      * @param string               $baseDir Base directory for relative paths.
      * @param string               $dir     Current directory to scan.
-     * @param Riseup_Upload_Ignore $ignore  Ignore patterns.
+     * @param RiseupUploadIgnore   $ignore  Ignore patterns.
      * @param array                $files   Reference to files array.
      */
     private function scanDirectory($baseDir, $dir, $ignore, &$files) {
@@ -327,7 +327,7 @@ class RiseupFileCache {
      * Full scan fallback when database is not available.
      *
      * @param string               $pluginDir Plugin directory.
-     * @param Riseup_Upload_Ignore $ignore    Ignore patterns.
+     * @param RiseupUploadIgnore   $ignore    Ignore patterns.
      * @return array{files: array, cached: int, computed: int, removed: int}
      */
     private function fullScan($pluginDir, $ignore) {

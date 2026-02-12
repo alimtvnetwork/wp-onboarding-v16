@@ -32,7 +32,7 @@ class RiseupPathUtils {
     /**
      * Re-entrancy guard to prevent circular dependency during logger init.
      * When true, ALL logging in this class is suppressed to avoid the
-     * RiseupPathUtils → RiseupInitHelpers → Riseup_File_Logger → RiseupPathUtils loop.
+     * RiseupPathUtils → RiseupInitHelpers → RiseupFileLogger → RiseupPathUtils loop.
      *
      * @var bool
      */
@@ -43,9 +43,9 @@ class RiseupPathUtils {
      *
      * Returns null if:
      *  - We are inside a bootstrapping phase (re-entrancy guard)
-     *  - The Riseup_File_Logger class is not yet loaded
+     *  - The RiseupFileLogger class is not yet loaded
      *
-     * @return Riseup_File_Logger|null
+     * @return RiseupFileLogger|null
      */
     private static function get_logger() {
         // CRITICAL: Prevent circular dependency. During bootstrapping,

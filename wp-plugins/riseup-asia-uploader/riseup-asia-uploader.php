@@ -335,47 +335,47 @@ unset($__includes);
 /**
  * Main plugin class.
  */
-class Riseup_Asia {
+class RiseupAsia {
 
     /**
      * File logger instance.
      *
-     * @var Riseup_File_Logger
+     * @var RiseupFileLogger
      */
     private $file_logger;
 
     /**
      * Transaction logger instance.
      *
-     * @var Riseup_Logger
+     * @var RiseupLogger
      */
     private $logger;
 
     /**
      * Database instance.
      *
-     * @var Riseup_Database
+     * @var RiseupDatabase
      */
     private $db;
 
     /**
      * Post manager instance.
      *
-     * @var Riseup_Post_Manager
+     * @var RiseupPostManager
      */
     private $post_manager;
 
     /**
      * Singleton instance.
      *
-     * @var Riseup_Asia|null
+     * @var RiseupAsia|null
      */
     private static $instance = null;
 
     /**
      * Get singleton instance.
      *
-     * @return Riseup_Asia
+     * @return RiseupAsia
      */
     public static function get_instance() {
         if (self::$instance === null) {
@@ -389,7 +389,7 @@ class Riseup_Asia {
      */
     private function __construct() {
         // Initialize file logger first (it doesn't depend on anything else).
-        $this->file_logger = Riseup_File_Logger::get_instance();
+        $this->file_logger = RiseupFileLogger::get_instance();
         $this->file_logger->info('Plugin constructor starting', array('version' => PLUGIN_VERSION));
 
         // Log dependency loading results from structured loader
@@ -415,7 +415,7 @@ class Riseup_Asia {
         // are isolated and do not block subsequent components.
         // =====================================================================
         $this->db = RiseupInitHelpers::initComponent('Database', function () {
-            $db = Riseup_Database::get_instance();
+            $db = RiseupDatabase::get_instance();
             $db_ready = $db->init();
             if (!$db_ready) {
                 // PDO/pdo_sqlite unavailable — warning already logged once by initSqliteConnection.
@@ -426,15 +426,15 @@ class Riseup_Asia {
         });
 
         $this->logger = RiseupInitHelpers::initComponent('TransactionLogger', function () {
-            return Riseup_Logger::get_instance();
+            return RiseupLogger::get_instance();
         });
 
         $this->post_manager = RiseupInitHelpers::initComponent('PostManager', function () {
-            return Riseup_Post_Manager::get_instance();
+            return RiseupPostManager::get_instance();
         });
 
         RiseupInitHelpers::initComponent('UpdateResolver', function () {
-            return Riseup_Update_Resolver::get_instance();
+            return RiseupUpdateResolver::get_instance();
         });
 
         // Only init scheduler if database is available (requires DB for snapshot tracking)
@@ -1152,7 +1152,7 @@ class Riseup_Asia {
      * @return bool True if enabled.
      */
     private function is_endpoint_enabled($endpoint) {
-        return Riseup_Admin::is_endpoint_enabled($endpoint);
+        return RiseupAdmin::is_endpoint_enabled($endpoint);
     }
 
     /**
@@ -1162,7 +1162,7 @@ class Riseup_Asia {
      * @return bool True if auth required.
      */
     private function is_auth_required($endpoint) {
-        return Riseup_Admin::is_auth_required($endpoint);
+        return RiseupAdmin::is_auth_required($endpoint);
     }
 
     /**
@@ -2231,7 +2231,7 @@ class Riseup_Asia {
             }
 
             // Load uploadignore patterns if available
-            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+            $ignore = RiseupUploadIgnore::from_directory($plugin_dir);
 
             // Use file cache for efficient hash computation
             $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
@@ -2283,7 +2283,7 @@ class Riseup_Asia {
                 return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
             }
 
-            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+            $ignore = RiseupUploadIgnore::from_directory($plugin_dir);
 
             $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
             $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
@@ -2338,7 +2338,7 @@ class Riseup_Asia {
                 return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
             }
 
-            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+            $ignore = RiseupUploadIgnore::from_directory($plugin_dir);
             $results = array();
             $files_updated = 0;
             $files_deleted = 0;
@@ -2469,7 +2469,7 @@ class Riseup_Asia {
      *
      * @param string               $base_dir The base directory for relative paths.
      * @param string               $dir      Current directory to scan.
-     * @param Riseup_Upload_Ignore $ignore   Ignore patterns.
+     * @param RiseupUploadIgnore   $ignore   Ignore patterns.
      * @param array                $files    Reference to files array to populate.
      *
      * @return void
@@ -2610,7 +2610,7 @@ class Riseup_Asia {
             }
 
             // Load uploadignore.
-            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+            $ignore = RiseupUploadIgnore::from_directory($plugin_dir);
             $this->file_logger->debug('Uploadignore loaded', array('has_patterns' => $ignore->is_loaded()));
 
             // Add files recursively.
@@ -2680,7 +2680,7 @@ class Riseup_Asia {
             }
 
             // Add all files recursively
-            $ignore = Riseup_Upload_Ignore::from_directory($plugin_dir);
+            $ignore = RiseupUploadIgnore::from_directory($plugin_dir);
             $this->add_dir_to_zip($zip, $plugin_dir, $slug, $ignore);
             $file_count = $zip->numFiles;
             $zip->close();
@@ -3352,7 +3352,7 @@ class Riseup_Asia {
             $this->file_logger->info('Error logs endpoint called');
 
             // Get log retrieval settings
-            $settings      = Riseup_Admin::get_settings();
+            $settings      = RiseupAdmin::get_settings();
             $log_settings  = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
             $include_error      = isset($log_settings['include_error_log']) ? (bool) $log_settings['include_error_log'] : true;
             $include_full       = isset($log_settings['include_full_log']) ? (bool) $log_settings['include_full_log'] : false;
@@ -3429,7 +3429,7 @@ class Riseup_Asia {
         return $this->safe_execute(function() use ($request) {
             $this->file_logger->info('Error sessions endpoint called');
 
-            $db = Riseup_Database::get_instance();
+            $db = RiseupDatabase::get_instance();
             $pdo = $db->get_pdo();
 
             if (!$pdo) {
@@ -3932,7 +3932,7 @@ class Riseup_Asia {
      * @param ZipArchive           $zip      ZIP archive.
      * @param string               $src_dir  Source directory.
      * @param string               $zip_dir  Directory name in ZIP.
-     * @param Riseup_Upload_Ignore $ignore   Upload ignore parser.
+     * @param RiseupUploadIgnore   $ignore   Upload ignore parser.
      *
      * @return void
      */
@@ -3991,7 +3991,7 @@ class Riseup_Asia {
                 $filters['status'] = sanitize_key($status);
             }
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $result = $manager->list_agents($filters, $limit, $offset);
             
             return new WP_REST_Response(array(
@@ -4020,7 +4020,7 @@ class Riseup_Asia {
                 'redirect_url' => $request->get_param('redirect_url'),
             );
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $result = $manager->add_agent($data);
             
             if (is_wp_error($result)) {
@@ -4046,7 +4046,7 @@ class Riseup_Asia {
             $id = (int) $request->get_param('id');
             $this->file_logger->info('Getting agent site', array('id' => $id));
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $agent = $manager->get_agent($id, false);
             
             if (!$agent) {
@@ -4071,7 +4071,7 @@ class Riseup_Asia {
             $id = (int) $request->get_param('id');
             $this->file_logger->info('Removing agent site', array('id' => $id));
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $result = $manager->remove_agent($id);
             
             if (is_wp_error($result)) {
@@ -4096,7 +4096,7 @@ class Riseup_Asia {
             $id = (int) $request->get_param('id');
             $this->file_logger->info('Testing agent connection', array('id' => $id));
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $result = $manager->test_connection($id);
             
             $status_code = $result['success'] ? 200 : 400;
@@ -4115,7 +4115,7 @@ class Riseup_Asia {
             $id = (int) $request->get_param('id');
             $this->file_logger->info('Syncing plugins from agent', array('id' => $id));
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $result = $manager->sync_plugins($id);
             
             if (is_wp_error($result)) {
@@ -4158,7 +4158,7 @@ class Riseup_Asia {
                 return $this->error_response('Plugin slug is required', 400);
             }
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $result = $manager->execute_plugin_action($id, $action, $slug);
             
             if (is_wp_error($result)) {
@@ -4183,7 +4183,7 @@ class Riseup_Asia {
             
             $this->file_logger->info('Getting agent action history', array('id' => $id));
             
-            $manager = Riseup_Agent_Manager::get_instance();
+            $manager = RiseupAgentManager::get_instance();
             $result = $manager->get_action_history($id, $limit, $offset);
             
             return new WP_REST_Response(array(
@@ -5236,11 +5236,11 @@ register_activation_hook(__FILE__, 'riseup_asia_activate');
  */
 function riseup_asia_init() {
     // Initialize main plugin class
-    Riseup_Asia::get_instance();
+    RiseupAsia::get_instance();
     
     // Initialize admin pages (only in admin context)
     if (is_admin()) {
-        Riseup_Admin::get_instance();
+        RiseupAdmin::get_instance();
     }
 }
 
