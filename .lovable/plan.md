@@ -329,6 +329,99 @@ interface ActivityEntry {
 
 ---
 
+## Feature G: PHP 8.1+ Enum Migration (ACTIVE)
+
+### Status: G1 in progress
+
+### Problem Statement
+
+The plugin currently uses **class-based fake enums** (`class FooEnum { public const BAR = '...'; }`) and `define()` constants. PHP 8.1+ provides native backed enums with type safety, `tryFrom()` validation, and `cases()` introspection. All enum-like constants must be migrated to real `enum` types under the `RiseupAsia\Enums` namespace in `includes/Enums/`.
+
+### Spec Reference
+- **Enum Spec:** `spec/04-php-standards/enums.md` v4.0.0
+
+### Architecture
+
+```
+includes/Enums/
+├── UploadSource.php    ← enum UploadSource: string
+├── Capability.php      ← enum Capability: string
+├── HttpMethod.php      ← enum HttpMethod: string
+├── Hook.php            ← enum Hook: string
+├── PathConst.php       ← final class PathConst (arrays/fragments, not enum)
+└── ErrorType.php       ← final class ErrorType (array groupings, not enum)
+```
+
+**Namespace:** `RiseupAsia\Enums`  
+**Naming:** PascalCase filenames (PSR-4 style), no `Enum` suffix, PascalCase cases.
+
+### Classification
+
+| Name           | Type         | Reason                                                      |
+|----------------|--------------|-------------------------------------------------------------|
+| `UploadSource` | `enum`       | Discrete choices — "which upload source?"                   |
+| `Capability`   | `enum`       | Discrete WordPress capability strings                       |
+| `HttpMethod`   | `enum`       | Discrete HTTP verbs                                         |
+| `Hook`         | `enum`       | Discrete WordPress hook names                               |
+| `PathConst`    | `final class`| Path fragments composed with directories — not a choice set |
+| `ErrorType`    | `final class`| Arrays of E_* constants and label maps                      |
+
+### Phases
+
+| # | Task | Status | Effort | Description |
+|---|------|--------|--------|-------------|
+| G1 | **Create `includes/Enums/` folder + all 6 files** | 🔵 Todo | Medium | Create `UploadSource.php`, `Capability.php`, `HttpMethod.php`, `Hook.php`, `PathConst.php`, `ErrorType.php` with proper namespaces. Register them in main plugin bootstrap via `require_once`. |
+| G2 | **Update ErrorChecker** | 🔵 Todo | Small | Add `use RiseupAsia\Enums\ErrorType;` and change `ErrorTypeEnum::` → `ErrorType::`. |
+| G3 | **Update constants.php** | 🔵 Todo | Medium | Remove all `define()` constants that now live in enums (`UPLOAD_SOURCE_*`, `CAP_*`, log levels, HTTP status). Replace backward-compat aliases with enum references where still needed. Evaluate which remaining `define()` constants can be moved into enums or namespaced const classes. |
+| G4 | **Update class-file-logger.php** | 🔵 Todo | Small | Replace `LOG_LEVEL_*` define constants with a new `LogLevel` enum or `LogConst` class. Add `use` import. |
+| G5 | **Update class-database.php** | 🔵 Todo | Medium | Replace `TABLE_*`, `STATUS_*`, `DEFAULT_LIMIT`, `MAX_LIMIT` references. Some may become a `TableName` const class or stay as defines — evaluate. |
+| G6 | **Update class-admin.php** | 🔵 Todo | Small | Replace `PLUGIN_VERSION` and `SNAPSHOT_WORKER_POOL_*` references. |
+| G7 | **Update class-logger.php** | 🔵 Todo | Small | Replace remaining `ACTION_*` and `STATUS_*` constant references. |
+| G8 | **Update REST route registration** | 🔵 Todo | Large | All `register_rest_route()` calls must use `HttpMethod::Get->value`, `Capability::ManageOptions->value`, etc. All `add_action()`/`add_filter()` must use `Hook::RestApiInit->value`, etc. |
+| G9 | **Update all remaining files** | 🔵 Todo | Large | Sweep all 37 plugin files for remaining `define()` constant usage. Replace with enum case references. |
+| G10 | **Delete old class-*-enum.php files** | 🔵 Todo | Small | Remove `class-hook-enum.php`, `class-path-enum.php`, `class-error-type-enum.php`, `class-capability-enum.php`, `class-http-method-enum.php`, `class-upload-source-enum.php`. Update bootstrap `require_once` statements. |
+| G11 | **Update spec & memory** | 🔵 Todo | Small | Update naming conventions memory, coding standards memory, and PHP spec README to reflect enum v4.0.0 patterns. |
+
+### Execution Order
+
+1. **G1** — Create all enum files (foundation)
+2. **G2** — Update ErrorChecker (first consumer)
+3. **G3** — Clean up constants.php (remove migrated defines)
+4. **G4 + G5 + G6 + G7** — Update core classes (parallel)
+5. **G8 + G9** — Sweep all files (parallel, batch by file group)
+6. **G10** — Delete old files
+7. **G11** — Documentation update
+
+### Migration Pattern
+
+For each file being updated:
+
+```php
+// BEFORE (old pattern):
+class Riseup_Admin {
+    public function enqueue_admin_assets($hook) {
+        wp_enqueue_style('...', '...', array(), RISEUP_VERSION);
+    }
+    public function ajax_test() {
+        if (!current_user_can('manage_options')) { ... }
+    }
+}
+
+// AFTER (new pattern):
+use RiseupAsia\Enums\Capability;
+
+class Riseup_Admin {
+    public function enqueue_admin_assets($hook) {
+        wp_enqueue_style('...', '...', array(), PLUGIN_VERSION);
+    }
+    public function ajax_test() {
+        if (!current_user_can(Capability::ManageOptions->value)) { ... }
+    }
+}
+```
+
+---
+
 ## Pending / Backlog
 
 | Item | Feature | Status | Description |
@@ -353,3 +446,4 @@ interface ActivityEntry {
 | Activity feed performance with many sites | Paginated API with cursor-based pagination; frontend virtualizes long lists |
 | Cross-source timestamp alignment | Go normalizes all timestamps to UTC ISO-8601 before returning |
 | Type remediation regression | Run `tsc --noEmit` + grep audit after each phase |
+| PHP 8.1 minimum version bump | Verify all deployment targets run PHP 8.1+; update `MIN_PHP_VERSION` constant |
