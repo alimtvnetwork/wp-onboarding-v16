@@ -221,6 +221,9 @@ class RiseupIncrementalBackup {
                 'duration'       => round($duration, 2) . 's',
             ));
 
+            // Feature D: Invalidate cached ZIP export for the parent full snapshot
+            $this->invalidateParentZipExport($master_dir);
+
             return array(
                 'success'        => true,
                 'snapshot_id'    => $snapshot_id,
@@ -244,6 +247,53 @@ class RiseupIncrementalBackup {
                 'error'   => $e->getMessage(),
                 'phase'   => 'incremental',
             );
+        }
+    }
+
+    /**
+     * Invalidate any cached ZIP export for the parent full snapshot.
+     *
+     * Looks up the parent snapshot ID from the master directory path and
+     * calls the exporter to expire the cached ZIP.
+     *
+     * @param string $master_dir Path to the master (full) snapshot directory.
+     * @return void
+     */
+    private function invalidateParentZipExport($master_dir) {
+        try {
+            $pdo = $this->db->get_pdo();
+            if (!$pdo) {
+                return;
+            }
+
+            // Find the parent full snapshot by matching filepath to master_dir
+            $stmt = $pdo->prepare(
+                'SELECT id FROM ' . RISEUP_TABLE_SNAPSHOTS .
+                ' WHERE filepath = ? AND status = ? LIMIT 1'
+            );
+            $stmt->execute(array($master_dir, RISEUP_SNAPSHOT_STATUS_COMPLETE));
+            $parent = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$parent) {
+                $this->log('DEBUG', 'No parent snapshot found for ZIP invalidation', array(
+                    'master_dir' => basename($master_dir),
+                ));
+                return;
+            }
+
+            require_once dirname(__FILE__) . '/class-snapshot-exporter.php';
+            $exporter = RiseupSnapshotExporter::getInstance($this->logger, $this->db);
+            if ($exporter) {
+                $invalidated = $exporter->invalidateZip((int) $parent['id']);
+                $this->log('INFO', 'Parent ZIP export invalidated after incremental backup', array(
+                    'parent_id'   => $parent['id'],
+                    'invalidated' => $invalidated,
+                ));
+            }
+        } catch (Exception $e) {
+            $this->log('WARN', 'Failed to invalidate parent ZIP export', array(
+                'error' => $e->getMessage(),
+            ));
         }
     }
 
