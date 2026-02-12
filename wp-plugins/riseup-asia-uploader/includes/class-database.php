@@ -528,6 +528,33 @@ class Riseup_Database {
                 $this->file_logger->info('Migration v10 applied successfully');
             }
             
+            // Migration v11: Snapshot ZIP export cache table (Feature D)
+            if ($current_version < 11) {
+                $this->file_logger->info('Applying migration v11: snapshot exports table');
+                
+                $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_SNAPSHOT_EXPORTS . " (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    snapshot_id     INTEGER NOT NULL,
+                    zip_filename    TEXT NOT NULL,
+                    zip_path        TEXT NOT NULL,
+                    zip_size        INTEGER NOT NULL DEFAULT 0,
+                    included_ids    TEXT NOT NULL,
+                    incremental_count INTEGER NOT NULL DEFAULT 0,
+                    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+                    expires_at      TEXT,
+                    status          TEXT NOT NULL DEFAULT '" . RISEUP_SNAPSHOT_EXPORT_STATUS_VALID . "',
+                    UNIQUE(snapshot_id)
+                )");
+                $this->file_logger->debug('Table created: snapshot_exports');
+                
+                // Indexes for efficient lookups
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_snapshot ON " . RISEUP_TABLE_SNAPSHOT_EXPORTS . "(snapshot_id)");
+                $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_status ON " . RISEUP_TABLE_SNAPSHOT_EXPORTS . "(status)");
+                
+                $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES (11, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
+                $this->file_logger->info('Migration v11 applied successfully');
+            }
+            
             $this->file_logger->info('Database migration complete');
             
         } catch (PDOException $e) {

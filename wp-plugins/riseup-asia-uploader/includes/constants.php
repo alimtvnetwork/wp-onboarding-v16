@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 // =============================================================================
 
 if (!defined('RISEUP_VERSION')) {
-    define('RISEUP_VERSION', '1.56.0');
+    define('RISEUP_VERSION', '1.57.0');
 }
 if (!defined('RISEUP_SLUG')) {
     define('RISEUP_SLUG', 'riseup-asia-uploader');
@@ -858,6 +858,61 @@ if (!defined('RISEUP_ACTION_SNAPSHOT_IMPORT_PERTABLE')) {
 // Cleanup endpoint (Phase 10)
 if (!defined('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP')) {
     define('RISEUP_ENDPOINT_SNAPSHOT_CLEANUP', 'snapshots/cleanup');
+}
+
+// =============================================================================
+// SNAPSHOT ZIP EXPORT SYSTEM (Feature D)
+// =============================================================================
+
+// Table for cached ZIP export metadata
+if (!defined('RISEUP_TABLE_SNAPSHOT_EXPORTS')) {
+    define('RISEUP_TABLE_SNAPSHOT_EXPORTS', 'snapshot_exports');
+}
+
+// REST endpoints for ZIP download
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD', 'snapshots/download');
+}
+if (!defined('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD_FILE')) {
+    define('RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD_FILE', 'snapshots/download-file');
+}
+
+// Export actions for transaction logging
+if (!defined('RISEUP_ACTION_SNAPSHOT_ZIP_BUILD')) {
+    define('RISEUP_ACTION_SNAPSHOT_ZIP_BUILD', 'snapshot_zip_build');
+}
+if (!defined('RISEUP_ACTION_SNAPSHOT_ZIP_EXPIRE')) {
+    define('RISEUP_ACTION_SNAPSHOT_ZIP_EXPIRE', 'snapshot_zip_expire');
+}
+if (!defined('RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD')) {
+    define('RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD', 'snapshot_zip_download');
+}
+
+// Export status values
+if (!defined('RISEUP_SNAPSHOT_EXPORT_STATUS_VALID')) {
+    define('RISEUP_SNAPSHOT_EXPORT_STATUS_VALID', 'valid');
+}
+if (!defined('RISEUP_SNAPSHOT_EXPORT_STATUS_EXPIRED')) {
+    define('RISEUP_SNAPSHOT_EXPORT_STATUS_EXPIRED', 'expired');
+}
+if (!defined('RISEUP_SNAPSHOT_EXPORT_STATUS_BUILDING')) {
+    define('RISEUP_SNAPSHOT_EXPORT_STATUS_BUILDING', 'building');
+}
+
+// Exports subdirectory within snapshots folder
+if (!defined('RISEUP_SNAPSHOT_EXPORTS_SUBDIR')) {
+    define('RISEUP_SNAPSHOT_EXPORTS_SUBDIR', 'exports');
+}
+
+// Error codes for export system
+if (!defined('RISEUP_ERR_EXPORT_NOT_FOUND')) {
+    define('RISEUP_ERR_EXPORT_NOT_FOUND', 'EXPORT_NOT_FOUND');
+}
+if (!defined('RISEUP_ERR_EXPORT_BUILD_FAILED')) {
+    define('RISEUP_ERR_EXPORT_BUILD_FAILED', 'EXPORT_BUILD_FAILED');
+}
+if (!defined('RISEUP_ERR_EXPORT_TOKEN_INVALID')) {
+    define('RISEUP_ERR_EXPORT_TOKEN_INVALID', 'EXPORT_TOKEN_INVALID');
 }
 
 // =============================================================================
