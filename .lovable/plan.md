@@ -4,7 +4,7 @@
 ## Plan: Go Upload Performance Optimization + Core Plugin Dashboard + Snapshot UX
 
 > Created: 2026-02-12  
-> Status: **Feature A complete. Feature B complete. Feature C (Snapshot UX) — audit in progress.**
+> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete.**
 
 ---
 
@@ -56,8 +56,8 @@ The snapshot panel (RemoteSnapshotsPanel) needs UX improvements: users should be
 
 | # | Task | Priority | Description |
 |---|------|----------|-------------|
-| C1 | **Snapshot Name Input** | High | Add a name/label field to the create form so users can name their snapshots. Date/time auto-appended. |
-| C2 | **Unified Create Form (Type Selector)** | High | Replace the separate "Create" + "Full Backup" + "Incremental" buttons with a single create form that has a Type dropdown (Full / Incremental). When "Incremental" is selected, show a parent snapshot picker (list of completed full snapshots). |
+| C1 | **Snapshot Name Input** | ✅ Done | Name input field in create form. Optional label, passed as `opts.name` to backup endpoints. |
+| C2 | **Unified Create Form (Type Selector)** | ✅ Done | Single create form with Type dropdown (Full / Incremental), scope selector, and conditional parent snapshot picker for incrementals. Replaced separate buttons. |
 | C3 | **Inline Worker Pool Quick-Set** | ✅ Done | Compact slider in create form area showing current worker count (1–10) with instant save to settings. |
 | C4 | **Progress Indicator** | ✅ Done | Real-time WebSocket-driven progress banner with per-table badge status, overall progress bar, worker count, and dismiss on completion. |
 | C5 | **Error Suppression on First Load** | ✅ Done | Initial load flag via `useRef` suppresses error state on first fetch, showing empty state instead. |
