@@ -573,6 +573,40 @@ export interface SnapshotCronSyncResult {
   active: SnapshotCronJob[];
 }
 
+// Activity Feed Types
+export type ActivityType = "publish" | "snapshot" | "plugin" | "config" | "connection";
+
+export interface ActivityEntry {
+  id: string;
+  timestamp: string;
+  siteId: number;
+  siteName: string;
+  type: ActivityType;
+  action: string;
+  title: string;
+  metadata: Record<string, unknown>;
+  source: "go" | "wordpress";
+  machineName?: string;
+  version?: string;
+}
+
+export interface ActivityFeedResponse {
+  entries: ActivityEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ActivityFeedParams {
+  limit?: number;
+  offset?: number;
+  siteId?: number;
+  type?: ActivityType;
+  from?: string;
+  to?: string;
+  search?: string;
+}
+
 // Request Session Types
 export interface RequestSessionRecord {
   id: string;

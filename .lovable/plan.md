@@ -4,7 +4,7 @@
 ## Plan: Go Upload Performance Optimization + Core Plugin Dashboard + Snapshot UX
 
 > Created: 2026-02-12  
-> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete. Feature E1 complete. Feature E2 planned.**
+> Status: **Feature A complete. Feature B complete. Feature C complete. Feature D complete. Feature E1 complete. Feature E2 in progress (E2.1 spec + E2.2–E2.4 scaffolded with mock data).**
 
 ---
 
@@ -255,11 +255,11 @@ interface ActivityEntry {
 
 | # | Task | Priority | Description |
 |---|------|----------|-------------|
-| E2.1 | **Go: Unified activity endpoint** | High | Aggregate publish sessions + snapshot events + plugin actions into `/api/v1/activity`. Paginated, filterable by siteId, type, date range. Normalize into `ActivityEntry` schema. |
-| E2.2 | **React: ActivityEntry type + API method** | High | Add `ActivityEntry` interface and `api.getActivityFeed()` method to `lib/api.ts`. |
-| E2.3 | **React: Activity Feed page** | High | New `/activity` route with a filterable, paginated timeline. Filters: site selector, action type multi-select, date range picker. Each entry shows site badge, action badge (color-coded per existing conventions), timestamp, and expandable detail row. |
-| E2.4 | **React: Navigation link** | Medium | Add "Activity" item to main navigation/sidebar with `Activity` icon. |
-| E2.5 | **React: Fleet summary header** | Medium | Top-of-page stats bar: total actions today, most active site, last action timestamp. Uses same endpoint with aggregation params. |
+| E2.1 | **Go: Unified activity endpoint** | High | Spec complete — see `spec/e2-activity-feed/e2.1-go-endpoint-spec.md`. Aggregates publish sessions + snapshot events + plugin actions into `/api/v1/activity`. |
+| E2.2 | **React: ActivityEntry type + API method** | ✅ Done | `ActivityEntry`, `ActivityFeedResponse`, `ActivityFeedParams` in `types.ts`. `api.getActivityFeed()` in `methods.ts`. Barrel exported. |
+| E2.3 | **React: Activity Feed page** | ✅ Done | `/activity` route with mock data. Filters: search, type selector, site selector. Color-coded action badges per convention. Expandable detail rows. Stats bar. Pagination. |
+| E2.4 | **React: Navigation link** | ✅ Done | "Activity Feed" with `Activity` icon added to sidebar between Publish History and E2E Tests. Route registered in `App.tsx`. |
+| E2.5 | **React: Fleet summary header** | ✅ Done | Integrated into Activity Feed page — stats cards showing Actions Today, Total Events, Active Sites. |
 | E2.6 | **React: Real-time updates via WebSocket** | Low | Listen to existing WS events (publish_complete, snapshot_complete) to prepend new entries to the feed without polling. |
 | E2.7 | **React: Export activity log** | Low | Download filtered results as CSV/JSON for compliance or reporting. |
 

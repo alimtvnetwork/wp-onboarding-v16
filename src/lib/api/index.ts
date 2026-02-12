@@ -49,6 +49,10 @@ export type {
   SnapshotCronSyncResult,
   RequestSessionRecord,
   RequestSessionListResponse,
+  ActivityEntry,
+  ActivityFeedResponse,
+  ActivityFeedParams,
+  ActivityType,
 } from './types';
 
 // Envelope utilities

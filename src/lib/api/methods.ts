@@ -34,6 +34,8 @@ import type {
   RequestSessionListResponse,
   SnapshotCronJob,
   SnapshotCronSyncResult,
+  ActivityFeedResponse,
+  ActivityFeedParams,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -677,4 +679,8 @@ export const api = {
     request<{ cleared: boolean }>("/request-sessions", { method: "DELETE" }),
   exportRequestSession: (id: string) =>
     request<RequestSessionRecord>(`/request-sessions/${id}/export`),
+
+  // Activity Feed
+  getActivityFeed: (params?: ActivityFeedParams) =>
+    request<ActivityFeedResponse>(`/activity${buildQuery((params || {}) as Record<string, string | number | undefined>)}`),
 };

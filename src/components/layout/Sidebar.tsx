@@ -19,6 +19,7 @@ import {
   BarChart3,
   HeartPulse,
   Radio,
+  Activity,
 } from "lucide-react";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
   { to: "/plugins/core", label: "Core Uploader", icon: Shield },
   { to: "/site-health", label: "Site Health", icon: HeartPulse },
   { to: "/publish-history", label: "Publish History", icon: BarChart3 },
+  { to: "/activity", label: "Activity Feed", icon: Activity },
   { to: "/tests", label: "E2E Tests", icon: FlaskConical },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/sessions", label: "Sessions", icon: History },
