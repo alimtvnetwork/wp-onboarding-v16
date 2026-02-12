@@ -46,7 +46,7 @@ class Riseup_Post_Manager {
      * @return Riseup_Post_Manager
      */
     public static function get_instance() {
-        if (RiseupBooleanHelpers::is_null(self::$instance)) {
+        if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
@@ -72,7 +72,7 @@ class Riseup_Post_Manager {
         $this->file_logger->info('Creating post', array('title' => $data['title'] ?? ''));
         
         // Validate required fields
-        if (RiseupBooleanHelpers::is_empty($data['title'])) {
+        if (empty($data['title'])) {
             $this->file_logger->warn('Post creation failed: title required');
             return array(
                 'success' => false,
@@ -80,7 +80,7 @@ class Riseup_Post_Manager {
             );
         }
 
-        if (RiseupBooleanHelpers::is_empty($data['content'])) {
+        if (empty($data['content'])) {
             $this->file_logger->warn('Post creation failed: content required');
             return array(
                 'success' => false,
@@ -98,7 +98,7 @@ class Riseup_Post_Manager {
             );
 
             // Set slug if provided
-            if (RiseupBooleanHelpers::has_content($data['slug'])) {
+            if (!empty($data['slug'])) {
                 $post_data['post_name'] = sanitize_title($data['slug']);
             }
 
@@ -132,7 +132,7 @@ class Riseup_Post_Manager {
             $this->file_logger->info('Post created', array('post_id' => $post_id));
 
             // Assign categories if provided
-            if (RiseupBooleanHelpers::has_content($data['categories']) && is_array($data['categories'])) {
+            if (!empty($data['categories']) && is_array($data['categories'])) {
                 $category_ids = array_map('intval', $data['categories']);
                 wp_set_post_categories($post_id, $category_ids);
                 $this->file_logger->debug('Categories assigned', array('categories' => $category_ids));
@@ -182,7 +182,7 @@ class Riseup_Post_Manager {
         try {
             $post = get_post($post_id);
 
-            if (RiseupBooleanHelpers::is_falsy($post)) {
+            if (!$post) {
                 $this->file_logger->warn('Post not found', array('post_id' => $post_id));
                 return array(
                     'success' => false,
@@ -279,13 +279,13 @@ class Riseup_Post_Manager {
                 'order'          => 'DESC',
             );
 
-            if (RiseupBooleanHelpers::has_content($params['status'])) {
+            if (!empty($params['status'])) {
                 $args['post_status'] = $this->validate_post_status($params['status']);
             } else {
                 $args['post_status'] = array('publish', 'draft', 'pending');
             }
 
-            if (RiseupBooleanHelpers::has_content($params['search'])) {
+            if (!empty($params['search'])) {
                 $args['s'] = sanitize_text_field($params['search']);
             }
 
@@ -332,7 +332,7 @@ class Riseup_Post_Manager {
     public function create_category($data) {
         $this->file_logger->info('Creating category', array('name' => $data['name'] ?? ''));
         
-        if (RiseupBooleanHelpers::is_empty($data['name'])) {
+        if (empty($data['name'])) {
             $this->file_logger->warn('Category creation failed: name required');
             return array(
                 'success' => false,
@@ -346,7 +346,7 @@ class Riseup_Post_Manager {
                 'parent'      => (int) ($data['parent'] ?? 0),
             );
 
-            if (RiseupBooleanHelpers::has_content($data['slug'])) {
+            if (!empty($data['slug'])) {
                 $args['slug'] = sanitize_title($data['slug']);
             }
 
@@ -417,7 +417,7 @@ class Riseup_Post_Manager {
                 'order'      => 'ASC',
             );
 
-            if (RiseupBooleanHelpers::has_content($params['search'])) {
+            if (!empty($params['search'])) {
                 $args['search'] = sanitize_text_field($params['search']);
             }
 

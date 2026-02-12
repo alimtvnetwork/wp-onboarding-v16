@@ -59,7 +59,7 @@ class RiseupSnapshotWorker {
      * @return RiseupSnapshotWorker
      */
     public static function getInstance($logger = null, $db = null, $rootDb = null, $analyzer = null) {
-        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db && $rootDb && $analyzer) {
+        if (self::$instance === null && $logger && $db && $rootDb && $analyzer) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
         return self::$instance;
@@ -337,7 +337,7 @@ class RiseupSnapshotWorker {
         $this->log('INFO', 'Processing worker batch', array('job_id' => $job_id));
 
         $pdo = $this->db->get_pdo();
-        if (RiseupBooleanHelpers::is_falsy($pdo)) {
+        if (!$pdo) {
             $this->log('ERROR', 'No database connection for worker batch');
             return;
         }
@@ -456,7 +456,7 @@ class RiseupSnapshotWorker {
      */
     private function createJob($snapshot_dir, $tables, $config) {
         $pdo = $this->db->get_pdo();
-        if (RiseupBooleanHelpers::is_falsy($pdo)) return false;
+        if (!$pdo) return false;
 
         try {
             // Ensure jobs table exists
@@ -636,7 +636,7 @@ class RiseupSnapshotWorker {
      */
     public function getJobProgress($job_id) {
         $pdo = $this->db->get_pdo();
-        if (RiseupBooleanHelpers::is_falsy($pdo)) return null;
+        if (!$pdo) return null;
 
         $job = $this->getJob($pdo, $job_id);
         if (!$job) return null;
@@ -702,7 +702,7 @@ class RiseupSnapshotWorker {
             $sqlite->exec('PRAGMA synchronous = OFF');
 
             $create_sql = $this->getCreateTableSql($table);
-            if (RiseupBooleanHelpers::is_falsy($create_sql)) {
+            if (!$create_sql) {
                 throw new Exception('Failed to get table structure for ' . $table);
             }
 
@@ -878,7 +878,7 @@ class RiseupSnapshotWorker {
      */
     private function initProgressRecords($tables) {
         $pdo = $this->db->get_pdo();
-        if (RiseupBooleanHelpers::is_falsy($pdo)) return;
+        if (!$pdo) return;
 
         try {
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . RISEUP_TABLE_SNAPSHOT_PROGRESS . "
@@ -908,7 +908,7 @@ class RiseupSnapshotWorker {
      */
     private function updateProgress($table, $status, $rows = 0, $error = null) {
         $pdo = $this->db->get_pdo();
-        if (RiseupBooleanHelpers::is_falsy($pdo)) return;
+        if (!$pdo) return;
 
         try {
             $now = gmdate('c');

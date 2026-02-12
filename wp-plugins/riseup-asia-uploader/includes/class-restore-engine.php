@@ -55,7 +55,7 @@ class RiseupRestoreEngine {
      * @return RiseupRestoreEngine
      */
     public static function getInstance($logger = null, $db = null, $orchestrator = null) {
-        if (RiseupBooleanHelpers::is_null(self::$instance) && $logger && $db) {
+        if (self::$instance === null && $logger && $db) {
             self::$instance = new self($logger, $db, $orchestrator);
         }
         return self::$instance;
@@ -93,7 +93,7 @@ class RiseupRestoreEngine {
         $apply_incrementals = $options['apply_incrementals'] ?? true;
 
         // Validate confirmation
-        if (RiseupBooleanHelpers::is_empty($options['confirm']) || $options['confirm'] !== true) {
+        if (empty($options['confirm']) || $options['confirm'] !== true) {
             return array(
                 'success' => false,
                 'error'   => 'Restore requires explicit confirmation (confirm=true)',
@@ -130,7 +130,7 @@ class RiseupRestoreEngine {
             $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
 
             // 4. Filter tables for selective mode
-            if ($mode === 'selective' && RiseupBooleanHelpers::has_content($selected_tables)) {
+            if ($mode === 'selective' && !empty($selected_tables)) {
                 $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
                     return in_array($t, $selected_tables);
                 }));
@@ -169,7 +169,7 @@ class RiseupRestoreEngine {
                         'error' => $backup_result['error'] ?? 'Unknown',
                     ));
                     // Continue unless strict mode
-                    if (RiseupBooleanHelpers::has_content($options['require_backup'])) {
+                    if (!empty($options['require_backup'])) {
                         $rootPdo = null;
                         return array(
                             'success' => false,
@@ -216,7 +216,7 @@ class RiseupRestoreEngine {
                         'error' => $result['error'],
                     ));
 
-                    if (RiseupBooleanHelpers::has_content($options['strict'])) {
+                    if (!empty($options['strict'])) {
                         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
                         $rootPdo = null;
                         return array(
@@ -312,7 +312,7 @@ class RiseupRestoreEngine {
                 "SELECT name FROM sqlite_master WHERE type='table' AND name='" .
                 str_replace("'", "''", $table) . "'"
             );
-            if (RiseupBooleanHelpers::is_falsy($check->fetch())) {
+            if (!$check->fetch()) {
                 $sqlite = null;
                 return array('success' => false, 'error' => 'Table not found in SQLite file', 'rows' => 0);
             }
