@@ -688,6 +688,14 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   const [restoreMode, setRestoreMode] = useState<"full" | "selective">("full");
   const [restoreTables, setRestoreTables] = useState<string[]>([]);
 
+  // C5: Initial load flag — suppress error on first fetch
+  const initialLoadRef = useRef(true);
+  useEffect(() => {
+    if (!isLoading && initialLoadRef.current) {
+      initialLoadRef.current = false;
+    }
+  }, [isLoading]);
+
   // C3: Inline worker count from settings
   const currentWorkerCount = (settings as unknown as Record<string, unknown> | undefined)?.worker_count as number || 4;
 
@@ -843,7 +851,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
           </DialogHeader>
 
           <Tabs defaultValue="snapshots" className="flex-1 flex flex-col min-h-0">
-            <TabsList className="w-full grid grid-cols-3 h-8">
+            <TabsList className="w-full grid grid-cols-3 h-8 shrink-0 overflow-hidden">
               <TabsTrigger value="snapshots" className="text-xs gap-1">
                 <Database className="h-3.5 w-3.5" />
                 Snapshots
@@ -1138,7 +1146,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : isError ? (
+                ) : isError && !initialLoadRef.current ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
                     <AlertCircle className="h-8 w-8 text-destructive/60" />
                     <p className="text-sm font-medium">Failed to load snapshots</p>
