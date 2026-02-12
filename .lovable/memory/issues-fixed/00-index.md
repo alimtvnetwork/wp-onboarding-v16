@@ -21,6 +21,7 @@
 | Deactivate plugin 404 | Backend/WordPress | [deactivate-plugin-404.md](./deactivate-plugin-404.md) |
 | PHP circular dependency during bootstrap | WordPress/PHP | [12-php-circular-dependency-bootstrap.md](./12-php-circular-dependency-bootstrap.md) |
 | Go `buildWPClient` undefined method | Backend/Go | [13-go-build-wp-client-undefined.md](./13-go-build-wp-client-undefined.md) |
+| Retry/debounce/dedup anti-patterns | Frontend/Reliability | [14-retry-debounce-dedup-anti-patterns.md](./14-retry-debounce-dedup-anti-patterns.md) |
 
 ---
 
