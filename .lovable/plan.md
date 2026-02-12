@@ -3,7 +3,7 @@
 ## Plan: Go Upload Performance Optimization + Core Plugin Dashboard
 
 > Created: 2026-02-12  
-> Status: **Phases A1-A4 complete. A5 done. Feature B pending.**
+> Status: **Feature A complete. Feature B Phase B1+B2 complete. B3 integrated (uses existing APIs).**
 
 ---
 
