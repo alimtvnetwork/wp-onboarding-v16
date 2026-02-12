@@ -43,7 +43,7 @@ export function DownloadDropdown({ error, appName, appVersion, gitCommit, buildT
             link.click();
             window.URL.revokeObjectURL(url);
             toast.success("Downloading error bundle...");
-          } catch (err) {
+          } catch (err: unknown) {
             console.error(err);
             toast.error("Failed to download error bundle");
           }

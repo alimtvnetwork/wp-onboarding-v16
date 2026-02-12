@@ -55,7 +55,7 @@ export function GlobalErrorModal() {
       } else {
         setErrorLogError(resp.error?.message || "No error log available");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setErrorLogError(err instanceof Error ? err.message : "Failed to fetch error log");
     } finally {
       setErrorLogLoading(false);

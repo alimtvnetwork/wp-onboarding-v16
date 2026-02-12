@@ -167,7 +167,7 @@ async function fetchRequest<T>(
         timestamp: new Date().toISOString(),
       },
     };
-  } catch (error) {
+  } catch (error: unknown) {
     const duration = Date.now() - startTime;
     logger.error(`API request failed: ${endpoint}`, error, { endpoint, method, duration });
     
@@ -206,7 +206,7 @@ export async function request<T>(
   
   try {
     return await withCircuitBreaker(circuitKey, () => fetchRequest<T>(endpoint, options));
-  } catch (error) {
+  } catch (error: unknown) {
     // If circuit breaker blocked the call, return a user-friendly error
     if (error instanceof Error && (error as unknown as { code?: string }).code === 'E_CIRCUIT_OPEN') {
       logger.warn(`Circuit breaker open for ${endpoint}, request blocked`);

@@ -133,7 +133,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
         toast.error(response.data?.message || "Connection failed");
         queryClient.invalidateQueries({ queryKey: ["sites"] });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureException(error, { endpoint: `/sites/${site.id}/test`, method: "POST" });
       toast.error("Connection test failed", {
         description: "Click for details",
@@ -164,7 +164,7 @@ export function SiteCard({ site, onEdit, onDelete }: SiteCardProps) {
       } else {
         toast.error("Deploy failed");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureException(error, { endpoint: `/sites/${site.id}/bootstrap-uploader`, method: "POST" });
       toast.error("Deploy failed", {
         description: "Click for details",

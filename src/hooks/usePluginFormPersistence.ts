@@ -42,7 +42,7 @@ export function usePluginFormPersistence() {
           buildCommand: parsed.buildCommand || "",
         });
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn("[PluginFormPersistence] Failed to load saved form data:", e);
     }
   }, []);
@@ -53,7 +53,7 @@ export function usePluginFormPersistence() {
       const next = { ...prev, ...updates };
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn("[PluginFormPersistence] Failed to save form data:", e);
       }
       return next;
@@ -71,7 +71,7 @@ export function usePluginFormPersistence() {
     setFormData(initialFormData);
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn("[PluginFormPersistence] Failed to clear form data:", e);
     }
   }, []);

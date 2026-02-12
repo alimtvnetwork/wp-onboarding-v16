@@ -149,7 +149,7 @@ export async function withRetry<T>(
       }
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       lastError = error;
 
       // Check if we should retry

@@ -79,7 +79,7 @@ export function useErrorHistory() {
     try {
       const input = capturedToInput(captured);
       await saveMutation.mutateAsync(input);
-    } catch (err) {
+    } catch (err: unknown) {
       // Silently fail - don't want error saving to cause more errors
       console.warn("Failed to save error to history:", err);
     }

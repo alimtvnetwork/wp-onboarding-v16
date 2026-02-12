@@ -37,7 +37,7 @@ export function useSiteFormPersistence() {
           password: "",
         });
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn("[SiteFormPersistence] Failed to load saved form data:", e);
     }
   }, []);
@@ -57,7 +57,7 @@ export function useSiteFormPersistence() {
             // Don't persist password for security
           })
         );
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn("[SiteFormPersistence] Failed to save form data:", e);
       }
       return next;
@@ -75,7 +75,7 @@ export function useSiteFormPersistence() {
     setFormData(initialFormData);
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
+    } catch (e: unknown) {
       console.warn("[SiteFormPersistence] Failed to clear form data:", e);
     }
   }, []);

@@ -180,7 +180,7 @@ export default function Settings() {
           border: "none",
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       const captured = captureError(
         {
           code: "E9010",
