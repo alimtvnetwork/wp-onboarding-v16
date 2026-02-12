@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\Hook;
+
 /**
  * Snapshot Scheduler class.
  * 
@@ -90,7 +92,7 @@ class RiseupSnapshotScheduler {
         $this->logger->info('[SCHEDULER] Initializing snapshot scheduler');
 
         // Register custom cron schedules
-        add_filter('cron_schedules', array($this, 'registerCronSchedules'));
+        add_filter(Hook::CronSchedules->value, array($this, 'registerCronSchedules'));
 
         // Register cron action hooks
         add_action(RISEUP_CRON_SNAPSHOT_SCHEDULED, array($this, 'executeScheduledSnapshot'));
