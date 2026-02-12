@@ -36,6 +36,7 @@ import PublishHistory from "@/pages/PublishHistory";
 import SiteHealth from "@/pages/SiteHealth";
 import RequestSessions from "@/pages/RequestSessions";
 import CorePluginDashboard from "@/pages/CorePluginDashboard";
+import ActivityFeed from "@/pages/ActivityFeed";
 
 function showGlobalError(error: unknown, context?: { endpoint?: string; method?: string; triggerComponent?: string; triggerAction?: string }) {
   const { captureError, captureException, openErrorModal } = useErrorStore.getState();
@@ -213,6 +214,7 @@ const App = () => (
                         <Route path="plugins" element={<Plugins />} />
                         <Route path="plugins/core" element={<CorePluginDashboard />} />
                         <Route path="publish-history" element={<PublishHistory />} />
+                        <Route path="activity" element={<ActivityFeed />} />
                         <Route path="site-health" element={<SiteHealth />} />
                         <Route path="tests" element={<Tests />} />
                         <Route path="logs" element={<Logs />} />
