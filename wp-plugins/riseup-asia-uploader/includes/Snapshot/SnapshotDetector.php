@@ -92,7 +92,7 @@ class RiseupSnapshotDetector {
      */
     private function detectWPReset() {
         $result = array(
-            'id' => RISEUP_SNAPSHOT_PROVIDER_WP_RESET,
+            'id' => SNAPSHOT_PROVIDER_WP_RESET,
             'name' => 'WP Reset',
             'available' => false,
             'capabilities' => array(),
@@ -149,7 +149,7 @@ class RiseupSnapshotDetector {
      */
     private function detectUpdraft() {
         $result = array(
-            'id' => RISEUP_SNAPSHOT_PROVIDER_UPDRAFT,
+            'id' => SNAPSHOT_PROVIDER_UPDRAFT,
             'name' => 'UpdraftPlus',
             'available' => false,
             'capabilities' => array(),
@@ -219,7 +219,7 @@ class RiseupSnapshotDetector {
         $has_sqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
 
         return array(
-            'id' => RISEUP_SNAPSHOT_PROVIDER_NATIVE,
+            'id' => SNAPSHOT_PROVIDER_NATIVE,
             'name' => 'Native SQLite',
             'available' => $has_sqlite,
             'capabilities' => array(
@@ -231,7 +231,7 @@ class RiseupSnapshotDetector {
                 'export' => true,
                 'import' => true,
             ),
-            'version' => RISEUP_VERSION,
+            'version' => PLUGIN_VERSION,
             'detection_method' => $has_sqlite ? 'extension_loaded' : 'extension_missing',
             'sqlite_version' => $has_sqlite ? $this->getSqliteVersion() : null,
         );
@@ -264,11 +264,11 @@ class RiseupSnapshotDetector {
      * @return string Provider ID.
      */
     public function getPreferredProvider() {
-        $settings = get_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, array());
-        $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : RISEUP_SNAPSHOT_PROVIDER_AUTO;
+        $settings = get_option(OPTION_SNAPSHOT_SETTINGS, array());
+        $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : SNAPSHOT_PROVIDER_AUTO;
 
         // If auto, determine best available
-        if ($preferred === RISEUP_SNAPSHOT_PROVIDER_AUTO) {
+        if ($preferred === SNAPSHOT_PROVIDER_AUTO) {
             return $this->getBestAvailableProvider();
         }
 
@@ -297,9 +297,9 @@ class RiseupSnapshotDetector {
         $providers = $this->detectAvailableProviders();
         
         $priority = array(
-            RISEUP_SNAPSHOT_PROVIDER_WP_RESET,
-            RISEUP_SNAPSHOT_PROVIDER_UPDRAFT,
-            RISEUP_SNAPSHOT_PROVIDER_NATIVE,
+            SNAPSHOT_PROVIDER_WP_RESET,
+            SNAPSHOT_PROVIDER_UPDRAFT,
+            SNAPSHOT_PROVIDER_NATIVE,
         );
 
         foreach ($priority as $provider_id) {
@@ -311,7 +311,7 @@ class RiseupSnapshotDetector {
         }
 
         // This should never happen, but return native as absolute fallback
-        return RISEUP_SNAPSHOT_PROVIDER_NATIVE;
+        return SNAPSHOT_PROVIDER_NATIVE;
     }
 
     /**
@@ -351,17 +351,17 @@ class RiseupSnapshotDetector {
         // Instantiate provider
         $instance = null;
         switch ($provider_id) {
-            case RISEUP_SNAPSHOT_PROVIDER_WP_RESET:
+            case SNAPSHOT_PROVIDER_WP_RESET:
                 require_once dirname(__FILE__) . '/SnapshotProviderWpReset.php';
                 $instance = new RiseupSnapshotProviderWPReset($this->logger, $this->db);
                 break;
 
-            case RISEUP_SNAPSHOT_PROVIDER_UPDRAFT:
+            case SNAPSHOT_PROVIDER_UPDRAFT:
                 require_once dirname(__FILE__) . '/SnapshotProviderUpdraft.php';
                 $instance = new RiseupSnapshotProviderUpdraft($this->logger, $this->db);
                 break;
 
-            case RISEUP_SNAPSHOT_PROVIDER_NATIVE:
+            case SNAPSHOT_PROVIDER_NATIVE:
             default:
                 require_once dirname(__FILE__) . '/SnapshotProviderNative.php';
                 $instance = new RiseupSnapshotProviderNative($this->logger, $this->db);
@@ -382,37 +382,37 @@ class RiseupSnapshotDetector {
     public function getSettings() {
         $defaults = array(
             // Provider
-            'preferred_provider' => RISEUP_SNAPSHOT_PROVIDER_AUTO,
+            'preferred_provider' => SNAPSHOT_PROVIDER_AUTO,
 
             // Scheduling
             'schedule_enabled' => false,
-            'schedule_frequency' => RISEUP_SNAPSHOT_FREQ_DAILY,
+            'schedule_frequency' => SNAPSHOT_FREQ_DAILY,
             'schedule_time' => '03:00',
             'schedule_day' => 1,
 
             // Scope
-            'default_scope' => RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
+            'default_scope' => SNAPSHOT_SCOPE_WORDPRESS,
             'custom_tables' => array(),
 
             // Retention
             'retention_type' => 'days',
-            'retention_days' => RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT,
-            'retention_count' => RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT,
+            'retention_days' => SNAPSHOT_RETENTION_DAYS_DEFAULT,
+            'retention_count' => SNAPSHOT_RETENTION_COUNT_DEFAULT,
 
             // Safety
             'pre_restore_backup' => true,
             'require_restore_confirm' => true,
 
             // Limits
-            'max_snapshot_size_mb' => RISEUP_SNAPSHOT_MAX_SIZE_MB,
-            'batch_size' => RISEUP_SNAPSHOT_BATCH_SIZE,
+            'max_snapshot_size_mb' => SNAPSHOT_MAX_SIZE_MB,
+            'batch_size' => SNAPSHOT_BATCH_SIZE,
 
             // Worker pool (Phase 5)
-            'worker_pool_size' => RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT,
+            'worker_pool_size' => SNAPSHOT_WORKER_POOL_DEFAULT,
             'storage_mode' => 'per-table',
         );
 
-        $saved = get_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, array());
+        $saved = get_option(OPTION_SNAPSHOT_SETTINGS, array());
         return array_merge($defaults, $saved);
     }
 
@@ -429,7 +429,7 @@ class RiseupSnapshotDetector {
         // Validate settings
         $updated = $this->validateSettings($updated);
 
-        $result = update_option(RISEUP_OPTION_SNAPSHOT_SETTINGS, $updated);
+        $result = update_option(OPTION_SNAPSHOT_SETTINGS, $updated);
 
         if ($result) {
             $this->logger->info('[SNAPSHOT] Settings updated', array(
@@ -449,35 +449,35 @@ class RiseupSnapshotDetector {
     private function validateSettings($settings) {
         // Validate provider
         $valid_providers = array(
-            RISEUP_SNAPSHOT_PROVIDER_AUTO,
-            RISEUP_SNAPSHOT_PROVIDER_WP_RESET,
-            RISEUP_SNAPSHOT_PROVIDER_UPDRAFT,
-            RISEUP_SNAPSHOT_PROVIDER_NATIVE,
+            SNAPSHOT_PROVIDER_AUTO,
+            SNAPSHOT_PROVIDER_WP_RESET,
+            SNAPSHOT_PROVIDER_UPDRAFT,
+            SNAPSHOT_PROVIDER_NATIVE,
         );
         if (!in_array($settings['preferred_provider'], $valid_providers)) {
-            $settings['preferred_provider'] = RISEUP_SNAPSHOT_PROVIDER_AUTO;
+            $settings['preferred_provider'] = SNAPSHOT_PROVIDER_AUTO;
         }
 
         // Validate frequency
         $valid_frequencies = array(
-            RISEUP_SNAPSHOT_FREQ_MANUAL,
-            RISEUP_SNAPSHOT_FREQ_DAILY,
-            RISEUP_SNAPSHOT_FREQ_WEEKLY,
-            RISEUP_SNAPSHOT_FREQ_MONTHLY,
+            SNAPSHOT_FREQ_MANUAL,
+            SNAPSHOT_FREQ_DAILY,
+            SNAPSHOT_FREQ_WEEKLY,
+            SNAPSHOT_FREQ_MONTHLY,
         );
         if (!in_array($settings['schedule_frequency'], $valid_frequencies)) {
-            $settings['schedule_frequency'] = RISEUP_SNAPSHOT_FREQ_DAILY;
+            $settings['schedule_frequency'] = SNAPSHOT_FREQ_DAILY;
         }
 
         // Validate scope
         $valid_scopes = array(
-            RISEUP_SNAPSHOT_SCOPE_ALL,
-            RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
-            RISEUP_SNAPSHOT_SCOPE_CONTENT,
-            RISEUP_SNAPSHOT_SCOPE_CUSTOM,
+            SNAPSHOT_SCOPE_ALL,
+            SNAPSHOT_SCOPE_WORDPRESS,
+            SNAPSHOT_SCOPE_CONTENT,
+            SNAPSHOT_SCOPE_CUSTOM,
         );
         if (!in_array($settings['default_scope'], $valid_scopes)) {
-            $settings['default_scope'] = RISEUP_SNAPSHOT_SCOPE_WORDPRESS;
+            $settings['default_scope'] = SNAPSHOT_SCOPE_WORDPRESS;
         }
 
         // Validate retention type
@@ -495,8 +495,8 @@ class RiseupSnapshotDetector {
 
         // Worker pool size (Phase 5)
         $settings['worker_pool_size'] = max(
-            RISEUP_SNAPSHOT_WORKER_POOL_MIN,
-            min(RISEUP_SNAPSHOT_WORKER_POOL_MAX, intval($settings['worker_pool_size'] ?? RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT))
+            SNAPSHOT_WORKER_POOL_MIN,
+            min(SNAPSHOT_WORKER_POOL_MAX, intval($settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT))
         );
 
         // Storage mode (Phase 5)

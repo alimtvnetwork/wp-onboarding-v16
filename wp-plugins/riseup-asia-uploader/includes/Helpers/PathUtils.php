@@ -139,7 +139,7 @@ class RiseupPathUtils {
     public static function get_base_dir() {
         $upload_dir = wp_upload_dir();
 
-        return self::join($upload_dir['basedir'], RISEUP_UPLOADS_SUBDIR);
+        return self::join($upload_dir['basedir'], UPLOADS_SUBDIR);
     }
 
     /**
@@ -148,7 +148,7 @@ class RiseupPathUtils {
      * @return string Full path to logs directory.
      */
     public static function get_logs_dir() {
-        return self::join(self::get_base_dir(), RISEUP_LOGS_SUBDIR);
+        return self::join(self::get_base_dir(), LOGS_SUBDIR);
     }
 
     /**
@@ -157,7 +157,7 @@ class RiseupPathUtils {
      * @return string Full path to snapshots directory.
      */
     public static function get_snapshots_dir() {
-        return self::join(self::get_base_dir(), RISEUP_SNAPSHOTS_SUBDIR);
+        return self::join(self::get_base_dir(), SNAPSHOTS_SUBDIR);
     }
 
     /**
@@ -166,7 +166,7 @@ class RiseupPathUtils {
      * @return string Full path to temp directory.
      */
     public static function get_temp_dir() {
-        return self::join(self::get_base_dir(), RISEUP_TEMP_SUBDIR);
+        return self::join(self::get_base_dir(), TEMP_SUBDIR);
     }
 
     /**
@@ -175,7 +175,7 @@ class RiseupPathUtils {
      * @return string Full path to SQLite database file.
      */
     public static function get_db_path() {
-        return self::join(self::get_base_dir(), RISEUP_DB_FILENAME);
+        return self::join(self::get_base_dir(), DB_FILENAME);
     }
 
     /**

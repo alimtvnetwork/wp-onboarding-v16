@@ -60,7 +60,7 @@ class Riseup_Upload_Ignore {
      * @return bool True if file was loaded, false otherwise.
      */
     public function load($plugin_dir) {
-        $ignore_file = rtrim($plugin_dir, '/\\') . '/' . RISEUP_IGNORE_FILENAME;
+        $ignore_file = rtrim($plugin_dir, '/\\') . '/' . IGNORE_FILENAME;
 
         $this->file_logger->debug('Loading uploadignore', array('path' => $ignore_file));
 
