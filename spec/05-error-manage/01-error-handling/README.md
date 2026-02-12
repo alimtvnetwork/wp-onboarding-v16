@@ -162,14 +162,15 @@ This ensures the Go backend always receives structured metadata when a delegated
 
 ### Global Shutdown Handler
 
-Use `ErrorChecker::is_fatal_error()` to centralize fatal error detection (see [PHP Standards](../../04-php-standards/README.md) for full `ErrorChecker` implementation):
+Use `ErrorChecker::is_fatal_error()` to centralize fatal error detection. `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` (see [PHP Enum Spec](../../04-php-standards/enums.md) for full implementation):
 
 ```php
 register_shutdown_function(function() {
     $error = error_get_last();
     if (ErrorChecker::is_fatal_error($error)) {
-        // Log to fatal-errors.log with memory_get_peak_usage()
-        // Send JSON response before process terminates
+        // Log to fatal-errors.log via RiseupPathUtils::getFatalErrorLog()
+        // Include memory_get_peak_usage() for diagnostics
+        // Send JSON response before process terminates (if REST_REQUEST)
     }
 });
 ```
