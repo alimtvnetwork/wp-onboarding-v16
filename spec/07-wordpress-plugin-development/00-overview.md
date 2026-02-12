@@ -45,6 +45,7 @@ class My_Logger {
             $upload_dir = wp_upload_dir();
             $this->log_path = $upload_dir['basedir'] . '/my-plugin/logs/';
         }
+
         return $this->log_path;
     }
     
@@ -78,6 +79,7 @@ class Logger {
         if ($this->db === null) {
             $this->db = Riseup_Database::get_instance();
         }
+
         return $this->db;
     }
 }

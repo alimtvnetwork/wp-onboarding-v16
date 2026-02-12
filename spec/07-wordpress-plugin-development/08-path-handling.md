@@ -129,6 +129,7 @@ if (!@mkdir($path, 0755, true)) {
         'operation' => 'mkdir',
         'permissions' => decoct(fileperms(dirname($path)) & 0777),
     ));
+
     return false;
 }
 ```
@@ -187,15 +188,16 @@ Always validate paths don't escape their intended boundaries:
 public static function is_safe_path($path, $base_path): bool {
     $real_base = realpath($base_path);
     $real_path = realpath($path);
-    
+
     // For non-existent paths, check the parent
     if ($real_path === false) {
         $real_path = realpath(dirname($path));
-        if ($real_path === false) {
-            return false;
-        }
     }
-    
+
+    if ($real_path === false) {
+        return false;
+    }
+
     return strpos($real_path, $real_base) === 0;
 }
 ```

@@ -196,7 +196,11 @@ class Riseup_Admin_UI {
 }
 
 // admin/views/dashboard.php
-<?php if (!defined('ABSPATH')) exit; ?>
+<?php
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
 <div class="wrap">
     <h1><?php echo esc_html(RISEUP_PLUGIN_NAME); ?></h1>
     <p>Version: <?php echo esc_html(RISEUP_VERSION); ?></p>
