@@ -2,8 +2,11 @@
 /**
  * Riseup Asia Uploader - Snapshot Cleaner
  *
- * Handles retention policy enforcement, orphan file cleanup,
- * and storage management for database snapshots.
+ * Consolidated cleanup engine handling retention policy enforcement,
+ * orphan file cleanup, stuck snapshot handling, and storage management.
+ * Supports dry-run mode, master snapshot protection, and audit trail logging.
+ *
+ * Replaces the former RiseupSnapshotCleanup class (class-snapshot-cleanup.php).
  *
  * PHP class naming follows PascalCase convention without underscores.
  *
@@ -17,9 +20,9 @@ if (!defined('ABSPATH')) {
 
 /**
  * Snapshot Cleaner class.
- * 
+ *
  * Manages cleanup of old snapshots based on retention policies,
- * removes orphan files, and provides storage statistics.
+ * removes orphan files, handles stuck snapshots, and provides storage statistics.
  *
  * PHP class naming follows PascalCase convention without underscores.
  */
@@ -51,11 +54,110 @@ class RiseupSnapshotCleaner {
     }
 
     /**
-     * Run full cleanup based on retention settings.
+     * Execute full cleanup with unified response format.
+     *
+     * This is the primary public entry point used by both the REST handler
+     * and the scheduler. Supports dry-run mode, master snapshot protection,
+     * and automatic audit trail logging.
+     *
+     * @param array $options {
+     *     Optional overrides.
+     *     @type string $retention_type  'days', 'count', or 'none'.
+     *     @type int    $retention_days  Days to retain.
+     *     @type int    $retention_count Max snapshots to keep.
+     *     @type bool   $dry_run         If true, simulate without deleting.
+     * }
+     * @return array {
+     *     Cleanup result summary.
+     *     @type bool   $success         Whether cleanup completed without errors.
+     *     @type array  $retention       { deleted, skipped_master, details }.
+     *     @type array  $orphans         { removed, files }.
+     *     @type array  $stuck           { cleaned, ids }.
+     *     @type array  $errors          Error messages.
+     *     @type bool   $dry_run         Whether this was a dry run.
+     *     @type float  $duration        Execution time in seconds.
+     *     @type int    $space_freed_bytes Total bytes freed.
+     * }
+     */
+    public function execute($options = array()) {
+        $start = microtime(true);
+        $dry_run = !empty($options['dry_run']);
+
+        $results = array(
+            'success'          => true,
+            'retention'        => array('deleted' => 0, 'skipped_master' => 0, 'details' => array()),
+            'orphans'          => array('removed' => 0, 'files' => array()),
+            'stuck'            => array('cleaned' => 0, 'ids' => array()),
+            'errors'           => array(),
+            'dry_run'          => $dry_run,
+            'space_freed_bytes' => 0,
+        );
+
+        $settings = $this->loadSettings($options);
+
+        // 1. Retention-based cleanup
+        try {
+            if ($settings['retention_type'] === 'none') {
+                $this->log('DEBUG', 'Retention policy is "none" - skipping policy cleanup');
+            } else {
+                $retention = $this->cleanByRetention($settings, $dry_run);
+                $results['retention'] = $retention;
+                $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
+            }
+        } catch (Exception $e) {
+            $results['errors'][] = 'Retention cleanup: ' . $e->getMessage();
+            $this->log('ERROR', 'Retention cleanup failed', array('error' => $e->getMessage()));
+        }
+
+        // 2. Orphan file cleanup
+        try {
+            $orphans = $this->cleanupOrphanFiles($dry_run);
+            $results['orphans'] = $orphans;
+            $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
+        } catch (Exception $e) {
+            $results['errors'][] = 'Orphan cleanup: ' . $e->getMessage();
+            $this->log('ERROR', 'Orphan cleanup failed', array('error' => $e->getMessage()));
+        }
+
+        // 3. Stuck/failed snapshot cleanup
+        try {
+            $stuck = $this->cleanupStuckSnapshots($dry_run);
+            $results['stuck'] = $stuck;
+        } catch (Exception $e) {
+            $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();
+            $this->log('ERROR', 'Stuck snapshot cleanup failed', array('error' => $e->getMessage()));
+        }
+
+        $results['success'] = empty($results['errors']);
+        $results['duration'] = round(microtime(true) - $start, 3);
+
+        $total_deleted = $results['retention']['deleted']
+            + $results['orphans']['removed']
+            + $results['stuck']['cleaned'];
+
+        $this->log('INFO', 'Cleanup complete', array(
+            'deleted_total'    => $total_deleted,
+            'space_freed'      => RiseupPathUtils::formatBytes($results['space_freed_bytes']),
+            'duration'         => $results['duration'],
+            'dry_run'          => $dry_run,
+        ));
+
+        // Audit trail
+        if (!$dry_run && $total_deleted > 0) {
+            $this->logCleanupAudit($results);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Run full cleanup based on retention settings (legacy entry point).
+     *
+     * Delegates to execute() and maps the response to the legacy format
+     * expected by the scheduler.
      *
      * @param array $settings Snapshot settings from detector.
      * @return array {
-     *     Cleanup result.
      *     @type int   $deleted_by_policy   Snapshots deleted by retention policy.
      *     @type int   $deleted_orphans     Orphan files deleted.
      *     @type int   $deleted_failed      Failed/stuck snapshots deleted.
@@ -64,98 +166,90 @@ class RiseupSnapshotCleaner {
      * }
      */
     public function runCleanup($settings) {
-        $this->log('INFO', 'Starting cleanup', array(
-            'retention_type' => $settings['retention_type'],
-        ));
+        $result = $this->execute($settings);
 
-        $result = array(
-            'deleted_by_policy' => 0,
-            'deleted_orphans' => 0,
-            'deleted_failed' => 0,
-            'space_freed_bytes' => 0,
-            'errors' => array(),
+        // Map to legacy format for scheduler compatibility
+        return array(
+            'deleted_by_policy' => $result['retention']['deleted'] ?? 0,
+            'deleted_orphans'   => $result['orphans']['removed'] ?? 0,
+            'deleted_failed'    => $result['stuck']['cleaned'] ?? 0,
+            'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
+            'errors'            => $result['errors'] ?? array(),
         );
-
-        // Skip if retention is 'none'
-        if ($settings['retention_type'] === 'none') {
-            $this->log('DEBUG', 'Retention policy is "none" - skipping policy cleanup');
-        } else {
-            // Run policy-based cleanup
-            $policy_result = $this->cleanupByPolicy($settings);
-            $result['deleted_by_policy'] = $policy_result['deleted'];
-            $result['space_freed_bytes'] += $policy_result['bytes_freed'];
-            if (!empty($policy_result['error'])) {
-                $result['errors'][] = $policy_result['error'];
-            }
-        }
-
-        // Clean up orphan files (files without database records)
-        $orphan_result = $this->cleanupOrphanFiles();
-        $result['deleted_orphans'] = $orphan_result['deleted'];
-        $result['space_freed_bytes'] += $orphan_result['bytes_freed'];
-        if (!empty($orphan_result['error'])) {
-            $result['errors'][] = $orphan_result['error'];
-        }
-
-        // Clean up failed/stuck snapshots older than 24 hours
-        $failed_result = $this->cleanupFailedSnapshots();
-        $result['deleted_failed'] = $failed_result['deleted'];
-        if (!empty($failed_result['error'])) {
-            $result['errors'][] = $failed_result['error'];
-        }
-
-        $this->log('INFO', 'Cleanup complete', array(
-            'deleted_total' => $result['deleted_by_policy'] + $result['deleted_orphans'] + $result['deleted_failed'],
-            'space_freed' => RiseupPathUtils::formatBytes($result['space_freed_bytes']),
-        ));
-
-        return $result;
     }
 
+    // -----------------------------------------------------------------------
+    // Retention cleanup
+    // -----------------------------------------------------------------------
+
     /**
-     * Cleanup by retention policy (days or count).
+     * Cleanup by retention policy (days or count) with master protection.
      *
-     * @param array $settings Snapshot settings.
-     * @return array {
-     *     @type int    $deleted     Number deleted.
-     *     @type int    $bytes_freed Bytes freed.
-     *     @type string $error       Error message if any.
-     * }
+     * @param array $settings Resolved settings.
+     * @param bool  $dry_run  Simulate only.
+     * @return array { deleted, skipped_master, bytes_freed, details }.
      */
-    private function cleanupByPolicy($settings) {
+    private function cleanByRetention($settings, $dry_run = false) {
         $result = array(
-            'deleted' => 0,
-            'bytes_freed' => 0,
-            'error' => null,
+            'deleted'        => 0,
+            'skipped_master' => 0,
+            'bytes_freed'    => 0,
+            'details'        => array(),
         );
 
-        try {
-            if ($settings['retention_type'] === 'days') {
-                $snapshots = $this->getSnapshotsOlderThan($settings['retention_days']);
-            } elseif ($settings['retention_type'] === 'count') {
-                $snapshots = $this->getSnapshotsBeyondCount($settings['retention_count']);
-            } else {
-                return $result;
+        $snapshots = array();
+
+        if ($settings['retention_type'] === 'days' && !empty($settings['retention_days'])) {
+            $snapshots = $this->getSnapshotsOlderThan((int) $settings['retention_days']);
+            $reason = "older than {$settings['retention_days']} days";
+        } elseif ($settings['retention_type'] === 'count' && !empty($settings['retention_count'])) {
+            $snapshots = $this->getSnapshotsBeyondCount((int) $settings['retention_count']);
+            $reason = "exceeds max count of {$settings['retention_count']}";
+        }
+
+        if (empty($snapshots)) {
+            return $result;
+        }
+
+        foreach ($snapshots as $snapshot) {
+            // Master snapshot protection: never auto-delete full/master snapshots
+            if ($this->isMasterSnapshot($snapshot)) {
+                $result['skipped_master']++;
+                continue;
             }
 
-            if (empty($snapshots)) {
-                return $result;
-            }
+            $result['details'][] = array(
+                'id'       => $snapshot['id'],
+                'filename' => $snapshot['filename'] ?? '',
+                'reason'   => $reason,
+            );
 
-            foreach ($snapshots as $snapshot) {
+            if (!$dry_run) {
                 $delete_result = $this->deleteSnapshot($snapshot);
                 if ($delete_result['success']) {
                     $result['deleted']++;
                     $result['bytes_freed'] += $delete_result['bytes_freed'];
                 }
+            } else {
+                $result['deleted']++;
+                $result['bytes_freed'] += $snapshot['size'] ?? 0;
             }
-
-        } catch (Exception $e) {
-            $result['error'] = $e->getMessage();
-            $this->log('ERROR', 'Policy cleanup failed', array('error' => $e->getMessage()));
         }
 
         return $result;
+    }
+
+    /**
+     * Determine if a snapshot is a master (permanent, never auto-deleted).
+     *
+     * @param array $snap Snapshot record.
+     * @return bool
+     */
+    private function isMasterSnapshot($snap) {
+        if (isset($snap['scope']) && $snap['scope'] === 'full') return true;
+        if (isset($snap['type']) && $snap['type'] === 'full') return true;
+        if (isset($snap['filename']) && strpos($snap['filename'], '_full_') !== false) return true;
+        return false;
     }
 
     /**
@@ -168,7 +262,7 @@ class RiseupSnapshotCleaner {
         $cutoff = date('c', strtotime("-{$days} days"));
 
         return $this->db->query_all(
-            'SELECT id, filepath, filename, size FROM ' . RISEUP_TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, size, scope, type FROM ' . RISEUP_TABLE_SNAPSHOTS .
             ' WHERE status = ? AND created_at < ? ORDER BY created_at ASC',
             array(RISEUP_SNAPSHOT_STATUS_COMPLETE, $cutoff)
         ) ?: array();
@@ -193,11 +287,15 @@ class RiseupSnapshotCleaner {
         $to_delete = $total_result['cnt'] - $count;
 
         return $this->db->query_all(
-            'SELECT id, filepath, filename, size FROM ' . RISEUP_TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, size, scope, type FROM ' . RISEUP_TABLE_SNAPSHOTS .
             ' WHERE status = ? ORDER BY created_at ASC LIMIT ?',
             array(RISEUP_SNAPSHOT_STATUS_COMPLETE, $to_delete)
         ) ?: array();
     }
+
+    // -----------------------------------------------------------------------
+    // Snapshot deletion (with cascade)
+    // -----------------------------------------------------------------------
 
     /**
      * Delete a single snapshot (file + database record).
@@ -205,10 +303,7 @@ class RiseupSnapshotCleaner {
      * cascade-delete all incremental children (files + DB records).
      *
      * @param array $snapshot Snapshot record.
-     * @return array {
-     *     @type bool $success     Whether deletion succeeded.
-     *     @type int  $bytes_freed Bytes freed.
-     * }
+     * @return array { success, bytes_freed }.
      */
     private function deleteSnapshot($snapshot) {
         $bytes_freed = 0;
@@ -267,7 +362,7 @@ class RiseupSnapshotCleaner {
 
         $this->log('DEBUG', 'Deleted snapshot', array(
             'id' => $snapshot['id'],
-            'filename' => $snapshot['filename'],
+            'filename' => $snapshot['filename'] ?? '',
             'bytes_freed' => RiseupPathUtils::formatBytes($bytes_freed),
         ));
 
@@ -282,7 +377,6 @@ class RiseupSnapshotCleaner {
      */
     private function cascadeDeleteIncrementalRecords($parent_dir) {
         try {
-            // Find all incremental records under this parent
             $incrementals = $this->db->query_all(
                 'SELECT id FROM ' . RISEUP_TABLE_SNAPSHOTS .
                 " WHERE scope = 'incremental' AND filepath LIKE ?",
@@ -305,6 +399,306 @@ class RiseupSnapshotCleaner {
                 'error' => $e->getMessage(),
             ));
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Orphan file cleanup
+    // -----------------------------------------------------------------------
+
+    /**
+     * Cleanup orphan files (files without database records).
+     *
+     * @param bool $dry_run Simulate only.
+     * @return array { removed, files, bytes_freed }.
+     */
+    private function cleanupOrphanFiles($dry_run = false) {
+        $result = array(
+            'removed'     => 0,
+            'files'       => array(),
+            'bytes_freed' => 0,
+        );
+
+        $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
+        if (!RiseupPathUtils::dirExists($snapshots_dir)) {
+            return $result;
+        }
+
+        // Get all known filenames from database
+        $db_files = $this->db->query_all(
+            'SELECT filepath, filename FROM ' . RISEUP_TABLE_SNAPSHOTS
+        ) ?: array();
+
+        $db_filepaths = array_column($db_files, 'filepath');
+        $db_filenames = array();
+        foreach ($db_files as $f) {
+            if (!empty($f['filename'])) {
+                $db_filenames[basename($f['filename'])] = true;
+            }
+        }
+
+        // Scan filesystem for .sqlite files
+        $files = glob(RiseupPathUtils::join($snapshots_dir, '*.sqlite'));
+        if (!empty($files)) {
+            foreach ($files as $file) {
+                if (!in_array($file, $db_filepaths) && !isset($db_filenames[basename($file)])) {
+                    $result['files'][] = basename($file);
+                    $bytes = filesize($file);
+
+                    if (!$dry_run) {
+                        if (RiseupPathUtils::deleteFile($file)) {
+                            $result['removed']++;
+                            $result['bytes_freed'] += $bytes;
+                            $this->log('DEBUG', 'Deleted orphan file', array('file' => basename($file)));
+
+                            // Also delete matching ZIP
+                            $zip_path = $this->getZipPath($file);
+                            if (RiseupPathUtils::fileExists($zip_path)) {
+                                $result['bytes_freed'] += filesize($zip_path);
+                                RiseupPathUtils::deleteFile($zip_path);
+                            }
+                        }
+                    } else {
+                        $result['removed']++;
+                        $result['bytes_freed'] += $bytes;
+                    }
+                }
+            }
+        }
+
+        // Scan for orphan directories
+        $entries = scandir($snapshots_dir);
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..' || $entry === '.htaccess' || $entry === 'index.php') continue;
+            $full_path = $snapshots_dir . DIRECTORY_SEPARATOR . $entry;
+            if (!is_dir($full_path)) continue;
+            if (!isset($db_filenames[$entry]) && !in_array($full_path, $db_filepaths)) {
+                $result['files'][] = $entry;
+                if (!$dry_run) {
+                    $dir_size = $this->getDirectorySize($full_path);
+                    $this->deleteDirectoryRecursive($full_path);
+                    $result['removed']++;
+                    $result['bytes_freed'] += $dir_size;
+                    $this->log('INFO', 'Orphan snapshot directory removed', array('dir' => $entry));
+                } else {
+                    $result['removed']++;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    // -----------------------------------------------------------------------
+    // Stuck/failed snapshot cleanup
+    // -----------------------------------------------------------------------
+
+    /**
+     * Cleanup stuck/failed snapshots older than the configured threshold.
+     *
+     * Stuck snapshots are marked as failed (preserved for diagnostics)
+     * rather than deleted outright.
+     *
+     * @param bool $dry_run Simulate only.
+     * @return array { cleaned, ids }.
+     */
+    private function cleanupStuckSnapshots($dry_run = false) {
+        $result = array(
+            'cleaned' => 0,
+            'ids'     => array(),
+        );
+
+        $stuck_hours = defined('RISEUP_SNAPSHOT_STUCK_HOURS') ? RISEUP_SNAPSHOT_STUCK_HOURS : 24;
+        $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
+
+        // Find stuck running, pending, or failed snapshots
+        $stuck = $this->db->query_all(
+            'SELECT id, filepath, filename, status FROM ' . RISEUP_TABLE_SNAPSHOTS .
+            ' WHERE status IN (?, ?, ?) AND created_at < ?',
+            array(
+                RISEUP_SNAPSHOT_STATUS_PENDING,
+                RISEUP_SNAPSHOT_STATUS_RUNNING,
+                RISEUP_SNAPSHOT_STATUS_FAILED,
+                $cutoff
+            )
+        ) ?: array();
+
+        foreach ($stuck as $snapshot) {
+            $result['ids'][] = (int) $snapshot['id'];
+
+            if (!$dry_run) {
+                // Mark as failed (preserve for diagnostics)
+                $this->db->execute(
+                    'UPDATE ' . RISEUP_TABLE_SNAPSHOTS . ' SET status = ?, error = ? WHERE id = ?',
+                    array(
+                        RISEUP_SNAPSHOT_STATUS_FAILED,
+                        "Auto-cleaned: stuck for >{$stuck_hours} hours",
+                        $snapshot['id']
+                    )
+                );
+
+                $this->log('WARN', 'Stuck snapshot marked as failed', array(
+                    'id'     => $snapshot['id'],
+                    'status' => $snapshot['status'],
+                ));
+            }
+
+            $result['cleaned']++;
+        }
+
+        return $result;
+    }
+
+    // -----------------------------------------------------------------------
+    // Storage statistics & estimation
+    // -----------------------------------------------------------------------
+
+    /**
+     * Get storage statistics for snapshots.
+     *
+     * @return array {
+     *     @type int    $total_snapshots     Total snapshot count.
+     *     @type int    $total_size_bytes    Total size in bytes.
+     *     @type string $total_size_formatted Human-readable size.
+     *     @type int    $oldest_timestamp    Oldest snapshot timestamp.
+     *     @type int    $newest_timestamp    Newest snapshot timestamp.
+     *     @type int    $disk_free_bytes     Free disk space.
+     *     @type string $disk_free_formatted Human-readable free space.
+     * }
+     */
+    public function getStorageStats() {
+        $stats = array(
+            'total_snapshots' => 0,
+            'total_size_bytes' => 0,
+            'total_size_formatted' => '0 B',
+            'oldest_timestamp' => null,
+            'newest_timestamp' => null,
+            'disk_free_bytes' => 0,
+            'disk_free_formatted' => '0 B',
+        );
+
+        try {
+            $db_stats = $this->db->query_single(
+                'SELECT 
+                    COUNT(*) as count,
+                    COALESCE(SUM(size), 0) as total_size,
+                    MIN(created_at) as oldest,
+                    MAX(created_at) as newest
+                FROM ' . RISEUP_TABLE_SNAPSHOTS .
+                ' WHERE status = ?',
+                array(RISEUP_SNAPSHOT_STATUS_COMPLETE)
+            );
+
+            if ($db_stats) {
+                $stats['total_snapshots'] = intval($db_stats['count']);
+                $stats['total_size_bytes'] = intval($db_stats['total_size']);
+                $stats['total_size_formatted'] = RiseupPathUtils::formatBytes($stats['total_size_bytes']);
+
+                if ($db_stats['oldest']) {
+                    $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);
+                }
+                if ($db_stats['newest']) {
+                    $stats['newest_timestamp'] = strtotime($db_stats['newest']);
+                }
+            }
+
+            // Get disk free space
+            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
+
+            if (RiseupPathUtils::dirExists($snapshots_dir)) {
+                $free = RiseupPathUtils::getFreeSpace($snapshots_dir);
+                if ($free !== false) {
+                    $stats['disk_free_bytes'] = $free;
+                    $stats['disk_free_formatted'] = RiseupPathUtils::formatBytes($free);
+                }
+            }
+
+        } catch (Exception $e) {
+            $this->log('ERROR', 'Failed to get storage stats', array('error' => $e->getMessage()));
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Estimate space that would be freed by cleanup.
+     *
+     * @param array $settings Snapshot settings.
+     * @return array {
+     *     @type int    $snapshots_count Number that would be deleted.
+     *     @type int    $bytes           Estimated bytes to free.
+     *     @type string $bytes_formatted Human-readable size.
+     * }
+     */
+    public function estimateCleanup($settings) {
+        $estimate = array(
+            'snapshots_count' => 0,
+            'bytes' => 0,
+            'bytes_formatted' => '0 B',
+        );
+
+        try {
+            $snapshots = array();
+
+            if ($settings['retention_type'] === 'days') {
+                $snapshots = $this->getSnapshotsOlderThan($settings['retention_days']);
+            } elseif ($settings['retention_type'] === 'count') {
+                $snapshots = $this->getSnapshotsBeyondCount($settings['retention_count']);
+            }
+
+            // Exclude master snapshots from estimate
+            $snapshots = array_filter($snapshots, function($s) {
+                return !$this->isMasterSnapshot($s);
+            });
+
+            $estimate['snapshots_count'] = count($snapshots);
+            $estimate['bytes'] = array_sum(array_column($snapshots, 'size'));
+            $estimate['bytes_formatted'] = RiseupPathUtils::formatBytes($estimate['bytes']);
+
+        } catch (Exception $e) {
+            $this->log('ERROR', 'Failed to estimate cleanup', array('error' => $e->getMessage()));
+        }
+
+        return $estimate;
+    }
+
+    // -----------------------------------------------------------------------
+    // Settings & helpers
+    // -----------------------------------------------------------------------
+
+    /**
+     * Load retention settings from WP options with overrides.
+     *
+     * @param array $overrides User-provided overrides.
+     * @return array Resolved settings.
+     */
+    private function loadSettings($overrides) {
+        $defaults = array(
+            'retention_type'  => defined('RISEUP_RETENTION_TYPE_DAYS') ? RISEUP_RETENTION_TYPE_DAYS : 'days',
+            'retention_days'  => defined('RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT') ? RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT : 30,
+            'retention_count' => defined('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT') ? RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT : 10,
+        );
+
+        // Load from WP options
+        $saved = get_option(
+            defined('RISEUP_OPTION_SNAPSHOT_SETTINGS') ? RISEUP_OPTION_SNAPSHOT_SETTINGS : 'riseup_snapshot_settings',
+            array()
+        );
+        if (is_array($saved)) {
+            $defaults = array_merge($defaults, $saved);
+        }
+
+        // Apply overrides (filter out nulls)
+        return array_merge($defaults, array_filter($overrides, function($v) { return $v !== null; }));
+    }
+
+    /**
+     * Get ZIP path from SQLite path.
+     *
+     * @param string $sqlite_path Path to .sqlite file.
+     * @return string Path to .zip file.
+     */
+    private function getZipPath($sqlite_path) {
+        return preg_replace('/\.sqlite$/', '.zip', $sqlite_path);
     }
 
     /**
@@ -348,248 +742,44 @@ class RiseupSnapshotCleaner {
         return $size;
     }
 
-    /**
-     * Cleanup orphan files (files without database records).
-     *
-     * @return array {
-     *     @type int    $deleted     Number deleted.
-     *     @type int    $bytes_freed Bytes freed.
-     *     @type string $error       Error message if any.
-     * }
-     */
-    private function cleanupOrphanFiles() {
-        $result = array(
-            'deleted' => 0,
-            'bytes_freed' => 0,
-            'error' => null,
-        );
-
-        try {
-            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
-
-            if (!RiseupPathUtils::dirExists($snapshots_dir)) {
-                return $result;
-            }
-
-            // Get all .sqlite files in directory
-            $files = glob(RiseupPathUtils::join($snapshots_dir, '*.sqlite'));
-            if (empty($files)) {
-                return $result;
-            }
-
-            // Get all filepaths from database
-            $db_files = $this->db->query_all(
-                'SELECT filepath FROM ' . RISEUP_TABLE_SNAPSHOTS
-            ) ?: array();
-            $db_filepaths = array_column($db_files, 'filepath');
-
-            // Find orphans
-            foreach ($files as $file) {
-                if (!in_array($file, $db_filepaths)) {
-                    $bytes = filesize($file);
-                    if (RiseupPathUtils::deleteFile($file)) {
-                        $result['deleted']++;
-                        $result['bytes_freed'] += $bytes;
-
-                        $this->log('DEBUG', 'Deleted orphan file', array('file' => basename($file)));
-
-                        // Also delete matching ZIP
-                        $zip_path = $this->getZipPath($file);
-                        if (RiseupPathUtils::fileExists($zip_path)) {
-                            $result['bytes_freed'] += filesize($zip_path);
-                            RiseupPathUtils::deleteFile($zip_path);
-                        }
-                    }
-                }
-            }
-
-        } catch (Exception $e) {
-            $result['error'] = $e->getMessage();
-            $this->log('ERROR', 'Orphan cleanup failed', array('error' => $e->getMessage()));
-        }
-
-        return $result;
-    }
+    // -----------------------------------------------------------------------
+    // Audit trail
+    // -----------------------------------------------------------------------
 
     /**
-     * Cleanup failed/stuck snapshots older than 24 hours.
+     * Log cleanup results to the audit trail.
      *
-     * @return array {
-     *     @type int    $deleted Number deleted.
-     *     @type string $error   Error message if any.
-     * }
+     * @param array $results Cleanup results from execute().
      */
-    private function cleanupFailedSnapshots() {
-        $result = array(
-            'deleted' => 0,
-            'error' => null,
-        );
-
+    private function logCleanupAudit($results) {
         try {
-            $cutoff = date('c', strtotime('-24 hours'));
-
-            // Find stuck running or failed snapshots
-            $stuck = $this->db->query_all(
-                'SELECT id, filepath, filename, status FROM ' . RISEUP_TABLE_SNAPSHOTS .
-                ' WHERE status IN (?, ?, ?) AND created_at < ?',
-                array(
-                    RISEUP_SNAPSHOT_STATUS_PENDING,
-                    RISEUP_SNAPSHOT_STATUS_RUNNING,
-                    RISEUP_SNAPSHOT_STATUS_FAILED,
-                    $cutoff
-                )
-            ) ?: array();
-
-            foreach ($stuck as $snapshot) {
-                // Delete file if exists
-                if (!empty($snapshot['filepath']) && RiseupPathUtils::fileExists($snapshot['filepath'])) {
-                    RiseupPathUtils::deleteFile($snapshot['filepath']);
-                }
-
-                // Delete database record
-                $this->db->delete(RISEUP_TABLE_SNAPSHOTS, array('id' => $snapshot['id']));
-
-                // Delete progress records
-                $this->db->execute(
-                    'DELETE FROM ' . RISEUP_TABLE_SNAPSHOT_PROGRESS . ' WHERE snapshot_id = ?',
-                    array($snapshot['id'])
-                );
-
-                $result['deleted']++;
-
-                $this->log('DEBUG', 'Deleted stuck/failed snapshot', array(
-                    'id' => $snapshot['id'],
-                    'status' => $snapshot['status'],
-                ));
-            }
-
-        } catch (Exception $e) {
-            $result['error'] = $e->getMessage();
-            $this->log('ERROR', 'Failed snapshot cleanup error', array('error' => $e->getMessage()));
-        }
-
-        return $result;
-    }
-
-    /**
-     * Get storage statistics for snapshots.
-     *
-     * @return array {
-     *     @type int    $total_snapshots     Total snapshot count.
-     *     @type int    $total_size_bytes    Total size in bytes.
-     *     @type string $total_size_formatted Human-readable size.
-     *     @type int    $oldest_timestamp    Oldest snapshot timestamp.
-     *     @type int    $newest_timestamp    Newest snapshot timestamp.
-     *     @type int    $disk_free_bytes     Free disk space.
-     *     @type string $disk_free_formatted Human-readable free space.
-     * }
-     */
-    public function getStorageStats() {
-        $stats = array(
-            'total_snapshots' => 0,
-            'total_size_bytes' => 0,
-            'total_size_formatted' => '0 B',
-            'oldest_timestamp' => null,
-            'newest_timestamp' => null,
-            'disk_free_bytes' => 0,
-            'disk_free_formatted' => '0 B',
-        );
-
-        try {
-            // Get snapshot stats from database
-            $db_stats = $this->db->query_single(
-                'SELECT 
-                    COUNT(*) as count,
-                    COALESCE(SUM(size), 0) as total_size,
-                    MIN(created_at) as oldest,
-                    MAX(created_at) as newest
-                FROM ' . RISEUP_TABLE_SNAPSHOTS .
-                ' WHERE status = ?',
-                array(RISEUP_SNAPSHOT_STATUS_COMPLETE)
+            $this->db->logTransaction(
+                RISEUP_ACTION_SNAPSHOT_CLEANUP,
+                json_encode(array(
+                    'retention_deleted'   => $results['retention']['deleted'],
+                    'retention_skipped'   => $results['retention']['skipped_master'],
+                    'orphans_removed'     => $results['orphans']['removed'],
+                    'stuck_cleaned'       => $results['stuck']['cleaned'],
+                    'space_freed'         => RiseupPathUtils::formatBytes($results['space_freed_bytes']),
+                    'errors'              => count($results['errors']),
+                    'duration'            => $results['duration'],
+                )),
+                empty($results['errors']) ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                RISEUP_TRIGGERED_BY_API
             );
-
-            if ($db_stats) {
-                $stats['total_snapshots'] = intval($db_stats['count']);
-                $stats['total_size_bytes'] = intval($db_stats['total_size']);
-                $stats['total_size_formatted'] = RiseupPathUtils::formatBytes($stats['total_size_bytes']);
-                
-                if ($db_stats['oldest']) {
-                    $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);
-                }
-                if ($db_stats['newest']) {
-                    $stats['newest_timestamp'] = strtotime($db_stats['newest']);
-                }
-            }
-
-            // Get disk free space
-            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
-            
-            if (RiseupPathUtils::dirExists($snapshots_dir)) {
-                $free = RiseupPathUtils::getFreeSpace($snapshots_dir);
-                if ($free !== false) {
-                    $stats['disk_free_bytes'] = $free;
-                    $stats['disk_free_formatted'] = RiseupPathUtils::formatBytes($free);
-                }
-            }
-
         } catch (Exception $e) {
-            $this->log('ERROR', 'Failed to get storage stats', array('error' => $e->getMessage()));
+            $this->log('ERROR', 'Failed to log cleanup action', array('error' => $e->getMessage()));
         }
-
-        return $stats;
     }
 
-    /**
-     * Estimate space that would be freed by cleanup.
-     *
-     * @param array $settings Snapshot settings.
-     * @return array {
-     *     @type int    $snapshots_count Number that would be deleted.
-     *     @type int    $bytes           Estimated bytes to free.
-     *     @type string $bytes_formatted Human-readable size.
-     * }
-     */
-    public function estimateCleanup($settings) {
-        $estimate = array(
-            'snapshots_count' => 0,
-            'bytes' => 0,
-            'bytes_formatted' => '0 B',
-        );
-
-        try {
-            $snapshots = array();
-
-            if ($settings['retention_type'] === 'days') {
-                $snapshots = $this->getSnapshotsOlderThan($settings['retention_days']);
-            } elseif ($settings['retention_type'] === 'count') {
-                $snapshots = $this->getSnapshotsBeyondCount($settings['retention_count']);
-            }
-
-            $estimate['snapshots_count'] = count($snapshots);
-            $estimate['bytes'] = array_sum(array_column($snapshots, 'size'));
-            $estimate['bytes_formatted'] = RiseupPathUtils::formatBytes($estimate['bytes']);
-
-        } catch (Exception $e) {
-            $this->log('ERROR', 'Failed to estimate cleanup', array('error' => $e->getMessage()));
-        }
-
-        return $estimate;
-    }
+    // -----------------------------------------------------------------------
+    // Logging
+    // -----------------------------------------------------------------------
 
     /**
-     * Get ZIP path from SQLite path.
+     * Log a message with cleaner context prefix.
      *
-     * @param string $sqlite_path Path to .sqlite file.
-     * @return string Path to .zip file.
-     */
-    private function getZipPath($sqlite_path) {
-        return preg_replace('/\.sqlite$/', '.zip', $sqlite_path);
-    }
-
-    /**
-     * Log a message with cleaner context.
-     *
-     * @param string $level   Log level.
+     * @param string $level   Log level (DEBUG, INFO, WARN, ERROR).
      * @param string $message Message.
      * @param array  $context Additional context.
      */

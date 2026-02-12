@@ -4808,9 +4808,9 @@ class Riseup_Asia {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
 
-            $cleanup = RiseupSnapshotCleanup::getInstance($this->file_logger, $this->db);
+            $cleaner = RiseupSnapshotFactory::cleaner($this->file_logger, $this->db);
 
-            $result = $cleanup->execute(array(
+            $result = $cleaner->execute(array(
                 'retention_type'  => $body['retention_type'] ?? null,
                 'retention_days'  => $body['retention_days'] ?? null,
                 'retention_count' => $body['retention_count'] ?? null,
@@ -4824,9 +4824,9 @@ class Riseup_Asia {
                     'snapshot',
                     $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
                     array(
-                        'retention_removed' => $result['retention']['removed'] ?? 0,
+                        'retention_removed' => $result['retention']['deleted'] ?? 0,
                         'orphans_removed'   => $result['orphans']['removed'] ?? 0,
-                        'stuck_marked'      => $result['stuck']['marked'] ?? 0,
+                        'stuck_marked'      => $result['stuck']['cleaned'] ?? 0,
                         'duration'          => $result['duration'] ?? 0,
                     ),
                     $result['success'] ? null : 'Cleanup encountered errors'
