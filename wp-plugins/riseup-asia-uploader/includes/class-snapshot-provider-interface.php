@@ -269,7 +269,7 @@ abstract class RiseupSnapshotProviderInterface {
      * @return string Full path to snapshots directory.
      */
     protected function getSnapshotsDir() {
-        return RiseupPathUtils::getSnapshotsDir();
+        return RiseupPathUtils::get_snapshots_dir();
     }
 
     /**
@@ -280,9 +280,9 @@ abstract class RiseupSnapshotProviderInterface {
      * @return bool True if directory exists or was created.
      */
     protected function ensureSnapshotsDir() {
-        $dir = RiseupPathUtils::ensurePath(
+        $dir = RiseupPathUtils::ensure_path(
             true, // secure with .htaccess
-            RiseupPathUtils::getSnapshotsDir()
+            RiseupPathUtils::get_snapshots_dir()
         );
 
         if ($dir === false) {
@@ -326,14 +326,14 @@ abstract class RiseupSnapshotProviderInterface {
     protected function isLocked() {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
         
-        if (!RiseupPathUtils::fileExists($lock_file)) {
+        if (!RiseupPathUtils::file_exists($lock_file)) {
             return false;
         }
 
         // Check if lock is stale (older than 30 minutes)
         $lock_time = filemtime($lock_file);
         if (time() - $lock_time > 1800) {
-            RiseupPathUtils::deleteFile($lock_file);
+            RiseupPathUtils::delete_file($lock_file);
             $this->log(RISEUP_LOG_LEVEL_WARN, 'Removed stale lock file', array('age_minutes' => round((time() - $lock_time) / 60)));
             return false;
         }
@@ -385,8 +385,8 @@ abstract class RiseupSnapshotProviderInterface {
     protected function releaseLock() {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
         
-        if (RiseupPathUtils::fileExists($lock_file)) {
-            RiseupPathUtils::deleteFile($lock_file);
+        if (RiseupPathUtils::file_exists($lock_file)) {
+            RiseupPathUtils::delete_file($lock_file);
             $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Lock released');
         }
     }

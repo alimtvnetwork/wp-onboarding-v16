@@ -142,7 +142,7 @@ class RiseupSnapshotWorker {
         $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
         $snapshot_dir = $base_dir . '/' . $dir_name;
 
-        if (!RiseupPathUtils::ensureDir($snapshot_dir, true)) {
+        if (!RiseupPathUtils::ensure_dir($snapshot_dir, true)) {
             return array('success' => false, 'error' => 'Failed to create snapshot directory');
         }
 
@@ -236,7 +236,7 @@ class RiseupSnapshotWorker {
         $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
         $snapshot_dir = $base_dir . '/' . $dir_name;
 
-        if (!RiseupPathUtils::ensureDir($snapshot_dir, true)) {
+        if (!RiseupPathUtils::ensure_dir($snapshot_dir, true)) {
             return array('success' => false, 'error' => 'Failed to create snapshot directory');
         }
 
@@ -937,8 +937,8 @@ class RiseupSnapshotWorker {
      * @return string Base snapshots directory path.
      */
     private function getSnapshotsBaseDir() {
-        $base = RiseupPathUtils::getSnapshotsDir();
-        RiseupPathUtils::ensureDir($base, true);
+        $base = RiseupPathUtils::get_snapshots_dir();
+        RiseupPathUtils::ensure_dir($base, true);
         return $base;
     }
 

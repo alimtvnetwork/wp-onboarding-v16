@@ -266,7 +266,7 @@ class RiseupSnapshotOrchestrator {
      */
     private function snapshotPlugins($snapshot_dir, $selection = 'all') {
         $plugins_dir = $snapshot_dir . '/plugins';
-        if (!RiseupPathUtils::ensureDir($plugins_dir, true)) {
+        if (!RiseupPathUtils::ensure_dir($plugins_dir, true)) {
             $this->log('ERROR', 'Failed to create plugins directory');
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }

@@ -585,7 +585,7 @@ class Riseup_Admin {
                 $result['deleted_by_policy'],
                 $result['deleted_orphans'],
                 $result['deleted_failed'],
-                RiseupPathUtils::formatBytes($result['space_freed_bytes'])
+                RiseupPathUtils::format_bytes($result['space_freed_bytes'])
             ),
             'result' => $result,
         ));

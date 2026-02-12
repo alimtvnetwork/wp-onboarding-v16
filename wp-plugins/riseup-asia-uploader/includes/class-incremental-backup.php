@@ -119,7 +119,7 @@ class RiseupIncrementalBackup {
             $incremental_base = $master_dir . '/incremental';
             $incremental_dir = $incremental_base . '/' . $folder_name;
 
-            if (!RiseupPathUtils::ensureDir($incremental_dir, true)) {
+            if (!RiseupPathUtils::ensure_dir($incremental_dir, true)) {
                 $rootPdo = null;
                 return array(
                     'success' => false,
@@ -761,7 +761,7 @@ class RiseupIncrementalBackup {
      * @return string Base snapshots directory path.
      */
     private function getSnapshotsBaseDir() {
-        return RiseupPathUtils::getSnapshotsDir();
+        return RiseupPathUtils::get_snapshots_dir();
     }
 
     /**

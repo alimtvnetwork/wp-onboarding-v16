@@ -79,7 +79,7 @@ class RiseupRootDb {
         // Ensure parent directory exists
         $dir = dirname($filepath);
         if (!file_exists($dir)) {
-            RiseupPathUtils::ensureDir($dir);
+            RiseupPathUtils::ensure_dir($dir);
         }
 
         $pdo = new PDO('sqlite:' . $filepath);
@@ -309,7 +309,7 @@ class RiseupRootDb {
      * @return array|null Metadata or null if invalid.
      */
     public function readMetadata($filepath) {
-        if (!RiseupPathUtils::fileExists($filepath)) {
+        if (!RiseupPathUtils::file_exists($filepath)) {
             return null;
         }
 
