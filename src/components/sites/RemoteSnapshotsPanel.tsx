@@ -641,30 +641,48 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
   const [deleteTarget, setDeleteTarget] = useState<SnapshotRecord | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<SnapshotRecord | null>(null);
   const [detailTarget, setDetailTarget] = useState<SnapshotRecord | null>(null);
+  const [createName, setCreateName] = useState("");
+  const [createType, setCreateType] = useState<"full" | "incremental">("full");
   const [createScope, setCreateScope] = useState<string>("wordpress");
+  const [parentSnapshotId, setParentSnapshotId] = useState<string>("");
   const [customTables, setCustomTables] = useState<string[]>([]);
   const [showTablePicker, setShowTablePicker] = useState(false);
   const [restoreMode, setRestoreMode] = useState<"full" | "selective">("full");
   const [restoreTables, setRestoreTables] = useState<string[]>([]);
+
+  // Available parent snapshots for incremental backups (completed full snapshots only)
+  const completedFullSnapshots = useMemo(
+    () => snapshots.filter(
+      (s) => s.status === "complete" && s.snapshot_type !== "incremental" && s.scope !== "incremental"
+    ),
+    [snapshots]
+  );
 
   const handleScopeChange = useCallback((scope: string) => {
     setCreateScope(scope);
     if (scope === "custom" && availableTables.length === 0) {
       fetchTables();
     }
-    if (scope === "custom") {
-      setShowTablePicker(true);
-    } else {
-      setShowTablePicker(false);
-    }
+    setShowTablePicker(scope === "custom");
   }, [availableTables.length, fetchTables]);
 
   const handleCreate = () => {
+    const opts: Record<string, unknown> = {};
+    if (createName.trim()) opts.name = createName.trim();
     if (createScope === "custom" && customTables.length > 0) {
-      createSnapshot({ scope: "custom", tables: customTables });
+      opts.scope = "custom";
+      opts.tables = customTables;
     } else {
-      createSnapshot({ scope: createScope });
+      opts.scope = createScope;
     }
+
+    if (createType === "incremental") {
+      if (parentSnapshotId) opts.parent_id = Number(parentSnapshotId);
+      incrementalBackup(opts);
+    } else {
+      fullBackup(opts);
+    }
+    setCreateName("");
   };
 
   const handleDelete = () => {
@@ -738,10 +756,55 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
 
             <TabsContent value="snapshots" className="flex-1 flex flex-col min-h-0 mt-2">
               {/* Create Snapshot Controls */}
-              <div className="space-y-2 pb-2 border-b mb-2">
+              <div className="space-y-2.5 pb-3 border-b mb-2">
+                {/* Row 1: Name + Refresh */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Snapshot name (optional)"
+                    value={createName}
+                    onChange={(e) => setCreateName(e.target.value)}
+                    className="h-8 text-xs flex-1"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => refetch()}
+                    disabled={isLoading}
+                    className="h-8 w-8 p-0 shrink-0"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                  </Button>
+                </div>
+
+                {/* Row 2: Type + Scope + Create */}
                 <div className="flex items-center gap-2 flex-wrap">
+                  <Select value={createType} onValueChange={(v) => {
+                    setCreateType(v as "full" | "incremental");
+                    if (v === "incremental" && completedFullSnapshots.length > 0 && !parentSnapshotId) {
+                      setParentSnapshotId(String(completedFullSnapshots[0].id));
+                    }
+                  }}>
+                    <SelectTrigger className="w-[130px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full">
+                        <span className="flex items-center gap-1.5">
+                          <Database className="h-3 w-3" />
+                          Full Backup
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="incremental" disabled={completedFullSnapshots.length === 0}>
+                        <span className="flex items-center gap-1.5">
+                          <GitBranch className="h-3 w-3" />
+                          Incremental
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
                   <Select value={createScope} onValueChange={handleScopeChange}>
-                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                    <SelectTrigger className="w-[130px] h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -751,13 +814,19 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                       <SelectItem value="custom">Custom Tables</SelectItem>
                     </SelectContent>
                   </Select>
+
                   <Button
                     size="sm"
                     onClick={handleCreate}
-                    disabled={isCreating || (createScope === "custom" && customTables.length === 0)}
+                    disabled={
+                      (createType === "full" ? isFullBackupPending : isIncrementalPending) ||
+                      hasRunningSnapshots ||
+                      (createScope === "custom" && customTables.length === 0) ||
+                      (createType === "incremental" && !parentSnapshotId)
+                    }
                     className="h-8"
                   >
-                    {isCreating ? (
+                    {(createType === "full" ? isFullBackupPending : isIncrementalPending) ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
                     ) : (
                       <Plus className="h-3.5 w-3.5 mr-1" />
@@ -767,48 +836,7 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                       <Badge variant="secondary" className="h-4 text-[10px] px-1 ml-1">{customTables.length}</Badge>
                     )}
                   </Button>
-                  <div className="flex-1" />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => refetch()}
-                    disabled={isLoading}
-                    className="h-8"
-                  >
-                    <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-                  </Button>
-                </div>
 
-                {/* Advanced Backup Actions */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fullBackup({})}
-                    disabled={isFullBackupPending || hasRunningSnapshots}
-                    className="h-7 text-xs"
-                  >
-                    {isFullBackupPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    ) : (
-                      <Database className="h-3 w-3 mr-1" />
-                    )}
-                    Full Backup
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => incrementalBackup({})}
-                    disabled={isIncrementalPending || hasRunningSnapshots}
-                    className="h-7 text-xs"
-                  >
-                    {isIncrementalPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                    ) : (
-                      <GitBranch className="h-3 w-3 mr-1" />
-                    )}
-                    Incremental
-                  </Button>
                   <div className="flex-1" />
                   <input
                     ref={fileInputRef}
@@ -828,16 +856,47 @@ export function RemoteSnapshotsPanel({ site, open, onOpenChange }: RemoteSnapsho
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isImporting}
-                    className="h-7 text-xs"
+                    className="h-8 text-xs"
                   >
                     {isImporting ? (
                       <Loader2 className="h-3 w-3 animate-spin mr-1" />
                     ) : (
                       <Upload className="h-3 w-3 mr-1" />
                     )}
-                    Import ZIP
+                    Import
                   </Button>
                 </div>
+
+                {/* Incremental: Parent Snapshot Picker */}
+                {createType === "incremental" && (
+                  <div className="space-y-1.5 animate-fade-in border rounded-md p-2 bg-accent/20">
+                    <Label className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                      <GitBranch className="h-3 w-3" />
+                      Base on Full Snapshot
+                    </Label>
+                    {completedFullSnapshots.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">No completed full snapshots available. Create a full backup first.</p>
+                    ) : (
+                      <Select value={parentSnapshotId} onValueChange={setParentSnapshotId}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Select parent snapshot…" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {completedFullSnapshots.map((s) => (
+                            <SelectItem key={s.id} value={String(s.id)}>
+                              <span className="flex items-center gap-2">
+                                <span className="font-medium">#{s.sequence}</span>
+                                <span className="text-muted-foreground">—</span>
+                                <span className="truncate">{s.filename}</span>
+                                <span className="text-muted-foreground text-[10px] shrink-0">{relativeTime(s.created_at)}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
 
                 {/* Custom Table Picker */}
                 {showTablePicker && (
