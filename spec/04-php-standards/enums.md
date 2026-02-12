@@ -1,6 +1,6 @@
 # PHP Enum Classes — Complete Reference
 
-> **Version:** 1.0.0  
+> **Version:** 2.0.0  
 > **Updated:** 2026-02-12  
 > **Applies to:** WordPress companion plugins (PHP 7.4+)
 
@@ -18,6 +18,7 @@ PHP 7.4 does not support native enums (PHP 8.1+). All "enum" classes use **class
 4. **Constants** use `UPPER_SNAKE_CASE`.
 5. **Each enum class lives in its own file**: `class-hook-enum.php`, `class-path-enum.php`, etc.
 6. **Enum classes are foundation files** — loaded via raw `require_once` before the dependency loader.
+7. **Plugin-specific custom hooks** (e.g., cron hooks) may use `define()` constants in `constants.php` OR class constants in an enum — but never inline string literals.
 
 ---
 
@@ -53,12 +54,25 @@ class HookEnum {
     /** Fires just before PHP shuts down */
     public const SHUTDOWN         = 'shutdown';
 
+    // ── Plugin Lifecycle ────────────────────────────────────────
+    /** Fires after a plugin is activated */
+    public const ACTIVATED_PLUGIN   = 'activated_plugin';
+
+    /** Fires after a plugin is deactivated */
+    public const DEACTIVATED_PLUGIN = 'deactivated_plugin';
+
+    /** Fires after a plugin is deleted */
+    public const DELETED_PLUGIN     = 'deleted_plugin';
+
     // ── Admin UI ────────────────────────────────────────────────
     /** Fires after core admin notices are printed */
     public const ADMIN_NOTICES    = 'admin_notices';
 
     /** Fires to enqueue admin scripts and styles */
     public const ADMIN_ENQUEUE    = 'admin_enqueue_scripts';
+
+    /** Fires to register admin menu pages */
+    public const ADMIN_MENU       = 'admin_menu';
 
     // ── AJAX ────────────────────────────────────────────────────
     /** Prefix for authenticated AJAX hooks: HookEnum::WP_AJAX_PREFIX . 'my_action' */
@@ -73,21 +87,53 @@ class HookEnum {
 
     /** Filters the plugin action links on the Plugins page */
     public const PLUGIN_ACTION_LINKS = 'plugin_action_links';
+
+    /** Filters the update_plugins site transient before it is set */
+    public const PRE_SET_SITE_TRANSIENT_UPDATE_PLUGINS = 'pre_set_site_transient_update_plugins';
+
+    /** Filters plugin information for the "View Details" modal */
+    public const PLUGINS_API = 'plugins_api';
+
+    /** Filters custom cron schedule intervals */
+    public const CRON_SCHEDULES = 'cron_schedules';
 }
 ```
 
 ### Usage Examples
 
 ```php
-// ❌ FORBIDDEN
+// ❌ FORBIDDEN: String literals for hooks
 add_action('init', [$this, 'setup']);
 add_action('rest_api_init', [$this, 'register_routes']);
+add_action('activated_plugin', [$this, 'on_plugin_activated'], 10, 2);
+add_action('admin_menu', [$this, 'add_admin_menu']);
 add_filter('rest_post_dispatch', [$this, 'enrich_error_response'], 10, 3);
+add_filter('pre_set_site_transient_update_plugins', [$this, 'check_for_plugin_update']);
+add_filter('cron_schedules', [$this, 'registerCronSchedules']);
 
-// ✅ REQUIRED
+// ✅ REQUIRED: Enum constants for hooks
 add_action(HookEnum::INIT, [$this, 'setup']);
 add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
+add_action(HookEnum::ACTIVATED_PLUGIN, [$this, 'on_plugin_activated'], 10, 2);
+add_action(HookEnum::ADMIN_MENU, [$this, 'add_admin_menu']);
 add_filter(HookEnum::REST_POST_DISPATCH, [$this, 'enrich_error_response'], 10, 3);
+add_filter(HookEnum::PRE_SET_SITE_TRANSIENT_UPDATE_PLUGINS, [$this, 'check_for_plugin_update']);
+add_filter(HookEnum::CRON_SCHEDULES, [$this, 'registerCronSchedules']);
+
+// ✅ ACCEPTABLE: Plugin-specific custom hooks from constants.php
+// These are defined via define() in constants.php, which is also valid.
+add_action(RISEUP_CRON_SNAPSHOT_SCHEDULED, [$this, 'executeScheduledSnapshot']);
+add_action(RISEUP_CRON_SNAPSHOT_CLEANUP, [$this, 'executeCleanup']);
+```
+
+### AJAX Hook Pattern
+
+```php
+// ❌ FORBIDDEN
+add_action('wp_ajax_riseup_test_connection', [$this, 'ajax_test']);
+
+// ✅ REQUIRED: Compose using prefix constant
+add_action(HookEnum::WP_AJAX_PREFIX . 'riseup_test_connection', [$this, 'ajax_test']);
 ```
 
 ---
@@ -116,6 +162,13 @@ A typed accessor in `RiseupPathUtils` composes: `getDataDir()` + `PathEnum::CONS
  */
 class PathEnum {
 
+    // ── Subdirectories ─────────────────────────────────────────
+    /** Logs subdirectory name */
+    public const LOGS_SUBDIR     = '/logs';
+
+    /** Temp working directory name */
+    public const TEMP_SUBDIR     = '/temp';
+
     // ── Databases ───────────────────────────────────────────────
     /** Root SQLite database file */
     public const ROOT_DB         = '/a-root.db';
@@ -125,6 +178,9 @@ class PathEnum {
 
     /** Snapshot tracking database */
     public const SNAPSHOT_DB     = '/snapshots.db';
+
+    /** Main plugin database (riseup-asia-uploader) */
+    public const PLUGIN_DB       = '/riseup-asia-uploader.db';
 
     // ── Log Files ───────────────────────────────────────────────
     /** General diagnostic log */
@@ -166,7 +222,12 @@ class RiseupPathUtils {
 
     /** Logs subdirectory */
     public static function getLogsDir(): string {
-        return self::getDataDir() . '/logs';
+        return self::getDataDir() . PathEnum::LOGS_SUBDIR;
+    }
+
+    /** Temp working directory */
+    public static function getTempDir(): string {
+        return self::getDataDir() . PathEnum::TEMP_SUBDIR;
     }
 
     // ── Database Paths ──────────────────────────────────────────
@@ -180,6 +241,10 @@ class RiseupPathUtils {
 
     public static function getSnapshotDb(): string {
         return self::getDataDir() . PathEnum::SNAPSHOT_DB;
+    }
+
+    public static function getPluginDb(): string {
+        return self::getDataDir() . PathEnum::PLUGIN_DB;
     }
 
     // ── Log Paths ───────────────────────────────────────────────
@@ -248,27 +313,67 @@ class ErrorTypeEnum {
      * E_PARSE         — Compile-time parse error (syntax error)
      * E_CORE_ERROR    — Fatal error during PHP startup
      * E_COMPILE_ERROR — Fatal compile-time error (Zend Engine)
+     * E_USER_ERROR    — User-triggered fatal error via trigger_error()
      */
     public const FATAL_TYPES = [
         E_ERROR,
         E_PARSE,
         E_CORE_ERROR,
         E_COMPILE_ERROR,
+        E_USER_ERROR,
     ];
 
     /**
      * Warning-level error types (non-fatal but logged).
      *
-     * E_WARNING      — Run-time warning
-     * E_CORE_WARNING — Warning during PHP startup
-     * E_NOTICE       — Run-time notice
-     * E_DEPRECATED   — Deprecation notice
+     * E_WARNING        — Run-time warning
+     * E_CORE_WARNING   — Warning during PHP startup
+     * E_USER_WARNING   — User-triggered warning via trigger_error()
+     * E_NOTICE         — Run-time notice
+     * E_USER_NOTICE    — User-triggered notice
+     * E_DEPRECATED     — Deprecation notice
+     * E_USER_DEPRECATED — User-triggered deprecation
      */
     public const WARNING_TYPES = [
         E_WARNING,
         E_CORE_WARNING,
+        E_USER_WARNING,
         E_NOTICE,
+        E_USER_NOTICE,
         E_DEPRECATED,
+        E_USER_DEPRECATED,
+    ];
+
+    /**
+     * Recoverable error types (can be caught by error handler).
+     *
+     * E_RECOVERABLE_ERROR — Catchable fatal error
+     * E_STRICT            — PHP suggests code changes for interoperability
+     */
+    public const RECOVERABLE_TYPES = [
+        E_RECOVERABLE_ERROR,
+        E_STRICT,
+    ];
+
+    /**
+     * Complete mapping of E_* constants to human-readable labels.
+     * Used by ErrorChecker::get_type_label() for log output.
+     */
+    public const TYPE_LABELS = [
+        E_ERROR             => 'E_ERROR',
+        E_PARSE             => 'E_PARSE',
+        E_CORE_ERROR        => 'E_CORE_ERROR',
+        E_COMPILE_ERROR     => 'E_COMPILE_ERROR',
+        E_USER_ERROR        => 'E_USER_ERROR',
+        E_WARNING           => 'E_WARNING',
+        E_CORE_WARNING      => 'E_CORE_WARNING',
+        E_USER_WARNING      => 'E_USER_WARNING',
+        E_NOTICE            => 'E_NOTICE',
+        E_USER_NOTICE       => 'E_USER_NOTICE',
+        E_DEPRECATED        => 'E_DEPRECATED',
+        E_USER_DEPRECATED   => 'E_USER_DEPRECATED',
+        E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
+        E_STRICT            => 'E_STRICT',
     ];
 }
 ```
@@ -318,10 +423,23 @@ class ErrorChecker {
     }
 
     /**
+     * Determine whether the given error is recoverable.
+     *
+     * @param array|null $error  Value returned by error_get_last()
+     * @return bool
+     */
+    public static function is_recoverable(?array $error): bool {
+        if ($error === null) {
+            return false;
+        }
+        return in_array($error['type'], ErrorTypeEnum::RECOVERABLE_TYPES, true);
+    }
+
+    /**
      * Get a human-readable label for the error severity.
      *
      * @param array|null $error  Value returned by error_get_last()
-     * @return string  'fatal', 'warning', or 'unknown'
+     * @return string  'fatal', 'warning', 'recoverable', or 'unknown'
      */
     public static function get_severity_label(?array $error): string {
         if (self::is_fatal_error($error)) {
@@ -330,9 +448,43 @@ class ErrorChecker {
         if (self::is_warning($error)) {
             return 'warning';
         }
+        if (self::is_recoverable($error)) {
+            return 'recoverable';
+        }
         return 'unknown';
     }
+
+    /**
+     * Get the human-readable E_* constant name for an error type integer.
+     * Replaces inline mapping arrays like riseup_error_type_to_string().
+     *
+     * @param int $type  The E_* error type constant value.
+     * @return string    e.g., 'E_ERROR', 'E_WARNING', or 'UNKNOWN_ERROR_TYPE'
+     */
+    public static function get_type_label(int $type): string {
+        return ErrorTypeEnum::TYPE_LABELS[$type] ?? 'UNKNOWN_ERROR_TYPE';
+    }
 }
+```
+
+### Forbidden vs Required
+
+```php
+// ❌ FORBIDDEN: Inline fatal type arrays
+$fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
+if (!in_array($error['type'], $fatal_types)) { return; }
+
+// ✅ REQUIRED: Centralized check
+if (!ErrorChecker::is_fatal_error($error)) { return; }
+
+// ❌ FORBIDDEN: Inline type-to-string mapping
+function riseup_error_type_to_string($type) {
+    $types = array(E_ERROR => 'E_ERROR', E_PARSE => 'E_PARSE', ...);
+    return isset($types[$type]) ? $types[$type] : 'UNKNOWN_ERROR_TYPE';
+}
+
+// ✅ REQUIRED: Centralized label lookup
+$label = ErrorChecker::get_type_label($error['type']);
 ```
 
 ---
@@ -345,7 +497,8 @@ When you need a new hook name, file path, or error type:
 2. **Add a PHPDoc comment** explaining what the constant represents
 3. **If PathEnum:** Add a corresponding typed accessor to `RiseupPathUtils`
 4. **If HookEnum:** Update all `add_action`/`add_filter` calls that used the string literal
-5. **Never skip the enum** — even for "one-time" usage
+5. **If ErrorTypeEnum:** Add to the appropriate group array AND to `TYPE_LABELS`
+6. **Never skip the enum** — even for "one-time" usage
 
 ---
 
@@ -358,4 +511,4 @@ When you need a new hook name, file path, or error type:
 
 ---
 
-*PHP Enum specification v1.0.0 — 2026-02-12*
+*PHP Enum specification v2.0.0 — 2026-02-12*
