@@ -1,12 +1,12 @@
  # ZIP Creation Rules
 
- ## Compression: Always Use Maximum
+ ## Compression: Use Default Level (Speed-Optimized)
 
- All ZIP creation across the project MUST use maximum compression:
+ All ZIP creation across the project uses `DefaultCompression` (level 6) for the best speed/size tradeoff:
 
  ### Go (backend)
 
- Use the shared `ziputil` package to register `flate.BestCompression` (level 9):
+ Use the shared `ziputil` package to register `flate.DefaultCompression` (level 6):
 
  ```go
  import "wp-plugin-publish/pkg/ziputil"
