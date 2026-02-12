@@ -905,7 +905,10 @@ jQuery(document).ready(function($) {
             success: function(settings) {
                 $('#settings_loading').hide();
                 $('#settings_form').show();
-                if (settings.schedule) $('#setting_schedule').val(settings.schedule);
+                if (settings.schedule) {
+                    $('#setting_schedule').val(settings.schedule);
+                    cachedSchedule = settings.schedule;
+                }
                 if (settings.retention_type) $('#setting_retention_type').val(settings.retention_type).trigger('change');
                 if (settings.retention_value) $('#setting_retention_value').val(settings.retention_value);
                 if (settings.default_scope) $('#setting_scope').val(settings.default_scope);
@@ -921,6 +924,8 @@ jQuery(document).ready(function($) {
                     $('.riseup-storage-card').removeClass('active');
                     $('.riseup-storage-card[data-mode="' + settings.storage_mode + '"]').addClass('active');
                 }
+                // Rebuild calendar now that schedule is known
+                buildCalendar(allSnapshots);
             },
             error: function(xhr) {
                 if (isInitialLoad || xhr.status === 404) {
@@ -1460,7 +1465,7 @@ jQuery(document).ready(function($) {
     // MONTHLY CALENDAR
     // =========================================================================
 
-    var calYear, calMonth;
+    var calYear, calMonth, cachedSchedule = 'manual';
     (function() {
         var now = new Date();
         calYear = now.getFullYear();
@@ -1471,6 +1476,50 @@ jQuery(document).ready(function($) {
         'January','February','March','April','May','June',
         'July','August','September','October','November','December'
     ];
+
+    function getScheduledDates(year, month, frequency) {
+        var dates = {};
+        if (!frequency || frequency === 'manual') return dates;
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        var today = new Date();
+        today.setHours(0,0,0,0);
+
+        if (frequency === 'daily') {
+            for (var d = 1; d <= daysInMonth; d++) {
+                var dt = new Date(year, month, d);
+                if (dt >= today) {
+                    var key = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                    dates[key] = true;
+                }
+            }
+        } else if (frequency === 'weekly') {
+            // Every Sunday (day 0) in the month, from today onward
+            for (var d = 1; d <= daysInMonth; d++) {
+                var dt = new Date(year, month, d);
+                if (dt >= today && dt.getDay() === 0) {
+                    var key = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                    dates[key] = true;
+                }
+            }
+        } else if (frequency === 'monthly') {
+            // 1st of month, from today onward
+            var dt = new Date(year, month, 1);
+            if (dt >= today) {
+                var key = year + '-' + String(month + 1).padStart(2, '0') + '-01';
+                dates[key] = true;
+            }
+        } else if (frequency === 'hourly') {
+            // Same as daily for calendar purposes
+            for (var d = 1; d <= daysInMonth; d++) {
+                var dt = new Date(year, month, d);
+                if (dt >= today) {
+                    var key = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                    dates[key] = true;
+                }
+            }
+        }
+        return dates;
+    }
 
     function buildCalendar(snapshots) {
         $('#cal_month_label').text(monthNames[calMonth] + ' ' + calYear);
@@ -1483,6 +1532,9 @@ jQuery(document).ready(function($) {
             if (!byDate[day]) byDate[day] = [];
             byDate[day].push(s);
         });
+
+        // Compute scheduled future dates
+        var scheduledDates = getScheduledDates(calYear, calMonth, cachedSchedule);
 
         var firstDay = new Date(calYear, calMonth, 1).getDay();
         var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
@@ -1504,10 +1556,11 @@ jQuery(document).ready(function($) {
                     var isToday = (dateStr === todayStr);
                     var cellClass = isToday ? 'riseup-cal-today' : '';
                     var entries = byDate[dateStr] || [];
+                    var isScheduled = !!scheduledDates[dateStr];
 
                     html += '<td class="riseup-cal-day ' + cellClass + '">';
                     html += '<span class="riseup-cal-num">' + day + '</span>';
-                    if (entries.length > 0) {
+                    if (entries.length > 0 || isScheduled) {
                         var hasFull = false, hasIncr = false;
                         entries.forEach(function(e) {
                             if (e.snapshot_type === 'incremental' || e.scope === 'incremental') hasIncr = true;
@@ -1516,8 +1569,9 @@ jQuery(document).ready(function($) {
                         html += '<div class="riseup-cal-dots">';
                         if (hasFull) html += '<span class="riseup-cal-dot riseup-cal-dot-full" title="Full backup"></span>';
                         if (hasIncr) html += '<span class="riseup-cal-dot riseup-cal-dot-incr" title="Incremental"></span>';
+                        if (isScheduled) html += '<span class="riseup-cal-dot riseup-cal-dot-scheduled" title="Scheduled backup"></span>';
                         html += '</div>';
-                        html += '<span class="riseup-cal-count">' + entries.length + '</span>';
+                        if (entries.length > 0) html += '<span class="riseup-cal-count">' + entries.length + '</span>';
                     }
                     html += '</td>';
                     day++;
