@@ -3,7 +3,7 @@
  * ErrorChecker — Centralized Error Type Inspection
  *
  * Encapsulates raw E_* constant checks so callers never need to
- * remember the specific list. Delegates to ErrorTypeEnum for the
+ * remember the specific list. Delegates to ErrorType for the
  * actual constant groupings.
  *
  * @package RiseupAsiaUploader
@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ErrorType;
+
 /**
  * Centralized error-type inspection.
  *
@@ -21,7 +23,7 @@ if (!defined('ABSPATH')) {
  * - Inline `in_array($error['type'], [E_ERROR, ...])` is duplicated
  *   across shutdown handlers, loggers, and health checks.
  * - A single is_fatal_error() call is self-documenting for AI and humans.
- * - Adding a new fatal type requires changing ONE place (ErrorTypeEnum).
+ * - Adding a new fatal type requires changing ONE place (ErrorType).
  */
 class ErrorChecker {
 
@@ -36,7 +38,7 @@ class ErrorChecker {
             return false;
         }
 
-        return in_array($error['type'], ErrorTypeEnum::FATAL_TYPES, true);
+        return in_array($error['type'], ErrorType::FATAL_TYPES, true);
     }
 
     /**
@@ -50,7 +52,7 @@ class ErrorChecker {
             return false;
         }
 
-        return in_array($error['type'], ErrorTypeEnum::WARNING_TYPES, true);
+        return in_array($error['type'], ErrorType::WARNING_TYPES, true);
     }
 
     /**
@@ -64,7 +66,7 @@ class ErrorChecker {
             return false;
         }
 
-        return in_array($error['type'], ErrorTypeEnum::RECOVERABLE_TYPES, true);
+        return in_array($error['type'], ErrorType::RECOVERABLE_TYPES, true);
     }
 
     /**
@@ -96,14 +98,14 @@ class ErrorChecker {
     /**
      * Convert an E_* integer to a human-readable string.
      *
-     * Replaces all inline type-mapping arrays like riseup_error_type_to_string().
+     * Replaces all inline type-mapping arrays.
      *
      * @param int $type PHP error type constant (e.g., E_ERROR).
      * @return string Human-readable label (e.g., 'E_ERROR') or 'UNKNOWN_ERROR_TYPE'.
      */
     public static function get_type_label($type) {
-        if (isset(ErrorTypeEnum::TYPE_LABELS[$type])) {
-            return ErrorTypeEnum::TYPE_LABELS[$type];
+        if (isset(ErrorType::TYPE_LABELS[$type])) {
+            return ErrorType::TYPE_LABELS[$type];
         }
 
         return 'UNKNOWN_ERROR_TYPE';
