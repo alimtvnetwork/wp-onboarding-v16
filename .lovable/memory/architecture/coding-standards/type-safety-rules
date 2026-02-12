@@ -3,20 +3,38 @@ Updated: 2026-02-12
 
 ## Priority Rules (CRITICAL — override all other conventions)
 
-1. **Generics First**: All reusable functions, API methods, hooks, and utilities MUST use generics. Never use `any`, `unknown`, or `Record<string, unknown>` where a generic can express the constraint.
+1. **Generic Enforce (GE-1)**: Every concrete instantiation of a generic type with domain-meaningful parameters MUST produce a named type alias. Raw generic instantiations like `Record<string, unknown>`, `map[string]interface{}`, `Dictionary<string, object>`, `serde_json::Value` are PROHIBITED in public APIs, props, function signatures, and struct fields. See `spec/12-generic-enforce/README.md`.
 
-2. **Zero `any` Tolerance**: The `any` type is PROHIBITED everywhere — catch blocks use bare `catch (err)` with `instanceof` narrowing, never `catch (err: any)`. No `as any` casts. No `<any>` generic params.
+2. **Generics First**: All reusable functions, API methods, hooks, and utilities MUST use generics. Never use `any`, `unknown`, or `Record<string, unknown>` where a generic can express the constraint.
 
-3. **No Magic Strings**: All string literals used as identifiers (status checks, action types, event names) MUST come from `const enum`, string literal types, or named constants in `src/lib/constants.ts`.
+3. **Zero Loose Types — ALL Languages**:
+   - **TypeScript**: `any`, `unknown` (except parse boundaries), `Record<string, unknown>`, `object` — all PROHIBITED.
+   - **Golang**: `interface{}`, `any`, `map[string]interface{}` — all PROHIBITED. Use concrete types or constrained generics.
+   - **C#**: `object`, `dynamic`, `Dictionary<string, object>` — all PROHIBITED.
+   - **Rust**: `Box<dyn Any>` (except true type erasure), `serde_json::Value` in domain structs — PROHIBITED.
 
-4. **No Magic Numbers**: All numeric literals with semantic meaning (timeouts, page sizes, intervals) MUST be named constants with `as const`.
+4. **No Magic Strings**: All string literals used as identifiers (status checks, action types, event names) MUST come from `const enum`, string literal types, or named constants in `src/lib/constants.ts`.
 
-5. **Specific Types Over Loose Types**: API method params/returns use domain-specific interfaces (e.g., `CreateSnapshotOptions`) not `Record<string, unknown>`. Component props use explicit interfaces, not generic records.
+5. **No Magic Numbers**: All numeric literals with semantic meaning (timeouts, page sizes, intervals) MUST be named constants with `as const`.
 
-6. **`unknown` Only at Parse Boundaries**: `unknown` is acceptable ONLY in JSON parsing entry points and type guard functions where it is immediately narrowed. Never in public APIs, props, hooks, or store state.
+6. **Specific Types Over Loose Types**: API method params/returns use domain-specific interfaces (e.g., `CreateSnapshotOptions`) not `Record<string, unknown>`. Component props use explicit interfaces, not generic records.
+
+7. **`unknown` Only at Parse Boundaries**: `unknown` is acceptable ONLY in JSON parsing entry points and type guard functions where it is immediately narrowed. Never in public APIs, props, hooks, or store state.
+
+8. **Catch Block Typing**: Use bare `catch (err)` with `instanceof Error` narrowing. Never `catch (err: any)` or `catch (err: unknown)`.
+
+## Generic Enforce Pattern Summary
+
+When `Generic<T, TKey>` is instantiated with concrete types, create a named alias:
+```
+type TeacherBasicRights = Student<BasicRights, number>;
+type TeacherBasicRightsV2 = Student<BasicRightsV2, number>;
+```
+This ensures DRY, self-documenting, grep-friendly, and refactor-safe code. Full spec with TypeScript, Go, C#, and Rust examples at `spec/12-generic-enforce/`.
 
 ## Remediation Status
 - Spec: `spec/02-typescript-standards/README.md` v2.0.0
+- Generic Enforce Spec: `spec/12-generic-enforce/README.md` v1.0.0
 - Plan: `spec/02-typescript-standards/type-safety-remediation-plan.md`
-- ~130 violations identified across 15 files
-- 8-phase fix plan created, ordered by priority
+- Phase F8 (discriminated unions for metadata) — COMPLETE
+- Remaining: ~23 files still have `Record<string, unknown>` — to be replaced with named domain types per GE-1

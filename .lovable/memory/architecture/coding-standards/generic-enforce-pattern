@@ -1,0 +1,4 @@
+# Memory: architecture/coding-standards/generic-enforce-pattern
+Updated: 2026-02-12
+
+The Generic Enforce pattern (spec/12-generic-enforce/) requires that every concrete instantiation of a generic type with domain-meaningful parameters MUST produce a named type alias. This is a cross-language rule applying to TypeScript, Golang, C#, and Rust. Raw generic instantiations like `Record<string, unknown>`, `map[string]interface{}`, `Dictionary<string, object>`, and `serde_json::Value` are PROHIBITED in public APIs, props, function signatures, and struct/interface fields. The pattern follows the Student-Teacher model: `type TeacherBasicRights = Student<BasicRights, number>` rather than scattering `Student<BasicRights, number>` throughout the codebase. Exception: trivial generics with primitive params (`string[]`, `Record<string, string>`) don't require aliases unless used in 3+ places.
