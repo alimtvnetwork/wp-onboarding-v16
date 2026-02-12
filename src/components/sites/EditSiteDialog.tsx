@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2, RefreshCw, CheckCircle, Package, Globe, Search } from "lucide-react";
 import { api, ApiError, Site, Plugin, PluginMapping } from "@/lib/api";
+import { ConnectionStatus } from "@/lib/constants";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
 import { ConnectionTestLogs } from "./ConnectionTestLogs";
@@ -215,7 +216,7 @@ export function EditSiteDialog({ open, onOpenChange, site }: EditSiteDialogProps
     }
   };
 
-  const isConnected = site?.connectionStatus === "connected" || testSuccess;
+  const isConnected = site?.connectionStatus === ConnectionStatus.Connected || testSuccess;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

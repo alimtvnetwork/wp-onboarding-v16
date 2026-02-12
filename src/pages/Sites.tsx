@@ -18,6 +18,7 @@ import {
   Upload,
 } from "lucide-react";
 import { api, Site } from "@/lib/api";
+import { ConnectionStatus } from "@/lib/constants";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useErrorStore } from "@/stores/errorStore";
@@ -93,7 +94,7 @@ export default function Sites() {
 
   // Connected sites for bulk deploy
   const connectedSites = useMemo(() => {
-    return sites?.filter((s) => s.connectionStatus === "connected") || [];
+    return sites?.filter((s) => s.connectionStatus === ConnectionStatus.Connected) || [];
   }, [sites]);
 
   // Handle bulk deploy

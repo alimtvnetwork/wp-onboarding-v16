@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
+import { ConnectionStatus } from "@/lib/constants";
 import { toast } from "sonner";
 
 export interface WebSocketState {
@@ -100,7 +101,7 @@ export function useWebSocketStatus(options: UseWebSocketStatusOptions = {}) {
 
     const unsubConnection = wsClient.on(WS_EVENTS.CONNECTION, (data) => {
       const payload = data as { status: string };
-      const newIsConnected = payload.status === "connected";
+      const newIsConnected = payload.status === ConnectionStatus.Connected;
       
       if (wasConnectedRef.current === false && newIsConnected && hasShownDisconnectRef.current) {
         if (showToastsRef.current) {

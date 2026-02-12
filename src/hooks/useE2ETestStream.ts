@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
+import { E2ECaseStatusValues } from "@/lib/constants";
 
 export interface LiveTestResult {
   caseId: string;
@@ -57,9 +58,9 @@ export function useE2ETestStream() {
           ? {
               ...prev,
               completedTests: (prev.completedTests || 0) + 1,
-              passedTests: prev.passedTests + (result.status === "passed" ? 1 : 0),
-              failedTests: prev.failedTests + (result.status === "failed" || result.status === "error" ? 1 : 0),
-              skippedTests: prev.skippedTests + (result.status === "skipped" ? 1 : 0),
+              passedTests: prev.passedTests + (result.status === E2ECaseStatusValues.Passed ? 1 : 0),
+              failedTests: prev.failedTests + (result.status === E2ECaseStatusValues.Failed || result.status === "error" ? 1 : 0),
+              skippedTests: prev.skippedTests + (result.status === E2ECaseStatusValues.Skipped ? 1 : 0),
               currentTest: result.caseName,
             }
           : prev

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { wsClient, WS_EVENTS } from "@/lib/ws";
+import { ConnectionStatus } from "@/lib/constants";
 
 export interface WebSocketMessage {
   type: string;
@@ -30,7 +31,7 @@ export function useWebSocket() {
     // Listen for connection events
     const unsubConnection = wsClient.on(WS_EVENTS.CONNECTION, (data: unknown) => {
       const { status } = data as { status: string };
-      setIsConnected(status === "connected");
+      setIsConnected(status === ConnectionStatus.Connected);
       setLastMessage(createMessage(WS_EVENTS.CONNECTION, data));
     });
 
