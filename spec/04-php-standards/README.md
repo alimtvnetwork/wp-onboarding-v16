@@ -16,9 +16,14 @@
 | Class names | PascalCase | `RiseupEnvelopeBuilder`, `RiseupSnapshotFactory` | _(matches PSR-12)_ |
 | Method names | snake_case | `build_response()`, `get_plugin_info()` | WordPress convention |
 | Constants | UPPER_SNAKE_CASE (no `RISEUP_` prefix) | `REST_NAMESPACE`, `ACTION_UPLOAD` | _(matches PSR-12)_ |
-| File names | `class-{kebab-case}.php` | `class-envelope-builder.php` | WordPress convention |
+| File names (classes) | `class-{kebab-case}.php` | `class-envelope-builder.php` | WordPress convention |
+| File names (enums) | `{DefinitionName}.php` (PascalCase, PSR-4) | `UploadSource.php`, `Capability.php` | PSR-4 in `includes/Enums/` |
 | Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` | _(matches PSR-12)_ |
-| Enum classes | PascalCase with `Enum` suffix | `HookEnum`, `PathEnum`, `ErrorTypeEnum` | Project convention |
+| Enum types | PascalCase, **no `Enum` suffix** | `UploadSource`, `Capability`, `HttpMethod` | PHP 8.1+ native backed enums |
+
+> **Dual file naming convention:**
+> - **`includes/`** (non-namespaced WordPress classes): `class-kebab-case.php` (e.g., `class-envelope-builder.php`)
+> - **`includes/Enums/`** (namespaced types under `RiseupAsia\Enums`): `{DefinitionName}.php` — file name = definition name, PascalCase, no prefix, no hyphens, no underscores (e.g., `UploadSource.php` contains `enum UploadSource: string`)
 
 ---
 
@@ -75,7 +80,7 @@ private function safe_execute(callable $callback) {
 
 ### Global Shutdown Handler
 
-Register a shutdown handler to catch fatal errors. **Delegate the type-check to `ErrorChecker`** which uses `ErrorTypeEnum::FATAL_TYPES` (see [PHP Enum Spec](./enums.md)):
+Register a shutdown handler to catch fatal errors. **Delegate the type-check to `ErrorChecker`** which uses `ErrorType::FATAL_TYPES` (see [PHP Enum Spec](./enums.md)):
 
 ```php
 // ❌ FORBIDDEN: Inline error-type checking
@@ -90,14 +95,14 @@ register_shutdown_function(function() {
 register_shutdown_function(function() {
     $error = error_get_last();
     if (ErrorChecker::is_fatal_error($error)) {
-        // Log to fatal-errors.log via RiseupPathUtils::getFatalErrorLog()
+        // Log to fatal-errors.log via RiseupPathUtils::get_fatal_error_log()
         // Include memory_get_peak_usage() for diagnostics
         // Send JSON response before process dies (if REST_REQUEST)
     }
 });
 ```
 
-> **Implementation:** `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` for the constant list. Use `ErrorChecker::get_type_label($error['type'])` to convert any `E_*` integer to a human-readable string (e.g., `'E_ERROR'`) — this replaces all inline type-mapping arrays like `riseup_error_type_to_string()`. See [enums.md](./enums.md) for the full `ErrorChecker`, `ErrorTypeEnum`, `get_severity_label()`, and `TYPE_LABELS` implementations.
+> **Implementation:** `ErrorChecker` delegates to `ErrorType::FATAL_TYPES` for the constant list. Use `ErrorChecker::get_type_label($error['type'])` to convert any `E_*` integer to a human-readable string (e.g., `'E_ERROR'`) — this replaces all inline type-mapping arrays. See [enums.md](./enums.md) for the full `ErrorChecker`, `ErrorType`, and `TYPE_LABELS` implementations.
 
 ---
 
@@ -145,11 +150,13 @@ public function log_exception(\Throwable $e, string $context = '') {
 
 ## Constants & Enums — No Magic Strings
 
-### Rule: All identifiers in `constants.php` or Enum classes
+### Rule: All identifiers in `constants.php` or native backed enums
 
-Every endpoint path, action name, capability string, option key, **hook name**, **file path segment**, **HTTP method**, and **WordPress capability** must be defined centrally. Use PHP `constants.php` for simple values and **Enum classes** for categorized groups.
+Every endpoint path, action name, capability string, option key, **hook name**, **file path segment**, **HTTP method**, and **WordPress capability** must be defined centrally. Use PHP `constants.php` for simple values and **PHP 8.1+ native backed enums** in `includes/Enums/` for categorized groups.
 
-### Hook Names — HookEnum
+> **See [enums.md](./enums.md)** for the full enum specification (v4.0.0), including file naming rules, namespace conventions, and all enum/const class definitions.
+
+### Hook Names — Hook enum
 
 ```php
 // ❌ FORBIDDEN: Magic hook strings
@@ -157,21 +164,12 @@ add_action('init', [$this, 'setup']);
 add_action('rest_api_init', [$this, 'register_routes']);
 add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
 
-// ✅ REQUIRED: Hook names from HookEnum
-class HookEnum {
-    public const INIT             = 'init';
-    public const REST_API_INIT    = 'rest_api_init';
-    public const PLUGINS_LOADED   = 'plugins_loaded';
-    public const ADMIN_INIT       = 'admin_init';
-    public const ADMIN_NOTICES    = 'admin_notices';
-    public const SHUTDOWN         = 'shutdown';
-    public const WP_AJAX_PREFIX   = 'wp_ajax_';
-}
+// ✅ REQUIRED: Hook names from Hook enum
+use RiseupAsia\Enums\Hook;
 
-// Usage:
-add_action(HookEnum::INIT, [$this, 'setup']);
-add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
-add_action(HookEnum::PLUGINS_LOADED, [$this, 'on_plugins_loaded']);
+add_action(Hook::Init->value, [$this, 'setup']);
+add_action(Hook::RestApiInit->value, [$this, 'register_routes']);
+add_action(Hook::PluginsLoaded->value, [$this, 'on_plugins_loaded']);
 ```
 
 ### Action Names — Named Composed Constants
