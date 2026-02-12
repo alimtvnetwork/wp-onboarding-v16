@@ -12,6 +12,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\Capability;
+use RiseupAsia\Enums\Hook;
+
 /**
  * Class Riseup_Admin
  *
@@ -75,20 +78,20 @@ class Riseup_Admin {
      * Constructor.
      */
     private function __construct() {
-        add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('admin_init', array($this, 'register_settings'));
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
-        add_action('admin_notices', array($this, 'render_global_error_notice'));
-        add_action('wp_ajax_riseup_test_update_connection', array($this, 'ajax_test_update_connection'));
-        add_action('wp_ajax_riseup_clear_update_cache', array($this, 'ajax_clear_update_cache'));
-        add_action('wp_ajax_riseup_check_for_updates', array($this, 'ajax_check_for_updates'));
-        add_action('wp_ajax_riseup_save_snapshot_settings', array($this, 'ajax_save_snapshot_settings'));
-        add_action('wp_ajax_riseup_run_snapshot_cleanup', array($this, 'ajax_run_snapshot_cleanup'));
-        add_action('wp_ajax_riseup_get_snapshot_storage_stats', array($this, 'ajax_get_snapshot_storage_stats'));
-        add_action('wp_ajax_riseup_dismiss_error_flash', array($this, 'ajax_dismiss_error_flash'));
-        add_action('wp_ajax_riseup_clear_error_sessions', array($this, 'ajax_clear_error_sessions'));
-        add_action('wp_ajax_riseup_read_log_file', array($this, 'ajax_read_log_file'));
-        add_action('wp_ajax_riseup_clear_log_file', array($this, 'ajax_clear_log_file'));
+        add_action(Hook::AdminMenu->value, array($this, 'add_admin_menu'));
+        add_action(Hook::AdminInit->value, array($this, 'register_settings'));
+        add_action(Hook::AdminEnqueue->value, array($this, 'enqueue_admin_assets'));
+        add_action(Hook::AdminNotices->value, array($this, 'render_global_error_notice'));
+        add_action(Hook::ajax('riseup_test_update_connection'), array($this, 'ajax_test_update_connection'));
+        add_action(Hook::ajax('riseup_clear_update_cache'), array($this, 'ajax_clear_update_cache'));
+        add_action(Hook::ajax('riseup_check_for_updates'), array($this, 'ajax_check_for_updates'));
+        add_action(Hook::ajax('riseup_save_snapshot_settings'), array($this, 'ajax_save_snapshot_settings'));
+        add_action(Hook::ajax('riseup_run_snapshot_cleanup'), array($this, 'ajax_run_snapshot_cleanup'));
+        add_action(Hook::ajax('riseup_get_snapshot_storage_stats'), array($this, 'ajax_get_snapshot_storage_stats'));
+        add_action(Hook::ajax('riseup_dismiss_error_flash'), array($this, 'ajax_dismiss_error_flash'));
+        add_action(Hook::ajax('riseup_clear_error_sessions'), array($this, 'ajax_clear_error_sessions'));
+        add_action(Hook::ajax('riseup_read_log_file'), array($this, 'ajax_read_log_file'));
+        add_action(Hook::ajax('riseup_clear_log_file'), array($this, 'ajax_clear_log_file'));
     }
 
     /**
@@ -99,7 +102,7 @@ class Riseup_Admin {
         add_menu_page(
             __('Riseup Asia Uploader', 'riseup-asia-uploader'),
             __('Riseup Uploader', 'riseup-asia-uploader'),
-            'manage_options',
+            Capability::ManageOptions->value,
             'riseup-asia-uploader',
             array($this, 'render_logs_page'),
             'dashicons-upload',
@@ -111,7 +114,7 @@ class Riseup_Admin {
             'riseup-asia-uploader',
             __('Activity Logs', 'riseup-asia-uploader'),
             __('Activity Logs', 'riseup-asia-uploader'),
-            'manage_options',
+            Capability::ManageOptions->value,
             'riseup-asia-uploader',
             array($this, 'render_logs_page')
         );
@@ -121,7 +124,7 @@ class Riseup_Admin {
             'riseup-asia-uploader',
             __('Settings', 'riseup-asia-uploader'),
             __('Settings', 'riseup-asia-uploader'),
-            'manage_options',
+            Capability::ManageOptions->value,
             'riseup-asia-settings',
             array($this, 'render_settings_page')
         );
@@ -131,7 +134,7 @@ class Riseup_Admin {
             'riseup-asia-uploader',
             __('Agent Sites', 'riseup-asia-uploader'),
             __('Agent Sites', 'riseup-asia-uploader'),
-            'manage_options',
+            Capability::ManageOptions->value,
             'riseup-asia-agents',
             array($this, 'render_agents_page')
         );
@@ -141,7 +144,7 @@ class Riseup_Admin {
             'riseup-asia-uploader',
             __('Snapshots', 'riseup-asia-uploader'),
             __('Snapshots', 'riseup-asia-uploader'),
-            'manage_options',
+            Capability::ManageOptions->value,
             'riseup-asia-snapshots',
             array($this, 'render_snapshots_page')
         );
@@ -157,7 +160,7 @@ class Riseup_Admin {
             'riseup-asia-uploader',
             __('Error Log', 'riseup-asia-uploader'),
             __('Error Log', 'riseup-asia-uploader') . $error_bubble,
-            'manage_options',
+            Capability::ManageOptions->value,
             'riseup-asia-errors',
             array($this, 'render_errors_page')
         );
@@ -425,8 +428,8 @@ class Riseup_Admin {
     public function ajax_test_update_connection() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
         
         $resolver = Riseup_Update_Resolver::get_instance();
@@ -445,8 +448,8 @@ class Riseup_Admin {
     public function ajax_clear_update_cache() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
         
         $resolver = Riseup_Update_Resolver::get_instance();
@@ -461,8 +464,8 @@ class Riseup_Admin {
     public function ajax_check_for_updates() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
         
         $resolver = Riseup_Update_Resolver::get_instance();
@@ -484,8 +487,8 @@ class Riseup_Admin {
     public function ajax_save_snapshot_settings() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
         $settings = array();
@@ -583,8 +586,8 @@ class Riseup_Admin {
     public function ajax_run_snapshot_cleanup() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
         require_once dirname(__FILE__) . '/class-snapshot-factory.php';
@@ -609,8 +612,8 @@ class Riseup_Admin {
     public function ajax_get_snapshot_storage_stats() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
         require_once dirname(__FILE__) . '/class-snapshot-factory.php';
@@ -800,8 +803,8 @@ class Riseup_Admin {
      */
     public function ajax_dismiss_error_flash() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
         $db = Riseup_Database::get_instance();
@@ -823,8 +826,8 @@ class Riseup_Admin {
      */
     public function ajax_clear_error_sessions() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
         $db = Riseup_Database::get_instance();
@@ -863,8 +866,8 @@ class Riseup_Admin {
      */
     public function ajax_read_log_file() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
@@ -907,8 +910,8 @@ class Riseup_Admin {
      */
     public function ajax_clear_log_file() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Unauthorized'));
+        if (!current_user_can(Capability::ManageOptions->value)) {
+            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
