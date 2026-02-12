@@ -267,7 +267,7 @@ type ActivityMetadata = PublishMetadata | SnapshotMetadata | PluginMetadata | Co
 
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
 - [Golang Standards](../03-golang-standards/README.md)
-- [Response Envelope Spec](../06-response-envelope/envelope.schema.json)
+- [Response Envelope Spec](../05-error-manage/05-response-envelope/envelope.schema.json)
 
 ---
 
