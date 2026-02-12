@@ -560,6 +560,35 @@ export const api = {
     const base = resolveApiBase();
     return `${base}/sites/${siteId}/snapshots/${snapshotId}/export`;
   },
+  /**
+   * Download a cached snapshot ZIP via Go proxy.
+   * Streams the ZIP binary; returns a Blob for client-side download.
+   */
+  downloadSnapshotZip: async (siteId: number, snapshotId: number): Promise<{ blob: Blob; filename: string; cached: boolean; size: number }> => {
+    const url = resolveApiUrl(`/sites/${siteId}/snapshots/download`);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ snapshot_id: snapshotId }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      let msg = `Download failed (${res.status})`;
+      try {
+        const parsed = JSON.parse(text);
+        msg = parsed?.Status?.Message || parsed?.message || msg;
+      } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    let filename = `snapshot-${snapshotId}.zip`;
+    const match = disposition.match(/filename="?([^";\n]+)"?/);
+    if (match?.[1]) filename = match[1];
+    const cached = res.headers.get("X-Snapshot-Cached") === "true";
+    const size = parseInt(res.headers.get("X-Snapshot-Size") || "0", 10);
+    return { blob, filename, cached, size };
+  },
   getRemoteAvailableTables: (siteId: number) =>
     request<AvailableTable[]>(`/sites/${siteId}/snapshots/tables`),
 

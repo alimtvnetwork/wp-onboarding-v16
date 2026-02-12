@@ -115,7 +115,9 @@ function SnapshotRow({
   isDeleting: boolean;
   isNested?: boolean;
 }) {
+  const [downloading, setDownloading] = useState(false);
   const isRunning = snapshot.status === "running" || snapshot.status === "in_progress";
+  const isIncremental = snapshot.snapshot_type === "incremental" || snapshot.scope === "incremental";
 
   const statusBadge = (() => {
     switch (snapshot.status) {
@@ -153,7 +155,7 @@ function SnapshotRow({
     custom: "bg-orange-500/10 text-orange-600 border-orange-500/20",
   };
 
-  const isIncremental = snapshot.snapshot_type === "incremental" || snapshot.scope === "incremental";
+  // isIncremental already declared above
 
   return (
     <div className={`border rounded-lg p-3 space-y-2 hover:bg-muted/30 transition-colors animate-fade-in ${isNested ? "ml-6 border-l-2 border-l-primary/20" : ""}`}>
@@ -187,17 +189,44 @@ function SnapshotRow({
               >
                 <Eye className="h-3.5 w-3.5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                asChild
-                title="Download snapshot"
-              >
-                <a href={api.getRemoteSnapshotExportUrl(siteId, snapshot.id)} download>
-                  <Download className="h-3.5 w-3.5" />
-                </a>
-              </Button>
+              {/* Download ZIP — full snapshots only */}
+              {!isIncremental && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  disabled={downloading}
+                  title={downloading ? "Building ZIP…" : "Download ZIP"}
+                  onClick={async () => {
+                    setDownloading(true);
+                    try {
+                      const { blob, filename, cached, size } = await api.downloadSnapshotZip(siteId, snapshot.id);
+                      // Trigger browser download
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = filename;
+                      document.body.appendChild(a);
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      a.remove();
+                      toast.success(
+                        `ZIP downloaded${cached ? " (cached)" : ""} — ${formatBytes(size)}`,
+                      );
+                    } catch (err: any) {
+                      toast.error(`Download failed: ${err.message}`);
+                    } finally {
+                      setDownloading(false);
+                    }
+                  }}
+                >
+                  {downloading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Download className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

@@ -170,6 +170,17 @@ func (c *Client) fullURL(endpoint string) string {
 	return fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 }
 
+// rawGet performs an authenticated GET request to an arbitrary full URL on the same WordPress host.
+func (c *Client) rawGet(fullURL string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
+			WithContext("url", fullURL)
+	}
+	c.setStandardHeaders(req, ContentTypeJSON)
+	return c.httpClient.Do(req)
+}
+
 func escapePathSegmentPreservingPercent(s string) string {
 	// If caller already provided an escaped segment (e.g., contains %2F), avoid double-encoding.
 	// This is not a full validation; it's a pragmatic guard for our plugin identifier use-case.

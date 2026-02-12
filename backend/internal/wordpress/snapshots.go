@@ -316,6 +316,58 @@ func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 	return resp, nil
 }
 
+// DownloadSnapshotZip requests a cached ZIP build/download for a snapshot via POST /snapshots/download.
+// Returns JSON with { url, filename, size, cached, included_ids, incremental_count }.
+func (c *Client) DownloadSnapshotZip(snapshotID int64) (map[string]interface{}, error) {
+	endpoint := snapshotEndpoint(EndpointSnapshotsDownload)
+	reqBody := map[string]interface{}{"id": snapshotID}
+	resp, err := c.request("POST", endpoint, reqBody)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to request snapshot download")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, &APIError{
+			Operation:    "download snapshot zip",
+			Method:       "POST",
+			Endpoint:     endpoint,
+			URL:          c.fullURL(endpoint),
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode download response")
+	}
+	return result, nil
+}
+
+// StreamSnapshotZip downloads the actual ZIP file from the WordPress download-file endpoint.
+// Returns the raw HTTP response; caller must close the body.
+func (c *Client) StreamSnapshotZip(downloadURL string) (*http.Response, error) {
+	resp, err := c.rawGet(downloadURL)
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to stream snapshot ZIP")
+	}
+	if resp.StatusCode != 200 {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, &APIError{
+			Operation:    "stream snapshot zip",
+			Method:       "GET",
+			Endpoint:     downloadURL,
+			URL:          downloadURL,
+			StatusCode:   resp.StatusCode,
+			ResponseBody: truncateBody(string(bodyBytes), 8192),
+		}
+	}
+	return resp, nil
+}
+
 // GetSnapshotProviders returns available snapshot providers on the remote site.
 func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsProviders)
