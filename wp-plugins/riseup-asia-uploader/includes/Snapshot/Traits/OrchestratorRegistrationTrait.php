@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait OrchestratorRegistrationTrait {
 
     /**
@@ -24,7 +26,7 @@ trait OrchestratorRegistrationTrait {
 
             return $this->insertSnapshotRecord($pdo, $sequence, $snapshot_dir, $scope, $tables_json, $worker_result, $dir_size);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Failed to register snapshot', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array('error' => $e->getMessage()));
             return false;
         }
     }

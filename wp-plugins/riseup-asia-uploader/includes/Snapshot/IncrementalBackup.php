@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once dirname(__FILE__) . '/SqliteSchemaConverter.php';
 
 // Load trait files
@@ -75,7 +77,7 @@ class RiseupIncrementalBackup {
             return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $root_path);
         }
 
-        $this->log('INFO', 'Starting incremental backup', array('master_dir' => basename($master_dir), 'title' => $title));
+        $this->log(LogLevelType::Info->value, 'Starting incremental backup', array('master_dir' => basename($master_dir), 'title' => $title));
 
         return $this->executeIncrementalPipeline($root_path, $title, $master_dir, $start_time);
     }
@@ -95,7 +97,7 @@ class RiseupIncrementalBackup {
 
             return $this->finalizeIncremental($title, $master_dir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $start_time);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Incremental backup failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Incremental backup failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental');
         }
     }
@@ -130,8 +132,8 @@ class RiseupIncrementalBackup {
         }
         if (!$this->logger) return;
         switch ($level) {
-            case 'WARN':  $this->logger->warn($full); break;
-            case 'ERROR': $this->logger->error($full); break;
+            case LogLevelType::Warn->value:  $this->logger->warn($full); break;
+            case LogLevelType::Error->value: $this->logger->error($full); break;
             default:      $this->logger->info($full);
         }
     }

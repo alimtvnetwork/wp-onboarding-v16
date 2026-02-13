@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait RestoreValidationTrait {
 
     /**
@@ -65,7 +67,7 @@ trait RestoreValidationTrait {
             }
         }
 
-        $this->log('INFO', 'Restore order determined', array(
+        $this->log(LogLevelType::Info->value, 'Restore order determined', array(
             'tables' => count($restore_order), 'order' => array_slice($restore_order, 0, 10),
         ));
 
@@ -85,7 +87,7 @@ trait RestoreValidationTrait {
             return null;
         }
 
-        $this->log('INFO', 'Creating pre-restore safety backup');
+        $this->log(LogLevelType::Info->value, 'Creating pre-restore safety backup');
         $result = $this->orchestrator->executeFullBackup(array(
             'title'           => 'Pre-Restore Safety Backup ' . date('Y-m-d H:i'),
             'compression'     => false,
@@ -93,11 +95,11 @@ trait RestoreValidationTrait {
         ));
 
         if ($result['success']) {
-            $this->log('INFO', 'Pre-restore backup complete', array('backup_id' => $result['snapshot_id'] ?? null));
+            $this->log(LogLevelType::Info->value, 'Pre-restore backup complete', array('backup_id' => $result['snapshot_id'] ?? null));
             return $result['snapshot_id'] ?? null;
         }
 
-        $this->log('WARN', 'Pre-restore backup failed (continuing)', array('error' => $result['error'] ?? 'Unknown'));
+        $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array('error' => $result['error'] ?? 'Unknown'));
 
         if (!empty($options['require_backup'])) {
             throw new Exception('Pre-restore backup failed: ' . ($result['error'] ?? 'Unknown'));

@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait RestoreUtilsTrait {
 
     /**
@@ -27,7 +29,7 @@ trait RestoreUtilsTrait {
      * @return array Final result.
      */
     private function buildRestoreResult(array $masterResult, array $incResult, ?int $backupId, array $errors, float $duration, array $meta, int $totalRows): array {
-        $this->log('INFO', 'Per-table restore complete', array(
+        $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
             'tables_restored'      => $masterResult['tables_restored'],
             'total_rows'           => $totalRows,
             'incrementals_applied' => $incResult['applied'],
@@ -66,7 +68,7 @@ trait RestoreUtilsTrait {
             $details = $this->buildAuditDetails($snapshot_dir, $tables_restored, $total_rows, $duration);
             $this->insertAuditRecord($pdo, $details);
         } catch (\Throwable $e) {
-            $this->log('WARN', 'Failed to log audit for restore', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Failed to log audit for restore', array('error' => $e->getMessage()));
         }
     }
 

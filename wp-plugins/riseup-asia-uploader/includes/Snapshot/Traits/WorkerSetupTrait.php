@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait WorkerSetupTrait {
 
     /**
@@ -24,7 +26,7 @@ trait WorkerSetupTrait {
             $this->setPoolSize($config['settings']['worker_pool_size']);
         }
 
-        $this->log('INFO', 'Starting per-table snapshot', array(
+        $this->log(LogLevelType::Info->value, 'Starting per-table snapshot', array(
             'title' => $title, 'scope' => $scope, 'type' => $type, 'pool_size' => $this->poolSize,
         ));
 
@@ -51,7 +53,7 @@ trait WorkerSetupTrait {
     /** Populate dependencies and return seed order. */
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config['scope'] ?? 'wordpress');
-        $this->log('INFO', 'Export order determined', array('tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
+        $this->log(LogLevelType::Info->value, 'Export order determined', array('tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
         return $analysis['seed_order'];
     }
 
@@ -74,8 +76,8 @@ trait WorkerSetupTrait {
         if (!$this->logger) return;
 
         switch ($level) {
-            case 'WARN':  $this->logger->warn($full); break;
-            case 'ERROR': $this->logger->error($full); break;
+            case LogLevelType::Warn->value:  $this->logger->warn($full); break;
+            case LogLevelType::Error->value: $this->logger->error($full); break;
             default:      $this->logger->info($full);
         }
     }

@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 // Load traits
 require_once dirname(__FILE__) . '/Traits/RestoreValidationTrait.php';
 require_once dirname(__FILE__) . '/Traits/RestoreTableTrait.php';
@@ -92,7 +94,7 @@ class RiseupRestoreEngine {
             return $prereqError;
         }
 
-        $this->log('INFO', 'Starting per-table restore', array(
+        $this->log(LogLevelType::Info->value, 'Starting per-table restore', array(
             'directory' => basename($snapshot_dir), 'mode' => $options['mode'] ?? 'full',
         ));
 
@@ -177,7 +179,7 @@ class RiseupRestoreEngine {
      */
     private function handleRestoreFailure(\Throwable $e): array {
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-        $this->log('ERROR', 'Restore engine failed', array(
+        $this->log(LogLevelType::Error->value, 'Restore engine failed', array(
             'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
         ));
         return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'restore');

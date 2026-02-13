@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait WorkerExecuteTrait {
 
     /**
@@ -36,7 +38,7 @@ trait WorkerExecuteTrait {
             $this->scheduleNextBatch($job_id);
             return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
@@ -62,7 +64,7 @@ trait WorkerExecuteTrait {
 
             return $this->buildSyncSnapshotResult($prepared, $export, $start_time);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Synchronous snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }

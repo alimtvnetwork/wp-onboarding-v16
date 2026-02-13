@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait WorkerBatchProcessTrait {
 
     /**
@@ -16,27 +18,27 @@ trait WorkerBatchProcessTrait {
     public function processWorkerBatch($args) {
         $job_id = $args['job_id'] ?? 0;
         if (!$job_id) {
-            $this->log('ERROR', 'Worker batch called without job_id');
+            $this->log(LogLevelType::Error->value, 'Worker batch called without job_id');
             return;
         }
 
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
-            $this->log('ERROR', 'No database connection for worker batch');
+            $this->log(LogLevelType::Error->value, 'No database connection for worker batch');
             return;
         }
 
         try {
             $job = $this->getJob($pdo, $job_id);
             if (!$job) {
-                $this->log('ERROR', 'Job not found', array('job_id' => $job_id));
+                $this->log(LogLevelType::Error->value, 'Job not found', array('job_id' => $job_id));
                 return;
             }
 
             $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_PROCESSING);
             $this->processJobBatch($pdo, $job_id, $job);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Worker batch failed', array(
+            $this->log(LogLevelType::Error->value, 'Worker batch failed', array(
                 'job_id' => $job_id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
             $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_FAILED, $e->getMessage());
@@ -61,7 +63,7 @@ trait WorkerBatchProcessTrait {
             return;
         }
 
-        $this->log('INFO', sprintf('Batch %d/%d: exporting %d tables',
+        $this->log(LogLevelType::Info->value, sprintf('Batch %d/%d: exporting %d tables',
             $batch_index + 1, count($batches), count($batches[$batch_index])
         ));
 
@@ -74,7 +76,7 @@ trait WorkerBatchProcessTrait {
         $next_batch = $batch_index + 1;
         if ($next_batch < count($batches)) {
             $this->scheduleNextBatch($jobId);
-            $this->log('INFO', sprintf('Next batch scheduled (%d/%d)', $next_batch + 1, count($batches)));
+            $this->log(LogLevelType::Info->value, sprintf('Next batch scheduled (%d/%d)', $next_batch + 1, count($batches)));
         } else {
             $this->finalizeJob($pdo, $jobId, $job['snapshot_dir']);
         }
