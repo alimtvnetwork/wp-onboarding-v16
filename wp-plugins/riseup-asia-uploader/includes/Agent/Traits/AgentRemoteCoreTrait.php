@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\HttpMethodType;
+
 trait AgentRemoteCoreTrait {
 
     /**
@@ -96,7 +98,7 @@ trait AgentRemoteCoreTrait {
             'sslverify' => true,
         );
 
-        if (!empty($body) && in_array($method, array('POST', 'PUT', 'PATCH'))) {
+        if (!empty($body) && in_array($method, array(HttpMethodType::Post->value, HttpMethodType::Put->value, HttpMethodType::Patch->value))) {
             $args['body'] = json_encode($body);
         }
 
