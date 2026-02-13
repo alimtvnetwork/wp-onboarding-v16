@@ -225,7 +225,7 @@ class RiseupSnapshotExporter {
             return null;
         }
 
-        if (!file_exists($export['zip_path'])) {
+        if (RiseupBooleanHelpers::is_file_missing($export['zip_path'])) {
             $this->log('WARN', 'Export ZIP file missing', array('path' => $export['zip_path']));
             return null;
         }
@@ -361,7 +361,7 @@ class RiseupSnapshotExporter {
 
         // Ensure exports directory exists
         $exportsDir = RiseupPathUtils::getSnapshotsDir() . '/' . SNAPSHOT_EXPORTS_SUBDIR;
-        if (!is_dir($exportsDir)) {
+        if (RiseupBooleanHelpers::is_dir_missing($exportsDir)) {
             if (!wp_mkdir_p($exportsDir)) {
                 return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => ERR_EXPORT_BUILD_FAILED);
             }
@@ -531,7 +531,7 @@ class RiseupSnapshotExporter {
      */
     private function collectSnapshotFiles($dir) {
         $files = array();
-        if (!is_dir($dir)) {
+        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
             return $files;
         }
 
@@ -557,7 +557,7 @@ class RiseupSnapshotExporter {
      */
     private function collectIncrementalFiles($incrementalDir) {
         $files = array();
-        if (!is_dir($incrementalDir)) {
+        if (RiseupBooleanHelpers::is_dir_missing($incrementalDir)) {
             return $files;
         }
 
