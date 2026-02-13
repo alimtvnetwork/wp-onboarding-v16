@@ -1,6 +1,6 @@
 <?php
 /**
- * Hook — WordPress Hook Name Enum
+ * HookType — WordPress Hook Name Enum
  *
  * Every add_action() or add_filter() call MUST reference a case from this enum.
  *
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 /**
  * WordPress action and filter hook names.
  */
-enum Hook: string
+enum HookType: string
 {
     // ── Core Lifecycle ──────────────────────────────────────────
     case Init           = 'init';

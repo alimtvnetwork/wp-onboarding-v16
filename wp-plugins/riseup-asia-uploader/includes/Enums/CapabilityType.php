@@ -1,6 +1,6 @@
 <?php
 /**
- * Capability — WordPress Capability Enum
+ * CapabilityType — WordPress Capability Enum
  *
  * Every current_user_can() call MUST reference a case from this enum.
  *
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 /**
  * WordPress capability strings for permission checks.
  */
-enum Capability: string
+enum CapabilityType: string
 {
     case ManageOptions   = 'manage_options';
     case ActivatePlugins = 'activate_plugins';

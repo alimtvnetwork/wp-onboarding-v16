@@ -1,6 +1,6 @@
 <?php
 /**
- * UploadSource — Upload Origin Enum
+ * UploadSourceType — Upload Origin Enum
  *
  * Identifies how a plugin upload was initiated.
  * Used in transaction logging and request validation.
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 /**
  * Upload source identifiers for transaction logging and request validation.
  */
-enum UploadSource: string
+enum UploadSourceType: string
 {
     case Script  = 'upload_script';
     case RestApi = 'rest_api';
