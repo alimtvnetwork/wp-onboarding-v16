@@ -39,7 +39,7 @@
 - **PostManager** → `CategoryTrait` + `PostCrudTrait` + `PostQueryTrait`
 - **PathUtils** → `PathUtilsCoreTrait` + `PathUtilsDirTrait` + `PathUtilsFileTrait`
 - **EnvelopeBuilder** → `EnvelopeBuildTrait` + `EnvelopeFactoryTrait` + `EnvelopeSettersTrait`
-- **BooleanHelpers** → `BooleanDomainTrait` + `BooleanValueTrait`
+- **BooleanHelpers** → `BooleanDomainTrait` (function: `is_func_exists`, `is_func_missing`; class: `is_class_exists`, `is_class_missing`, `is_class_not_loaded`; extension: `is_extension_loaded`, `is_extension_missing`; directory: `is_dir_exists`, `is_dir_missing`, `is_dir_writable`, `is_dir_readonly`, `is_not_directory`; file: `is_file_exists`, `is_file_missing`, `is_file_unreadable`, `is_not_regular_file`, `is_copy_failed`; list: `is_not_in_list`; database: `is_db_connected`, `is_db_disconnected`) + `BooleanValueTrait`
 - **InitHelpers** → `InitDirTrait` + `InitStartupTrait`
 - **UpdateResolver** → `UpdateResolverHooksTrait` + `UpdateResolverUrlTrait` + `UpdateResolverWpHooksTrait`
 - **UploadIgnore** → `UploadIgnorePatternTrait`
