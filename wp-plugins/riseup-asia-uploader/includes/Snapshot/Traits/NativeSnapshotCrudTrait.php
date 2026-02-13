@@ -59,22 +59,33 @@ trait NativeSnapshotCrudTrait {
             return array('success' => false, 'error' => 'Snapshot file not found');
         }
 
+        return $this->createExportZip($snapshot_id, $filepath, $snapshot);
+    }
+
+    /** Create a ZIP export for a single snapshot. */
+    private function createExportZip(int $snapshot_id, string $filepath, array $snapshot): array {
         $zip_path = str_replace('.sqlite', '.zip', $filepath);
+
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return array('success' => false, 'error' => 'Failed to create ZIP file');
         }
 
         $zip->addFile($filepath, basename($filepath));
-        $zip->addFromString('manifest.json', json_encode(array(
+        $zip->addFromString('manifest.json', json_encode($this->buildExportManifest($snapshot_id, $snapshot), JSON_PRETTY_PRINT));
+        $zip->close();
+
+        return array('success' => true, 'filepath' => $zip_path, 'filename' => basename($zip_path), 'size' => filesize($zip_path));
+    }
+
+    /** Build manifest data for a snapshot export. */
+    private function buildExportManifest(int $snapshot_id, array $snapshot): array {
+        return array(
             'version' => PLUGIN_VERSION, 'created_at' => date('c'), 'snapshot_id' => $snapshot_id,
             'filename' => $snapshot['filename'], 'scope' => $snapshot['scope'],
             'tables' => json_decode($snapshot['tables_json'], true),
             'total_rows' => $snapshot['total_rows'], 'file_size' => $snapshot['file_size'],
-        ), JSON_PRETTY_PRINT));
-        $zip->close();
-
-        return array('success' => true, 'filepath' => $zip_path, 'filename' => basename($zip_path), 'size' => filesize($zip_path));
+        );
     }
 
     /**

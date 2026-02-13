@@ -23,27 +23,46 @@ trait PathUtilsDirTrait {
         $real_base = realpath($base_path);
         if ($real_base === false) {
             self::safe_log('warn', '[PATH] Base path does not exist', array('base' => $base_path));
+
             return false;
         }
 
-        $real_path = realpath($path);
-        if ($real_path === false) {
-            $parent = dirname($path);
-            $real_parent = realpath($parent);
-            if ($real_parent === false) {
-                self::safe_log('warn', '[PATH] Neither path nor parent exists', array('path' => $path, 'parent' => $parent));
-                return false;
-            }
-            $real_path = self::join($real_parent, basename($path));
+        $real_path = self::resolvePathOrParent($path);
+        if ($real_path === null) {
+            return false;
         }
 
         $real_base = str_replace('\\\\', '/', $real_base);
         $real_path = str_replace('\\\\', '/', $real_path);
 
+        return self::checkTraversal($path, $real_path, $real_base);
+    }
+
+    /** Resolve a path via realpath, falling back to parent resolution. */
+    private static function resolvePathOrParent(string $path): ?string {
+        $real_path = realpath($path);
+        if ($real_path !== false) {
+            return $real_path;
+        }
+
+        $parent = dirname($path);
+        $real_parent = realpath($parent);
+        if ($real_parent === false) {
+            self::safe_log('warn', '[PATH] Neither path nor parent exists', array('path' => $path, 'parent' => $parent));
+
+            return null;
+        }
+
+        return self::join($real_parent, basename($path));
+    }
+
+    /** Check for path traversal and log if detected. */
+    private static function checkTraversal(string $path, string $real_path, string $real_base): bool {
         $is_safe = strpos($real_path, $real_base) === 0;
         if (!$is_safe) {
             self::safe_log('error', '[PATH] Path traversal attempt detected', array('path' => $path, 'resolved' => $real_path, 'base' => $real_base));
         }
+
         return $is_safe;
     }
 
@@ -69,24 +88,34 @@ trait PathUtilsDirTrait {
         $path = self::join($path);
         if (empty($path)) {
             self::safe_log('error', '[PATH] Empty path provided to ensure_dir');
+
             return false;
         }
 
         if (is_dir($path)) {
-            self::safe_log('debug', '[PATH] Directory already exists', array('path' => $path));
-            if ($secure) {
-                self::add_security_files($path);
-            }
-            return true;
+            return self::handleExistingDir($path, $secure);
         }
 
+        return self::createNewDir($path, $secure);
+    }
+
+    /** Handle an already-existing directory (optionally secure it). */
+    private static function handleExistingDir(string $path, bool $secure): bool {
+        self::safe_log('debug', '[PATH] Directory already exists', array('path' => $path));
+        if ($secure) {
+            self::add_security_files($path);
+        }
+
+        return true;
+    }
+
+    /** Create a new directory and optionally add security files. */
+    private static function createNewDir(string $path, bool $secure): bool {
         self::safe_log('info', '[PATH] Creating directory', array('path' => $path, 'secure' => $secure));
+
         if (!wp_mkdir_p($path)) {
-            $error = error_get_last();
-            self::safe_log('error', '[PATH] Directory creation failed', array(
-                'path' => $path, 'error' => $error ? $error['message'] : 'Unknown error',
-                'parent_exists' => is_dir(dirname($path)), 'parent_writable' => is_writable(dirname($path)),
-            ));
+            self::logDirCreationFailure($path);
+
             return false;
         }
 
@@ -94,7 +123,17 @@ trait PathUtilsDirTrait {
         if ($secure) {
             self::add_security_files($path);
         }
+
         return true;
+    }
+
+    /** Log detailed directory creation failure diagnostics. */
+    private static function logDirCreationFailure(string $path) {
+        $error = error_get_last();
+        self::safe_log('error', '[PATH] Directory creation failed', array(
+            'path' => $path, 'error' => $error ? $error['message'] : 'Unknown error',
+            'parent_exists' => is_dir(dirname($path)), 'parent_writable' => is_writable(dirname($path)),
+        ));
     }
 
     /**

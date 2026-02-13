@@ -44,35 +44,32 @@ class RiseupDependencyLoader {
      * @return bool True if loaded successfully, false on failure.
      */
     public static function load($label, $path) {
-        // Check file exists before attempting load
         if (RiseupBooleanHelpers::is_file_missing($path)) {
-            self::$results[] = array(
-                'label'   => $label,
-                'file'    => basename($path),
-                'success' => false,
-                'error'   => 'File not found: ' . $path,
-            );
+            self::recordResult($label, $path, false, 'File not found: ' . $path);
+
             return false;
         }
 
         try {
             require_once $path;
-            self::$results[] = array(
-                'label'   => $label,
-                'file'    => basename($path),
-                'success' => true,
-                'error'   => null,
-            );
+            self::recordResult($label, $path, true, null);
+
             return true;
         } catch (\Throwable $e) {
-            self::$results[] = array(
-                'label'   => $label,
-                'file'    => basename($path),
-                'success' => false,
-                'error'   => $e->getMessage(),
-            );
+            self::recordResult($label, $path, false, $e->getMessage());
+
             return false;
         }
+    }
+
+    /** Record a file load result. */
+    private static function recordResult(string $label, string $path, bool $success, ?string $error) {
+        self::$results[] = array(
+            'label'   => $label,
+            'file'    => basename($path),
+            'success' => $success,
+            'error'   => $error,
+        );
     }
 
     /**

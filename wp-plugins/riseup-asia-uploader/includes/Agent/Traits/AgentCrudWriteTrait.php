@@ -87,27 +87,32 @@ trait AgentCrudWriteTrait {
                 return new WP_Error('db_error', 'Database not available');
             }
 
-            $update = $this->buildUpdateSets($data);
-            if (empty($update['sets'])) {
-                return new WP_Error('no_data', 'No fields to update');
-            }
-
-            $update['sets'][] = 'updated_at = ?';
-            $update['params'][] = gmdate('Y-m-d\TH:i:s\Z');
-            $update['params'][] = (int) $id;
-
-            $sql = "UPDATE agent_sites SET " . implode(', ', $update['sets']) . " WHERE id = ?";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($update['params']);
-
-            $this->file_logger->info('Agent site updated', array('id' => $id));
-
-            return true;
-
+            return $this->executeAgentUpdate($pdo, $id, $data);
         } catch (PDOException $e) {
             $this->file_logger->log_exception($e, 'Failed to update agent site');
+
             return new WP_Error('db_error', 'Failed to update agent site: ' . $e->getMessage());
         }
+    }
+
+    /** Execute the agent update query. */
+    private function executeAgentUpdate(PDO $pdo, int $id, array $data) {
+        $update = $this->buildUpdateSets($data);
+        if (empty($update['sets'])) {
+            return new WP_Error('no_data', 'No fields to update');
+        }
+
+        $update['sets'][] = 'updated_at = ?';
+        $update['params'][] = gmdate('Y-m-d\TH:i:s\Z');
+        $update['params'][] = $id;
+
+        $sql = "UPDATE agent_sites SET " . implode(', ', $update['sets']) . " WHERE id = ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($update['params']);
+
+        $this->file_logger->info('Agent site updated', array('id' => $id));
+
+        return true;
     }
 
     /**
@@ -120,6 +125,14 @@ trait AgentCrudWriteTrait {
         $sets = array();
         $params = array();
 
+        $this->applyFieldMap($data, $sets, $params);
+        $this->applyPasswordField($data, $sets, $params);
+
+        return array('sets' => $sets, 'params' => $params);
+    }
+
+    /** Apply the standard field map transforms. */
+    private function applyFieldMap(array $data, array &$sets, array &$params) {
         $field_map = array(
             'name'         => fn($v) => array('name = ?', sanitize_text_field($v)),
             'url'          => fn($v) => array('url = ?', esc_url_raw($this->normalizeUrl($v))),
@@ -131,19 +144,25 @@ trait AgentCrudWriteTrait {
         );
 
         foreach ($field_map as $field => $transform) {
-            if (isset($data[$field])) {
-                $result = $transform($data[$field]);
-                $sets[] = $result[0];
-                $params[] = $result[1];
+            if (!isset($data[$field])) {
+                continue;
             }
+
+            $result = $transform($data[$field]);
+            $sets[] = $result[0];
+            $params[] = $result[1];
+        }
+    }
+
+    /** Apply encrypted password field if present. */
+    private function applyPasswordField(array $data, array &$sets, array &$params) {
+        $hasPassword = isset($data['app_password']) && !empty($data['app_password']);
+        if (!$hasPassword) {
+            return;
         }
 
-        if (isset($data['app_password']) && !empty($data['app_password'])) {
-            $sets[] = 'app_password_encrypted = ?';
-            $params[] = $this->encrypt($data['app_password']);
-        }
-
-        return array('sets' => $sets, 'params' => $params);
+        $sets[] = 'app_password_encrypted = ?';
+        $params[] = $this->encrypt($data['app_password']);
     }
 
     /**

@@ -67,31 +67,37 @@ trait LoggerFormatTrait {
         }
 
         $meta = array();
+        $meta['_request'] = (php_sapi_name() === 'cli')
+            ? $this->buildCliRequestMeta()
+            : $this->buildHttpRequestMeta();
 
-        if (php_sapi_name() === 'cli') {
-            $meta['_request'] = array(
-                'method' => 'CLI',
-                'script' => isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : 'unknown',
-            );
-            $this->request_metadata_cache = $meta;
-            return $meta;
-        }
+        $this->request_metadata_cache = $meta;
 
+        return $meta;
+    }
+
+    /** Build request metadata for CLI context. */
+    private function buildCliRequestMeta(): array {
+        return array(
+            'method' => 'CLI',
+            'script' => isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : 'unknown',
+        );
+    }
+
+    /** Build request metadata for HTTP context. */
+    private function buildHttpRequestMeta(): array {
         $method    = isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN';
         $uri       = isset($_SERVER['REQUEST_URI']) ? strtok($_SERVER['REQUEST_URI'], '?') : '/';
         $query     = isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING'] !== '' ? '?' . $_SERVER['QUERY_STRING'] : '';
         $useragent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
         $ip        = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
 
-        $meta['_request'] = array(
+        return array(
             'method'    => $method,
             'endpoint'  => $uri . $query,
             'userAgent' => strlen($useragent) > 200 ? substr($useragent, 0, 200) . '…' : $useragent,
             'ip'        => $ip,
         );
-
-        $this->request_metadata_cache = $meta;
-        return $meta;
     }
 
     /**
@@ -120,37 +126,52 @@ trait LoggerFormatTrait {
     private function prepare_context($context, $trace = null, $include_chain = false) {
         $context = $this->enrich_context_with_request($context);
 
-        if (!$include_chain || $trace === null || isset($context['_invocation_chain'])) {
+        $shouldSkipChain = !$include_chain || $trace === null || isset($context['_invocation_chain']);
+        if ($shouldSkipChain) {
             return $context;
         }
 
+        $chain = $this->buildInvocationChain($trace);
+        if (!empty($chain)) {
+            $context['_invocation_chain'] = $chain;
+        }
+
+        return $context;
+    }
+
+    /** Build an invocation chain from a backtrace (skipping frame 0). */
+    private function buildInvocationChain(array $trace): array {
         $chain = array();
         foreach ($trace as $i => $frame) {
             if ($i === 0) {
                 continue;
             }
 
-            $entry = array();
-            if (isset($frame['class'])) {
-                $entry['class'] = $frame['class'];
-            }
-            if (isset($frame['function'])) {
-                $entry['function'] = $frame['function'];
-            }
-            if (isset($frame['file'])) {
-                $entry['file'] = basename($frame['file']);
-                $entry['line'] = isset($frame['line']) ? $frame['line'] : 0;
-            }
-
+            $entry = $this->extractChainEntry($frame);
             if (!empty($entry)) {
                 $chain[] = $entry;
             }
         }
 
-        if (!empty($chain)) {
-            $context['_invocation_chain'] = $chain;
+        return $chain;
+    }
+
+    /** Extract a single chain entry from a backtrace frame. */
+    private function extractChainEntry(array $frame): array {
+        $entry = array();
+        if (isset($frame['class'])) {
+            $entry['class'] = $frame['class'];
         }
 
-        return $context;
+        if (isset($frame['function'])) {
+            $entry['function'] = $frame['function'];
+        }
+
+        if (isset($frame['file'])) {
+            $entry['file'] = basename($frame['file']);
+            $entry['line'] = isset($frame['line']) ? $frame['line'] : 0;
+        }
+
+        return $entry;
     }
 }
