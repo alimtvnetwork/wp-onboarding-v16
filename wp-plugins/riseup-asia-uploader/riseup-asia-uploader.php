@@ -1242,6 +1242,135 @@ class RiseupAsia {
     }
 
     /**
+     * Resolve the Authorization header from the request.
+     *
+     * Tries WP_REST_Request first, then falls back to $_SERVER
+     * and getallheaders() for CGI/FastCGI compatibility.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return string|null Authorization header value, or null if missing.
+     */
+    private function resolve_auth_header($request) {
+        $auth_header = $request->get_header('Authorization');
+
+        if (!empty($auth_header)) {
+            return $auth_header;
+        }
+
+        if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+            return $_SERVER['HTTP_AUTHORIZATION'];
+        }
+
+        if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+
+        $hasGetAllHeaders = function_exists('getallheaders');
+        if (!$hasGetAllHeaders) {
+            return null;
+        }
+
+        $headers = getallheaders();
+
+        if (isset($headers['Authorization'])) {
+            return $headers['Authorization'];
+        }
+
+        if (isset($headers['authorization'])) {
+            return $headers['authorization'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse Basic auth header and authenticate the user.
+     *
+     * @param string $auth_header Raw Authorization header value.
+     *
+     * @return WP_User|WP_Error Authenticated user, or WP_Error on failure.
+     */
+    private function authenticate_user($auth_header) {
+        $isBasicAuth = (strpos($auth_header, 'Basic ') === 0);
+        if (!$isBasicAuth) {
+            $this->file_logger->warn('Invalid Authorization header format');
+            $this->logger->log_auth_failure('Invalid Authorization header format');
+
+            return new WP_Error(
+                'rest_forbidden',
+                MSG_UNAUTHORIZED,
+                array('status' => HTTP_UNAUTHORIZED)
+            );
+        }
+
+        $credentials = base64_decode(substr($auth_header, 6));
+        $hasDelimiter = ($credentials && strpos($credentials, ':') !== false);
+        if (!$hasDelimiter) {
+            $this->file_logger->warn('Invalid credentials format');
+            $this->logger->log_auth_failure('Invalid credentials format');
+
+            return new WP_Error(
+                'rest_forbidden',
+                MSG_UNAUTHORIZED,
+                array('status' => HTTP_UNAUTHORIZED)
+            );
+        }
+
+        list($username, $password) = explode(':', $credentials, 2);
+        $this->file_logger->debug('Authenticating user', array('username' => $username));
+
+        $user = wp_authenticate_application_password(null, $username, $password);
+
+        $isAuthFailed = (is_wp_error($user) || !$user);
+        if ($isAuthFailed) {
+            $this->file_logger->warn('Invalid credentials', array('username' => $username));
+            $this->logger->log_auth_failure(
+                'Invalid credentials',
+                array('username' => $username)
+            );
+
+            return new WP_Error(
+                'rest_forbidden',
+                MSG_UNAUTHORIZED,
+                array('status' => HTTP_UNAUTHORIZED)
+            );
+        }
+
+        wp_set_current_user($user->ID);
+
+        return $user;
+    }
+
+    /**
+     * Build a WP_Error for missing Authorization header with diagnostic context.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return WP_Error
+     */
+    private function build_missing_auth_error($request) {
+        $this->file_logger->warn('Missing Authorization header', array(
+            'reason'          => 'Missing Authorization header',
+            'method'          => $request->get_method(),
+            'endpoint'        => $request->get_route(),
+            'ip'              => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown',
+            'user_agent'      => $request->get_header('user-agent') ?: 'unknown',
+            'server_software' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'unknown',
+        ));
+        $this->logger->log_auth_failure('Missing Authorization header');
+
+        return new WP_Error(
+            'rest_forbidden',
+            MSG_UNAUTHORIZED,
+            array(
+                'status'  => HTTP_UNAUTHORIZED,
+                'headers' => array('WWW-Authenticate' => 'Basic realm="WordPress Application Password"'),
+            )
+        );
+    }
+
+    /**
      * Verify authentication only (no capability check).
      *
      * @param WP_REST_Request $request Request object.
@@ -1252,93 +1381,22 @@ class RiseupAsia {
         $this->file_logger->debug('Authenticating request (any user)');
 
         try {
-            // Get Authorization header — try multiple sources for compatibility
-            // with CGI/FastCGI and proxy configurations.
-            $auth_header = $request->get_header('Authorization');
-
-            // Fallback: check $_SERVER for CGI/FastCGI environments
+            $auth_header = $this->resolve_auth_header($request);
             if (empty($auth_header)) {
-                if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
-                    $auth_header = $_SERVER['HTTP_AUTHORIZATION'];
-                } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-                    $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-                } elseif (function_exists('getallheaders')) {
-                    $headers = getallheaders();
-                    if (isset($headers['Authorization'])) {
-                        $auth_header = $headers['Authorization'];
-                    } elseif (isset($headers['authorization'])) {
-                        $auth_header = $headers['authorization'];
-                    }
-                }
+                return $this->build_missing_auth_error($request);
             }
 
-            if (empty($auth_header)) {
-                $this->file_logger->warn('Missing Authorization header', array(
-                    'reason'     => 'Missing Authorization header',
-                    'method'     => $request->get_method(),
-                    'endpoint'   => $request->get_route(),
-                    'ip'         => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown',
-                    'user_agent' => $request->get_header('user-agent') ?: 'unknown',
-                    'server_software' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'unknown',
-                ));
-                $this->logger->log_auth_failure('Missing Authorization header');
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array(
-                        'status' => HTTP_UNAUTHORIZED,
-                        'headers' => array('WWW-Authenticate' => 'Basic realm="WordPress Application Password"'),
-                    )
-                );
+            $user = $this->authenticate_user($auth_header);
+            if (is_wp_error($user)) {
+                return $user;
             }
 
-            // Parse Basic auth.
-            if (strpos($auth_header, 'Basic ') !== 0) {
-                $this->file_logger->warn('Invalid Authorization header format');
-                $this->logger->log_auth_failure('Invalid Authorization header format');
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array('status' => HTTP_UNAUTHORIZED)
-                );
-            }
+            $this->file_logger->info('Request authorized (status)', array('username' => $user->user_login));
 
-            $credentials = base64_decode(substr($auth_header, 6));
-            if (!$credentials || strpos($credentials, ':') === false) {
-                $this->file_logger->warn('Invalid credentials format');
-                $this->logger->log_auth_failure('Invalid credentials format');
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array('status' => HTTP_UNAUTHORIZED)
-                );
-            }
-
-            list($username, $password) = explode(':', $credentials, 2);
-            $this->file_logger->debug('Authenticating user', array('username' => $username));
-
-            // Authenticate using application password.
-            $user = wp_authenticate_application_password(null, $username, $password);
-
-            if (is_wp_error($user) || !$user) {
-                $this->file_logger->warn('Invalid credentials', array('username' => $username));
-                $this->logger->log_auth_failure(
-                    'Invalid credentials',
-                    array('username' => $username)
-                );
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array('status' => HTTP_UNAUTHORIZED)
-                );
-            }
-
-            // Set current user.
-            wp_set_current_user($user->ID);
-            $this->file_logger->info('Request authorized (status)', array('username' => $username));
             return true;
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Authentication error');
+
             return new WP_Error(
                 'rest_forbidden',
                 MSG_UNAUTHORIZED,
@@ -1359,97 +1417,28 @@ class RiseupAsia {
         $this->file_logger->debug('Authenticating request', array('capability' => $capability));
 
         try {
-            // Get Authorization header — try multiple sources for compatibility
-            $auth_header = $request->get_header('Authorization');
-
-            // Fallback: check $_SERVER for CGI/FastCGI environments
+            $auth_header = $this->resolve_auth_header($request);
             if (empty($auth_header)) {
-                if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
-                    $auth_header = $_SERVER['HTTP_AUTHORIZATION'];
-                } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-                    $auth_header = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-                } elseif (function_exists('getallheaders')) {
-                    $headers = getallheaders();
-                    if (isset($headers['Authorization'])) {
-                        $auth_header = $headers['Authorization'];
-                    } elseif (isset($headers['authorization'])) {
-                        $auth_header = $headers['authorization'];
-                    }
-                }
+                return $this->build_missing_auth_error($request);
             }
 
-            if (empty($auth_header)) {
-                $this->file_logger->warn('Missing Authorization header', array(
-                    'reason'     => 'Missing Authorization header',
-                    'method'     => $request->get_method(),
-                    'endpoint'   => $request->get_route(),
-                    'ip'         => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'unknown',
-                    'user_agent' => $request->get_header('user-agent') ?: 'unknown',
-                    'server_software' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'unknown',
-                ));
-                $this->logger->log_auth_failure('Missing Authorization header');
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array('status' => HTTP_UNAUTHORIZED)
-                );
+            $user = $this->authenticate_user($auth_header);
+            if (is_wp_error($user)) {
+                return $user;
             }
 
-            // Parse Basic auth.
-            if (strpos($auth_header, 'Basic ') !== 0) {
-                $this->file_logger->warn('Invalid Authorization header format');
-                $this->logger->log_auth_failure('Invalid Authorization header format');
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array('status' => HTTP_UNAUTHORIZED)
-                );
-            }
-
-            $credentials = base64_decode(substr($auth_header, 6));
-            if (!$credentials || strpos($credentials, ':') === false) {
-                $this->file_logger->warn('Invalid credentials format');
-                $this->logger->log_auth_failure('Invalid credentials format');
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array('status' => HTTP_UNAUTHORIZED)
-                );
-            }
-
-            list($username, $password) = explode(':', $credentials, 2);
-            $this->file_logger->debug('Authenticating user', array('username' => $username));
-
-            // Authenticate using application password.
-            $user = wp_authenticate_application_password(null, $username, $password);
-
-            if (is_wp_error($user) || !$user) {
-                $this->file_logger->warn('Invalid credentials', array('username' => $username));
-                $this->logger->log_auth_failure(
-                    'Invalid credentials',
-                    array('username' => $username)
-                );
-                return new WP_Error(
-                    'rest_forbidden',
-                    MSG_UNAUTHORIZED,
-                    array('status' => HTTP_UNAUTHORIZED)
-                );
-            }
-
-            // Set current user for further capability checks.
-            wp_set_current_user($user->ID);
             $this->file_logger->debug('User authenticated', array('user_id' => $user->ID));
 
-            // Check capability.
             if (!current_user_can($capability)) {
                 $this->file_logger->warn('Insufficient permissions', array(
-                    'username'     => $username,
+                    'username'     => $user->user_login,
                     'required_cap' => $capability,
                 ));
                 $this->logger->log_auth_failure(
                     'Insufficient permissions',
-                    array('username' => $username, 'required_cap' => $capability)
+                    array('username' => $user->user_login, 'required_cap' => $capability)
                 );
+
                 return new WP_Error(
                     'rest_forbidden',
                     MSG_FORBIDDEN,
@@ -1457,10 +1446,12 @@ class RiseupAsia {
                 );
             }
 
-            $this->file_logger->info('Request authorized', array('username' => $username));
+            $this->file_logger->info('Request authorized', array('username' => $user->user_login));
+
             return true;
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Authentication error');
+
             return new WP_Error(
                 'rest_forbidden',
                 MSG_UNAUTHORIZED,
