@@ -1,0 +1,64 @@
+<?php
+/**
+ * WorkerProgressTrait — Table-level progress tracking for snapshot worker.
+ *
+ * @package RiseupAsiaUploader
+ * @since   2.0.0
+ */
+
+trait WorkerProgressTrait {
+
+    /**
+     * Initialize progress records for all tables.
+     *
+     * @param array $tables Table names.
+     */
+    private function initProgressRecords($tables) {
+        $pdo = $this->db->get_pdo();
+        if (!$pdo) return;
+
+        try {
+            $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TABLE_SNAPSHOT_PROGRESS . "
+                (snapshot_id, table_name, status, rows_total, rows_exported, started_at)
+                VALUES (0, ?, 'pending', 0, 0, ?)");
+
+            $now = gmdate('c');
+            foreach ($tables as $table) {
+                $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
+                $stmt->execute(array($table, $now));
+
+                $pdo->exec("UPDATE " . TABLE_SNAPSHOT_PROGRESS .
+                    " SET rows_total = {$count} WHERE snapshot_id = 0 AND table_name = '{$table}'");
+            }
+        } catch (Exception $e) {
+            $this->log('WARN', 'Failed to init progress records', array('error' => $e->getMessage()));
+        }
+    }
+
+    /**
+     * Update progress for a table.
+     *
+     * @param string      $table  Table name.
+     * @param string      $status Status: pending, running, complete, failed.
+     * @param int         $rows   Rows exported.
+     * @param string|null $error  Error message if failed.
+     */
+    private function updateProgress($table, $status, $rows = 0, $error = null) {
+        $pdo = $this->db->get_pdo();
+        if (!$pdo) return;
+
+        try {
+            $now = gmdate('c');
+            $stmt = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_PROGRESS . "
+                SET status = ?, rows_exported = ?, completed_at = ?, error_message = ?
+                WHERE snapshot_id = 0 AND table_name = ?");
+            $stmt->execute(array(
+                $status, $rows,
+                ($status === 'complete' || $status === 'failed') ? $now : null,
+                $error, $table,
+            ));
+        } catch (Exception $e) {
+            // Non-fatal
+        }
+    }
+}
