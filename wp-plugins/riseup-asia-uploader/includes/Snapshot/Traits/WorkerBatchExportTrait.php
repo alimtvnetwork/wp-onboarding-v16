@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait WorkerBatchExportTrait {
 
     /**
@@ -23,7 +25,7 @@ trait WorkerBatchExportTrait {
         $batches = array_chunk($seedOrder, $this->poolSize);
 
         foreach ($batches as $batch_index => $batch_tables) {
-            $this->log('INFO', sprintf('Processing batch %d/%d (%d tables)',
+            $this->log(LogLevelType::Info->value, sprintf('Processing batch %d/%d (%d tables)',
                 $batch_index + 1, count($batches), count($batch_tables)
             ));
 
@@ -84,7 +86,7 @@ trait WorkerBatchExportTrait {
     private function buildAsyncSnapshotResult(array $prepared, array $seedOrder, int $jobId, float $startTime): array {
         $duration = microtime(true) - $startTime;
 
-        $this->log('INFO', 'Snapshot job created, first batch scheduled', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
             'job_id' => $jobId, 'directory' => $prepared['dir_name'],
             'total_tables' => count($seedOrder), 'pool_size' => $this->poolSize,
             'setup_time' => round($duration, 2) . 's',

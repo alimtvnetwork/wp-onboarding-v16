@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait OrchestratorBackupTrait {
 
     /**
@@ -17,7 +19,7 @@ trait OrchestratorBackupTrait {
      */
     public function executeFullBackup($options = array()) {
         $resolved = $this->resolveBackupOptions($options);
-        $this->log('INFO', 'Starting full backup orchestration', $resolved);
+        $this->log(LogLevelType::Info->value, 'Starting full backup orchestration', $resolved);
 
         return ($options['async'] ?? true)
             ? $this->executeAsyncBackup($resolved)
@@ -45,7 +47,7 @@ trait OrchestratorBackupTrait {
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
-            $this->log('INFO', 'Async backup job created', array(
+            $this->log(LogLevelType::Info->value, 'Async backup job created', array(
                 'job_id' => $worker_result['job_id'] ?? null, 'total_tables' => $worker_result['total_tables'] ?? null,
                 'pool_size' => $worker_result['pool_size'] ?? null, 'directory' => $worker_result['directory'] ?? null,
             ));
@@ -105,7 +107,7 @@ trait OrchestratorBackupTrait {
         if ($zip_result['success']) {
             return array('path' => $zip_result['path'], 'size' => $zip_result['size']);
         }
-        $this->log('WARN', 'ZIP export failed (non-fatal)', array('error' => $zip_result['error']));
+        $this->log(LogLevelType::Warn->value, 'ZIP export failed (non-fatal)', array('error' => $zip_result['error']));
         return array('path' => null, 'size' => 0);
     }
 
@@ -113,7 +115,7 @@ trait OrchestratorBackupTrait {
      * Execute an incremental backup against the latest full snapshot.
      */
     public function executeIncrementalBackup($options = array()) {
-        $this->log('INFO', 'Starting incremental backup orchestration', $options);
+        $this->log(LogLevelType::Info->value, 'Starting incremental backup orchestration', $options);
         try {
             $incremental = RiseupIncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
             $master_dir = $this->resolveMasterDir($options, $incremental);
@@ -123,7 +125,7 @@ trait OrchestratorBackupTrait {
             }
 
             $result = $incremental->execute($master_dir, $options);
-            $this->log('INFO', 'Incremental backup orchestration ' . ($result['success'] ? 'complete' : 'failed'), array(
+            $this->log(LogLevelType::Info->value, 'Incremental backup orchestration ' . ($result['success'] ? 'complete' : 'failed'), array(
                 'master' => basename($master_dir), 'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
             ));
             return $result;

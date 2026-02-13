@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait OrchestratorZipTrait {
 
     /**
@@ -59,7 +61,7 @@ trait OrchestratorZipTrait {
             return array('success' => false, 'error' => 'ZIP export is empty');
         }
 
-        $this->log('INFO', 'ZIP export created', array('filename' => $filename, 'files' => $files, 'size' => $this->formatBytes($size)));
+        $this->log(LogLevelType::Info->value, 'ZIP export created', array('filename' => $filename, 'files' => $files, 'size' => $this->formatBytes($size)));
         return array('success' => true, 'path' => $path, 'filename' => $filename, 'size' => $size, 'files' => $files);
     }
 }

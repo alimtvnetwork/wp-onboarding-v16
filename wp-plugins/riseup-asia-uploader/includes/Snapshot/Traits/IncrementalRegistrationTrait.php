@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait IncrementalRegistrationTrait {
 
     /** Register the incremental snapshot in the tracking table. */
@@ -22,7 +24,7 @@ trait IncrementalRegistrationTrait {
 
             return $this->insertIncrementalRecord($pdo, $snap_sequence, $folder_name, $incremental_dir, $tables_json, $total_new_rows, $dir_size);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Failed to register incremental snapshot', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to register incremental snapshot', array('error' => $e->getMessage()));
             return false;
         }
     }
@@ -83,7 +85,7 @@ trait IncrementalRegistrationTrait {
 
             $this->doInvalidateZip($parent, $master_dir);
         } catch (Exception $e) {
-            $this->log('WARN', 'Failed to invalidate parent ZIP export', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Failed to invalidate parent ZIP export', array('error' => $e->getMessage()));
         }
     }
 
@@ -99,7 +101,7 @@ trait IncrementalRegistrationTrait {
         $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$parent) {
-            $this->log('DEBUG', 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($master_dir)));
+            $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($master_dir)));
             return null;
         }
 
@@ -115,7 +117,7 @@ trait IncrementalRegistrationTrait {
         }
 
         $invalidated = $exporter->invalidateZip((int) $parent['id']);
-        $this->log('INFO', 'Parent ZIP export invalidated after incremental backup', array(
+        $this->log(LogLevelType::Info->value, 'Parent ZIP export invalidated after incremental backup', array(
             'parent_id' => $parent['id'], 'invalidated' => $invalidated,
         ));
     }

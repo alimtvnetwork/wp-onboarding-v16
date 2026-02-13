@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait WorkerJobLifecycleTrait {
 
     /**
@@ -49,7 +51,7 @@ trait WorkerJobLifecycleTrait {
 
             return (int) $pdo->lastInsertId();
         } catch (Exception $e) {
-            $this->log('ERROR', 'Failed to create snapshot job', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to create snapshot job', array('error' => $e->getMessage()));
             return false;
         }
     }
@@ -134,14 +136,14 @@ trait WorkerJobLifecycleTrait {
                 $this->rootDb->updateStats($rootPdo, (int) $job['tables_exported'], (int) $job['total_rows']);
                 $rootPdo = null;
             } catch (Exception $e) {
-                $this->log('WARN', 'Failed to finalize a-root.db stats', array('error' => $e->getMessage()));
+                $this->log(LogLevelType::Warn->value, 'Failed to finalize a-root.db stats', array('error' => $e->getMessage()));
             }
         }
 
         $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_COMPLETE);
 
         $errors = json_decode($job['errors_json'] ?? '[]', true);
-        $this->log('INFO', 'Snapshot job complete', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot job complete', array(
             'job_id' => $job_id, 'tables_exported' => $job['tables_exported'],
             'total_rows' => $job['total_rows'], 'errors' => count($errors),
         ));

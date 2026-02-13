@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait RestoreIncrementalTrait {
 
     /**
@@ -51,7 +53,7 @@ trait RestoreIncrementalTrait {
             return array('applied' => 0, 'total_rows' => 0, 'errors' => array());
         }
 
-        $this->log('INFO', 'Applying incrementals', array('count' => count($incrementals)));
+        $this->log(LogLevelType::Info->value, 'Applying incrementals', array('count' => count($incrementals)));
 
         $applied = 0;
         $total_rows = 0;
@@ -80,11 +82,11 @@ trait RestoreIncrementalTrait {
     private function applySingleIncremental(array $inc, string $snapshotDir, array $restoreOrder): array {
         $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
         if (RiseupBooleanHelpers::is_dir_missing($inc_dir)) {
-            $this->log('WARN', 'Incremental directory missing', array('folder' => $inc['folder_name']));
+            $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
             return array('rows' => 0, 'errors' => array('Incremental directory missing: ' . $inc['folder_name']));
         }
 
-        $this->log('INFO', 'Applying incremental: ' . $inc['folder_name']);
+        $this->log(LogLevelType::Info->value, 'Applying incremental: ' . $inc['folder_name']);
 
         $sqlite_files = glob($inc_dir . '/*.sqlite');
         $inc_rows = 0;
@@ -99,7 +101,7 @@ trait RestoreIncrementalTrait {
             $result = $this->restoreTableFromFile($sqlite_file, $table, 'merge');
             if ($result['success']) {
                 $inc_rows += $result['rows'];
-                $this->log('INFO', sprintf('Incremental %s: %s (+%d rows)', $inc['folder_name'], $table, $result['rows']));
+                $this->log(LogLevelType::Info->value, sprintf('Incremental %s: %s (+%d rows)', $inc['folder_name'], $table, $result['rows']));
             } else {
                 $errors[] = sprintf('Incremental %s/%s: %s', $inc['folder_name'], $table, $result['error']);
             }

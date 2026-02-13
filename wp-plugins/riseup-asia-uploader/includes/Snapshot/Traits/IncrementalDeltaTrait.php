@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait IncrementalDeltaTrait {
 
     /**
@@ -22,7 +24,7 @@ trait IncrementalDeltaTrait {
         $last_max_id = $this->getLastMaxId($tableName, $info, $rootPdo, $sequence);
 
         if ($last_max_id === null) {
-            $this->log('INFO', 'Skipping table (no auto-increment PK): ' . $tableName);
+            $this->log(LogLevelType::Info->value, 'Skipping table (no auto-increment PK): ' . $tableName);
             return null;
         }
 
@@ -37,10 +39,10 @@ trait IncrementalDeltaTrait {
         $result = $this->exportDeltaRows($incDir, $tableName, $info['pk_column'], $last_max_id, $new_count);
 
         if ($result['success']) {
-            $this->log('INFO', sprintf('Incremental export: %s (+%d rows, %s)', $tableName, $result['rows'], $this->formatBytes($result['file_size'])));
+            $this->log(LogLevelType::Info->value, sprintf('Incremental export: %s (+%d rows, %s)', $tableName, $result['rows'], $this->formatBytes($result['file_size'])));
             $result['entry'] = array('table' => $tableName, 'new_rows' => $result['rows'], 'size' => $result['file_size']);
         } else {
-            $this->log('ERROR', 'Incremental export failed: ' . $tableName, array('error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Incremental export failed: ' . $tableName, array('error' => $result['error']));
         }
 
         return $result;
@@ -83,7 +85,7 @@ trait IncrementalDeltaTrait {
             $tablePdo = null;
             return ($max_id !== false && $max_id !== null) ? (int) $max_id : 0;
         } catch (Exception $e) {
-            $this->log('WARN', 'Could not read master SQLite for max ID', array('table' => $tableName, 'error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array('table' => $tableName, 'error' => $e->getMessage()));
             return (int) $info['row_count'];
         }
     }

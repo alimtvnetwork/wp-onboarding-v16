@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait OrchestratorPluginTrait {
 
     /**
@@ -18,7 +20,7 @@ trait OrchestratorPluginTrait {
     private function snapshotPlugins($snapshot_dir, $selection = 'all') {
         $plugins_dir = $snapshot_dir . '/plugins';
         if (!RiseupPathUtils::ensure_dir($plugins_dir, true)) {
-            $this->log('ERROR', 'Failed to create plugins directory');
+            $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }
 
@@ -68,7 +70,7 @@ trait OrchestratorPluginTrait {
             );
         }
 
-        $this->log('INFO', 'Snapshotting plugins', array('total' => count($all_plugins), 'selected' => count($plugins_to_snapshot), 'selection' => $selection));
+        $this->log(LogLevelType::Info->value, 'Snapshotting plugins', array('total' => count($all_plugins), 'selected' => count($plugins_to_snapshot), 'selection' => $selection));
         return $plugins_to_snapshot;
     }
 
@@ -78,7 +80,7 @@ trait OrchestratorPluginTrait {
         $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
 
         if (RiseupBooleanHelpers::is_dir_missing($plugin_path)) {
-            $this->log('INFO', 'Skipping single-file plugin: ' . $slug);
+            $this->log(LogLevelType::Info->value, 'Skipping single-file plugin: ' . $slug);
             return null;
         }
 
@@ -87,7 +89,7 @@ trait OrchestratorPluginTrait {
         $zip_result = $this->createPluginZip($plugin_path, $zip_path, $slug);
 
         if (!$zip_result['success']) {
-            $this->log('WARN', 'Failed to archive plugin: ' . $slug, array('error' => $zip_result['error']));
+            $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array('error' => $zip_result['error']));
             return array('success' => false);
         }
 
@@ -100,7 +102,7 @@ trait OrchestratorPluginTrait {
             ));
         }
 
-        $this->log('INFO', sprintf('Plugin archived: %s (%s)', $info['name'], $this->formatBytes($entry['size'])));
+        $this->log(LogLevelType::Info->value, sprintf('Plugin archived: %s (%s)', $info['name'], $this->formatBytes($entry['size'])));
         return array('success' => true, 'size' => $entry['size'], 'entry' => $entry);
     }
 
@@ -154,7 +156,7 @@ trait OrchestratorPluginTrait {
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return $pdo;
         } catch (Exception $e) {
-            $this->log('WARN', 'Could not open a-root.db for plugin registration', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Could not open a-root.db for plugin registration', array('error' => $e->getMessage()));
             return null;
         }
     }

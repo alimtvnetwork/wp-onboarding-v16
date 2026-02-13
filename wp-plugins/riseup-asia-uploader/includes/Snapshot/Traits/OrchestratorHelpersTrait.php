@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait OrchestratorHelpersTrait {
 
     private function buildPhaseError(string $phase, array $result): array {
@@ -17,7 +19,7 @@ trait OrchestratorHelpersTrait {
     }
 
     private function buildExceptionResult(Exception $e, string $phase): array {
-        $this->log('ERROR', ucfirst(str_replace('_', ' ', $phase)) . ' failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+        $this->log(LogLevelType::Error->value, ucfirst(str_replace('_', ' ', $phase)) . ' failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         return array('success' => false, 'error' => $e->getMessage(), 'phase' => $phase);
     }
 
@@ -44,8 +46,8 @@ trait OrchestratorHelpersTrait {
         if (!empty($context)) $full .= ' ' . json_encode($context);
         if (!$this->logger) return;
         switch ($level) {
-            case 'WARN':  $this->logger->warn($full); break;
-            case 'ERROR': $this->logger->error($full); break;
+            case LogLevelType::Warn->value:  $this->logger->warn($full); break;
+            case LogLevelType::Error->value: $this->logger->error($full); break;
             default:      $this->logger->info($full);
         }
     }
