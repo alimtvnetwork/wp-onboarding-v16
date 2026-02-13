@@ -311,7 +311,7 @@ require_once __DIR__ . '/includes/Enums/LogLevelType.php';
 // Error checker (uses RiseupAsia\Enums\ErrorType internally)
 require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';
 require_once __DIR__ . '/includes/constants.php';
-require_once __DIR__ . '/includes/constants-compat.php'; // RISEUP_* aliases — remove after consumer migration
+
 require_once __DIR__ . '/includes/Helpers/BooleanHelpers.php';
 require_once __DIR__ . '/includes/Helpers/InitHelpers.php';
 
