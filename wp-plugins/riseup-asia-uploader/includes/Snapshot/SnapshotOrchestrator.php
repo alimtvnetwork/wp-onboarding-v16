@@ -87,15 +87,16 @@ class RiseupSnapshotOrchestrator {
     }
 
     /**
-     * Execute a full end-to-end backup.
+     * Execute a full end-to-end backup (dispatcher).
      *
-     * @param array $options Options: title, scope, include_plugins, plugin_selection, compression.
+     * Delegates to executeAsyncBackup or executeSyncBackup based on the
+     * 'async' option (defaults to true).
+     *
+     * @param array $options Options: title, scope, include_plugins, plugin_selection, compression, async.
      * @return array Result with success, path, zip_path, stats.
      */
     public function executeFullBackup($options = array()) {
-        $start_time = microtime(true);
-
-        // 1. Read settings (merge with overrides)
+        // Read settings (merge with overrides)
         $settings = $this->manager->getSettings();
         $title = $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i'));
         $scope = $options['scope'] ?? $settings['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
@@ -103,39 +104,47 @@ class RiseupSnapshotOrchestrator {
         $plugin_selection = $options['plugin_selection'] ?? $settings['plugin_selection'] ?? 'all';
         $compression = $options['compression'] ?? $settings['compression'] ?? true;
 
-        $this->log('INFO', 'Starting full backup orchestration', array(
+        // Apply worker pool size from settings
+        $pool_size = $settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT;
+        $this->worker->setPoolSize($pool_size);
+
+        $resolved = array(
             'title'            => $title,
             'scope'            => $scope,
             'include_plugins'  => $include_plugins,
             'plugin_selection' => $plugin_selection,
             'compression'      => $compression,
-        ));
+            'settings'         => $settings,
+        );
 
+        $this->log('INFO', 'Starting full backup orchestration', $resolved);
+
+        $async = $options['async'] ?? true;
+
+        if ($async) {
+            return $this->executeAsyncBackup($resolved);
+        }
+
+        return $this->executeSyncBackup($resolved);
+    }
+
+    /**
+     * Execute an asynchronous (cron-based) backup.
+     *
+     * Creates a job and schedules the first cron batch. The caller polls
+     * the progress endpoint until the job completes.
+     *
+     * @param array $resolved Resolved options from executeFullBackup.
+     * @return array Result with job_id, snapshot_id, and status.
+     */
+    private function executeAsyncBackup($resolved) {
         try {
-            // Apply worker pool size from settings
-            $pool_size = $settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT;
-            $this->worker->setPoolSize($pool_size);
-
-            // Determine execution mode: async (cron) or sync
-            $async = $options['async'] ?? true;
-
-            if ($async) {
-                // 2a. Async: create job + schedule first cron batch
-                $worker_result = $this->worker->execute(array(
-                    'title'    => $title,
-                    'scope'    => $scope,
-                    'type'     => 'full',
-                    'settings' => $settings,
-                ));
-            } else {
-                // 2b. Sync: block until all tables exported
-                $worker_result = $this->worker->executeSynchronous(array(
-                    'title'    => $title,
-                    'scope'    => $scope,
-                    'type'     => 'full',
-                    'settings' => $settings,
-                ));
-            }
+            $worker_result = $this->worker->execute(array(
+                'title'    => $resolved['title'],
+                'scope'    => $resolved['scope'],
+                'type'     => 'full',
+                'settings' => $resolved['settings'],
+            ));
 
             if (!$worker_result['success']) {
                 return array(
@@ -147,32 +156,73 @@ class RiseupSnapshotOrchestrator {
 
             $snapshot_dir = $worker_result['path'];
 
-            // For async jobs, return early with job_id for progress polling
-            if ($async && !empty($worker_result['job_id'])) {
-                $this->log('INFO', 'Async backup job created', array(
-                    'job_id'       => $worker_result['job_id'],
-                    'total_tables' => $worker_result['total_tables'],
-                    'pool_size'    => $worker_result['pool_size'],
-                    'directory'    => $worker_result['directory'],
-                ));
+            $this->log('INFO', 'Async backup job created', array(
+                'job_id'       => $worker_result['job_id'] ?? null,
+                'total_tables' => $worker_result['total_tables'] ?? null,
+                'pool_size'    => $worker_result['pool_size'] ?? null,
+                'directory'    => $worker_result['directory'] ?? null,
+            ));
 
-                // Register snapshot record in pending state
-                $snapshot_id = $this->registerSnapshot(
-                    $title, $scope, $worker_result, array('count' => 0, 'total_size' => 0), $snapshot_dir
-                );
+            // Register snapshot record in pending state
+            $snapshot_id = $this->registerSnapshot(
+                $resolved['title'], $resolved['scope'], $worker_result,
+                array('count' => 0, 'total_size' => 0), $snapshot_dir
+            );
 
+            return array(
+                'success'      => true,
+                'async'        => true,
+                'job_id'       => $worker_result['job_id'] ?? null,
+                'snapshot_id'  => $snapshot_id,
+                'directory'    => $worker_result['directory'] ?? null,
+                'path'         => $snapshot_dir,
+                'total_tables' => $worker_result['total_tables'] ?? null,
+                'pool_size'    => $worker_result['pool_size'] ?? null,
+                'status'       => $worker_result['status'] ?? null,
+            );
+        } catch (Exception $e) {
+            $this->log('ERROR', 'Async backup failed', array(
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ));
+
+            return array(
+                'success' => false,
+                'error'   => $e->getMessage(),
+                'phase'   => 'async_orchestration',
+            );
+        }
+    }
+
+    /**
+     * Execute a synchronous (blocking) backup.
+     *
+     * Blocks until all tables are exported, optionally snapshots plugins,
+     * and creates a ZIP archive.
+     *
+     * @param array $resolved Resolved options from executeFullBackup.
+     * @return array Result with snapshot_id, tables, total_rows, zip info.
+     */
+    private function executeSyncBackup($resolved) {
+        $start_time = microtime(true);
+
+        try {
+            $worker_result = $this->worker->executeSynchronous(array(
+                'title'    => $resolved['title'],
+                'scope'    => $resolved['scope'],
+                'type'     => 'full',
+                'settings' => $resolved['settings'],
+            ));
+
+            if (!$worker_result['success']) {
                 return array(
-                    'success'      => true,
-                    'async'        => true,
-                    'job_id'       => $worker_result['job_id'],
-                    'snapshot_id'  => $snapshot_id,
-                    'directory'    => $worker_result['directory'],
-                    'path'         => $snapshot_dir,
-                    'total_tables' => $worker_result['total_tables'],
-                    'pool_size'    => $worker_result['pool_size'],
-                    'status'       => $worker_result['status'],
+                    'success' => false,
+                    'error'   => 'Table export failed: ' . ($worker_result['error'] ?? 'Unknown error'),
+                    'phase'   => 'table_export',
                 );
             }
+
+            $snapshot_dir = $worker_result['path'];
 
             $this->log('INFO', 'Table export complete', array(
                 'tables'     => $worker_result['tables'],
@@ -180,30 +230,27 @@ class RiseupSnapshotOrchestrator {
                 'directory'  => $worker_result['directory'],
             ));
 
-            // 3. Plugin snapshots (optional)
+            // Plugin snapshots (optional)
             $plugin_stats = array('count' => 0, 'total_size' => 0);
-            if ($include_plugins) {
-                $plugin_stats = $this->snapshotPlugins($snapshot_dir, $plugin_selection);
+            if ($resolved['include_plugins']) {
+                $plugin_stats = $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']);
                 $this->log('INFO', 'Plugin snapshots complete', array(
                     'count'      => $plugin_stats['count'],
                     'total_size' => $this->formatBytes($plugin_stats['total_size']),
                 ));
             }
 
-            // 4. Register in snapshots table for tracking
+            // Register in snapshots table for tracking
             $snapshot_id = $this->registerSnapshot(
-                $title,
-                $scope,
-                $worker_result,
-                $plugin_stats,
-                $snapshot_dir
+                $resolved['title'], $resolved['scope'], $worker_result,
+                $plugin_stats, $snapshot_dir
             );
 
-            // 5. ZIP export (optional)
+            // ZIP export (optional)
             $zip_path = null;
             $zip_size = 0;
-            if ($compression) {
-                $zip_result = $this->createZipExport($snapshot_dir, $title);
+            if ($resolved['compression']) {
+                $zip_result = $this->createZipExport($snapshot_dir, $resolved['title']);
                 if ($zip_result['success']) {
                     $zip_path = $zip_result['path'];
                     $zip_size = $zip_result['size'];
@@ -220,14 +267,14 @@ class RiseupSnapshotOrchestrator {
 
             $duration = microtime(true) - $start_time;
 
-            $this->log('INFO', 'Full backup orchestration complete', array(
-                'snapshot_id'     => $snapshot_id,
-                'tables'          => $worker_result['tables'],
-                'total_rows'      => $worker_result['total_rows'],
-                'plugins'         => $plugin_stats['count'],
-                'zip'             => $zip_path ? basename($zip_path) : 'disabled',
-                'duration'        => round($duration, 2) . 's',
-                'worker_errors'   => count($worker_result['errors'] ?? array()),
+            $this->log('INFO', 'Sync backup orchestration complete', array(
+                'snapshot_id'   => $snapshot_id,
+                'tables'        => $worker_result['tables'],
+                'total_rows'    => $worker_result['total_rows'],
+                'plugins'       => $plugin_stats['count'],
+                'zip'           => $zip_path ? basename($zip_path) : 'disabled',
+                'duration'      => round($duration, 2) . 's',
+                'worker_errors' => count($worker_result['errors'] ?? array()),
             ));
 
             return array(
@@ -243,16 +290,16 @@ class RiseupSnapshotOrchestrator {
                 'duration'     => $duration,
                 'errors'       => $worker_result['errors'] ?? array(),
             );
-
         } catch (Exception $e) {
-            $this->log('ERROR', 'Full backup orchestration failed', array(
+            $this->log('ERROR', 'Sync backup failed', array(
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ));
+
             return array(
                 'success' => false,
                 'error'   => $e->getMessage(),
-                'phase'   => 'orchestration',
+                'phase'   => 'sync_orchestration',
             );
         }
     }
