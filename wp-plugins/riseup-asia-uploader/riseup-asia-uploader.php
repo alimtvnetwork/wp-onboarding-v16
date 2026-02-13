@@ -3620,7 +3620,8 @@ class RiseupAsia {
             'truncated'  => false,
         );
 
-        if (!file_exists($file_path) || !is_readable($file_path)) {
+        $isFileUnreadable = RiseupBooleanHelpers::is_file_missing($file_path) || !is_readable($file_path);
+        if ($isFileUnreadable) {
             return $result;
         }
 
@@ -5165,10 +5166,10 @@ function riseup_asia_activate() {
             $logs_dir = $base_dir . '/' . LOGS_SUBDIR;
 
             // Create base + logs directories
-            if (!is_dir($base_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($base_dir)) {
                 wp_mkdir_p($base_dir);
             }
-            if (!is_dir($logs_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($logs_dir)) {
                 wp_mkdir_p($logs_dir);
             }
 
@@ -5195,7 +5196,7 @@ function riseup_asia_activate() {
 
             // Initialize stacktrace.txt
             $stacktrace_file = $logs_dir . '/' . STACKTRACE_FILENAME;
-            if (!file_exists($stacktrace_file)) {
+            if (RiseupBooleanHelpers::is_file_missing($stacktrace_file)) {
                 @file_put_contents($stacktrace_file, sprintf(
                     "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
                     $timestamp
@@ -5208,11 +5209,11 @@ function riseup_asia_activate() {
             } else {
                 // Manual security files
                 $htaccess = $base_dir . '/.htaccess';
-                if (!file_exists($htaccess)) {
+                if (RiseupBooleanHelpers::is_file_missing($htaccess)) {
                     @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
                 }
                 $index = $base_dir . '/index.php';
-                if (!file_exists($index)) {
+                if (RiseupBooleanHelpers::is_file_missing($index)) {
                     @file_put_contents($index, "<?php\n// Silence is golden.\n");
                 }
             }
