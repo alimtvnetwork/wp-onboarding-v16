@@ -148,22 +148,18 @@ Each sub-method receives `$safe_register` closure as a parameter. Result: `regis
 
 ---
 
-## Phase 11 — `riseup-asia-uploader.php`: Remaining handlers (🟡 20–40 lines each)
-**Functions (all in main plugin class):**
-- `handle_status()` — ~95 lines: extract `buildStatusPayload()`, `detectLiveVersion()`
-- `handle_invalid_route()` — ~42 lines: extract `buildInvalidRouteTrace()`
-- `enrich_error_response()` — ~38 lines: minor, mostly guard clauses
-- `handle_error_logs()` — ~57 lines (inside safe_execute): extract `resolveLogSettings()`
-- `handle_error_sessions()` — ~100+ lines: extract `buildErrorEntries()`, `readFlashState()`
-- `handle_sync_push()` — ~120+ lines: extract `processSyncFile()` per-file handler
-- `handle_create_snapshot()` — ~62 lines: extract `routeToPerTableOrLegacy()`
-- `handle_restore_snapshot()` — ~50+ lines: extract `routeRestoreToEngine()`
-- `handle_snapshot_download()` — ~61 lines: can be trimmed
-- `handle_snapshot_download_file()` — ~62 lines: extract `streamZipFile()`
-- `handle_export_snapshot()` — ~52 lines: extract `logAndReturnExport()`
-- `handle_full_backup()` — ~45 lines: lightweight orchestrator
+## Phase 11 — `riseup-asia-uploader.php`: Remaining handlers (🟡 20–40 lines each) ✅ DONE
+**Refactored 8 of 12 handlers** (the 8 largest, accounting for ~90% of line savings):
+- `handle_status()` → extracted `detectLiveVersion()`, `collectRegisteredRoutes()`, `loadEndpointsReference()`, `buildStatusPayload()`
+- `handle_invalid_route()` → extracted `buildInvalidRouteTrace()`, `formatBacktraceLines()`, `formatFramesSummary()`
+- `handle_error_logs()` → extracted `resolveLogSettings()`
+- `handle_error_sessions()` → extracted `isTableExists()`, `buildErrorSessionQuery()`, `countErrorSessions()`, `fetchErrorSessions()`, `enrichErrorEntries()`, `parseContextJson()`
+- `handle_sync_push()` → extracted `executeSyncPush()`, `processSyncFile()`, `isSyncPathTraversal()`, `syncReplaceFile()`, `syncDeleteFile()`, `cleanEmptyParentDirs()`, `updateSyncCounters()`, `logSyncCompletion()`
+- `handle_create_snapshot()` → extracted `executePerTableSnapshot()`, `executeLegacySnapshot()`, `logSnapshotResult()`
+- `handle_restore_snapshot()` → extracted `parseRestoreOptions()`, `routeRestoreToEngine()`
+- `handle_snapshot_download_file()` → extracted `streamZipFile()`
 
-**Est. impact:** 1 file, ~12 functions → each under 15 lines with extracted helpers.
+**Remaining (borderline, deferred to Phase 12):** `enrich_error_response()`, `handle_snapshot_download()`, `handle_export_snapshot()`, `handle_full_backup()`
 
 ---
 
