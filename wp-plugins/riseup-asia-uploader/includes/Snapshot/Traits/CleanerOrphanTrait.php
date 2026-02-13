@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait CleanerOrphanTrait {
 
     /**
@@ -73,7 +75,7 @@ trait CleanerOrphanTrait {
                 if (RiseupPathUtils::delete_file($file)) {
                     $result['removed']++;
                     $result['bytes_freed'] += $bytes;
-                    $this->log('DEBUG', 'Deleted orphan file', array('file' => basename($file)));
+                    $this->log(LogLevelType::Debug->value, 'Deleted orphan file', array('file' => basename($file)));
 
                     $zip_path = $this->getZipPath($file);
                     if (RiseupPathUtils::file_exists($zip_path)) {
@@ -117,7 +119,7 @@ trait CleanerOrphanTrait {
                     $this->deleteDirectoryRecursive($full_path);
                     $result['removed']++;
                     $result['bytes_freed'] += $dir_size;
-                    $this->log('INFO', 'Orphan snapshot directory removed', array('dir' => $entry));
+                    $this->log(LogLevelType::Info->value, 'Orphan snapshot directory removed', array('dir' => $entry));
                 } else {
                     $result['removed']++;
                 }
@@ -161,7 +163,7 @@ trait CleanerOrphanTrait {
                     )
                 );
 
-                $this->log('WARN', 'Stuck snapshot marked as failed', array(
+                $this->log(LogLevelType::Warn->value, 'Stuck snapshot marked as failed', array(
                     'id'     => $snapshot['id'],
                     'status' => $snapshot['status'],
                 ));

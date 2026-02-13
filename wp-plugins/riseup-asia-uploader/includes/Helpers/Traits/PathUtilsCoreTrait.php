@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait PathUtilsCoreTrait {
 
     /** @var RiseupFileLogger|null */
@@ -57,21 +59,24 @@ trait PathUtilsCoreTrait {
     /**
      * Log a message safely — falls back to error_log() when logger is unavailable.
      *
-     * @param string $level   One of 'debug', 'info', 'warn', 'error'.
+     * @param string $level   Log level (e.g. LogLevelType::Info->value).
      * @param string $message Log message.
      * @param array  $context Optional context.
      */
     private static function safe_log($level, $message, $context = array()) {
+        $upper = strtoupper($level);
+        $method = strtolower($level);
+
         if (self::$bootstrapping) {
-            error_log('[Riseup Asia] [' . strtoupper($level) . '] ' . $message);
+            error_log('[Riseup Asia] [' . $upper . '] ' . $message);
             return;
         }
 
         $logger = self::get_logger();
         if ($logger !== null) {
-            $logger->$level($message, $context);
+            $logger->$method($message, $context);
         } else {
-            error_log('[Riseup Asia] [' . strtoupper($level) . '] ' . $message);
+            error_log('[Riseup Asia] [' . $upper . '] ' . $message);
         }
     }
 

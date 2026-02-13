@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait CleanerUtilsTrait {
 
     /**
@@ -111,14 +113,14 @@ trait CleanerUtilsTrait {
                 TRIGGERED_BY_API
             );
         } catch (\Throwable $e) {
-            $this->log('ERROR', 'Failed to log cleanup action', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to log cleanup action', array('error' => $e->getMessage()));
         }
     }
 
     /**
      * Log a message with cleaner context prefix.
      *
-     * @param string $level   Log level (DEBUG, INFO, WARN, ERROR).
+     * @param string $level   Log level (e.g. LogLevelType::Info->value).
      * @param string $message Message.
      * @param array  $context Additional context.
      */
@@ -135,10 +137,10 @@ trait CleanerUtilsTrait {
         }
 
         switch ($level) {
-            case 'DEBUG': $this->logger->debug($full_message); break;
-            case 'INFO':  $this->logger->info($full_message);  break;
-            case 'WARN':  $this->logger->warn($full_message);  break;
-            case 'ERROR': $this->logger->error($full_message);  break;
+            case LogLevelType::Debug->value: $this->logger->debug($full_message); break;
+            case LogLevelType::Info->value:  $this->logger->info($full_message);  break;
+            case LogLevelType::Warn->value:  $this->logger->warn($full_message);  break;
+            case LogLevelType::Error->value: $this->logger->error($full_message);  break;
             default:      $this->logger->info($full_message);
         }
     }

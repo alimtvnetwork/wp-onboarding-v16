@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait RootDbSchemaTrait {
 
     /**
@@ -94,7 +96,7 @@ trait RootDbSchemaTrait {
             isset($config['settings']) ? json_encode($config['settings']) : null,
         ));
 
-        $this->log('INFO', 'Metadata populated', array(
+        $this->log(LogLevelType::Info->value, 'Metadata populated', array(
             'title' => $config['title'] ?? 'Untitled', 'mysql_version' => $mysql_version, 'wp_version' => $wp_version,
         ));
     }
@@ -118,7 +120,7 @@ trait RootDbSchemaTrait {
         }
         $pdo->commit();
 
-        $this->log('INFO', 'Dependencies populated', array(
+        $this->log(LogLevelType::Info->value, 'Dependencies populated', array(
             'edges' => count($analysis['dependencies']), 'tables' => count($analysis['tables']),
         ));
 

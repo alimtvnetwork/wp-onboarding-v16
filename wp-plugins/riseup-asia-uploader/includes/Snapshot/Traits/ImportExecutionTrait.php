@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once __DIR__ . '/ImportExecutionFileTrait.php';
 
 trait ImportExecutionTrait {
@@ -20,7 +22,7 @@ trait ImportExecutionTrait {
 
     /** Import a per-table snapshot (with a-root.db). */
     private function importPerTable($tempDir, $rootDbPath) {
-        $this->log('INFO', 'Detected per-table snapshot format');
+        $this->log(LogLevelType::Info->value, 'Detected per-table snapshot format');
         $snapshotRoot = dirname($rootDbPath);
 
         $metadata = $this->extractAndValidateRootDb($rootDbPath, $snapshotRoot);
@@ -47,7 +49,7 @@ trait ImportExecutionTrait {
     /** Validate all import file inventories (tables, incrementals, plugins). */
     private function validateAllImportFiles(string $rootDbPath, string $snapshotRoot): array {
         $tables = $this->readRootDbTables($rootDbPath);
-        $this->log('INFO', 'Validating table files', array('count' => count($tables)));
+        $this->log(LogLevelType::Info->value, 'Validating table files', array('count' => count($tables)));
         $this->validateTableFiles($snapshotRoot, $tables);
 
         $incrementals = $this->readRootDbIncrementals($rootDbPath);
@@ -61,7 +63,7 @@ trait ImportExecutionTrait {
 
     /** Build the final import result array. */
     private function buildImportResult(int $snapshotId, string $destDir, array $metadata, array $inventories): array {
-        $this->log('INFO', 'Per-table snapshot imported successfully', array(
+        $this->log(LogLevelType::Info->value, 'Per-table snapshot imported successfully', array(
             'snapshotId' => $snapshotId, 'tables' => count($inventories['tables']),
             'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
         ));

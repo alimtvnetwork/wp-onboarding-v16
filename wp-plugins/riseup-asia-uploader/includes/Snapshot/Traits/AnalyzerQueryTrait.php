@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait AnalyzerQueryTrait {
 
     /**
@@ -58,7 +60,7 @@ trait AnalyzerQueryTrait {
         $rows = $this->wpdb->get_results($sql, ARRAY_A);
 
         if (empty($rows)) {
-            $this->log('INFO', 'No foreign key dependencies detected', array('database' => $db_name));
+            $this->log(LogLevelType::Info->value, 'No foreign key dependencies detected', array('database' => $db_name));
             return array();
         }
 
@@ -72,7 +74,7 @@ trait AnalyzerQueryTrait {
             );
         }
 
-        $this->log('INFO', 'Dependencies detected', array('count' => count($deps), 'database' => $db_name));
+        $this->log(LogLevelType::Info->value, 'Dependencies detected', array('count' => count($deps), 'database' => $db_name));
 
         return $deps;
     }
@@ -118,8 +120,8 @@ trait AnalyzerQueryTrait {
         }
 
         switch ($level) {
-            case 'WARN':  $this->logger->warn($full); break;
-            case 'ERROR': $this->logger->error($full); break;
+            case LogLevelType::Warn->value:  $this->logger->warn($full); break;
+            case LogLevelType::Error->value: $this->logger->error($full); break;
             default:      $this->logger->info($full);
         }
     }

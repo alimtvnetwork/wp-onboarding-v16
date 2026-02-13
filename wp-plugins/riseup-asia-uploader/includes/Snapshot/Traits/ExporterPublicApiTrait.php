@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ExporterPublicApiTrait {
 
     /**
@@ -19,7 +21,7 @@ trait ExporterPublicApiTrait {
      * @return array {success: bool, export?: array, error?: string}
      */
     public function getOrBuildZip($fullSnapshotId) {
-        $this->log('INFO', 'getOrBuildZip called', array('snapshot_id' => $fullSnapshotId));
+        $this->log(LogLevelType::Info->value, 'getOrBuildZip called', array('snapshot_id' => $fullSnapshotId));
 
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
         if (!$snapshot) {
@@ -28,7 +30,7 @@ trait ExporterPublicApiTrait {
 
         $existing = $this->getValidExport($fullSnapshotId);
         if ($existing && file_exists($existing['zip_path'])) {
-            $this->log('INFO', 'Returning cached ZIP export', array('export_id' => $existing['id'], 'filename' => $existing['zip_filename']));
+            $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array('export_id' => $existing['id'], 'filename' => $existing['zip_filename']));
             return array('success' => true, 'cached' => true, 'export' => $existing);
         }
 
@@ -46,7 +48,7 @@ trait ExporterPublicApiTrait {
      * @return bool True if an export was invalidated.
      */
     public function invalidateZip($fullSnapshotId) {
-        $this->log('INFO', 'Invalidating ZIP export', array('snapshot_id' => $fullSnapshotId));
+        $this->log(LogLevelType::Info->value, 'Invalidating ZIP export', array('snapshot_id' => $fullSnapshotId));
 
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
@@ -55,19 +57,19 @@ trait ExporterPublicApiTrait {
 
         $export = $this->getValidExport($fullSnapshotId);
         if (!$export) {
-            $this->log('DEBUG', 'No valid export to invalidate');
+            $this->log(LogLevelType::Debug->value, 'No valid export to invalidate');
             return false;
         }
 
         if (file_exists($export['zip_path'])) {
             @unlink($export['zip_path']);
-            $this->log('INFO', 'Deleted cached ZIP file', array('path' => basename($export['zip_path'])));
+            $this->log(LogLevelType::Info->value, 'Deleted cached ZIP file', array('path' => basename($export['zip_path'])));
         }
 
         $stmt = $pdo->prepare('UPDATE ' . TABLE_SNAPSHOT_EXPORTS . ' SET status = ?, expires_at = datetime(\'now\') WHERE id = ?');
         $stmt->execute(array(SNAPSHOT_EXPORT_STATUS_EXPIRED, $export['id']));
 
-        $this->log('INFO', 'Export marked as expired', array('export_id' => $export['id']));
+        $this->log(LogLevelType::Info->value, 'Export marked as expired', array('export_id' => $export['id']));
         return true;
     }
 
@@ -89,14 +91,14 @@ trait ExporterPublicApiTrait {
         foreach ($exports as $export) {
             if (!empty($export['zip_path']) && file_exists($export['zip_path'])) {
                 @unlink($export['zip_path']);
-                $this->log('DEBUG', 'Deleted export ZIP', array('path' => basename($export['zip_path'])));
+                $this->log(LogLevelType::Debug->value, 'Deleted export ZIP', array('path' => basename($export['zip_path'])));
             }
         }
 
         $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
         $stmt->execute(array($fullSnapshotId));
 
-        $this->log('INFO', 'Removed all exports for snapshot', array('snapshot_id' => $fullSnapshotId, 'count' => count($exports)));
+        $this->log(LogLevelType::Info->value, 'Removed all exports for snapshot', array('snapshot_id' => $fullSnapshotId, 'count' => count($exports)));
     }
 
     /**
@@ -125,23 +127,23 @@ trait ExporterPublicApiTrait {
     public function validateDownloadToken($exportId, $token) {
         $valid = wp_verify_nonce($token, 'riseup_snapshot_download_' . $exportId);
         if (!$valid) {
-            $this->log('WARN', 'Invalid download token', array('export_id' => $exportId));
+            $this->log(LogLevelType::Warn->value, 'Invalid download token', array('export_id' => $exportId));
             return null;
         }
 
         $export = $this->getExportById($exportId);
         if (!$export) {
-            $this->log('WARN', 'Export not found for download', array('export_id' => $exportId));
+            $this->log(LogLevelType::Warn->value, 'Export not found for download', array('export_id' => $exportId));
             return null;
         }
 
         if ($export['status'] !== SNAPSHOT_EXPORT_STATUS_VALID) {
-            $this->log('WARN', 'Export is not valid', array('export_id' => $exportId, 'status' => $export['status']));
+            $this->log(LogLevelType::Warn->value, 'Export is not valid', array('export_id' => $exportId, 'status' => $export['status']));
             return null;
         }
 
         if (RiseupBooleanHelpers::is_file_missing($export['zip_path'])) {
-            $this->log('WARN', 'Export ZIP file missing', array('path' => $export['zip_path']));
+            $this->log(LogLevelType::Warn->value, 'Export ZIP file missing', array('path' => $export['zip_path']));
             return null;
         }
 

@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ImportValidationTrait {
 
     /**
@@ -48,7 +50,7 @@ trait ImportValidationTrait {
             $pdo = null;
             return $row ?: null;
         } catch (PDOException $e) {
-            $this->log('ERROR', 'Failed to read a-root.db metadata', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to read a-root.db metadata', array('error' => $e->getMessage()));
             return null;
         }
     }

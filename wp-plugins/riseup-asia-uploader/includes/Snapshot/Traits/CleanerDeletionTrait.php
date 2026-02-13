@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait CleanerDeletionTrait {
 
     /**
@@ -42,7 +44,7 @@ trait CleanerDeletionTrait {
         $this->deleteSnapshotRecords($snapshot['id']);
         $this->removeExportCache($snapshot['id']);
 
-        $this->log('DEBUG', 'Deleted snapshot', array(
+        $this->log(LogLevelType::Debug->value, 'Deleted snapshot', array(
             'id' => $snapshot['id'],
             'filename' => $snapshot['filename'] ?? '',
             'bytes_freed' => RiseupPathUtils::format_bytes($bytes_freed),
@@ -68,7 +70,7 @@ trait CleanerDeletionTrait {
         $this->deleteDirectoryRecursive($incremental_dir);
         $this->cascadeDeleteIncrementalRecords($filepath);
 
-        $this->log('INFO', 'Cascade-deleted incremental children', array(
+        $this->log(LogLevelType::Info->value, 'Cascade-deleted incremental children', array(
             'parent_id'   => $parent_id,
             'parent_dir'  => basename($filepath),
             'bytes_freed' => RiseupPathUtils::format_bytes($inc_size),
@@ -89,7 +91,7 @@ trait CleanerDeletionTrait {
         if (RiseupPathUtils::file_exists($filepath)) {
             $bytes_freed = filesize($filepath);
             if (!RiseupPathUtils::delete_file($filepath)) {
-                $this->log('WARN', 'Failed to delete snapshot file', array('filepath' => $filepath));
+                $this->log(LogLevelType::Warn->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
                 return -1;
             }
         }
@@ -129,7 +131,7 @@ trait CleanerDeletionTrait {
                 $exporter->removeExports((int) $snapshot_id);
             }
         } catch (\Throwable $e) {
-            $this->log('WARN', 'Failed to remove cached ZIP exports during delete', array(
+            $this->log(LogLevelType::Warn->value, 'Failed to remove cached ZIP exports during delete', array(
                 'snapshot_id' => $snapshot_id,
                 'error'       => $e->getMessage(),
             ));
@@ -154,11 +156,11 @@ trait CleanerDeletionTrait {
                 $this->deleteSnapshotRecords($inc['id']);
             }
 
-            $this->log('DEBUG', 'Deleted incremental DB records', array(
+            $this->log(LogLevelType::Debug->value, 'Deleted incremental DB records', array(
                 'count' => count($incrementals),
             ));
         } catch (\Throwable $e) {
-            $this->log('ERROR', 'Failed to cascade-delete incremental records', array(
+            $this->log(LogLevelType::Error->value, 'Failed to cascade-delete incremental records', array(
                 'error' => $e->getMessage(),
             ));
         }
