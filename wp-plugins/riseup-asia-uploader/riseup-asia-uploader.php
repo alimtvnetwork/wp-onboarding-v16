@@ -827,37 +827,37 @@ class RiseupAsia {
         // constants on PHP 8.0+ (Error thrown at argument evaluation).
         // =================================================================
 
-        try { $safe_register(RISEUP_ENDPOINT_AGENTS_LIST, array(
+        try { $safe_register(ENDPOINT_AGENTS_LIST, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_list_agents'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
         )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_LIST failed: ' . $e->getMessage()); }
 
-        try { $safe_register(RISEUP_ENDPOINT_AGENTS_ADD, array(
+        try { $safe_register(ENDPOINT_AGENTS_ADD, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_add_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
         )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_ADD failed: ' . $e->getMessage()); }
 
-        try { $safe_register(RISEUP_ENDPOINT_AGENTS_REMOVE, array(
+        try { $safe_register(ENDPOINT_AGENTS_REMOVE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_remove_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
         )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_REMOVE failed: ' . $e->getMessage()); }
 
-        try { $safe_register(RISEUP_ENDPOINT_AGENTS_TEST, array(
+        try { $safe_register(ENDPOINT_AGENTS_TEST, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_test_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
         )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_TEST failed: ' . $e->getMessage()); }
 
-        try { $safe_register(RISEUP_ENDPOINT_AGENTS_SYNC, array(
+        try { $safe_register(ENDPOINT_AGENTS_SYNC, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_sync_to_agent'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
         )); } catch (Throwable $e) { $failed++; $this->file_logger->error('Agent route AGENTS_SYNC failed: ' . $e->getMessage()); }
 
-        try { $safe_register(RISEUP_ENDPOINT_AGENTS_PLUGINS, array(
+        try { $safe_register(ENDPOINT_AGENTS_PLUGINS, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_agent_plugin_action'),
             'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
@@ -1520,7 +1520,7 @@ class RiseupAsia {
 
         // =====================================================================
         // VERSION DETECTION — Read from the actual plugin file on disk to
-        // avoid stale RISEUP_VERSION constant after self-updates. OPcache
+        // avoid stale PLUGIN_VERSION constant after self-updates. OPcache
         // may cache the old constants.php bytecode across requests.
         // =====================================================================
         $live_version = PLUGIN_VERSION; // default fallback
@@ -1711,13 +1711,13 @@ class RiseupAsia {
 
                 if ($upload['error'] !== UPLOAD_ERR_OK) {
                     $this->file_logger->error('Multipart upload error', array('code' => $upload['error']));
-                    return $this->error_response('File upload failed (error code: ' . $upload['error'] . ')', RISEUP_HTTP_BAD_REQUEST);
+                    return $this->error_response('File upload failed (error code: ' . $upload['error'] . ')', HTTP_BAD_REQUEST);
                 }
 
                 $zip_content = file_get_contents($upload['tmp_name']);
                 if ($zip_content === false) {
                     $this->file_logger->error('Failed to read uploaded file');
-                    return $this->error_response('Failed to read uploaded file', RISEUP_HTTP_SERVER_ERROR);
+                    return $this->error_response('Failed to read uploaded file', HTTP_SERVER_ERROR);
                 }
 
                 // Read form fields from multipart body params
@@ -1739,14 +1739,14 @@ class RiseupAsia {
 
                 if (empty($data['plugin_zip'])) {
                     $this->file_logger->warn('Upload failed: plugin_zip required');
-                    return $this->error_response(RISEUP_MSG_INVALID_REQUEST . ': plugin_zip is required (send as multipart file or base64 JSON)', RISEUP_HTTP_BAD_REQUEST);
+                    return $this->error_response(MSG_INVALID_REQUEST . ': plugin_zip is required (send as multipart file or base64 JSON)', HTTP_BAD_REQUEST);
                 }
 
                 $this->file_logger->info('Processing base64 JSON upload');
                 $zip_content = base64_decode($data['plugin_zip']);
                 if ($zip_content === false) {
                     $this->file_logger->error('Invalid base64 data');
-                    return $this->error_response('Invalid base64 data', RISEUP_HTTP_BAD_REQUEST);
+                    return $this->error_response('Invalid base64 data', HTTP_BAD_REQUEST);
                 }
             }
 
@@ -1775,7 +1775,7 @@ class RiseupAsia {
                     'client_version' => $client_plugin_version,
                     'file_size'      => strlen($zip_content),
                 ), array(
-                    'plugin_version' => $client_plugin_version ?: RISEUP_VERSION,
+                    'plugin_version' => $client_plugin_version ?: PLUGIN_VERSION,
                     'upload_source'  => $upload_source,
                 ));
             }
@@ -1788,7 +1788,7 @@ class RiseupAsia {
             if (file_put_contents($temp_file, $zip_content) === false) {
                 $this->file_logger->error('Failed to write temp file');
                 $this->logger->log_upload_failed($slug, 'Failed to write temp file');
-                return $this->error_response(RISEUP_MSG_UPLOAD_FAILED, RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response(MSG_UPLOAD_FAILED, HTTP_SERVER_ERROR);
             }
 
             // Validate ZIP.
@@ -1798,7 +1798,7 @@ class RiseupAsia {
                 @unlink($temp_file);
                 $this->file_logger->error('Invalid ZIP archive');
                 $this->logger->log_upload_failed($slug, 'Invalid ZIP archive');
-                return $this->error_response('Invalid ZIP archive', RISEUP_HTTP_BAD_REQUEST);
+                return $this->error_response('Invalid ZIP archive', HTTP_BAD_REQUEST);
             }
 
             // Determine plugin slug from ZIP.
@@ -1809,7 +1809,7 @@ class RiseupAsia {
                 @unlink($temp_file);
                 $this->file_logger->error('Could not detect plugin in ZIP');
                 $this->logger->log_upload_failed($slug, 'Could not detect plugin in ZIP');
-                return $this->error_response('Could not detect plugin in ZIP', RISEUP_HTTP_BAD_REQUEST);
+                return $this->error_response('Could not detect plugin in ZIP', HTTP_BAD_REQUEST);
             }
 
             // Use detected slug if not provided.
@@ -1877,10 +1877,10 @@ class RiseupAsia {
             // activity BEFORE the files are replaced. Otherwise, the log entry
             // might not be created if the new code changes the logging behavior.
             // =====================================================================
-            $is_self_update = ($slug === RISEUP_SLUG && $is_update);
+            $is_self_update = ($slug === PLUGIN_SLUG && $is_update);
             if ($is_self_update) {
                 $old_plugin_file = $this->find_plugin_file($slug);
-                $old_version = RISEUP_VERSION;
+                $old_version = PLUGIN_VERSION;
                 
                 $this->file_logger->info('Self-update detected, pre-logging activity', array(
                     'old_version'   => $old_version,
@@ -1888,9 +1888,9 @@ class RiseupAsia {
                 ));
                 
                 $this->logger->log_plugin_action(
-                    RISEUP_ACTION_UPLOAD,
+                    ACTION_UPLOAD,
                     $slug,
-                    RISEUP_STATUS_SUCCESS,
+                    STATUS_SUCCESS,
                     array(
                         'is_update'       => true,
                         'is_self_update'  => true,
@@ -1945,7 +1945,7 @@ class RiseupAsia {
                 @unlink($temp_file);
                 $this->delete_directory($temp_extract_dir);
                 $this->file_logger->error('Failed to open ZIP for extraction');
-                return $this->error_response('Failed to open ZIP for extraction', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('Failed to open ZIP for extraction', HTTP_SERVER_ERROR);
             }
             $zip->extractTo($temp_extract_dir);
             $zip->close();
@@ -1957,7 +1957,7 @@ class RiseupAsia {
                 $this->delete_directory($temp_extract_dir);
                 $this->file_logger->error('No folder found in extracted ZIP');
                 $this->logger->log_upload_failed($slug, 'No folder found in extracted ZIP');
-                return $this->error_response('No folder found in extracted ZIP', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('No folder found in extracted ZIP', HTTP_SERVER_ERROR);
             }
 
             $extracted_folder = $extracted_folders[0];
@@ -2027,7 +2027,7 @@ class RiseupAsia {
                     'target_dir' => $target_dir,
                 ));
                 $this->logger->log_upload_failed($slug, 'Could not find plugin file after extraction');
-                return $this->error_response('Could not find plugin file after extraction', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
             }
 
             $this->file_logger->info('Plugin file found', array('plugin_file' => $plugin_file));
@@ -2040,14 +2040,14 @@ class RiseupAsia {
                 if (is_wp_error($result)) {
                     $error_msg = $result->get_error_message();
                     $this->file_logger->warn('Activation failed', array('error' => $error_msg));
-                    $this->logger->log_upload_failed($slug, RISEUP_MSG_ACTIVATION_FAILED . ': ' . $error_msg);
+                    $this->logger->log_upload_failed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
 
                     // Capture backtrace for activation failure diagnostics
                     $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
 
                     // Plugin uploaded but activation failed — include full diagnostic metadata
-                    return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', RISEUP_HTTP_OK)
-                        ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_UPLOAD)
+                    return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
+                        ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
                         ->setSingleResult(array(
                             'plugin_slug'      => $slug,
                             'is_update'        => $is_update,
@@ -2065,7 +2065,7 @@ class RiseupAsia {
             // The client-sent version is used as a fallback, but we prefer
             // reading the actual installed file to confirm what's on disk.
             // This avoids the self-update chicken-and-egg problem where
-            // RISEUP_VERSION constant still holds the old value.
+            // PLUGIN_VERSION constant still holds the old value.
             // =================================================================
             $installed_version = '';
             if (!empty($plugin_file)) {
@@ -2092,14 +2092,14 @@ class RiseupAsia {
             }
 
             // Priority depends on whether this is a self-update:
-            // - Self-update: client_version > installed_version > RISEUP_VERSION
+            // - Self-update: client_version > installed_version > PLUGIN_VERSION
             //   (running PHP process has stale constants and OPcache may serve old file content)
-            // - Other plugins: installed_version > client_version > RISEUP_VERSION
+            // - Other plugins: installed_version > client_version > PLUGIN_VERSION
             if ($is_self_update) {
-                $plugin_version = $client_plugin_version ?: ($installed_version ?: RISEUP_VERSION);
+                $plugin_version = $client_plugin_version ?: ($installed_version ?: PLUGIN_VERSION);
                 $version_source = !empty($client_plugin_version) ? 'client (self-update)' : ($installed_version ? 'file_header' : 'constant');
             } else {
-                $plugin_version = $installed_version ?: ($client_plugin_version ?: RISEUP_VERSION);
+                $plugin_version = $installed_version ?: ($client_plugin_version ?: PLUGIN_VERSION);
                 $version_source = $installed_version ? 'file_header' : (!empty($client_plugin_version) ? 'client' : 'constant');
             }
             
@@ -2107,7 +2107,7 @@ class RiseupAsia {
                 'version'           => $plugin_version,
                 'installed_version' => $installed_version,
                 'client_version'    => $client_plugin_version,
-                'constant_version'  => RISEUP_VERSION,
+                'constant_version'  => PLUGIN_VERSION,
                 'is_self_update'    => $is_self_update,
                 'source'            => $version_source,
             ));
@@ -2137,7 +2137,7 @@ class RiseupAsia {
             ));
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_UPLOAD)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
                 ->setSingleResult(array(
                     'plugin_slug'    => $slug,
                     'is_update'      => $is_update,
@@ -2149,7 +2149,7 @@ class RiseupAsia {
         } catch (Throwable $e) {
             // Catch both Exception and Error (PHP 7+) for complete coverage
             $this->file_logger->log_exception($e, 'Upload error');
-            return $this->error_response('Upload failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Upload failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2192,12 +2192,12 @@ class RiseupAsia {
             $this->file_logger->debug('Plugins listed', array('count' => count($plugins)));
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . RISEUP_ENDPOINT_PLUGINS)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . ENDPOINT_PLUGINS)
                 ->setResults($plugins)
                 ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'List plugins error');
-            return $this->error_response('Failed to list plugins: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Failed to list plugins: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2213,7 +2213,7 @@ class RiseupAsia {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Plugin files endpoint called', array('slug' => $slug));
 
@@ -2227,7 +2227,7 @@ class RiseupAsia {
             
             if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
                 $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
-                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
             }
 
             // Load uploadignore patterns if available
@@ -2249,10 +2249,9 @@ class RiseupAsia {
                 'plugin'     => $slug,
                 'totalFiles' => count($result['files']),
                 'files'      => $result['files'],
-            ), RISEUP_HTTP_OK);
+            ), HTTP_OK);
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, 'Plugin files error');
-            return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2267,7 +2266,7 @@ class RiseupAsia {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Sync manifest endpoint called', array('slug' => $slug));
 
@@ -2280,7 +2279,7 @@ class RiseupAsia {
             
             if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
                 $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
-                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
             }
 
             $ignore = RiseupUploadIgnore::from_directory($plugin_dir);
@@ -2302,10 +2301,10 @@ class RiseupAsia {
                     ),
                     'files'       => $result['files'],
                 ),
-            ), RISEUP_HTTP_OK);
+            ), HTTP_OK);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Sync manifest error');
-            return $this->error_response('Failed to generate sync manifest: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Failed to generate sync manifest: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2324,10 +2323,10 @@ class RiseupAsia {
         $files = isset($body['files']) ? $body['files'] : array();
 
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         if (empty($files) || !is_array($files)) {
-            return $this->error_response('Files array is required', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Files array is required', HTTP_BAD_REQUEST);
         }
 
         $this->file_logger->info('Sync push endpoint called', array('slug' => $slug, 'fileCount' => count($files)));
@@ -2335,7 +2334,7 @@ class RiseupAsia {
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
             }
 
             $ignore = RiseupUploadIgnore::from_directory($plugin_dir);
@@ -2359,7 +2358,7 @@ class RiseupAsia {
                 if ($ignore && $ignore->is_ignored($path)) {
                     $files_ignored++;
                     $ignored_files[] = $path;
-                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => RISEUP_MSG_FILE_IGNORED);
+                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => MSG_FILE_IGNORED);
                     continue;
                 }
 
@@ -2372,12 +2371,12 @@ class RiseupAsia {
                     // Directory doesn't exist yet for new files
                     $resolved = $plugin_dir;
                 }
-                if (strpos($resolved, $real_plugin_dir) !== 0 && $action !== RISEUP_SYNC_ACTION_DELETE) {
+                if (strpos($resolved, $real_plugin_dir) !== 0 && $action !== SYNC_ACTION_DELETE) {
                     $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Path traversal detected');
                     continue;
                 }
 
-                if ($action === RISEUP_SYNC_ACTION_REPLACE) {
+                if ($action === SYNC_ACTION_REPLACE) {
                     // Decode base64 content and write file
                     $decoded = base64_decode($content, true);
                     if ($decoded === false) {
@@ -2395,20 +2394,20 @@ class RiseupAsia {
                         $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Failed to write file');
                     }
 
-                } elseif ($action === RISEUP_SYNC_ACTION_DELETE) {
+                } elseif ($action === SYNC_ACTION_DELETE) {
                     // Delete the file from remote
                     if (file_exists($full_path)) {
                         // Log deletion to audit trail
                         $this->file_logger->info('Sync delete', array('slug' => $slug, 'path' => $path));
                         if ($this->db) {
                             $this->db->log_transaction(
-                                RISEUP_ACTION_SYNC_DELETE,
+                                ACTION_SYNC_DELETE,
                                 $slug,
-                                RISEUP_STATUS_SUCCESS,
+                                STATUS_SUCCESS,
                                 'Deleted via sync: ' . $path,
                                 null,
                                 null,
-                                RISEUP_TRIGGERED_BY_API
+                                TRIGGERED_BY_API
                             );
                         }
                         if (unlink($full_path)) {
@@ -2436,13 +2435,13 @@ class RiseupAsia {
             // Log overall sync operation
             if ($this->db) {
                 $this->db->log_transaction(
-                    RISEUP_ACTION_SYNC,
+                    ACTION_SYNC,
                     $slug,
-                    RISEUP_STATUS_SUCCESS,
+                    STATUS_SUCCESS,
                     sprintf('Sync: %d updated, %d deleted, %d ignored', $files_updated, $files_deleted, $files_ignored),
                     null,
                     null,
-                    RISEUP_TRIGGERED_BY_API
+                    TRIGGERED_BY_API
                 );
             }
 
@@ -2457,10 +2456,10 @@ class RiseupAsia {
                 'files_ignored' => $files_ignored,
                 'ignored_files' => $ignored_files,
                 'results'       => $results,
-            ), RISEUP_HTTP_OK);
+            ), HTTP_OK);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Sync push error');
-            return $this->error_response('Sync push failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Sync push failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2525,7 +2524,7 @@ class RiseupAsia {
         $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
         $file_path = isset($json['path']) ? $json['path'] : null;
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
 
         $this->file_logger->info('Plugin file content endpoint called', array(
@@ -2535,20 +2534,20 @@ class RiseupAsia {
 
         try {
             if (empty($file_path)) {
-                return $this->error_response('File path is required', RISEUP_HTTP_BAD_REQUEST);
+                return $this->error_response('File path is required', HTTP_BAD_REQUEST);
             }
 
             // Sanitize path - prevent directory traversal
             $file_path = ltrim($file_path, '/\\');
             if (strpos($file_path, '..') !== false) {
-                return $this->error_response('Invalid file path', RISEUP_HTTP_BAD_REQUEST);
+                return $this->error_response('Invalid file path', HTTP_BAD_REQUEST);
             }
 
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             $full_path = $plugin_dir . '/' . $file_path;
 
             if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-                return $this->error_response(RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug, RISEUP_HTTP_NOT_FOUND);
+                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
             }
 
             // Verify the file is within the plugin directory
@@ -2556,16 +2555,16 @@ class RiseupAsia {
             $real_file_path = realpath($full_path);
 
             if ($real_file_path === false || strpos($real_file_path, $real_plugin_dir) !== 0) {
-                return $this->error_response('File not found or invalid path', RISEUP_HTTP_NOT_FOUND);
+                return $this->error_response('File not found or invalid path', HTTP_NOT_FOUND);
             }
 
             if (!is_file($real_file_path)) {
-                return $this->error_response('File not found', RISEUP_HTTP_NOT_FOUND);
+                return $this->error_response('File not found', HTTP_NOT_FOUND);
             }
 
             $content = @file_get_contents($real_file_path);
             if ($content === false) {
-                return $this->error_response('Failed to read file', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('Failed to read file', HTTP_SERVER_ERROR);
             }
 
             $this->file_logger->info('File content read', array(
@@ -2578,10 +2577,10 @@ class RiseupAsia {
                 'success' => true,
                 'path'    => $file_path,
                 'content' => $content,
-            ), RISEUP_HTTP_OK);
+            ), HTTP_OK);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Plugin file content error');
-            return $this->error_response('Failed to read file: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Failed to read file: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2598,7 +2597,7 @@ class RiseupAsia {
         try {
             $plugin_dir = dirname(__FILE__);
             $temp_dir   = $this->get_temp_dir();
-            $zip_file   = $temp_dir . '/' . RISEUP_SLUG . '.zip';
+            $zip_file   = $temp_dir . '/' . PLUGIN_SLUG . '.zip';
 
             $this->file_logger->debug('Creating ZIP', array('source' => $plugin_dir, 'target' => $zip_file));
 
@@ -2606,7 +2605,7 @@ class RiseupAsia {
             $zip = new ZipArchive();
             if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
                 $this->file_logger->error('Failed to create ZIP file');
-                return $this->error_response('Failed to create ZIP file', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('Failed to create ZIP file', HTTP_SERVER_ERROR);
             }
 
             // Load uploadignore.
@@ -2614,7 +2613,7 @@ class RiseupAsia {
             $this->file_logger->debug('Uploadignore loaded', array('has_patterns' => $ignore->is_loaded()));
 
             // Add files recursively.
-            $this->add_dir_to_zip($zip, $plugin_dir, RISEUP_SLUG, $ignore);
+            $this->add_dir_to_zip($zip, $plugin_dir, PLUGIN_SLUG, $ignore);
             $zip->close();
 
             // Read and encode.
@@ -2623,25 +2622,25 @@ class RiseupAsia {
 
             if ($zip_content === false) {
                 $this->file_logger->error('Failed to read ZIP file');
-                return $this->error_response('Failed to read ZIP file', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('Failed to read ZIP file', HTTP_SERVER_ERROR);
             }
 
             $this->file_logger->info('Export-self complete', array('size' => strlen($zip_content)));
 
             // Log the export.
-            $this->logger->log_plugin_action(RISEUP_ACTION_EXPORT_SELF, RISEUP_SLUG, RISEUP_STATUS_SUCCESS, array(
+            $this->logger->log_plugin_action(ACTION_EXPORT_SELF, PLUGIN_SLUG, STATUS_SUCCESS, array(
                 'size' => strlen($zip_content),
             ));
 
             return new WP_REST_Response(array(
                 'success'    => true,
                 'plugin_zip' => base64_encode($zip_content),
-                'slug'       => RISEUP_SLUG,
-                'version'    => RISEUP_VERSION,
-            ), RISEUP_HTTP_OK);
+                'slug'       => PLUGIN_SLUG,
+                'version'    => PLUGIN_VERSION,
+            ), HTTP_OK);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Export-self error');
-            return $this->error_response('Export failed: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Export failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2653,7 +2652,7 @@ class RiseupAsia {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Export-plugin endpoint called', array('slug' => $slug));
 
@@ -2662,12 +2661,12 @@ class RiseupAsia {
             $plugin_dir  = RiseupPathUtils::join($plugins_dir, $slug);
 
             if (!RiseupPathUtils::dirExists($plugin_dir)) {
-                return $this->error_response('Plugin not found: ' . $slug, RISEUP_HTTP_NOT_FOUND);
+                return $this->error_response('Plugin not found: ' . $slug, HTTP_NOT_FOUND);
             }
 
             // Safety: prevent path traversal
             if (!RiseupPathUtils::isSafePath($plugin_dir, $plugins_dir)) {
-                return $this->error_response('Invalid plugin slug', RISEUP_HTTP_BAD_REQUEST);
+                return $this->error_response('Invalid plugin slug', HTTP_BAD_REQUEST);
             }
 
             $temp_dir = $this->get_temp_dir();
@@ -2676,7 +2675,7 @@ class RiseupAsia {
             $zip = new ZipArchive();
             if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
                 $this->file_logger->error('Failed to create export ZIP');
-                return $this->error_response('Failed to create ZIP file', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('Failed to create ZIP file', HTTP_SERVER_ERROR);
             }
 
             // Add all files recursively
@@ -2689,7 +2688,7 @@ class RiseupAsia {
             @unlink($zip_file);
 
             if ($zip_content === false) {
-                return $this->error_response('Failed to read ZIP file', RISEUP_HTTP_SERVER_ERROR);
+                return $this->error_response('Failed to read ZIP file', HTTP_SERVER_ERROR);
             }
 
             $this->file_logger->info('Export-plugin complete', array(
@@ -2698,7 +2697,7 @@ class RiseupAsia {
                 'files' => $file_count,
             ));
 
-            $this->logger->log_plugin_action(RISEUP_ACTION_EXPORT_PLUGIN, $slug, RISEUP_STATUS_SUCCESS, array(
+            $this->logger->log_plugin_action(ACTION_EXPORT_PLUGIN, $slug, STATUS_SUCCESS, array(
                 'size'  => strlen($zip_content),
                 'files' => $file_count,
             ));
@@ -2709,7 +2708,7 @@ class RiseupAsia {
                 'slug'       => $slug,
                 'file_count' => $file_count,
                 'size'       => strlen($zip_content),
-            ), RISEUP_HTTP_OK);
+            ), HTTP_OK);
         });
     }
 
@@ -2734,7 +2733,7 @@ class RiseupAsia {
             'search' => $request->get_param('search'),
         ));
 
-        return new WP_REST_Response($result, $result['success'] ? RISEUP_HTTP_OK : RISEUP_HTTP_SERVER_ERROR);
+        return new WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
     }
 
     /**
@@ -2750,7 +2749,7 @@ class RiseupAsia {
         $data   = $request->get_json_params();
         $result = $this->post_manager->create_post($data);
 
-        return new WP_REST_Response($result, $result['success'] ? RISEUP_HTTP_CREATED : RISEUP_HTTP_BAD_REQUEST);
+        return new WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
 
     /**
@@ -2769,7 +2768,7 @@ class RiseupAsia {
             'search' => $request->get_param('search'),
         ));
 
-        return new WP_REST_Response($result, $result['success'] ? RISEUP_HTTP_OK : RISEUP_HTTP_SERVER_ERROR);
+        return new WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
     }
 
     /**
@@ -2785,7 +2784,7 @@ class RiseupAsia {
         $data   = $request->get_json_params();
         $result = $this->post_manager->create_category($data);
 
-        return new WP_REST_Response($result, $result['success'] ? RISEUP_HTTP_CREATED : RISEUP_HTTP_BAD_REQUEST);
+        return new WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
 
     // =========================================================================
@@ -2815,7 +2814,7 @@ class RiseupAsia {
                 'to'     => $request->get_param('to'),
             );
 
-            $limit  = $request->get_param('limit') ?? RISEUP_DEFAULT_LIMIT;
+            $limit  = $request->get_param('limit') ?? DEFAULT_LIMIT;
             $offset = $request->get_param('offset') ?? 0;
 
             $result = $this->db->query_transactions($filters, $limit, $offset);
@@ -2824,13 +2823,13 @@ class RiseupAsia {
             $per_page = (int) $limit;
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_LOGS)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_LOGS)
                 ->setResults($result['logs'])
                 ->setPagination($total, $per_page, $per_page > 0 ? (int) floor($offset / $per_page) + 1 : 1)
                 ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Query logs error');
-            return $this->error_response('Failed to query logs: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Failed to query logs: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2851,12 +2850,12 @@ class RiseupAsia {
             $stats = $this->db->get_stats();
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_LOGS_STATS)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_LOGS_STATS)
                 ->setSingleResult($stats)
                 ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Logs stats error');
-            return $this->error_response('Failed to get stats: ' . $e->getMessage(), RISEUP_HTTP_SERVER_ERROR, $e);
+            return $this->error_response('Failed to get stats: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -2876,7 +2875,7 @@ class RiseupAsia {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
 
         try {
@@ -2890,7 +2889,7 @@ class RiseupAsia {
             }
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_EXISTS)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_EXISTS)
                 ->setSingleResult(array(
                     'plugin_slug'  => $slug,
                     'exists'       => $exists,
@@ -2904,7 +2903,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'handle_plugin_exists: Failed');
             return $this->error_response(
                 'Failed to check plugin existence: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -2923,7 +2922,7 @@ class RiseupAsia {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Enable plugin endpoint called', array('slug' => $slug));
 
@@ -2936,7 +2935,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to load plugin functions');
             return $this->error_response(
                 'Failed to load WordPress plugin functions: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -2948,8 +2947,8 @@ class RiseupAsia {
             if (!$plugin_file) {
                 $this->file_logger->warn('Plugin not found', array('slug' => $slug));
                 return $this->error_response(
-                    RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
-                    RISEUP_HTTP_NOT_FOUND
+                    MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
+                    HTTP_NOT_FOUND
                 );
             }
             $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
@@ -2957,7 +2956,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to find plugin file');
             return $this->error_response(
                 'Failed to locate plugin: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -2967,7 +2966,7 @@ class RiseupAsia {
             if (is_plugin_active($plugin_file)) {
                 $this->file_logger->info('Plugin already active', array('slug' => $slug));
                 return RiseupEnvelopeBuilder::success('Plugin was already active')
-                    ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_ENABLE)
+                    ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_ENABLE)
                     ->setSingleResult(array(
                         'plugin_slug' => $slug,
                         'activated'   => true,
@@ -2978,7 +2977,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to check plugin status');
             return $this->error_response(
                 'Failed to check plugin status: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -2995,30 +2994,30 @@ class RiseupAsia {
                 ));
                 
                 // Log the failure
-                $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_FAILED, array(
+                $this->logger->log_plugin_action(ACTION_ENABLE, $slug, STATUS_FAILED, array(
                     'error' => $error_msg,
                 ));
 
                 return $this->error_response(
-                    RISEUP_MSG_ACTIVATION_FAILED . ': ' . $error_msg,
-                    RISEUP_HTTP_SERVER_ERROR
+                    MSG_ACTIVATION_FAILED . ': ' . $error_msg,
+                    HTTP_SERVER_ERROR
                 );
             }
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Exception during plugin activation');
-            $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_FAILED, array(
+            $this->logger->log_plugin_action(ACTION_ENABLE, $slug, STATUS_FAILED, array(
                 'exception' => $e->getMessage(),
             ));
             return $this->error_response(
                 'Exception during activation: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
 
         // Step 5: Log success
         try {
-            $this->logger->log_plugin_action(RISEUP_ACTION_ENABLE, $slug, RISEUP_STATUS_SUCCESS);
+            $this->logger->log_plugin_action(ACTION_ENABLE, $slug, STATUS_SUCCESS);
         } catch (Throwable $e) {
             $this->file_logger->warn('Failed to log activation success', array('error' => $e->getMessage()));
         }
@@ -3026,7 +3025,7 @@ class RiseupAsia {
         $this->file_logger->info('Plugin activated successfully', array('slug' => $slug));
 
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_ENABLE)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_ENABLE)
             ->setSingleResult(array(
                 'plugin_slug' => $slug,
                 'activated'   => true,
@@ -3047,7 +3046,7 @@ class RiseupAsia {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Disable plugin endpoint called', array('slug' => $slug));
 
@@ -3060,7 +3059,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to load plugin functions');
             return $this->error_response(
                 'Failed to load WordPress plugin functions: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3072,8 +3071,8 @@ class RiseupAsia {
             if (!$plugin_file) {
                 $this->file_logger->warn('Plugin not found', array('slug' => $slug));
                 return $this->error_response(
-                    RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
-                    RISEUP_HTTP_NOT_FOUND
+                    MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
+                    HTTP_NOT_FOUND
                 );
             }
             $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
@@ -3081,7 +3080,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to find plugin file');
             return $this->error_response(
                 'Failed to locate plugin: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3091,7 +3090,7 @@ class RiseupAsia {
             if (!is_plugin_active($plugin_file)) {
                 $this->file_logger->info('Plugin already inactive', array('slug' => $slug));
                 return RiseupEnvelopeBuilder::success('Plugin was already inactive')
-                    ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_DISABLE)
+                    ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_DISABLE)
                     ->setSingleResult(array(
                         'plugin_slug'  => $slug,
                         'deactivated'  => true,
@@ -3102,7 +3101,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to check plugin status');
             return $this->error_response(
                 'Failed to check plugin status: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3113,12 +3112,12 @@ class RiseupAsia {
             $this->file_logger->debug('deactivate_plugins called', array('plugin_file' => $plugin_file));
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Exception during plugin deactivation');
-            $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_FAILED, array(
+            $this->logger->log_plugin_action(ACTION_DISABLE, $slug, STATUS_FAILED, array(
                 'exception' => $e->getMessage(),
             ));
             return $this->error_response(
                 'Exception during deactivation: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3127,26 +3126,26 @@ class RiseupAsia {
         try {
             if (is_plugin_active($plugin_file)) {
                 $this->file_logger->warn('Plugin still active after deactivation attempt', array('slug' => $slug));
-                $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_FAILED, array(
+                $this->logger->log_plugin_action(ACTION_DISABLE, $slug, STATUS_FAILED, array(
                     'error' => 'Plugin remained active after deactivation',
                 ));
                 return $this->error_response(
-                    RISEUP_MSG_DEACTIVATION_FAILED . ': Plugin remained active',
-                    RISEUP_HTTP_SERVER_ERROR
+                    MSG_DEACTIVATION_FAILED . ': Plugin remained active',
+                    HTTP_SERVER_ERROR
                 );
             }
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Failed to verify deactivation');
             return $this->error_response(
                 'Failed to verify deactivation: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
 
         // Step 6: Log success
         try {
-            $this->logger->log_plugin_action(RISEUP_ACTION_DISABLE, $slug, RISEUP_STATUS_SUCCESS);
+            $this->logger->log_plugin_action(ACTION_DISABLE, $slug, STATUS_SUCCESS);
         } catch (Throwable $e) {
             $this->file_logger->warn('Failed to log deactivation success', array('error' => $e->getMessage()));
         }
@@ -3154,7 +3153,7 @@ class RiseupAsia {
         $this->file_logger->info('Plugin deactivated successfully', array('slug' => $slug));
 
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_DISABLE)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_DISABLE)
             ->setSingleResult(array(
                 'plugin_slug'  => $slug,
                 'deactivated'  => true,
@@ -3175,7 +3174,7 @@ class RiseupAsia {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', RISEUP_HTTP_BAD_REQUEST);
+            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         $this->file_logger->info('Delete plugin endpoint called', array('slug' => $slug));
 
@@ -3191,7 +3190,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to load plugin functions');
             return $this->error_response(
                 'Failed to load WordPress plugin functions: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3203,8 +3202,8 @@ class RiseupAsia {
             if (!$plugin_file) {
                 $this->file_logger->warn('Plugin not found', array('slug' => $slug));
                 return $this->error_response(
-                    RISEUP_MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
-                    RISEUP_HTTP_NOT_FOUND
+                    MSG_PLUGIN_NOT_FOUND . ': ' . $slug,
+                    HTTP_NOT_FOUND
                 );
             }
             $this->file_logger->debug('Plugin file found', array('plugin_file' => $plugin_file));
@@ -3212,7 +3211,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to find plugin file');
             return $this->error_response(
                 'Failed to locate plugin: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3227,7 +3226,7 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Failed to deactivate plugin before deletion');
             return $this->error_response(
                 'Failed to deactivate plugin before deletion: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3244,42 +3243,42 @@ class RiseupAsia {
                     'error'       => $error_msg,
                 ));
                 
-                $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_FAILED, array(
+                $this->logger->log_plugin_action(ACTION_DELETE, $slug, STATUS_FAILED, array(
                     'error' => $error_msg,
                 ));
 
                 return $this->error_response(
-                    RISEUP_MSG_DELETE_FAILED . ': ' . $error_msg,
-                    RISEUP_HTTP_SERVER_ERROR
+                    MSG_DELETE_FAILED . ': ' . $error_msg,
+                    HTTP_SERVER_ERROR
                 );
             }
 
             if ($result === false) {
                 $this->file_logger->warn('Plugin deletion returned false', array('slug' => $slug));
-                $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_FAILED, array(
+                $this->logger->log_plugin_action(ACTION_DELETE, $slug, STATUS_FAILED, array(
                     'error' => 'delete_plugins returned false',
                 ));
 
                 return $this->error_response(
-                    RISEUP_MSG_DELETE_FAILED . ': Unknown error',
-                    RISEUP_HTTP_SERVER_ERROR
+                    MSG_DELETE_FAILED . ': Unknown error',
+                    HTTP_SERVER_ERROR
                 );
             }
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Exception during plugin deletion');
-            $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_FAILED, array(
+            $this->logger->log_plugin_action(ACTION_DELETE, $slug, STATUS_FAILED, array(
                 'exception' => $e->getMessage(),
             ));
             return $this->error_response(
                 'Exception during deletion: ' . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
 
         // Step 5: Log success
         try {
-            $this->logger->log_plugin_action(RISEUP_ACTION_DELETE, $slug, RISEUP_STATUS_SUCCESS);
+            $this->logger->log_plugin_action(ACTION_DELETE, $slug, STATUS_SUCCESS);
         } catch (Throwable $e) {
             $this->file_logger->warn('Failed to log deletion success', array('error' => $e->getMessage()));
         }
@@ -3287,7 +3286,7 @@ class RiseupAsia {
         $this->file_logger->info('Plugin deleted successfully', array('slug' => $slug));
 
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_PLUGIN_DELETE)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_DELETE)
             ->setSingleResult(array(
                 'plugin_slug' => $slug,
                 'deleted'     => true,
@@ -3327,7 +3326,7 @@ class RiseupAsia {
             
             return $this->error_response(
                 "Error in {$context}: " . $e->getMessage(),
-                RISEUP_HTTP_SERVER_ERROR,
+                HTTP_SERVER_ERROR,
                 $e
             );
         }
@@ -3374,7 +3373,7 @@ class RiseupAsia {
             }
 
             $result = array(
-                'version'  => RISEUP_VERSION,
+                'version'  => PLUGIN_VERSION,
                 'settings' => array(
                     'include_error_log'  => $include_error,
                     'include_full_log'   => $include_full,
@@ -3435,7 +3434,7 @@ class RiseupAsia {
             if (!$pdo) {
                 return $this->error_response(
                     'Database not available (PDO/pdo_sqlite extension may not be installed)',
-                    RISEUP_HTTP_SERVER_ERROR
+                    HTTP_SERVER_ERROR
                 );
             }
 
@@ -4243,9 +4242,9 @@ class RiseupAsia {
 
             // Log activity: snapshot creation initiated
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_CREATE,
+                ACTION_SNAPSHOT_CREATE,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
@@ -4265,9 +4264,9 @@ class RiseupAsia {
 
                 // Log result
                 $this->logger->log_plugin_action(
-                    RISEUP_ACTION_SNAPSHOT_CREATE,
+                    ACTION_SNAPSHOT_CREATE,
                     'snapshot',
-                    $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                    $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                     array('scope' => $scope, 'mode' => 'per_table', 'phase' => 'complete'),
                     $result['success'] ? null : ($result['error'] ?? 'Unknown error')
                 );
@@ -4279,7 +4278,7 @@ class RiseupAsia {
             // Legacy single-db mode via provider
             $options = array(
                 'scope'   => $scope,
-                'trigger' => RISEUP_SNAPSHOT_TRIGGER_API,
+                'trigger' => SNAPSHOT_TRIGGER_API,
                 'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
             );
 
@@ -4289,9 +4288,9 @@ class RiseupAsia {
 
             // Log result
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_CREATE,
+                ACTION_SNAPSHOT_CREATE,
                 'snapshot',
-                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('scope' => $scope, 'mode' => 'legacy', 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Unknown error')
             );
@@ -4344,9 +4343,9 @@ class RiseupAsia {
 
             // Log activity: delete initiated
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_DELETE,
+                ACTION_SNAPSHOT_DELETE,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
@@ -4355,9 +4354,9 @@ class RiseupAsia {
 
             // Log activity: delete complete
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_DELETE,
+                ACTION_SNAPSHOT_DELETE,
                 'snapshot',
-                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Delete failed')
             );
@@ -4390,9 +4389,9 @@ class RiseupAsia {
 
             // Log activity: restore initiated
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_RESTORE,
+                ACTION_SNAPSHOT_RESTORE,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated')
             );
 
@@ -4412,9 +4411,9 @@ class RiseupAsia {
 
                     // Log result
                     $this->logger->log_plugin_action(
-                        RISEUP_ACTION_SNAPSHOT_RESTORE,
+                        ACTION_SNAPSHOT_RESTORE,
                         'snapshot',
-                        $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                        $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                         array('snapshot_id' => $id, 'mode' => 'per_table', 'phase' => 'complete'),
                         $result['success'] ? null : ($result['error'] ?? 'Restore failed')
                     );
@@ -4429,9 +4428,9 @@ class RiseupAsia {
 
             // Log result
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_RESTORE,
+                ACTION_SNAPSHOT_RESTORE,
                 'snapshot',
-                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('snapshot_id' => $id, 'mode' => 'legacy', 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Restore failed')
             );
@@ -4499,9 +4498,9 @@ class RiseupAsia {
 
             // Log activity: export initiated
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_EXPORT,
+                ACTION_SNAPSHOT_EXPORT,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
@@ -4511,9 +4510,9 @@ class RiseupAsia {
             if (!$result['success']) {
                 // Log failure
                 $this->logger->log_plugin_action(
-                    RISEUP_ACTION_SNAPSHOT_EXPORT,
+                    ACTION_SNAPSHOT_EXPORT,
                     'snapshot',
-                    RISEUP_STATUS_FAILED,
+                    STATUS_FAILED,
                     array('snapshot_id' => $id),
                     $result['error'] ?? 'Export failed'
                 );
@@ -4524,9 +4523,9 @@ class RiseupAsia {
             $filepath = $result['filepath'];
             if (RiseupBooleanHelpers::is_file_missing($filepath)) {
                 $this->logger->log_plugin_action(
-                    RISEUP_ACTION_SNAPSHOT_EXPORT,
+                    ACTION_SNAPSHOT_EXPORT,
                     'snapshot',
-                    RISEUP_STATUS_FAILED,
+                    STATUS_FAILED,
                     array('snapshot_id' => $id),
                     'Export file not found'
                 );
@@ -4535,9 +4534,9 @@ class RiseupAsia {
 
             // Log success
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_EXPORT,
+                ACTION_SNAPSHOT_EXPORT,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'filename' => $result['filename'], 'size' => $result['size'])
             );
 
@@ -4546,7 +4545,7 @@ class RiseupAsia {
                 'success'  => true,
                 'filename' => $result['filename'],
                 'size'     => $result['size'],
-                'downloadUrl' => rest_url(RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_SNAPSHOTS . '/' . $id . '/download'),
+                'downloadUrl' => rest_url(API_FULL_NAMESPACE . '/' . ENDPOINT_SNAPSHOTS . '/' . $id . '/download'),
             ), 200);
         }, 'export_snapshot');
     }
@@ -4572,9 +4571,9 @@ class RiseupAsia {
 
             // Log activity: download initiated
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+                ACTION_SNAPSHOT_ZIP_DOWNLOAD,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
             );
 
@@ -4584,9 +4583,9 @@ class RiseupAsia {
 
             if (!$result['success']) {
                 $this->logger->log_plugin_action(
-                    RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+                    ACTION_SNAPSHOT_ZIP_DOWNLOAD,
                     'snapshot',
-                    RISEUP_STATUS_FAILED,
+                    STATUS_FAILED,
                     array('snapshot_id' => $snapshotId),
                     $result['error'] ?? 'Download failed'
                 );
@@ -4597,9 +4596,9 @@ class RiseupAsia {
             $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
 
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+                ACTION_SNAPSHOT_ZIP_DOWNLOAD,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array(
                     'snapshot_id' => $snapshotId,
                     'cached'      => $result['cached'] ?? false,
@@ -4619,7 +4618,7 @@ class RiseupAsia {
                     'created_at'        => $export['created_at'] ?? '',
                     'status'            => $export['status'] ?? 'valid',
                 )))
-                ->setRequestedAt('/' . RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD)
+                ->setRequestedAt('/' . ENDPOINT_SNAPSHOT_DOWNLOAD)
                 ->toResponse();
         }, 'snapshot_download');
     }
@@ -4640,7 +4639,7 @@ class RiseupAsia {
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'Missing id or token parameter',
-                'code'    => RISEUP_ERR_EXPORT_TOKEN_INVALID,
+                'code'    => ERR_EXPORT_TOKEN_INVALID,
             ), 400);
         }
 
@@ -4652,7 +4651,7 @@ class RiseupAsia {
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'Invalid or expired download token',
-                'code'    => RISEUP_ERR_EXPORT_TOKEN_INVALID,
+                'code'    => ERR_EXPORT_TOKEN_INVALID,
             ), 403);
         }
 
@@ -4662,9 +4661,9 @@ class RiseupAsia {
 
         // Log the download
         $this->logger->log_plugin_action(
-            RISEUP_ACTION_SNAPSHOT_ZIP_DOWNLOAD,
+            ACTION_SNAPSHOT_ZIP_DOWNLOAD,
             'snapshot',
-            RISEUP_STATUS_SUCCESS,
+            STATUS_SUCCESS,
             array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming')
         );
 
@@ -4719,9 +4718,9 @@ class RiseupAsia {
 
             // Log activity: import initiated
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_IMPORT,
+                ACTION_SNAPSHOT_IMPORT,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
             );
 
@@ -4732,9 +4731,9 @@ class RiseupAsia {
 
             // Log result
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_IMPORT,
+                ACTION_SNAPSHOT_IMPORT,
                 'snapshot',
-                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('filename' => $original_name, 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Import failed')
             );
@@ -4780,7 +4779,7 @@ class RiseupAsia {
             $this->logger->log_plugin_action(
                 'snapshot_settings_update',
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('keys' => array_keys($body))
             );
 
@@ -4899,9 +4898,9 @@ class RiseupAsia {
 
             // Log activity: full backup initiated (Phase 6)
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_FULL_BACKUP,
+                ACTION_SNAPSHOT_FULL_BACKUP,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? null, 'phase' => 'initiated')
             );
 
@@ -4918,9 +4917,9 @@ class RiseupAsia {
 
             // Log activity: full backup result (Phase 6)
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_FULL_BACKUP,
+                ACTION_SNAPSHOT_FULL_BACKUP,
                 'snapshot',
-                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array(
                     'snapshot_id' => $result['snapshot_id'] ?? null,
                     'tables'      => $result['tables'] ?? 0,
@@ -4964,9 +4963,9 @@ class RiseupAsia {
 
             // Log activity: incremental backup initiated (Phase 6)
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                ACTION_SNAPSHOT_INCREMENTAL,
                 'snapshot',
-                RISEUP_STATUS_SUCCESS,
+                STATUS_SUCCESS,
                 array('title' => $body['title'] ?? null, 'phase' => 'initiated')
             );
 
@@ -4994,9 +4993,9 @@ class RiseupAsia {
 
             // Log activity: incremental backup result (Phase 6)
             $this->logger->log_plugin_action(
-                RISEUP_ACTION_SNAPSHOT_INCREMENTAL,
+                ACTION_SNAPSHOT_INCREMENTAL,
                 'snapshot',
-                $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array(
                     'snapshot_id'    => $result['snapshot_id'] ?? null,
                     'tables_changed' => $result['tables_changed'] ?? 0,
@@ -5048,9 +5047,9 @@ class RiseupAsia {
             // Log activity: cleanup result (Phase 6)
             if (!($body['dry_run'] ?? false)) {
                 $this->logger->log_plugin_action(
-                    RISEUP_ACTION_SNAPSHOT_CLEANUP,
+                    ACTION_SNAPSHOT_CLEANUP,
                     'snapshot',
-                    $result['success'] ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
+                    $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                     array(
                         'retention_removed' => $result['retention']['deleted'] ?? 0,
                         'orphans_removed'   => $result['orphans']['removed'] ?? 0,
@@ -5092,7 +5091,7 @@ class RiseupAsia {
                     'IsSuccess'    => false,
                     'HasAnyErrors' => true,
                     'error'        => 'Missing required field: job_id',
-                ), RISEUP_HTTP_BAD_REQUEST);
+                ), HTTP_BAD_REQUEST);
             }
 
             require_once dirname(__FILE__) . '/includes/Snapshot/SnapshotFactory.php';
@@ -5112,7 +5111,7 @@ class RiseupAsia {
                     'HasAnyErrors' => true,
                     'error'        => 'Job not found',
                     'code'         => 'JOB_NOT_FOUND',
-                ), RISEUP_HTTP_NOT_FOUND);
+                ), HTTP_NOT_FOUND);
             }
 
             return new WP_REST_Response(array(
@@ -5132,7 +5131,7 @@ class RiseupAsia {
                 'created_at'      => $progress['created_at'],
                 'updated_at'      => $progress['updated_at'],
                 'completed_at'    => $progress['completed_at'],
-            ), RISEUP_HTTP_OK);
+            ), HTTP_OK);
         }, 'snapshot_progress');
     }
 }
