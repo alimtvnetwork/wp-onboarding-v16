@@ -1,12 +1,12 @@
 # WP Plugin Publish - Plan Index
 
-**Updated: 2026-02-09**
+**Updated: 2026-02-13**
 
 ## Structure
 
 | File | Description |
 |------|-------------|
-| `../plan.md` | DRY Refactoring plan — All 10 phases complete ✅ |
+| `../plan.md` | Feature roadmap & remediation — Features A–H complete, E2 in progress |
 | `active.md` | Status overview — all tracks complete |
 | `technical-notes.md` | Root cause analyses, architecture decisions |
 | `completed/` | All completed plan files archived |
@@ -25,9 +25,11 @@
 
 ## Current Focus
 
-**No active implementation phases.** All planned work is complete.
+**Feature E2 (Activity Feed)** in progress — Go endpoint spec complete, React UI done with mock data.
 
-Next work should come from new feature requests or the open questions in `active.md`.
+**Feature H (PHP Coding Standards Remediation)** ✅ complete — 200-line file limit, 15-line function limit, zero raw function negations. Magic string audit identified log level migration (643 occurrences) as next remediation target.
+
+Next work: HTTP method + log level magic string migration, or new feature requests.
 
 ## Suggestions Status
 
