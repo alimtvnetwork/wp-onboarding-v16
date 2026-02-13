@@ -247,50 +247,74 @@ class RiseupSnapshotScheduler {
      * @return int Unix timestamp.
      */
     private function calculateNextRunTime($frequency, $time, $day) {
-        $now = current_time('timestamp');
         list($hour, $minute) = explode(':', $time);
         $hour = intval($hour);
         $minute = intval($minute);
 
         switch ($frequency) {
-            case SNAPSHOT_FREQ_DAILY:
-                // Next occurrence of the specified time
-                $next = strtotime("today {$hour}:{$minute}:00");
-                if ($next <= $now) {
-                    $next = strtotime("tomorrow {$hour}:{$minute}:00");
-                }
-                return $next;
-
-            case SNAPSHOT_FREQ_WEEKLY:
-                // Day 1 = Monday, 7 = Sunday
-                $day_name = $this->getDayName($day);
-                $next = strtotime("next {$day_name} {$hour}:{$minute}:00");
-                
-                // If today is the day and time hasn't passed, use today
-                if (date('N') == $day) {
-                    $today = strtotime("today {$hour}:{$minute}:00");
-                    if ($today > $now) {
-                        $next = $today;
-                    }
-                }
-                return $next;
-
-            case SNAPSHOT_FREQ_MONTHLY:
-                // Day of month (1-28)
-                $day = min(28, max(1, $day)); // Clamp to valid range
-                $current_month = date('Y-m');
-                $next_month = date('Y-m', strtotime('+1 month'));
-                
-                $next = strtotime("{$current_month}-{$day} {$hour}:{$minute}:00");
-                if ($next <= $now) {
-                    $next = strtotime("{$next_month}-{$day} {$hour}:{$minute}:00");
-                }
-                return $next;
-
-            default:
-                // Default to daily
-                return strtotime("tomorrow {$hour}:{$minute}:00");
+            case SNAPSHOT_FREQ_DAILY:   return $this->nextDailyRun($hour, $minute);
+            case SNAPSHOT_FREQ_WEEKLY:  return $this->nextWeeklyRun($hour, $minute, $day);
+            case SNAPSHOT_FREQ_MONTHLY: return $this->nextMonthlyRun($hour, $minute, $day);
+            default:                    return strtotime("tomorrow {$hour}:{$minute}:00");
         }
+    }
+
+    /**
+     * Calculate next daily run timestamp.
+     *
+     * @param int $hour   Hour (0-23).
+     * @param int $minute Minute (0-59).
+     * @return int Unix timestamp.
+     */
+    private function nextDailyRun(int $hour, int $minute): int {
+        $now = current_time('timestamp');
+        $next = strtotime("today {$hour}:{$minute}:00");
+        return ($next <= $now) ? strtotime("tomorrow {$hour}:{$minute}:00") : $next;
+    }
+
+    /**
+     * Calculate next weekly run timestamp.
+     *
+     * @param int $hour   Hour (0-23).
+     * @param int $minute Minute (0-59).
+     * @param int $day    ISO day number (1=Monday, 7=Sunday).
+     * @return int Unix timestamp.
+     */
+    private function nextWeeklyRun(int $hour, int $minute, int $day): int {
+        $now = current_time('timestamp');
+        $day_name = $this->getDayName($day);
+        $next = strtotime("next {$day_name} {$hour}:{$minute}:00");
+
+        if (date('N') == $day) {
+            $today = strtotime("today {$hour}:{$minute}:00");
+            if ($today > $now) {
+                return $today;
+            }
+        }
+
+        return $next;
+    }
+
+    /**
+     * Calculate next monthly run timestamp.
+     *
+     * @param int $hour   Hour (0-23).
+     * @param int $minute Minute (0-59).
+     * @param int $day    Day of month (1-28).
+     * @return int Unix timestamp.
+     */
+    private function nextMonthlyRun(int $hour, int $minute, int $day): int {
+        $now = current_time('timestamp');
+        $day = min(28, max(1, $day));
+        $current_month = date('Y-m');
+
+        $next = strtotime("{$current_month}-{$day} {$hour}:{$minute}:00");
+        if ($next <= $now) {
+            $next_month = date('Y-m', strtotime('+1 month'));
+            $next = strtotime("{$next_month}-{$day} {$hour}:{$minute}:00");
+        }
+
+        return $next;
     }
 
     /**

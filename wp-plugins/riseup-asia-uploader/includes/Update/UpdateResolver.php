@@ -126,69 +126,73 @@ class RiseupUpdateResolver {
      */
     public function resolve_url($url, $max_redirects = 5) {
         $this->file_logger->info('Resolving URL through redirects', array('url' => $url));
-        
+
         $current_url = $url;
-        $redirect_count = 0;
-        
-        while ($redirect_count < $max_redirects) {
-            $response = wp_remote_head($current_url, array(
-                'timeout'     => 15,
-                'redirection' => 0, // Don't auto-follow - we want to track each redirect
-                'sslverify'   => true,
-            ));
-            
-            if (is_wp_error($response)) {
-                $this->file_logger->error('URL resolution failed', array(
-                    'url'   => $current_url,
-                    'error' => $response->get_error_message(),
-                ));
-                return $response;
+
+        for ($i = 0; $i < $max_redirects; $i++) {
+            $result = $this->followSingleRedirect($current_url);
+
+            if (is_wp_error($result)) {
+                return $result;
             }
-            
-            $status_code = wp_remote_retrieve_response_code($response);
-            $this->file_logger->debug('Redirect check', array(
-                'url'    => $current_url,
-                'status' => $status_code,
-            ));
-            
-            // Check for redirect status codes
-            if (in_array($status_code, array(301, 302, 303, 307, 308))) {
-                $location = wp_remote_retrieve_header($response, 'location');
-                
-                if (empty($location)) {
-                    $this->file_logger->error('Redirect without Location header', array('url' => $current_url));
-                    return new WP_Error('no_location', 'Redirect response missing Location header');
-                }
-                
-                // Handle relative URLs
-                if (strpos($location, 'http') !== 0) {
-                    $parsed = parse_url($current_url);
-                    $location = $parsed['scheme'] . '://' . $parsed['host'] . $location;
-                }
-                
-                $this->file_logger->debug('Following redirect', array(
-                    'from' => $current_url,
-                    'to'   => $location,
-                ));
-                
-                $current_url = $location;
-                $redirect_count++;
-            } else {
-                // No more redirects - this is the final URL
-                $this->file_logger->info('URL resolved', array(
-                    'original' => $url,
-                    'final'    => $current_url,
-                    'hops'     => $redirect_count,
-                ));
-                return $current_url;
+            if ($result === null) {
+                return $this->logResolvedUrl($url, $current_url, $i);
             }
+
+            $current_url = $result;
         }
-        
-        $this->file_logger->error('Max redirects exceeded', array(
-            'url'       => $url,
-            'redirects' => $redirect_count,
-        ));
+
+        $this->file_logger->error('Max redirects exceeded', array('url' => $url, 'redirects' => $max_redirects));
         return new WP_Error('max_redirects', 'Maximum redirect limit exceeded');
+    }
+
+    /**
+     * Follow a single HTTP redirect and return the target URL.
+     *
+     * @param string $url URL to check.
+     * @return string|WP_Error|null Redirect target, WP_Error on failure, null if no redirect.
+     */
+    private function followSingleRedirect(string $url) {
+        $response = wp_remote_head($url, array('timeout' => 15, 'redirection' => 0, 'sslverify' => true));
+
+        if (is_wp_error($response)) {
+            $this->file_logger->error('URL resolution failed', array('url' => $url, 'error' => $response->get_error_message()));
+            return $response;
+        }
+
+        $status = wp_remote_retrieve_response_code($response);
+        $this->file_logger->debug('Redirect check', array('url' => $url, 'status' => $status));
+
+        if (!in_array($status, array(301, 302, 303, 307, 308))) {
+            return null;
+        }
+
+        $location = wp_remote_retrieve_header($response, 'location');
+        if (empty($location)) {
+            $this->file_logger->error('Redirect without Location header', array('url' => $url));
+            return new WP_Error('no_location', 'Redirect response missing Location header');
+        }
+
+        if (strpos($location, 'http') !== 0) {
+            $parsed = parse_url($url);
+            $location = $parsed['scheme'] . '://' . $parsed['host'] . $location;
+        }
+
+        $this->file_logger->debug('Following redirect', array('from' => $url, 'to' => $location));
+        return $location;
+    }
+
+    /**
+     * Log a successful URL resolution.
+     *
+     * @param string $original Original URL.
+     * @param string $final    Final resolved URL.
+     * @param int    $hops     Number of redirects followed.
+     * @return string The final URL.
+     */
+    private function logResolvedUrl(string $original, string $final, int $hops): string {
+        $this->file_logger->info('URL resolved', array('original' => $original, 'final' => $final, 'hops' => $hops));
+        return $final;
     }
 
     /**
