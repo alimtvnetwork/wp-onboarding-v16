@@ -27,6 +27,22 @@ use RiseupAsia\Enums\HookType;
 // =============================================================================
 
 /**
+ * Build a single structured frame from a backtrace entry.
+ *
+ * @param array $frame Backtrace frame.
+ * @return array Structured frame object.
+ */
+function riseup_build_single_frame($frame) {
+    return array(
+        'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
+        'fileBase' => isset($frame['file']) ? basename($frame['file']) : '[internal]',
+        'line'     => isset($frame['line']) ? $frame['line'] : 0,
+        'function' => isset($frame['function']) ? $frame['function'] : '',
+        'class'    => isset($frame['class']) ? $frame['class'] : '',
+    );
+}
+
+/**
  * Convert a Throwable trace to a structured frames array.
  *
  * @param Throwable $exception The exception/error.
@@ -46,13 +62,7 @@ function riseup_exception_to_frames($exception) {
     
     // Remaining frames from trace
     foreach ($exception->getTrace() as $frame) {
-        $frames[] = array(
-            'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
-            'fileBase' => isset($frame['file']) ? basename($frame['file']) : '[internal]',
-            'line'     => isset($frame['line']) ? $frame['line'] : 0,
-            'function' => isset($frame['function']) ? $frame['function'] : '',
-            'class'    => isset($frame['class']) ? $frame['class'] : '',
-        );
+        $frames[] = riseup_build_single_frame($frame);
     }
     
     return $frames;
@@ -67,14 +77,9 @@ function riseup_exception_to_frames($exception) {
 function riseup_backtrace_to_frames($backtrace) {
     $frames = array();
     foreach ($backtrace as $frame) {
-        $frames[] = array(
-            'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
-            'fileBase' => isset($frame['file']) ? basename($frame['file']) : '[internal]',
-            'line'     => isset($frame['line']) ? $frame['line'] : 0,
-            'function' => isset($frame['function']) ? $frame['function'] : '',
-            'class'    => isset($frame['class']) ? $frame['class'] : '',
-        );
+        $frames[] = riseup_build_single_frame($frame);
     }
+
     return $frames;
 }
 
@@ -107,19 +112,15 @@ function riseup_is_fatal_rest_error($error) {
 }
 
 /**
- * Build structured stack trace lines and frames from a fatal error.
+ * Build trace lines from a fatal error and optional backtrace.
  *
- * @param array $error The error from error_get_last().
- * @return array{trace_lines: string[], frames: array} Trace lines and structured frames.
+ * @param array      $error     The error from error_get_last().
+ * @param array|null $backtrace Debug backtrace or null.
+ * @return string[] Formatted trace lines.
  */
-function riseup_build_fatal_frames($error) {
+function riseup_build_trace_lines($error, $backtrace) {
     $trace_lines = array();
     $trace_lines[] = sprintf("#0 %s(%d): Fatal error occurred", $error['file'], $error['line']);
-
-    $backtrace = null;
-    if (function_exists('debug_backtrace')) {
-        $backtrace = @debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
-    }
 
     if (is_array($backtrace)) {
         foreach ($backtrace as $i => $frame) {
@@ -133,7 +134,17 @@ function riseup_build_fatal_frames($error) {
 
     $trace_lines[] = sprintf("#%d [internal function]: PHP shutdown handler", count($trace_lines));
 
-    // Structured frames
+    return $trace_lines;
+}
+
+/**
+ * Build structured frames from a fatal error and optional backtrace.
+ *
+ * @param array      $error     The error from error_get_last().
+ * @param array|null $backtrace Debug backtrace or null.
+ * @return array Structured frame objects.
+ */
+function riseup_build_structured_frames($error, $backtrace) {
     $frames = array(
         array(
             'file'     => $error['file'],
@@ -146,13 +157,7 @@ function riseup_build_fatal_frames($error) {
 
     if (is_array($backtrace)) {
         foreach ($backtrace as $frame) {
-            $frames[] = array(
-                'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
-                'fileBase' => isset($frame['file']) ? basename($frame['file']) : '[internal]',
-                'line'     => isset($frame['line']) ? (int) $frame['line'] : 0,
-                'function' => isset($frame['function']) ? $frame['function'] : '',
-                'class'    => isset($frame['class']) ? $frame['class'] : '',
-            );
+            $frames[] = riseup_build_single_frame($frame);
         }
     }
 
@@ -164,7 +169,53 @@ function riseup_build_fatal_frames($error) {
         'class'    => 'PHP',
     );
 
-    return array('trace_lines' => $trace_lines, 'frames' => $frames);
+    return $frames;
+}
+
+/**
+ * Build structured stack trace lines and frames from a fatal error.
+ *
+ * @param array $error The error from error_get_last().
+ * @return array{trace_lines: string[], frames: array} Trace lines and structured frames.
+ */
+function riseup_build_fatal_frames($error) {
+    $backtrace = null;
+    if (function_exists('debug_backtrace')) {
+        $backtrace = @debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
+    }
+
+    return array(
+        'trace_lines' => riseup_build_trace_lines($error, $backtrace),
+        'frames'      => riseup_build_structured_frames($error, $backtrace),
+    );
+}
+
+/**
+ * Build the details sub-array for a fatal error response.
+ *
+ * @param array    $error       The error from error_get_last().
+ * @param string[] $trace_lines Formatted stack trace lines.
+ * @param array    $frames      Structured frame objects.
+ * @return array Details array.
+ */
+function riseup_build_fatal_details($error, $trace_lines, $frames) {
+    return array(
+        'type'             => $error['type'],
+        'typeName'         => riseup_error_type_to_string($error['type']),
+        'message'          => $error['message'],
+        'file'             => basename($error['file']),
+        'fileFull'         => $error['file'],
+        'line'             => $error['line'],
+        'stackTrace'       => implode("\n", $trace_lines),
+        'stackTraceFrames' => $frames,
+        'phpVersion'       => phpversion(),
+        'wpVersion'        => defined('WP_VERSION') ? WP_VERSION : 'unknown',
+        'memoryUsage'      => memory_get_usage(true),
+        'memoryPeak'       => memory_get_peak_usage(true),
+        'memoryLimit'      => ini_get('memory_limit'),
+        'requestUri'       => isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '',
+        'requestMethod'    => isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN',
+    );
 }
 
 /**
@@ -176,30 +227,12 @@ function riseup_build_fatal_frames($error) {
  * @return array Response envelope.
  */
 function riseup_build_fatal_response($error, $trace_lines, $frames) {
-    $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-
     return array(
         'success' => false,
         'error'   => array(
             'code'    => 'FATAL_ERROR',
             'message' => 'A fatal error occurred in the plugin: ' . $error['message'],
-            'details' => array(
-                'type'             => $error['type'],
-                'typeName'         => riseup_error_type_to_string($error['type']),
-                'message'          => $error['message'],
-                'file'             => basename($error['file']),
-                'fileFull'         => $error['file'],
-                'line'             => $error['line'],
-                'stackTrace'       => implode("\n", $trace_lines),
-                'stackTraceFrames' => $frames,
-                'phpVersion'       => phpversion(),
-                'wpVersion'        => defined('WP_VERSION') ? WP_VERSION : 'unknown',
-                'memoryUsage'      => memory_get_usage(true),
-                'memoryPeak'       => memory_get_peak_usage(true),
-                'memoryLimit'      => ini_get('memory_limit'),
-                'requestUri'       => $request_uri,
-                'requestMethod'    => isset($_SERVER['REQUEST_METHOD']) ? $_SERVER['REQUEST_METHOD'] : 'UNKNOWN',
-            ),
+            'details' => riseup_build_fatal_details($error, $trace_lines, $frames),
         ),
     );
 }
@@ -207,6 +240,80 @@ function riseup_build_fatal_response($error, $trace_lines, $frames) {
 // =============================================================================
 // GLOBAL ERROR HANDLER FOR JSON RESPONSES
 // =============================================================================
+
+/**
+ * Log a fatal error to the plugin's log file.
+ *
+ * @param array $error The error from error_get_last().
+ */
+function riseup_log_fatal_to_file($error) {
+    $log_entry = sprintf(
+        "[%s] FATAL ERROR in %s:%d - %s (type: %s)\n",
+        date('Y-m-d H:i:s'),
+        $error['file'],
+        $error['line'],
+        $error['message'],
+        riseup_error_type_to_string($error['type'])
+    );
+    $uploads  = wp_upload_dir();
+    $log_file = $uploads['basedir'] . '/riseup-asia-uploader/fatal-errors.log';
+    @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+}
+
+/**
+ * Clean all output buffers.
+ */
+function riseup_clean_output_buffers() {
+    while (ob_get_level()) {
+        @ob_end_clean();
+    }
+}
+
+/**
+ * Emit the fatal error JSON response and exit.
+ *
+ * @param array $error The error from error_get_last().
+ */
+function riseup_emit_fatal_json_response($error) {
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+    }
+
+    $frame_data = riseup_build_fatal_frames($error);
+    $response   = riseup_build_fatal_response($error, $frame_data['trace_lines'], $frame_data['frames']);
+
+    $json = @json_encode($response, JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        echo json_encode(riseup_build_fatal_fallback($error));
+    } else {
+        echo $json;
+    }
+
+    exit;
+}
+
+/**
+ * Build a minimal fallback response when JSON encoding fails.
+ *
+ * @param array $error The error from error_get_last().
+ * @return array Minimal response.
+ */
+function riseup_build_fatal_fallback($error) {
+    return array(
+        'success' => false,
+        'error'   => array(
+            'code'    => 'FATAL_ERROR_ENCODING_FAILED',
+            'message' => 'Fatal error occurred and JSON encoding also failed',
+            'details' => array(
+                'originalMessage' => substr($error['message'], 0, 500),
+                'file'            => basename($error['file']),
+                'line'            => $error['line'],
+                'jsonError'       => json_last_error_msg(),
+            ),
+        ),
+    );
+}
 
 /**
  * Custom error handler to catch fatal errors and return JSON response.
@@ -219,54 +326,9 @@ function riseup_fatal_error_handler() {
         return;
     }
 
-    // Log to file before any output
-    $log_entry = sprintf(
-        "[%s] FATAL ERROR in %s:%d - %s (type: %s)\n",
-        date('Y-m-d H:i:s'),
-        $error['file'],
-        $error['line'],
-        $error['message'],
-        riseup_error_type_to_string($error['type'])
-    );
-    $uploads  = wp_upload_dir();
-    $log_file = $uploads['basedir'] . '/riseup-asia-uploader/fatal-errors.log';
-    @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
-
-    // Clean output buffers
-    while (ob_get_level()) {
-        @ob_end_clean();
-    }
-
-    if (!headers_sent()) {
-        header('Content-Type: application/json; charset=utf-8');
-        http_response_code(500);
-    }
-
-    // Build and emit response
-    $frame_data = riseup_build_fatal_frames($error);
-    $response   = riseup_build_fatal_response($error, $frame_data['trace_lines'], $frame_data['frames']);
-
-    $json = @json_encode($response, JSON_UNESCAPED_SLASHES);
-    if ($json === false) {
-        $minimal = array(
-            'success' => false,
-            'error'   => array(
-                'code'    => 'FATAL_ERROR_ENCODING_FAILED',
-                'message' => 'Fatal error occurred and JSON encoding also failed',
-                'details' => array(
-                    'originalMessage' => substr($error['message'], 0, 500),
-                    'file'            => basename($error['file']),
-                    'line'            => $error['line'],
-                    'jsonError'       => json_last_error_msg(),
-                ),
-            ),
-        );
-        echo json_encode($minimal);
-    } else {
-        echo $json;
-    }
-
-    exit;
+    riseup_log_fatal_to_file($error);
+    riseup_clean_output_buffers();
+    riseup_emit_fatal_json_response($error);
 }
 
 /**
@@ -291,6 +353,7 @@ function riseup_error_type_to_string($type) {
         E_USER_DEPRECATED   => 'E_USER_DEPRECATED',
         E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
     );
+
     return isset($types[$type]) ? $types[$type] : 'UNKNOWN_ERROR_TYPE';
 }
 register_shutdown_function('riseup_fatal_error_handler');
@@ -1103,16 +1166,12 @@ class RiseupAsia {
     /**
      * Enrich error responses from our namespace with plugin metadata.
      *
-     * Adds plugin_version, timestamp, and log_hint to all 4xx/5xx responses
-     * from the riseup-asia-uploader REST namespace.
-     *
      * @param WP_REST_Response $response Response object.
      * @param WP_REST_Server   $server   REST server.
      * @param WP_REST_Request  $request  Request object.
      * @return WP_REST_Response Modified response.
      */
     public function enrich_error_response($response, $server, $request) {
-        // Only process our namespace
         $route = $request->get_route();
         if (strpos($route, '/' . API_FULL_NAMESPACE) === false) {
             return $response;
@@ -1128,7 +1187,20 @@ class RiseupAsia {
             return $response;
         }
 
-        // Inject metadata into the response
+        $data = $this->injectErrorMetadata($data);
+        $this->logRestApiError($route, $status, $data);
+        $response->set_data($data);
+
+        return $response;
+    }
+
+    /**
+     * Inject plugin metadata into error response data.
+     *
+     * @param array $data Response data.
+     * @return array Modified data with metadata.
+     */
+    private function injectErrorMetadata(array $data): array {
         if (!isset($data['plugin_version'])) {
             $data['plugin_version'] = PLUGIN_VERSION;
         }
@@ -1139,16 +1211,23 @@ class RiseupAsia {
             $data['log_hint'] = 'Check the plugin error logs or the Activity Logs page for details.';
         }
 
-        // Log the error for audit trail
+        return $data;
+    }
+
+    /**
+     * Log a REST API error for audit trail.
+     *
+     * @param string $route  Request route.
+     * @param int    $status HTTP status code.
+     * @param array  $data   Response data.
+     */
+    private function logRestApiError(string $route, int $status, array $data) {
         $this->file_logger->error('REST API error response', array(
             'route'          => $route,
             'status'         => $status,
             'message'        => isset($data['message']) ? $data['message'] : (isset($data['Status']['Message']) ? $data['Status']['Message'] : 'Unknown'),
             'plugin_version' => PLUGIN_VERSION,
         ));
-
-        $response->set_data($data);
-        return $response;
     }
 
     // =========================================================================
@@ -1586,20 +1665,30 @@ class RiseupAsia {
             'DbAvailable'      => $dbAvailable,
             'ServerTime'       => gmdate('c'),
             'Timezone'         => wp_timezone_string(),
-            'Features'         => array(
-                'PluginUpload'   => true,
-                'PluginManage'   => true,
-                'FileOperations' => true,
-                'DeltaSync'      => true,
-                'PostPublish'    => true,
-                'CategoryManage' => true,
-                'TransactionLog' => $dbAvailable,
-                'ExportSelf'     => true,
-                'Snapshots'      => $dbAvailable,
-                'Agents'         => $dbAvailable,
-            ),
+            'Features'         => $this->buildFeatureFlags($dbAvailable),
             'RegisteredRoutes' => $this->collectRegisteredRoutes(),
             'EndpointsRef'     => $this->loadEndpointsReference(),
+        );
+    }
+
+    /**
+     * Build the feature flags sub-section of the status payload.
+     *
+     * @param bool $dbAvailable Whether the database is available.
+     * @return array Feature flags.
+     */
+    private function buildFeatureFlags(bool $dbAvailable): array {
+        return array(
+            'PluginUpload'   => true,
+            'PluginManage'   => true,
+            'FileOperations' => true,
+            'DeltaSync'      => true,
+            'PostPublish'    => true,
+            'CategoryManage' => true,
+            'TransactionLog' => $dbAvailable,
+            'ExportSelf'     => true,
+            'Snapshots'      => $dbAvailable,
+            'Agents'         => $dbAvailable,
         );
     }
 
@@ -1613,11 +1702,27 @@ class RiseupAsia {
     public function handle_openapi($request) {
         $this->file_logger->info('OpenAPI endpoint called');
 
-        // Read the OpenAPI spec from the data directory.
+        $spec = $this->loadOpenApiSpec();
+        if ($spec instanceof WP_REST_Response) {
+            return $spec;
+        }
+
+        $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
+
+        return new WP_REST_Response($spec, HTTP_OK);
+    }
+
+    /**
+     * Load and validate the OpenAPI spec from disk.
+     *
+     * @return array|WP_REST_Response Parsed spec or error response.
+     */
+    private function loadOpenApiSpec() {
         $spec_file = plugin_dir_path(__FILE__) . 'data/openapi.json';
-        
+
         if (RiseupBooleanHelpers::is_file_missing($spec_file)) {
             $this->file_logger->error('OpenAPI spec file not found', array('path' => $spec_file));
+
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'OpenAPI specification file not found',
@@ -1627,6 +1732,7 @@ class RiseupAsia {
         $spec_content = file_get_contents($spec_file);
         if ($spec_content === false) {
             $this->file_logger->error('Failed to read OpenAPI spec file');
+
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'Failed to read OpenAPI specification',
@@ -1636,16 +1742,14 @@ class RiseupAsia {
         $spec = json_decode($spec_content, true);
         if ($spec === null) {
             $this->file_logger->error('Invalid JSON in OpenAPI spec file');
+
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'Invalid OpenAPI specification format',
             ), HTTP_SERVER_ERROR);
         }
 
-        // Update the server URL dynamically.
-        $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
-
-        return new WP_REST_Response($spec, HTTP_OK);
+        return $spec;
     }
 
     // =========================================================================
@@ -1672,37 +1776,47 @@ class RiseupAsia {
             'timestamp'         => gmdate('c'),
         );
 
-        // Full OPcache reset
         if (function_exists('opcache_reset')) {
             $result['opcache_reset'] = opcache_reset();
             $this->file_logger->info('OPcache reset executed', array('result' => $result['opcache_reset']));
         }
 
-        // Also invalidate specific plugin files
-        $plugin_dir = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG;
-        $invalidated = 0;
-        if (function_exists('opcache_invalidate')) {
-            $files_to_invalidate = array(
-                $plugin_dir . '/' . PLUGIN_SLUG . '.php',
-                $plugin_dir . '/includes/constants.php',
-            );
-            foreach ($files_to_invalidate as $file) {
-                if (file_exists($file)) {
-                    clearstatcache(true, $file);
-                    opcache_invalidate($file, true);
-                    $invalidated++;
-                }
-            }
-        }
-        $result['files_invalidated'] = $invalidated;
+        $result['files_invalidated'] = $this->invalidatePluginFiles();
 
-        // Clear WordPress plugin cache
         wp_cache_delete('plugins', 'plugins');
 
         return RiseupEnvelopeBuilder::success('OPcache reset complete')
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_OPCACHE_RESET)
             ->setSingleResult($result)
             ->toResponse();
+    }
+
+    /**
+     * Invalidate OPcache for critical plugin files.
+     *
+     * @return int Number of files invalidated.
+     */
+    private function invalidatePluginFiles(): int {
+        if (!function_exists('opcache_invalidate')) {
+            return 0;
+        }
+
+        $plugin_dir = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG;
+        $files_to_invalidate = array(
+            $plugin_dir . '/' . PLUGIN_SLUG . '.php',
+            $plugin_dir . '/includes/constants.php',
+        );
+        $invalidated = 0;
+
+        foreach ($files_to_invalidate as $file) {
+            if (file_exists($file)) {
+                clearstatcache(true, $file);
+                opcache_invalidate($file, true);
+                $invalidated++;
+            }
+        }
+
+        return $invalidated;
     }
 
     // =========================================================================
@@ -1720,108 +1834,149 @@ class RiseupAsia {
         $this->file_logger->info('Upload endpoint called');
 
         try {
-            $input = $this->parse_upload_input($request);
-            if ($input instanceof WP_REST_Response) {
-                return $input;
-            }
-
-            $zip_content          = $input['zip_content'];
-            $slug                 = $input['slug'];
-            $activate             = $input['activate'];
-            $upload_source        = $input['upload_source'];
-            $client_plugin_version = $input['client_plugin_version'];
-
-            // Log "Upload Initiated" before any processing
-            if (!empty($slug)) {
-                $this->logger->log_upload_initiated($slug, array(
-                    'activate'       => $activate,
-                    'upload_source'  => $upload_source,
-                    'client_version' => $client_plugin_version,
-                    'file_size'      => strlen($zip_content),
-                ), array(
-                    'plugin_version' => $client_plugin_version ?: PLUGIN_VERSION,
-                    'upload_source'  => $upload_source,
-                ));
-            }
-
-            $zip_result = $this->validate_and_write_zip($zip_content, $slug);
-            if ($zip_result instanceof WP_REST_Response) {
-                return $zip_result;
-            }
-
-            $temp_file = $zip_result['temp_file'];
-            $slug      = $zip_result['slug'];
-
-            $plugins_dir = WP_PLUGIN_DIR;
-            $target_dir  = $plugins_dir . '/' . $slug;
-            $is_update   = is_dir($target_dir);
-
-            $this->remove_duplicate_plugins($slug, $plugins_dir);
-
-            // Self-update pre-logging
-            $is_self_update = ($slug === PLUGIN_SLUG && $is_update);
-            if ($is_self_update) {
-                $this->pre_log_self_update($slug, $upload_source, $client_plugin_version, strlen($zip_content));
-            }
-
-            $was_active = $this->deactivate_if_updating($slug, $is_update, $target_dir);
-
-            $extract_result = $this->extract_to_plugins_dir($temp_file, $slug, $target_dir);
-            if ($extract_result instanceof WP_REST_Response) {
-                return $extract_result;
-            }
-
-            $plugin_file = $this->reset_opcache_and_find_plugin($slug);
-            if ($plugin_file instanceof WP_REST_Response) {
-                return $plugin_file;
-            }
-
-            $activation = $this->activate_if_needed($plugin_file, $slug, $activate, $was_active, $is_update);
-            if ($activation instanceof WP_REST_Response) {
-                return $activation;
-            }
-
-            $activated = $activation['activated'];
-
-            $version_info = $this->detect_installed_version($plugin_file, $slug, $is_self_update, $client_plugin_version);
-            $plugin_version = $version_info['version'];
-
-            // Log final result (skip if self-update was pre-logged)
-            if (!$is_self_update) {
-                $this->logger->log_upload($slug, array(
-                    'is_update'      => $is_update,
-                    'activated'      => $activated,
-                    'file_size'      => strlen($zip_content),
-                    'plugin_version' => $plugin_version,
-                ), array(
-                    'plugin_version' => $plugin_version,
-                    'upload_source'  => $upload_source,
-                ));
-            }
-
-            $this->file_logger->info('Upload complete', array(
-                'slug'           => $slug,
-                'is_update'      => $is_update,
-                'activated'      => $activated,
-                'plugin_version' => $plugin_version,
-                'upload_source'  => $upload_source,
-            ));
-
-            return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
-                ->setSingleResult(array(
-                    'plugin_slug'    => $slug,
-                    'is_update'      => $is_update,
-                    'activated'      => $activated,
-                    'plugin_version' => $plugin_version,
-                    'upload_source'  => $upload_source,
-                ))
-                ->toResponse();
+            return $this->executeUploadPipeline($request);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Upload error');
 
             return $this->error_response('Upload failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /**
+     * Execute the full upload pipeline: parse, validate, extract, activate, respond.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    private function executeUploadPipeline($request) {
+        $input = $this->parse_upload_input($request);
+        if ($input instanceof WP_REST_Response) {
+            return $input;
+        }
+
+        $this->logUploadInitiated($input);
+
+        $zip_result = $this->validate_and_write_zip($input['zip_content'], $input['slug']);
+        if ($zip_result instanceof WP_REST_Response) {
+            return $zip_result;
+        }
+
+        $result = $this->processUploadExtraction($input, $zip_result);
+        if ($result instanceof WP_REST_Response) {
+            return $result;
+        }
+
+        return $this->buildUploadResponse($result, $input);
+    }
+
+    /**
+     * Log upload initiated event if slug is known.
+     *
+     * @param array $input Parsed upload input.
+     */
+    private function logUploadInitiated(array $input) {
+        if (empty($input['slug'])) {
+            return;
+        }
+
+        $this->logger->log_upload_initiated($input['slug'], array(
+            'activate'       => $input['activate'],
+            'upload_source'  => $input['upload_source'],
+            'client_version' => $input['client_plugin_version'],
+            'file_size'      => strlen($input['zip_content']),
+        ), array(
+            'plugin_version' => $input['client_plugin_version'] ?: PLUGIN_VERSION,
+            'upload_source'  => $input['upload_source'],
+        ));
+    }
+
+    /**
+     * Process the extraction, activation, and version detection phases of upload.
+     *
+     * @param array $input      Parsed upload input.
+     * @param array $zip_result Validated ZIP result with temp_file and slug.
+     * @return array|WP_REST_Response Result array or error response.
+     */
+    private function processUploadExtraction(array $input, array $zip_result) {
+        $temp_file = $zip_result['temp_file'];
+        $slug      = $zip_result['slug'];
+        $plugins_dir = WP_PLUGIN_DIR;
+        $target_dir  = $plugins_dir . '/' . $slug;
+        $is_update   = is_dir($target_dir);
+
+        $this->remove_duplicate_plugins($slug, $plugins_dir);
+
+        $is_self_update = ($slug === PLUGIN_SLUG && $is_update);
+        if ($is_self_update) {
+            $this->pre_log_self_update($slug, $input['upload_source'], $input['client_plugin_version'], strlen($input['zip_content']));
+        }
+
+        $was_active = $this->deactivate_if_updating($slug, $is_update, $target_dir);
+
+        $extract_result = $this->extract_to_plugins_dir($temp_file, $slug, $target_dir);
+        if ($extract_result instanceof WP_REST_Response) {
+            return $extract_result;
+        }
+
+        $plugin_file = $this->reset_opcache_and_find_plugin($slug);
+        if ($plugin_file instanceof WP_REST_Response) {
+            return $plugin_file;
+        }
+
+        $activation = $this->activate_if_needed($plugin_file, $slug, $input['activate'], $was_active, $is_update);
+        if ($activation instanceof WP_REST_Response) {
+            return $activation;
+        }
+
+        $version_info = $this->detect_installed_version($plugin_file, $slug, $is_self_update, $input['client_plugin_version']);
+
+        return array(
+            'slug'           => $slug,
+            'is_update'      => $is_update,
+            'activated'      => $activation['activated'],
+            'plugin_version' => $version_info['version'],
+            'is_self_update' => $is_self_update,
+        );
+    }
+
+    /**
+     * Build the final upload success response and log the result.
+     *
+     * @param array $result Upload result.
+     * @param array $input  Original upload input.
+     * @return WP_REST_Response
+     */
+    private function buildUploadResponse(array $result, array $input) {
+        if (!$result['is_self_update']) {
+            $this->logger->log_upload($result['slug'], array(
+                'is_update'      => $result['is_update'],
+                'activated'      => $result['activated'],
+                'file_size'      => strlen($input['zip_content']),
+                'plugin_version' => $result['plugin_version'],
+            ), array(
+                'plugin_version' => $result['plugin_version'],
+                'upload_source'  => $input['upload_source'],
+            ));
+        }
+
+        $this->file_logger->info('Upload complete', array(
+            'slug'           => $result['slug'],
+            'is_update'      => $result['is_update'],
+            'activated'      => $result['activated'],
+            'plugin_version' => $result['plugin_version'],
+            'upload_source'  => $input['upload_source'],
+        ));
+
+        return RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
+            ->setSingleResult(array(
+                'plugin_slug'    => $result['slug'],
+                'is_update'      => $result['is_update'],
+                'activated'      => $result['activated'],
+                'plugin_version' => $result['plugin_version'],
+                'upload_source'  => $input['upload_source'],
+            ))
+            ->toResponse();
     }
 
     /**
@@ -1922,7 +2077,7 @@ class RiseupAsia {
             'slug'           => $slug,
             'activate'       => $activate,
             'upload_source'  => $upload_source,
-            'client_version' => $client_plugin_version,
+            'client_version' => $client_version,
             'file_size'      => strlen($zip_content),
         ));
 
@@ -2335,27 +2490,7 @@ class RiseupAsia {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
-            $all_plugins    = get_plugins();
-            $active_plugins = get_option('active_plugins', array());
-            $plugins        = array();
-
-            foreach ($all_plugins as $plugin_file => $plugin_data) {
-                $slug = dirname($plugin_file);
-                if ($slug === '.') {
-                    $slug = basename($plugin_file, '.php');
-                }
-
-                $plugins[] = array(
-                    'slug'        => $slug,
-                    'name'        => $plugin_data['Name'],
-                    'version'     => $plugin_data['Version'],
-                    'author'      => $plugin_data['Author'],
-                    'description' => $plugin_data['Description'],
-                    'active'      => in_array($plugin_file, $active_plugins, true),
-                    'plugin_file' => $plugin_file,
-                );
-            }
-
+            $plugins = $this->collectPluginList();
             $this->file_logger->debug('Plugins listed', array('count' => count($plugins)));
 
             return RiseupEnvelopeBuilder::success()
@@ -2364,16 +2499,45 @@ class RiseupAsia {
                 ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'List plugins error');
+
             return $this->error_response('Failed to list plugins: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
     /**
+     * Collect all installed plugins into a normalized array.
+     *
+     * @return array Plugin list.
+     */
+    private function collectPluginList(): array {
+        $all_plugins    = get_plugins();
+        $active_plugins = get_option('active_plugins', array());
+        $plugins        = array();
+
+        foreach ($all_plugins as $plugin_file => $plugin_data) {
+            $slug = dirname($plugin_file);
+            if ($slug === '.') {
+                $slug = basename($plugin_file, '.php');
+            }
+
+            $plugins[] = array(
+                'slug'        => $slug,
+                'name'        => $plugin_data['Name'],
+                'version'     => $plugin_data['Version'],
+                'author'      => $plugin_data['Author'],
+                'description' => $plugin_data['Description'],
+                'active'      => in_array($plugin_file, $active_plugins, true),
+                'plugin_file' => $plugin_file,
+            );
+        }
+
+        return $plugins;
+    }
+
+    /**
      * Handle plugin files listing (for diff preview).
-     * Returns all files in a plugin directory with their MD5 hashes.
      *
      * @param WP_REST_Request $request Request object.
-     *
      * @return WP_REST_Response
      */
     public function handle_plugin_files($request) {
@@ -2385,46 +2549,51 @@ class RiseupAsia {
         $this->file_logger->info('Plugin files endpoint called', array('slug' => $slug));
 
         try {
-            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
-                require_once ABSPATH . 'wp-admin/includes/plugin.php';
-            }
-
-            // Find the plugin directory
-            $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-            
-            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-                $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
-                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
-            }
-
-            // Load uploadignore patterns if available
-            $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-
-            // Use file cache for efficient hash computation
-            $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
-            $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
-
-            $this->file_logger->info('Plugin files scanned', array(
-                'slug'     => $slug,
-                'count'    => count($result['files']),
-                'cached'   => $result['cached'],
-                'computed' => $result['computed'],
-            ));
-
-            return new WP_REST_Response(array(
-                'success'    => true,
-                'plugin'     => $slug,
-                'totalFiles' => count($result['files']),
-                'files'      => $result['files'],
-            ), HTTP_OK);
+            return $this->scanPluginFilesWithCache($slug);
         } catch (Throwable $e) {
             return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
     /**
+     * Scan plugin files using the file cache and return the response.
+     *
+     * @param string $slug Plugin slug.
+     * @return WP_REST_Response
+     */
+    private function scanPluginFilesWithCache(string $slug) {
+        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+        if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
+            $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
+
+            return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+        }
+
+        $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
+        $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
+
+        $this->file_logger->info('Plugin files scanned', array(
+            'slug'     => $slug,
+            'count'    => count($result['files']),
+            'cached'   => $result['cached'],
+            'computed' => $result['computed'],
+        ));
+
+        return new WP_REST_Response(array(
+            'success'    => true,
+            'plugin'     => $slug,
+            'totalFiles' => count($result['files']),
+            'files'      => $result['files'],
+        ), HTTP_OK);
+    }
+
+    /**
      * Handle sync manifest endpoint.
-     * Returns cached file hashes optimized for sync comparison.
      *
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response
@@ -2438,41 +2607,51 @@ class RiseupAsia {
         $this->file_logger->info('Sync manifest endpoint called', array('slug' => $slug));
 
         try {
-            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
-                require_once ABSPATH . 'wp-admin/includes/plugin.php';
-            }
-
-            $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-            
-            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-                $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
-                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
-            }
-
-            $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-
-            $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
-            $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
-
-            return new WP_REST_Response(array(
-                'success' => true,
-                'data'    => array(
-                    'plugin'      => $slug,
-                    'fileCount'   => count($result['files']),
-                    'generatedAt' => gmdate('c'),
-                    'cached'      => $result['cached'] > 0,
-                    'cacheStats'  => array(
-                        'fromCache' => $result['cached'],
-                        'computed'  => $result['computed'],
-                        'removed'   => $result['removed'],
-                    ),
-                    'files'       => $result['files'],
-                ),
-            ), HTTP_OK);
+            return $this->generateSyncManifest($slug);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Sync manifest error');
+
             return $this->error_response('Failed to generate sync manifest: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /**
+     * Generate a sync manifest for a plugin.
+     *
+     * @param string $slug Plugin slug.
+     * @return WP_REST_Response
+     */
+    private function generateSyncManifest(string $slug) {
+        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+        if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
+            $this->file_logger->warn('Plugin directory not found', array('slug' => $slug, 'path' => $plugin_dir));
+
+            return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+        }
+
+        $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
+        $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
+
+        return new WP_REST_Response(array(
+            'success' => true,
+            'data'    => array(
+                'plugin'      => $slug,
+                'fileCount'   => count($result['files']),
+                'generatedAt' => gmdate('c'),
+                'cached'      => $result['cached'] > 0,
+                'cacheStats'  => array(
+                    'fromCache' => $result['cached'],
+                    'computed'  => $result['computed'],
+                    'removed'   => $result['removed'],
+                ),
+                'files'       => $result['files'],
+            ),
+        ), HTTP_OK);
     }
 
     /**
@@ -3041,18 +3220,8 @@ class RiseupAsia {
         $this->file_logger->debug('Query logs endpoint called');
 
         try {
-            // Initialize database if not already done.
             $this->db->init();
-
-            $filters = array(
-                'plugin' => $request->get_param('plugin'),
-                'action' => $request->get_param('action'),
-                'user'   => $request->get_param('user'),
-                'status' => $request->get_param('status'),
-                'from'   => $request->get_param('from'),
-                'to'     => $request->get_param('to'),
-            );
-
+            $filters = $this->buildLogQueryFilters($request);
             $limit  = $request->get_param('limit') ?? DEFAULT_LIMIT;
             $offset = $request->get_param('offset') ?? 0;
 
@@ -3068,8 +3237,26 @@ class RiseupAsia {
                 ->toResponse();
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Query logs error');
+
             return $this->error_response('Failed to query logs: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /**
+     * Build log query filters from the request.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return array Filter parameters.
+     */
+    private function buildLogQueryFilters($request): array {
+        return array(
+            'plugin' => $request->get_param('plugin'),
+            'action' => $request->get_param('action'),
+            'user'   => $request->get_param('user'),
+            'status' => $request->get_param('status'),
+            'from'   => $request->get_param('from'),
+            'to'     => $request->get_param('to'),
+        );
     }
 
     /**
@@ -3083,7 +3270,6 @@ class RiseupAsia {
         $this->file_logger->debug('Logs stats endpoint called');
 
         try {
-            // Initialize database if not already done.
             $this->db->init();
 
             $stats = $this->db->get_stats();
@@ -3698,33 +3884,46 @@ class RiseupAsia {
         $lines  = explode("\n", $trace_string);
 
         foreach ($lines as $line) {
-            $line = trim($line);
-            if (empty($line)) {
-                continue;
-            }
-            // Match: #0 /path/to/file.php(123): ClassName->method()
-            if (preg_match('/^#\d+\s+(.+?)\((\d+)\):\s*(.*)$/', $line, $m)) {
-                $func_part = $m[3];
-                $class    = '';
-                $function = $func_part;
-                if (strpos($func_part, '->') !== false) {
-                    list($class, $function) = explode('->', $func_part, 2);
-                } elseif (strpos($func_part, '::') !== false) {
-                    list($class, $function) = explode('::', $func_part, 2);
-                }
-                $function = rtrim($function, '()');
-
-                $frames[] = array(
-                    'file'     => $m[1],
-                    'fileBase' => basename($m[1]),
-                    'line'     => (int) $m[2],
-                    'function' => $function,
-                    'class'    => $class,
-                );
+            $frame = $this->parseTraceFrame(trim($line));
+            if ($frame !== null) {
+                $frames[] = $frame;
             }
         }
 
         return $frames;
+    }
+
+    /**
+     * Parse a single stack trace line into a frame.
+     *
+     * @param string $line Trimmed trace line.
+     * @return array|null Frame object or null if not parseable.
+     */
+    private function parseTraceFrame(string $line): ?array {
+        if (empty($line)) {
+            return null;
+        }
+
+        if (!preg_match('/^#\d+\s+(.+?)\((\d+)\):\s*(.*)$/', $line, $m)) {
+            return null;
+        }
+
+        $func_part = $m[3];
+        $class    = '';
+        $function = $func_part;
+        if (strpos($func_part, '->') !== false) {
+            list($class, $function) = explode('->', $func_part, 2);
+        } elseif (strpos($func_part, '::') !== false) {
+            list($class, $function) = explode('::', $func_part, 2);
+        }
+
+        return array(
+            'file'     => $m[1],
+            'fileBase' => basename($m[1]),
+            'line'     => (int) $m[2],
+            'function' => rtrim($function, '()'),
+            'class'    => $class,
+        );
     }
 
     /**
@@ -3782,35 +3981,46 @@ class RiseupAsia {
      * @param string         $message   Error message.
      * @param int            $status    HTTP status code.
      * @param Throwable|null $exception Optional exception for stack trace.
-     *
      * @return WP_REST_Response
      */
     private function error_response($message, $status, $exception = null) {
-        // Log the error
-        if ($exception instanceof Throwable) {
-            $this->file_logger->log_exception($exception, $message);
-        } else {
-            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
-            $this->file_logger->error('Error response', array(
-                'message'    => $message,
-                'status'     => $status,
-                'stackTrace' => implode("\n", array_map(function($i, $f) {
-                    $file = isset($f['file']) ? basename($f['file']) : '[internal]';
-                    $line = isset($f['line']) ? $f['line'] : '?';
-                    $func = isset($f['function']) ? $f['function'] : '';
-                    $class = isset($f['class']) ? $f['class'] . $f['type'] : '';
-                    return "#{$i} {$file}({$line}): {$class}{$func}()";
-                }, array_keys($backtrace), $backtrace)),
-            ));
-        }
+        $this->logErrorWithBacktrace($message, $status, $exception);
 
-        // Auto-detect requested endpoint
         $requested_at = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
         return RiseupEnvelopeBuilder::error($message, $status, $exception)
             ->setRequestedAt($requested_at)
             ->setDelegatedAt(home_url())
             ->toResponse();
+    }
+
+    /**
+     * Log an error with backtrace context.
+     *
+     * @param string         $message   Error message.
+     * @param int            $status    HTTP status code.
+     * @param Throwable|null $exception Optional exception.
+     */
+    private function logErrorWithBacktrace(string $message, int $status, $exception) {
+        if ($exception instanceof Throwable) {
+            $this->file_logger->log_exception($exception, $message);
+
+            return;
+        }
+
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
+        $this->file_logger->error('Error response', array(
+            'message'    => $message,
+            'status'     => $status,
+            'stackTrace' => implode("\n", array_map(function($i, $f) {
+                $file = isset($f['file']) ? basename($f['file']) : '[internal]';
+                $line = isset($f['line']) ? $f['line'] : '?';
+                $func = isset($f['function']) ? $f['function'] : '';
+                $class = isset($f['class']) ? $f['class'] . $f['type'] : '';
+
+                return "#{$i} {$file}({$line}): {$class}{$func}()";
+            }, array_keys($backtrace), $backtrace)),
+        ));
     }
 
     /**
@@ -4685,8 +4895,6 @@ class RiseupAsia {
     /**
      * Handle ZIP download request (Feature D).
      *
-     * Checks for a cached ZIP or builds a new one. Returns a download URL.
-     *
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response Response.
      */
@@ -4699,71 +4907,88 @@ class RiseupAsia {
                 return $this->error_response('Missing or invalid snapshot_id', 400);
             }
 
-            $this->file_logger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
-
-            // Log activity: download initiated
-            $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_ZIP_DOWNLOAD,
-                'snapshot',
-                STATUS_SUCCESS,
-                array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
-            );
-
-            require_once dirname(__FILE__) . '/includes/Snapshot/SnapshotExporter.php';
-            $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
-            $result = $exporter->getOrBuildZip($snapshotId);
-
-            if (!$result['success']) {
-                $this->logger->log_plugin_action(
-                    ACTION_SNAPSHOT_ZIP_DOWNLOAD,
-                    'snapshot',
-                    STATUS_FAILED,
-                    array('snapshot_id' => $snapshotId),
-                    $result['error'] ?? 'Download failed'
-                );
-                return $this->error_response($result['error'] ?? 'Export failed', 400);
-            }
-
-            $export = $result['export'];
-            $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
-
-            $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_ZIP_DOWNLOAD,
-                'snapshot',
-                STATUS_SUCCESS,
-                array(
-                    'snapshot_id' => $snapshotId,
-                    'cached'      => $result['cached'] ?? false,
-                    'size'        => $export['zip_size'] ?? 0,
-                    'filename'    => $export['zip_filename'] ?? '',
-                )
-            );
-
-            return RiseupEnvelopeBuilder::success()
-                ->setResults(array(array(
-                    'url'               => $downloadUrl,
-                    'filename'          => $export['zip_filename'],
-                    'size'              => (int) $export['zip_size'],
-                    'cached'            => $result['cached'] ?? false,
-                    'included_ids'      => json_decode($export['included_ids'] ?? '[]', true),
-                    'incremental_count' => (int) ($export['incremental_count'] ?? 0),
-                    'created_at'        => $export['created_at'] ?? '',
-                    'status'            => $export['status'] ?? 'valid',
-                )))
-                ->setRequestedAt('/' . ENDPOINT_SNAPSHOT_DOWNLOAD)
-                ->toResponse();
+            return $this->buildDownloadResponse($snapshotId);
         }, 'snapshot_download');
+    }
+
+    /**
+     * Build the download response for a snapshot ZIP.
+     *
+     * @param int $snapshotId Snapshot ID.
+     * @return WP_REST_Response
+     */
+    private function buildDownloadResponse(int $snapshotId) {
+        $this->file_logger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
+
+        $this->logger->log_plugin_action(
+            ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_SUCCESS,
+            array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
+        );
+
+        require_once dirname(__FILE__) . '/includes/Snapshot/SnapshotExporter.php';
+        $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
+        $result = $exporter->getOrBuildZip($snapshotId);
+
+        if (!$result['success']) {
+            $this->logger->log_plugin_action(
+                ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_FAILED,
+                array('snapshot_id' => $snapshotId),
+                $result['error'] ?? 'Download failed'
+            );
+
+            return $this->error_response($result['error'] ?? 'Export failed', 400);
+        }
+
+        $export = $result['export'];
+        $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
+
+        $this->logger->log_plugin_action(
+            ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_SUCCESS,
+            array(
+                'snapshot_id' => $snapshotId,
+                'cached'      => $result['cached'] ?? false,
+                'size'        => $export['zip_size'] ?? 0,
+                'filename'    => $export['zip_filename'] ?? '',
+            )
+        );
+
+        return RiseupEnvelopeBuilder::success()
+            ->setResults(array(array(
+                'url'               => $downloadUrl,
+                'filename'          => $export['zip_filename'],
+                'size'              => (int) $export['zip_size'],
+                'cached'            => $result['cached'] ?? false,
+                'included_ids'      => json_decode($export['included_ids'] ?? '[]', true),
+                'incremental_count' => (int) ($export['incremental_count'] ?? 0),
+                'created_at'        => $export['created_at'] ?? '',
+                'status'            => $export['status'] ?? 'valid',
+            )))
+            ->setRequestedAt('/' . ENDPOINT_SNAPSHOT_DOWNLOAD)
+            ->toResponse();
     }
 
     /**
      * Handle ZIP file download (Feature D).
      *
-     * Validates nonce token and streams the ZIP file to the client.
-     *
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response|void Response or direct file stream.
      */
     public function handle_snapshot_download_file($request) {
+        $validated = $this->validateAndResolveExport($request);
+        if ($validated instanceof WP_REST_Response) {
+            return $validated;
+        }
+
+        $this->streamZipFile($validated['export_id'], $validated['export']);
+    }
+
+    /**
+     * Validate download token and resolve the export record.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return array|WP_REST_Response Export data or error response.
+     */
+    private function validateAndResolveExport($request) {
         $exportId = (int) $request->get_param('id');
         $token    = sanitize_text_field($request->get_param('token'));
 
@@ -4782,7 +5007,21 @@ class RiseupAsia {
             ), 403);
         }
 
-        $this->streamZipFile($exportId, $export);
+        return array('export_id' => $exportId, 'export' => $export);
+    }
+
+    /**
+     * Send ZIP file headers for streaming.
+     *
+     * @param string $filename Filename for Content-Disposition.
+     * @param int    $filesize File size in bytes.
+     */
+    private function sendZipHeaders(string $filename, int $filesize) {
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . $filesize);
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
     }
 
     /**
@@ -4799,11 +5038,7 @@ class RiseupAsia {
         $this->logger->log_plugin_action(ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_SUCCESS,
             array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming'));
 
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . $filesize);
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Pragma: no-cache');
+        $this->sendZipHeaders($filename, $filesize);
 
         while (ob_get_level()) {
             ob_end_clean();

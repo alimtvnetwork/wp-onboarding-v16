@@ -794,7 +794,6 @@ class RiseupDatabase {
      * @param array $filters Filters: plugin, action, user, status, from, to.
      * @param int   $limit   Number of records to return.
      * @param int   $offset  Offset for pagination.
-     *
      * @return array Array with 'total' and 'logs' keys.
      */
     public function query_transactions($filters = array(), $limit = self::DEFAULT_LIMIT, $offset = 0) {
@@ -804,44 +803,29 @@ class RiseupDatabase {
             return array('total' => 0, 'logs' => array());
         }
 
-        // Sanitize limit
         $limit = min(max(1, (int) $limit), self::MAX_LIMIT);
         $offset = max(0, (int) $offset);
 
         try {
             $this->file_logger->debug('Querying transactions', array('filters' => $filters));
-            
-            // Build count query
+
             $count_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
             $data_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
 
-            // Apply filters to both queries
             $this->apply_filters($count_query, $filters);
             $this->apply_filters($data_query, $filters);
 
-            // Get total count
             $total = $count_query->count();
-
-            // Get paginated results
             $logs = $data_query
                 ->order_by_desc('created_at')
                 ->limit($limit)
                 ->offset($offset)
                 ->find_many();
 
-            // Decode JSON details
-            foreach ($logs as &$log) {
-                if (!empty($log['details'])) {
-                    $log['details'] = json_decode($log['details'], true);
-                }
-            }
-
+            $this->decodeLogDetails($logs);
             $this->file_logger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
-            
-            return array(
-                'total' => $total,
-                'logs'  => $logs,
-            );
+
+            return array('total' => $total, 'logs' => $logs);
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to query transactions');
 
@@ -850,20 +834,42 @@ class RiseupDatabase {
     }
 
     /**
+     * Decode JSON details in log records.
+     *
+     * @param array &$logs Log records reference.
+     */
+    private function decodeLogDetails(array &$logs) {
+        foreach ($logs as &$log) {
+            if (!empty($log['details'])) {
+                $log['details'] = json_decode($log['details'], true);
+            }
+        }
+    }
+
+    /**
      * Apply filters to an ORM query.
      *
      * @param RiseupORM $query   ORM query instance.
      * @param array      $filters Filters to apply.
-     *
      * @return void
      */
     private function apply_filters($query, $filters) {
-        // Filter by plugin
+        $this->applyEqualityFilters($query, $filters);
+        $this->applyDateRangeFilters($query, $filters);
+        $this->applyTextFilters($query, $filters);
+    }
+
+    /**
+     * Apply equality-based filters (plugin, action, user, status, triggered_by, upload_source).
+     *
+     * @param RiseupORM $query   ORM query instance.
+     * @param array      $filters Filters to apply.
+     */
+    private function applyEqualityFilters($query, array $filters) {
         if (!empty($filters['plugin'])) {
             $query->where('plugin_slug', $filters['plugin']);
         }
 
-        // Filter by action (supports comma-separated list)
         if (!empty($filters['action'])) {
             $actions = array_map('trim', explode(',', $filters['action']));
             if (count($actions) === 1) {
@@ -873,17 +879,30 @@ class RiseupDatabase {
             }
         }
 
-        // Filter by user
         if (!empty($filters['user'])) {
             $query->where('user_login', $filters['user']);
         }
 
-        // Filter by status
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        // Filter by date range
+        if (!empty($filters['triggered_by'])) {
+            $query->where('triggered_by', $filters['triggered_by']);
+        }
+
+        if (!empty($filters['upload_source'])) {
+            $query->where('upload_source', $filters['upload_source']);
+        }
+    }
+
+    /**
+     * Apply date range filters (from, to).
+     *
+     * @param RiseupORM $query   ORM query instance.
+     * @param array      $filters Filters with from/to keys.
+     */
+    private function applyDateRangeFilters($query, array $filters) {
         if (!empty($filters['from'])) {
             $query->where_gte('created_at', $filters['from'] . 'T00:00:00Z');
         }
@@ -891,20 +910,17 @@ class RiseupDatabase {
         if (!empty($filters['to'])) {
             $query->where_lte('created_at', $filters['to'] . 'T23:59:59Z');
         }
+    }
 
-        // Filter by triggered_by (source type)
-        if (!empty($filters['triggered_by'])) {
-            $query->where('triggered_by', $filters['triggered_by']);
-        }
-
-        // Filter by source_machine (hostname)
+    /**
+     * Apply text search filters (source_machine).
+     *
+     * @param RiseupORM $query   ORM query instance.
+     * @param array      $filters Filters to apply.
+     */
+    private function applyTextFilters($query, array $filters) {
         if (!empty($filters['source_machine'])) {
             $query->where_like('source_machine', '%' . $filters['source_machine'] . '%');
-        }
-
-        // Filter by upload_source
-        if (!empty($filters['upload_source'])) {
-            $query->where('upload_source', $filters['upload_source']);
         }
     }
 

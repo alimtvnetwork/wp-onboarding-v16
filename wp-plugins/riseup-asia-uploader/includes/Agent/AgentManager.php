@@ -195,61 +195,64 @@ class RiseupAgentManager {
                 return new WP_Error('db_error', 'Database not available');
             }
             
-            $sets = array();
-            $params = array();
-            
-            if (isset($data['name'])) {
-                $sets[] = 'name = ?';
-                $params[] = sanitize_text_field($data['name']);
-            }
-            if (isset($data['url'])) {
-                $sets[] = 'url = ?';
-                $params[] = esc_url_raw($this->normalizeUrl($data['url']));
-            }
-            if (isset($data['username'])) {
-                $sets[] = 'username = ?';
-                $params[] = sanitize_user($data['username']);
-            }
-            if (isset($data['app_password']) && !empty($data['app_password'])) {
-                $sets[] = 'app_password_encrypted = ?';
-                $params[] = $this->encrypt($data['app_password']);
-            }
-            if (isset($data['redirect_url'])) {
-                $sets[] = 'redirect_url = ?';
-                $params[] = esc_url_raw($data['redirect_url']);
-            }
-            if (isset($data['status'])) {
-                $sets[] = 'status = ?';
-                $params[] = sanitize_key($data['status']);
-            }
-            if (isset($data['last_sync'])) {
-                $sets[] = 'last_sync = ?';
-                $params[] = $data['last_sync'];
-            }
-            if (isset($data['last_error'])) {
-                $sets[] = 'last_error = ?';
-                $params[] = $data['last_error'];
-            }
-            
-            if (empty($sets)) {
+            $update = $this->buildUpdateSets($data);
+            if (empty($update['sets'])) {
                 return new WP_Error('no_data', 'No fields to update');
             }
             
-            $sets[] = 'updated_at = ?';
-            $params[] = gmdate('Y-m-d\TH:i:s\Z');
-            $params[] = (int) $id;
+            $update['sets'][] = 'updated_at = ?';
+            $update['params'][] = gmdate('Y-m-d\TH:i:s\Z');
+            $update['params'][] = (int) $id;
             
-            $sql = "UPDATE agent_sites SET " . implode(', ', $sets) . " WHERE id = ?";
+            $sql = "UPDATE agent_sites SET " . implode(', ', $update['sets']) . " WHERE id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
+            $stmt->execute($update['params']);
             
             $this->file_logger->info('Agent site updated', array('id' => $id));
+
             return true;
             
         } catch (PDOException $e) {
             $this->file_logger->log_exception($e, 'Failed to update agent site');
+
             return new WP_Error('db_error', 'Failed to update agent site: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Build SET clauses and params from update data.
+     *
+     * @param array $data Update data.
+     * @return array{sets: string[], params: array} SET clauses and params.
+     */
+    private function buildUpdateSets(array $data): array {
+        $sets = array();
+        $params = array();
+
+        $field_map = array(
+            'name'         => fn($v) => array('name = ?', sanitize_text_field($v)),
+            'url'          => fn($v) => array('url = ?', esc_url_raw($this->normalizeUrl($v))),
+            'username'     => fn($v) => array('username = ?', sanitize_user($v)),
+            'redirect_url' => fn($v) => array('redirect_url = ?', esc_url_raw($v)),
+            'status'       => fn($v) => array('status = ?', sanitize_key($v)),
+            'last_sync'    => fn($v) => array('last_sync = ?', $v),
+            'last_error'   => fn($v) => array('last_error = ?', $v),
+        );
+
+        foreach ($field_map as $field => $transform) {
+            if (isset($data[$field])) {
+                $result = $transform($data[$field]);
+                $sets[] = $result[0];
+                $params[] = $result[1];
+            }
+        }
+
+        if (isset($data['app_password']) && !empty($data['app_password'])) {
+            $sets[] = 'app_password_encrypted = ?';
+            $params[] = $this->encrypt($data['app_password']);
+        }
+
+        return array('sets' => $sets, 'params' => $params);
     }
 
     /**
@@ -329,40 +332,74 @@ class RiseupAgentManager {
             if (!$pdo) {
                 return array('total' => 0, 'agents' => array());
             }
-            
-            $where = array();
-            $params = array();
-            
-            if (!empty($filters['status'])) {
-                $where[] = 'status = ?';
-                $params[] = $filters['status'];
-            }
-            
-            $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-            
-            // Count total
-            $count_sql = "SELECT COUNT(*) as total FROM agent_sites {$where_sql}";
-            $stmt = $pdo->prepare($count_sql);
-            $stmt->execute($params);
-            $total = (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-            
-            // Fetch agents
-            $params[] = (int) $limit;
-            $params[] = (int) $offset;
-            $sql = "SELECT id, name, url, username, redirect_url, status, last_sync, last_error, created_at, updated_at 
-                    FROM agent_sites {$where_sql} 
-                    ORDER BY created_at DESC 
-                    LIMIT ? OFFSET ?";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            $agents = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
+
+            $query = $this->buildAgentListQuery($filters);
+            $total = $this->countAgents($pdo, $query);
+            $agents = $this->fetchAgents($pdo, $query, $limit, $offset);
+
             return array('total' => $total, 'agents' => $agents);
-            
+
         } catch (PDOException $e) {
             $this->file_logger->log_exception($e, 'Failed to list agent sites');
+
             return array('total' => 0, 'agents' => array());
         }
+    }
+
+    /**
+     * Build WHERE clause and params for agent listing.
+     *
+     * @param array $filters Filter options.
+     * @return array{where_sql: string, params: array} Query components.
+     */
+    private function buildAgentListQuery(array $filters): array {
+        $where = array();
+        $params = array();
+
+        if (!empty($filters['status'])) {
+            $where[] = 'status = ?';
+            $params[] = $filters['status'];
+        }
+
+        return array(
+            'where_sql' => !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '',
+            'params'    => $params,
+        );
+    }
+
+    /**
+     * Count agents matching the query.
+     *
+     * @param PDO   $pdo   Database connection.
+     * @param array $query Query components.
+     * @return int Total count.
+     */
+    private function countAgents(PDO $pdo, array $query): int {
+        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM agent_sites {$query['where_sql']}");
+        $stmt->execute($query['params']);
+
+        return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    }
+
+    /**
+     * Fetch agent records matching the query.
+     *
+     * @param PDO   $pdo    Database connection.
+     * @param array $query  Query components.
+     * @param int   $limit  Max results.
+     * @param int   $offset Pagination offset.
+     * @return array Agent records.
+     */
+    private function fetchAgents(PDO $pdo, array $query, int $limit, int $offset): array {
+        $params = array_merge($query['params'], array((int) $limit, (int) $offset));
+        $sql = "SELECT id, name, url, username, redirect_url, status, last_sync, last_error, created_at, updated_at 
+                FROM agent_sites {$query['where_sql']} 
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     // =========================================================================
@@ -416,12 +453,30 @@ class RiseupAgentManager {
      */
     public function apiRequest($agent_id, $method, $endpoint, $body = array()) {
         $agent = $this->getAgent($agent_id, true);
-        
         if (!$agent) {
             return new WP_Error('not_found', 'Agent site not found');
         }
-        
-        // Resolve redirect URL if configured
+
+        $url = $this->resolveAgentBaseUrl($agent, $endpoint);
+        $args = $this->buildAgentRequestArgs($agent, $method, $body);
+
+        $this->file_logger->debug('Agent API request', array(
+            'agent_id' => $agent_id, 'method' => $method, 'url' => $url,
+        ));
+
+        $response = wp_remote_request($url, $args);
+
+        return $this->parseAgentResponse($response, $agent_id);
+    }
+
+    /**
+     * Resolve the full API URL for an agent request.
+     *
+     * @param array  $agent    Agent data.
+     * @param string $endpoint API endpoint.
+     * @return string Full URL.
+     */
+    private function resolveAgentBaseUrl(array $agent, string $endpoint): string {
         $base_url = $agent['url'];
         if (!empty($agent['redirect_url'])) {
             $resolved = $this->resolveRedirectUrl($agent);
@@ -429,15 +484,19 @@ class RiseupAgentManager {
                 $base_url = $resolved;
             }
         }
-        
-        $url = trailingslashit($base_url) . 'wp-json/' . ltrim($endpoint, '/');
-        
-        $this->file_logger->debug('Agent API request', array(
-            'agent_id' => $agent_id,
-            'method'   => $method,
-            'url'      => $url,
-        ));
-        
+
+        return trailingslashit($base_url) . 'wp-json/' . ltrim($endpoint, '/');
+    }
+
+    /**
+     * Build request arguments for an agent API call.
+     *
+     * @param array  $agent  Agent data with app_password.
+     * @param string $method HTTP method.
+     * @param array  $body   Request body.
+     * @return array WP HTTP API args.
+     */
+    private function buildAgentRequestArgs(array $agent, string $method, array $body): array {
         $args = array(
             'method'    => strtoupper($method),
             'timeout'   => 30,
@@ -447,27 +506,37 @@ class RiseupAgentManager {
             ),
             'sslverify' => true,
         );
-        
+
         if (!empty($body) && in_array($method, array('POST', 'PUT', 'PATCH'))) {
             $args['body'] = json_encode($body);
         }
-        
-        $response = wp_remote_request($url, $args);
-        
+
+        return $args;
+    }
+
+    /**
+     * Parse the HTTP response from an agent API call.
+     *
+     * @param array|WP_Error $response  HTTP response or error.
+     * @param int            $agent_id  Agent ID for logging.
+     * @return array|WP_Error Parsed data or error.
+     */
+    private function parseAgentResponse($response, int $agent_id) {
         if (is_wp_error($response)) {
             $this->logAction($agent_id, 'api_error', null, 'failed', null, $response->get_error_message());
+
             return $response;
         }
-        
+
         $status_code = wp_remote_retrieve_response_code($response);
-        $body_raw = wp_remote_retrieve_body($response);
-        $body_json = json_decode($body_raw, true);
-        
+        $body_json = json_decode(wp_remote_retrieve_body($response), true);
+
         if ($status_code >= 400) {
             $error_msg = isset($body_json['error']['message']) ? $body_json['error']['message'] : "HTTP {$status_code}";
+
             return new WP_Error('api_error', $error_msg, array('status' => $status_code, 'response' => $body_json));
         }
-        
+
         return $body_json;
     }
 
@@ -478,50 +547,68 @@ class RiseupAgentManager {
      * @return string|WP_Error Resolved URL or error.
      */
     private function resolveRedirectUrl($agent) {
-        // Check cache
-        if (!empty($agent['redirect_resolved']) && !empty($agent['redirect_resolved_at'])) {
-            $resolved_at = strtotime($agent['redirect_resolved_at']);
-            $cache_days = UPDATE_CACHE_DAYS_DEFAULT;
-            if (time() < $resolved_at + ($cache_days * DAY_IN_SECONDS)) {
-                return $agent['redirect_resolved'];
-            }
+        if ($this->isRedirectCacheValid($agent)) {
+            return $agent['redirect_resolved'];
         }
-        
-        // Resolve URL through redirects
-        $url = $agent['redirect_url'];
-        $max_redirects = UPDATE_MAX_REDIRECTS;
-        
-        for ($i = 0; $i < $max_redirects; $i++) {
+
+        $resolved = $this->followRedirectChain($agent['redirect_url']);
+        if (is_wp_error($resolved)) {
+            return $resolved;
+        }
+
+        $this->updateAgent($agent['id'], array(
+            'redirect_resolved'    => $resolved,
+            'redirect_resolved_at' => gmdate('Y-m-d\TH:i:s\Z'),
+        ));
+
+        return $resolved;
+    }
+
+    /**
+     * Check if the cached redirect URL is still valid.
+     *
+     * @param array $agent Agent data.
+     * @return bool True if cache is valid.
+     */
+    private function isRedirectCacheValid(array $agent): bool {
+        if (empty($agent['redirect_resolved']) || empty($agent['redirect_resolved_at'])) {
+            return false;
+        }
+
+        $resolved_at = strtotime($agent['redirect_resolved_at']);
+        $cache_days = UPDATE_CACHE_DAYS_DEFAULT;
+
+        return (time() < $resolved_at + ($cache_days * DAY_IN_SECONDS));
+    }
+
+    /**
+     * Follow a redirect chain to find the final URL.
+     *
+     * @param string $url           Starting URL.
+     * @param int    $maxRedirects  Maximum redirects to follow.
+     * @return string|WP_Error Final URL or error.
+     */
+    private function followRedirectChain(string $url, int $maxRedirects = 5) {
+        for ($i = 0; $i < $maxRedirects; $i++) {
             $response = wp_remote_head($url, array(
-                'timeout'     => 15,
-                'redirection' => 0,
-                'sslverify'   => true,
+                'timeout' => 15, 'redirection' => 0, 'sslverify' => true,
             ));
-            
+
             if (is_wp_error($response)) {
                 return $response;
             }
-            
+
             $status = wp_remote_retrieve_response_code($response);
-            
-            if (in_array($status, array(301, 302, 303, 307, 308))) {
-                $location = wp_remote_retrieve_header($response, 'location');
-                if (!empty($location)) {
-                    $url = $location;
-                    continue;
-                }
+            if (!in_array($status, array(301, 302, 303, 307, 308))) {
+                break;
             }
-            
-            // Final URL
-            break;
+
+            $location = wp_remote_retrieve_header($response, 'location');
+            if (!empty($location)) {
+                $url = $location;
+            }
         }
-        
-        // Cache the resolved URL
-        $this->updateAgent($agent['id'], array(
-            'redirect_resolved'    => $url,
-            'redirect_resolved_at' => gmdate('Y-m-d\TH:i:s\Z'),
-        ));
-        
+
         return $url;
     }
 
@@ -682,32 +769,39 @@ class RiseupAgentManager {
             if (!$pdo) {
                 return array('total' => 0, 'actions' => array());
             }
-            
-            // Count total
+
             $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM agent_actions WHERE agent_site_id = ?");
             $stmt->execute(array((int) $agent_id));
             $total = (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-            
-            // Fetch actions
+
             $stmt = $pdo->prepare("SELECT * FROM agent_actions 
                 WHERE agent_site_id = ? 
                 ORDER BY created_at DESC 
                 LIMIT ? OFFSET ?");
             $stmt->execute(array((int) $agent_id, (int) $limit, (int) $offset));
             $actions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Decode details JSON
-            foreach ($actions as &$action) {
-                if (!empty($action['details'])) {
-                    $action['details'] = json_decode($action['details'], true);
-                }
-            }
-            
+
+            $this->decodeActionDetails($actions);
+
             return array('total' => $total, 'actions' => $actions);
-            
+
         } catch (PDOException $e) {
             $this->file_logger->log_exception($e, 'Failed to get action history');
+
             return array('total' => 0, 'actions' => array());
+        }
+    }
+
+    /**
+     * Decode JSON details in action records.
+     *
+     * @param array &$actions Action records reference.
+     */
+    private function decodeActionDetails(array &$actions) {
+        foreach ($actions as &$action) {
+            if (!empty($action['details'])) {
+                $action['details'] = json_decode($action['details'], true);
+            }
         }
     }
 }

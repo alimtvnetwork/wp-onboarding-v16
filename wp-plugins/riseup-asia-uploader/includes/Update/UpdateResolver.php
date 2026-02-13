@@ -3,8 +3,6 @@
  * Riseup Asia Uploader - Update Resolver
  *
  * Handles auto-update functionality with 301 redirect URL resolution and caching.
- * Resolves master URLs through 301 redirects, caches final URLs, and provides
- * fallback logic when cached URLs fail.
  *
  * @package RiseupAsiaUploader
  * @since   1.8.0
@@ -277,95 +275,24 @@ class RiseupUpdateResolver {
      */
     public function fetch_update_info($force_check = false) {
         $settings = $this->get_settings();
-        
         if (!$settings['enabled']) {
             return new WP_Error('disabled', 'Auto-update is disabled');
         }
-        
-        $update_url = $this->get_update_url($force_check);
-        
-        if (is_wp_error($update_url)) {
-            // Try master URL directly as fallback
-            $this->file_logger->warn('Falling back to master URL', array(
-                'error' => $update_url->get_error_message(),
-            ));
-            $update_url = $settings['master_url'];
+
+        $update_url = $this->resolveUpdateUrl($settings, $force_check);
+
+        $response = $this->fetchUpdateResponse($update_url);
+        if ($response instanceof WP_Error) {
+            return $this->handleFetchFailure($settings, $force_check, $response);
         }
-        
-        // Fetch update metadata
-        $response = wp_remote_get($update_url, array(
-            'timeout'   => 30,
-            'sslverify' => true,
-        ));
-        
-        if (is_wp_error($response)) {
-            $error_msg = $response->get_error_message();
-            $this->file_logger->error('Failed to fetch update info', array('error' => $error_msg));
-            
-            // If cached URL failed, try resolving fresh
-            if (!$force_check && !empty($settings['resolved_url'])) {
-                $this->file_logger->info('Cached URL failed, resolving fresh');
-                $this->clear_cache();
-                return $this->fetch_update_info(true);
-            }
-            
-            $this->save_settings(array(
-                'last_error' => $error_msg,
-                'last_check' => current_time('mysql', true),
-            ));
-            
-            return $response;
-        }
-        
+
         $status_code = wp_remote_retrieve_response_code($response);
-        
         if ($status_code !== 200) {
-            $error_msg = "HTTP $status_code from update server";
-            $this->file_logger->error('Update server error', array('status' => $status_code));
-            
-            // If cached URL failed with non-200, try resolving fresh
-            if (!$force_check && !empty($settings['resolved_url'])) {
-                $this->file_logger->info('Cached URL returned error, resolving fresh');
-                $this->clear_cache();
-                return $this->fetch_update_info(true);
-            }
-            
-            $this->save_settings(array(
-                'last_error' => $error_msg,
-                'last_check' => current_time('mysql', true),
-            ));
-            
-            return new WP_Error('http_error', $error_msg);
+            return $this->handleNon200Response($settings, $force_check, $status_code);
         }
-        
-        $body = wp_remote_retrieve_body($response);
-        $content_type = wp_remote_retrieve_header($response, 'content-type');
-        
-        // Check if response is JSON (update metadata) or a direct ZIP file
-        if (strpos($content_type, 'application/json') !== false) {
-            $data = json_decode($body, true);
-            
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $this->file_logger->error('Invalid JSON from update server');
-                return new WP_Error('invalid_json', 'Update server returned invalid JSON');
-            }
-            
-            $update_info = array(
-                'version'      => isset($data['version']) ? $data['version'] : '',
-                'package'      => isset($data['package']) ? $data['package'] : '',
-                'tested'       => isset($data['tested']) ? $data['tested'] : '',
-                'requires'     => isset($data['requires']) ? $data['requires'] : '',
-                'requires_php' => isset($data['requires_php']) ? $data['requires_php'] : '',
-                'changelog'    => isset($data['changelog']) ? $data['changelog'] : '',
-            );
-        } else {
-            // Assume direct ZIP URL - the resolved URL IS the package
-            $update_info = array(
-                'version' => '', // Will need to be extracted from ZIP or set manually
-                'package' => $update_url,
-            );
-        }
-        
+
+        $update_info = $this->parseUpdateResponseBody($response, $update_url);
+
         $this->save_settings(array(
             'update_info'  => $update_info,
             'new_version'  => $update_info['version'],
@@ -373,10 +300,130 @@ class RiseupUpdateResolver {
             'last_check'   => current_time('mysql', true),
             'last_error'   => '',
         ));
-        
+
         $this->file_logger->info('Update info fetched', $update_info);
-        
+
         return $update_info;
+    }
+
+    /**
+     * Resolve the update URL, falling back to master URL on error.
+     *
+     * @param array $settings    Current settings.
+     * @param bool  $force_check Whether to force fresh resolution.
+     * @return string Resolved URL.
+     */
+    private function resolveUpdateUrl(array $settings, bool $force_check): string {
+        $update_url = $this->get_update_url($force_check);
+
+        if (is_wp_error($update_url)) {
+            $this->file_logger->warn('Falling back to master URL', array(
+                'error' => $update_url->get_error_message(),
+            ));
+
+            return $settings['master_url'];
+        }
+
+        return $update_url;
+    }
+
+    /**
+     * Fetch the update response from the server.
+     *
+     * @param string $url Update URL.
+     * @return array|WP_Error HTTP response or error.
+     */
+    private function fetchUpdateResponse(string $url) {
+        $response = wp_remote_get($url, array('timeout' => 30, 'sslverify' => true));
+
+        if (is_wp_error($response)) {
+            $this->file_logger->error('Failed to fetch update info', array('error' => $response->get_error_message()));
+        }
+
+        return $response;
+    }
+
+    /**
+     * Handle a fetch failure with retry logic.
+     *
+     * @param array    $settings    Current settings.
+     * @param bool     $force_check Whether this was a forced check.
+     * @param WP_Error $error       The fetch error.
+     * @return array|WP_Error Retry result or error.
+     */
+    private function handleFetchFailure(array $settings, bool $force_check, WP_Error $error) {
+        if (!$force_check && !empty($settings['resolved_url'])) {
+            $this->file_logger->info('Cached URL failed, resolving fresh');
+            $this->clear_cache();
+
+            return $this->fetch_update_info(true);
+        }
+
+        $this->save_settings(array(
+            'last_error' => $error->get_error_message(),
+            'last_check' => current_time('mysql', true),
+        ));
+
+        return $error;
+    }
+
+    /**
+     * Handle a non-200 HTTP response with retry logic.
+     *
+     * @param array $settings    Current settings.
+     * @param bool  $force_check Whether this was a forced check.
+     * @param int   $status_code HTTP status code.
+     * @return array|WP_Error Retry result or error.
+     */
+    private function handleNon200Response(array $settings, bool $force_check, int $status_code) {
+        $error_msg = "HTTP $status_code from update server";
+        $this->file_logger->error('Update server error', array('status' => $status_code));
+
+        if (!$force_check && !empty($settings['resolved_url'])) {
+            $this->file_logger->info('Cached URL returned error, resolving fresh');
+            $this->clear_cache();
+
+            return $this->fetch_update_info(true);
+        }
+
+        $this->save_settings(array(
+            'last_error' => $error_msg,
+            'last_check' => current_time('mysql', true),
+        ));
+
+        return new WP_Error('http_error', $error_msg);
+    }
+
+    /**
+     * Parse the update response body into structured update info.
+     *
+     * @param array  $response   HTTP response.
+     * @param string $update_url The URL used for the request.
+     * @return array Update info.
+     */
+    private function parseUpdateResponseBody($response, string $update_url): array {
+        $body = wp_remote_retrieve_body($response);
+        $content_type = wp_remote_retrieve_header($response, 'content-type');
+
+        if (strpos($content_type, 'application/json') === false) {
+            return array('version' => '', 'package' => $update_url);
+        }
+
+        $data = json_decode($body, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->file_logger->error('Invalid JSON from update server');
+
+            return array('version' => '', 'package' => $update_url);
+        }
+
+        return array(
+            'version'      => isset($data['version']) ? $data['version'] : '',
+            'package'      => isset($data['package']) ? $data['package'] : '',
+            'tested'       => isset($data['tested']) ? $data['tested'] : '',
+            'requires'     => isset($data['requires']) ? $data['requires'] : '',
+            'requires_php' => isset($data['requires_php']) ? $data['requires_php'] : '',
+            'changelog'    => isset($data['changelog']) ? $data['changelog'] : '',
+        );
     }
 
     /**
@@ -389,65 +436,72 @@ class RiseupUpdateResolver {
         if (empty($transient->checked)) {
             return $transient;
         }
-        
+
         $settings = $this->get_settings();
-        
         if (!$settings['enabled'] || empty($settings['master_url'])) {
             return $transient;
         }
-        
+
         $this->file_logger->debug('Checking for plugin update');
-        
-        // Fetch update info
         $update_info = $this->fetch_update_info();
-        
-        if (is_wp_error($update_info)) {
+        if (is_wp_error($update_info) || empty($update_info['version'])) {
             return $transient;
         }
-        
-        // Get current plugin version
+
         $plugin_file = PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
-        $current_version = PLUGIN_VERSION;
-        
-        if (empty($update_info['version'])) {
-            return $transient;
-        }
-        
-        // Compare versions
-        if (version_compare($update_info['version'], $current_version, '>')) {
-            $this->file_logger->info('Update available', array(
-                'current' => $current_version,
-                'new'     => $update_info['version'],
-            ));
-            
-            $transient->response[$plugin_file] = (object) array(
-                'id'          => PLUGIN_SLUG,
-                'slug'        => PLUGIN_SLUG,
-                'plugin'      => $plugin_file,
-                'new_version' => $update_info['version'],
-                'url'         => isset($update_info['url']) ? $update_info['url'] : '',
-                'package'     => $update_info['package'],
-                'icons'       => array(),
-                'banners'     => array(),
-                'tested'      => isset($update_info['tested']) ? $update_info['tested'] : '',
-                'requires'    => isset($update_info['requires']) ? $update_info['requires'] : '',
-                'requires_php' => isset($update_info['requires_php']) ? $update_info['requires_php'] : '',
-            );
+
+        if (version_compare($update_info['version'], PLUGIN_VERSION, '>')) {
+            $transient->response[$plugin_file] = $this->buildUpdateTransientEntry($update_info, $plugin_file);
         } else {
-            // No update - ensure not listed
             unset($transient->response[$plugin_file]);
-            
-            $transient->no_update[$plugin_file] = (object) array(
-                'id'          => PLUGIN_SLUG,
-                'slug'        => PLUGIN_SLUG,
-                'plugin'      => $plugin_file,
-                'new_version' => $current_version,
-                'url'         => '',
-                'package'     => '',
-            );
+            $transient->no_update[$plugin_file] = $this->buildNoUpdateTransientEntry($plugin_file);
         }
-        
+
         return $transient;
+    }
+
+    /**
+     * Build a transient entry for an available update.
+     *
+     * @param array  $update_info Update info.
+     * @param string $plugin_file Plugin file path.
+     * @return object Transient entry.
+     */
+    private function buildUpdateTransientEntry(array $update_info, string $plugin_file): object {
+        $this->file_logger->info('Update available', array(
+            'current' => PLUGIN_VERSION, 'new' => $update_info['version'],
+        ));
+
+        return (object) array(
+            'id'           => PLUGIN_SLUG,
+            'slug'         => PLUGIN_SLUG,
+            'plugin'       => $plugin_file,
+            'new_version'  => $update_info['version'],
+            'url'          => isset($update_info['url']) ? $update_info['url'] : '',
+            'package'      => $update_info['package'],
+            'icons'        => array(),
+            'banners'      => array(),
+            'tested'       => isset($update_info['tested']) ? $update_info['tested'] : '',
+            'requires'     => isset($update_info['requires']) ? $update_info['requires'] : '',
+            'requires_php' => isset($update_info['requires_php']) ? $update_info['requires_php'] : '',
+        );
+    }
+
+    /**
+     * Build a transient entry indicating no update available.
+     *
+     * @param string $plugin_file Plugin file path.
+     * @return object Transient entry.
+     */
+    private function buildNoUpdateTransientEntry(string $plugin_file): object {
+        return (object) array(
+            'id'          => PLUGIN_SLUG,
+            'slug'        => PLUGIN_SLUG,
+            'plugin'      => $plugin_file,
+            'new_version' => PLUGIN_VERSION,
+            'url'         => '',
+            'package'     => '',
+        );
     }
 
     /**
@@ -462,18 +516,28 @@ class RiseupUpdateResolver {
         if ($action !== 'plugin_information') {
             return $result;
         }
-        
+
         if (!isset($args->slug) || $args->slug !== PLUGIN_SLUG) {
             return $result;
         }
-        
+
         $settings = $this->get_settings();
         $update_info = $settings['update_info'];
-        
+
         if (empty($update_info)) {
             return $result;
         }
-        
+
+        return $this->buildPluginInfoObject($update_info);
+    }
+
+    /**
+     * Build the plugin info object for the details modal.
+     *
+     * @param array $update_info Update metadata.
+     * @return object Plugin info.
+     */
+    private function buildPluginInfoObject(array $update_info): object {
         return (object) array(
             'name'          => PLUGIN_NAME,
             'slug'          => PLUGIN_SLUG,
