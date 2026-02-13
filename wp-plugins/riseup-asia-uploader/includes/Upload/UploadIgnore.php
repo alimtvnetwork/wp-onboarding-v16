@@ -1,6 +1,6 @@
 <?php
 /**
- * Riseup Asia Uploader - Upload Ignore Parser
+ * Upload Ignore Parser
  *
  * Parses .uploadignore files using gitignore-style pattern matching.
  * Shell class — pattern logic delegated to trait.
@@ -28,35 +28,35 @@ class RiseupUploadIgnore {
     /** @var array */
     private $negations = array();
     /** @var bool */
-    private $loaded = false;
+    private $isLoaded = false;
     /** @var RiseupFileLogger */
-    private $file_logger;
+    private $fileLogger;
 
     public function __construct() {
-        $this->file_logger = RiseupFileLogger::get_instance();
+        $this->fileLogger = RiseupFileLogger::getInstance();
     }
 
     /**
      * Load patterns from .uploadignore file.
      *
-     * @param string $plugin_dir The plugin directory path.
+     * @param string $pluginDir The plugin directory path.
      * @return bool True if file was loaded.
      */
-    public function load($plugin_dir) {
-        $ignore_file = rtrim($plugin_dir, '/\\') . '/' . IGNORE_FILENAME;
-        $this->file_logger->debug('Loading uploadignore', array('path' => $ignore_file));
+    public function load($pluginDir) {
+        $ignoreFile = rtrim($pluginDir, '/\\') . '/' . IGNORE_FILENAME;
+        $this->fileLogger->debug('Loading uploadignore', array('path' => $ignoreFile));
 
-        if (RiseupBooleanHelpers::is_file_missing($ignore_file)) {
-            $this->file_logger->debug('No uploadignore file found');
-            $this->loaded = false;
+        if (RiseupBooleanHelpers::is_file_missing($ignoreFile)) {
+            $this->fileLogger->debug('No uploadignore file found');
+            $this->isLoaded = false;
             return false;
         }
 
         try {
-            $content = file_get_contents($ignore_file);
+            $content = file_get_contents($ignoreFile);
             if ($content === false) {
-                $this->file_logger->warn('Failed to read uploadignore file');
-                $this->loaded = false;
+                $this->fileLogger->warn('Failed to read uploadignore file');
+                $this->isLoaded = false;
                 return false;
             }
 
@@ -76,15 +76,15 @@ class RiseupUploadIgnore {
                 }
             }
 
-            $this->loaded = true;
-            $this->file_logger->info('Uploadignore loaded', array(
+            $this->isLoaded = true;
+            $this->fileLogger->info('Uploadignore loaded', array(
                 'patterns'  => count($this->patterns),
                 'negations' => count($this->negations),
             ));
             return true;
         } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Failed to load uploadignore');
-            $this->loaded = false;
+            $this->fileLogger->logException($e, 'Failed to load uploadignore');
+            $this->isLoaded = false;
             return false;
         }
     }
@@ -92,19 +92,19 @@ class RiseupUploadIgnore {
     /**
      * Check if a relative path should be ignored.
      */
-    public function shouldIgnore($relative_path) {
-        $path = str_replace('\\', '/', $relative_path);
+    public function shouldIgnore($relativePath) {
+        $path = str_replace('\\', '/', $relativePath);
         $path = ltrim($path, '/');
 
-        $ignored = false;
+        $isIgnored = false;
         foreach ($this->patterns as $pattern) {
             if ($this->matchPattern($pattern, $path)) {
-                $ignored = true;
+                $isIgnored = true;
                 break;
             }
         }
 
-        if ($ignored) {
+        if ($isIgnored) {
             foreach ($this->negations as $pattern) {
                 if ($this->matchPattern($pattern, $path)) {
                     return false;
@@ -112,7 +112,7 @@ class RiseupUploadIgnore {
             }
         }
 
-        return $ignored;
+        return $isIgnored;
     }
 
     /** @return array */
@@ -127,15 +127,15 @@ class RiseupUploadIgnore {
 
     /** @return bool */
     public function isLoaded() {
-        return $this->loaded;
+        return $this->isLoaded;
     }
 
     /**
      * Create an instance and load from a directory.
      */
-    public static function fromDirectory($plugin_dir) {
+    public static function fromDirectory($pluginDir) {
         $instance = new self();
-        $instance->load($plugin_dir);
+        $instance->load($pluginDir);
         return $instance;
     }
 }

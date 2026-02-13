@@ -29,11 +29,11 @@ trait LoggerLevelMethodsTrait {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevelType::Debug->value, $message, $file, $line)) {
+        if ($this->isDuplicate(LogLevelType::Debug->value, $message, $file, $line)) {
             return true;
         }
 
-        $entry = $this->format_entry(LogLevelType::Debug->value, $message, $file, $line, $context);
+        $entry = $this->formatEntry(LogLevelType::Debug->value, $message, $file, $line, $context);
         return $this->write($entry, false);
     }
 
@@ -50,11 +50,11 @@ trait LoggerLevelMethodsTrait {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevelType::Info->value, $message, $file, $line)) {
+        if ($this->isDuplicate(LogLevelType::Info->value, $message, $file, $line)) {
             return true;
         }
 
-        $entry = $this->format_entry(LogLevelType::Info->value, $message, $file, $line, $context);
+        $entry = $this->formatEntry(LogLevelType::Info->value, $message, $file, $line, $context);
         return $this->write($entry, false);
     }
 
@@ -71,15 +71,15 @@ trait LoggerLevelMethodsTrait {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevelType::Warn->value, $message, $file, $line)) {
+        if ($this->isDuplicate(LogLevelType::Warn->value, $message, $file, $line)) {
             return true;
         }
 
-        $context = $this->prepare_context($context, $trace, true);
-        $formatted_trace = $this->format_backtrace($trace);
+        $context = $this->prepareContext($context, $trace, true);
+        $formattedTrace = $this->formatBacktrace($trace);
 
-        $entry = $this->format_entry(LogLevelType::Warn->value, $message, $file, $line, $context);
-        $this->persist_to_error_sessions(LogLevelType::Warn->value, $message, $file, $line, $context, $formatted_trace);
+        $entry = $this->formatEntry(LogLevelType::Warn->value, $message, $file, $line, $context);
+        $this->persistToErrorSessions(LogLevelType::Warn->value, $message, $file, $line, $context, $formattedTrace);
 
         return $this->write($entry, false);
     }
@@ -97,16 +97,16 @@ trait LoggerLevelMethodsTrait {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevelType::Error->value, $message, $file, $line)) {
+        if ($this->isDuplicate(LogLevelType::Error->value, $message, $file, $line)) {
             return true;
         }
 
-        $context = $this->prepare_context($context, $trace, true);
+        $context = $this->prepareContext($context, $trace, true);
 
-        $entry = $this->format_entry(LogLevelType::Error->value, $message, $file, $line, $context);
-        $formatted_trace = $this->format_backtrace($trace);
-        $this->persist_to_error_sessions(LogLevelType::Error->value, $message, $file, $line, $context, $formatted_trace);
-        $this->write_stacktrace($message, $file, $line, $formatted_trace);
+        $entry = $this->formatEntry(LogLevelType::Error->value, $message, $file, $line, $context);
+        $formattedTrace = $this->formatBacktrace($trace);
+        $this->persistToErrorSessions(LogLevelType::Error->value, $message, $file, $line, $context, $formattedTrace);
+        $this->writeStacktrace($message, $file, $line, $formattedTrace);
 
         return $this->write($entry, true);
     }
@@ -121,16 +121,17 @@ trait LoggerLevelMethodsTrait {
      * @param array  $context Additional context.
      * @return bool
      */
-    public function log_at($level, $message, $file, $line, $context = array()) {
-        if ($this->is_duplicate($level, $message, $file, $line)) {
+    public function logAt($level, $message, $file, $line, $context = array()) {
+        if ($this->isDuplicate($level, $message, $file, $line)) {
             return true;
         }
 
-        $context = $this->prepare_context($context);
-        $is_error = ($level === LogLevelType::Error->value);
-        $entry = $this->format_entry($level, $message, $file, $line, $context);
+        $context = $this->prepareContext($context);
+        $levelEnum = LogLevelType::from($level);
+        $isError = $levelEnum->isError();
+        $entry = $this->formatEntry($level, $message, $file, $line, $context);
 
-        return $this->write($entry, $is_error);
+        return $this->write($entry, $isError);
     }
 
     /**
@@ -140,16 +141,16 @@ trait LoggerLevelMethodsTrait {
      * @param string     $context Additional context message.
      * @return bool
      */
-    public function log_exception($e, $context = '') {
-        if ($this->is_duplicate(LogLevelType::Error->value, $e->getMessage(), $e->getFile(), $e->getLine())) {
+    public function logException($e, $context = '') {
+        if ($this->isDuplicate(LogLevelType::Error->value, $e->getMessage(), $e->getFile(), $e->getLine())) {
             return true;
         }
 
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
-        $ctx = $this->prepare_context(array('trace' => $e->getTraceAsString()));
-        $entry = $this->format_entry(LogLevelType::Error->value, $message, $e->getFile(), $e->getLine(), $ctx);
-        $this->persist_to_error_sessions(LogLevelType::Error->value, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
-        $this->write_stacktrace($message, $e->getFile(), $e->getLine(), $e->getTraceAsString());
+        $ctx = $this->prepareContext(array('trace' => $e->getTraceAsString()));
+        $entry = $this->formatEntry(LogLevelType::Error->value, $message, $e->getFile(), $e->getLine(), $ctx);
+        $this->persistToErrorSessions(LogLevelType::Error->value, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
+        $this->writeStacktrace($message, $e->getFile(), $e->getLine(), $e->getTraceAsString());
 
         return $this->write($entry, true);
     }

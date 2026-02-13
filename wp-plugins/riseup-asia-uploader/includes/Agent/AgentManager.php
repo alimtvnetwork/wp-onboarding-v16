@@ -29,10 +29,10 @@ class RiseupAgentManager {
     use AgentLoggingTrait;
 
     /** @var string Encryption key for app passwords. */
-    private $encryption_key;
+    private $encryptionKey;
 
     /** @var RiseupFileLogger */
-    private $file_logger;
+    private $fileLogger;
 
     /** @var RiseupDatabase */
     private $db;
@@ -49,6 +49,7 @@ class RiseupAgentManager {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
@@ -56,9 +57,9 @@ class RiseupAgentManager {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = RiseupFileLogger::get_instance();
-        $this->db = RiseupDatabase::get_instance();
-        $this->encryption_key = substr(hash('sha256', AUTH_KEY . SECURE_AUTH_KEY), 0, 32);
+        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->db = RiseupDatabase::getInstance();
+        $this->encryptionKey = substr(hash('sha256', AUTH_KEY . SECURE_AUTH_KEY), 0, 32);
     }
 
     /**
@@ -74,7 +75,7 @@ class RiseupAgentManager {
         $ciphertext = openssl_encrypt(
             $plaintext,
             'aes-256-gcm',
-            $this->encryption_key,
+            $this->encryptionKey,
             OPENSSL_RAW_DATA,
             $iv,
             $tag,
@@ -105,7 +106,7 @@ class RiseupAgentManager {
         return openssl_decrypt(
             $ciphertext,
             'aes-256-gcm',
-            $this->encryption_key,
+            $this->encryptionKey,
             OPENSSL_RAW_DATA,
             $iv,
             $tag

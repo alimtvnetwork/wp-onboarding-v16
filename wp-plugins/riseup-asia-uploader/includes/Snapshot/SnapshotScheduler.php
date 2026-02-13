@@ -52,13 +52,14 @@ class RiseupSnapshotScheduler {
         if (self::$instance === null) {
             self::$instance = new self($logger, $db);
         }
+
         return self::$instance;
     }
 
     /** Constructor. */
     private function __construct($logger = null, $db = null) {
-        $this->logger = $logger ?: RiseupFileLogger::get_instance();
-        $this->db = $db ?: RiseupDatabase::get_instance();
+        $this->logger = $logger ?: RiseupFileLogger::getInstance();
+        $this->db = $db ?: RiseupDatabase::getInstance();
 
         require_once dirname(__FILE__) . '/SnapshotFactory.php';
         $this->detector = RiseupSnapshotFactory::detector($this->logger, $this->db);

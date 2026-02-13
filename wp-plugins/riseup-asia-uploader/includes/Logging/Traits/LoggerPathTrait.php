@@ -19,18 +19,18 @@ trait LoggerPathTrait {
      *
      * @return bool True if successful.
      */
-    private function initialize_paths() {
-        if ($this->initialized) {
+    private function initializePaths() {
+        if ($this->isInitialized) {
             return true;
         }
 
-        $this->base_dir = RiseupInitHelpers::resolveBaseDir();
-        $this->logs_dir        = rtrim($this->base_dir, '/') . '/' . LOGS_SUBDIR;
-        $this->log_file        = $this->logs_dir . '/' . LOG_FILENAME;
-        $this->error_file      = $this->logs_dir . '/' . ERROR_LOG_FILENAME;
-        $this->stacktrace_file = $this->logs_dir . '/' . STACKTRACE_FILENAME;
+        $this->baseDir = RiseupInitHelpers::resolveBaseDir();
+        $this->logsDir        = rtrim($this->baseDir, '/') . '/' . LOGS_SUBDIR;
+        $this->logFile        = $this->logsDir . '/' . LOG_FILENAME;
+        $this->errorFile      = $this->logsDir . '/' . ERROR_LOG_FILENAME;
+        $this->stacktraceFile = $this->logsDir . '/' . STACKTRACE_FILENAME;
 
-        return $this->ensure_directories();
+        return $this->ensureDirectories();
     }
 
     /**
@@ -38,58 +38,58 @@ trait LoggerPathTrait {
      *
      * @return bool True if successful.
      */
-    private function ensure_directories() {
-        if (!RiseupInitHelpers::ensureDirNative($this->base_dir, true)) {
-            error_log('[Riseup Asia] Failed to create base directory: ' . $this->base_dir);
+    private function ensureDirectories() {
+        if (!RiseupInitHelpers::ensureDirNative($this->baseDir, true)) {
+            error_log('[Riseup Asia] Failed to create base directory: ' . $this->baseDir);
             return false;
         }
 
-        if (!RiseupInitHelpers::ensureDirNative($this->logs_dir, false)) {
-            error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logs_dir);
+        if (!RiseupInitHelpers::ensureDirNative($this->logsDir, false)) {
+            error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logsDir);
             return false;
         }
 
-        $this->initialized = true;
+        $this->isInitialized = true;
         return true;
     }
 
     /** @return string */
-    public function get_base_dir() {
-        if ($this->base_dir === null) {
-            $this->initialize_paths();
+    public function getBaseDir() {
+        if ($this->baseDir === null) {
+            $this->initializePaths();
         }
-        return $this->base_dir;
+        return $this->baseDir;
     }
 
     /** @return string */
-    public function get_logs_dir() {
-        if ($this->logs_dir === null) {
-            $this->initialize_paths();
+    public function getLogsDir() {
+        if ($this->logsDir === null) {
+            $this->initializePaths();
         }
-        return $this->logs_dir;
+        return $this->logsDir;
     }
 
     /** @return string */
-    public function get_log_file() {
-        if ($this->log_file === null) {
-            $this->initialize_paths();
+    public function getLogFile() {
+        if ($this->logFile === null) {
+            $this->initializePaths();
         }
-        return $this->log_file;
+        return $this->logFile;
     }
 
     /** @return string */
-    public function get_error_file() {
-        if ($this->error_file === null) {
-            $this->initialize_paths();
+    public function getErrorFile() {
+        if ($this->errorFile === null) {
+            $this->initializePaths();
         }
-        return $this->error_file;
+        return $this->errorFile;
     }
 
     /** @return string */
-    public function get_stacktrace_file() {
-        if ($this->stacktrace_file === null) {
-            $this->initialize_paths();
+    public function getStacktraceFile() {
+        if ($this->stacktraceFile === null) {
+            $this->initializePaths();
         }
-        return $this->stacktrace_file;
+        return $this->stacktraceFile;
     }
 }
