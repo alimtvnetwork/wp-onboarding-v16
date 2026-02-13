@@ -716,8 +716,8 @@ class RiseupIncrementalBackup {
 
         try {
             // Find the most recent full backup from tracking table
-            $stmt = $pdo->query("SELECT filepath FROM " . RISEUP_TABLE_SNAPSHOTS . "
-                WHERE scope != 'incremental' AND status = '" . RISEUP_SNAPSHOT_STATUS_COMPLETE . "'
+            $stmt = $pdo->query("SELECT filepath FROM " . TABLE_SNAPSHOTS . "
+                WHERE scope != 'incremental' AND status = '" . SNAPSHOT_STATUS_COMPLETE . "'
                 ORDER BY created_at DESC LIMIT 1");
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 

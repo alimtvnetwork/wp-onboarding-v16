@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevel;
+
 /**
  * Snapshot Manager class.
  *
@@ -749,7 +751,7 @@ class RiseupSnapshotManager {
      */
     private function getNextSequence() {
         $result = $this->db->query_single(
-            'SELECT MAX(sequence) as max_seq FROM ' . RISEUP_TABLE_SNAPSHOTS
+            'SELECT MAX(sequence) as max_seq FROM ' . TABLE_SNAPSHOTS
         );
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
@@ -770,13 +772,13 @@ class RiseupSnapshotManager {
             'sequence' => $sequence,
             'filename' => $filename,
             'filepath' => $filepath,
-            'provider' => RISEUP_SNAPSHOT_PROVIDER_NATIVE,
+            'provider' => SNAPSHOT_PROVIDER_NATIVE,
             'scope' => $snapshot_data['scope'],
             'tables_json' => json_encode($snapshot_data['tables']),
             'total_rows' => $snapshot_data['total_rows'] ?? 0,
             'file_size' => filesize($filepath),
             'trigger_source' => 'import',
-            'status' => RISEUP_SNAPSHOT_STATUS_COMPLETE,
+            'status' => SNAPSHOT_STATUS_COMPLETE,
             'created_at' => date('c'),
             'completed_at' => date('c'),
             'import_source' => json_encode(array(
@@ -862,12 +864,12 @@ class RiseupSnapshotManager {
     public function listSnapshots($limit = 50, $offset = 0) {
         // Query all snapshots regardless of provider
         $snapshots = $this->db->query_all(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($limit, $offset)
         );
 
         $total = $this->db->query_single(
-            'SELECT COUNT(*) as count FROM ' . RISEUP_TABLE_SNAPSHOTS
+            'SELECT COUNT(*) as count FROM ' . TABLE_SNAPSHOTS
         );
 
         return array(
@@ -1021,16 +1023,16 @@ class RiseupSnapshotManager {
 
         if ($this->logger) {
             switch ($level) {
-                case RISEUP_LOG_LEVEL_DEBUG:
+                case LogLevel::Debug->value:
                     $this->logger->debug($full_message);
                     break;
-                case RISEUP_LOG_LEVEL_INFO:
+                case LogLevel::Info->value:
                     $this->logger->info($full_message);
                     break;
-                case RISEUP_LOG_LEVEL_WARN:
+                case LogLevel::Warn->value:
                     $this->logger->warn($full_message);
                     break;
-                case RISEUP_LOG_LEVEL_ERROR:
+                case LogLevel::Error->value:
                     $this->logger->error($full_message);
                     break;
                 default:

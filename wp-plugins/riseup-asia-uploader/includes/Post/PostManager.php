@@ -93,7 +93,7 @@ class RiseupPostManager {
             $post_data = array(
                 'post_title'   => sanitize_text_field($data['title']),
                 'post_content' => wp_kses_post($data['content']),
-                'post_status'  => $this->validate_post_status($data['status'] ?? RISEUP_POST_STATUS_DRAFT),
+                'post_status'  => $this->validate_post_status($data['status'] ?? POST_STATUS_DRAFT),
                 'post_type'    => 'post',
             );
 
@@ -117,9 +117,9 @@ class RiseupPostManager {
                 $error_msg = $post_id->get_error_message();
                 $this->file_logger->error('Post insertion failed', array('error' => $error_msg));
                 $this->logger->log_post_action(
-                    RISEUP_ACTION_POST_CREATE,
+                    ACTION_POST_CREATE,
                     0,
-                    RISEUP_STATUS_FAILED,
+                    STATUS_FAILED,
                     array('title' => $data['title']),
                     $error_msg
                 );
@@ -216,9 +216,9 @@ class RiseupPostManager {
                 $error_msg = $result->get_error_message();
                 $this->file_logger->error('Post update failed', array('error' => $error_msg));
                 $this->logger->log_post_action(
-                    RISEUP_ACTION_POST_UPDATE,
+                    ACTION_POST_UPDATE,
                     $post_id,
-                    RISEUP_STATUS_FAILED,
+                    STATUS_FAILED,
                     $data,
                     $error_msg
                 );
@@ -273,7 +273,7 @@ class RiseupPostManager {
         try {
             $args = array(
                 'post_type'      => 'post',
-                'posts_per_page' => min((int) ($params['limit'] ?? RISEUP_DEFAULT_LIMIT), RISEUP_MAX_LIMIT),
+                'posts_per_page' => min((int) ($params['limit'] ?? DEFAULT_LIMIT), MAX_LIMIT),
                 'offset'         => max(0, (int) ($params['offset'] ?? 0)),
                 'orderby'        => 'date',
                 'order'          => 'DESC',
@@ -356,9 +356,9 @@ class RiseupPostManager {
                 $error_msg = $result->get_error_message();
                 $this->file_logger->error('Category creation failed', array('error' => $error_msg));
                 $this->logger->log_post_action(
-                    RISEUP_ACTION_CATEGORY_CREATE,
+                    ACTION_CATEGORY_CREATE,
                     0,
-                    RISEUP_STATUS_FAILED,
+                    STATUS_FAILED,
                     $data,
                     $error_msg
                 );
@@ -411,7 +411,7 @@ class RiseupPostManager {
             $args = array(
                 'taxonomy'   => 'category',
                 'hide_empty' => false,
-                'number'     => min((int) ($params['limit'] ?? RISEUP_DEFAULT_LIMIT), RISEUP_MAX_LIMIT),
+                'number'     => min((int) ($params['limit'] ?? DEFAULT_LIMIT), MAX_LIMIT),
                 'offset'     => max(0, (int) ($params['offset'] ?? 0)),
                 'orderby'    => 'name',
                 'order'      => 'ASC',
@@ -477,11 +477,11 @@ class RiseupPostManager {
      */
     private function validate_post_status($status) {
         $valid_statuses = array(
-            RISEUP_POST_STATUS_PUBLISH,
-            RISEUP_POST_STATUS_DRAFT,
-            RISEUP_POST_STATUS_PENDING,
+            POST_STATUS_PUBLISH,
+            POST_STATUS_DRAFT,
+            POST_STATUS_PENDING,
         );
 
-        return in_array($status, $valid_statuses, true) ? $status : RISEUP_POST_STATUS_DRAFT;
+        return in_array($status, $valid_statuses, true) ? $status : POST_STATUS_DRAFT;
     }
 }
