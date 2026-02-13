@@ -14,9 +14,6 @@ trait SyncManifestTrait
 {
     /**
      * Handle sync manifest endpoint.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
      */
     public function handle_sync_manifest($request) {
         $body = $request->get_json_params();
@@ -84,13 +81,18 @@ trait SyncManifestTrait
             if (is_dir($full_path)) {
                 $this->scan_directory_for_files($base_dir, $full_path, $ignore, $files);
             } else {
-                $files[] = array(
-                    'path' => str_replace('\\', '/', $rel_path),
-                    'hash' => @md5_file($full_path) ?: '',
-                    'size' => @filesize($full_path) ?: 0,
-                    'modifiedAt' => ($mtime = @filemtime($full_path)) ? gmdate('c', $mtime) : null,
-                );
+                $files[] = $this->buildFileEntry($rel_path, $full_path);
             }
         }
+    }
+
+    /** Build a file entry for the manifest. */
+    private function buildFileEntry(string $rel_path, string $full_path): array {
+        return array(
+            'path' => str_replace('\\', '/', $rel_path),
+            'hash' => @md5_file($full_path) ?: '',
+            'size' => @filesize($full_path) ?: 0,
+            'modifiedAt' => ($mtime = @filemtime($full_path)) ? gmdate('c', $mtime) : null,
+        );
     }
 }

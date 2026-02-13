@@ -61,6 +61,17 @@ trait SyncPushTrait
         $path   = isset($file['path']) ? $file['path'] : '';
         $action = isset($file['action']) ? $file['action'] : '';
 
+        $guardResult = $this->guardSyncFile($path, $action, $plugin_dir, $ignore);
+        if ($guardResult !== null) {
+            return $guardResult;
+        }
+
+        $full_path = $plugin_dir . '/' . $path;
+        return $this->dispatchSyncAction($path, $action, $full_path, $plugin_dir, $slug, $file);
+    }
+
+    /** Validate sync file prerequisites. */
+    private function guardSyncFile(string $path, string $action, string $plugin_dir, $ignore): ?array {
         if (empty($path) || empty($action)) {
             return array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
         }
@@ -73,6 +84,11 @@ trait SyncPushTrait
             return array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Path traversal detected');
         }
 
+        return null;
+    }
+
+    /** Dispatch the sync action to the appropriate handler. */
+    private function dispatchSyncAction(string $path, string $action, string $full_path, string $plugin_dir, string $slug, array $file): array {
         if ($action === SYNC_ACTION_REPLACE) {
             return $this->syncReplaceFile($path, $action, isset($file['content']) ? $file['content'] : '', $full_path);
         }

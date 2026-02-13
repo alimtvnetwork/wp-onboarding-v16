@@ -24,40 +24,62 @@ trait AuthCredentialTrait
         if (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
             return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
         }
-        if (function_exists('getallheaders')) {
-            $headers = getallheaders();
-            if (isset($headers['Authorization'])) { return $headers['Authorization']; }
-            if (isset($headers['authorization'])) { return $headers['authorization']; }
+
+        return $this->resolveFromGetallheaders();
+    }
+
+    /** Attempt to resolve Authorization from getallheaders(). */
+    private function resolveFromGetallheaders() {
+        if (!function_exists('getallheaders')) {
+            return null;
         }
+
+        $headers = getallheaders();
+        if (isset($headers['Authorization'])) { return $headers['Authorization']; }
+        if (isset($headers['authorization'])) { return $headers['authorization']; }
+
         return null;
     }
 
     /** Parse Basic auth header and authenticate the user. */
     private function authenticate_user($auth_header) {
-        if (strpos($auth_header, 'Basic ') !== 0) {
-            $this->file_logger->warn('Invalid Authorization header format');
-            $this->logger->log_auth_failure('Invalid Authorization header format');
-            return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
+        $formatError = $this->validateAuthFormat($auth_header);
+        if ($formatError) {
+            return $formatError;
         }
 
         $credentials = base64_decode(substr($auth_header, 6));
-        if (!$credentials || strpos($credentials, ':') === false) {
-            $this->file_logger->warn('Invalid credentials format');
-            $this->logger->log_auth_failure('Invalid credentials format');
-            return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
+        $isInvalidFormat = (!$credentials || strpos($credentials, ':') === false);
+        if ($isInvalidFormat) {
+            return $this->buildAuthError('Invalid credentials format');
         }
 
         list($username, $password) = explode(':', $credentials, 2);
         $user = wp_authenticate_application_password(null, $username, $password);
 
         if (is_wp_error($user) || !$user) {
-            $this->file_logger->warn('Invalid credentials', array('username' => $username));
-            $this->logger->log_auth_failure('Invalid credentials', array('username' => $username));
-            return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
+            return $this->buildAuthError('Invalid credentials', array('username' => $username));
         }
 
         wp_set_current_user($user->ID);
         return $user;
+    }
+
+    /** Validate the Basic auth header format prefix. */
+    private function validateAuthFormat(string $auth_header) {
+        if (strpos($auth_header, 'Basic ') === 0) {
+            return null;
+        }
+
+        return $this->buildAuthError('Invalid Authorization header format');
+    }
+
+    /** Build a WP_Error for auth failure with logging. */
+    private function buildAuthError(string $reason, array $context = array()) {
+        $this->file_logger->warn($reason, $context);
+        $this->logger->log_auth_failure($reason, $context);
+
+        return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
     }
 
     /** Build a WP_Error for missing Authorization header. */
@@ -76,17 +98,7 @@ trait AuthCredentialTrait
     /** Verify authentication only (no capability check). */
     private function check_authenticated_only($request) {
         try {
-            $auth_header = $this->resolve_auth_header($request);
-            if (empty($auth_header)) {
-                return $this->build_missing_auth_error($request);
-            }
-
-            $user = $this->authenticate_user($auth_header);
-            if (is_wp_error($user)) {
-                return $user;
-            }
-
-            return true;
+            return $this->resolveAndAuthenticate($request);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Authentication error');
             return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
@@ -96,30 +108,46 @@ trait AuthCredentialTrait
     /** Verify authentication and capability. */
     private function check_authenticated_capability($request, $capability) {
         try {
-            $auth_header = $this->resolve_auth_header($request);
-            if (empty($auth_header)) {
-                return $this->build_missing_auth_error($request);
+            $authResult = $this->resolveAndAuthenticate($request);
+            if (is_wp_error($authResult) || $authResult === true) {
+                return $authResult;
             }
 
-            $user = $this->authenticate_user($auth_header);
-            if (is_wp_error($user)) {
-                return $user;
-            }
-
-            if (!current_user_can($capability)) {
-                $this->file_logger->warn('Insufficient permissions', array(
-                    'username' => $user->user_login, 'required_cap' => $capability,
-                ));
-                $this->logger->log_auth_failure('Insufficient permissions', array(
-                    'username' => $user->user_login, 'required_cap' => $capability,
-                ));
-                return new WP_Error('rest_forbidden', MSG_FORBIDDEN, array('status' => HTTP_FORBIDDEN));
-            }
-
-            return true;
+            return $this->verifyCapability($authResult, $capability);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Authentication error');
             return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
         }
+    }
+
+    /** Resolve auth header and authenticate, returning user or error. */
+    private function resolveAndAuthenticate($request) {
+        $auth_header = $this->resolve_auth_header($request);
+        if (empty($auth_header)) {
+            return $this->build_missing_auth_error($request);
+        }
+
+        $user = $this->authenticate_user($auth_header);
+        if (is_wp_error($user)) {
+            return $user;
+        }
+
+        return $user;
+    }
+
+    /** Verify the current user has the required capability. */
+    private function verifyCapability($user, string $capability) {
+        if (current_user_can($capability)) {
+            return true;
+        }
+
+        $this->file_logger->warn('Insufficient permissions', array(
+            'username' => $user->user_login, 'required_cap' => $capability,
+        ));
+        $this->logger->log_auth_failure('Insufficient permissions', array(
+            'username' => $user->user_login, 'required_cap' => $capability,
+        ));
+
+        return new WP_Error('rest_forbidden', MSG_FORBIDDEN, array('status' => HTTP_FORBIDDEN));
     }
 }

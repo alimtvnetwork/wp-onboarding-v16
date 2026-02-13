@@ -38,15 +38,27 @@ trait StatusPayloadTrait {
             return PLUGIN_VERSION;
         }
 
-        if (function_exists('opcache_invalidate')) {
-            opcache_invalidate($main_plugin_file, true);
-            $constants_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/includes/constants.php';
-            if (file_exists($constants_file)) {
-                opcache_invalidate($constants_file, true);
-            }
+        $this->invalidateVersionCaches($main_plugin_file);
+
+        return $this->parseVersionFromHeader($main_plugin_file);
+    }
+
+    /** Invalidate OPcache for plugin file and constants. */
+    private function invalidateVersionCaches(string $main_plugin_file) {
+        if (!function_exists('opcache_invalidate')) {
+            return;
         }
 
-        $header = file_get_contents($main_plugin_file, false, null, 0, 8192);
+        opcache_invalidate($main_plugin_file, true);
+        $constants_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/includes/constants.php';
+        if (file_exists($constants_file)) {
+            opcache_invalidate($constants_file, true);
+        }
+    }
+
+    /** Parse the Version header from a plugin file. */
+    private function parseVersionFromHeader(string $file): string {
+        $header = file_get_contents($file, false, null, 0, 8192);
         if ($header !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $header, $m)) {
             return $m[1];
         }
@@ -65,19 +77,26 @@ trait StatusPayloadTrait {
             if (strpos($route, $ns_prefix) !== 0) {
                 continue;
             }
-            $methods = array();
-            foreach ($handlers as $handler) {
-                if (!isset($handler['methods'])) {
-                    continue;
-                }
-                $methods = array_merge($methods, is_array($handler['methods'])
-                    ? array_keys($handler['methods'])
-                    : array($handler['methods']));
-            }
-            $routes[] = array('route' => $route, 'methods' => array_values(array_unique($methods)));
+
+            $routes[] = array('route' => $route, 'methods' => $this->extractRouteMethods($handlers));
         }
 
         return $routes;
+    }
+
+    /** Extract unique HTTP methods from route handlers. */
+    private function extractRouteMethods(array $handlers): array {
+        $methods = array();
+        foreach ($handlers as $handler) {
+            if (!isset($handler['methods'])) {
+                continue;
+            }
+            $methods = array_merge($methods, is_array($handler['methods'])
+                ? array_keys($handler['methods'])
+                : array($handler['methods']));
+        }
+
+        return array_values(array_unique($methods));
     }
 
     /**
@@ -99,21 +118,30 @@ trait StatusPayloadTrait {
      * Build the full status payload array.
      */
     private function buildStatusPayload(string $version, bool $dbAvailable): array {
+        return array_merge(
+            $this->buildCoreStatusFields($version, $dbAvailable),
+            array(
+                'Features'         => $this->buildFeatureFlags($dbAvailable),
+                'RegisteredRoutes' => $this->collectRegisteredRoutes(),
+                'EndpointsRef'     => $this->loadEndpointsReference(),
+            )
+        );
+    }
+
+    /** Build core status fields. */
+    private function buildCoreStatusFields(string $version, bool $dbAvailable): array {
         return array(
-            'Plugin'           => PLUGIN_NAME,
-            'Version'          => $version,
-            'Slug'             => PLUGIN_SLUG,
-            'Api'              => API_FULL_NAMESPACE,
-            'SiteUrl'          => get_site_url(),
-            'Wp'               => get_bloginfo('version'),
-            'Php'              => PHP_VERSION,
-            'IsActive'         => in_array(plugin_basename(__FILE__), get_option('active_plugins', array()), true),
-            'DbAvailable'      => $dbAvailable,
-            'ServerTime'       => gmdate('c'),
-            'Timezone'         => wp_timezone_string(),
-            'Features'         => $this->buildFeatureFlags($dbAvailable),
-            'RegisteredRoutes' => $this->collectRegisteredRoutes(),
-            'EndpointsRef'     => $this->loadEndpointsReference(),
+            'Plugin'      => PLUGIN_NAME,
+            'Version'     => $version,
+            'Slug'        => PLUGIN_SLUG,
+            'Api'         => API_FULL_NAMESPACE,
+            'SiteUrl'     => get_site_url(),
+            'Wp'          => get_bloginfo('version'),
+            'Php'         => PHP_VERSION,
+            'IsActive'    => in_array(plugin_basename(__FILE__), get_option('active_plugins', array()), true),
+            'DbAvailable' => $dbAvailable,
+            'ServerTime'  => gmdate('c'),
+            'Timezone'    => wp_timezone_string(),
         );
     }
 

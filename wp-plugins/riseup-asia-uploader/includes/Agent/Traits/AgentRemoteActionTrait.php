@@ -83,15 +83,25 @@ trait AgentRemoteActionTrait {
         $result = $this->apiRequest($agent_id, 'GET', API_FULL_NAMESPACE . '/status');
 
         if (is_wp_error($result)) {
-            $this->updateAgent($agent_id, array(
-                'status'     => 'error',
-                'last_error' => $result->get_error_message(),
-            ));
-            $this->logAction($agent_id, ACTION_AGENT_TEST, null, STATUS_FAILED, null, $result->get_error_message());
-
-            return array('success' => false, 'message' => $result->get_error_message());
+            return $this->handleTestConnectionFailure($agent_id, $result);
         }
 
+        return $this->handleTestConnectionSuccess($agent_id, $result);
+    }
+
+    /** Handle a failed connection test. */
+    private function handleTestConnectionFailure(int $agent_id, $error): array {
+        $this->updateAgent($agent_id, array(
+            'status'     => 'error',
+            'last_error' => $error->get_error_message(),
+        ));
+        $this->logAction($agent_id, ACTION_AGENT_TEST, null, STATUS_FAILED, null, $error->get_error_message());
+
+        return array('success' => false, 'message' => $error->get_error_message());
+    }
+
+    /** Handle a successful connection test. */
+    private function handleTestConnectionSuccess(int $agent_id, $result): array {
         $this->updateAgent($agent_id, array(
             'status'     => 'connected',
             'last_sync'  => gmdate('Y-m-d\TH:i:s\Z'),
