@@ -1,6 +1,6 @@
 <?php
 /**
- * LogLevel — Log Level Enum
+ * LogLevelType — Log Level Enum
  *
  * Defines the severity levels for file and transaction logging.
  *
@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 /**
  * Log severity levels.
  */
-enum LogLevel: string
+enum LogLevelType: string
 {
     case Debug = 'DEBUG';
     case Info  = 'INFO';
