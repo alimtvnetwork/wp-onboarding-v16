@@ -90,9 +90,9 @@ class RiseupUploadIgnore {
                 // Handle negation patterns.
                 if (strpos($line, '!') === 0) {
                     $pattern = substr($line, 1);
-                    $this->negations[] = $this->compile_pattern($pattern);
+                    $this->negations[] = $this->compilePattern($pattern);
                 } else {
-                    $this->patterns[] = $this->compile_pattern($line);
+                    $this->patterns[] = $this->compilePattern($line);
                 }
             }
 
@@ -116,7 +116,7 @@ class RiseupUploadIgnore {
      *
      * @return bool True if the file should be ignored, false otherwise.
      */
-    public function should_ignore($relative_path) {
+    public function shouldIgnore($relative_path) {
         // Normalize path separators.
         $path = str_replace('\\', '/', $relative_path);
         $path = ltrim($path, '/');
@@ -124,7 +124,7 @@ class RiseupUploadIgnore {
         // Check if any pattern matches.
         $ignored = false;
         foreach ($this->patterns as $pattern) {
-            if ($this->match_pattern($pattern, $path)) {
+            if ($this->matchPattern($pattern, $path)) {
                 $ignored = true;
                 break;
             }
@@ -133,7 +133,7 @@ class RiseupUploadIgnore {
         // If ignored, check for negation patterns.
         if ($ignored) {
             foreach ($this->negations as $pattern) {
-                if ($this->match_pattern($pattern, $path)) {
+                if ($this->matchPattern($pattern, $path)) {
                     return false; // Negated, don't ignore.
                 }
             }
@@ -147,7 +147,7 @@ class RiseupUploadIgnore {
      *
      * @return array Array of patterns.
      */
-    public function get_patterns() {
+    public function getPatterns() {
         return $this->patterns;
     }
 
@@ -156,7 +156,7 @@ class RiseupUploadIgnore {
      *
      * @return array Array of negation patterns.
      */
-    public function get_negations() {
+    public function getNegations() {
         return $this->negations;
     }
 
@@ -165,7 +165,7 @@ class RiseupUploadIgnore {
      *
      * @return bool True if loaded, false otherwise.
      */
-    public function is_loaded() {
+    public function isLoaded() {
         return $this->loaded;
     }
 
@@ -176,7 +176,7 @@ class RiseupUploadIgnore {
      *
      * @return array Compiled pattern info.
      */
-    private function compile_pattern($pattern) {
+    private function compilePattern($pattern) {
         $info = array(
             'original'   => $pattern,
             'anchored'   => false,
@@ -235,7 +235,7 @@ class RiseupUploadIgnore {
      *
      * @return bool True if matches, false otherwise.
      */
-    private function match_pattern($pattern, $path) {
+    private function matchPattern($pattern, $path) {
         return preg_match($pattern['regex'], $path) === 1;
     }
 
@@ -246,7 +246,7 @@ class RiseupUploadIgnore {
      *
      * @return RiseupUploadIgnore The instance.
      */
-    public static function from_directory($plugin_dir) {
+    public static function fromDirectory($plugin_dir) {
         $instance = new self();
         $instance->load($plugin_dir);
         return $instance;
