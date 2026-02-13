@@ -1677,7 +1677,7 @@ class RiseupAsia {
     // =========================================================================
 
     /**
-     * Handle plugin upload (Base64 ZIP).
+     * Handle plugin upload (multipart or base64 ZIP).
      *
      * @param WP_REST_Request $request Request object.
      *
@@ -1687,78 +1687,18 @@ class RiseupAsia {
         $this->file_logger->info('Upload endpoint called');
 
         try {
-            // =====================================================================
-            // DUAL-FORMAT UPLOAD: Accept both multipart/form-data (preferred, faster)
-            // and JSON with base64-encoded ZIP (legacy, backward-compatible).
-            // Multipart avoids the 33% base64 overhead and allows streaming.
-            // =====================================================================
-            $files = $request->get_file_params();
-            $is_multipart = !empty($files['plugin_zip']);
-
-            if ($is_multipart) {
-                // --- MULTIPART UPLOAD (new, preferred) ---
-                $this->file_logger->info('Processing multipart upload');
-                $upload = $files['plugin_zip'];
-
-                if ($upload['error'] !== UPLOAD_ERR_OK) {
-                    $this->file_logger->error('Multipart upload error', array('code' => $upload['error']));
-                    return $this->error_response('File upload failed (error code: ' . $upload['error'] . ')', HTTP_BAD_REQUEST);
-                }
-
-                $zip_content = file_get_contents($upload['tmp_name']);
-                if ($zip_content === false) {
-                    $this->file_logger->error('Failed to read uploaded file');
-                    return $this->error_response('Failed to read uploaded file', HTTP_SERVER_ERROR);
-                }
-
-                // Read form fields from multipart body params
-                $body_params = $request->get_body_params();
-                $data = array(
-                    'slug'           => isset($body_params['slug']) ? $body_params['slug'] : '',
-                    'activate'       => isset($body_params['activate']) ? $body_params['activate'] : '',
-                    'upload_source'  => isset($body_params['upload_source']) ? $body_params['upload_source'] : UPLOAD_SOURCE_REST_API,
-                    'plugin_version' => isset($body_params['plugin_version']) ? $body_params['plugin_version'] : '',
-                );
-
-                $this->file_logger->debug('Multipart params', array(
-                    'file_size' => strlen($zip_content),
-                    'slug'      => $data['slug'],
-                ));
-            } else {
-                // --- BASE64 JSON UPLOAD (legacy, backward-compatible) ---
-                $data = $request->get_json_params();
-
-                if (empty($data['plugin_zip'])) {
-                    $this->file_logger->warn('Upload failed: plugin_zip required');
-                    return $this->error_response(MSG_INVALID_REQUEST . ': plugin_zip is required (send as multipart file or base64 JSON)', HTTP_BAD_REQUEST);
-                }
-
-                $this->file_logger->info('Processing base64 JSON upload');
-                $zip_content = base64_decode($data['plugin_zip']);
-                if ($zip_content === false) {
-                    $this->file_logger->error('Invalid base64 data');
-                    return $this->error_response('Invalid base64 data', HTTP_BAD_REQUEST);
-                }
+            $input = $this->parse_upload_input($request);
+            if ($input instanceof WP_REST_Response) {
+                return $input;
             }
 
-            // Get optional parameters.
-            $slug     = sanitize_file_name($data['slug'] ?? '');
-            $activate = !empty($data['activate']);
-            $upload_source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UPLOAD_SOURCE_REST_API;
-            $client_plugin_version = isset($data['plugin_version']) ? sanitize_text_field($data['plugin_version']) : '';
-            
-            // Validate upload_source against allowed enum values
-            $valid_sources = json_decode(UPLOAD_SOURCES_VALID, true);
-            if (!in_array($upload_source, $valid_sources, true)) {
-                $upload_source = UPLOAD_SOURCE_REST_API;
-            }
-            
-            $this->file_logger->debug('Upload parameters', array('slug' => $slug, 'activate' => $activate, 'upload_source' => $upload_source, 'client_version' => $client_plugin_version));
+            $zip_content          = $input['zip_content'];
+            $slug                 = $input['slug'];
+            $activate             = $input['activate'];
+            $upload_source        = $input['upload_source'];
+            $client_plugin_version = $input['client_plugin_version'];
 
-            // =====================================================================
-            // ACTIVITY STATE 1: Log "Upload Initiated" before any processing
-            // This ensures we have a record even if the upload fails partway through
-            // =====================================================================
+            // Log "Upload Initiated" before any processing
             if (!empty($slug)) {
                 $this->logger->log_upload_initiated($slug, array(
                     'activate'       => $activate,
@@ -1771,347 +1711,54 @@ class RiseupAsia {
                 ));
             }
 
-            // Create temp file.
-            $temp_dir  = $this->get_temp_dir();
-            $temp_file = $temp_dir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
-
-            $this->file_logger->debug('Writing temp file', array('path' => $temp_file));
-            if (file_put_contents($temp_file, $zip_content) === false) {
-                $this->file_logger->error('Failed to write temp file');
-                $this->logger->log_upload_failed($slug, 'Failed to write temp file');
-                return $this->error_response(MSG_UPLOAD_FAILED, HTTP_SERVER_ERROR);
+            $zip_result = $this->validate_and_write_zip($zip_content, $slug);
+            if ($zip_result instanceof WP_REST_Response) {
+                return $zip_result;
             }
 
-            // Validate ZIP.
-            $this->file_logger->debug('Validating ZIP archive');
-            $zip = new ZipArchive();
-            if ($zip->open($temp_file) !== true) {
-                @unlink($temp_file);
-                $this->file_logger->error('Invalid ZIP archive');
-                $this->logger->log_upload_failed($slug, 'Invalid ZIP archive');
-                return $this->error_response('Invalid ZIP archive', HTTP_BAD_REQUEST);
-            }
+            $temp_file = $zip_result['temp_file'];
+            $slug      = $zip_result['slug'];
 
-            // Determine plugin slug from ZIP.
-            $detected_slug = $this->detect_plugin_slug_from_zip($zip);
-            $zip->close();
+            $plugins_dir = WP_PLUGIN_DIR;
+            $target_dir  = $plugins_dir . '/' . $slug;
+            $is_update   = is_dir($target_dir);
 
-            if (!$detected_slug) {
-                @unlink($temp_file);
-                $this->file_logger->error('Could not detect plugin in ZIP');
-                $this->logger->log_upload_failed($slug, 'Could not detect plugin in ZIP');
-                return $this->error_response('Could not detect plugin in ZIP', HTTP_BAD_REQUEST);
-            }
+            $this->remove_duplicate_plugins($slug, $plugins_dir);
 
-            // Use detected slug if not provided.
-            if (empty($slug)) {
-                $slug = $detected_slug;
-            }
-            $this->file_logger->info('Plugin slug determined', array('slug' => $slug));
-
-            // Extract to plugins directory.
-            $plugins_dir  = WP_PLUGIN_DIR;
-            $target_dir   = $plugins_dir . '/' . $slug;
-            $is_update    = is_dir($target_dir);
-
-            // =================================================================
-            // DUPLICATE PLUGIN SCANNER — Remove any duplicate folders that
-            // contain the same plugin (same Plugin Name header) but under a
-            // different folder name. This can happen when the ZIP's internal
-            // folder name differs from the expected slug.
-            // =================================================================
-            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
-                require_once ABSPATH . 'wp-admin/includes/plugin.php';
-            }
-            $all_plugins = get_plugins();
-            $duplicates_removed = 0;
-            foreach ($all_plugins as $pfile => $pdata) {
-                $pdir = dirname($pfile);
-                if ($pdir === '.' || $pdir === $slug) {
-                    continue; // skip single-file plugins and the target slug itself
-                }
-                // Check if this is a duplicate by matching slug in the directory name
-                // or by matching the Plugin Name header
-                $is_duplicate = false;
-                if (isset($pdata['TextDomain']) && $pdata['TextDomain'] === $slug) {
-                    $is_duplicate = true;
-                } elseif (isset($pdata['Name']) && strpos(strtolower($pfile), $slug) !== false) {
-                    $is_duplicate = true;
-                }
-                if ($is_duplicate) {
-                    $dup_dir = $plugins_dir . '/' . $pdir;
-                    $this->file_logger->warn('Duplicate plugin folder detected', array(
-                        'duplicate_dir'  => $pdir,
-                        'duplicate_ver'  => isset($pdata['Version']) ? $pdata['Version'] : 'unknown',
-                        'target_slug'    => $slug,
-                    ));
-                    // Deactivate if active
-                    if (is_plugin_active($pfile)) {
-                        deactivate_plugins($pfile);
-                        $this->file_logger->info('Deactivated duplicate plugin', array('file' => $pfile));
-                    }
-                    // Remove the duplicate directory
-                    if (is_dir($dup_dir)) {
-                        $this->delete_directory($dup_dir);
-                        $this->file_logger->info('Removed duplicate plugin folder', array('dir' => $dup_dir));
-                        $duplicates_removed++;
-                    }
-                }
-            }
-            if ($duplicates_removed > 0) {
-                wp_cache_delete('plugins', 'plugins');
-                $this->file_logger->info('Duplicate cleanup complete', array('removed' => $duplicates_removed));
-            }
-
-            // =====================================================================
-            // SELF-UPDATE PRE-LOGGING: If the plugin is updating itself, log the
-            // activity BEFORE the files are replaced. Otherwise, the log entry
-            // might not be created if the new code changes the logging behavior.
-            // =====================================================================
+            // Self-update pre-logging
             $is_self_update = ($slug === PLUGIN_SLUG && $is_update);
             if ($is_self_update) {
-                $old_plugin_file = $this->find_plugin_file($slug);
-                $old_version = PLUGIN_VERSION;
-                
-                $this->file_logger->info('Self-update detected, pre-logging activity', array(
-                    'old_version'   => $old_version,
-                    'upload_source' => $upload_source,
-                ));
-                
-                $this->logger->log_plugin_action(
-                    ACTION_UPLOAD,
-                    $slug,
-                    STATUS_SUCCESS,
-                    array(
-                        'is_update'       => true,
-                        'is_self_update'  => true,
-                        'old_version'     => $old_version,
-                        'new_version'     => $client_plugin_version,
-                        'file_size'       => strlen($zip_content),
-                        'note'            => 'Pre-logged before self-update to ensure audit trail',
-                    ),
-                    null,
-                    array(
-                        'plugin_version' => $client_plugin_version ?: $old_version,
-                        'upload_source'  => $upload_source,
-                    )
-                );
+                $this->pre_log_self_update($slug, $upload_source, $client_plugin_version, strlen($zip_content));
             }
 
-            $this->file_logger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array(
-                'slug'       => $slug,
-                'target_dir' => $target_dir,
-            ));
+            $was_active = $this->deactivate_if_updating($slug, $is_update, $target_dir);
 
-            // If updating, check if currently active.
-            $was_active = false;
-            if ($is_update) {
-                $plugin_file = $this->find_plugin_file($slug);
-                if ($plugin_file) {
-                    $was_active = is_plugin_active($plugin_file);
-                    if ($was_active) {
-                        $this->file_logger->debug('Deactivating plugin before update', array('plugin_file' => $plugin_file));
-                        deactivate_plugins($plugin_file);
-                    }
-                }
-                // Remove old version.
-                $this->file_logger->debug('Removing old plugin version', array('target_dir' => $target_dir));
-                $this->delete_directory($target_dir);
+            $extract_result = $this->extract_to_plugins_dir($temp_file, $slug, $target_dir);
+            if ($extract_result instanceof WP_REST_Response) {
+                return $extract_result;
             }
 
-            // =================================================================
-            // EXTRACT TO TEMP FIRST TO AVOID FOLDER NAME MISMATCHES
-            // This prevents duplicate plugins when ZIP folder name differs from slug
-            // =================================================================
-            $temp_extract_dir = $this->get_temp_dir() . '/extract_' . uniqid();
-            wp_mkdir_p($temp_extract_dir);
-
-            $this->file_logger->debug('Extracting ZIP to temp directory', array(
-                'temp_dir'   => $temp_extract_dir,
-                'temp_file'  => $temp_file,
-            ));
-
-            $zip = new ZipArchive();
-            if ($zip->open($temp_file) !== true) {
-                @unlink($temp_file);
-                $this->delete_directory($temp_extract_dir);
-                $this->file_logger->error('Failed to open ZIP for extraction');
-                return $this->error_response('Failed to open ZIP for extraction', HTTP_SERVER_ERROR);
-            }
-            $zip->extractTo($temp_extract_dir);
-            $zip->close();
-            @unlink($temp_file);
-
-            // Find the extracted folder (should be exactly one directory).
-            $extracted_folders = glob($temp_extract_dir . '/*', GLOB_ONLYDIR);
-            if (empty($extracted_folders)) {
-                $this->delete_directory($temp_extract_dir);
-                $this->file_logger->error('No folder found in extracted ZIP');
-                $this->logger->log_upload_failed($slug, 'No folder found in extracted ZIP');
-                return $this->error_response('No folder found in extracted ZIP', HTTP_SERVER_ERROR);
+            $plugin_file = $this->reset_opcache_and_find_plugin($slug);
+            if ($plugin_file instanceof WP_REST_Response) {
+                return $plugin_file;
             }
 
-            $extracted_folder = $extracted_folders[0];
-            $extracted_name   = basename($extracted_folder);
-            $this->file_logger->debug('Found extracted folder', array(
-                'extracted_name' => $extracted_name,
-                'target_slug'    => $slug,
-                'needs_rename'   => $extracted_name !== $slug,
-            ));
-
-            // Move the extracted folder to the plugins directory with the correct slug name.
-            // This ensures the folder name always matches the slug, preventing duplicates.
-            if (rename($extracted_folder, $target_dir)) {
-                $this->file_logger->info('Plugin installed to correct location', array(
-                    'from' => $extracted_folder,
-                    'to'   => $target_dir,
-                ));
-            } else {
-                // Fallback: copy files if rename fails (cross-device move).
-                $this->file_logger->warn('Rename failed, attempting copy', array(
-                    'from' => $extracted_folder,
-                    'to'   => $target_dir,
-                ));
-                $this->copy_directory($extracted_folder, $target_dir);
-                $this->delete_directory($extracted_folder);
+            $activation = $this->activate_if_needed($plugin_file, $slug, $activate, $was_active, $is_update);
+            if ($activation instanceof WP_REST_Response) {
+                return $activation;
             }
 
-            // Cleanup temp extraction directory.
-            $this->delete_directory($temp_extract_dir);
+            $activated = $activation['activated'];
 
-            // =================================================================
-            // OPCACHE RESET — critical for self-updates
-            // After replacing files, do a FULL opcache_reset() so the NEXT
-            // HTTP request serves the new bytecode. Individual invalidate()
-            // calls are unreliable on many hosts. The full reset ensures
-            // the /status endpoint (called next by the upload script) will
-            // execute the NEW code and return the correct version.
-            // =================================================================
-            if (function_exists('opcache_reset')) {
-                opcache_reset();
-                $this->file_logger->info('Full OPcache reset after plugin extraction');
-            }
+            $version_info = $this->detect_installed_version($plugin_file, $slug, $is_self_update, $client_plugin_version);
+            $plugin_version = $version_info['version'];
 
-            $plugin_file = $this->find_plugin_file($slug);
-            if (!empty($plugin_file)) {
-                $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
-                
-                // Also invalidate specific files as belt-and-suspenders
-                if (function_exists('opcache_invalidate')) {
-                    opcache_invalidate($full_plugin_path, true);
-                    $this->file_logger->debug('OPcache invalidated for plugin file', array('path' => $full_plugin_path));
-                }
-                
-                $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
-                if (file_exists($constants_file) && function_exists('opcache_invalidate')) {
-                    opcache_invalidate($constants_file, true);
-                    $this->file_logger->debug('OPcache invalidated for constants file', array('path' => $constants_file));
-                }
-                
-                // Clear WordPress plugin cache
-                wp_cache_delete('plugins', 'plugins');
-            }
-
-            if (!$plugin_file) {
-                $this->file_logger->error('Could not find plugin file after extraction', array(
-                    'slug'       => $slug,
-                    'target_dir' => $target_dir,
-                ));
-                $this->logger->log_upload_failed($slug, 'Could not find plugin file after extraction');
-                return $this->error_response('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
-            }
-
-            $this->file_logger->info('Plugin file found', array('plugin_file' => $plugin_file));
-
-            // Activate if requested or was previously active.
-            $activated = false;
-            if ($activate || $was_active) {
-                $this->file_logger->debug('Activating plugin');
-                $result = activate_plugin($plugin_file);
-                if (is_wp_error($result)) {
-                    $error_msg = $result->get_error_message();
-                    $this->file_logger->warn('Activation failed', array('error' => $error_msg));
-                    $this->logger->log_upload_failed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
-
-                    // Capture backtrace for activation failure diagnostics
-                    $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
-
-                    // Plugin uploaded but activation failed — include full diagnostic metadata
-                    return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
-                        ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
-                        ->setSingleResult(array(
-                            'plugin_slug'      => $slug,
-                            'is_update'        => $is_update,
-                            'activated'        => false,
-                            'activation_error' => $error_msg,
-                        ))
-                        ->toResponse();
-                }
-                $activated = true;
-                $this->file_logger->info('Plugin activated successfully');
-            }
-
-            // =================================================================
-            // VERSION DETECTION — Always read from the NEWLY INSTALLED files
-            // The client-sent version is used as a fallback, but we prefer
-            // reading the actual installed file to confirm what's on disk.
-            // This avoids the self-update chicken-and-egg problem where
-            // PLUGIN_VERSION constant still holds the old value.
-            // =================================================================
-            $installed_version = '';
-            if (!empty($plugin_file)) {
-                // Force re-read from disk (not cached)
-                $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
-                // Clear PHP's stat cache so file_exists/file_get_contents read fresh data
-                clearstatcache(true, $full_path);
-                if (file_exists($full_path)) {
-                    // Read file header directly to bypass any caching
-                    $file_contents = file_get_contents($full_path, false, null, 0, 8192);
-                    if ($file_contents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $file_contents, $matches)) {
-                        $installed_version = $matches[1];
-                        $this->file_logger->debug('Version read directly from file header', array('version' => $installed_version));
-                    }
-                }
-                
-                // Fallback: try get_plugin_data (may be cached by OPcache)
-                if (empty($installed_version)) {
-                    $plugin_data = get_plugin_data($full_path, false, false);
-                    if (!empty($plugin_data['Version'])) {
-                        $installed_version = $plugin_data['Version'];
-                    }
-                }
-            }
-
-            // Priority depends on whether this is a self-update:
-            // - Self-update: client_version > installed_version > PLUGIN_VERSION
-            //   (running PHP process has stale constants and OPcache may serve old file content)
-            // - Other plugins: installed_version > client_version > PLUGIN_VERSION
-            if ($is_self_update) {
-                $plugin_version = $client_plugin_version ?: ($installed_version ?: PLUGIN_VERSION);
-                $version_source = !empty($client_plugin_version) ? 'client (self-update)' : ($installed_version ? 'file_header' : 'constant');
-            } else {
-                $plugin_version = $installed_version ?: ($client_plugin_version ?: PLUGIN_VERSION);
-                $version_source = $installed_version ? 'file_header' : (!empty($client_plugin_version) ? 'client' : 'constant');
-            }
-            
-            $this->file_logger->info('Plugin version determined', array(
-                'version'           => $plugin_version,
-                'installed_version' => $installed_version,
-                'client_version'    => $client_plugin_version,
-                'constant_version'  => PLUGIN_VERSION,
-                'is_self_update'    => $is_self_update,
-                'source'            => $version_source,
-            ));
-
-            // =====================================================================
-            // ACTIVITY STATE 2: Log "Upload Success/Failed" after processing
-            // (skip if self-update was pre-logged)
-            // =====================================================================
+            // Log final result (skip if self-update was pre-logged)
             if (!$is_self_update) {
                 $this->logger->log_upload($slug, array(
-                    'is_update' => $is_update,
-                    'activated' => $activated,
-                    'file_size' => strlen($zip_content),
+                    'is_update'      => $is_update,
+                    'activated'      => $activated,
+                    'file_size'      => strlen($zip_content),
                     'plugin_version' => $plugin_version,
                 ), array(
                     'plugin_version' => $plugin_version,
@@ -2138,10 +1785,506 @@ class RiseupAsia {
                 ))
                 ->toResponse();
         } catch (Throwable $e) {
-            // Catch both Exception and Error (PHP 7+) for complete coverage
             $this->file_logger->log_exception($e, 'Upload error');
+
             return $this->error_response('Upload failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /**
+     * Parse upload input from multipart or base64 JSON request.
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return array|WP_REST_Response Parsed input array, or error response.
+     */
+    private function parse_upload_input($request) {
+        $files = $request->get_file_params();
+        $is_multipart = !empty($files['plugin_zip']);
+
+        if ($is_multipart) {
+            return $this->parse_multipart_input($files, $request);
+        }
+
+        return $this->parse_base64_input($request);
+    }
+
+    /**
+     * Parse multipart/form-data upload.
+     *
+     * @param array           $files   File params from request.
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return array|WP_REST_Response Parsed input or error response.
+     */
+    private function parse_multipart_input($files, $request) {
+        $this->file_logger->info('Processing multipart upload');
+        $upload = $files['plugin_zip'];
+
+        if ($upload['error'] !== UPLOAD_ERR_OK) {
+            $this->file_logger->error('Multipart upload error', array('code' => $upload['error']));
+
+            return $this->error_response('File upload failed (error code: ' . $upload['error'] . ')', HTTP_BAD_REQUEST);
+        }
+
+        $zip_content = file_get_contents($upload['tmp_name']);
+        if ($zip_content === false) {
+            $this->file_logger->error('Failed to read uploaded file');
+
+            return $this->error_response('Failed to read uploaded file', HTTP_SERVER_ERROR);
+        }
+
+        $body_params = $request->get_body_params();
+
+        return $this->build_upload_params($zip_content, $body_params);
+    }
+
+    /**
+     * Parse base64 JSON upload (legacy).
+     *
+     * @param WP_REST_Request $request Request object.
+     *
+     * @return array|WP_REST_Response Parsed input or error response.
+     */
+    private function parse_base64_input($request) {
+        $data = $request->get_json_params();
+
+        if (empty($data['plugin_zip'])) {
+            $this->file_logger->warn('Upload failed: plugin_zip required');
+
+            return $this->error_response(MSG_INVALID_REQUEST . ': plugin_zip is required (send as multipart file or base64 JSON)', HTTP_BAD_REQUEST);
+        }
+
+        $this->file_logger->info('Processing base64 JSON upload');
+        $zip_content = base64_decode($data['plugin_zip']);
+        if ($zip_content === false) {
+            $this->file_logger->error('Invalid base64 data');
+
+            return $this->error_response('Invalid base64 data', HTTP_BAD_REQUEST);
+        }
+
+        return $this->build_upload_params($zip_content, $data);
+    }
+
+    /**
+     * Build normalized upload parameters from raw data.
+     *
+     * @param string $zip_content Raw ZIP bytes.
+     * @param array  $data        Form/JSON params.
+     *
+     * @return array Normalized upload parameters.
+     */
+    private function build_upload_params($zip_content, $data) {
+        $slug     = sanitize_file_name($data['slug'] ?? '');
+        $activate = !empty($data['activate']);
+        $upload_source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UPLOAD_SOURCE_REST_API;
+        $client_plugin_version = isset($data['plugin_version']) ? sanitize_text_field($data['plugin_version']) : '';
+
+        $valid_sources = json_decode(UPLOAD_SOURCES_VALID, true);
+        if (!in_array($upload_source, $valid_sources, true)) {
+            $upload_source = UPLOAD_SOURCE_REST_API;
+        }
+
+        $this->file_logger->debug('Upload parameters', array(
+            'slug'           => $slug,
+            'activate'       => $activate,
+            'upload_source'  => $upload_source,
+            'client_version' => $client_plugin_version,
+            'file_size'      => strlen($zip_content),
+        ));
+
+        return array(
+            'zip_content'          => $zip_content,
+            'slug'                 => $slug,
+            'activate'             => $activate,
+            'upload_source'        => $upload_source,
+            'client_plugin_version' => $client_plugin_version,
+        );
+    }
+
+    /**
+     * Write ZIP content to temp file and validate its structure.
+     *
+     * @param string $zip_content Raw ZIP bytes.
+     * @param string $slug        Optional slug hint.
+     *
+     * @return array|WP_REST_Response Array with temp_file and slug, or error response.
+     */
+    private function validate_and_write_zip($zip_content, $slug) {
+        $temp_dir  = $this->get_temp_dir();
+        $temp_file = $temp_dir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
+
+        $this->file_logger->debug('Writing temp file', array('path' => $temp_file));
+        if (file_put_contents($temp_file, $zip_content) === false) {
+            $this->file_logger->error('Failed to write temp file');
+            $this->logger->log_upload_failed($slug, 'Failed to write temp file');
+
+            return $this->error_response(MSG_UPLOAD_FAILED, HTTP_SERVER_ERROR);
+        }
+
+        $this->file_logger->debug('Validating ZIP archive');
+        $zip = new ZipArchive();
+        if ($zip->open($temp_file) !== true) {
+            @unlink($temp_file);
+            $this->file_logger->error('Invalid ZIP archive');
+            $this->logger->log_upload_failed($slug, 'Invalid ZIP archive');
+
+            return $this->error_response('Invalid ZIP archive', HTTP_BAD_REQUEST);
+        }
+
+        $detected_slug = $this->detect_plugin_slug_from_zip($zip);
+        $zip->close();
+
+        if (!$detected_slug) {
+            @unlink($temp_file);
+            $this->file_logger->error('Could not detect plugin in ZIP');
+            $this->logger->log_upload_failed($slug, 'Could not detect plugin in ZIP');
+
+            return $this->error_response('Could not detect plugin in ZIP', HTTP_BAD_REQUEST);
+        }
+
+        if (empty($slug)) {
+            $slug = $detected_slug;
+        }
+
+        $this->file_logger->info('Plugin slug determined', array('slug' => $slug));
+
+        return array('temp_file' => $temp_file, 'slug' => $slug);
+    }
+
+    /**
+     * Remove duplicate plugin folders that share the same slug or TextDomain.
+     *
+     * @param string $slug        Target plugin slug.
+     * @param string $plugins_dir Absolute path to wp-content/plugins.
+     *
+     * @return int Number of duplicates removed.
+     */
+    private function remove_duplicate_plugins($slug, $plugins_dir) {
+        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $all_plugins = get_plugins();
+        $duplicates_removed = 0;
+
+        foreach ($all_plugins as $pfile => $pdata) {
+            $pdir = dirname($pfile);
+            $isSkippable = ($pdir === '.' || $pdir === $slug);
+            if ($isSkippable) {
+                continue;
+            }
+
+            $hasMatchingTextDomain = (isset($pdata['TextDomain']) && $pdata['TextDomain'] === $slug);
+            $hasMatchingSlugInPath = (isset($pdata['Name']) && strpos(strtolower($pfile), $slug) !== false);
+            $isDuplicate = ($hasMatchingTextDomain || $hasMatchingSlugInPath);
+            if (!$isDuplicate) {
+                continue;
+            }
+
+            $dup_dir = $plugins_dir . '/' . $pdir;
+            $this->file_logger->warn('Duplicate plugin folder detected', array(
+                'duplicate_dir' => $pdir,
+                'duplicate_ver' => isset($pdata['Version']) ? $pdata['Version'] : 'unknown',
+                'target_slug'   => $slug,
+            ));
+
+            if (is_plugin_active($pfile)) {
+                deactivate_plugins($pfile);
+                $this->file_logger->info('Deactivated duplicate plugin', array('file' => $pfile));
+            }
+
+            if (is_dir($dup_dir)) {
+                $this->delete_directory($dup_dir);
+                $this->file_logger->info('Removed duplicate plugin folder', array('dir' => $dup_dir));
+                $duplicates_removed++;
+            }
+        }
+
+        if ($duplicates_removed > 0) {
+            wp_cache_delete('plugins', 'plugins');
+            $this->file_logger->info('Duplicate cleanup complete', array('removed' => $duplicates_removed));
+        }
+
+        return $duplicates_removed;
+    }
+
+    /**
+     * Pre-log self-update activity before files are replaced.
+     *
+     * @param string $slug            Plugin slug.
+     * @param string $upload_source   Upload source identifier.
+     * @param string $client_version  Client-reported version.
+     * @param int    $file_size       ZIP file size in bytes.
+     */
+    private function pre_log_self_update($slug, $upload_source, $client_version, $file_size) {
+        $old_version = PLUGIN_VERSION;
+
+        $this->file_logger->info('Self-update detected, pre-logging activity', array(
+            'old_version'   => $old_version,
+            'upload_source' => $upload_source,
+        ));
+
+        $this->logger->log_plugin_action(
+            ACTION_UPLOAD,
+            $slug,
+            STATUS_SUCCESS,
+            array(
+                'is_update'      => true,
+                'is_self_update' => true,
+                'old_version'    => $old_version,
+                'new_version'    => $client_version,
+                'file_size'      => $file_size,
+                'note'           => 'Pre-logged before self-update to ensure audit trail',
+            ),
+            null,
+            array(
+                'plugin_version' => $client_version ?: $old_version,
+                'upload_source'  => $upload_source,
+            )
+        );
+    }
+
+    /**
+     * Deactivate plugin and remove old directory if this is an update.
+     *
+     * @param string $slug       Plugin slug.
+     * @param bool   $is_update  Whether this is an update.
+     * @param string $target_dir Absolute path to plugin directory.
+     *
+     * @return bool Whether the plugin was previously active.
+     */
+    private function deactivate_if_updating($slug, $is_update, $target_dir) {
+        $this->file_logger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array(
+            'slug'       => $slug,
+            'target_dir' => $target_dir,
+        ));
+
+        if (!$is_update) {
+            return false;
+        }
+
+        $plugin_file = $this->find_plugin_file($slug);
+        $was_active = false;
+
+        if ($plugin_file) {
+            $was_active = is_plugin_active($plugin_file);
+            if ($was_active) {
+                $this->file_logger->debug('Deactivating plugin before update', array('plugin_file' => $plugin_file));
+                deactivate_plugins($plugin_file);
+            }
+        }
+
+        $this->file_logger->debug('Removing old plugin version', array('target_dir' => $target_dir));
+        $this->delete_directory($target_dir);
+
+        return $was_active;
+    }
+
+    /**
+     * Extract ZIP to a temp directory, then move to the correct plugin location.
+     *
+     * @param string $temp_file  Path to the temp ZIP file.
+     * @param string $slug       Plugin slug.
+     * @param string $target_dir Target plugin directory.
+     *
+     * @return true|WP_REST_Response True on success, or error response.
+     */
+    private function extract_to_plugins_dir($temp_file, $slug, $target_dir) {
+        $temp_extract_dir = $this->get_temp_dir() . '/extract_' . uniqid();
+        wp_mkdir_p($temp_extract_dir);
+
+        $this->file_logger->debug('Extracting ZIP to temp directory', array(
+            'temp_dir'  => $temp_extract_dir,
+            'temp_file' => $temp_file,
+        ));
+
+        $zip = new ZipArchive();
+        if ($zip->open($temp_file) !== true) {
+            @unlink($temp_file);
+            $this->delete_directory($temp_extract_dir);
+            $this->file_logger->error('Failed to open ZIP for extraction');
+
+            return $this->error_response('Failed to open ZIP for extraction', HTTP_SERVER_ERROR);
+        }
+
+        $zip->extractTo($temp_extract_dir);
+        $zip->close();
+        @unlink($temp_file);
+
+        $extracted_folders = glob($temp_extract_dir . '/*', GLOB_ONLYDIR);
+        if (empty($extracted_folders)) {
+            $this->delete_directory($temp_extract_dir);
+            $this->file_logger->error('No folder found in extracted ZIP');
+            $this->logger->log_upload_failed($slug, 'No folder found in extracted ZIP');
+
+            return $this->error_response('No folder found in extracted ZIP', HTTP_SERVER_ERROR);
+        }
+
+        $extracted_folder = $extracted_folders[0];
+        $this->file_logger->debug('Found extracted folder', array(
+            'extracted_name' => basename($extracted_folder),
+            'target_slug'    => $slug,
+            'needs_rename'   => basename($extracted_folder) !== $slug,
+        ));
+
+        if (rename($extracted_folder, $target_dir)) {
+            $this->file_logger->info('Plugin installed to correct location', array(
+                'from' => $extracted_folder,
+                'to'   => $target_dir,
+            ));
+        } else {
+            $this->file_logger->warn('Rename failed, attempting copy', array(
+                'from' => $extracted_folder,
+                'to'   => $target_dir,
+            ));
+            $this->copy_directory($extracted_folder, $target_dir);
+            $this->delete_directory($extracted_folder);
+        }
+
+        $this->delete_directory($temp_extract_dir);
+
+        return true;
+    }
+
+    /**
+     * Reset OPcache and locate the plugin's main file.
+     *
+     * @param string $slug Plugin slug.
+     *
+     * @return string|WP_REST_Response Plugin file path, or error response.
+     */
+    private function reset_opcache_and_find_plugin($slug) {
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+            $this->file_logger->info('Full OPcache reset after plugin extraction');
+        }
+
+        $plugin_file = $this->find_plugin_file($slug);
+
+        if (!empty($plugin_file)) {
+            $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+
+            if (function_exists('opcache_invalidate')) {
+                opcache_invalidate($full_plugin_path, true);
+                $this->file_logger->debug('OPcache invalidated for plugin file', array('path' => $full_plugin_path));
+            }
+
+            $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
+            $hasConstantsFile = (file_exists($constants_file) && function_exists('opcache_invalidate'));
+            if ($hasConstantsFile) {
+                opcache_invalidate($constants_file, true);
+                $this->file_logger->debug('OPcache invalidated for constants file', array('path' => $constants_file));
+            }
+
+            wp_cache_delete('plugins', 'plugins');
+        }
+
+        if (!$plugin_file) {
+            $this->file_logger->error('Could not find plugin file after extraction', array('slug' => $slug));
+            $this->logger->log_upload_failed($slug, 'Could not find plugin file after extraction');
+
+            return $this->error_response('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
+        }
+
+        $this->file_logger->info('Plugin file found', array('plugin_file' => $plugin_file));
+
+        return $plugin_file;
+    }
+
+    /**
+     * Activate the plugin if requested or if it was previously active.
+     *
+     * @param string $plugin_file Plugin file relative path.
+     * @param string $slug        Plugin slug.
+     * @param bool   $activate    Whether activation was requested.
+     * @param bool   $was_active  Whether the plugin was previously active.
+     * @param bool   $is_update   Whether this is an update.
+     *
+     * @return array|WP_REST_Response Array with 'activated' key, or partial-success response.
+     */
+    private function activate_if_needed($plugin_file, $slug, $activate, $was_active, $is_update) {
+        $shouldActivate = ($activate || $was_active);
+        if (!$shouldActivate) {
+            return array('activated' => false);
+        }
+
+        $this->file_logger->debug('Activating plugin');
+        $result = activate_plugin($plugin_file);
+
+        if (is_wp_error($result)) {
+            $error_msg = $result->get_error_message();
+            $this->file_logger->warn('Activation failed', array('error' => $error_msg));
+            $this->logger->log_upload_failed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
+
+            return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
+                ->setSingleResult(array(
+                    'plugin_slug'      => $slug,
+                    'is_update'        => $is_update,
+                    'activated'        => false,
+                    'activation_error' => $error_msg,
+                ))
+                ->toResponse();
+        }
+
+        $this->file_logger->info('Plugin activated successfully');
+
+        return array('activated' => true);
+    }
+
+    /**
+     * Detect the installed plugin version from disk.
+     *
+     * @param string $plugin_file     Plugin file relative path.
+     * @param string $slug            Plugin slug.
+     * @param bool   $is_self_update  Whether this is a self-update.
+     * @param string $client_version  Client-reported version.
+     *
+     * @return array Array with 'version' and 'source' keys.
+     */
+    private function detect_installed_version($plugin_file, $slug, $is_self_update, $client_version) {
+        $installed_version = '';
+        $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+
+        clearstatcache(true, $full_path);
+        if (file_exists($full_path)) {
+            $file_contents = file_get_contents($full_path, false, null, 0, 8192);
+            $hasVersionHeader = ($file_contents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $file_contents, $matches));
+            if ($hasVersionHeader) {
+                $installed_version = $matches[1];
+                $this->file_logger->debug('Version read directly from file header', array('version' => $installed_version));
+            }
+        }
+
+        // Fallback: try get_plugin_data (may be cached by OPcache)
+        if (empty($installed_version)) {
+            $plugin_data = get_plugin_data($full_path, false, false);
+            if (!empty($plugin_data['Version'])) {
+                $installed_version = $plugin_data['Version'];
+            }
+        }
+
+        // Self-update: client_version > installed > constant
+        // Other plugins: installed > client_version > constant
+        if ($is_self_update) {
+            $version = $client_version ?: ($installed_version ?: PLUGIN_VERSION);
+            $source  = !empty($client_version) ? 'client (self-update)' : ($installed_version ? 'file_header' : 'constant');
+        } else {
+            $version = $installed_version ?: ($client_version ?: PLUGIN_VERSION);
+            $source  = $installed_version ? 'file_header' : (!empty($client_version) ? 'client' : 'constant');
+        }
+
+        $this->file_logger->info('Plugin version determined', array(
+            'version'          => $version,
+            'installed_version' => $installed_version,
+            'client_version'   => $client_version,
+            'constant_version' => PLUGIN_VERSION,
+            'is_self_update'   => $is_self_update,
+            'source'           => $source,
+        ));
+
+        return array('version' => $version, 'source' => $source);
     }
 
     /**
