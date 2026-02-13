@@ -49,20 +49,9 @@ trait DatabaseQueryLogTrait {
                 'action' => $action, 'status' => $status, 'enhanced' => $enhanced,
             ));
 
-            $record = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
-                ->create()
-                ->set('action', $action)
-                ->set('plugin_slug', $plugin_slug)
-                ->set('post_id', $post_id)
-                ->set('user_login', $user_login)
-                ->set('user_id', $user_id)
-                ->set('ip_address', $ip_address)
-                ->set('details', !empty($details) ? json_encode($details) : null)
-                ->set('status', $status)
-                ->set('error_msg', $error_msg)
-                ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'));
-
+            $record = $this->buildTransactionRecord($action, $plugin_slug, $post_id, $user_login, $user_id, $ip_address, $details, $status, $error_msg);
             $this->applyEnhancedFields($record, $enhanced);
+
             $result = $record->save();
             $this->file_logger->info('Transaction logged', array('id' => $result));
 
@@ -71,6 +60,22 @@ trait DatabaseQueryLogTrait {
             $this->file_logger->log_exception($e, 'Failed to log transaction');
             return false;
         }
+    }
+
+    /** Build a new ORM transaction record with base fields. */
+    private function buildTransactionRecord($action, $plugin_slug, $post_id, $user_login, $user_id, $ip_address, $details, $status, $error_msg) {
+        return RiseupORM::for_table(self::TABLE_TRANSACTIONS)
+            ->create()
+            ->set('action', $action)
+            ->set('plugin_slug', $plugin_slug)
+            ->set('post_id', $post_id)
+            ->set('user_login', $user_login)
+            ->set('user_id', $user_id)
+            ->set('ip_address', $ip_address)
+            ->set('details', !empty($details) ? json_encode($details) : null)
+            ->set('status', $status)
+            ->set('error_msg', $error_msg)
+            ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'));
     }
 
     /**

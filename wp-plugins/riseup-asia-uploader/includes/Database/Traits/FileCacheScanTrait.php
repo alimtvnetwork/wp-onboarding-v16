@@ -131,17 +131,20 @@ trait FileCacheScanTrait {
 
             if (is_dir($fullPath)) {
                 $this->scanDirectory($baseDir, $fullPath, $ignore, $files);
-            } else {
-                $mtime = @filemtime($fullPath);
-                $size = @filesize($fullPath);
-
-                $files[] = array(
-                    'path'  => str_replace('\\', '/', $relPath),
-                    'mtime' => $mtime ?: 0,
-                    'size'  => $size ?: 0,
-                );
+                continue;
             }
+
+            $files[] = $this->buildFileInfo($relPath, $fullPath);
         }
+    }
+
+    /** Build a file info array for a single file. */
+    private function buildFileInfo(string $relPath, string $fullPath): array {
+        return array(
+            'path'  => str_replace('\\', '/', $relPath),
+            'mtime' => @filemtime($fullPath) ?: 0,
+            'size'  => @filesize($fullPath) ?: 0,
+        );
     }
 
     /**

@@ -32,7 +32,7 @@ trait PluginListTrait
                 ->setRequestedAt('/' . API_FULL_NAMESPACE . ENDPOINT_PLUGINS)
                 ->setResults($plugins)
                 ->toResponse();
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->file_logger->log_exception($e, 'List plugins error');
 
             return $this->error_response('Failed to list plugins: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
@@ -126,51 +126,77 @@ trait PluginListTrait
     public function handle_plugin_file_content($request) {
         $json = $request->get_json_params();
         $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
-        $file_path = isset($json['path']) ? $json['path'] : null;
         if (empty($slug)) {
             return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
 
         try {
-            if (empty($file_path)) {
-                return $this->error_response('File path is required', HTTP_BAD_REQUEST);
+            $file_path = isset($json['path']) ? $json['path'] : null;
+
+            $validation = $this->validateFilePath($file_path, $slug);
+            if ($validation instanceof WP_REST_Response) {
+                return $validation;
             }
 
-            $file_path = ltrim($file_path, '/\\');
-            if (strpos($file_path, '..') !== false) {
-                return $this->error_response('Invalid file path', HTTP_BAD_REQUEST);
-            }
-
-            $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-            $full_path = $plugin_dir . '/' . $file_path;
-
-            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
-            }
-
-            $real_plugin_dir = realpath($plugin_dir);
-            $real_file_path = realpath($full_path);
-
-            if ($real_file_path === false || strpos($real_file_path, $real_plugin_dir) !== 0) {
-                return $this->error_response('File not found or invalid path', HTTP_NOT_FOUND);
-            }
-
-            if (!is_file($real_file_path)) {
-                return $this->error_response('File not found', HTTP_NOT_FOUND);
-            }
-
-            $content = @file_get_contents($real_file_path);
-            if ($content === false) {
-                return $this->error_response('Failed to read file', HTTP_SERVER_ERROR);
-            }
-
-            return new WP_REST_Response(array(
-                'success' => true,
-                'path'    => $file_path,
-                'content' => $content,
-            ), HTTP_OK);
-        } catch (Throwable $e) {
+            return $this->readAndReturnFile($validation['real_path'], $validation['file_path']);
+        } catch (\Throwable $e) {
             return $this->error_response('Failed to read file: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /**
+     * Validate and resolve a plugin file path.
+     *
+     * @param string|null $file_path Relative file path.
+     * @param string      $slug      Plugin slug.
+     * @return array{real_path: string, file_path: string}|WP_REST_Response
+     */
+    private function validateFilePath($file_path, string $slug) {
+        if (empty($file_path)) {
+            return $this->error_response('File path is required', HTTP_BAD_REQUEST);
+        }
+
+        $file_path = ltrim($file_path, '/\\');
+        if (strpos($file_path, '..') !== false) {
+            return $this->error_response('Invalid file path', HTTP_BAD_REQUEST);
+        }
+
+        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+        if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
+            return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+        }
+
+        $real_plugin_dir = realpath($plugin_dir);
+        $real_file_path = realpath($plugin_dir . '/' . $file_path);
+
+        if ($real_file_path === false || strpos($real_file_path, $real_plugin_dir) !== 0) {
+            return $this->error_response('File not found or invalid path', HTTP_NOT_FOUND);
+        }
+
+        if (!is_file($real_file_path)) {
+            return $this->error_response('File not found', HTTP_NOT_FOUND);
+        }
+
+        return array('real_path' => $real_file_path, 'file_path' => $file_path);
+    }
+
+    /**
+     * Read a file and return its content as a REST response.
+     *
+     * @param string $real_path Absolute file path.
+     * @param string $rel_path  Relative file path.
+     * @return WP_REST_Response
+     */
+    private function readAndReturnFile(string $real_path, string $rel_path) {
+        $content = @file_get_contents($real_path);
+        if ($content === false) {
+            return $this->error_response('Failed to read file', HTTP_SERVER_ERROR);
+        }
+
+        return new WP_REST_Response(array(
+            'success' => true,
+            'path'    => $rel_path,
+            'content' => $content,
+        ), HTTP_OK);
     }
 }

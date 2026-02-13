@@ -30,29 +30,30 @@ trait DatabaseQuerySearchTrait {
         $offset = max(0, (int) $offset);
 
         try {
-            $this->file_logger->debug('Querying transactions', array('filters' => $filters));
-
-            $count_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
-            $data_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
-
-            $this->apply_filters($count_query, $filters);
-            $this->apply_filters($data_query, $filters);
-
-            $total = $count_query->count();
-            $logs = $data_query
-                ->order_by_desc('created_at')
-                ->limit($limit)
-                ->offset($offset)
-                ->find_many();
-
-            $this->decodeLogDetails($logs);
-            $this->file_logger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
-
-            return array('total' => $total, 'logs' => $logs);
+            return $this->executeTransactionQuery($filters, $limit, $offset);
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to query transactions');
             return array('total' => 0, 'logs' => array());
         }
+    }
+
+    /** Execute the transaction query with filters and pagination. */
+    private function executeTransactionQuery(array $filters, int $limit, int $offset): array {
+        $this->file_logger->debug('Querying transactions', array('filters' => $filters));
+
+        $count_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
+        $data_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
+
+        $this->apply_filters($count_query, $filters);
+        $this->apply_filters($data_query, $filters);
+
+        $total = $count_query->count();
+        $logs = $data_query->order_by_desc('created_at')->limit($limit)->offset($offset)->find_many();
+
+        $this->decodeLogDetails($logs);
+        $this->file_logger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
+
+        return array('total' => $total, 'logs' => $logs);
     }
 
     /** Decode JSON details in log records. */

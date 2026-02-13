@@ -22,35 +22,9 @@ trait LifecycleHooksTrait
      * @param bool   $network_wide Whether activated for the entire network.
      */
     public function on_plugin_activated($plugin, $network_wide = false) {
-        if ($this->is_rest_request()) {
-            return;
-        }
-
-        try {
-            $slug = $this->extract_plugin_slug($plugin);
-            $triggered_by = $this->detect_trigger_source();
-
-            $this->file_logger->info('WordPress hook: Plugin activated', array(
-                'plugin'       => $plugin,
-                'slug'         => $slug,
-                'network_wide' => $network_wide,
-                'triggered_by' => $triggered_by,
-            ));
-
-            $this->logger->log_plugin_action(
-                ACTION_ENABLE,
-                $slug,
-                STATUS_SUCCESS,
-                array(
-                    'plugin_file'   => $plugin,
-                    'network_wide'  => $network_wide,
-                    'triggered_by'  => $triggered_by,
-                    'hook_source'   => 'activated_plugin',
-                )
-            );
-        } catch (Throwable $e) {
-            $this->file_logger->error('Failed to log plugin activation: ' . $e->getMessage());
-        }
+        $this->logLifecycleEvent(ACTION_ENABLE, $plugin, 'activated_plugin', array(
+            'network_wide' => $network_wide,
+        ));
     }
 
     /**
@@ -60,35 +34,9 @@ trait LifecycleHooksTrait
      * @param bool   $network_deactivating Whether deactivating across the network.
      */
     public function on_plugin_deactivated($plugin, $network_deactivating = false) {
-        if ($this->is_rest_request()) {
-            return;
-        }
-
-        try {
-            $slug = $this->extract_plugin_slug($plugin);
-            $triggered_by = $this->detect_trigger_source();
-
-            $this->file_logger->info('WordPress hook: Plugin deactivated', array(
-                'plugin'       => $plugin,
-                'slug'         => $slug,
-                'network'      => $network_deactivating,
-                'triggered_by' => $triggered_by,
-            ));
-
-            $this->logger->log_plugin_action(
-                ACTION_DISABLE,
-                $slug,
-                STATUS_SUCCESS,
-                array(
-                    'plugin_file'          => $plugin,
-                    'network_deactivating' => $network_deactivating,
-                    'triggered_by'         => $triggered_by,
-                    'hook_source'          => 'deactivated_plugin',
-                )
-            );
-        } catch (Throwable $e) {
-            $this->file_logger->error('Failed to log plugin deactivation: ' . $e->getMessage());
-        }
+        $this->logLifecycleEvent(ACTION_DISABLE, $plugin, 'deactivated_plugin', array(
+            'network_deactivating' => $network_deactivating,
+        ));
     }
 
     /**
@@ -98,11 +46,23 @@ trait LifecycleHooksTrait
      * @param bool   $deleted Whether the plugin was successfully deleted.
      */
     public function on_plugin_deleted($plugin, $deleted = true) {
-        if ($this->is_rest_request()) {
+        if (!$deleted) {
             return;
         }
 
-        if (!$deleted) {
+        $this->logLifecycleEvent(ACTION_DELETE, $plugin, 'deleted_plugin', array());
+    }
+
+    /**
+     * Log a plugin lifecycle event with trigger source detection.
+     *
+     * @param string $action      Action constant (enable/disable/delete).
+     * @param string $plugin      Plugin file path.
+     * @param string $hook_source WordPress hook name.
+     * @param array  $extra       Additional context fields.
+     */
+    private function logLifecycleEvent(string $action, string $plugin, string $hook_source, array $extra) {
+        if ($this->is_rest_request()) {
             return;
         }
 
@@ -110,24 +70,22 @@ trait LifecycleHooksTrait
             $slug = $this->extract_plugin_slug($plugin);
             $triggered_by = $this->detect_trigger_source();
 
-            $this->file_logger->info('WordPress hook: Plugin deleted', array(
+            $this->file_logger->info('WordPress hook: Plugin lifecycle event', array(
+                'action'       => $action,
                 'plugin'       => $plugin,
                 'slug'         => $slug,
                 'triggered_by' => $triggered_by,
             ));
 
-            $this->logger->log_plugin_action(
-                ACTION_DELETE,
-                $slug,
-                STATUS_SUCCESS,
-                array(
-                    'plugin_file'  => $plugin,
-                    'triggered_by' => $triggered_by,
-                    'hook_source'  => 'deleted_plugin',
-                )
-            );
-        } catch (Throwable $e) {
-            $this->file_logger->error('Failed to log plugin deletion: ' . $e->getMessage());
+            $details = array_merge($extra, array(
+                'plugin_file'  => $plugin,
+                'triggered_by' => $triggered_by,
+                'hook_source'  => $hook_source,
+            ));
+
+            $this->logger->log_plugin_action($action, $slug, STATUS_SUCCESS, $details);
+        } catch (\Throwable $e) {
+            $this->file_logger->error('Failed to log plugin lifecycle: ' . $e->getMessage());
         }
     }
 
