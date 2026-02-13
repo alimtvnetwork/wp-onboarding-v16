@@ -598,7 +598,7 @@ class RiseupFileLogger {
     private function persist_to_error_sessions($level, $message, $file, $line, $context = array(), $stack_trace = '') {
         try {
             // Guard: RiseupDatabase may not be loaded yet during early bootstrap
-            if (!class_exists('RiseupDatabase', false)) {
+            if (RiseupBooleanHelpers::is_class_missing('RiseupDatabase')) {
                 return;
             }
 

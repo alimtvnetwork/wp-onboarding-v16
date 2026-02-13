@@ -45,7 +45,7 @@ class RiseupDependencyLoader {
      */
     public static function load($label, $path) {
         // Check file exists before attempting load
-        if (!file_exists($path)) {
+        if (RiseupBooleanHelpers::is_file_missing($path)) {
             self::$results[] = array(
                 'label'   => $label,
                 'file'    => basename($path),

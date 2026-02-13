@@ -78,7 +78,7 @@ class RiseupRootDb {
 
         // Ensure parent directory exists
         $dir = dirname($filepath);
-        if (!file_exists($dir)) {
+        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
             RiseupPathUtils::ensure_dir($dir);
         }
 
