@@ -10,13 +10,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait SnapshotProviderLockTrait {
 
-    /**
-     * Check if a snapshot operation is currently in progress.
-     *
-     * @return bool True if locked.
-     */
+    /** Check if a snapshot operation is currently in progress. */
     protected function isLocked() {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
 
@@ -27,48 +25,35 @@ trait SnapshotProviderLockTrait {
         return $this->isLockFresh($lock_file);
     }
 
-    /**
-     * Check if lock file is still fresh (not stale).
-     *
-     * @param string $lock_file Lock file path.
-     * @return bool True if lock is fresh.
-     */
+    /** Check if lock file is still fresh (not stale). */
     private function isLockFresh(string $lock_file): bool {
         $lock_time = filemtime($lock_file);
         $age = time() - $lock_time;
 
         if ($age > 1800) {
             RiseupPathUtils::delete_file($lock_file);
-            $this->log(LOG_LEVEL_WARN, 'Removed stale lock file', array('age_minutes' => round($age / 60)));
+            $this->log(LogLevelType::Warn->value, 'Removed stale lock file', array('age_minutes' => round($age / 60)));
             return false;
         }
 
         return true;
     }
 
-    /**
-     * Acquire a lock for snapshot operations.
-     *
-     * @return bool True if lock acquired.
-     */
+    /** Acquire a lock for snapshot operations. */
     protected function acquireLock() {
         if ($this->isLocked()) {
             return false;
         }
 
         if (!$this->ensureSnapshotsDir()) {
-            $this->log(LOG_LEVEL_ERROR, 'Cannot acquire lock - directory creation failed');
+            $this->log(LogLevelType::Error->value, 'Cannot acquire lock - directory creation failed');
             return false;
         }
 
         return $this->writeLockFile();
     }
 
-    /**
-     * Write the lock file to disk.
-     *
-     * @return bool True on success.
-     */
+    /** Write the lock file to disk. */
     private function writeLockFile(): bool {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
         $lock_data = json_encode(array(
@@ -78,25 +63,23 @@ trait SnapshotProviderLockTrait {
         $result = @file_put_contents($lock_file, $lock_data);
         if ($result === false) {
             $error = error_get_last();
-            $this->log(LOG_LEVEL_ERROR, 'Failed to acquire lock', array(
+            $this->log(LogLevelType::Error->value, 'Failed to acquire lock', array(
                 'path' => $lock_file, 'error' => $error ? $error['message'] : 'Unknown error',
             ));
             return false;
         }
 
-        $this->log(LOG_LEVEL_DEBUG, 'Lock acquired', array('path' => $lock_file));
+        $this->log(LogLevelType::Debug->value, 'Lock acquired', array('path' => $lock_file));
         return true;
     }
 
-    /**
-     * Release the snapshot lock.
-     */
+    /** Release the snapshot lock. */
     protected function releaseLock() {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
 
         if (RiseupPathUtils::file_exists($lock_file)) {
             RiseupPathUtils::delete_file($lock_file);
-            $this->log(LOG_LEVEL_DEBUG, 'Lock released');
+            $this->log(LogLevelType::Debug->value, 'Lock released');
         }
     }
 }

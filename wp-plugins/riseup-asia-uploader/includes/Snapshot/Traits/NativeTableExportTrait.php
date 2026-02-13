@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once __DIR__ . '/NativeTableExportConvertTrait.php';
 
 trait NativeTableExportTrait {
@@ -20,11 +22,6 @@ trait NativeTableExportTrait {
 
     /**
      * Export a single MySQL table to SQLite.
-     *
-     * @param PDO    $sqlite      SQLite PDO instance.
-     * @param string $table       Table name.
-     * @param int    $snapshot_id Snapshot ID for progress tracking.
-     * @return array Export result.
      */
     private function exportTable($sqlite, $table, $snapshot_id) {
         try {
@@ -50,14 +47,7 @@ trait NativeTableExportTrait {
         }
     }
 
-    /**
-     * Export rows from a MySQL table to SQLite in batches.
-     *
-     * @param PDO    $sqlite SQLite PDO instance.
-     * @param string $table  Table name.
-     * @param int    $count  Total row count.
-     * @return array Export result.
-     */
+    /** Export rows from a MySQL table to SQLite in batches. */
     private function exportTableRows($sqlite, $table, int $count): array {
         $insert = $this->prepareInsertStatement($sqlite, $table);
 
@@ -106,25 +96,21 @@ trait NativeTableExportTrait {
         return array('exported' => $exported, 'bytes' => $bytes);
     }
 
-    /**
-     * Log export progress at 25% intervals.
-     */
+    /** Log export progress at 25% intervals. */
     private function logExportProgress(string $table, int $offset, int $count, int $batch_size) {
         $progress = ($offset / $count) * 100;
         $prev = (($offset - $batch_size) / $count) * 100;
 
         if ($progress >= 25 && $prev < 25) {
-            $this->log(LOG_LEVEL_DEBUG, "{$table}: 25% complete");
+            $this->log(LogLevelType::Debug->value, "{$table}: 25% complete");
         } elseif ($progress >= 50 && $prev < 50) {
-            $this->log(LOG_LEVEL_DEBUG, "{$table}: 50% complete");
+            $this->log(LogLevelType::Debug->value, "{$table}: 50% complete");
         } elseif ($progress >= 75 && $prev < 75) {
-            $this->log(LOG_LEVEL_DEBUG, "{$table}: 75% complete");
+            $this->log(LogLevelType::Debug->value, "{$table}: 75% complete");
         }
     }
 
-    /**
-     * Get MySQL CREATE TABLE statement.
-     */
+    /** Get MySQL CREATE TABLE statement. */
     private function getCreateTableSql($table) {
         $result = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
         return $result ? $result[1] : null;

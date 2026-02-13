@@ -12,33 +12,30 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once __DIR__ . '/NativeSnapshotCrudTrait.php';
 
 trait NativeSnapshotRecordTrait {
 
     use NativeSnapshotCrudTrait;
 
-    /**
-     * Create SQLite database file.
-     *
-     * @param string $filepath Path to create database.
-     * @return PDO|null PDO instance or null on failure.
-     */
+    /** Create SQLite database file. */
     private function createSqliteDatabase($filepath) {
         $snapshots_dir = $this->getSnapshotsDir();
         if (!RiseupPathUtils::isSafePath($filepath, $snapshots_dir)) {
-            $this->log(LOG_LEVEL_ERROR, 'Unsafe path detected for SQLite database', array('filepath' => $filepath, 'base' => $snapshots_dir));
+            $this->log(LogLevelType::Error->value, 'Unsafe path detected for SQLite database', array('filepath' => $filepath, 'base' => $snapshots_dir));
             return null;
         }
 
         $parent_dir = dirname($filepath);
         if (!RiseupPathUtils::ensureDir($parent_dir, true)) {
-            $this->log(LOG_LEVEL_ERROR, 'Failed to ensure parent directory for SQLite', array('parent' => $parent_dir));
+            $this->log(LogLevelType::Error->value, 'Failed to ensure parent directory for SQLite', array('parent' => $parent_dir));
             return null;
         }
 
         try {
-            $this->log(LOG_LEVEL_DEBUG, 'Creating SQLite database', array('filepath' => $filepath));
+            $this->log(LogLevelType::Debug->value, 'Creating SQLite database', array('filepath' => $filepath));
             $pdo = new PDO('sqlite:' . $filepath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $pdo->exec('PRAGMA journal_mode = WAL');
@@ -48,7 +45,7 @@ trait NativeSnapshotRecordTrait {
             $this->insertSnapshotMeta($pdo);
             return $pdo;
         } catch (Exception $e) {
-            $this->log(LOG_LEVEL_ERROR, 'Failed to create SQLite database', array('filepath' => $filepath, 'error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to create SQLite database', array('filepath' => $filepath, 'error' => $e->getMessage()));
             return null;
         }
     }

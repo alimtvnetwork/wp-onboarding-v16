@@ -340,21 +340,9 @@ if (!defined('HTTP_SERVER_ERROR')) {
 }
 
 // =============================================================================
-// LOG LEVELS
+// LOG LEVELS — Use LogLevelType enum (RiseupAsia\Enums\LogLevelType)
+// Legacy constants removed: use LogLevelType::Info->value, etc.
 // =============================================================================
-
-if (!defined('LOG_LEVEL_DEBUG')) {
-    define('LOG_LEVEL_DEBUG', 'DEBUG');
-}
-if (!defined('LOG_LEVEL_INFO')) {
-    define('LOG_LEVEL_INFO', 'INFO');
-}
-if (!defined('LOG_LEVEL_WARN')) {
-    define('LOG_LEVEL_WARN', 'WARN');
-}
-if (!defined('LOG_LEVEL_ERROR')) {
-    define('LOG_LEVEL_ERROR', 'ERROR');
-}
 
 // =============================================================================
 // LOGGING PREFIX

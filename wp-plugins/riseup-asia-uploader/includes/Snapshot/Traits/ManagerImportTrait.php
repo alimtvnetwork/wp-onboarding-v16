@@ -8,6 +8,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once __DIR__ . '/ManagerImportValidationTrait.php';
 require_once __DIR__ . '/ManagerImportRecordTrait.php';
 
@@ -18,9 +20,6 @@ trait ManagerImportTrait {
 
     /**
      * Import a snapshot from an uploaded ZIP file.
-     *
-     * @param string $uploaded_path Path to uploaded file.
-     * @return array Result with snapshot ID.
      */
     public function importSnapshot($uploaded_path) {
         if (RiseupBooleanHelpers::is_file_missing($uploaded_path)) {
@@ -32,7 +31,7 @@ trait ManagerImportTrait {
             return array('success' => false, 'error' => 'Invalid file type. Expected ZIP file.');
         }
 
-        $this->log(LOG_LEVEL_INFO, 'Importing snapshot from ZIP', array(
+        $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
             'path' => $uploaded_path, 'size' => RiseupPathUtils::formatBytes(filesize($uploaded_path)),
         ));
 
@@ -53,19 +52,12 @@ trait ManagerImportTrait {
                 $this->deleteDirectory($temp_dir);
             }
 
-            $this->log(LOG_LEVEL_ERROR, 'Snapshot import failed', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
 
-    /**
-     * Extract ZIP and validate contents.
-     *
-     * @param string $uploaded_path Path to ZIP file.
-     * @param string $temp_dir      Temp extraction directory.
-     * @return array With 'manifest' and 'sqlite_path' keys.
-     * @throws Exception On validation failure.
-     */
+    /** Extract ZIP and validate contents. */
     private function extractAndValidateZip($uploaded_path, $temp_dir) {
         $this->extractZipToDir($uploaded_path, $temp_dir);
         $manifest = $this->loadAndValidateManifest($temp_dir);
@@ -121,14 +113,7 @@ trait ManagerImportTrait {
         return $sqlite_path;
     }
 
-    /**
-     * Move validated snapshot to storage and create DB record.
-     *
-     * @param array  $manifest    Parsed manifest.
-     * @param string $sqlite_path Path to validated SQLite file.
-     * @param string $temp_dir    Temp directory.
-     * @return array Success result.
-     */
+    /** Move validated snapshot to storage and create DB record. */
     private function moveAndRecordSnapshot($manifest, $sqlite_path, $temp_dir) {
         $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
         $isDirCreationFailed = !RiseupPathUtils::ensureDir($snapshots_dir, true);
@@ -150,7 +135,7 @@ trait ManagerImportTrait {
             throw new Exception('Failed to create snapshot record');
         }
 
-        $this->log(LOG_LEVEL_INFO, 'Snapshot imported successfully', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot imported successfully', array(
             'snapshot_id' => $snapshot_id, 'filename' => $new_filename,
         ));
 

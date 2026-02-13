@@ -6,14 +6,12 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ManagerRestoreValidationTrait {
 
     /**
      * Validate that an incremental snapshot's parent full snapshot exists.
-     *
-     * @param array $snapshot    Snapshot record.
-     * @param int   $snapshot_id Snapshot ID (for logging).
-     * @return array|null Error array if blocked, null if OK.
      */
     private function validateIncrementalParent($snapshot, $snapshot_id) {
         $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === 'incremental');
@@ -34,7 +32,7 @@ trait ManagerRestoreValidationTrait {
             return null;
         }
 
-        $this->log(LOG_LEVEL_ERROR, 'Incremental restore blocked: parent full snapshot missing', array(
+        $this->log(LogLevelType::Error->value, 'Incremental restore blocked: parent full snapshot missing', array(
             'snapshot_id' => $snapshot_id, 'master_dir' => $master_dirname, 'expected_path' => $master_dir,
         ));
 
@@ -47,10 +45,6 @@ trait ManagerRestoreValidationTrait {
 
     /**
      * Handle pre-restore backup creation with optional strict enforcement.
-     *
-     * @param array $options     Restore options.
-     * @param int   $snapshot_id Snapshot being restored.
-     * @return int|null|array Backup ID, null if skipped, or error array.
      */
     private function handlePreRestoreBackup($options, $snapshot_id) {
         $shouldBackup = (!isset($options['create_backup']) || $options['create_backup'] === true);
@@ -61,11 +55,11 @@ trait ManagerRestoreValidationTrait {
         $backup_result = $this->createPreRestoreBackup($snapshot_id);
 
         if ($backup_result['success']) {
-            $this->log(LOG_LEVEL_INFO, 'Pre-restore backup created', array('backup_id' => $backup_result['snapshot_id']));
+            $this->log(LogLevelType::Info->value, 'Pre-restore backup created', array('backup_id' => $backup_result['snapshot_id']));
             return $backup_result['snapshot_id'];
         }
 
-        $this->log(LOG_LEVEL_WARN, 'Failed to create pre-restore backup', array('error' => $backup_result['error']));
+        $this->log(LogLevelType::Warn->value, 'Failed to create pre-restore backup', array('error' => $backup_result['error']));
 
         if (!empty($options['require_backup'])) {
             return array('success' => false, 'error' => 'Pre-restore backup failed: ' . $backup_result['error']);
@@ -76,10 +70,6 @@ trait ManagerRestoreValidationTrait {
 
     /**
      * Determine which tables to restore.
-     *
-     * @param array $snapshot Snapshot record.
-     * @param array $options  Restore options.
-     * @return array Table names.
      */
     private function getRestoreTables($snapshot, $options) {
         $all_tables = json_decode($snapshot['tables_json'], true);

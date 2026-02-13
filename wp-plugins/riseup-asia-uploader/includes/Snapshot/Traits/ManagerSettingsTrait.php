@@ -2,20 +2,15 @@
 /**
  * ManagerSettingsTrait — Snapshot settings read/write.
  *
- * Handles reading from SQLite snapshot_settings table with
- * defaults fallback, updating settings, and cron sync.
- *
  * @package RiseupAsiaUploader
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ManagerSettingsTrait {
 
-    /**
-     * Get current snapshot settings.
-     *
-     * @return array Settings.
-     */
+    /** Get current snapshot settings. */
     public function getSettings() {
         $settings = $this->readSettingsFromDb();
 
@@ -41,13 +36,9 @@ trait ManagerSettingsTrait {
         return array_merge($defaults, $settings);
     }
 
-    /**
-     * Read settings from SQLite snapshot_settings table.
-     *
-     * @return array Key-value settings.
-     */
+    /** Read settings from SQLite snapshot_settings table. */
     private function readSettingsFromDb() {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return array();
         }
@@ -61,19 +52,14 @@ trait ManagerSettingsTrait {
             }
             return $settings;
         } catch (Exception $e) {
-            $this->log(LOG_LEVEL_WARN, 'Failed to read snapshot_settings from SQLite', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Failed to read snapshot_settings from SQLite', array('error' => $e->getMessage()));
             return array();
         }
     }
 
-    /**
-     * Update snapshot settings in SQLite.
-     *
-     * @param array $settings New settings.
-     * @return array Updated settings.
-     */
+    /** Update snapshot settings in SQLite. */
     public function updateSettings($settings) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
 
         if ($pdo) {
             try {
@@ -87,7 +73,7 @@ trait ManagerSettingsTrait {
                     $stmt->execute(array($dbKey, $dbValue, $type, $now));
                 }
             } catch (Exception $e) {
-                $this->log(LOG_LEVEL_ERROR, 'Failed to update snapshot_settings', array('error' => $e->getMessage()));
+                $this->log(LogLevelType::Error->value, 'Failed to update snapshot_settings', array('error' => $e->getMessage()));
             }
         }
 
@@ -98,18 +84,12 @@ trait ManagerSettingsTrait {
         }
 
         $result = $this->getSettings();
-        $this->log(LOG_LEVEL_INFO, 'Snapshot settings updated', array('keys' => array_keys($settings)));
+        $this->log(LogLevelType::Info->value, 'Snapshot settings updated', array('keys' => array_keys($settings)));
 
         return $result;
     }
 
-    /**
-     * Cast a setting value to its declared type.
-     *
-     * @param string $value Raw string value.
-     * @param string $type  Type hint: 'string', 'int', 'bool', 'json'.
-     * @return mixed Typed value.
-     */
+    /** Cast a setting value to its declared type. */
     private function castSettingValue($value, $type) {
         switch ($type) {
             case 'int':

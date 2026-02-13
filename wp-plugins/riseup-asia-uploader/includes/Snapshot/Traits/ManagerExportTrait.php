@@ -2,20 +2,15 @@
 /**
  * ManagerExportTrait — Snapshot ZIP export operations.
  *
- * Handles exporting snapshots to ZIP archives with manifest generation.
- *
  * @package RiseupAsiaUploader
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ManagerExportTrait {
 
-    /**
-     * Export a snapshot to a downloadable ZIP file.
-     *
-     * @param int $snapshot_id Snapshot ID.
-     * @return array Result with filepath.
-     */
+    /** Export a snapshot to a downloadable ZIP file. */
     public function exportSnapshot($snapshot_id) {
         $provider = $this->getProvider();
         if (!$provider) {
@@ -35,20 +30,13 @@ trait ManagerExportTrait {
         return $this->createSnapshotZip($snapshot_id, $filepath, $snapshot);
     }
 
-    /**
-     * Create a ZIP archive from a snapshot file with manifest.
-     *
-     * @param int    $snapshot_id Snapshot ID.
-     * @param string $filepath   Path to the SQLite file.
-     * @param array  $snapshot   Snapshot record.
-     * @return array Result with filepath, filename, size.
-     */
+    /** Create a ZIP archive from a snapshot file with manifest. */
     private function createSnapshotZip(int $snapshot_id, string $filepath, array $snapshot): array {
         $zip_path = preg_replace('/\.sqlite$/', '.zip', $filepath);
 
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            $this->log(LOG_LEVEL_ERROR, 'Failed to create ZIP file', array('path' => $zip_path));
+            $this->log(LogLevelType::Error->value, 'Failed to create ZIP file', array('path' => $zip_path));
             return array('success' => false, 'error' => 'Failed to create ZIP file');
         }
 
@@ -58,19 +46,14 @@ trait ManagerExportTrait {
         $zip->close();
 
         $size = filesize($zip_path);
-        $this->log(LOG_LEVEL_INFO, 'Snapshot exported to ZIP', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', array(
             'snapshot_id' => $snapshot_id, 'zip_path' => $zip_path, 'size' => RiseupPathUtils::formatBytes($size),
         ));
 
         return array('success' => true, 'filepath' => $zip_path, 'filename' => basename($zip_path), 'size' => $size);
     }
 
-    /**
-     * Create export manifest for ZIP.
-     *
-     * @param array $snapshot Snapshot record.
-     * @return array Manifest data.
-     */
+    /** Create export manifest for ZIP. */
     private function createExportManifest($snapshot) {
         return array(
             'version' => PLUGIN_VERSION,

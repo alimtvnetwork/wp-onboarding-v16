@@ -16,6 +16,8 @@ if (!defined('ABSPATH')) {
 
 require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 
+use RiseupAsia\Enums\LogLevelType;
+
 /**
  * WP Reset Snapshot Provider.
  * 
@@ -106,7 +108,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
             );
         }
 
-        $this->log(LOG_LEVEL_INFO, 'Creating snapshot via WP Reset', $options);
+        $this->log(LogLevelType::Info->value, 'Creating snapshot via WP Reset', $options);
 
         try {
             // TODO: Implement WP Reset integration
@@ -119,7 +121,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
             );
 
         } catch (Exception $e) {
-            $this->log(LOG_LEVEL_ERROR, 'WP Reset snapshot failed', array(
+            $this->log(LogLevelType::Error->value, 'WP Reset snapshot failed', array(
                 'error' => $e->getMessage(),
             ));
 
