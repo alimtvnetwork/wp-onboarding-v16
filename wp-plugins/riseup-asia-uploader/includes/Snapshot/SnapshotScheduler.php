@@ -331,58 +331,23 @@ class RiseupSnapshotScheduler {
         }
     }
 
+    // ──────────────────────────────────────────────────
+    // Shared cron-job infrastructure
+    // ──────────────────────────────────────────────────
+
     /**
-     * Execute a scheduled snapshot (called by cron).
+     * Shared cron-job wrapper: try-catch + audit trail.
      *
-     * Routes through the orchestrator with async=true so the worker pool
-     * handles table export in cron-chained batches.
+     * @param string   $label Human label for logging.
+     * @param callable $work  Returns a standardized cron result array.
      */
-    public function executeScheduledSnapshot() {
-        $this->logger->info('[SCHEDULER] Executing scheduled snapshot via orchestrator');
-
+    private function executeCronJob(string $label, callable $work) {
+        $this->logger->info("[SCHEDULER] Executing {$label}");
         try {
-            $settings = $this->detector->getSettings();
-
-            require_once dirname(__FILE__) . '/SnapshotFactory.php';
-            $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
-            $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
-
-            $result = $orchestrator->executeFullBackup(array(
-                'scope'   => $settings['default_scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
-                'trigger' => SNAPSHOT_TRIGGER_CRON,
-                'title'   => 'Scheduled Backup ' . date('Y-m-d H:i'),
-                'async'   => true,
-            ));
-
-            if ($result['success']) {
-                $this->logger->info('[SCHEDULER] Scheduled snapshot job created', array(
-                    'job_id'      => $result['job_id'] ?? null,
-                    'snapshot_id' => $result['snapshot_id'] ?? null,
-                    'async'       => $result['async'] ?? false,
-                ));
-                // Audit trail (Phase 6)
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_CREATE,
-                    'snapshot', null, '', null, '',
-                    array('trigger' => 'cron', 'snapshot_id' => $result['snapshot_id'] ?? null, 'job_id' => $result['job_id'] ?? null),
-                    STATUS_SUCCESS, null,
-                    array('triggered_by' => TRIGGERED_BY_CRON)
-                );
-            } else {
-                $this->logger->error('[SCHEDULER] Scheduled snapshot failed', array(
-                    'error' => $result['error'] ?? 'Unknown',
-                ));
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_CREATE,
-                    'snapshot', null, '', null, '',
-                    array('trigger' => 'cron'),
-                    STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => TRIGGERED_BY_CRON)
-                );
-            }
-
-        } catch (Exception $e) {
-            $this->logger->error('[SCHEDULER] Exception during scheduled snapshot', array(
+            $result = $work();
+            $this->logCronResult($label, $result);
+        } catch (\Throwable $e) {
+            $this->logger->error("[SCHEDULER] Exception during {$label}", array(
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ));
@@ -390,73 +355,108 @@ class RiseupSnapshotScheduler {
     }
 
     /**
-     * Execute an immediate snapshot (called by cron from "Snapshot Now").
+     * Log the outcome of a cron job and optionally write an audit trail.
      *
-     * Routes through the orchestrator with async=true so table export
-     * continues in the background via cron-chained batches.
+     * @param string $label  Human label.
+     * @param array  $result Standardized cron result.
+     */
+    private function logCronResult(string $label, array $result) {
+        $isSuccess = $result['success'] ?? false;
+        $level = $isSuccess ? 'info' : 'error';
+        $suffix = $isSuccess ? 'completed' : 'failed';
+
+        $this->logger->{$level}("[SCHEDULER] {$label} {$suffix}", $result['log_data'] ?? array());
+
+        if ($result['skip_audit'] ?? false) {
+            return;
+        }
+
+        $this->db->log_transaction(
+            $result['action'],
+            'snapshot', null, '', null, '',
+            $result['audit_data'] ?? array(),
+            $isSuccess ? STATUS_SUCCESS : STATUS_FAILED,
+            $isSuccess ? null : ($result['error'] ?? 'Unknown'),
+            array('triggered_by' => $result['triggered_by'] ?? TRIGGERED_BY_CRON)
+        );
+    }
+
+    /**
+     * Build a standardized cron result array from a raw operation result.
+     *
+     * @param array  $result      Raw operation result.
+     * @param string $action      Audit action constant.
+     * @param string $triggeredBy Trigger source constant.
+     * @param array  $auditData   Extra audit data.
+     * @return array Standardized result.
+     */
+    private function buildCronResult(array $result, string $action, string $triggeredBy, array $auditData = array()): array {
+        return array(
+            'success'      => $result['success'] ?? false,
+            'error'        => $result['error'] ?? null,
+            'action'       => $action,
+            'triggered_by' => $triggeredBy,
+            'audit_data'   => $auditData,
+            'log_data'     => $result,
+            'skip_audit'   => false,
+        );
+    }
+
+    /**
+     * Create manager + orchestrator instances via factory.
+     *
+     * @return array{0: RiseupSnapshotManager, 1: RiseupSnapshotOrchestrator}
+     */
+    private function createOrchestrator(): array {
+        require_once dirname(__FILE__) . '/SnapshotFactory.php';
+        $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
+        $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
+        return array($manager, $orchestrator);
+    }
+
+    /**
+     * Invoke a backup through the orchestrator, branching on snapshot type.
+     *
+     * @param object $orchestrator Orchestrator instance.
+     * @param array  $args         Snapshot arguments including snapshot_type.
+     * @return array Raw orchestrator result.
+     */
+    private function invokeBackup(object $orchestrator, array $args): array {
+        $snapshotType = $args['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
+
+        if ($snapshotType === SNAPSHOT_TYPE_INCREMENTAL) {
+            return $orchestrator->executeIncrementalBackup(array(
+                'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
+                'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
+            ));
+        }
+
+        return $orchestrator->executeFullBackup(array(
+            'title'   => $args['title'] ?? 'Manual Backup ' . date('Y-m-d H:i'),
+            'scope'   => $args['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
+            'trigger' => SNAPSHOT_TRIGGER_MANUAL,
+            'async'   => true,
+        ));
+    }
+
+    // ──────────────────────────────────────────────────
+    // Public cron executors (thin delegates)
+    // ──────────────────────────────────────────────────
+
+    /**
+     * Execute a scheduled snapshot (called by cron).
+     */
+    public function executeScheduledSnapshot() {
+        $this->executeCronJob('scheduled snapshot', fn() => $this->runScheduledSnapshot());
+    }
+
+    /**
+     * Execute an immediate snapshot (called by cron from "Snapshot Now").
      *
      * @param array $args { snapshot_type, title, scope, options }.
      */
     public function executeImmediateSnapshot($args) {
-        $this->logger->info('[SCHEDULER] Executing immediate snapshot via orchestrator', $args);
-
-        try {
-            require_once dirname(__FILE__) . '/SnapshotFactory.php';
-            $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
-            $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
-
-            $snapshot_type = $args['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
-
-            if ($snapshot_type === SNAPSHOT_TYPE_INCREMENTAL) {
-                $result = $orchestrator->executeIncrementalBackup(array(
-                    'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
-                    'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
-                ));
-            } else {
-                $result = $orchestrator->executeFullBackup(array(
-                    'title'   => $args['title'] ?? 'Manual Backup ' . date('Y-m-d H:i'),
-                    'scope'   => $args['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
-                    'trigger' => SNAPSHOT_TRIGGER_MANUAL,
-                    'async'   => true,
-                ));
-            }
-
-            if ($result['success']) {
-                $this->logger->info('[SCHEDULER] Immediate snapshot job created', array(
-                    'job_id'      => $result['job_id'] ?? null,
-                    'snapshot_id' => $result['snapshot_id'] ?? null,
-                    'type'        => $snapshot_type,
-                ));
-                // Audit trail (Phase 6)
-                $action = $snapshot_type === SNAPSHOT_TYPE_INCREMENTAL
-                    ? ACTION_SNAPSHOT_INCREMENTAL
-                    : ACTION_SNAPSHOT_FULL_BACKUP;
-                $this->db->log_transaction(
-                    $action,
-                    'snapshot', null, '', null, '',
-                    array('trigger' => 'manual', 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshot_type),
-                    STATUS_SUCCESS, null,
-                    array('triggered_by' => TRIGGERED_BY_DASHBOARD)
-                );
-            } else {
-                $this->logger->error('[SCHEDULER] Immediate snapshot failed', array(
-                    'error' => $result['error'] ?? 'Unknown',
-                ));
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_CREATE,
-                    'snapshot', null, '', null, '',
-                    array('trigger' => 'manual', 'type' => $snapshot_type),
-                    STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => TRIGGERED_BY_DASHBOARD)
-                );
-            }
-
-        } catch (Exception $e) {
-            $this->logger->error('[SCHEDULER] Exception during immediate snapshot', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-        }
+        $this->executeCronJob('immediate snapshot', fn() => $this->runImmediateSnapshot($args));
     }
 
     /**
@@ -465,57 +465,7 @@ class RiseupSnapshotScheduler {
      * @param array $args { snapshot_id, options }.
      */
     public function executeCronRestore($args) {
-        $this->logger->info('[SCHEDULER] Executing cron-based restore', $args);
-
-        if (empty($args['snapshot_id'])) {
-            $this->logger->error('[SCHEDULER] Missing snapshot_id for cron restore');
-            return;
-        }
-
-        try {
-            require_once dirname(__FILE__) . '/SnapshotFactory.php';
-            $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
-
-            $restore_options = $args['options'] ?? array();
-            $restore_options['confirm'] = true; // Already confirmed before scheduling
-
-            $result = $manager->restoreSnapshot($args['snapshot_id'], $restore_options);
-
-            if ($result['success']) {
-                $this->logger->info('[SCHEDULER] Cron restore completed', array(
-                    'snapshot_id' => $args['snapshot_id'],
-                    'tables'      => $result['tables'] ?? 0,
-                    'rows'        => $result['rows'] ?? 0,
-                    'duration'    => round($result['duration'] ?? 0, 2) . 's',
-                ));
-                // Audit trail (Phase 6)
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_RESTORE,
-                    'snapshot', null, '', null, '',
-                    array('snapshot_id' => $args['snapshot_id'], 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0),
-                    STATUS_SUCCESS, null,
-                    array('triggered_by' => TRIGGERED_BY_CRON)
-                );
-            } else {
-                $this->logger->error('[SCHEDULER] Cron restore failed', array(
-                    'snapshot_id' => $args['snapshot_id'],
-                    'error'       => $result['error'] ?? 'Unknown',
-                ));
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_RESTORE,
-                    'snapshot', null, '', null, '',
-                    array('snapshot_id' => $args['snapshot_id']),
-                    STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => TRIGGERED_BY_CRON)
-                );
-            }
-
-        } catch (Exception $e) {
-            $this->logger->error('[SCHEDULER] Exception during cron restore', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-        }
+        $this->executeCronJob('cron restore', fn() => $this->runCronRestore($args));
     }
 
     /**
@@ -524,100 +474,125 @@ class RiseupSnapshotScheduler {
      * @param array $args { title, master_snapshot_id }.
      */
     public function executeCronIncremental($args) {
-        $this->logger->info('[SCHEDULER] Executing cron-based incremental backup', $args);
-
-        try {
-            require_once dirname(__FILE__) . '/SnapshotFactory.php';
-            $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
-            $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
-
-            $result = $orchestrator->executeIncrementalBackup(array(
-                'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
-                'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
-            ));
-
-            if ($result['success']) {
-                $this->logger->info('[SCHEDULER] Cron incremental backup completed', array(
-                    'tables_changed' => $result['tables_changed'] ?? 0,
-                    'total_new_rows' => $result['total_new_rows'] ?? 0,
-                ));
-                // Audit trail (Phase 6)
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_INCREMENTAL,
-                    'snapshot', null, '', null, '',
-                    array('tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0),
-                    STATUS_SUCCESS, null,
-                    array('triggered_by' => TRIGGERED_BY_CRON)
-                );
-            } else {
-                $this->logger->error('[SCHEDULER] Cron incremental backup failed', array(
-                    'error' => $result['error'] ?? 'Unknown',
-                ));
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_INCREMENTAL,
-                    'snapshot', null, '', null, '',
-                    array(),
-                    STATUS_FAILED, $result['error'] ?? 'Unknown',
-                    array('triggered_by' => TRIGGERED_BY_CRON)
-                );
-            }
-
-        } catch (Exception $e) {
-            $this->logger->error('[SCHEDULER] Exception during cron incremental', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-        }
+        $this->executeCronJob('cron incremental backup', fn() => $this->runCronIncremental($args));
     }
 
     /**
      * Execute cleanup of old snapshots based on retention policy.
-     * 
-     * Uses RiseupSnapshotCleaner for comprehensive cleanup including:
-     * - Retention policy enforcement (days or count based)
-     * - Orphan file cleanup (files without database records)
-     * - Failed/stuck snapshot cleanup (older than 24 hours)
      */
     public function executeCleanup() {
-        $this->logger->info('[SCHEDULER] Executing snapshot cleanup');
+        $this->executeCronJob('snapshot cleanup', fn() => $this->runCleanup());
+    }
 
-        try {
-            $settings = $this->detector->getSettings();
-            $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
-            
-            $result = $cleaner->runCleanup($settings);
+    // ──────────────────────────────────────────────────
+    // Private work methods (each ≤15 lines)
+    // ──────────────────────────────────────────────────
 
-            $this->logger->info('[SCHEDULER] Cleanup complete', array(
-                'deleted_by_policy' => $result['deleted_by_policy'],
-                'deleted_orphans' => $result['deleted_orphans'],
-                'deleted_failed' => $result['deleted_failed'],
-                'space_freed' => RiseupPathUtils::format_bytes($result['space_freed_bytes']),
-                'errors_count' => count($result['errors']),
-            ));
+    /**
+     * Run a scheduled backup through the orchestrator.
+     *
+     * @return array Standardized cron result.
+     */
+    private function runScheduledSnapshot(): array {
+        $settings = $this->detector->getSettings();
+        list(, $orchestrator) = $this->createOrchestrator();
 
-            // Audit trail (Phase 6)
-            $total_deleted = ($result['deleted_by_policy'] ?? 0) + ($result['deleted_orphans'] ?? 0) + ($result['deleted_failed'] ?? 0);
-            if ($total_deleted > 0) {
-                $this->db->log_transaction(
-                    ACTION_SNAPSHOT_CLEANUP,
-                    'snapshot', null, '', null, '',
-                    array(
-                        'deleted_by_policy' => $result['deleted_by_policy'] ?? 0,
-                        'deleted_orphans'   => $result['deleted_orphans'] ?? 0,
-                        'deleted_failed'    => $result['deleted_failed'] ?? 0,
-                        'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
-                    ),
-                    STATUS_SUCCESS, null,
-                    array('triggered_by' => TRIGGERED_BY_CRON)
-                );
-            }
+        $result = $orchestrator->executeFullBackup(array(
+            'scope'   => $settings['default_scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
+            'trigger' => SNAPSHOT_TRIGGER_CRON,
+            'title'   => 'Scheduled Backup ' . date('Y-m-d H:i'),
+            'async'   => true,
+        ));
 
-        } catch (Exception $e) {
-            $this->logger->error('[SCHEDULER] Exception during cleanup', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
+        return $this->buildCronResult($result, ACTION_SNAPSHOT_CREATE, TRIGGERED_BY_CRON, array(
+            'trigger' => 'cron', 'snapshot_id' => $result['snapshot_id'] ?? null, 'job_id' => $result['job_id'] ?? null,
+        ));
+    }
+
+    /**
+     * Run an immediate backup, branching on full vs incremental.
+     *
+     * @param array $args Snapshot arguments.
+     * @return array Standardized cron result.
+     */
+    private function runImmediateSnapshot(array $args): array {
+        list(, $orchestrator) = $this->createOrchestrator();
+        $snapshotType = $args['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
+        $result = $this->invokeBackup($orchestrator, $args);
+
+        $action = ($snapshotType === SNAPSHOT_TYPE_INCREMENTAL) ? ACTION_SNAPSHOT_INCREMENTAL : ACTION_SNAPSHOT_FULL_BACKUP;
+        return $this->buildCronResult($result, $action, TRIGGERED_BY_DASHBOARD, array(
+            'trigger' => 'manual', 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshotType,
+        ));
+    }
+
+    /**
+     * Run a cron-based restore operation.
+     *
+     * @param array $args Restore arguments.
+     * @return array Standardized cron result.
+     */
+    private function runCronRestore(array $args): array {
+        if (empty($args['snapshot_id'])) {
+            $this->logger->error('[SCHEDULER] Missing snapshot_id for cron restore');
+            return array('success' => false, 'error' => 'Missing snapshot_id', 'skip_audit' => true);
         }
+
+        require_once dirname(__FILE__) . '/SnapshotFactory.php';
+        $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
+        $restoreOptions = $args['options'] ?? array();
+        $restoreOptions['confirm'] = true;
+
+        $result = $manager->restoreSnapshot($args['snapshot_id'], $restoreOptions);
+
+        return $this->buildCronResult($result, ACTION_SNAPSHOT_RESTORE, TRIGGERED_BY_CRON, array(
+            'snapshot_id' => $args['snapshot_id'], 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
+        ));
+    }
+
+    /**
+     * Run a cron-based incremental backup.
+     *
+     * @param array $args Incremental arguments.
+     * @return array Standardized cron result.
+     */
+    private function runCronIncremental(array $args): array {
+        list(, $orchestrator) = $this->createOrchestrator();
+
+        $result = $orchestrator->executeIncrementalBackup(array(
+            'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
+            'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
+        ));
+
+        return $this->buildCronResult($result, ACTION_SNAPSHOT_INCREMENTAL, TRIGGERED_BY_CRON, array(
+            'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
+        ));
+    }
+
+    /**
+     * Run snapshot cleanup with conditional audit trail.
+     *
+     * @return array Standardized cron result.
+     */
+    private function runCleanup(): array {
+        $settings = $this->detector->getSettings();
+        $result = RiseupSnapshotFactory::cleaner($this->logger, $this->db)->runCleanup($settings);
+
+        $auditData = array(
+            'deleted_by_policy' => $result['deleted_by_policy'] ?? 0,
+            'deleted_orphans'   => $result['deleted_orphans'] ?? 0,
+            'deleted_failed'    => $result['deleted_failed'] ?? 0,
+            'space_freed_bytes' => $result['space_freed_bytes'] ?? 0,
+        );
+        $totalDeleted = array_sum(array_slice($auditData, 0, 3));
+
+        $cronResult = $this->buildCronResult(array('success' => true), ACTION_SNAPSHOT_CLEANUP, TRIGGERED_BY_CRON, $auditData);
+        $cronResult['skip_audit'] = ($totalDeleted === 0);
+        $cronResult['log_data'] = $auditData + array(
+            'space_freed'  => RiseupPathUtils::format_bytes($result['space_freed_bytes']),
+            'errors_count' => count($result['errors']),
+        );
+        return $cronResult;
     }
 
     /**
