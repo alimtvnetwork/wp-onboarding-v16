@@ -278,20 +278,20 @@ if (!defined('MSG_FILE_IGNORED')) {
 }
 
 // =============================================================================
-// CAPABILITIES — Now in RiseupAsia\Enums\Capability, kept as aliases for backward compat
+// CAPABILITIES — Now in RiseupAsia\Enums\CapabilityType, kept as aliases for backward compat
 // =============================================================================
 
 if (!defined('CAP_MANAGE_PLUGINS')) {
-    define('CAP_MANAGE_PLUGINS', \RiseupAsia\Enums\Capability::ActivatePlugins->value);
+    define('CAP_MANAGE_PLUGINS', \RiseupAsia\Enums\CapabilityType::ActivatePlugins->value);
 }
 if (!defined('CAP_MANAGE_POSTS')) {
-    define('CAP_MANAGE_POSTS', \RiseupAsia\Enums\Capability::PublishPosts->value);
+    define('CAP_MANAGE_POSTS', \RiseupAsia\Enums\CapabilityType::PublishPosts->value);
 }
 if (!defined('CAP_UPLOAD_MEDIA')) {
-    define('CAP_UPLOAD_MEDIA', \RiseupAsia\Enums\Capability::UploadFiles->value);
+    define('CAP_UPLOAD_MEDIA', \RiseupAsia\Enums\CapabilityType::UploadFiles->value);
 }
 if (!defined('CAP_VIEW_LOGS')) {
-    define('CAP_VIEW_LOGS', \RiseupAsia\Enums\Capability::ManageOptions->value);
+    define('CAP_VIEW_LOGS', \RiseupAsia\Enums\CapabilityType::ManageOptions->value);
 }
 
 // =============================================================================
@@ -905,23 +905,23 @@ if (!defined('ENDPOINT_ERROR_SESSIONS')) {
 }
 
 // =============================================================================
-// UPLOAD SOURCE — Now in RiseupAsia\Enums\UploadSource, kept as aliases for backward compat
+// UPLOAD SOURCE — Now in RiseupAsia\Enums\UploadSourceType, kept as aliases for backward compat
 // =============================================================================
 
 if (!defined('UPLOAD_SOURCE_SCRIPT')) {
-    define('UPLOAD_SOURCE_SCRIPT', \RiseupAsia\Enums\UploadSource::Script->value);
+    define('UPLOAD_SOURCE_SCRIPT', \RiseupAsia\Enums\UploadSourceType::Script->value);
 }
 if (!defined('UPLOAD_SOURCE_REST_API')) {
-    define('UPLOAD_SOURCE_REST_API', \RiseupAsia\Enums\UploadSource::RestApi->value);
+    define('UPLOAD_SOURCE_REST_API', \RiseupAsia\Enums\UploadSourceType::RestApi->value);
 }
 if (!defined('UPLOAD_SOURCE_ADMIN_UI')) {
-    define('UPLOAD_SOURCE_ADMIN_UI', \RiseupAsia\Enums\UploadSource::AdminUi->value);
+    define('UPLOAD_SOURCE_ADMIN_UI', \RiseupAsia\Enums\UploadSourceType::AdminUi->value);
 }
 if (!defined('UPLOAD_SOURCE_WP_CLI')) {
-    define('UPLOAD_SOURCE_WP_CLI', \RiseupAsia\Enums\UploadSource::WpCli->value);
+    define('UPLOAD_SOURCE_WP_CLI', \RiseupAsia\Enums\UploadSourceType::WpCli->value);
 }
 
 // Valid upload sources for validation
 if (!defined('UPLOAD_SOURCES_VALID')) {
-    define('UPLOAD_SOURCES_VALID', json_encode(\RiseupAsia\Enums\UploadSource::valid_values()));
+    define('UPLOAD_SOURCES_VALID', json_encode(\RiseupAsia\Enums\UploadSourceType::valid_values()));
 }

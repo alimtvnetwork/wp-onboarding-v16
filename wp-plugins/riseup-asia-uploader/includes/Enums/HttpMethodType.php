@@ -1,6 +1,6 @@
 <?php
 /**
- * HttpMethod — HTTP Method Enum
+ * HttpMethodType — HTTP Method Enum
  *
  * Every register_rest_route() call MUST use these cases
  * instead of WP_REST_Server constants or string literals.
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 /**
  * HTTP method constants for REST route registration.
  */
-enum HttpMethod: string
+enum HttpMethodType: string
 {
     case Get    = 'GET';
     case Post   = 'POST';
