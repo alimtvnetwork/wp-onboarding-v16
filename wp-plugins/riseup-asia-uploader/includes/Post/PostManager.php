@@ -45,7 +45,7 @@ class RiseupPostManager {
      *
      * @return RiseupPostManager
      */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -68,7 +68,7 @@ class RiseupPostManager {
      *
      * @return array Result with success status and post data or error.
      */
-    public function create_post($data) {
+    public function createPost($data) {
         $this->file_logger->info('Creating post', array('title' => $data['title'] ?? ''));
         
         // Validate required fields
@@ -93,7 +93,7 @@ class RiseupPostManager {
             $post_data = array(
                 'post_title'   => sanitize_text_field($data['title']),
                 'post_content' => wp_kses_post($data['content']),
-                'post_status'  => $this->validate_post_status($data['status'] ?? POST_STATUS_DRAFT),
+                'post_status'  => $this->validatePostStatus($data['status'] ?? POST_STATUS_DRAFT),
                 'post_type'    => 'post',
             );
 
@@ -176,7 +176,7 @@ class RiseupPostManager {
      *
      * @return array Result with success status.
      */
-    public function update_post($post_id, $data) {
+    public function updatePost($post_id, $data) {
         $this->file_logger->info('Updating post', array('post_id' => $post_id));
         
         try {
@@ -205,7 +205,7 @@ class RiseupPostManager {
             }
 
             if (isset($data['status'])) {
-                $post_data['post_status'] = $this->validate_post_status($data['status']);
+                $post_data['post_status'] = $this->validatePostStatus($data['status']);
             }
 
             $this->file_logger->debug('Updating post data', $post_data);
@@ -267,7 +267,7 @@ class RiseupPostManager {
      *
      * @return array Posts list.
      */
-    public function list_posts($params = array()) {
+    public function listPosts($params = array()) {
         $this->file_logger->debug('Listing posts', $params);
         
         try {
@@ -280,7 +280,7 @@ class RiseupPostManager {
             );
 
             if (!empty($params['status'])) {
-                $args['post_status'] = $this->validate_post_status($params['status']);
+                $args['post_status'] = $this->validatePostStatus($params['status']);
             } else {
                 $args['post_status'] = array('publish', 'draft', 'pending');
             }
@@ -329,7 +329,7 @@ class RiseupPostManager {
      *
      * @return array Result with success status.
      */
-    public function create_category($data) {
+    public function createCategory($data) {
         $this->file_logger->info('Creating category', array('name' => $data['name'] ?? ''));
         
         if (empty($data['name'])) {
@@ -404,7 +404,7 @@ class RiseupPostManager {
      *
      * @return array Categories list.
      */
-    public function list_categories($params = array()) {
+    public function listCategories($params = array()) {
         $this->file_logger->debug('Listing categories', $params);
         
         try {
@@ -475,7 +475,7 @@ class RiseupPostManager {
      *
      * @return string Valid status.
      */
-    private function validate_post_status($status) {
+    private function validatePostStatus($status) {
         $valid_statuses = array(
             POST_STATUS_PUBLISH,
             POST_STATUS_DRAFT,
