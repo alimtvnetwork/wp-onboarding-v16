@@ -1,0 +1,82 @@
+<?php
+/**
+ * WorkerSetupTrait — snapshot directory preparation, root DB init, and helpers.
+ *
+ * @package RiseupAsia\Snapshot\Traits
+ * @since   1.57.0
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+trait WorkerSetupTrait {
+
+    /**
+     * Prepare the snapshot directory.
+     */
+    private function prepareSnapshotDir(array $config): array {
+        $title = $config['title'] ?? ('Snapshot ' . date('Y-m-d H:i'));
+        $scope = $config['scope'] ?? 'wordpress';
+        $type  = $config['type'] ?? 'full';
+
+        if (!empty($config['settings']['worker_pool_size'])) {
+            $this->setPoolSize($config['settings']['worker_pool_size']);
+        }
+
+        $this->log('INFO', 'Starting per-table snapshot', array(
+            'title' => $title, 'scope' => $scope, 'type' => $type, 'pool_size' => $this->poolSize,
+        ));
+
+        $base_dir = $this->getSnapshotsBaseDir();
+        $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
+        $snapshot_dir = $base_dir . '/' . $dir_name;
+
+        if (!RiseupPathUtils::ensure_dir($snapshot_dir, true)) {
+            return array('success' => false, 'error' => 'Failed to create snapshot directory');
+        }
+
+        return array('success' => true, 'snapshot_dir' => $snapshot_dir, 'dir_name' => $dir_name, 'title' => $title, 'scope' => $scope, 'type' => $type);
+    }
+
+    /** Initialize a-root.db. */
+    private function initRootDb(string $snapshotDir, array $config): PDO {
+        $rootPdo = $this->rootDb->create($snapshotDir . '/a-root.db');
+        $this->rootDb->populateMetadata($rootPdo, array(
+            'title' => $config['title'] ?? 'Snapshot', 'type' => $config['type'] ?? 'full', 'settings' => $config['settings'] ?? null,
+        ));
+        return $rootPdo;
+    }
+
+    /** Populate dependencies and return seed order. */
+    private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
+        $analysis = $this->rootDb->populateDependencies($rootPdo, $config['scope'] ?? 'wordpress');
+        $this->log('INFO', 'Export order determined', array('tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
+        return $analysis['seed_order'];
+    }
+
+    /** Get the base snapshots directory. */
+    private function getSnapshotsBaseDir() {
+        $base = RiseupPathUtils::get_snapshots_dir();
+        RiseupPathUtils::ensure_dir($base, true);
+        return $base;
+    }
+
+    /**
+     * Log a message.
+     */
+    private function log($level, $message, $context = array()) {
+        $full = '[SNAPSHOT] [WORKER] ' . $message;
+        if (!empty($context)) {
+            $full .= ' ' . json_encode($context);
+        }
+
+        if (!$this->logger) return;
+
+        switch ($level) {
+            case 'WARN':  $this->logger->warn($full); break;
+            case 'ERROR': $this->logger->error($full); break;
+            default:      $this->logger->info($full);
+        }
+    }
+}
