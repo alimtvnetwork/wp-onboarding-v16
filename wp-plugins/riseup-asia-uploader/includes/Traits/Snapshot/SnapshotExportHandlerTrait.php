@@ -98,7 +98,7 @@ trait SnapshotExportHandlerTrait {
             array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
         );
 
-        require_once dirname(__FILE__) . '/../Snapshot/SnapshotExporter.php';
+        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotExporter.php';
         $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
         $result = $exporter->getOrBuildZip($snapshotId);
 

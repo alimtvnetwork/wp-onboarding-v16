@@ -43,7 +43,7 @@ trait SnapshotImportStreamTrait {
             ), 400);
         }
 
-        require_once dirname(__FILE__) . '/../Snapshot/SnapshotExporter.php';
+        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotExporter.php';
         $export = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db)->validateDownloadToken($exportId, $token);
 
         if (!$export) {
