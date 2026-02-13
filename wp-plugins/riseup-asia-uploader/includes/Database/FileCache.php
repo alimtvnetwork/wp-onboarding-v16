@@ -304,7 +304,7 @@ class RiseupFileCache {
             $fullPath = $dir . '/' . $item;
             $relPath = ltrim(str_replace($baseDir, '', $fullPath), '/\\');
 
-            if ($ignore->should_ignore($relPath)) {
+            if ($ignore->shouldIgnore($relPath)) {
                 continue;
             }
 

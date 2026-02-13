@@ -51,7 +51,7 @@ class RiseupAgentManager {
      *
      * @return RiseupAgentManager
      */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -135,7 +135,7 @@ class RiseupAgentManager {
      * @param array $data Agent data (name, url, username, app_password, redirect_url).
      * @return int|WP_Error Agent ID on success, WP_Error on failure.
      */
-    public function add_agent($data) {
+    public function addAgent($data) {
         $this->file_logger->info('Adding agent site', array('name' => $data['name'], 'url' => $data['url']));
         
         // Validate required fields
@@ -144,7 +144,7 @@ class RiseupAgentManager {
         }
         
         // Normalize URL
-        $url = $this->normalize_url($data['url']);
+        $url = $this->normalizeUrl($data['url']);
         
         // Encrypt the app password
         $encrypted_password = $this->encrypt($data['app_password']);
@@ -186,7 +186,7 @@ class RiseupAgentManager {
      * @param array $data Updated data.
      * @return bool|WP_Error True on success.
      */
-    public function update_agent($id, $data) {
+    public function updateAgent($id, $data) {
         $this->file_logger->info('Updating agent site', array('id' => $id));
         
         try {
@@ -204,7 +204,7 @@ class RiseupAgentManager {
             }
             if (isset($data['url'])) {
                 $sets[] = 'url = ?';
-                $params[] = esc_url_raw($this->normalize_url($data['url']));
+                $params[] = esc_url_raw($this->normalizeUrl($data['url']));
             }
             if (isset($data['username'])) {
                 $sets[] = 'username = ?';
@@ -258,7 +258,7 @@ class RiseupAgentManager {
      * @param int $id Agent ID.
      * @return bool|WP_Error True on success.
      */
-    public function remove_agent($id) {
+    public function removeAgent($id) {
         $this->file_logger->info('Removing agent site', array('id' => $id));
         
         try {
@@ -287,7 +287,7 @@ class RiseupAgentManager {
      * @param bool $include_password Whether to include decrypted password.
      * @return array|null Agent data or null.
      */
-    public function get_agent($id, $include_password = false) {
+    public function getAgent($id, $include_password = false) {
         try {
             $pdo = $this->db->get_pdo();
             if (!$pdo) {
@@ -323,7 +323,7 @@ class RiseupAgentManager {
      * @param int   $offset  Offset for pagination.
      * @return array Array with 'total' and 'agents'.
      */
-    public function list_agents($filters = array(), $limit = 100, $offset = 0) {
+    public function listAgents($filters = array(), $limit = 100, $offset = 0) {
         try {
             $pdo = $this->db->get_pdo();
             if (!$pdo) {
@@ -375,7 +375,7 @@ class RiseupAgentManager {
      * @param string $url The URL to normalize.
      * @return string Normalized URL.
      */
-    private function normalize_url($url) {
+    private function normalizeUrl($url) {
         $url = rtrim($url, '/');
         
         // Remove common suffixes
@@ -400,7 +400,7 @@ class RiseupAgentManager {
      * @param array $agent Agent data with app_password.
      * @return string Authorization header value.
      */
-    private function build_auth_header($agent) {
+    private function buildAuthHeader($agent) {
         $credentials = $agent['username'] . ':' . $agent['app_password'];
         return 'Basic ' . base64_encode($credentials);
     }
@@ -414,8 +414,8 @@ class RiseupAgentManager {
      * @param array  $body     Request body (for POST/PUT).
      * @return array|WP_Error Response data or error.
      */
-    public function api_request($agent_id, $method, $endpoint, $body = array()) {
-        $agent = $this->get_agent($agent_id, true);
+    public function apiRequest($agent_id, $method, $endpoint, $body = array()) {
+        $agent = $this->getAgent($agent_id, true);
         
         if (!$agent) {
             return new WP_Error('not_found', 'Agent site not found');
@@ -424,7 +424,7 @@ class RiseupAgentManager {
         // Resolve redirect URL if configured
         $base_url = $agent['url'];
         if (!empty($agent['redirect_url'])) {
-            $resolved = $this->resolve_redirect_url($agent);
+            $resolved = $this->resolveRedirectUrl($agent);
             if (!is_wp_error($resolved)) {
                 $base_url = $resolved;
             }
@@ -442,7 +442,7 @@ class RiseupAgentManager {
             'method'    => strtoupper($method),
             'timeout'   => 30,
             'headers'   => array(
-                'Authorization' => $this->build_auth_header($agent),
+                'Authorization' => $this->buildAuthHeader($agent),
                 'Content-Type'  => 'application/json',
             ),
             'sslverify' => true,
@@ -455,7 +455,7 @@ class RiseupAgentManager {
         $response = wp_remote_request($url, $args);
         
         if (is_wp_error($response)) {
-            $this->log_action($agent_id, 'api_error', null, 'failed', null, $response->get_error_message());
+            $this->logAction($agent_id, 'api_error', null, 'failed', null, $response->get_error_message());
             return $response;
         }
         
@@ -477,7 +477,7 @@ class RiseupAgentManager {
      * @param array $agent Agent data.
      * @return string|WP_Error Resolved URL or error.
      */
-    private function resolve_redirect_url($agent) {
+    private function resolveRedirectUrl($agent) {
         // Check cache
         if (!empty($agent['redirect_resolved']) && !empty($agent['redirect_resolved_at'])) {
             $resolved_at = strtotime($agent['redirect_resolved_at']);
@@ -517,7 +517,7 @@ class RiseupAgentManager {
         }
         
         // Cache the resolved URL
-        $this->update_agent($agent['id'], array(
+        $this->updateAgent($agent['id'], array(
             'redirect_resolved'    => $url,
             'redirect_resolved_at' => gmdate('Y-m-d\TH:i:s\Z'),
         ));
@@ -531,18 +531,18 @@ class RiseupAgentManager {
      * @param int $agent_id Agent ID.
      * @return array Test result.
      */
-    public function test_connection($agent_id) {
+    public function testConnection($agent_id) {
         $this->file_logger->info('Testing agent connection', array('id' => $agent_id));
         
-        $result = $this->api_request($agent_id, 'GET', API_FULL_NAMESPACE . '/status');
+        $result = $this->apiRequest($agent_id, 'GET', API_FULL_NAMESPACE . '/status');
         
         if (is_wp_error($result)) {
-            $this->update_agent($agent_id, array(
+            $this->updateAgent($agent_id, array(
                 'status'     => 'error',
                 'last_error' => $result->get_error_message(),
             ));
             
-            $this->log_action($agent_id, ACTION_AGENT_TEST, null, STATUS_FAILED, null, $result->get_error_message());
+            $this->logAction($agent_id, ACTION_AGENT_TEST, null, STATUS_FAILED, null, $result->get_error_message());
             
             return array(
                 'success' => false,
@@ -550,13 +550,13 @@ class RiseupAgentManager {
             );
         }
         
-        $this->update_agent($agent_id, array(
+        $this->updateAgent($agent_id, array(
             'status'     => 'connected',
             'last_sync'  => gmdate('Y-m-d\TH:i:s\Z'),
             'last_error' => null,
         ));
         
-        $this->log_action($agent_id, ACTION_AGENT_TEST, null, STATUS_SUCCESS);
+        $this->logAction($agent_id, ACTION_AGENT_TEST, null, STATUS_SUCCESS);
         
         return array(
             'success' => true,
@@ -571,23 +571,23 @@ class RiseupAgentManager {
      * @param int $agent_id Agent ID.
      * @return array|WP_Error Plugin list or error.
      */
-    public function sync_plugins($agent_id) {
+    public function syncPlugins($agent_id) {
         $this->file_logger->info('Syncing plugins from agent', array('id' => $agent_id));
         
-        $result = $this->api_request($agent_id, 'GET', API_FULL_NAMESPACE . '/plugins');
+        $result = $this->apiRequest($agent_id, 'GET', API_FULL_NAMESPACE . '/plugins');
         
         if (is_wp_error($result)) {
-            $this->log_action($agent_id, ACTION_AGENT_SYNC, null, STATUS_FAILED, null, $result->get_error_message());
+            $this->logAction($agent_id, ACTION_AGENT_SYNC, null, STATUS_FAILED, null, $result->get_error_message());
             return $result;
         }
         
-        $this->update_agent($agent_id, array(
+        $this->updateAgent($agent_id, array(
             'status'    => 'connected',
             'last_sync' => gmdate('Y-m-d\TH:i:s\Z'),
         ));
         
         $plugins = isset($result['plugins']) ? $result['plugins'] : $result;
-        $this->log_action($agent_id, ACTION_AGENT_SYNC, null, STATUS_SUCCESS, array('count' => count($plugins)));
+        $this->logAction($agent_id, ACTION_AGENT_SYNC, null, STATUS_SUCCESS, array('count' => count($plugins)));
         
         return $plugins;
     }
@@ -600,7 +600,7 @@ class RiseupAgentManager {
      * @param string $slug     Plugin slug.
      * @return array|WP_Error Result or error.
      */
-    public function execute_plugin_action($agent_id, $action, $slug) {
+    public function executePluginAction($agent_id, $action, $slug) {
         $this->file_logger->info('Executing plugin action on agent', array(
             'agent_id' => $agent_id,
             'action'   => $action,
@@ -608,14 +608,14 @@ class RiseupAgentManager {
         ));
         
         $endpoint = API_FULL_NAMESPACE . '/plugins/' . urlencode($slug) . '/' . $action;
-        $result = $this->api_request($agent_id, 'POST', $endpoint);
+        $result = $this->apiRequest($agent_id, 'POST', $endpoint);
         
         if (is_wp_error($result)) {
-            $this->log_action($agent_id, 'plugin_' . $action, $slug, STATUS_FAILED, null, $result->get_error_message());
+            $this->logAction($agent_id, 'plugin_' . $action, $slug, STATUS_FAILED, null, $result->get_error_message());
             return $result;
         }
         
-        $this->log_action($agent_id, 'plugin_' . $action, $slug, STATUS_SUCCESS);
+        $this->logAction($agent_id, 'plugin_' . $action, $slug, STATUS_SUCCESS);
         
         return array(
             'success' => true,
@@ -639,7 +639,7 @@ class RiseupAgentManager {
      * @param string|null $error_msg   Error message if failed.
      * @return int|false Insert ID or false.
      */
-    public function log_action($agent_id, $action, $plugin = null, $status = 'success', $details = null, $error_msg = null) {
+    public function logAction($agent_id, $action, $plugin = null, $status = 'success', $details = null, $error_msg = null) {
         try {
             $pdo = $this->db->get_pdo();
             if (!$pdo) {
@@ -676,7 +676,7 @@ class RiseupAgentManager {
      * @param int $offset   Offset.
      * @return array Array with 'total' and 'actions'.
      */
-    public function get_action_history($agent_id, $limit = 50, $offset = 0) {
+    public function getActionHistory($agent_id, $limit = 50, $offset = 0) {
         try {
             $pdo = $this->db->get_pdo();
             if (!$pdo) {
