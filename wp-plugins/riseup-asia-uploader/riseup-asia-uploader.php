@@ -79,85 +79,61 @@ function riseup_backtrace_to_frames($backtrace) {
 }
 
 // =============================================================================
-// GLOBAL ERROR HANDLER FOR JSON RESPONSES
+// FATAL ERROR HANDLER HELPERS
 // =============================================================================
 
 /**
- * Custom error handler to catch fatal errors and return JSON response.
- * This ensures API consumers get proper error responses instead of HTML stack traces.
- * 
- * Enhanced in v1.7.0:
- * - Better output buffer handling
- * - Enhanced stack trace generation
- * - Memory tracking for OOM detection
- * - JSON encoding error handling
+ * Check whether the last PHP error is a fatal REST API error for our namespace.
+ *
+ * @param array|null $error Result of error_get_last().
+ * @return bool True if this is a fatal error on a plugin REST request.
  */
-function riseup_fatal_error_handler() {
-    $error = error_get_last();
-    // SAFETY: Use native PHP checks here — RiseupBooleanHelpers may not be loaded yet
-    // if the fatal error occurred during class loading.
+function riseup_is_fatal_rest_error($error) {
     if ($error === null) {
-        return;
+        return false;
     }
-    
-    // Only handle fatal errors
+
     $fatal_types = array(E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR);
-    if (!in_array($error['type'], $fatal_types)) {
-        return;
+    $isFatalType = in_array($error['type'], $fatal_types, true);
+
+    if (!$isFatalType) {
+        return false;
     }
-    
-    // Only handle if this is a REST API request to our namespace
+
     $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
-    if (strpos($request_uri, 'riseup-asia-uploader') === false && strpos($request_uri, 'wp-json') === false) {
-        return;
-    }
-    
-    // Try to log to file before any output (helps with complete crashes)
-    $log_entry = sprintf(
-        "[%s] FATAL ERROR in %s:%d - %s (type: %s)\n",
-        date('Y-m-d H:i:s'),
-        $error['file'],
-        $error['line'],
-        $error['message'],
-        riseup_error_type_to_string($error['type'])
-    );
-    
-    // Attempt to write to a simple log file (even if plugin logger isn't available)
-    $uploads = wp_upload_dir();
-    $log_file = $uploads['basedir'] . '/riseup-asia-uploader/fatal-errors.log';
-    @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
-    
-    // Clean any existing output to ensure pure JSON response
-    while (ob_get_level()) {
-        @ob_end_clean();
-    }
-    
-    // Set proper headers before any output
-    if (!headers_sent()) {
-        header('Content-Type: application/json; charset=utf-8');
-        http_response_code(500);
-    }
-    
-    // Generate detailed stack trace from error location
+    $isPluginRequest = strpos($request_uri, 'riseup-asia-uploader') !== false || strpos($request_uri, 'wp-json') !== false;
+
+    return $isPluginRequest;
+}
+
+/**
+ * Build structured stack trace lines and frames from a fatal error.
+ *
+ * @param array $error The error from error_get_last().
+ * @return array{trace_lines: string[], frames: array} Trace lines and structured frames.
+ */
+function riseup_build_fatal_frames($error) {
     $trace_lines = array();
     $trace_lines[] = sprintf("#0 %s(%d): Fatal error occurred", $error['file'], $error['line']);
-    
-    // Try to get any available backtrace (may be limited in shutdown)
+
+    $backtrace = null;
     if (function_exists('debug_backtrace')) {
         $backtrace = @debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);
-        if (is_array($backtrace)) {
-            foreach ($backtrace as $i => $frame) {
-                $file = isset($frame['file']) ? $frame['file'] : '[internal]';
-                $line = isset($frame['line']) ? $frame['line'] : 0;
-                $func = isset($frame['function']) ? $frame['function'] : '';
-                $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
-                $trace_lines[] = sprintf("#%d %s(%d): %s%s()", $i + 1, $file, $line, $class, $func);
-            }
+    }
+
+    if (is_array($backtrace)) {
+        foreach ($backtrace as $i => $frame) {
+            $file  = isset($frame['file']) ? $frame['file'] : '[internal]';
+            $line  = isset($frame['line']) ? $frame['line'] : 0;
+            $func  = isset($frame['function']) ? $frame['function'] : '';
+            $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
+            $trace_lines[] = sprintf("#%d %s(%d): %s%s()", $i + 1, $file, $line, $class, $func);
         }
     }
+
     $trace_lines[] = sprintf("#%d [internal function]: PHP shutdown handler", count($trace_lines));
-    
-    // Generate frames array for structured parsing
+
+    // Structured frames
     $frames = array(
         array(
             'file'     => $error['file'],
@@ -167,9 +143,8 @@ function riseup_fatal_error_handler() {
             'class'    => '',
         ),
     );
-    
-    // Add backtrace frames if available
-    if (isset($backtrace) && is_array($backtrace)) {
+
+    if (is_array($backtrace)) {
         foreach ($backtrace as $frame) {
             $frames[] = array(
                 'file'     => isset($frame['file']) ? $frame['file'] : '[internal]',
@@ -180,7 +155,7 @@ function riseup_fatal_error_handler() {
             );
         }
     }
-    
+
     $frames[] = array(
         'file'     => '[internal]',
         'fileBase' => '[internal]',
@@ -188,12 +163,25 @@ function riseup_fatal_error_handler() {
         'function' => 'shutdown_handler',
         'class'    => 'PHP',
     );
-    
-    // Build the error response
-    $response = array(
+
+    return array('trace_lines' => $trace_lines, 'frames' => $frames);
+}
+
+/**
+ * Build the JSON response array for a fatal error.
+ *
+ * @param array    $error       The error from error_get_last().
+ * @param string[] $trace_lines Formatted stack trace lines.
+ * @param array    $frames      Structured frame objects.
+ * @return array Response envelope.
+ */
+function riseup_build_fatal_response($error, $trace_lines, $frames) {
+    $request_uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+
+    return array(
         'success' => false,
-        'error' => array(
-            'code' => 'FATAL_ERROR',
+        'error'   => array(
+            'code'    => 'FATAL_ERROR',
             'message' => 'A fatal error occurred in the plugin: ' . $error['message'],
             'details' => array(
                 'type'             => $error['type'],
@@ -214,21 +202,62 @@ function riseup_fatal_error_handler() {
             ),
         ),
     );
-    
-    // Attempt JSON encoding with error handling
+}
+
+// =============================================================================
+// GLOBAL ERROR HANDLER FOR JSON RESPONSES
+// =============================================================================
+
+/**
+ * Custom error handler to catch fatal errors and return JSON response.
+ * Delegates detection, frame building, and response assembly to focused helpers.
+ */
+function riseup_fatal_error_handler() {
+    $error = error_get_last();
+
+    if (!riseup_is_fatal_rest_error($error)) {
+        return;
+    }
+
+    // Log to file before any output
+    $log_entry = sprintf(
+        "[%s] FATAL ERROR in %s:%d - %s (type: %s)\n",
+        date('Y-m-d H:i:s'),
+        $error['file'],
+        $error['line'],
+        $error['message'],
+        riseup_error_type_to_string($error['type'])
+    );
+    $uploads  = wp_upload_dir();
+    $log_file = $uploads['basedir'] . '/riseup-asia-uploader/fatal-errors.log';
+    @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
+
+    // Clean output buffers
+    while (ob_get_level()) {
+        @ob_end_clean();
+    }
+
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(500);
+    }
+
+    // Build and emit response
+    $frame_data = riseup_build_fatal_frames($error);
+    $response   = riseup_build_fatal_response($error, $frame_data['trace_lines'], $frame_data['frames']);
+
     $json = @json_encode($response, JSON_UNESCAPED_SLASHES);
     if ($json === false) {
-        // JSON encoding failed - return minimal response
         $minimal = array(
             'success' => false,
-            'error' => array(
-                'code' => 'FATAL_ERROR_ENCODING_FAILED',
+            'error'   => array(
+                'code'    => 'FATAL_ERROR_ENCODING_FAILED',
                 'message' => 'Fatal error occurred and JSON encoding also failed',
                 'details' => array(
                     'originalMessage' => substr($error['message'], 0, 500),
-                    'file' => basename($error['file']),
-                    'line' => $error['line'],
-                    'jsonError' => json_last_error_msg(),
+                    'file'            => basename($error['file']),
+                    'line'            => $error['line'],
+                    'jsonError'       => json_last_error_msg(),
                 ),
             ),
         );
@@ -236,7 +265,7 @@ function riseup_fatal_error_handler() {
     } else {
         echo $json;
     }
-    
+
     exit;
 }
 
