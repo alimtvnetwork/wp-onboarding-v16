@@ -768,7 +768,7 @@ class RiseupSnapshotCleaner {
     private function logCleanupAudit($results) {
         try {
             $this->db->logTransaction(
-                RISEUP_ACTION_SNAPSHOT_CLEANUP,
+                ACTION_SNAPSHOT_CLEANUP,
                 json_encode(array(
                     'retention_deleted'   => $results['retention']['deleted'],
                     'retention_skipped'   => $results['retention']['skipped_master'],
@@ -778,8 +778,8 @@ class RiseupSnapshotCleaner {
                     'errors'              => count($results['errors']),
                     'duration'            => $results['duration'],
                 )),
-                empty($results['errors']) ? RISEUP_STATUS_SUCCESS : RISEUP_STATUS_FAILED,
-                RISEUP_TRIGGERED_BY_API
+                empty($results['errors']) ? STATUS_SUCCESS : STATUS_FAILED,
+                TRIGGERED_BY_API
             );
         } catch (Exception $e) {
             $this->log('ERROR', 'Failed to log cleanup action', array('error' => $e->getMessage()));

@@ -74,7 +74,7 @@ class RiseupSnapshotExporter {
         // 1. Validate snapshot exists and is a full snapshot
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
         if (!$snapshot) {
-            return array('success' => false, 'error' => 'Full snapshot not found', 'code' => RISEUP_ERR_SNAPSHOT_NOT_FOUND);
+            return array('success' => false, 'error' => 'Full snapshot not found', 'code' => ERR_SNAPSHOT_NOT_FOUND);
         }
 
         // 2. Check for a valid cached export
@@ -130,10 +130,10 @@ class RiseupSnapshotExporter {
 
         // Mark as expired in DB
         $stmt = $pdo->prepare(
-            'UPDATE ' . RISEUP_TABLE_SNAPSHOT_EXPORTS .
+            'UPDATE ' . TABLE_SNAPSHOT_EXPORTS .
             ' SET status = ?, expires_at = datetime(\'now\') WHERE id = ?'
         );
-        $stmt->execute(array(RISEUP_SNAPSHOT_EXPORT_STATUS_EXPIRED, $export['id']));
+        $stmt->execute(array(SNAPSHOT_EXPORT_STATUS_EXPIRED, $export['id']));
 
         $this->log('INFO', 'Export marked as expired', array('export_id' => $export['id']));
         return true;
@@ -154,7 +154,7 @@ class RiseupSnapshotExporter {
         }
 
         $stmt = $pdo->prepare(
-            'SELECT id, zip_path FROM ' . RISEUP_TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?'
+            'SELECT id, zip_path FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?'
         );
         $stmt->execute(array($fullSnapshotId));
         $exports = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -166,7 +166,7 @@ class RiseupSnapshotExporter {
             }
         }
 
-        $stmt = $pdo->prepare('DELETE FROM ' . RISEUP_TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
+        $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
         $stmt->execute(array($fullSnapshotId));
 
         $this->log('INFO', 'Removed all exports for snapshot', array(
@@ -183,7 +183,7 @@ class RiseupSnapshotExporter {
      */
     public function getDownloadUrl($exportId) {
         $export = $this->getExportById($exportId);
-        if (!$export || $export['status'] !== RISEUP_SNAPSHOT_EXPORT_STATUS_VALID) {
+        if (!$export || $export['status'] !== SNAPSHOT_EXPORT_STATUS_VALID) {
             return null;
         }
 
@@ -192,8 +192,8 @@ class RiseupSnapshotExporter {
         $nonce = wp_create_nonce('riseup_snapshot_download_' . $exportId);
 
         return rest_url(
-            RISEUP_API_FULL_NAMESPACE . '/' .
-            RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD_FILE .
+            API_FULL_NAMESPACE . '/' .
+            ENDPOINT_SNAPSHOT_DOWNLOAD_FILE .
             '?token=' . $nonce .
             '&id=' . $exportId
         );
@@ -220,7 +220,7 @@ class RiseupSnapshotExporter {
             return null;
         }
 
-        if ($export['status'] !== RISEUP_SNAPSHOT_EXPORT_STATUS_VALID) {
+        if ($export['status'] !== SNAPSHOT_EXPORT_STATUS_VALID) {
             $this->log('WARN', 'Export is not valid', array('export_id' => $exportId, 'status' => $export['status']));
             return null;
         }
@@ -246,7 +246,7 @@ class RiseupSnapshotExporter {
         }
 
         $stmt = $pdo->prepare(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOT_EXPORTS .
+            'SELECT * FROM ' . TABLE_SNAPSHOT_EXPORTS .
             ' WHERE snapshot_id = ? ORDER BY created_at DESC LIMIT 1'
         );
         $stmt->execute(array($fullSnapshotId));
@@ -269,7 +269,7 @@ class RiseupSnapshotExporter {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE id = ?');
         $stmt->execute(array($snapshotId));
         $snapshot = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -283,7 +283,7 @@ class RiseupSnapshotExporter {
             return null;
         }
 
-        if ($snapshot['status'] !== RISEUP_SNAPSHOT_STATUS_COMPLETE) {
+        if ($snapshot['status'] !== SNAPSHOT_STATUS_COMPLETE) {
             $this->log('WARN', 'Snapshot not complete', array('id' => $snapshotId, 'status' => $snapshot['status']));
             return null;
         }
@@ -304,10 +304,10 @@ class RiseupSnapshotExporter {
         }
 
         $stmt = $pdo->prepare(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOT_EXPORTS .
+            'SELECT * FROM ' . TABLE_SNAPSHOT_EXPORTS .
             ' WHERE snapshot_id = ? AND status = ?'
         );
-        $stmt->execute(array($snapshotId, RISEUP_SNAPSHOT_EXPORT_STATUS_VALID));
+        $stmt->execute(array($snapshotId, SNAPSHOT_EXPORT_STATUS_VALID));
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
@@ -323,7 +323,7 @@ class RiseupSnapshotExporter {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . RISEUP_TABLE_SNAPSHOT_EXPORTS . ' WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE id = ?');
         $stmt->execute(array($exportId));
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
@@ -340,7 +340,7 @@ class RiseupSnapshotExporter {
             return;
         }
 
-        $stmt = $pdo->prepare('DELETE FROM ' . RISEUP_TABLE_SNAPSHOT_EXPORTS . ' WHERE id = ?');
+        $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE id = ?');
         $stmt->execute(array($exportId));
     }
 
@@ -360,10 +360,10 @@ class RiseupSnapshotExporter {
         ));
 
         // Ensure exports directory exists
-        $exportsDir = RiseupPathUtils::getSnapshotsDir() . '/' . RISEUP_SNAPSHOT_EXPORTS_SUBDIR;
+        $exportsDir = RiseupPathUtils::getSnapshotsDir() . '/' . SNAPSHOT_EXPORTS_SUBDIR;
         if (!is_dir($exportsDir)) {
             if (!wp_mkdir_p($exportsDir)) {
-                return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => RISEUP_ERR_EXPORT_BUILD_FAILED);
+                return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => ERR_EXPORT_BUILD_FAILED);
             }
             // Add security files
             @file_put_contents($exportsDir . '/.htaccess', "deny from all\n");
@@ -378,11 +378,11 @@ class RiseupSnapshotExporter {
         // Mark as building (INSERT OR REPLACE to handle unique constraint)
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
-            return array('success' => false, 'error' => 'Database unavailable', 'code' => RISEUP_ERR_EXPORT_BUILD_FAILED);
+            return array('success' => false, 'error' => 'Database unavailable', 'code' => ERR_EXPORT_BUILD_FAILED);
         }
 
         $stmt = $pdo->prepare(
-            'INSERT OR REPLACE INTO ' . RISEUP_TABLE_SNAPSHOT_EXPORTS .
+            'INSERT OR REPLACE INTO ' . TABLE_SNAPSHOT_EXPORTS .
             ' (snapshot_id, zip_filename, zip_path, zip_size, included_ids, incremental_count, status, created_at)' .
             ' VALUES (?, ?, ?, 0, ?, 0, ?, datetime(\'now\'))'
         );
@@ -391,7 +391,7 @@ class RiseupSnapshotExporter {
             $zipFilename,
             $zipPath,
             json_encode(array($snapshotId)),
-            RISEUP_SNAPSHOT_EXPORT_STATUS_BUILDING,
+            SNAPSHOT_EXPORT_STATUS_BUILDING,
         ));
 
         try {
@@ -400,7 +400,7 @@ class RiseupSnapshotExporter {
 
             if (empty($files)) {
                 $this->deleteExportRecord($pdo->lastInsertId() ?: $snapshotId);
-                return array('success' => false, 'error' => 'No snapshot files found to export', 'code' => RISEUP_ERR_EXPORT_BUILD_FAILED);
+                return array('success' => false, 'error' => 'No snapshot files found to export', 'code' => ERR_EXPORT_BUILD_FAILED);
             }
 
             // Collect incremental children
@@ -425,7 +425,7 @@ class RiseupSnapshotExporter {
                 return array(
                     'success' => false,
                     'error'   => 'Failed to create ZIP archive (error code: ' . $openResult . ')',
-                    'code'    => RISEUP_ERR_EXPORT_BUILD_FAILED,
+                    'code'    => ERR_EXPORT_BUILD_FAILED,
                 );
             }
 
@@ -453,7 +453,7 @@ class RiseupSnapshotExporter {
 
             // Add manifest
             $manifest = array(
-                'version'           => RISEUP_VERSION,
+                'version'           => PLUGIN_VERSION,
                 'created_at'        => gmdate('c'),
                 'snapshot_id'       => $snapshotId,
                 'filename'          => $snapshot['filename'],
@@ -471,12 +471,12 @@ class RiseupSnapshotExporter {
             // Update record with final size
             $zipSize = filesize($zipPath);
             $stmt = $pdo->prepare(
-                'UPDATE ' . RISEUP_TABLE_SNAPSHOT_EXPORTS .
+                'UPDATE ' . TABLE_SNAPSHOT_EXPORTS .
                 ' SET status = ?, zip_size = ?, included_ids = ?, incremental_count = ?' .
                 ' WHERE snapshot_id = ?'
             );
             $stmt->execute(array(
-                RISEUP_SNAPSHOT_EXPORT_STATUS_VALID,
+                SNAPSHOT_EXPORT_STATUS_VALID,
                 $zipSize,
                 json_encode($includedIds),
                 count($incrementals),
@@ -512,13 +512,13 @@ class RiseupSnapshotExporter {
             }
 
             // Mark as failed / remove record
-            $stmt = $pdo->prepare('DELETE FROM ' . RISEUP_TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
+            $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
             $stmt->execute(array($snapshotId));
 
             return array(
                 'success' => false,
                 'error'   => 'ZIP build failed: ' . $e->getMessage(),
-                'code'    => RISEUP_ERR_EXPORT_BUILD_FAILED,
+                'code'    => ERR_EXPORT_BUILD_FAILED,
             );
         }
     }
@@ -597,11 +597,11 @@ class RiseupSnapshotExporter {
 
         // Match incrementals by filepath containing the parent directory
         $stmt = $pdo->prepare(
-            'SELECT id, filename, filepath, scope, status, created_at FROM ' . RISEUP_TABLE_SNAPSHOTS .
+            'SELECT id, filename, filepath, scope, status, created_at FROM ' . TABLE_SNAPSHOTS .
             ' WHERE scope = \'incremental\' AND filepath LIKE ? AND status = ? ORDER BY created_at ASC'
         );
         $parentDir = '%/' . $parentName . '/incremental/%';
-        $stmt->execute(array($parentDir, RISEUP_SNAPSHOT_STATUS_COMPLETE));
+        $stmt->execute(array($parentDir, SNAPSHOT_STATUS_COMPLETE));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

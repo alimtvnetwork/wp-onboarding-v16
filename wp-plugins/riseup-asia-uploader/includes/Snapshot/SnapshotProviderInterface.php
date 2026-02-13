@@ -243,16 +243,16 @@ abstract class RiseupSnapshotProviderInterface {
 
         if ($this->logger) {
             switch ($level) {
-                case RISEUP_LOG_LEVEL_DEBUG:
+                case LOG_LEVEL_DEBUG:
                     $this->logger->debug($full_message);
                     break;
-                case RISEUP_LOG_LEVEL_INFO:
+                case LOG_LEVEL_INFO:
                     $this->logger->info($full_message);
                     break;
-                case RISEUP_LOG_LEVEL_WARN:
+                case LOG_LEVEL_WARN:
                     $this->logger->warn($full_message);
                     break;
-                case RISEUP_LOG_LEVEL_ERROR:
+                case LOG_LEVEL_ERROR:
                     $this->logger->error($full_message);
                     break;
                 default:
@@ -286,11 +286,11 @@ abstract class RiseupSnapshotProviderInterface {
         );
 
         if ($dir === false) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to ensure snapshots directory');
+            $this->log(LOG_LEVEL_ERROR, 'Failed to ensure snapshots directory');
             return false;
         }
 
-        $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Snapshots directory ensured', array('path' => $dir));
+        $this->log(LOG_LEVEL_DEBUG, 'Snapshots directory ensured', array('path' => $dir));
         return true;
     }
 
@@ -313,7 +313,7 @@ abstract class RiseupSnapshotProviderInterface {
      */
     protected function getNextSequence() {
         $result = $this->db->query_single(
-            'SELECT MAX(sequence) as max_seq FROM ' . RISEUP_TABLE_SNAPSHOTS
+            'SELECT MAX(sequence) as max_seq FROM ' . TABLE_SNAPSHOTS
         );
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
@@ -334,7 +334,7 @@ abstract class RiseupSnapshotProviderInterface {
         $lock_time = filemtime($lock_file);
         if (time() - $lock_time > 1800) {
             RiseupPathUtils::delete_file($lock_file);
-            $this->log(RISEUP_LOG_LEVEL_WARN, 'Removed stale lock file', array('age_minutes' => round((time() - $lock_time) / 60)));
+            $this->log(LOG_LEVEL_WARN, 'Removed stale lock file', array('age_minutes' => round((time() - $lock_time) / 60)));
             return false;
         }
 
@@ -353,7 +353,7 @@ abstract class RiseupSnapshotProviderInterface {
 
         // Ensure directory exists first
         if (!$this->ensureSnapshotsDir()) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Cannot acquire lock - directory creation failed');
+            $this->log(LOG_LEVEL_ERROR, 'Cannot acquire lock - directory creation failed');
             return false;
         }
 
@@ -368,14 +368,14 @@ abstract class RiseupSnapshotProviderInterface {
 
         if ($result === false) {
             $error = error_get_last();
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to acquire lock', array(
+            $this->log(LOG_LEVEL_ERROR, 'Failed to acquire lock', array(
                 'path' => $lock_file,
                 'error' => $error ? $error['message'] : 'Unknown error',
             ));
             return false;
         }
 
-        $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Lock acquired', array('path' => $lock_file));
+        $this->log(LOG_LEVEL_DEBUG, 'Lock acquired', array('path' => $lock_file));
         return true;
     }
 
@@ -387,7 +387,7 @@ abstract class RiseupSnapshotProviderInterface {
         
         if (RiseupPathUtils::file_exists($lock_file)) {
             RiseupPathUtils::delete_file($lock_file);
-            $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Lock released');
+            $this->log(LOG_LEVEL_DEBUG, 'Lock released');
         }
     }
 

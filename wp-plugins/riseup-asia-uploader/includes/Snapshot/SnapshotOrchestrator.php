@@ -534,7 +534,7 @@ class RiseupSnapshotOrchestrator {
                 'plugin_details' => $plugin_stats['plugins'] ?? array(),
             ));
 
-            $stmt = $pdo->prepare("INSERT INTO " . RISEUP_TABLE_SNAPSHOTS . "
+            $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOTS . "
                 (sequence, filename, filepath, provider, scope, tables_json, total_rows,
                  file_size, trigger_source, status, created_at, completed_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -546,13 +546,13 @@ class RiseupSnapshotOrchestrator {
                 $sequence,
                 $filename,
                 $snapshot_dir,
-                RISEUP_SNAPSHOT_PROVIDER_NATIVE,
+                SNAPSHOT_PROVIDER_NATIVE,
                 $scope,
                 $tables_json,
                 $worker_result['total_rows'] ?? 0,
                 $dir_size,
-                RISEUP_SNAPSHOT_TRIGGER_API,
-                RISEUP_SNAPSHOT_STATUS_COMPLETE,
+                SNAPSHOT_TRIGGER_API,
+                SNAPSHOT_STATUS_COMPLETE,
                 $now,
                 $now,
             ));

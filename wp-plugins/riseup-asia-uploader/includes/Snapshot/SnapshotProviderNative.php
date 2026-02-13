@@ -32,7 +32,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
      *
      * @var string
      */
-    protected $provider_id = RISEUP_SNAPSHOT_PROVIDER_NATIVE;
+    protected $provider_id = SNAPSHOT_PROVIDER_NATIVE;
 
     /**
      * Provider name.
@@ -93,7 +93,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
      * @return array Snapshot result.
      */
     public function createSnapshot($options) {
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot creation requested', $options);
+        $this->log(LOG_LEVEL_INFO, 'Snapshot creation requested', $options);
 
         // Ensure directory exists
         if (!$this->ensureSnapshotsDir()) {
@@ -105,16 +105,16 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
 
         // Check for existing lock
         if ($this->isLocked()) {
-            $this->log(RISEUP_LOG_LEVEL_WARN, 'Snapshot already in progress (locked)');
+            $this->log(LOG_LEVEL_WARN, 'Snapshot already in progress (locked)');
             return array(
                 'success' => false,
                 'error' => 'Another snapshot operation is in progress',
-                'code' => RISEUP_ERR_SNAPSHOT_LOCK_EXISTS,
+                'code' => ERR_SNAPSHOT_LOCK_EXISTS,
             );
         }
 
         // Determine tables to export
-        $scope = isset($options['scope']) ? $options['scope'] : RISEUP_SNAPSHOT_SCOPE_WORDPRESS;
+        $scope = isset($options['scope']) ? $options['scope'] : SNAPSHOT_SCOPE_WORDPRESS;
         $tables = $this->getTablesForScope($scope, isset($options['tables']) ? $options['tables'] : array());
 
         if (empty($tables)) {
@@ -143,7 +143,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
         // Schedule the actual export via cron
         $scheduled = wp_schedule_single_event(
             time() + 5, // 5 seconds from now
-            RISEUP_CRON_SNAPSHOT_IMMEDIATE,
+            CRON_SNAPSHOT_IMMEDIATE,
             array(array(
                 'snapshot_id' => $snapshot_id,
                 'tables' => $tables,
@@ -152,12 +152,12 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
 
         if ($scheduled === false) {
             // Direct execution as fallback (not recommended)
-            $this->log(RISEUP_LOG_LEVEL_WARN, 'Cron scheduling failed, executing directly');
+            $this->log(LOG_LEVEL_WARN, 'Cron scheduling failed, executing directly');
             $result = $this->executeSnapshot($snapshot_id, $tables);
             return $result;
         }
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot scheduled via cron', array(
+        $this->log(LOG_LEVEL_INFO, 'Snapshot scheduled via cron', array(
             'snapshot_id' => $snapshot_id,
             'filename' => $filename,
             'tables' => count($tables),
@@ -167,7 +167,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
             'success' => true,
             'snapshot_id' => $snapshot_id,
             'filename' => $filename . '.sqlite',
-            'status' => RISEUP_SNAPSHOT_STATUS_SCHEDULED,
+            'status' => SNAPSHOT_STATUS_SCHEDULED,
             'tables' => count($tables),
             'scheduled_at' => date('c', time() + 5),
         );
@@ -193,15 +193,15 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
 
         // Acquire lock
         if (!$this->acquireLock()) {
-            $this->updateSnapshotStatus($snapshot_id, RISEUP_SNAPSHOT_STATUS_FAILED, 'Failed to acquire lock');
+            $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_FAILED, 'Failed to acquire lock');
             return array('success' => false, 'error' => 'Failed to acquire lock');
         }
 
         try {
             // Update status to running
-            $this->updateSnapshotStatus($snapshot_id, RISEUP_SNAPSHOT_STATUS_RUNNING);
+            $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_RUNNING);
 
-            $this->log(RISEUP_LOG_LEVEL_INFO, 'Starting snapshot export', array(
+            $this->log(LOG_LEVEL_INFO, 'Starting snapshot export', array(
                 'snapshot_id' => $snapshot_id,
                 'filepath' => $filepath,
                 'tables' => count($tables),
@@ -218,21 +218,21 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
 
             // Export each table
             foreach ($tables as $table) {
-                $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Exporting table: ' . $table);
+                $this->log(LOG_LEVEL_DEBUG, 'Exporting table: ' . $table);
 
                 $result = $this->exportTable($sqlite, $table, $snapshot_id);
 
                 if ($result['success']) {
                     $total_rows += $result['rows'];
                     $table_counts[$table] = $result['rows'];
-                    $this->log(RISEUP_LOG_LEVEL_INFO, sprintf(
+                    $this->log(LOG_LEVEL_INFO, sprintf(
                         'Table %s complete (%d rows, %s)',
                         $table,
                         $result['rows'],
                         $this->formatBytes($result['bytes'])
                     ));
                 } else {
-                    $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to export table: ' . $table, array(
+                    $this->log(LOG_LEVEL_ERROR, 'Failed to export table: ' . $table, array(
                         'error' => $result['error']
                     ));
                     // Continue with other tables
@@ -248,14 +248,14 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
 
             // Update snapshot record
             $this->finalizeSnapshot($snapshot_id, array(
-                'status' => RISEUP_SNAPSHOT_STATUS_COMPLETE,
+                'status' => SNAPSHOT_STATUS_COMPLETE,
                 'file_size' => $file_size,
                 'total_rows' => $total_rows,
                 'table_counts' => $table_counts,
                 'duration_ms' => (int)($duration * 1000),
             ));
 
-            $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot complete', array(
+            $this->log(LOG_LEVEL_INFO, 'Snapshot complete', array(
                 'snapshot_id' => $snapshot_id,
                 'filepath' => $filepath,
                 'size' => $this->formatBytes($file_size),
@@ -276,12 +276,12 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
             );
 
         } catch (Exception $e) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Snapshot failed', array(
+            $this->log(LOG_LEVEL_ERROR, 'Snapshot failed', array(
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ));
 
-            $this->updateSnapshotStatus($snapshot_id, RISEUP_SNAPSHOT_STATUS_FAILED, $e->getMessage());
+            $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_FAILED, $e->getMessage());
 
             return array(
                 'success' => false,
@@ -303,7 +303,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
         // Validate path is within snapshots directory
         $snapshots_dir = $this->getSnapshotsDir();
         if (!RiseupPathUtils::isSafePath($filepath, $snapshots_dir)) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Unsafe path detected for SQLite database', array(
+            $this->log(LOG_LEVEL_ERROR, 'Unsafe path detected for SQLite database', array(
                 'filepath' => $filepath,
                 'base' => $snapshots_dir,
             ));
@@ -313,14 +313,14 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
         // Ensure parent directory exists
         $parent_dir = dirname($filepath);
         if (!RiseupPathUtils::ensureDir($parent_dir, true)) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to ensure parent directory for SQLite', array(
+            $this->log(LOG_LEVEL_ERROR, 'Failed to ensure parent directory for SQLite', array(
                 'parent' => $parent_dir,
             ));
             return null;
         }
 
         try {
-            $this->log(RISEUP_LOG_LEVEL_DEBUG, 'Creating SQLite database', array('filepath' => $filepath));
+            $this->log(LOG_LEVEL_DEBUG, 'Creating SQLite database', array('filepath' => $filepath));
 
             $pdo = new PDO('sqlite:' . $filepath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -342,7 +342,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
                 'site_url' => get_site_url(),
                 'php_version' => PHP_VERSION,
                 'provider' => $this->provider_id,
-                'plugin_version' => RISEUP_VERSION,
+                'plugin_version' => PLUGIN_VERSION,
             );
 
             $stmt = $pdo->prepare('INSERT INTO _snapshot_meta (key, value) VALUES (?, ?)');
@@ -353,7 +353,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
             return $pdo;
 
         } catch (Exception $e) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to create SQLite database', array(
+            $this->log(LOG_LEVEL_ERROR, 'Failed to create SQLite database', array(
                 'filepath' => $filepath,
                 'error' => $e->getMessage(),
             ));
@@ -402,7 +402,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
             $stmt = $sqlite->prepare($insert_sql);
 
             // Export in batches
-            $batch_size = RISEUP_SNAPSHOT_BATCH_SIZE;
+            $batch_size = SNAPSHOT_BATCH_SIZE;
             $offset = 0;
             $exported = 0;
             $bytes = 0;
@@ -430,11 +430,11 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
                 // Log progress every 25%
                 $progress = ($offset / $count) * 100;
                 if ($progress >= 25 && ($offset - $batch_size) / $count * 100 < 25) {
-                    $this->log(RISEUP_LOG_LEVEL_DEBUG, "{$table}: 25% complete");
+                    $this->log(LOG_LEVEL_DEBUG, "{$table}: 25% complete");
                 } elseif ($progress >= 50 && ($offset - $batch_size) / $count * 100 < 50) {
-                    $this->log(RISEUP_LOG_LEVEL_DEBUG, "{$table}: 50% complete");
+                    $this->log(LOG_LEVEL_DEBUG, "{$table}: 50% complete");
                 } elseif ($progress >= 75 && ($offset - $batch_size) / $count * 100 < 75) {
-                    $this->log(RISEUP_LOG_LEVEL_DEBUG, "{$table}: 75% complete");
+                    $this->log(LOG_LEVEL_DEBUG, "{$table}: 75% complete");
                 }
             }
 
@@ -551,16 +551,16 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
         $prefix = $this->wpdb->prefix;
 
         switch ($scope) {
-            case RISEUP_SNAPSHOT_SCOPE_ALL:
+            case SNAPSHOT_SCOPE_ALL:
                 return $all_tables;
 
-            case RISEUP_SNAPSHOT_SCOPE_WORDPRESS:
+            case SNAPSHOT_SCOPE_WORDPRESS:
                 // Only tables with WP prefix
                 return array_filter($all_tables, function($table) use ($prefix) {
                     return strpos($table, $prefix) === 0;
                 });
 
-            case RISEUP_SNAPSHOT_SCOPE_CONTENT:
+            case SNAPSHOT_SCOPE_CONTENT:
                 // Posts, comments, terms, and related
                 $content_tables = array(
                     $prefix . 'posts',
@@ -576,7 +576,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
                     return in_array($table, $content_tables);
                 });
 
-            case RISEUP_SNAPSHOT_SCOPE_CUSTOM:
+            case SNAPSHOT_SCOPE_CUSTOM:
                 // User-specified tables
                 return array_filter($all_tables, function($table) use ($custom) {
                     return in_array($table, $custom);
@@ -607,11 +607,11 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
             'scope' => $scope,
             'tables_json' => json_encode($tables),
             'trigger_source' => $trigger,
-            'status' => RISEUP_SNAPSHOT_STATUS_PENDING,
+            'status' => SNAPSHOT_STATUS_PENDING,
             'created_at' => date('c'),
         );
 
-        $result = $this->db->insert(RISEUP_TABLE_SNAPSHOTS, $data);
+        $result = $this->db->insert(TABLE_SNAPSHOTS, $data);
 
         if ($result) {
             return $this->db->lastInsertId();
@@ -637,11 +637,11 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
             $data['error_message'] = $error;
         }
 
-        if ($status === RISEUP_SNAPSHOT_STATUS_RUNNING) {
+        if ($status === SNAPSHOT_STATUS_RUNNING) {
             $data['started_at'] = date('c');
         }
 
-        $this->db->update(RISEUP_TABLE_SNAPSHOTS, $data, array('id' => $snapshot_id));
+        $this->db->update(TABLE_SNAPSHOTS, $data, array('id' => $snapshot_id));
     }
 
     /**
@@ -661,7 +661,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
             'updated_at' => date('c'),
         );
 
-        $this->db->update(RISEUP_TABLE_SNAPSHOTS, $data, array('id' => $snapshot_id));
+        $this->db->update(TABLE_SNAPSHOTS, $data, array('id' => $snapshot_id));
     }
 
     /**
@@ -695,7 +695,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
         $filepath = $snapshot['filepath'];
         if (RiseupPathUtils::fileExists($filepath)) {
             if (!RiseupPathUtils::deleteFile($filepath)) {
-                $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to delete snapshot file', array(
+                $this->log(LOG_LEVEL_ERROR, 'Failed to delete snapshot file', array(
                     'filepath' => $filepath,
                 ));
                 return array('success' => false, 'error' => 'Failed to delete snapshot file');
@@ -709,9 +709,9 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
         }
 
         // Delete database record
-        $this->db->delete(RISEUP_TABLE_SNAPSHOTS, array('id' => $snapshot_id));
+        $this->db->delete(TABLE_SNAPSHOTS, array('id' => $snapshot_id));
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot deleted', array(
+        $this->log(LOG_LEVEL_INFO, 'Snapshot deleted', array(
             'snapshot_id' => $snapshot_id,
             'filename' => $snapshot['filename'],
         ));
@@ -748,7 +748,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
 
         // Add manifest
         $manifest = array(
-            'version' => RISEUP_VERSION,
+            'version' => PLUGIN_VERSION,
             'created_at' => date('c'),
             'snapshot_id' => $snapshot_id,
             'filename' => $snapshot['filename'],
@@ -791,7 +791,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
      */
     public function getSnapshot($snapshot_id) {
         return $this->db->query_single(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE id = ?',
+            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE id = ?',
             array($snapshot_id)
         );
     }
@@ -805,12 +805,12 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
      */
     public function listSnapshots($limit = 50, $offset = 0) {
         $snapshots = $this->db->query_all(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
         );
 
         $total = $this->db->query_single(
-            'SELECT COUNT(*) as count FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE provider = ?',
+            'SELECT COUNT(*) as count FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ?',
             array($this->provider_id)
         );
 

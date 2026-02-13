@@ -71,7 +71,7 @@ class RiseupIncrementalBackup {
         $this->logger = $logger;
         $this->db = $db;
         $this->rootDb = $rootDb;
-        $this->batchSize = RISEUP_SNAPSHOT_BATCH_SIZE;
+        $this->batchSize = SNAPSHOT_BATCH_SIZE;
     }
 
     /**
@@ -268,10 +268,10 @@ class RiseupIncrementalBackup {
 
             // Find the parent full snapshot by matching filepath to master_dir
             $stmt = $pdo->prepare(
-                'SELECT id FROM ' . RISEUP_TABLE_SNAPSHOTS .
+                'SELECT id FROM ' . TABLE_SNAPSHOTS .
                 ' WHERE filepath = ? AND status = ? LIMIT 1'
             );
-            $stmt->execute(array($master_dir, RISEUP_SNAPSHOT_STATUS_COMPLETE));
+            $stmt->execute(array($master_dir, SNAPSHOT_STATUS_COMPLETE));
             $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$parent) {
@@ -650,7 +650,7 @@ class RiseupIncrementalBackup {
             $master_basename = basename($master_dir);
 
             // Get next snapshot sequence from tracking table
-            $seq_result = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . RISEUP_TABLE_SNAPSHOTS);
+            $seq_result = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TABLE_SNAPSHOTS);
             $row = $seq_result->fetch(PDO::FETCH_ASSOC);
             $snap_sequence = ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
 
@@ -675,7 +675,7 @@ class RiseupIncrementalBackup {
                 }
             }
 
-            $stmt = $pdo->prepare("INSERT INTO " . RISEUP_TABLE_SNAPSHOTS . "
+            $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOTS . "
                 (sequence, filename, filepath, provider, scope, tables_json, total_rows,
                  file_size, trigger_source, status, created_at, completed_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -684,13 +684,13 @@ class RiseupIncrementalBackup {
                 $snap_sequence,
                 $folder_name,
                 $incremental_dir,
-                RISEUP_SNAPSHOT_PROVIDER_NATIVE,
+                SNAPSHOT_PROVIDER_NATIVE,
                 'incremental',
                 $tables_json,
                 $total_new_rows,
                 $dir_size,
-                RISEUP_SNAPSHOT_TRIGGER_API,
-                RISEUP_SNAPSHOT_STATUS_COMPLETE,
+                SNAPSHOT_TRIGGER_API,
+                SNAPSHOT_STATUS_COMPLETE,
                 $now,
                 $now,
             ));

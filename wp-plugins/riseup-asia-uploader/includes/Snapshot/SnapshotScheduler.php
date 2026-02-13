@@ -660,8 +660,8 @@ class RiseupSnapshotScheduler {
     public function getStatus() {
         $settings = $this->detector->getSettings();
         
-        $scheduled_next = wp_next_scheduled(RISEUP_CRON_SNAPSHOT_SCHEDULED);
-        $cleanup_next = wp_next_scheduled(RISEUP_CRON_SNAPSHOT_CLEANUP);
+        $scheduled_next = wp_next_scheduled(CRON_SNAPSHOT_SCHEDULED);
+        $cleanup_next = wp_next_scheduled(CRON_SNAPSHOT_CLEANUP);
 
         return array(
             'schedule_enabled' => $settings['schedule_enabled'],
@@ -692,22 +692,22 @@ class RiseupSnapshotScheduler {
         try {
             $settings = $this->detector->getSettings();
 
-            $snapshot_type = $options['snapshot_type'] ?? RISEUP_SNAPSHOT_TYPE_FULL;
-            $title = $options['title'] ?? ($snapshot_type === RISEUP_SNAPSHOT_TYPE_INCREMENTAL
+            $snapshot_type = $options['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
+            $title = $options['title'] ?? ($snapshot_type === SNAPSHOT_TYPE_INCREMENTAL
                 ? 'Incremental Backup ' . date('Y-m-d H:i')
                 : 'Manual Backup ' . date('Y-m-d H:i'));
 
             $cron_args = array(
                 'snapshot_type'      => $snapshot_type,
                 'title'              => $title,
-                'scope'              => $options['scope'] ?? $settings['default_scope'] ?? RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
+                'scope'              => $options['scope'] ?? $settings['default_scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
                 'master_snapshot_id' => $options['master_snapshot_id'] ?? null,
             );
 
             // Schedule the cron event to fire ASAP (within next 5 seconds)
             $scheduled = wp_schedule_single_event(
                 time() + 5,
-                RISEUP_CRON_SNAPSHOT_IMMEDIATE,
+                CRON_SNAPSHOT_IMMEDIATE,
                 array($cron_args)
             );
 
@@ -764,7 +764,7 @@ class RiseupSnapshotScheduler {
 
         $scheduled = wp_schedule_single_event(
             time() + 5,
-            RISEUP_CRON_SNAPSHOT_RESTORE,
+            CRON_SNAPSHOT_RESTORE,
             array($cron_args)
         );
 
@@ -791,22 +791,22 @@ class RiseupSnapshotScheduler {
         $this->clearScheduledSnapshot();
 
         // Clear cleanup
-        $cleanup = wp_next_scheduled(RISEUP_CRON_SNAPSHOT_CLEANUP);
+        $cleanup = wp_next_scheduled(CRON_SNAPSHOT_CLEANUP);
         if ($cleanup) {
-            wp_unschedule_event($cleanup, RISEUP_CRON_SNAPSHOT_CLEANUP);
+            wp_unschedule_event($cleanup, CRON_SNAPSHOT_CLEANUP);
         }
 
         // Clear any pending immediate snapshots
-        wp_unschedule_hook(RISEUP_CRON_SNAPSHOT_IMMEDIATE);
+        wp_unschedule_hook(CRON_SNAPSHOT_IMMEDIATE);
 
         // Clear any pending worker batches
-        wp_unschedule_hook(RISEUP_CRON_SNAPSHOT_WORKER_BATCH);
+        wp_unschedule_hook(CRON_SNAPSHOT_WORKER_BATCH);
 
         // Clear any pending restore operations
-        wp_unschedule_hook(RISEUP_CRON_SNAPSHOT_RESTORE);
+        wp_unschedule_hook(CRON_SNAPSHOT_RESTORE);
 
         // Clear any pending incremental backups
-        wp_unschedule_hook(RISEUP_CRON_SNAPSHOT_INCREMENTAL);
+        wp_unschedule_hook(CRON_SNAPSHOT_INCREMENTAL);
 
         $this->logger->info('[SCHEDULER] All schedules cleared');
     }
