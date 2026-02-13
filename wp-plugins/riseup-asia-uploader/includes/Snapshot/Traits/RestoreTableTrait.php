@@ -112,27 +112,46 @@ trait RestoreTableTrait {
         $sqlite = new PDO('sqlite:' . $sqlitePath);
         $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $check = $sqlite->query(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='" .
-            str_replace("'", "''", $table) . "'"
-        );
-        if (!$check->fetch()) {
+        $tableExists = $this->sqliteTableExists($sqlite, $table);
+        if (!$tableExists) {
             $sqlite = null;
             return array('success' => false, 'error' => 'Table not found in SQLite file', 'rows' => 0);
         }
 
-        $columns = $sqlite->query("PRAGMA table_info('" . str_replace("'", "''", $table) . "')")
-            ->fetchAll(PDO::FETCH_ASSOC);
-        $column_names = array_column($columns, 'name');
-
+        $column_names = $this->getSqliteColumnNames($sqlite, $table);
         if (empty($column_names)) {
             $sqlite = null;
             return array('success' => false, 'error' => 'No columns found in SQLite table', 'rows' => 0);
         }
 
         $row_count = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
-
         return array('success' => true, 'sqlite' => $sqlite, 'columns' => $column_names, 'row_count' => $row_count);
+    }
+
+    /**
+     * Check if a table exists in a SQLite database.
+     *
+     * @param PDO    $sqlite SQLite connection.
+     * @param string $table  Table name.
+     * @return bool
+     */
+    private function sqliteTableExists(PDO $sqlite, string $table): bool {
+        $escaped = str_replace("'", "''", $table);
+        $check = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$escaped}'");
+        return (bool) $check->fetch();
+    }
+
+    /**
+     * Get column names from a SQLite table.
+     *
+     * @param PDO    $sqlite SQLite connection.
+     * @param string $table  Table name.
+     * @return array Column names.
+     */
+    private function getSqliteColumnNames(PDO $sqlite, string $table): array {
+        $escaped = str_replace("'", "''", $table);
+        $columns = $sqlite->query("PRAGMA table_info('{$escaped}')")->fetchAll(PDO::FETCH_ASSOC);
+        return array_column($columns, 'name');
     }
 
     /**
