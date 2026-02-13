@@ -10,6 +10,8 @@
 
 require_once __DIR__ . '/ManagerRestoreValidationTrait.php';
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ManagerRestoreTrait {
 
     use ManagerRestoreValidationTrait;
@@ -29,7 +31,7 @@ trait ManagerRestoreTrait {
 
         $snapshot = $this->getProvider()->getSnapshot($snapshot_id);
 
-        $this->log(LOG_LEVEL_INFO, 'Starting snapshot restore', array(
+        $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
             'snapshot_id' => $snapshot_id, 'filename' => $snapshot['filename'], 'create_backup' => !empty($options['create_backup']),
         ));
 
@@ -66,11 +68,11 @@ trait ManagerRestoreTrait {
     private function finalizeRestoreResult(array $result, int $snapshot_id, $backup_id): array {
         if ($result['success']) {
             $result['backup_id'] = $backup_id;
-            $this->log(LOG_LEVEL_INFO, 'Snapshot restored successfully', array(
+            $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
                 'snapshot_id' => $snapshot_id, 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
             ));
         } else {
-            $this->log(LOG_LEVEL_ERROR, 'Snapshot restore failed', array('snapshot_id' => $snapshot_id, 'error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array('snapshot_id' => $snapshot_id, 'error' => $result['error']));
         }
 
         return $result;
@@ -78,10 +80,6 @@ trait ManagerRestoreTrait {
 
     /**
      * Execute the actual restore operation.
-     *
-     * @param array $snapshot Snapshot record.
-     * @param array $options  Restore options.
-     * @return array Result.
      */
     private function executeRestore($snapshot, $options) {
         $start_time = microtime(true);
@@ -105,7 +103,7 @@ trait ManagerRestoreTrait {
 
             return array('success' => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $start_time);
         } catch (Exception $e) {
-            $this->log(LOG_LEVEL_ERROR, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
@@ -120,11 +118,11 @@ trait ManagerRestoreTrait {
             if ($result['success']) {
                 $total_rows += $result['rows'];
                 $restored_tables++;
-                $this->log(LOG_LEVEL_INFO, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
+                $this->log(LogLevelType::Info->value, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
                 continue;
             }
 
-            $this->log(LOG_LEVEL_ERROR, 'Failed to restore table: ' . $table, array('error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array('error' => $result['error']));
             if (!empty($options['strict'])) {
                 throw new Exception('Table restore failed: ' . $table);
             }

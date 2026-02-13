@@ -10,13 +10,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait NativeSnapshotCrudTrait {
 
     /**
      * Delete a snapshot.
-     *
-     * @param int $snapshot_id Snapshot ID.
-     * @return array Delete result.
      */
     public function deleteSnapshot($snapshot_id) {
         $snapshot = $this->getSnapshot($snapshot_id);
@@ -27,7 +26,7 @@ trait NativeSnapshotCrudTrait {
         $filepath = $snapshot['filepath'];
         if (RiseupPathUtils::fileExists($filepath)) {
             if (!RiseupPathUtils::deleteFile($filepath)) {
-                $this->log(LOG_LEVEL_ERROR, 'Failed to delete snapshot file', array('filepath' => $filepath));
+                $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
                 return array('success' => false, 'error' => 'Failed to delete snapshot file');
             }
         }
@@ -38,7 +37,7 @@ trait NativeSnapshotCrudTrait {
         }
 
         $this->db->delete(TABLE_SNAPSHOTS, array('id' => $snapshot_id));
-        $this->log(LOG_LEVEL_INFO, 'Snapshot deleted', array('snapshot_id' => $snapshot_id, 'filename' => $snapshot['filename']));
+        $this->log(LogLevelType::Info->value, 'Snapshot deleted', array('snapshot_id' => $snapshot_id, 'filename' => $snapshot['filename']));
         return array('success' => true);
     }
 

@@ -10,26 +10,23 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait UpdraftCrudTrait {
 
-    /**
-     * Create a snapshot using UpdraftPlus.
-     *
-     * @param array $options Snapshot options.
-     * @return array Snapshot result.
-     */
+    /** Create a snapshot using UpdraftPlus. */
     public function createSnapshot($options) {
         if (!$this->isAvailable()) {
             return array('success' => false, 'error' => 'UpdraftPlus is not available', 'code' => ERR_PROVIDER_NOT_AVAILABLE);
         }
 
-        $this->log(LOG_LEVEL_INFO, 'Creating snapshot via UpdraftPlus', $options);
+        $this->log(LogLevelType::Info->value, 'Creating snapshot via UpdraftPlus', $options);
 
         try {
             // TODO: Implement UpdraftPlus integration
             return array('success' => false, 'error' => 'UpdraftPlus integration not yet implemented');
         } catch (Exception $e) {
-            $this->log(LOG_LEVEL_ERROR, 'UpdraftPlus snapshot failed', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'UpdraftPlus snapshot failed', array('error' => $e->getMessage()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }

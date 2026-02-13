@@ -10,14 +10,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait NativeSnapshotExecTrait {
 
     /**
      * Execute the actual snapshot export (called by cron).
-     *
-     * @param int   $snapshot_id Snapshot ID.
-     * @param array $tables      Tables to export.
-     * @return array Result.
      */
     public function executeSnapshot($snapshot_id, $tables) {
         $start_time = microtime(true);
@@ -35,7 +33,7 @@ trait NativeSnapshotExecTrait {
         try {
             return $this->runSnapshotExport($snapshot_id, $snapshot['filepath'], $tables, $start_time);
         } catch (Exception $e) {
-            $this->log(LOG_LEVEL_ERROR, 'Snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'Snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_FAILED, $e->getMessage());
             return array('success' => false, 'error' => $e->getMessage());
         } finally {
@@ -43,18 +41,10 @@ trait NativeSnapshotExecTrait {
         }
     }
 
-    /**
-     * Run the core snapshot export loop.
-     *
-     * @param int    $snapshot_id Snapshot ID.
-     * @param string $filepath    Output file path.
-     * @param array  $tables      Tables to export.
-     * @param float  $start_time  Start timestamp.
-     * @return array Result.
-     */
+    /** Run the core snapshot export loop. */
     private function runSnapshotExport(int $snapshot_id, string $filepath, array $tables, float $start_time): array {
         $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_RUNNING);
-        $this->log(LOG_LEVEL_INFO, 'Starting snapshot export', array(
+        $this->log(LogLevelType::Info->value, 'Starting snapshot export', array(
             'snapshot_id' => $snapshot_id, 'filepath' => $filepath, 'tables' => count($tables),
         ));
 
@@ -73,7 +63,7 @@ trait NativeSnapshotExecTrait {
     private function exportAllTables(PDO $sqlite, array $tables, int $snapshot_id): array {
         $table_counts = array();
         foreach ($tables as $table) {
-            $this->log(LOG_LEVEL_DEBUG, 'Exporting table: ' . $table);
+            $this->log(LogLevelType::Debug->value, 'Exporting table: ' . $table);
             $result = $this->exportTable($sqlite, $table, $snapshot_id);
             $this->logTableExportResult($table, $result);
 
@@ -88,12 +78,12 @@ trait NativeSnapshotExecTrait {
     /** Log export result for a single table. */
     private function logTableExportResult(string $table, array $result) {
         if ($result['success']) {
-            $this->log(LOG_LEVEL_INFO, sprintf('%s complete (%d rows, %s)', $table, $result['rows'], $this->formatBytes($result['bytes'])));
+            $this->log(LogLevelType::Info->value, sprintf('%s complete (%d rows, %s)', $table, $result['rows'], $this->formatBytes($result['bytes'])));
 
             return;
         }
 
-        $this->log(LOG_LEVEL_ERROR, 'Failed to export table: ' . $table, array('error' => $result['error']));
+        $this->log(LogLevelType::Error->value, 'Failed to export table: ' . $table, array('error' => $result['error']));
     }
 
     /** Build final export result array and finalize snapshot record. */

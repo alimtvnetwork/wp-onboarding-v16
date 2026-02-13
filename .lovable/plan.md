@@ -456,10 +456,11 @@ Enforce camelCase naming for all PHP properties, methods, and parameters. Add en
 |---|------|--------|-------------|
 | I1 | **Update memory & specs** | ✅ Done | Updated `naming-conventions.md` with boolean prefix rules, property/param camelCase, singleton pattern, and enum encapsulation standards. |
 | I2 | **Enhance LogLevelType enum** | ✅ Done | Added `isError()`, `isWarn()`, `isInfo()`, `isDebug()`, `isErrorOrWarn()` helper methods to the enum body. |
-| I3 | **Logging domain camelCase** | 🔄 In Progress | Refactor FileLogger (shell + 7 traits) + Logger (shell + 2 traits) — all properties, methods, and params to camelCase. |
-| I4 | **Caller updates (batch 1)** | ⬚ Pending | Update ~60 files referencing renamed Logging public APIs (`getInstance`, `logException`, `logAt`, `getLogFile`, `getErrorFile`, `getStacktraceFile`, `clearDedupHashes`, `$fileLogger`). |
-| I5 | **Database/Agent/Admin camelCase** | ⬚ Pending | Extend camelCase to Database, Agent, Admin, Snapshot, Upload domains. |
-| I6 | **Full codebase audit** | ⬚ Pending | Grep for remaining snake_case methods/properties; zero violations. |
+| I3 | **Logging domain camelCase** | ✅ Done | Refactored FileLogger (shell + 7 traits) + Logger (shell + 2 traits) — all properties, methods, and params to camelCase. |
+| I4 | **Caller updates (batch 1)** | ✅ Done | Updated Database, UpdateResolver, AgentManager, SnapshotFactory, SnapshotScheduler, UploadIgnore, AdminErrorAjaxTrait, ErrorLogHandlerTrait, PathUtilsCoreTrait, DatabaseConnectionTrait — all renamed to camelCase APIs. |
+| I5 | **LOG_LEVEL_* constant cleanup** | ✅ Done | Replaced all `LOG_LEVEL_*` constant usages across 16 Snapshot/Manager trait files with `LogLevelType::*->value` enum references. Removed legacy constant definitions from `constants.php`. Fixed `ManagerCoreTrait` incorrect `LogLevel` import → `LogLevelType`. Zero violations remaining. |
+| I6 | **Remaining caller updates** | ⬚ Pending | Update `riseup-asia-uploader.php` main shell, ~28 trait files with `->log_exception()` → `->logException()`, `->log_plugin_action()` → `->logPluginAction()`, and remaining `$file_logger` property renames across consuming classes. |
+| I7 | **Full codebase audit** | ⬚ Pending | Grep for remaining snake_case methods/properties; zero violations. |
 
 ### References
 - **Naming conventions:** `.lovable/memory/architecture/php/naming-conventions.md`

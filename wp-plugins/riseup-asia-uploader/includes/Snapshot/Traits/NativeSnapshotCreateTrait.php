@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once dirname(__FILE__) . '/NativeSnapshotExecTrait.php';
 
 trait NativeSnapshotCreateTrait {
@@ -18,12 +20,9 @@ trait NativeSnapshotCreateTrait {
 
     /**
      * Create a snapshot (schedules via cron).
-     *
-     * @param array $options Snapshot options.
-     * @return array Snapshot result.
      */
     public function createSnapshot($options) {
-        $this->log(LOG_LEVEL_INFO, 'Snapshot creation requested', $options);
+        $this->log(LogLevelType::Info->value, 'Snapshot creation requested', $options);
 
         $guardError = $this->guardCreateSnapshot();
         if ($guardError) {
@@ -44,40 +43,25 @@ trait NativeSnapshotCreateTrait {
         return $this->scheduleOrExecute($snapshot_id, $tables, $filename);
     }
 
-    /**
-     * Guard conditions for snapshot creation.
-     *
-     * @return array|null Failure result or null if clear.
-     */
+    /** Guard conditions for snapshot creation. */
     private function guardCreateSnapshot(): ?array {
         if (!$this->ensureSnapshotsDir()) {
             return array('success' => false, 'error' => 'Failed to create snapshots directory');
         }
         if ($this->isLocked()) {
-            $this->log(LOG_LEVEL_WARN, 'Snapshot already in progress (locked)');
+            $this->log(LogLevelType::Warn->value, 'Snapshot already in progress (locked)');
             return array('success' => false, 'error' => 'Another snapshot operation is in progress', 'code' => ERR_SNAPSHOT_LOCK_EXISTS);
         }
         return null;
     }
 
-    /**
-     * Resolve tables from options scope.
-     *
-     * @param array $options Snapshot options.
-     * @return array Table names.
-     */
+    /** Resolve tables from options scope. */
     private function resolveSnapshotTables(array $options): array {
         $scope = $options['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
         return $this->getTablesForScope($scope, $options['tables'] ?? array());
     }
 
-    /**
-     * Create snapshot record and return its ID.
-     *
-     * @param array $options Snapshot options.
-     * @param array $tables  Tables.
-     * @return int|false Snapshot ID or false.
-     */
+    /** Create snapshot record and return its ID. */
     private function initSnapshotRecord(array $options, array $tables) {
         $sequence = $this->getNextSequence();
         $filename = $this->generateSnapshotFilename($sequence);
@@ -87,14 +71,7 @@ trait NativeSnapshotCreateTrait {
         return $this->createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger);
     }
 
-    /**
-     * Schedule snapshot via cron or execute directly as fallback.
-     *
-     * @param int    $snapshot_id Snapshot ID.
-     * @param array  $tables      Tables to export.
-     * @param string $filename    Snapshot filename.
-     * @return array Result.
-     */
+    /** Schedule snapshot via cron or execute directly as fallback. */
     private function scheduleOrExecute(int $snapshot_id, array $tables, string $filename): array {
         $scheduled = wp_schedule_single_event(
             time() + 5,
@@ -103,11 +80,11 @@ trait NativeSnapshotCreateTrait {
         );
 
         if ($scheduled === false) {
-            $this->log(LOG_LEVEL_WARN, 'Cron scheduling failed, executing directly');
+            $this->log(LogLevelType::Warn->value, 'Cron scheduling failed, executing directly');
             return $this->executeSnapshot($snapshot_id, $tables);
         }
 
-        $this->log(LOG_LEVEL_INFO, 'Snapshot scheduled via cron', array(
+        $this->log(LogLevelType::Info->value, 'Snapshot scheduled via cron', array(
             'snapshot_id' => $snapshot_id, 'filename' => $filename, 'tables' => count($tables),
         ));
 
