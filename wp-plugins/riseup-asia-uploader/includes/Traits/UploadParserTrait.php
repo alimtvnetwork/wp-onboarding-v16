@@ -89,28 +89,30 @@ trait UploadParserTrait {
     private function build_upload_params($zip_content, $data) {
         $slug     = sanitize_file_name($data['slug'] ?? '');
         $activate = !empty($data['activate']);
-        $upload_source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UPLOAD_SOURCE_REST_API;
+        $upload_source = $this->resolveUploadSource($data);
         $client_plugin_version = isset($data['plugin_version']) ? sanitize_text_field($data['plugin_version']) : '';
 
-        $valid_sources = json_decode(UPLOAD_SOURCES_VALID, true);
-        if (!in_array($upload_source, $valid_sources, true)) {
-            $upload_source = UPLOAD_SOURCE_REST_API;
-        }
-
         $this->file_logger->debug('Upload parameters', array(
-            'slug'           => $slug,
-            'activate'       => $activate,
-            'upload_source'  => $upload_source,
-            'client_version' => $client_plugin_version,
-            'file_size'      => strlen($zip_content),
+            'slug' => $slug, 'activate' => $activate,
+            'upload_source' => $upload_source, 'client_version' => $client_plugin_version,
+            'file_size' => strlen($zip_content),
         ));
 
         return array(
-            'zip_content'          => $zip_content,
-            'slug'                 => $slug,
-            'activate'             => $activate,
-            'upload_source'        => $upload_source,
-            'client_plugin_version' => $client_plugin_version,
+            'zip_content' => $zip_content, 'slug' => $slug, 'activate' => $activate,
+            'upload_source' => $upload_source, 'client_plugin_version' => $client_plugin_version,
         );
+    }
+
+    /**
+     * Resolve and validate the upload source from request data.
+     *
+     * @param array $data Request data.
+     * @return string Validated upload source.
+     */
+    private function resolveUploadSource(array $data): string {
+        $source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UPLOAD_SOURCE_REST_API;
+        $valid_sources = json_decode(UPLOAD_SOURCES_VALID, true);
+        return in_array($source, $valid_sources, true) ? $source : UPLOAD_SOURCE_REST_API;
     }
 }

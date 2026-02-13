@@ -76,30 +76,53 @@ trait WorkerTableExportTrait {
     private function batchExportRows(PDO $sqlite, string $table, int $count): int {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
         $column_names = array_column($columns, 'Field');
-        $placeholders = implode(', ', array_fill(0, count($column_names), '?'));
-        $column_list = implode(', ', array_map(function($c) { return "`{$c}`"; }, $column_names));
+        $stmt = $this->prepareExportInsert($sqlite, $table, $column_names);
 
-        $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$column_list}) VALUES ({$placeholders})");
+        $sqlite->beginTransaction();
+        $exported = $this->exportRowsInBatches($stmt, $table, $count);
+        $sqlite->commit();
 
+        return $exported;
+    }
+
+    /**
+     * Prepare the SQLite INSERT statement for export.
+     *
+     * @param PDO    $sqlite      SQLite connection.
+     * @param string $table       Table name.
+     * @param array  $columnNames Column names.
+     * @return PDOStatement Prepared statement.
+     */
+    private function prepareExportInsert(PDO $sqlite, string $table, array $columnNames): PDOStatement {
+        $placeholders = implode(', ', array_fill(0, count($columnNames), '?'));
+        $columnList = implode(', ', array_map(function($c) { return "`{$c}`"; }, $columnNames));
+        return $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
+    }
+
+    /**
+     * Export rows in batches using a prepared statement.
+     *
+     * @param PDOStatement $stmt  Prepared insert statement.
+     * @param string       $table Table name.
+     * @param int          $count Total rows.
+     * @return int Rows exported.
+     */
+    private function exportRowsInBatches(PDOStatement $stmt, string $table, int $count): int {
         $offset = 0;
         $exported = 0;
-        $sqlite->beginTransaction();
 
         while ($offset < $count) {
             $rows = $this->wpdb->get_results(
                 $this->wpdb->prepare("SELECT * FROM `{$table}` LIMIT %d OFFSET %d", $this->batchSize, $offset),
                 ARRAY_N
             );
-
             foreach ($rows as $row) {
                 $stmt->execute($row);
                 $exported++;
             }
-
             $offset += $this->batchSize;
         }
 
-        $sqlite->commit();
         return $exported;
     }
 

@@ -63,27 +63,44 @@ trait RestoreUtilsTrait {
         }
 
         try {
-            $stmt = $pdo->prepare(
-                "INSERT INTO " . TABLE_TRANSACTIONS .
-                " (plugin, action, status, details, source, created_at) VALUES (?, ?, ?, ?, ?, ?)"
-            );
-            $stmt->execute(array(
-                PLUGIN_SLUG,
-                ACTION_SNAPSHOT_RESTORE,
-                STATUS_SUCCESS,
-                json_encode(array(
-                    'directory'       => basename($snapshot_dir),
-                    'tables_restored' => $tables_restored,
-                    'total_rows'      => $total_rows,
-                    'duration'        => round($duration, 2),
-                    'type'            => 'per_table',
-                )),
-                gethostname() ?: php_uname('n'),
-                gmdate('Y-m-d H:i:s'),
-            ));
+            $details = $this->buildAuditDetails($snapshot_dir, $tables_restored, $total_rows, $duration);
+            $this->insertAuditRecord($pdo, $details);
         } catch (\Throwable $e) {
             $this->log('WARN', 'Failed to log audit for restore', array('error' => $e->getMessage()));
         }
+    }
+
+    /**
+     * Build audit detail JSON for restore.
+     *
+     * @param string $snapshotDir    Snapshot directory.
+     * @param int    $tablesRestored Tables restored.
+     * @param int    $totalRows      Total rows.
+     * @param float  $duration       Duration.
+     * @return string JSON-encoded details.
+     */
+    private function buildAuditDetails(string $snapshotDir, int $tablesRestored, int $totalRows, float $duration): string {
+        return json_encode(array(
+            'directory' => basename($snapshotDir), 'tables_restored' => $tablesRestored,
+            'total_rows' => $totalRows, 'duration' => round($duration, 2), 'type' => 'per_table',
+        ));
+    }
+
+    /**
+     * Insert an audit record into the transactions table.
+     *
+     * @param PDO    $pdo     Database connection.
+     * @param string $details JSON details.
+     */
+    private function insertAuditRecord(PDO $pdo, string $details): void {
+        $stmt = $pdo->prepare(
+            "INSERT INTO " . TABLE_TRANSACTIONS .
+            " (plugin, action, status, details, source, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+        );
+        $stmt->execute(array(
+            PLUGIN_SLUG, ACTION_SNAPSHOT_RESTORE, STATUS_SUCCESS,
+            $details, gethostname() ?: php_uname('n'), gmdate('Y-m-d H:i:s'),
+        ));
     }
 
     /**
