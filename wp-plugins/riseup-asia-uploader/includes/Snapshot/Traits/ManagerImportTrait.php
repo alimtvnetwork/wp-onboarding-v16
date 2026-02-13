@@ -23,7 +23,7 @@ trait ManagerImportTrait {
      * @return array Result with snapshot ID.
      */
     public function importSnapshot($uploaded_path) {
-        if (!RiseupPathUtils::fileExists($uploaded_path)) {
+        if (RiseupBooleanHelpers::is_file_missing($uploaded_path)) {
             return array('success' => false, 'error' => 'Uploaded file not found');
         }
 
@@ -37,7 +37,8 @@ trait ManagerImportTrait {
         ));
 
         $temp_dir = RiseupPathUtils::join(RiseupPathUtils::getTempDir(), 'import_' . uniqid());
-        if (!RiseupPathUtils::ensureDir($temp_dir, false)) {
+        $isDirCreationFailed = !RiseupPathUtils::ensureDir($temp_dir, false);
+        if ($isDirCreationFailed) {
             return array('success' => false, 'error' => 'Failed to create temp directory');
         }
 
@@ -86,7 +87,7 @@ trait ManagerImportTrait {
     /** Load and validate the manifest.json from the extracted directory. */
     private function loadAndValidateManifest(string $temp_dir): array {
         $manifest_path = RiseupPathUtils::join($temp_dir, 'manifest.json');
-        if (!RiseupPathUtils::fileExists($manifest_path)) {
+        if (RiseupBooleanHelpers::is_file_missing($manifest_path)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }
 
@@ -108,7 +109,7 @@ trait ManagerImportTrait {
         $sqlite_filename = $manifest['snapshot']['filename'];
         $sqlite_path = RiseupPathUtils::join($temp_dir, $sqlite_filename);
 
-        if (!RiseupPathUtils::fileExists($sqlite_path)) {
+        if (RiseupBooleanHelpers::is_file_missing($sqlite_path)) {
             throw new Exception('SQLite file not found in archive: ' . $sqlite_filename);
         }
 
@@ -130,7 +131,8 @@ trait ManagerImportTrait {
      */
     private function moveAndRecordSnapshot($manifest, $sqlite_path, $temp_dir) {
         $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
-        if (!RiseupPathUtils::ensureDir($snapshots_dir, true)) {
+        $isDirCreationFailed = !RiseupPathUtils::ensureDir($snapshots_dir, true);
+        if ($isDirCreationFailed) {
             throw new Exception('Failed to ensure snapshots directory');
         }
 
@@ -138,7 +140,7 @@ trait ManagerImportTrait {
         $new_filename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
         $dest_path = RiseupPathUtils::join($snapshots_dir, $new_filename);
 
-        if (!copy($sqlite_path, $dest_path)) {
+        if (RiseupBooleanHelpers::is_copy_failed($sqlite_path, $dest_path)) {
             throw new Exception('Failed to copy snapshot file to destination');
         }
 

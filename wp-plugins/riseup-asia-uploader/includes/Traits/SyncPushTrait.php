@@ -131,7 +131,7 @@ trait SyncPushTrait
 
     /** Delete a file during sync with audit trail. */
     private function syncDeleteFile(string $path, string $action, string $full_path, string $plugin_dir, string $slug): array {
-        if (!file_exists($full_path)) {
+        if (RiseupBooleanHelpers::is_file_missing($full_path)) {
             return array('path' => $path, 'action' => $action, 'status' => 'success', 'reason' => 'Already absent');
         }
 

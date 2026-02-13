@@ -103,7 +103,7 @@ trait StatusOpsTrait {
      * Invalidate OPcache for critical plugin files.
      */
     private function invalidatePluginFiles(): int {
-        if (!function_exists('opcache_invalidate')) {
+        if (RiseupBooleanHelpers::is_func_missing('opcache_invalidate')) {
             return 0;
         }
 

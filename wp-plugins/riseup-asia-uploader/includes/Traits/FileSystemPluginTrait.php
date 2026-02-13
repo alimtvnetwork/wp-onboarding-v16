@@ -118,7 +118,7 @@ trait FileSystemPluginTrait {
     private function findDirPlugin(string $slug) {
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (!is_dir($plugin_dir)) {
+        if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
             return null;
         }
 

@@ -134,7 +134,7 @@ trait RestoreGraphTrait {
         }
 
         foreach ($allTables as $t) {
-            if (!in_array($t, $sorted)) {
+            if (RiseupBooleanHelpers::is_not_in_list($t, $sorted)) {
                 $sorted[] = $t;
             }
         }

@@ -173,7 +173,7 @@ trait PluginListTrait
             return $this->error_response('File not found or invalid path', HTTP_NOT_FOUND);
         }
 
-        if (!is_file($real_file_path)) {
+        if (RiseupBooleanHelpers::is_not_regular_file($real_file_path)) {
             return $this->error_response('File not found', HTTP_NOT_FOUND);
         }
 
