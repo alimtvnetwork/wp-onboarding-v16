@@ -106,7 +106,7 @@ trait SnapshotBackupOpsTrait {
 
     /** Fetch job progress from the worker. */
     private function fetchJobProgress(int $jobId) {
-        require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
+        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotFactory.php';
         $rootDb = RiseupRootDb::getInstance($this->file_logger, RiseupDependencyAnalyzer::getInstance($this->file_logger));
         $worker = RiseupSnapshotWorker::getInstance($this->file_logger, $this->db, $rootDb, RiseupDependencyAnalyzer::getInstance($this->file_logger));
         return $worker->getJobProgress($jobId);

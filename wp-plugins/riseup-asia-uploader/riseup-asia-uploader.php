@@ -96,26 +96,26 @@ unset($__includes);
 // =============================================================================
 
 $__traits = __DIR__ . '/includes/Traits';
-require_once $__traits . '/LifecycleHooksTrait.php';
-require_once $__traits . '/RouteRegistrationTrait.php';
-require_once $__traits . '/PluginRoutesTrait.php';
-require_once $__traits . '/InvalidRouteTrait.php';
-require_once $__traits . '/AuthTrait.php';
-require_once $__traits . '/StatusHandlerTrait.php';
-require_once $__traits . '/UploadPipelineTrait.php';
-require_once $__traits . '/UploadExtractionTrait.php';
-require_once $__traits . '/PluginListTrait.php';
-require_once $__traits . '/PluginExportTrait.php';
-require_once $__traits . '/PostHandlerTrait.php';
-require_once $__traits . '/PluginLifecycleTrait.php';
-require_once $__traits . '/SyncHandlerTrait.php';
-require_once $__traits . '/ResponseTrait.php';
-require_once $__traits . '/ErrorLogTrait.php';
-require_once $__traits . '/AgentHandlerTrait.php';
-require_once $__traits . '/SnapshotCrudTrait.php';
-require_once $__traits . '/SnapshotExportTrait.php';
-require_once $__traits . '/SnapshotBackupTrait.php';
-require_once $__traits . '/FileSystemTrait.php';
+require_once $__traits . '/Core/LifecycleHooksTrait.php';
+require_once $__traits . '/Route/RouteRegistrationTrait.php';
+require_once $__traits . '/Plugin/PluginRoutesTrait.php';
+require_once $__traits . '/Route/InvalidRouteTrait.php';
+require_once $__traits . '/Auth/AuthTrait.php';
+require_once $__traits . '/Status/StatusHandlerTrait.php';
+require_once $__traits . '/Upload/UploadPipelineTrait.php';
+require_once $__traits . '/Upload/UploadExtractionTrait.php';
+require_once $__traits . '/Plugin/PluginListTrait.php';
+require_once $__traits . '/Plugin/PluginExportTrait.php';
+require_once $__traits . '/Core/PostHandlerTrait.php';
+require_once $__traits . '/Plugin/PluginLifecycleTrait.php';
+require_once $__traits . '/Sync/SyncHandlerTrait.php';
+require_once $__traits . '/Core/ResponseTrait.php';
+require_once $__traits . '/Error/ErrorLogTrait.php';
+require_once $__traits . '/Agent/AgentHandlerTrait.php';
+require_once $__traits . '/Snapshot/SnapshotCrudTrait.php';
+require_once $__traits . '/Snapshot/SnapshotExportTrait.php';
+require_once $__traits . '/Snapshot/SnapshotBackupTrait.php';
+require_once $__traits . '/FileSystem/FileSystemTrait.php';
 unset($__traits);
 
 // =============================================================================
