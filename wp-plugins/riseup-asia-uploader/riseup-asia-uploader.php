@@ -277,7 +277,7 @@ require_once __DIR__ . '/includes/Enums/HttpMethodType.php';
 require_once __DIR__ . '/includes/Enums/HookType.php';
 require_once __DIR__ . '/includes/Enums/PathConst.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
-require_once __DIR__ . '/includes/Enums/LogLevel.php';
+require_once __DIR__ . '/includes/Enums/LogLevelType.php';
 
 // Error checker (uses RiseupAsia\Enums\ErrorType internally)
 require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';

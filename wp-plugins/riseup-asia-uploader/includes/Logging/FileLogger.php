@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use RiseupAsia\Enums\LogLevel;
+use RiseupAsia\Enums\LogLevelType;
 
 /**
  * Class RiseupFileLogger
@@ -443,11 +443,11 @@ class RiseupFileLogger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevel::Debug->value, $message, $file, $line)) {
+        if ($this->is_duplicate(LogLevelType::Debug->value, $message, $file, $line)) {
             return true; // Silently skip duplicate
         }
         
-        $entry = $this->format_entry(LogLevel::Debug->value, $message, $file, $line, $context);
+        $entry = $this->format_entry(LogLevelType::Debug->value, $message, $file, $line, $context);
 
         return $this->write($entry, false);
     }
@@ -466,11 +466,11 @@ class RiseupFileLogger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevel::Info->value, $message, $file, $line)) {
+        if ($this->is_duplicate(LogLevelType::Info->value, $message, $file, $line)) {
             return true;
         }
         
-        $entry = $this->format_entry(LogLevel::Info->value, $message, $file, $line, $context);
+        $entry = $this->format_entry(LogLevelType::Info->value, $message, $file, $line, $context);
 
         return $this->write($entry, false);
     }
@@ -489,7 +489,7 @@ class RiseupFileLogger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevel::Warn->value, $message, $file, $line)) {
+        if ($this->is_duplicate(LogLevelType::Warn->value, $message, $file, $line)) {
             return true;
         }
 
@@ -498,8 +498,8 @@ class RiseupFileLogger {
         // Capture abbreviated stack trace for warn-level too
         $formatted_trace = $this->format_backtrace($trace);
 
-        $entry = $this->format_entry(LogLevel::Warn->value, $message, $file, $line, $context);
-        $this->persist_to_error_sessions(LogLevel::Warn->value, $message, $file, $line, $context, $formatted_trace);
+        $entry = $this->format_entry(LogLevelType::Warn->value, $message, $file, $line, $context);
+        $this->persist_to_error_sessions(LogLevelType::Warn->value, $message, $file, $line, $context, $formatted_trace);
 
         return $this->write($entry, false);
     }
@@ -518,15 +518,15 @@ class RiseupFileLogger {
         $file = isset($caller['file']) ? $caller['file'] : __FILE__;
         $line = isset($caller['line']) ? $caller['line'] : __LINE__;
 
-        if ($this->is_duplicate(LogLevel::Error->value, $message, $file, $line)) {
+        if ($this->is_duplicate(LogLevelType::Error->value, $message, $file, $line)) {
             return true;
         }
 
         $context = $this->prepare_context($context, $trace, true);
         
-        $entry = $this->format_entry(LogLevel::Error->value, $message, $file, $line, $context);
+        $entry = $this->format_entry(LogLevelType::Error->value, $message, $file, $line, $context);
         $formatted_trace = $this->format_backtrace($trace);
-        $this->persist_to_error_sessions(LogLevel::Error->value, $message, $file, $line, $context, $formatted_trace);
+        $this->persist_to_error_sessions(LogLevelType::Error->value, $message, $file, $line, $context, $formatted_trace);
         $this->write_stacktrace($message, $file, $line, $formatted_trace);
 
         return $this->write($entry, true);
@@ -550,7 +550,7 @@ class RiseupFileLogger {
 
         $context = $this->prepare_context($context);
 
-        $is_error = ($level === LogLevel::Error->value);
+        $is_error = ($level === LogLevelType::Error->value);
         $entry = $this->format_entry($level, $message, $file, $line, $context);
 
         return $this->write($entry, $is_error);
@@ -565,20 +565,20 @@ class RiseupFileLogger {
      * @return bool
      */
     public function log_exception($e, $context = '') {
-        if ($this->is_duplicate(LogLevel::Error->value, $e->getMessage(), $e->getFile(), $e->getLine())) {
+        if ($this->is_duplicate(LogLevelType::Error->value, $e->getMessage(), $e->getFile(), $e->getLine())) {
             return true;
         }
 
         $message = $context ? $context . ': ' . $e->getMessage() : $e->getMessage();
         $ctx = $this->prepare_context(array('trace' => $e->getTraceAsString()));
         $entry = $this->format_entry(
-            LogLevel::Error->value,
+            LogLevelType::Error->value,
             $message,
             $e->getFile(),
             $e->getLine(),
             $ctx
         );
-        $this->persist_to_error_sessions(LogLevel::Error->value, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
+        $this->persist_to_error_sessions(LogLevelType::Error->value, $message, $e->getFile(), $e->getLine(), array(), $e->getTraceAsString());
         $this->write_stacktrace($message, $e->getFile(), $e->getLine(), $e->getTraceAsString());
 
         return $this->write($entry, true);
