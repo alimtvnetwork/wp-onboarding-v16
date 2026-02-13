@@ -1,7 +1,7 @@
 # TypeScript Coding Standards
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-12  
+> **Version:** 3.0.0  
+> **Updated:** 2026-02-13  
 > **Applies to:** All frontend TypeScript/React code  
 > **Priority:** CRITICAL — These rules override all other conventions
 
@@ -236,7 +236,56 @@ type ActivityMetadata = PublishMetadata | SnapshotMetadata | PluginMetadata | Co
 
 ---
 
-## 5. Enforcement
+## 5. Function Size — Max 15 Lines
+
+> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+
+Every function/method body must be **15 lines or fewer**. Extract logic into small, well-named helper functions.
+
+```typescript
+// ❌ FORBIDDEN: 20+ line function
+const handleSubmit = async (data: FormData) => {
+    // validation, API call, state update, toast... all inline
+};
+
+// ✅ REQUIRED: Decomposed
+const handleSubmit = async (data: FormData) => {
+    const validated = validateFormData(data);
+    const result = await submitToApi(validated);
+    updateLocalState(result);
+    showSuccessToast(result.message);
+};
+```
+
+---
+
+## 6. Zero Nested `if` — Absolute Ban
+
+> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 2 & 7
+
+Nested `if` blocks are **absolutely forbidden** — zero tolerance, no exceptions. Flatten with early returns or combined conditions.
+
+```typescript
+// ❌ FORBIDDEN: Nested if
+if (response) {
+    if (response.status >= 400) {
+        handleError(response);
+    }
+}
+
+// ✅ REQUIRED: Early return
+if (!response) {
+    return;
+}
+
+if (response.status >= 400) {
+    handleError(response);
+}
+```
+
+---
+
+## 7. Enforcement
 
 - **TypeScript strict mode:** Must be enabled (`strict: true` in tsconfig)
 - **ESLint rules (REQUIRED):**
@@ -250,7 +299,7 @@ type ActivityMetadata = PublishMetadata | SnapshotMetadata | PluginMetadata | Co
 
 ---
 
-## 6. Generics Reference — When to Use What
+## 9. Generics Reference — When to Use What
 
 | Scenario | Pattern |
 |----------|---------|
@@ -263,7 +312,7 @@ type ActivityMetadata = PublishMetadata | SnapshotMetadata | PluginMetadata | Co
 
 ---
 
-## 7. No Raw Negations — Use Positive Guard Functions
+## 8. No Raw Negations — Use Positive Guard Functions
 
 > **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
 
@@ -295,4 +344,4 @@ if (isFileMissing(path)) { throw new Error('Missing'); }
 
 ---
 
-*TypeScript standards v2.0.0 — generics-first, zero-any, no-magic-strings — 2026-02-12*
+*TypeScript standards v3.0.0 — generics-first, zero-any, no-magic-strings, max-15-lines, zero-nesting — 2026-02-13*

@@ -1,14 +1,14 @@
-# Cross-Language Code Style — Braces, Nesting & Spacing
+# Cross-Language Code Style — Braces, Nesting, Spacing & Function Size
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-12  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-13  
 > **Applies to:** PHP, TypeScript, Go
 
 ---
 
 ## Overview
 
-These five rules govern control-flow formatting across **all languages** in the project. Language-specific specs (PHP, TypeScript, Go) reference this document as the single source of truth.
+These seven rules govern control-flow formatting and function design across **all languages** in the project. Language-specific specs (PHP, TypeScript, Go) reference this document as the single source of truth.
 
 ---
 
@@ -52,9 +52,9 @@ if (isLoading) {
 
 ---
 
-## Rule 2: No Nested `if` — Flatten with Combined Checks or Early Returns
+## Rule 2: Zero Nested `if` — Absolute Ban
 
-Nested `if` blocks reduce readability. Combine conditions into a single `if`, or use early returns to flatten the logic. If a helper function already handles the null/empty check internally, rely on it — don't wrap it in a redundant outer guard.
+Nested `if` blocks are **absolutely forbidden** — zero tolerance, no exceptions. Every nested `if` must be flattened using one of: (a) combined conditions, (b) early returns, (c) extracted helper functions. If a helper function already handles the null/empty check internally, rely on it — don't wrap it in a redundant outer guard.
 
 ```php
 // ── PHP ──────────────────────────────────────────────────────
@@ -347,14 +347,141 @@ if (ErrorChecker::is_fatal_error($error)) {
 
 ---
 
+## Rule 6: Maximum 15 Lines Per Function — Extract Small Helpers
+
+Every function/method body must be **15 lines or fewer** (excluding blank lines, comments, and the signature). If a function exceeds this limit, extract logic into small, well-named helper functions.
+
+### Why
+
+- Short functions are easier to read, test, and debug
+- Named helpers act as documentation — the function name describes intent
+- Reduces cognitive load — each function does exactly one thing
+- Makes code review faster — reviewers can understand each piece in isolation
+
+### How to Flatten
+
+| Problem | Solution |
+|---------|----------|
+| Long setup + logic + cleanup | Extract each phase into a helper |
+| Multiple validation checks | Extract `validateRequest()` helper |
+| Complex data transformation | Extract `transformPayload()` helper |
+| Repeated patterns | Extract shared utility function |
+
+```php
+// ── PHP ──────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN: 25+ line function
+public function handle_upload($request) {
+    $file = $request->get_param('file');
+    $source = $request->get_param('source');
+    // ... validation ...
+    // ... processing ...
+    // ... logging ...
+    // ... response building ...
+}
+
+// ✅ REQUIRED: Short top-level, helpers do the work
+public function handle_upload($request) {
+    $params = $this->extract_upload_params($request);
+    $this->validate_upload($params);
+    $result = $this->process_upload($params);
+    $this->log_upload($result);
+
+    return $this->envelope->success($result);
+}
+```
+
+```typescript
+// ── TypeScript ───────────────────────────────────────────────
+
+// ❌ FORBIDDEN: Long function
+const handleSubmit = async (data: FormData) => {
+    // 20+ lines of validation, API call, state updates, toasts...
+};
+
+// ✅ REQUIRED: Decomposed
+const handleSubmit = async (data: FormData) => {
+    const validated = validateFormData(data);
+    const result = await submitToApi(validated);
+    updateLocalState(result);
+    showSuccessToast(result.message);
+};
+```
+
+```go
+// ── Go ───────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN: Long function
+func ProcessUpload(ctx context.Context, req UploadRequest) error {
+    // 20+ lines...
+}
+
+// ✅ REQUIRED: Decomposed
+func ProcessUpload(ctx context.Context, req UploadRequest) error {
+    if err := validateUpload(req); err != nil {
+        return err
+    }
+
+    result, err := executeUpload(ctx, req)
+    if err != nil {
+        return apperror.Wrap(err, "E5001", "upload failed")
+    }
+
+    return logAndRespond(ctx, result)
+}
+```
+
+---
+
+## Rule 7: Zero Nested `if` — Absolute Ban (Reinforced)
+
+This is a **reinforcement of Rule 2** with stricter language. Nested `if` blocks are the single biggest readability killer. There is **zero tolerance** — any code review finding a nested `if` is an automatic rejection.
+
+### Flattening Techniques
+
+| Nesting Pattern | Flattening Technique |
+|----------------|---------------------|
+| Null guard → logic | Early return for null |
+| Permission → action | Early return for no permission |
+| Multiple conditions | Combined `&&` (extract if 2+ operators) |
+| If-inside-loop | Extract loop body to helper function |
+| If-inside-if-inside-if | Extract to dedicated method |
+
+```php
+// ❌ FORBIDDEN: Triple nesting
+if ($request !== null) {
+    if ($request->has_param('file')) {
+        if ($this->is_valid_file($request->get_param('file'))) {
+            $this->process($request);
+        }
+    }
+}
+
+// ✅ REQUIRED: Flat with early returns
+if ($request === null) {
+    return;
+}
+
+$hasValidFile = $request->has_param('file')
+    && $this->is_valid_file($request->get_param('file'));
+
+if ($hasValidFile) {
+    $this->process($request);
+}
+```
+
+---
+
 ## Checklist Summary (Copy for PRs)
 
 ```
 [ ] No single-line `if (...) return;` — always use braces
-[ ] No nested `if` — flatten with combined conditions or early returns
+[ ] No nested `if` — ZERO TOLERANCE — flatten with early returns or combined conditions
 [ ] No inline multi-part `if` (2+ operators) — extract to named variable or method
 [ ] Blank line before `return` when preceded by other statements
 [ ] Blank line after closing `}` when followed by more code
+[ ] Functions max 15 lines — extract helpers for longer logic
+[ ] No deeply nested control flow — extract loop/condition bodies to helpers
 ```
 
 ---
@@ -368,4 +495,4 @@ if (ErrorChecker::is_fatal_error($error)) {
 
 ---
 
-*Cross-language code style specification v1.0.0 — 2026-02-12*
+*Cross-language code style specification v2.0.0 — 2026-02-13*

@@ -1,7 +1,7 @@
 # PHP Enums — Complete Reference
 
-> **Version:** 4.0.0  
-> **Updated:** 2026-02-12  
+> **Version:** 5.0.0  
+> **Updated:** 2026-02-13  
 > **Applies to:** WordPress companion plugins (PHP 8.1+)
 
 ---
@@ -12,25 +12,32 @@ All enum-like constants MUST use **PHP 8.1+ native backed enums** with proper na
 The old pattern of `class FooEnum { public const BAR = '...'; }` and `define()` constants
 is **deprecated** and must be migrated.
 
+### Naming Convention: `Type` Suffix
+
+All enums MUST use the **`Type` suffix** in their name. This clearly distinguishes enums from classes and makes the type nature explicit at every usage site.
+
+| ❌ Forbidden Name | ✅ Required Name |
+|------------------|-----------------|
+| `UploadSource` | `UploadSourceType` |
+| `Capability` | `CapabilityType` |
+| `HttpMethod` | `HttpMethodType` |
+| `Hook` | `HookType` |
+
+> **Non-enum constant classes** (`PathConst`, `ErrorType`) keep their existing names — they are `final class`, not `enum`.
+
 ### Architectural Rules
 
 1. **All enums live in `includes/Enums/`** — one file per enum.
-2. **File name = Definition name** — the filename MUST match the enum/class name exactly, PascalCase, no prefix, no hyphens, no underscores.
-   - ✅ `UploadSource.php` → contains `enum UploadSource: string`
-   - ✅ `PathConst.php` → contains `final class PathConst`
-   - ❌ `class-upload-source.php` (WordPress class convention — NOT used in `Enums/`)
-   - ❌ `upload_source.php` (snake_case — NOT used in `Enums/`)
-   - ❌ `UploadSourceEnum.php` (no `Enum` suffix)
-   - **Rationale:** The `Enums/` folder uses PSR-4 naming because these are namespaced types under `RiseupAsia\Enums`, not WordPress procedural classes. The `class-kebab-case.php` convention applies only to non-namespaced classes in `includes/`.
+2. **File name = Definition name** — e.g., `UploadSourceType.php` → contains `enum UploadSourceType: string`.
 3. **Namespace:** `RiseupAsia\\Enums` — every enum file declares this namespace.
-4. **No `Enum` suffix** in the enum name — use `UploadSource`, not `UploadSourceEnum`.
+4. **`Type` suffix required** — use `UploadSourceType`, not `UploadSource`.
 5. **String-backed** (`enum Foo: string`) for all enums whose values are strings.
 6. **Case names use PascalCase** — `case RestApi`, not `case REST_API`.
 7. **No `RISEUP_` prefix** on anything — namespace provides scoping.
 8. **`define()` constants are prohibited** for values that belong in an enum.
-9. **Access pattern:** `UploadSource::Script` (the enum case) or `UploadSource::Script->value` (the raw string).
+9. **Access pattern:** `UploadSourceType::Script` (the enum case) or `UploadSourceType::Script->value` (the raw string).
 10. **Validation helpers** go as `static` methods on the enum itself.
-11. **Non-enum constants classes** (PathConst, ErrorType) use the same namespace and folder but remain `final class` with `public const` — they hold arrays/maps that can't be enum cases.
+11. **Non-enum constants classes** (PathConst, ErrorType) use the same namespace and folder but remain `final class` with `public const`.
 
 ### File Loading
 
@@ -38,10 +45,10 @@ Enum files are loaded via `require_once` before the dependency loader:
 
 ```php
 // In riseup-asia-uploader.php (bootstrap)
-require_once __DIR__ . '/includes/Enums/UploadSource.php';
-require_once __DIR__ . '/includes/Enums/Capability.php';
-require_once __DIR__ . '/includes/Enums/HttpMethod.php';
-require_once __DIR__ . '/includes/Enums/Hook.php';
+require_once __DIR__ . '/includes/Enums/UploadSourceType.php';
+require_once __DIR__ . '/includes/Enums/CapabilityType.php';
+require_once __DIR__ . '/includes/Enums/HttpMethodType.php';
+require_once __DIR__ . '/includes/Enums/HookType.php';
 require_once __DIR__ . '/includes/Enums/PathConst.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
 ```
@@ -49,13 +56,13 @@ require_once __DIR__ . '/includes/Enums/ErrorType.php';
 At call sites, use the `use` import:
 
 ```php
-use RiseupAsia\\Enums\\UploadSource;
-use RiseupAsia\\Enums\\Capability;
+use RiseupAsia\\Enums\\UploadSourceType;
+use RiseupAsia\\Enums\\CapabilityType;
 ```
 
 ---
 
-## UploadSource — Upload Origin
+## UploadSourceType — Upload Origin
 
 Identifies how a plugin upload was initiated.
 
@@ -65,31 +72,20 @@ Identifies how a plugin upload was initiated.
 namespace RiseupAsia\\Enums;
 
 /**
- * Upload source identifiers for transaction logging and request validation.
+ * Upload source identifiers for transaction logging.
  */
-enum UploadSource: string
+enum UploadSourceType: string
 {
     case Script  = 'upload_script';
     case RestApi = 'rest_api';
     case AdminUi = 'admin_ui';
     case WpCli   = 'wp_cli';
 
-    /**
-     * All valid source values as a flat array.
-     *
-     * @return string[]
-     */
     public static function valid_values(): array
     {
         return array_column(self::cases(), 'value');
     }
 
-    /**
-     * Check if a raw string is a valid upload source.
-     *
-     * @param string $source Source to validate.
-     * @return bool
-     */
     public static function is_valid(string $source): bool
     {
         return self::tryFrom($source) !== null;
@@ -100,31 +96,21 @@ enum UploadSource: string
 ### Usage
 
 ```php
-use RiseupAsia\\Enums\\UploadSource;
+use RiseupAsia\\Enums\\UploadSourceType;
 
-// ❌ FORBIDDEN: define() constants
+// ❌ FORBIDDEN
 define('UPLOAD_SOURCE_SCRIPT', 'upload_script');
 
-// ❌ FORBIDDEN: Class-based fake enum
-class UploadSourceEnum {
-    public const SCRIPT = 'upload_script';
-}
-
-// ✅ REQUIRED: Native backed enum
-$source = UploadSource::Script;              // The enum case
-$value  = UploadSource::Script->value;       // 'upload_script'
-$parsed = UploadSource::tryFrom('rest_api'); // UploadSource::RestApi or null
-$isValid = UploadSource::is_valid($input);   // bool
-
-// Validation
-if (!UploadSource::is_valid($request['source'])) {
-    return new WP_Error('invalid_source', 'Unknown upload source');
-}
+// ✅ REQUIRED
+$source  = UploadSourceType::Script;
+$value   = UploadSourceType::Script->value;
+$parsed  = UploadSourceType::tryFrom('rest_api');
+$isValid = UploadSourceType::is_valid($input);
 ```
 
 ---
 
-## Capability — WordPress Capabilities
+## CapabilityType — WordPress Capabilities
 
 ```php
 <?php
@@ -133,10 +119,8 @@ namespace RiseupAsia\\Enums;
 
 /**
  * WordPress capability strings for permission checks.
- *
- * Every current_user_can() call MUST reference a case from this enum.
  */
-enum Capability: string
+enum CapabilityType: string
 {
     case ManageOptions   = 'manage_options';
     case ActivatePlugins = 'activate_plugins';
@@ -155,20 +139,18 @@ enum Capability: string
 ### Usage
 
 ```php
-use RiseupAsia\\Enums\\Capability;
+use RiseupAsia\\Enums\\CapabilityType;
 
 // ❌ FORBIDDEN
 if (current_user_can('manage_options')) { ... }
 
 // ✅ REQUIRED
-if (current_user_can(Capability::ManageOptions->value)) { ... }
-
-add_menu_page('Settings', 'Settings', Capability::ManageOptions->value, ...);
+if (current_user_can(CapabilityType::ManageOptions->value)) { ... }
 ```
 
 ---
 
-## HttpMethod — REST API Methods
+## HttpMethodType — REST API Methods
 
 ```php
 <?php
@@ -177,11 +159,8 @@ namespace RiseupAsia\\Enums;
 
 /**
  * HTTP method constants for REST route registration.
- *
- * Every register_rest_route() call MUST use these cases
- * instead of WP_REST_Server constants or string literals.
  */
-enum HttpMethod: string
+enum HttpMethodType: string
 {
     case Get    = 'GET';
     case Post   = 'POST';
@@ -189,10 +168,6 @@ enum HttpMethod: string
     case Patch  = 'PATCH';
     case Delete = 'DELETE';
 
-    /**
-     * Editable methods string for WordPress route registration.
-     * WordPress accepts comma-separated methods.
-     */
     public static function editable(): string
     {
         return 'PUT, PATCH';
@@ -203,19 +178,18 @@ enum HttpMethod: string
 ### Usage
 
 ```php
-use RiseupAsia\\Enums\\HttpMethod;
+use RiseupAsia\\Enums\\HttpMethodType;
 
 // ❌ FORBIDDEN
 register_rest_route($ns, '/upload', ['methods' => 'POST', ...]);
 
 // ✅ REQUIRED
-register_rest_route($ns, '/upload', ['methods' => HttpMethod::Post->value, ...]);
-register_rest_route($ns, '/config', ['methods' => HttpMethod::editable(), ...]);
+register_rest_route($ns, '/upload', ['methods' => HttpMethodType::Post->value, ...]);
 ```
 
 ---
 
-## Hook — WordPress Hook Names
+## HookType — WordPress Hook Names
 
 ```php
 <?php
@@ -224,10 +198,8 @@ namespace RiseupAsia\\Enums;
 
 /**
  * WordPress action and filter hook names.
- *
- * Every add_action() or add_filter() call MUST reference a case from this enum.
  */
-enum Hook: string
+enum HookType: string
 {
     // ── Core Lifecycle ──────────────────────────────────────────
     case Init           = 'init';
@@ -253,23 +225,11 @@ enum Hook: string
     case PluginsApi                        = 'plugins_api';
     case CronSchedules                     = 'cron_schedules';
 
-    /**
-     * Build an authenticated AJAX hook name.
-     *
-     * @param string $action The AJAX action slug.
-     * @return string Full hook name (e.g., 'wp_ajax_riseup_test_connection').
-     */
     public static function ajax(string $action): string
     {
         return 'wp_ajax_' . $action;
     }
 
-    /**
-     * Build an unauthenticated AJAX hook name.
-     *
-     * @param string $action The AJAX action slug.
-     * @return string Full hook name.
-     */
     public static function ajax_nopriv(string $action): string
     {
         return 'wp_ajax_nopriv_' . $action;
@@ -280,35 +240,27 @@ enum Hook: string
 ### Usage
 
 ```php
-use RiseupAsia\\Enums\\Hook;
+use RiseupAsia\\Enums\\HookType;
 
 // ❌ FORBIDDEN
 add_action('rest_api_init', [$this, 'register_routes']);
-add_action('wp_ajax_riseup_test', [$this, 'ajax_test']);
 
 // ✅ REQUIRED
-add_action(Hook::RestApiInit->value, [$this, 'register_routes']);
-add_action(Hook::ajax('riseup_test'), [$this, 'ajax_test']);
+add_action(HookType::RestApiInit->value, [$this, 'register_routes']);
+add_action(HookType::ajax('riseup_test'), [$this, 'ajax_test']);
 ```
 
 ---
 
 ## PathConst — File Name Constants (Non-Enum Class)
 
-`PathConst` is NOT a backed enum because its values are path fragments composed with
-directory methods — they don't form a discrete, finite set of "which one" choices.
-It remains a `final class` with `public const`, but under the same namespace.
+`PathConst` is NOT a backed enum — it holds path fragments. Remains `final class`.
 
 ```php
 <?php
 
 namespace RiseupAsia\\Enums;
 
-/**
- * File name constants for all plugin data files.
- *
- * Path accessors in RiseupPathUtils compose: directory method + PathConst::CONSTANT.
- */
 final class PathConst
 {
     // ── Subdirectories ─────────────────────────────────────────
@@ -334,55 +286,32 @@ final class PathConst
 }
 ```
 
-### Usage
-
-```php
-use RiseupAsia\\Enums\\PathConst;
-
-// Always accessed via RiseupPathUtils typed accessors, never directly:
-// $path = RiseupPathUtils::get_root_db();  // internally uses PathConst::ROOT_DB
-```
-
 ---
 
 ## ErrorType — PHP Error Type Constants (Non-Enum Class)
 
-`ErrorType` is NOT a backed enum because it holds **arrays** of PHP E_* constants
-and a label map. These are groupings, not discrete cases.
+`ErrorType` holds arrays/maps — not a backed enum.
 
 ```php
 <?php
 
 namespace RiseupAsia\\Enums;
 
-/**
- * PHP error type groupings for fatal/warning/recoverable classification.
- *
- * Used by ErrorChecker for centralized error-type inspection.
- */
 final class ErrorType
 {
     public const FATAL_TYPES = [
-        E_ERROR,
-        E_PARSE,
-        E_CORE_ERROR,
-        E_COMPILE_ERROR,
-        E_USER_ERROR,
+        E_ERROR, E_PARSE, E_CORE_ERROR,
+        E_COMPILE_ERROR, E_USER_ERROR,
     ];
 
     public const WARNING_TYPES = [
-        E_WARNING,
-        E_CORE_WARNING,
-        E_USER_WARNING,
-        E_NOTICE,
-        E_USER_NOTICE,
-        E_DEPRECATED,
-        E_USER_DEPRECATED,
+        E_WARNING, E_CORE_WARNING, E_USER_WARNING,
+        E_NOTICE, E_USER_NOTICE,
+        E_DEPRECATED, E_USER_DEPRECATED,
     ];
 
     public const RECOVERABLE_TYPES = [
-        E_RECOVERABLE_ERROR,
-        E_STRICT,
+        E_RECOVERABLE_ERROR, E_STRICT,
     ];
 
     public const TYPE_LABELS = [
@@ -408,26 +337,23 @@ final class ErrorType
 
 ## Classification: Enum vs Const Class
 
-| Name           | Type         | Why                                                              |
-|----------------|--------------|------------------------------------------------------------------|
-| `UploadSource` | `enum`       | Discrete set of string-backed choices — "which source?"          |
-| `Capability`   | `enum`       | Discrete WordPress capability strings — "which permission?"      |
-| `HttpMethod`   | `enum`       | Discrete HTTP verbs — "which method?"                            |
-| `Hook`         | `enum`       | Discrete WordPress hook names — "which hook?"                    |
-| `PathConst`    | `final class`| Path fragments composed with directories — not a "which one" set |
-| `ErrorType`    | `final class`| Arrays of PHP E_* constants and label maps — not single values   |
+| Name               | Type         | Suffix | Why                                              |
+|--------------------|--------------|--------|--------------------------------------------------|
+| `UploadSourceType` | `enum`       | `Type` | Discrete set — "which source?"                   |
+| `CapabilityType`   | `enum`       | `Type` | Discrete capabilities — "which permission?"      |
+| `HttpMethodType`   | `enum`       | `Type` | Discrete HTTP verbs — "which method?"            |
+| `HookType`         | `enum`       | `Type` | Discrete hook names — "which hook?"              |
+| `PathConst`        | `final class`| —      | Path fragments, not a "which one" set            |
+| `ErrorType`        | `final class`| —      | Arrays of E_* constants and label maps           |
 
 ### Decision Rule
 
-> If the type answers **"which one of these?"** with a single value → `enum`.  
+> If the type answers **"which one of these?"** with a single value → `enum` with `Type` suffix.  
 > If it holds **arrays, maps, or composable fragments** → `final class` with `public const`.
 
 ---
 
 ## ErrorChecker — Uses ErrorType
-
-`ErrorChecker` is a utility class (not an enum). It stays in `includes/` as `class-error-checker.php`
-but updates its imports to use `RiseupAsia\\Enums\\ErrorType`.
 
 ```php
 use RiseupAsia\\Enums\\ErrorType;
@@ -445,8 +371,6 @@ class ErrorChecker {
     public static function get_type_label(int $type): string {
         return ErrorType::TYPE_LABELS[$type] ?? 'UNKNOWN_ERROR_TYPE';
     }
-
-    // ... remaining methods unchanged
 }
 ```
 
@@ -457,9 +381,9 @@ class ErrorChecker {
 1. **Add the case** to the appropriate enum in `includes/Enums/`.
 2. **Add a PHPDoc comment** if the case is non-obvious.
 3. **If PathConst:** Add a corresponding typed accessor to `RiseupPathUtils`.
-4. **If Hook:** Update all `add_action`/`add_filter` calls that used the string literal.
-5. **If Capability:** Update all `current_user_can()` and permission callbacks to use `->value`.
-6. **If HttpMethod:** Update all `register_rest_route()` calls.
+4. **If HookType:** Update all `add_action`/`add_filter` calls.
+5. **If CapabilityType:** Update all `current_user_can()` calls.
+6. **If HttpMethodType:** Update all `register_rest_route()` calls.
 7. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
 8. **Never skip the enum** — even for "one-time" usage.
 
@@ -472,4 +396,4 @@ class ErrorChecker {
 
 ---
 
-*PHP Enum specification v4.0.0 — 2026-02-12*
+*PHP Enum specification v5.0.0 — 2026-02-13*

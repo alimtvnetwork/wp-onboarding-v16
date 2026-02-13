@@ -13,13 +13,14 @@
 
 ## Classes, Interfaces, Traits, Enums
 
-Use **PascalCase**.
+Use **PascalCase**. Enums MUST use the **`Type` suffix**.
 
 ```php
 class UploadManager {}
 interface CacheDriver {}
 trait HasTimestamps {}
-enum UploadSource {}
+enum UploadSourceType: string {}  // ✅ Type suffix required
+enum CapabilityType: string {}    // ✅ Type suffix required
 ```
 
 **Rules:**
@@ -92,20 +93,21 @@ class Limits
 }
 ```
 
-Enums are the exception: enum cases follow **PascalCase**, not uppercase.
+Enums are the exception: enum cases follow **PascalCase**, not uppercase. Enum names use `Type` suffix.
 
 ```php
-UploadSource::RestApi
+UploadSourceType::RestApi
+CapabilityType::ManageOptions
 ```
 
 ---
 
 ## Enum Cases
 
-Use **PascalCase**.
+Use **PascalCase**. Enum names MUST have `Type` suffix.
 
 ```php
-enum UploadSource: string
+enum UploadSourceType: string
 {
     case Script;
     case RestApi;
@@ -202,9 +204,12 @@ namespace RiseupAsia\Enums;
 ```
 includes/
   Enums/
-    Capability.php
+    CapabilityType.php
     ErrorType.php
-    Hook.php
+    HookType.php
+    HttpMethodType.php
+    UploadSourceType.php
+    PathConst.php
 ```
 
 Autoloaders depend on this mapping.
@@ -226,7 +231,8 @@ These are exceptions and should be minimal in modern architecture.
 
 | Element                    | Convention                     | Example                          |
 |----------------------------|--------------------------------|----------------------------------|
-| Class / Enum / Interface   | PascalCase                     | `SnapshotFactory`                |
+| Class / Interface          | PascalCase                     | `SnapshotFactory`                |
+| Enum                       | PascalCase + `Type` suffix     | `UploadSourceType`               |
 | Trait                      | PascalCase                     | `HasTimestamps`                  |
 | Method / Function          | camelCase                      | `processUpload()`                |
 | Variable                   | camelCase                      | `$maxRetries`                    |
@@ -234,7 +240,8 @@ These are exceptions and should be minimal in modern architecture.
 | Constant                   | UPPER_SNAKE_CASE               | `MAX_RETRIES`                    |
 | Enum case                  | PascalCase                     | `RestApi`                        |
 | Namespace                  | PascalCase                     | `RiseupAsia\Enums`               |
-| File (class/enum/trait)    | PascalCase.php                 | `SnapshotFactory.php`            |
+| File (class/trait)         | PascalCase.php                 | `SnapshotFactory.php`            |
+| File (enum)                | PascalCase + Type.php          | `UploadSourceType.php`           |
 | File (config/procedural)   | lowercase_with_underscores.php | `constants.php`                  |
 | Directory (domain folder)  | PascalCase                     | `Snapshot/`, `Database/`         |
 
