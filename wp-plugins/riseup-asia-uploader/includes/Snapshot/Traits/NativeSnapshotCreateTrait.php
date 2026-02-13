@@ -21,34 +21,66 @@ trait NativeSnapshotCreateTrait {
     public function createSnapshot($options) {
         $this->log(LOG_LEVEL_INFO, 'Snapshot creation requested', $options);
 
-        if (!$this->ensureSnapshotsDir()) {
-            return array('success' => false, 'error' => 'Failed to create snapshots directory');
+        $guardError = $this->guardCreateSnapshot();
+        if ($guardError) {
+            return $guardError;
         }
 
-        if ($this->isLocked()) {
-            $this->log(LOG_LEVEL_WARN, 'Snapshot already in progress (locked)');
-            return array('success' => false, 'error' => 'Another snapshot operation is in progress', 'code' => ERR_SNAPSHOT_LOCK_EXISTS);
-        }
-
-        $scope = isset($options['scope']) ? $options['scope'] : SNAPSHOT_SCOPE_WORDPRESS;
-        $tables = $this->getTablesForScope($scope, isset($options['tables']) ? $options['tables'] : array());
-
+        $tables = $this->resolveSnapshotTables($options);
         if (empty($tables)) {
             return array('success' => false, 'error' => 'No tables selected for snapshot');
         }
 
-        $sequence = $this->getNextSequence();
-        $filename = $this->generateSnapshotFilename($sequence);
-        $filepath = RiseupPathUtils::join($this->getSnapshotsDir(), $filename . '.sqlite');
-
-        $trigger = isset($options['trigger']) ? $options['trigger'] : 'api';
-        $snapshot_id = $this->createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger);
-
+        $snapshot_id = $this->initSnapshotRecord($options, $tables);
         if (!$snapshot_id) {
             return array('success' => false, 'error' => 'Failed to create snapshot record');
         }
 
+        $filename = $this->generateSnapshotFilename($this->getNextSequence() - 1);
         return $this->scheduleOrExecute($snapshot_id, $tables, $filename);
+    }
+
+    /**
+     * Guard conditions for snapshot creation.
+     *
+     * @return array|null Failure result or null if clear.
+     */
+    private function guardCreateSnapshot(): ?array {
+        if (!$this->ensureSnapshotsDir()) {
+            return array('success' => false, 'error' => 'Failed to create snapshots directory');
+        }
+        if ($this->isLocked()) {
+            $this->log(LOG_LEVEL_WARN, 'Snapshot already in progress (locked)');
+            return array('success' => false, 'error' => 'Another snapshot operation is in progress', 'code' => ERR_SNAPSHOT_LOCK_EXISTS);
+        }
+        return null;
+    }
+
+    /**
+     * Resolve tables from options scope.
+     *
+     * @param array $options Snapshot options.
+     * @return array Table names.
+     */
+    private function resolveSnapshotTables(array $options): array {
+        $scope = $options['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
+        return $this->getTablesForScope($scope, $options['tables'] ?? array());
+    }
+
+    /**
+     * Create snapshot record and return its ID.
+     *
+     * @param array $options Snapshot options.
+     * @param array $tables  Tables.
+     * @return int|false Snapshot ID or false.
+     */
+    private function initSnapshotRecord(array $options, array $tables) {
+        $sequence = $this->getNextSequence();
+        $filename = $this->generateSnapshotFilename($sequence);
+        $filepath = RiseupPathUtils::join($this->getSnapshotsDir(), $filename . '.sqlite');
+        $trigger = $options['trigger'] ?? 'api';
+        $scope = $options['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
+        return $this->createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger);
     }
 
     /**

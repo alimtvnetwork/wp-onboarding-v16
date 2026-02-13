@@ -153,38 +153,73 @@ trait RestoreTableTrait {
                 $this->wpdb->query("TRUNCATE TABLE `{$table}`");
             }
 
-            $columns_sql = '`' . implode('`, `', $columns) . '`';
-            $placeholders = implode(', ', array_fill(0, count($columns), '%s'));
-            $insert_verb = ($strategy === 'merge') ? 'REPLACE' : 'INSERT';
-            $sql_template = "{$insert_verb} INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders})";
-
-            $total_rows = 0;
-            $offset = 0;
-
-            while ($offset < $rowCount) {
-                $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$this->batchSize} OFFSET {$offset}")
-                    ->fetchAll(PDO::FETCH_ASSOC);
-
-                foreach ($rows as $row) {
-                    $values = array();
-                    foreach ($columns as $col) {
-                        $values[] = isset($row[$col]) ? $row[$col] : null;
-                    }
-                    $this->wpdb->query($this->wpdb->prepare($sql_template, $values));
-                    $total_rows++;
-                }
-
-                $offset += $this->batchSize;
-            }
+            $sql_template = $this->buildInsertTemplate($table, $columns, $strategy);
+            $total_rows = $this->insertAllBatches($sqlite, $table, $columns, $sql_template, $rowCount);
 
             $this->wpdb->query("COMMIT");
             $sqlite = null;
-
             return array('success' => true, 'rows' => $total_rows);
-
         } catch (Exception $e) {
             $this->wpdb->query("ROLLBACK");
             throw $e;
         }
+    }
+
+    /**
+     * Build the SQL INSERT/REPLACE template.
+     *
+     * @param string $table    Table name.
+     * @param array  $columns  Column names.
+     * @param string $strategy Insert strategy.
+     * @return string SQL template.
+     */
+    private function buildInsertTemplate(string $table, array $columns, string $strategy): string {
+        $columns_sql = '`' . implode('`, `', $columns) . '`';
+        $placeholders = implode(', ', array_fill(0, count($columns), '%s'));
+        $verb = ($strategy === 'merge') ? 'REPLACE' : 'INSERT';
+        return "{$verb} INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders})";
+    }
+
+    /**
+     * Insert all batches from SQLite into MySQL.
+     *
+     * @param PDO    $sqlite      SQLite connection.
+     * @param string $table       Table name.
+     * @param array  $columns     Column names.
+     * @param string $sqlTemplate SQL template.
+     * @param int    $rowCount    Total rows.
+     * @return int Total rows inserted.
+     */
+    private function insertAllBatches(PDO $sqlite, string $table, array $columns, string $sqlTemplate, int $rowCount): int {
+        $total_rows = 0;
+        $offset = 0;
+
+        while ($offset < $rowCount) {
+            $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$this->batchSize} OFFSET {$offset}")
+                ->fetchAll(PDO::FETCH_ASSOC);
+
+            $total_rows += $this->insertRowBatch($rows, $columns, $sqlTemplate);
+            $offset += $this->batchSize;
+        }
+
+        return $total_rows;
+    }
+
+    /**
+     * Insert a single batch of rows.
+     *
+     * @param array  $rows        Row data.
+     * @param array  $columns     Column names.
+     * @param string $sqlTemplate SQL template.
+     * @return int Rows inserted.
+     */
+    private function insertRowBatch(array $rows, array $columns, string $sqlTemplate): int {
+        foreach ($rows as $row) {
+            $values = array_map(function($col) use ($row) {
+                return $row[$col] ?? null;
+            }, $columns);
+            $this->wpdb->query($this->wpdb->prepare($sqlTemplate, $values));
+        }
+        return count($rows);
     }
 }
