@@ -64,7 +64,7 @@ class RiseupUploadIgnore {
 
         $this->file_logger->debug('Loading uploadignore', array('path' => $ignore_file));
 
-        if (!file_exists($ignore_file)) {
+        if (RiseupBooleanHelpers::is_file_missing($ignore_file)) {
             $this->file_logger->debug('No uploadignore file found');
             $this->loaded = false;
             return false;
