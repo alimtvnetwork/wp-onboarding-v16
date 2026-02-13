@@ -459,7 +459,7 @@ class RiseupAsia {
         });
 
         $this->post_manager = RiseupInitHelpers::initComponent('PostManager', function () {
-            return RiseupPostManager::get_instance();
+            return RiseupPostManager::getInstance();
         });
 
         RiseupInitHelpers::initComponent('UpdateResolver', function () {
@@ -2846,7 +2846,7 @@ class RiseupAsia {
     public function handle_list_posts($request) {
         $this->file_logger->debug('List posts endpoint called');
 
-        $result = $this->post_manager->list_posts(array(
+        $result = $this->post_manager->listPosts(array(
             'status' => $request->get_param('status'),
             'limit'  => $request->get_param('limit'),
             'offset' => $request->get_param('offset'),
@@ -2867,7 +2867,7 @@ class RiseupAsia {
         $this->file_logger->info('Create post endpoint called');
 
         $data   = $request->get_json_params();
-        $result = $this->post_manager->create_post($data);
+        $result = $this->post_manager->createPost($data);
 
         return new WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
@@ -2882,7 +2882,7 @@ class RiseupAsia {
     public function handle_list_categories($request) {
         $this->file_logger->debug('List categories endpoint called');
 
-        $result = $this->post_manager->list_categories(array(
+        $result = $this->post_manager->listCategories(array(
             'limit'  => $request->get_param('limit'),
             'offset' => $request->get_param('offset'),
             'search' => $request->get_param('search'),
@@ -2902,7 +2902,7 @@ class RiseupAsia {
         $this->file_logger->info('Create category endpoint called');
 
         $data   = $request->get_json_params();
-        $result = $this->post_manager->create_category($data);
+        $result = $this->post_manager->createCategory($data);
 
         return new WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
