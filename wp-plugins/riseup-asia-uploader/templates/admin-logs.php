@@ -49,7 +49,7 @@ $upload_source_classes = array(
     <h1>
         <span class="dashicons dashicons-list-view"></span>
         <?php esc_html_e('Riseup Asia Uploader - Activity Logs', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
     </h1>
     
     <p class="description">
@@ -246,7 +246,7 @@ $upload_source_classes = array(
                         </td>
                         <td class="column-version">
                             <?php if (!empty($plugin_version)): ?>
-                                <?php if ($plugin_version === RISEUP_VERSION): ?>
+                                <?php if ($plugin_version === PLUGIN_VERSION): ?>
                                     <code class="version-badge version-current">v<?php echo esc_html($plugin_version); ?></code>
                                 <?php else: ?>
                                     <code class="version-badge version-old">v<?php echo esc_html($plugin_version); ?></code>

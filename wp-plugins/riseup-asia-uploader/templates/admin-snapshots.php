@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     <h1>
         <span class="dashicons dashicons-database"></span>
         <?php esc_html_e('Database Snapshots', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
     </h1>
 
     <p class="description">
@@ -538,7 +538,7 @@ if (!defined('ABSPATH')) {
 <script type="text/javascript">
 jQuery(document).ready(function($) {
     var ajaxNonce = '<?php echo wp_create_nonce('riseup_admin_nonce'); ?>';
-    var restBase = '<?php echo esc_url(rest_url(RISEUP_API_FULL_NAMESPACE)); ?>';
+    var restBase = '<?php echo esc_url(rest_url(API_FULL_NAMESPACE)); ?>';
     var $status = $('#snapshot_action_status');
     var currentPage = 1;
     var currentRestoreId = null;
