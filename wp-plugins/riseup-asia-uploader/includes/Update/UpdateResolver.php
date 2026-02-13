@@ -402,8 +402,8 @@ class RiseupUpdateResolver {
         }
         
         // Get current plugin version
-        $plugin_file = RISEUP_SLUG . '/' . RISEUP_SLUG . '.php';
-        $current_version = RISEUP_VERSION;
+        $plugin_file = PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
+        $current_version = PLUGIN_VERSION;
         
         if (empty($update_info['version'])) {
             return $transient;
@@ -417,8 +417,8 @@ class RiseupUpdateResolver {
             ));
             
             $transient->response[$plugin_file] = (object) array(
-                'id'          => RISEUP_SLUG,
-                'slug'        => RISEUP_SLUG,
+                'id'          => PLUGIN_SLUG,
+                'slug'        => PLUGIN_SLUG,
                 'plugin'      => $plugin_file,
                 'new_version' => $update_info['version'],
                 'url'         => isset($update_info['url']) ? $update_info['url'] : '',
@@ -434,8 +434,8 @@ class RiseupUpdateResolver {
             unset($transient->response[$plugin_file]);
             
             $transient->no_update[$plugin_file] = (object) array(
-                'id'          => RISEUP_SLUG,
-                'slug'        => RISEUP_SLUG,
+                'id'          => PLUGIN_SLUG,
+                'slug'        => PLUGIN_SLUG,
                 'plugin'      => $plugin_file,
                 'new_version' => $current_version,
                 'url'         => '',
@@ -459,7 +459,7 @@ class RiseupUpdateResolver {
             return $result;
         }
         
-        if (!isset($args->slug) || $args->slug !== RISEUP_SLUG) {
+        if (!isset($args->slug) || $args->slug !== PLUGIN_SLUG) {
             return $result;
         }
         
@@ -471,13 +471,13 @@ class RiseupUpdateResolver {
         }
         
         return (object) array(
-            'name'          => RISEUP_NAME,
-            'slug'          => RISEUP_SLUG,
-            'version'       => isset($update_info['version']) ? $update_info['version'] : RISEUP_VERSION,
+            'name'          => PLUGIN_NAME,
+            'slug'          => PLUGIN_SLUG,
+            'version'       => isset($update_info['version']) ? $update_info['version'] : PLUGIN_VERSION,
             'author'        => 'MD ALIM UL KARIM',
             'homepage'      => 'https://rasia.pro/alim-r-profile-v1',
-            'requires'      => isset($update_info['requires']) ? $update_info['requires'] : RISEUP_MIN_WP_VERSION,
-            'requires_php'  => isset($update_info['requires_php']) ? $update_info['requires_php'] : RISEUP_MIN_PHP_VERSION,
+            'requires'      => isset($update_info['requires']) ? $update_info['requires'] : MIN_WP_VERSION,
+            'requires_php'  => isset($update_info['requires_php']) ? $update_info['requires_php'] : MIN_PHP_VERSION,
             'tested'        => isset($update_info['tested']) ? $update_info['tested'] : get_bloginfo('version'),
             'download_link' => isset($update_info['package']) ? $update_info['package'] : '',
             'sections'      => array(

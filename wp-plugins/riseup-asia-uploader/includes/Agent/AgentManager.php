@@ -481,7 +481,7 @@ class RiseupAgentManager {
         // Check cache
         if (!empty($agent['redirect_resolved']) && !empty($agent['redirect_resolved_at'])) {
             $resolved_at = strtotime($agent['redirect_resolved_at']);
-            $cache_days = RISEUP_UPDATE_CACHE_DAYS_DEFAULT;
+            $cache_days = UPDATE_CACHE_DAYS_DEFAULT;
             if (time() < $resolved_at + ($cache_days * DAY_IN_SECONDS)) {
                 return $agent['redirect_resolved'];
             }
@@ -489,7 +489,7 @@ class RiseupAgentManager {
         
         // Resolve URL through redirects
         $url = $agent['redirect_url'];
-        $max_redirects = RISEUP_UPDATE_MAX_REDIRECTS;
+        $max_redirects = UPDATE_MAX_REDIRECTS;
         
         for ($i = 0; $i < $max_redirects; $i++) {
             $response = wp_remote_head($url, array(
@@ -534,7 +534,7 @@ class RiseupAgentManager {
     public function test_connection($agent_id) {
         $this->file_logger->info('Testing agent connection', array('id' => $agent_id));
         
-        $result = $this->api_request($agent_id, 'GET', RISEUP_API_FULL_NAMESPACE . '/status');
+        $result = $this->api_request($agent_id, 'GET', API_FULL_NAMESPACE . '/status');
         
         if (is_wp_error($result)) {
             $this->update_agent($agent_id, array(
@@ -542,7 +542,7 @@ class RiseupAgentManager {
                 'last_error' => $result->get_error_message(),
             ));
             
-            $this->log_action($agent_id, RISEUP_ACTION_AGENT_TEST, null, RISEUP_STATUS_FAILED, null, $result->get_error_message());
+            $this->log_action($agent_id, ACTION_AGENT_TEST, null, STATUS_FAILED, null, $result->get_error_message());
             
             return array(
                 'success' => false,
@@ -556,7 +556,7 @@ class RiseupAgentManager {
             'last_error' => null,
         ));
         
-        $this->log_action($agent_id, RISEUP_ACTION_AGENT_TEST, null, RISEUP_STATUS_SUCCESS);
+        $this->log_action($agent_id, ACTION_AGENT_TEST, null, STATUS_SUCCESS);
         
         return array(
             'success' => true,
@@ -574,10 +574,10 @@ class RiseupAgentManager {
     public function sync_plugins($agent_id) {
         $this->file_logger->info('Syncing plugins from agent', array('id' => $agent_id));
         
-        $result = $this->api_request($agent_id, 'GET', RISEUP_API_FULL_NAMESPACE . '/plugins');
+        $result = $this->api_request($agent_id, 'GET', API_FULL_NAMESPACE . '/plugins');
         
         if (is_wp_error($result)) {
-            $this->log_action($agent_id, RISEUP_ACTION_AGENT_SYNC, null, RISEUP_STATUS_FAILED, null, $result->get_error_message());
+            $this->log_action($agent_id, ACTION_AGENT_SYNC, null, STATUS_FAILED, null, $result->get_error_message());
             return $result;
         }
         
@@ -587,7 +587,7 @@ class RiseupAgentManager {
         ));
         
         $plugins = isset($result['plugins']) ? $result['plugins'] : $result;
-        $this->log_action($agent_id, RISEUP_ACTION_AGENT_SYNC, null, RISEUP_STATUS_SUCCESS, array('count' => count($plugins)));
+        $this->log_action($agent_id, ACTION_AGENT_SYNC, null, STATUS_SUCCESS, array('count' => count($plugins)));
         
         return $plugins;
     }
@@ -607,15 +607,15 @@ class RiseupAgentManager {
             'slug'     => $slug,
         ));
         
-        $endpoint = RISEUP_API_FULL_NAMESPACE . '/plugins/' . urlencode($slug) . '/' . $action;
+        $endpoint = API_FULL_NAMESPACE . '/plugins/' . urlencode($slug) . '/' . $action;
         $result = $this->api_request($agent_id, 'POST', $endpoint);
         
         if (is_wp_error($result)) {
-            $this->log_action($agent_id, 'plugin_' . $action, $slug, RISEUP_STATUS_FAILED, null, $result->get_error_message());
+            $this->log_action($agent_id, 'plugin_' . $action, $slug, STATUS_FAILED, null, $result->get_error_message());
             return $result;
         }
         
-        $this->log_action($agent_id, 'plugin_' . $action, $slug, RISEUP_STATUS_SUCCESS);
+        $this->log_action($agent_id, 'plugin_' . $action, $slug, STATUS_SUCCESS);
         
         return array(
             'success' => true,

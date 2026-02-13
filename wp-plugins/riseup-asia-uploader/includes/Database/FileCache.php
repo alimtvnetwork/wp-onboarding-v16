@@ -184,7 +184,7 @@ class RiseupFileCache {
         }
 
         try {
-            $deleted = RiseupORM::for_table(RISEUP_TABLE_FILE_CACHE)
+            $deleted = RiseupORM::for_table(TABLE_FILE_CACHE)
                 ->where('plugin_slug', $pluginSlug)
                 ->delete();
 
@@ -211,7 +211,7 @@ class RiseupFileCache {
      */
     private function loadCachedEntries($pluginSlug) {
         try {
-            $rows = RiseupORM::for_table(RISEUP_TABLE_FILE_CACHE)
+            $rows = RiseupORM::for_table(TABLE_FILE_CACHE)
                 ->where('plugin_slug', $pluginSlug)
                 ->find_many();
 
@@ -249,7 +249,7 @@ class RiseupFileCache {
 
             // Use INSERT OR REPLACE for upsert
             $stmt = $pdo->prepare(
-                "INSERT OR REPLACE INTO " . RISEUP_TABLE_FILE_CACHE .
+                "INSERT OR REPLACE INTO " . TABLE_FILE_CACHE .
                 " (plugin_slug, relative_path, md5_hash, modified_at, file_size, cached_at)" .
                 " VALUES (?, ?, ?, ?, ?, ?)"
             );
@@ -270,7 +270,7 @@ class RiseupFileCache {
      */
     private function deleteCacheEntry($pluginSlug, $path) {
         try {
-            RiseupORM::for_table(RISEUP_TABLE_FILE_CACHE)
+            RiseupORM::for_table(TABLE_FILE_CACHE)
                 ->where('plugin_slug', $pluginSlug)
                 ->where('relative_path', $path)
                 ->delete();

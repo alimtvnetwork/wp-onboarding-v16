@@ -80,8 +80,8 @@ class RiseupSnapshotWorker {
         $this->db = $db;
         $this->rootDb = $rootDb;
         $this->analyzer = $analyzer;
-        $this->batchSize = RISEUP_SNAPSHOT_BATCH_SIZE;
-        $this->poolSize  = RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT;
+        $this->batchSize = SNAPSHOT_BATCH_SIZE;
+        $this->poolSize  = SNAPSHOT_WORKER_POOL_DEFAULT;
     }
 
     // =========================================================================
@@ -95,8 +95,8 @@ class RiseupSnapshotWorker {
      */
     public function setPoolSize($size) {
         $this->poolSize = max(
-            RISEUP_SNAPSHOT_WORKER_POOL_MIN,
-            min(RISEUP_SNAPSHOT_WORKER_POOL_MAX, (int) $size)
+            SNAPSHOT_WORKER_POOL_MIN,
+            min(SNAPSHOT_WORKER_POOL_MAX, (int) $size)
         );
     }
 
@@ -202,7 +202,7 @@ class RiseupSnapshotWorker {
                 'total_rows'   => 0,
                 'errors'       => array(),
                 'duration'     => $duration,
-                'status'       => RISEUP_SNAPSHOT_JOB_STATUS_QUEUED,
+                'status'       => SNAPSHOT_JOB_STATUS_QUEUED,
             );
 
         } catch (Exception $e) {
@@ -351,7 +351,7 @@ class RiseupSnapshotWorker {
             }
 
             // Mark job as processing
-            $this->updateJobStatus($pdo, $job_id, RISEUP_SNAPSHOT_JOB_STATUS_PROCESSING);
+            $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_PROCESSING);
 
             $snapshot_dir = $job['snapshot_dir'];
             $all_tables   = json_decode($job['tables_json'], true);
@@ -438,7 +438,7 @@ class RiseupSnapshotWorker {
                 'error'  => $e->getMessage(),
                 'trace'  => $e->getTraceAsString(),
             ));
-            $this->updateJobStatus($pdo, $job_id, RISEUP_SNAPSHOT_JOB_STATUS_FAILED, $e->getMessage());
+            $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_FAILED, $e->getMessage());
         }
     }
 
@@ -460,16 +460,16 @@ class RiseupSnapshotWorker {
 
         try {
             // Ensure jobs table exists
-            $pdo->exec("CREATE TABLE IF NOT EXISTS " . RISEUP_TABLE_SNAPSHOT_JOBS . " (
+            $pdo->exec("CREATE TABLE IF NOT EXISTS " . TABLE_SNAPSHOT_JOBS . " (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 snapshot_dir TEXT NOT NULL,
                 tables_json TEXT NOT NULL,
-                pool_size INTEGER NOT NULL DEFAULT " . RISEUP_SNAPSHOT_WORKER_POOL_DEFAULT . ",
+                pool_size INTEGER NOT NULL DEFAULT " . SNAPSHOT_WORKER_POOL_DEFAULT . ",
                 current_batch INTEGER NOT NULL DEFAULT 0,
                 tables_exported INTEGER NOT NULL DEFAULT 0,
                 total_rows INTEGER NOT NULL DEFAULT 0,
                 errors_json TEXT DEFAULT '[]',
-                status TEXT NOT NULL DEFAULT '" . RISEUP_SNAPSHOT_JOB_STATUS_QUEUED . "',
+                status TEXT NOT NULL DEFAULT '" . SNAPSHOT_JOB_STATUS_QUEUED . "',
                 config_json TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
@@ -477,7 +477,7 @@ class RiseupSnapshotWorker {
             )");
 
             $now = gmdate('c');
-            $stmt = $pdo->prepare("INSERT INTO " . RISEUP_TABLE_SNAPSHOT_JOBS . "
+            $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOT_JOBS . "
                 (snapshot_dir, tables_json, pool_size, status, config_json, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
 
@@ -485,7 +485,7 @@ class RiseupSnapshotWorker {
                 $snapshot_dir,
                 json_encode($tables),
                 $this->poolSize,
-                RISEUP_SNAPSHOT_JOB_STATUS_QUEUED,
+                SNAPSHOT_JOB_STATUS_QUEUED,
                 json_encode($config),
                 $now,
                 $now,
@@ -507,7 +507,7 @@ class RiseupSnapshotWorker {
      * @return array|null Job record.
      */
     private function getJob($pdo, $job_id) {
-        $stmt = $pdo->prepare("SELECT * FROM " . RISEUP_TABLE_SNAPSHOT_JOBS . " WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT * FROM " . TABLE_SNAPSHOT_JOBS . " WHERE id = ?");
         $stmt->execute(array($job_id));
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
@@ -523,10 +523,10 @@ class RiseupSnapshotWorker {
      */
     private function updateJobStatus($pdo, $job_id, $status, $error = null) {
         $now = gmdate('c');
-        $completed = ($status === RISEUP_SNAPSHOT_JOB_STATUS_COMPLETE || $status === RISEUP_SNAPSHOT_JOB_STATUS_FAILED)
+        $completed = ($status === SNAPSHOT_JOB_STATUS_COMPLETE || $status === SNAPSHOT_JOB_STATUS_FAILED)
             ? $now : null;
 
-        $stmt = $pdo->prepare("UPDATE " . RISEUP_TABLE_SNAPSHOT_JOBS . "
+        $stmt = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_JOBS . "
             SET status = ?, updated_at = ?, completed_at = COALESCE(?, completed_at)
             WHERE id = ?");
         $stmt->execute(array($status, $now, $completed, $job_id));
@@ -535,7 +535,7 @@ class RiseupSnapshotWorker {
             $job = $this->getJob($pdo, $job_id);
             $errors = json_decode($job['errors_json'] ?? '[]', true);
             $errors[] = $error;
-            $stmt2 = $pdo->prepare("UPDATE " . RISEUP_TABLE_SNAPSHOT_JOBS . " SET errors_json = ? WHERE id = ?");
+            $stmt2 = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_JOBS . " SET errors_json = ? WHERE id = ?");
             $stmt2->execute(array(json_encode($errors), $job_id));
         }
     }
@@ -558,7 +558,7 @@ class RiseupSnapshotWorker {
         $existing_errors = json_decode($job['errors_json'] ?? '[]', true);
         $all_errors = array_merge($existing_errors, $batch_errors);
 
-        $stmt = $pdo->prepare("UPDATE " . RISEUP_TABLE_SNAPSHOT_JOBS . "
+        $stmt = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_JOBS . "
             SET current_batch = ?,
                 tables_exported = tables_exported + ?,
                 total_rows = total_rows + ?,
@@ -603,7 +603,7 @@ class RiseupSnapshotWorker {
             }
         }
 
-        $this->updateJobStatus($pdo, $job_id, RISEUP_SNAPSHOT_JOB_STATUS_COMPLETE);
+        $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_COMPLETE);
 
         $errors = json_decode($job['errors_json'] ?? '[]', true);
         $this->log('INFO', 'Snapshot job complete', array(
@@ -623,7 +623,7 @@ class RiseupSnapshotWorker {
         // Schedule 5 seconds from now to allow current request to finish
         wp_schedule_single_event(
             time() + 5,
-            RISEUP_CRON_SNAPSHOT_WORKER_BATCH,
+            CRON_SNAPSHOT_WORKER_BATCH,
             array(array('job_id' => $job_id))
         );
     }
@@ -650,7 +650,7 @@ class RiseupSnapshotWorker {
         $table_progress = array();
         try {
             $stmt = $pdo->prepare("SELECT table_name, status, rows_total, rows_exported, error_message
-                FROM " . RISEUP_TABLE_SNAPSHOT_PROGRESS . " WHERE snapshot_id = 0");
+                FROM " . TABLE_SNAPSHOT_PROGRESS . " WHERE snapshot_id = 0");
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $r) {
@@ -881,7 +881,7 @@ class RiseupSnapshotWorker {
         if (!$pdo) return;
 
         try {
-            $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . RISEUP_TABLE_SNAPSHOT_PROGRESS . "
+            $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TABLE_SNAPSHOT_PROGRESS . "
                 (snapshot_id, table_name, status, rows_total, rows_exported, started_at)
                 VALUES (0, ?, 'pending', 0, 0, ?)");
 
@@ -890,7 +890,7 @@ class RiseupSnapshotWorker {
                 $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
                 $stmt->execute(array($table, $now));
 
-                $pdo->exec("UPDATE " . RISEUP_TABLE_SNAPSHOT_PROGRESS .
+                $pdo->exec("UPDATE " . TABLE_SNAPSHOT_PROGRESS .
                     " SET rows_total = {$count} WHERE snapshot_id = 0 AND table_name = '{$table}'");
             }
         } catch (Exception $e) {
@@ -912,7 +912,7 @@ class RiseupSnapshotWorker {
 
         try {
             $now = gmdate('c');
-            $stmt = $pdo->prepare("UPDATE " . RISEUP_TABLE_SNAPSHOT_PROGRESS . "
+            $stmt = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_PROGRESS . "
                 SET status = ?, rows_exported = ?, completed_at = ?, error_message = ?
                 WHERE snapshot_id = 0 AND table_name = ?");
             $stmt->execute(array(
