@@ -1,6 +1,8 @@
 <?php
 /**
- * DetectorSettingsTrait — provider selection, settings management, and validation.
+ * DetectorSettingsTrait — provider selection and settings management.
+ *
+ * Shell trait — validation delegated to DetectorValidationTrait.
  *
  * @package RiseupAsiaUploader
  * @since   1.57.0
@@ -10,7 +12,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/DetectorValidationTrait.php';
+
 trait DetectorSettingsTrait {
+
+    use DetectorValidationTrait;
 
     /**
      * Get the preferred provider based on settings.
@@ -155,46 +161,4 @@ trait DetectorSettingsTrait {
      * @param array $settings Settings to validate.
      * @return array Validated settings.
      */
-    private function validateSettings($settings) {
-        $validations = array(
-            'preferred_provider' => array(SNAPSHOT_PROVIDER_AUTO, SNAPSHOT_PROVIDER_WP_RESET, SNAPSHOT_PROVIDER_UPDRAFT, SNAPSHOT_PROVIDER_NATIVE),
-            'schedule_frequency' => array(SNAPSHOT_FREQ_MANUAL, SNAPSHOT_FREQ_DAILY, SNAPSHOT_FREQ_WEEKLY, SNAPSHOT_FREQ_MONTHLY),
-            'default_scope' => array(SNAPSHOT_SCOPE_ALL, SNAPSHOT_SCOPE_WORDPRESS, SNAPSHOT_SCOPE_CONTENT, SNAPSHOT_SCOPE_CUSTOM),
-            'retention_type' => array('days', 'count', 'none'),
-        );
-
-        $defaults = array('preferred_provider' => SNAPSHOT_PROVIDER_AUTO, 'schedule_frequency' => SNAPSHOT_FREQ_DAILY, 'default_scope' => SNAPSHOT_SCOPE_WORDPRESS, 'retention_type' => 'days');
-
-        foreach ($validations as $key => $valid) {
-            if (!in_array($settings[$key], $valid)) {
-                $settings[$key] = $defaults[$key];
-            }
-        }
-
-        $settings['retention_days'] = max(1, min(365, intval($settings['retention_days'])));
-        $settings['retention_count'] = max(1, min(100, intval($settings['retention_count'])));
-        $settings['schedule_day'] = max(1, min(28, intval($settings['schedule_day'])));
-        $settings['max_snapshot_size_mb'] = max(50, min(2000, intval($settings['max_snapshot_size_mb'])));
-        $settings['batch_size'] = max(100, min(10000, intval($settings['batch_size'])));
-        $settings['worker_pool_size'] = max(SNAPSHOT_WORKER_POOL_MIN, min(SNAPSHOT_WORKER_POOL_MAX, intval($settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT)));
-
-        $valid_storage_modes = array('single', 'per-table');
-        if (!in_array($settings['storage_mode'] ?? 'per-table', $valid_storage_modes)) {
-            $settings['storage_mode'] = 'per-table';
-        }
-
-        $settings['schedule_enabled'] = (bool) $settings['schedule_enabled'];
-        $settings['pre_restore_backup'] = (bool) $settings['pre_restore_backup'];
-        $settings['require_restore_confirm'] = (bool) $settings['require_restore_confirm'];
-
-        if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $settings['schedule_time'])) {
-            $settings['schedule_time'] = '03:00';
-        }
-
-        if (!is_array($settings['custom_tables'])) {
-            $settings['custom_tables'] = array();
-        }
-
-        return $settings;
-    }
 }

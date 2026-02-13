@@ -133,23 +133,42 @@ trait NativeSnapshotCreateTrait {
             throw new Exception('Failed to create SQLite database');
         }
 
-        $total_rows = 0;
-        $table_counts = array();
+        $table_counts = $this->exportAllTables($sqlite, $tables, $snapshot_id);
+        $sqlite = null;
 
+        return $this->buildExportResult($snapshot_id, $filepath, $tables, $table_counts, $start_time);
+    }
+
+    /** Export all tables and return row counts map. */
+    private function exportAllTables(PDO $sqlite, array $tables, int $snapshot_id): array {
+        $table_counts = array();
         foreach ($tables as $table) {
             $this->log(LOG_LEVEL_DEBUG, 'Exporting table: ' . $table);
             $result = $this->exportTable($sqlite, $table, $snapshot_id);
+            $this->logTableExportResult($table, $result);
 
             if ($result['success']) {
-                $total_rows += $result['rows'];
                 $table_counts[$table] = $result['rows'];
-                $this->log(LOG_LEVEL_INFO, sprintf('%s complete (%d rows, %s)', $table, $result['rows'], $this->formatBytes($result['bytes'])));
-            } else {
-                $this->log(LOG_LEVEL_ERROR, 'Failed to export table: ' . $table, array('error' => $result['error']));
             }
         }
 
-        $sqlite = null;
+        return $table_counts;
+    }
+
+    /** Log export result for a single table. */
+    private function logTableExportResult(string $table, array $result) {
+        if ($result['success']) {
+            $this->log(LOG_LEVEL_INFO, sprintf('%s complete (%d rows, %s)', $table, $result['rows'], $this->formatBytes($result['bytes'])));
+
+            return;
+        }
+
+        $this->log(LOG_LEVEL_ERROR, 'Failed to export table: ' . $table, array('error' => $result['error']));
+    }
+
+    /** Build final export result array and finalize snapshot record. */
+    private function buildExportResult(int $snapshot_id, string $filepath, array $tables, array $table_counts, float $start_time): array {
+        $total_rows = array_sum($table_counts);
         $file_size = filesize($filepath);
         $duration = microtime(true) - $start_time;
 

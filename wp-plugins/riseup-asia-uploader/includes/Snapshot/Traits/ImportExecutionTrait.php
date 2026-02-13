@@ -29,13 +29,29 @@ trait ImportExecutionTrait {
         $this->log('INFO', 'Detected per-table snapshot format');
         $snapshotRoot = dirname($rootDbPath);
 
-        $this->validateSqliteFile($rootDbPath, 'a-root.db');
+        $metadata = $this->extractAndValidateRootDb($rootDbPath, $snapshotRoot);
+        $inventories = $this->validateAllImportFiles($rootDbPath, $snapshotRoot);
 
+        $destDir = $this->moveSnapshotToFinalLocation($snapshotRoot, $metadata);
+        $snapshotId = $this->registerImportedSnapshot($metadata, $inventories['tables'], $inventories['incrementals'], $inventories['plugins'], $destDir);
+
+        return $this->buildImportResult($snapshotId, $destDir, $metadata, $inventories);
+    }
+
+    /** Extract and validate the root database file and metadata. */
+    private function extractAndValidateRootDb(string $rootDbPath, string $snapshotRoot): array {
+        $this->validateSqliteFile($rootDbPath, 'a-root.db');
         $metadata = $this->readRootDbMetadata($rootDbPath);
+
         if (!$metadata) {
             throw new Exception('Failed to read metadata from a-root.db');
         }
 
+        return $metadata;
+    }
+
+    /** Validate all import file inventories (tables, incrementals, plugins). */
+    private function validateAllImportFiles(string $rootDbPath, string $snapshotRoot): array {
         $tables = $this->readRootDbTables($rootDbPath);
         $this->log('INFO', 'Validating table files', array('count' => count($tables)));
         $this->validateTableFiles($snapshotRoot, $tables);
@@ -46,19 +62,21 @@ trait ImportExecutionTrait {
         $plugins = $this->readRootDbPlugins($rootDbPath);
         $this->validatePluginFiles($snapshotRoot, $plugins);
 
-        $destDir = $this->moveSnapshotToFinalLocation($snapshotRoot, $metadata);
-        $snapshotId = $this->registerImportedSnapshot($metadata, $tables, $incrementals, $plugins, $destDir);
+        return array('tables' => $tables, 'incrementals' => $incrementals, 'plugins' => $plugins);
+    }
 
+    /** Build the final import result array. */
+    private function buildImportResult(int $snapshotId, string $destDir, array $metadata, array $inventories): array {
         $this->log('INFO', 'Per-table snapshot imported successfully', array(
-            'snapshotId' => $snapshotId, 'tables' => count($tables),
-            'incrementals' => count($incrementals), 'plugins' => count($plugins),
+            'snapshotId' => $snapshotId, 'tables' => count($inventories['tables']),
+            'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
         ));
 
         return array(
             'success' => true, 'snapshot_id' => $snapshotId, 'folder' => basename($destDir),
-            'type' => $metadata['type'] ?? 'full', 'tables' => count($tables),
+            'type' => $metadata['type'] ?? 'full', 'tables' => count($inventories['tables']),
             'total_rows' => $metadata['total_rows'] ?? 0,
-            'incrementals' => count($incrementals), 'plugins' => count($plugins),
+            'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
         );
     }
 

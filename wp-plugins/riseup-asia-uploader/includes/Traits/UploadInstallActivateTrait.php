@@ -20,23 +20,32 @@ trait UploadInstallActivateTrait
 
         $plugin_file = $this->find_plugin_file($slug);
         if (!empty($plugin_file)) {
-            $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
-            if (function_exists('opcache_invalidate')) {
-                opcache_invalidate($full_plugin_path, true);
-            }
-            $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
-            if (file_exists($constants_file) && function_exists('opcache_invalidate')) {
-                opcache_invalidate($constants_file, true);
-            }
-            wp_cache_delete('plugins', 'plugins');
+            $this->invalidatePluginCache($plugin_file, $slug);
         }
 
         if (!$plugin_file) {
             $this->logger->log_upload_failed($slug, 'Could not find plugin file after extraction');
+
             return $this->error_response('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
         }
 
         return $plugin_file;
+    }
+
+    /** Invalidate OPcache entries and WP plugin cache for the given plugin. */
+    private function invalidatePluginCache(string $plugin_file, string $slug) {
+        $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($full_plugin_path, true);
+        }
+
+        $constants_file = WP_PLUGIN_DIR . '/' . $slug . '/includes/constants.php';
+        $shouldInvalidateConstants = file_exists($constants_file) && function_exists('opcache_invalidate');
+        if ($shouldInvalidateConstants) {
+            opcache_invalidate($constants_file, true);
+        }
+
+        wp_cache_delete('plugins', 'plugins');
     }
 
     /** Activate the plugin if requested or if it was previously active. */

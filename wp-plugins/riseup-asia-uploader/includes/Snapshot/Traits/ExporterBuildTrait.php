@@ -30,37 +30,67 @@ trait ExporterBuildTrait {
 
         $this->log('INFO', 'Building ZIP export', array('snapshot_id' => $snapshotId, 'dir' => basename($snapshotDir)));
 
-        $exportsDir = RiseupPathUtils::getSnapshotsDir() . '/' . SNAPSHOT_EXPORTS_SUBDIR;
-        if (RiseupBooleanHelpers::is_dir_missing($exportsDir)) {
-            if (!wp_mkdir_p($exportsDir)) {
-                return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => ERR_EXPORT_BUILD_FAILED);
-            }
-            @file_put_contents($exportsDir . '/.htaccess', "deny from all\n");
-            @file_put_contents($exportsDir . '/index.php', "<?php // Silence is golden.\n");
+        $exportsDir = $this->ensureExportsDir();
+        if (!$exportsDir) {
+            return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => ERR_EXPORT_BUILD_FAILED);
         }
 
-        $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $snapshot['filename']);
-        $zipFilename = $safeName . '_export.zip';
-        $zipPath = $exportsDir . '/' . $zipFilename;
-
+        $zipMeta = $this->prepareZipPaths($exportsDir, $snapshot);
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
             return array('success' => false, 'error' => 'Database unavailable', 'code' => ERR_EXPORT_BUILD_FAILED);
         }
 
-        $this->insertBuildingRecord($pdo, $snapshotId, $zipFilename, $zipPath);
+        $this->insertBuildingRecord($pdo, $snapshotId, $zipMeta['filename'], $zipMeta['path']);
 
+        return $this->attemptZipAssembly($pdo, $snapshot, $snapshotId, $snapshotDir, $zipMeta);
+    }
+
+    /** Ensure the exports directory exists with security files. */
+    private function ensureExportsDir(): ?string {
+        $exportsDir = RiseupPathUtils::getSnapshotsDir() . '/' . SNAPSHOT_EXPORTS_SUBDIR;
+        if (!RiseupBooleanHelpers::is_dir_missing($exportsDir)) {
+            return $exportsDir;
+        }
+
+        if (!wp_mkdir_p($exportsDir)) {
+            return null;
+        }
+
+        @file_put_contents($exportsDir . '/.htaccess', "deny from all\n");
+        @file_put_contents($exportsDir . '/index.php', "<?php // Silence is golden.\n");
+
+        return $exportsDir;
+    }
+
+    /** Prepare ZIP filename and path. */
+    private function prepareZipPaths(string $exportsDir, array $snapshot): array {
+        $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $snapshot['filename']);
+        $zipFilename = $safeName . '_export.zip';
+
+        return array('filename' => $zipFilename, 'path' => $exportsDir . '/' . $zipFilename);
+    }
+
+    /** Attempt ZIP assembly with error cleanup. */
+    private function attemptZipAssembly(PDO $pdo, array $snapshot, int $snapshotId, string $snapshotDir, array $zipMeta): array {
         try {
-            return $this->assembleZipArchive($pdo, $snapshot, $snapshotId, $snapshotDir, $zipPath, $zipFilename);
+            return $this->assembleZipArchive($pdo, $snapshot, $snapshotId, $snapshotDir, $zipMeta['path'], $zipMeta['filename']);
         } catch (Exception $e) {
             $this->log('ERROR', 'ZIP export build failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
-            if (file_exists($zipPath)) {
-                @unlink($zipPath);
-            }
-            $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
-            $stmt->execute(array($snapshotId));
+            $this->cleanupFailedExport($pdo, $snapshotId, $zipMeta['path']);
+
             return array('success' => false, 'error' => 'ZIP build failed: ' . $e->getMessage(), 'code' => ERR_EXPORT_BUILD_FAILED);
         }
+    }
+
+    /** Clean up after a failed export build. */
+    private function cleanupFailedExport(PDO $pdo, int $snapshotId, string $zipPath) {
+        if (file_exists($zipPath)) {
+            @unlink($zipPath);
+        }
+
+        $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
+        $stmt->execute(array($snapshotId));
     }
 
     /** Insert a "building" export record. */
@@ -78,9 +108,24 @@ trait ExporterBuildTrait {
         $files = $this->collectSnapshotFiles($snapshotDir);
         if (empty($files)) {
             $this->deleteExportRecord($pdo->lastInsertId() ?: $snapshotId);
+
             return array('success' => false, 'error' => 'No snapshot files found to export', 'code' => ERR_EXPORT_BUILD_FAILED);
         }
 
+        $incrementalData = $this->gatherIncrementalData($snapshotId, $snapshot, $snapshotDir);
+
+        $zip = $this->openZipForExport($zipPath, $pdo, $snapshotId);
+        $this->populateZipArchive($zip, $files, $incrementalData, $snapshot, $snapshotId);
+        $zip->close();
+
+        $this->finalizeExportRecord($pdo, $snapshotId, $incrementalData['included_ids'], $incrementalData['incrementals'], $zipPath, $zipFilename);
+        $export = $this->getValidExport($snapshotId);
+
+        return array('success' => true, 'cached' => false, 'export' => $export);
+    }
+
+    /** Gather incremental snapshot data for ZIP assembly. */
+    private function gatherIncrementalData(int $snapshotId, array $snapshot, string $snapshotDir): array {
         $incrementals = $this->getIncrementalSnapshots($snapshotId, $snapshot['filename']);
         $incrementalDir = $snapshotDir . '/incremental';
         $incrementalFiles = is_dir($incrementalDir) ? $this->collectIncrementalFiles($incrementalDir) : array();
@@ -90,23 +135,28 @@ trait ExporterBuildTrait {
             $includedIds[] = (int) $inc['id'];
         }
 
+        return array('incrementals' => $incrementals, 'files' => $incrementalFiles, 'included_ids' => $includedIds);
+    }
+
+    /** Open a new ZIP archive for writing. */
+    private function openZipForExport(string $zipPath, PDO $pdo, int $snapshotId): ZipArchive {
         $zip = new ZipArchive();
         $openResult = $zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         if ($openResult !== true) {
             $this->deleteExportRecord($pdo->lastInsertId() ?: $snapshotId);
-            return array('success' => false, 'error' => 'Failed to create ZIP archive (error code: ' . $openResult . ')', 'code' => ERR_EXPORT_BUILD_FAILED);
+            throw new Exception('Failed to create ZIP archive (error code: ' . $openResult . ')');
         }
 
         $zip->setCompressionIndex(0, ZipArchive::CM_DEFLATE);
+
+        return $zip;
+    }
+
+    /** Populate ZIP with snapshot files, incrementals, and manifest. */
+    private function populateZipArchive(ZipArchive $zip, array $files, array $incrementalData, array $snapshot, int $snapshotId) {
         $this->addFilesToZip($zip, $files, '');
-        $this->addFilesToZip($zip, $incrementalFiles, 'incremental/');
-        $this->addManifestToZip($zip, $snapshot, $snapshotId, $includedIds, $incrementals);
-        $zip->close();
-
-        $this->finalizeExportRecord($pdo, $snapshotId, $includedIds, $incrementals, $zipPath, $zipFilename);
-
-        $export = $this->getValidExport($snapshotId);
-        return array('success' => true, 'cached' => false, 'export' => $export);
+        $this->addFilesToZip($zip, $incrementalData['files'], 'incremental/');
+        $this->addManifestToZip($zip, $snapshot, $snapshotId, $incrementalData['included_ids'], $incrementalData['incrementals']);
     }
 
     /** Add files to ZIP with compression. */
