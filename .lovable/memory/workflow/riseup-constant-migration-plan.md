@@ -24,40 +24,16 @@ Scanned all 41 PHP files in `wp-plugins/riseup-asia-uploader/`. Found **~20 actu
 
 ---
 
-## 🔴 Needs Migration — 3 Files, ~20 References
+## ✅ Migration Complete — 3 Files, ~20 References
 
-### Phase 1: `PostManager.php` (~10 refs)
+### Phase 1: `PostManager.php` (~10 refs) ✅ Done
+Migrated 9 constants: `POST_STATUS_*`, `ACTION_POST_*`, `ACTION_CATEGORY_CREATE`, `STATUS_FAILED`, `DEFAULT_LIMIT`, `MAX_LIMIT`.
 
-| Old (RISEUP_*) | New (unprefixed) |
-|-----------------|------------------|
-| `RISEUP_POST_STATUS_DRAFT` | `POST_STATUS_DRAFT` |
-| `RISEUP_POST_STATUS_PUBLISH` | `POST_STATUS_PUBLISH` |
-| `RISEUP_POST_STATUS_PENDING` | `POST_STATUS_PENDING` |
-| `RISEUP_ACTION_POST_CREATE` | `ACTION_POST_CREATE` |
-| `RISEUP_ACTION_POST_UPDATE` | `ACTION_POST_UPDATE` |
-| `RISEUP_ACTION_CATEGORY_CREATE` | `ACTION_CATEGORY_CREATE` |
-| `RISEUP_STATUS_FAILED` | `STATUS_FAILED` |
-| `RISEUP_DEFAULT_LIMIT` | `DEFAULT_LIMIT` |
-| `RISEUP_MAX_LIMIT` | `MAX_LIMIT` |
+### Phase 2: `SnapshotManager.php` (~8 refs) ✅ Done
+Migrated 7 constants: `TABLE_SNAPSHOTS`, `SNAPSHOT_PROVIDER_NATIVE`, `SNAPSHOT_STATUS_COMPLETE`. Log levels migrated to `LogLevel` enum (`LogLevel::Debug->value`, etc.) with `use RiseupAsia\Enums\LogLevel;` import.
 
-### Phase 2: `SnapshotManager.php` (~8 refs)
-
-| Old (RISEUP_*) | New (unprefixed) |
-|-----------------|------------------|
-| `RISEUP_TABLE_SNAPSHOTS` | `TABLE_SNAPSHOTS` |
-| `RISEUP_SNAPSHOT_PROVIDER_NATIVE` | `SNAPSHOT_PROVIDER_NATIVE` |
-| `RISEUP_SNAPSHOT_STATUS_COMPLETE` | `SNAPSHOT_STATUS_COMPLETE` |
-| `RISEUP_LOG_LEVEL_DEBUG` | `LOG_LEVEL_DEBUG` (or `LogLevel::Debug->value`) |
-| `RISEUP_LOG_LEVEL_INFO` | `LOG_LEVEL_INFO` (or `LogLevel::Info->value`) |
-| `RISEUP_LOG_LEVEL_WARN` | `LOG_LEVEL_WARN` (or `LogLevel::Warn->value`) |
-| `RISEUP_LOG_LEVEL_ERROR` | `LOG_LEVEL_ERROR` (or `LogLevel::Error->value`) |
-
-### Phase 3: `IncrementalBackup.php` (~2 refs)
-
-| Old (RISEUP_*) | New (unprefixed) |
-|-----------------|------------------|
-| `RISEUP_TABLE_SNAPSHOTS` | `TABLE_SNAPSHOTS` |
-| `RISEUP_SNAPSHOT_STATUS_COMPLETE` | `SNAPSHOT_STATUS_COMPLETE` |
+### Phase 3: `IncrementalBackup.php` (~2 refs) ✅ Done
+Migrated 2 constants: `TABLE_SNAPSHOTS`, `SNAPSHOT_STATUS_COMPLETE`.
 
 ### Phase 4: Delete `constants-compat.php`
 
