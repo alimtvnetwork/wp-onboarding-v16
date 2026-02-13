@@ -20,29 +20,53 @@ trait NativeTableExportConvertTrait {
      * @return string SQLite CREATE statement.
      */
     private function convertCreateStatement($mysql_create, $table) {
-        $sql = $mysql_create;
+        $sql = $this->stripMysqlTableOptions($mysql_create);
+        $sql = $this->convertMysqlDataTypes($sql);
+        $sql = $this->stripMysqlColumnModifiers($sql);
+        $sql = $this->stripMysqlIndexDefinitions($sql);
+        return $sql;
+    }
 
+    /**
+     * Remove MySQL table-level options (ENGINE, CHARSET, etc.).
+     *
+     * @param string $sql SQL statement.
+     * @return string Cleaned SQL.
+     */
+    private function stripMysqlTableOptions(string $sql): string {
         $sql = preg_replace('/\s+ENGINE\s*=\s*\w+/i', '', $sql);
         $sql = preg_replace('/\s+DEFAULT\s+CHARSET\s*=\s*\w+/i', '', $sql);
         $sql = preg_replace('/\s+COLLATE\s*=?\s*\w+/i', '', $sql);
         $sql = preg_replace('/\s+AUTO_INCREMENT\s*=\s*\d+/i', '', $sql);
         $sql = preg_replace('/\s+ROW_FORMAT\s*=\s*\w+/i', '', $sql);
-        $sql = preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $sql);
+        return preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $sql);
+    }
 
-        $sql = $this->convertMysqlDataTypes($sql);
-
+    /**
+     * Strip column-level MySQL modifiers (COLLATE, CHARSET, UNSIGNED, ZEROFILL).
+     *
+     * @param string $sql SQL statement.
+     * @return string Cleaned SQL.
+     */
+    private function stripMysqlColumnModifiers(string $sql): string {
         $sql = preg_replace('/\s+COLLATE\s+\w+/i', '', $sql);
         $sql = preg_replace('/\s+CHARACTER\s+SET\s+\w+/i', '', $sql);
         $sql = preg_replace('/\s+UNSIGNED\b/i', '', $sql);
-        $sql = preg_replace('/\s+ZEROFILL\b/i', '', $sql);
+        return preg_replace('/\s+ZEROFILL\b/i', '', $sql);
+    }
 
+    /**
+     * Remove MySQL KEY/INDEX definitions not supported in SQLite.
+     *
+     * @param string $sql SQL statement.
+     * @return string Cleaned SQL.
+     */
+    private function stripMysqlIndexDefinitions(string $sql): string {
         $sql = preg_replace('/,\s*KEY\s+[^,]+(?=,|\))/i', '', $sql);
         $sql = preg_replace('/,\s*UNIQUE\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
         $sql = preg_replace('/,\s*FULLTEXT\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
         $sql = preg_replace('/,\s*SPATIAL\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
-        $sql = preg_replace('/,\s*\)/', ')', $sql);
-
-        return $sql;
+        return preg_replace('/,\s*\)/', ')', $sql);
     }
 
     /**

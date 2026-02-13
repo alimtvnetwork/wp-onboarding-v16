@@ -92,55 +92,94 @@ class RiseupRestoreEngine {
             return $prereqError;
         }
 
-        $start_time = microtime(true);
-        $mode = $options['mode'] ?? 'full';
-        $apply_incrementals = $options['apply_incrementals'] ?? true;
-
         $this->log('INFO', 'Starting per-table restore', array(
-            'directory' => basename($snapshot_dir), 'mode' => $mode,
+            'directory' => basename($snapshot_dir), 'mode' => $options['mode'] ?? 'full',
         ));
 
         try {
-            $rootPdo = new PDO('sqlite:' . $snapshot_dir . '/a-root.db');
-            $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-            $meta = $this->getSnapshotMeta($rootPdo);
-            $restore_order = $this->prepareRestoreOrder($rootPdo, $options);
-
-            if (!$restore_order['success']) {
-                $rootPdo = null;
-                return $restore_order;
-            }
-
-            $ordered_tables = $restore_order['tables'];
-            $table_inventory = $restore_order['inventory'];
-
-            $backup_id = $this->createSafetyBackup($options);
-
-            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
-
-            $master_result = $this->restoreMasterTables($ordered_tables, $table_inventory, $snapshot_dir, $options);
-            $inc_result = $this->applyIncrementalsPhase($rootPdo, $snapshot_dir, $ordered_tables, $mode, $apply_incrementals);
-
-            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-            $rootPdo = null;
-
-            $duration = microtime(true) - $start_time;
-            $total_rows = $master_result['total_rows'] + $inc_result['total_rows'];
-            $errors = array_merge($master_result['errors'], $inc_result['errors']);
-
-            $this->logAuditRestore($snapshot_dir, $master_result['tables_restored'], $total_rows, $duration);
-
-            return $this->buildRestoreResult(
-                $master_result, $inc_result, $backup_id, $errors, $duration, $meta, $total_rows
-            );
-
+            return $this->executeRestoreWorkflow($snapshot_dir, $options);
         } catch (\Throwable $e) {
-            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-            $this->log('ERROR', 'Restore engine failed', array(
-                'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
-            ));
-            return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'restore');
+            return $this->handleRestoreFailure($e);
         }
+    }
+
+    /**
+     * Core restore workflow after validation passes.
+     *
+     * @param string $snapshot_dir Snapshot directory.
+     * @param array  $options      Restore options.
+     * @return array Result.
+     */
+    private function executeRestoreWorkflow(string $snapshot_dir, array $options): array {
+        $start_time = microtime(true);
+        $rootPdo = $this->openRootPdo($snapshot_dir);
+        $meta = $this->getSnapshotMeta($rootPdo);
+        $restore_order = $this->prepareRestoreOrder($rootPdo, $options);
+
+        if (!$restore_order['success']) {
+            $rootPdo = null;
+            return $restore_order;
+        }
+
+        $backup_id = $this->createSafetyBackup($options);
+        $results = $this->runRestoreWithFkDisabled($rootPdo, $snapshot_dir, $restore_order, $options);
+        $rootPdo = null;
+
+        $duration = microtime(true) - $start_time;
+        $this->logAuditRestore($snapshot_dir, $results['master']['tables_restored'], $results['total_rows'], $duration);
+
+        return $this->buildRestoreResult(
+            $results['master'], $results['inc'], $backup_id, $results['errors'], $duration, $meta, $results['total_rows']
+        );
+    }
+
+    /**
+     * Open root PDO connection.
+     *
+     * @param string $snapshot_dir Snapshot directory.
+     * @return PDO
+     */
+    private function openRootPdo(string $snapshot_dir): PDO {
+        $pdo = new PDO('sqlite:' . $snapshot_dir . '/a-root.db');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $pdo;
+    }
+
+    /**
+     * Run master + incremental restore with FK checks disabled.
+     *
+     * @param PDO    $rootPdo      Root PDO.
+     * @param string $snapshot_dir Snapshot directory.
+     * @param array  $restoreOrder Restore order result.
+     * @param array  $options      Options.
+     * @return array Combined results.
+     */
+    private function runRestoreWithFkDisabled(PDO $rootPdo, string $snapshot_dir, array $restoreOrder, array $options): array {
+        $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
+
+        $master = $this->restoreMasterTables($restoreOrder['tables'], $restoreOrder['inventory'], $snapshot_dir, $options);
+        $inc = $this->applyIncrementalsPhase($rootPdo, $snapshot_dir, $restoreOrder['tables'], $options['mode'] ?? 'full', $options['apply_incrementals'] ?? true);
+
+        $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
+
+        return array(
+            'master' => $master, 'inc' => $inc,
+            'total_rows' => $master['total_rows'] + $inc['total_rows'],
+            'errors' => array_merge($master['errors'], $inc['errors']),
+        );
+    }
+
+    /**
+     * Handle restore failure with FK cleanup.
+     *
+     * @param \Throwable $e Exception.
+     * @return array Failure result.
+     */
+    private function handleRestoreFailure(\Throwable $e): array {
+        $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
+        $this->log('ERROR', 'Restore engine failed', array(
+            'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
+        ));
+        return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'restore');
     }
 }
