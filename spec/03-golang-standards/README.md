@@ -199,11 +199,34 @@ func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { 
 | `init()` functions | Hidden side effects | Explicit initialization |
 | Global mutable state | Race conditions | Dependency injection |
 | `map[string]interface{}` in APIs | Untyped | Defined structs |
+| `!fileExists(path)` raw negation | Easy to miss `!` | `IsFileMissing(path)` guard |
+| `!strings.Contains(s, x)` raw negation | Same | `IsMissingSubstring(s, x)` |
+
+---
+
+## No Raw Negations — Use Positive Guard Functions
+
+> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+
+**Never use `!` on a function call in a condition.** Wrap every negative check in a positively named guard.
+
+```go
+// ❌ FORBIDDEN
+if !fileExists(path) { ... }
+if !strings.Contains(s, substr) { ... }
+
+// ✅ REQUIRED
+if IsFileMissing(path) { ... }
+if IsMissingSubstring(s, substr) { ... }
+```
+
+**Utility package:** `pkg/guards/` — see canonical spec for full guard function table.
 
 ---
 
 ## Cross-References
 
+- [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
 - [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
 - [TypeScript Standards](../02-typescript-standards/README.md)

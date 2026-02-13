@@ -263,8 +263,31 @@ type ActivityMetadata = PublishMetadata | SnapshotMetadata | PluginMetadata | Co
 
 ---
 
+## 7. No Raw Negations — Use Positive Guard Functions
+
+> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+
+**Never use `!` on a function call in a condition.** Wrap every negative check in a positively named guard function.
+
+```typescript
+// ❌ FORBIDDEN
+if (!response.ok) { handleError(response); }
+if (!array.includes(item)) { array.push(item); }
+if (!fs.existsSync(path)) { throw new Error('Missing'); }
+
+// ✅ REQUIRED
+if (isResponseFailed(response)) { handleError(response); }
+if (isItemMissing(array, item)) { array.push(item); }
+if (isFileMissing(path)) { throw new Error('Missing'); }
+```
+
+**Utility location:** `src/utils/guards.ts` — see canonical spec for full guard function table.
+
+---
+
 ## Cross-References
 
+- [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
 - [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
 - [Golang Standards](../03-golang-standards/README.md)
