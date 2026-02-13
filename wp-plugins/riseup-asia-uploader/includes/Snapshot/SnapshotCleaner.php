@@ -484,7 +484,7 @@ class RiseupSnapshotCleaner {
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..' || $entry === '.htaccess' || $entry === 'index.php') continue;
             $full_path = $snapshots_dir . DIRECTORY_SEPARATOR . $entry;
-            if (!is_dir($full_path)) continue;
+            if (RiseupBooleanHelpers::is_dir_missing($full_path)) continue;
             if (!isset($db_filenames[$entry]) && !in_array($full_path, $db_filepaths)) {
                 $result['files'][] = $entry;
                 if (!$dry_run) {
@@ -721,7 +721,7 @@ class RiseupSnapshotCleaner {
      * @param string $dir Directory path.
      */
     private function deleteDirectoryRecursive($dir) {
-        if (!is_dir($dir)) return;
+        if (RiseupBooleanHelpers::is_dir_missing($dir)) return;
 
         $items = array_diff(scandir($dir), array('.', '..'));
         foreach ($items as $item) {
@@ -743,7 +743,7 @@ class RiseupSnapshotCleaner {
      */
     private function getDirectorySize($dir) {
         $size = 0;
-        if (!is_dir($dir)) return 0;
+        if (RiseupBooleanHelpers::is_dir_missing($dir)) return 0;
 
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)

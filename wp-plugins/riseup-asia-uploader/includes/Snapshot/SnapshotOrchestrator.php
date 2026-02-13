@@ -638,7 +638,7 @@ class RiseupSnapshotOrchestrator {
      */
     private function getDirectorySize($dir) {
         $size = 0;
-        if (!is_dir($dir)) return 0;
+        if (RiseupBooleanHelpers::is_dir_missing($dir)) return 0;
 
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)

@@ -730,7 +730,7 @@ class RiseupIncrementalBackup {
 
             // Fallback: scan snapshots directory for most recent full backup
             $base_dir = $this->getSnapshotsBaseDir();
-            if (!is_dir($base_dir)) {
+            if (RiseupBooleanHelpers::is_dir_missing($base_dir)) {
                 return null;
             }
 

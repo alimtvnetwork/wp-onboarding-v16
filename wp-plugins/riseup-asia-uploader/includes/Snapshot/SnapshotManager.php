@@ -169,7 +169,8 @@ class RiseupSnapshotManager {
             if ($master_dirname) {
                 // Resolve master directory from filepath (incremental path is master_dir/incremental/folder)
                 $master_dir = dirname(dirname($snapshot['filepath']));
-                if (!is_dir($master_dir) || !file_exists($master_dir . '/a-root.db')) {
+                $isMasterMissing = RiseupBooleanHelpers::is_dir_missing($master_dir) || RiseupBooleanHelpers::is_file_missing($master_dir . '/a-root.db');
+                if ($isMasterMissing) {
                     $this->log(LOG_LEVEL_ERROR, 'Incremental restore blocked: parent full snapshot missing', array(
                         'snapshot_id'   => $snapshot_id,
                         'master_dir'    => $master_dirname,
