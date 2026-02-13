@@ -35,32 +35,31 @@ trait StatusOpsTrait {
         $spec_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/data/openapi.json';
 
         if (RiseupBooleanHelpers::is_file_missing($spec_file)) {
-            $this->file_logger->error('OpenAPI spec file not found', array('path' => $spec_file));
-
-            return new WP_REST_Response(array(
-                'success' => false,
-                'error'   => 'OpenAPI specification file not found',
-            ), HTTP_NOT_FOUND);
+            return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
         }
 
+        return $this->parseSpecFile($spec_file);
+    }
+
+    /** Build an error response for missing spec file. */
+    private function buildSpecError(string $message, string $path): WP_REST_Response {
+        $this->file_logger->error($message, array('path' => $path));
+
+        return new WP_REST_Response(array('success' => false, 'error' => $message), HTTP_NOT_FOUND);
+    }
+
+    /** Read and parse the spec JSON file. */
+    private function parseSpecFile(string $spec_file) {
         $spec_content = file_get_contents($spec_file);
         if ($spec_content === false) {
             $this->file_logger->error('Failed to read OpenAPI spec file');
-
-            return new WP_REST_Response(array(
-                'success' => false,
-                'error'   => 'Failed to read OpenAPI specification',
-            ), HTTP_SERVER_ERROR);
+            return new WP_REST_Response(array('success' => false, 'error' => 'Failed to read OpenAPI specification'), HTTP_SERVER_ERROR);
         }
 
         $spec = json_decode($spec_content, true);
         if ($spec === null) {
             $this->file_logger->error('Invalid JSON in OpenAPI spec file');
-
-            return new WP_REST_Response(array(
-                'success' => false,
-                'error'   => 'Invalid OpenAPI specification format',
-            ), HTTP_SERVER_ERROR);
+            return new WP_REST_Response(array('success' => false, 'error' => 'Invalid OpenAPI specification format'), HTTP_SERVER_ERROR);
         }
 
         return $spec;
@@ -72,6 +71,18 @@ trait StatusOpsTrait {
     public function handle_opcache_reset($request) {
         $this->file_logger->info('OPcache reset endpoint called');
 
+        $result = $this->buildOpcacheResult();
+        $result['files_invalidated'] = $this->invalidatePluginFiles();
+        wp_cache_delete('plugins', 'plugins');
+
+        return RiseupEnvelopeBuilder::success('OPcache reset complete')
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_OPCACHE_RESET)
+            ->setSingleResult($result)
+            ->toResponse();
+    }
+
+    /** Build the base OPcache result with reset execution. */
+    private function buildOpcacheResult(): array {
         $result = array(
             'success'           => true,
             'opcache_available' => function_exists('opcache_reset'),
@@ -85,14 +96,7 @@ trait StatusOpsTrait {
             $this->file_logger->info('OPcache reset executed', array('result' => $result['opcache_reset']));
         }
 
-        $result['files_invalidated'] = $this->invalidatePluginFiles();
-
-        wp_cache_delete('plugins', 'plugins');
-
-        return RiseupEnvelopeBuilder::success('OPcache reset complete')
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_OPCACHE_RESET)
-            ->setSingleResult($result)
-            ->toResponse();
+        return $result;
     }
 
     /**
