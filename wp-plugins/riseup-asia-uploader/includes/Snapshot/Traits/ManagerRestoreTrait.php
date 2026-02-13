@@ -22,6 +22,29 @@ trait ManagerRestoreTrait {
      * @return array Result with success status.
      */
     public function restoreSnapshot($snapshot_id, $options = array()) {
+        $guard = $this->guardRestorePreConditions($snapshot_id, $options);
+        if ($guard !== null) {
+            return $guard;
+        }
+
+        $snapshot = $this->getProvider()->getSnapshot($snapshot_id);
+
+        $this->log(LOG_LEVEL_INFO, 'Starting snapshot restore', array(
+            'snapshot_id' => $snapshot_id, 'filename' => $snapshot['filename'], 'create_backup' => !empty($options['create_backup']),
+        ));
+
+        $backup_id = $this->handlePreRestoreBackup($options, $snapshot_id);
+        if ($backup_id instanceof array) {
+            return $backup_id;
+        }
+
+        $result = $this->executeRestore($snapshot, $options);
+
+        return $this->finalizeRestoreResult($result, $snapshot_id, $backup_id);
+    }
+
+    /** Validate all pre-conditions for a restore operation. */
+    private function guardRestorePreConditions(int $snapshot_id, array $options) {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
             return array('success' => false, 'error' => 'Restore requires explicit confirmation (confirm=true)', 'code' => ERR_RESTORE_NO_CONFIRM);
         }
@@ -36,22 +59,11 @@ trait ManagerRestoreTrait {
             return array('success' => false, 'error' => 'Snapshot not found', 'code' => ERR_SNAPSHOT_NOT_FOUND);
         }
 
-        $guard = $this->validateIncrementalParent($snapshot, $snapshot_id);
-        if ($guard !== null) {
-            return $guard;
-        }
+        return $this->validateIncrementalParent($snapshot, $snapshot_id);
+    }
 
-        $this->log(LOG_LEVEL_INFO, 'Starting snapshot restore', array(
-            'snapshot_id' => $snapshot_id, 'filename' => $snapshot['filename'], 'create_backup' => !empty($options['create_backup']),
-        ));
-
-        $backup_id = $this->handlePreRestoreBackup($options, $snapshot_id);
-        if ($backup_id instanceof array) {
-            return $backup_id;
-        }
-
-        $result = $this->executeRestore($snapshot, $options);
-
+    /** Log and enrich the restore result. */
+    private function finalizeRestoreResult(array $result, int $snapshot_id, $backup_id): array {
         if ($result['success']) {
             $result['backup_id'] = $backup_id;
             $this->log(LOG_LEVEL_INFO, 'Snapshot restored successfully', array(
@@ -88,32 +100,36 @@ trait ManagerRestoreTrait {
                 return array('success' => false, 'error' => 'No tables to restore');
             }
 
-            $this->log(LOG_LEVEL_INFO, 'Restoring tables', array('count' => count($tables), 'mode' => $options['mode'] ?? 'full'));
-
-            $total_rows = 0;
-            $restored_tables = 0;
-
-            foreach ($tables as $table) {
-                $result = $this->restoreTable($sqlite, $table);
-                if ($result['success']) {
-                    $total_rows += $result['rows'];
-                    $restored_tables++;
-                    $this->log(LOG_LEVEL_INFO, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
-                    continue;
-                }
-
-                $this->log(LOG_LEVEL_ERROR, 'Failed to restore table: ' . $table, array('error' => $result['error']));
-                if (!empty($options['strict'])) {
-                    throw new Exception('Table restore failed: ' . $table);
-                }
-            }
-
+            $counts = $this->restoreAllTables($sqlite, $tables, $options);
             $sqlite = null;
 
-            return array('success' => true, 'tables' => $restored_tables, 'rows' => $total_rows, 'duration' => microtime(true) - $start_time);
+            return array('success' => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $start_time);
         } catch (Exception $e) {
             $this->log(LOG_LEVEL_ERROR, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage());
         }
+    }
+
+    /** Restore all tables from the snapshot SQLite handle. */
+    private function restoreAllTables(PDO $sqlite, array $tables, array $options): array {
+        $total_rows = 0;
+        $restored_tables = 0;
+
+        foreach ($tables as $table) {
+            $result = $this->restoreTable($sqlite, $table);
+            if ($result['success']) {
+                $total_rows += $result['rows'];
+                $restored_tables++;
+                $this->log(LOG_LEVEL_INFO, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
+                continue;
+            }
+
+            $this->log(LOG_LEVEL_ERROR, 'Failed to restore table: ' . $table, array('error' => $result['error']));
+            if (!empty($options['strict'])) {
+                throw new Exception('Table restore failed: ' . $table);
+            }
+        }
+
+        return array('tables' => $restored_tables, 'rows' => $total_rows);
     }
 }

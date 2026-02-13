@@ -65,6 +65,15 @@ trait ManagerImportTrait {
      * @throws Exception On validation failure.
      */
     private function extractAndValidateZip($uploaded_path, $temp_dir) {
+        $this->extractZipToDir($uploaded_path, $temp_dir);
+        $manifest = $this->loadAndValidateManifest($temp_dir);
+        $sqlite_path = $this->validateSnapshotSqlite($manifest, $temp_dir);
+
+        return array('manifest' => $manifest, 'sqlite_path' => $sqlite_path);
+    }
+
+    /** Extract a ZIP file into a directory. */
+    private function extractZipToDir(string $uploaded_path, string $temp_dir) {
         $zip = new ZipArchive();
         if ($zip->open($uploaded_path) !== true) {
             throw new Exception('Failed to open ZIP file');
@@ -72,7 +81,10 @@ trait ManagerImportTrait {
 
         $zip->extractTo($temp_dir);
         $zip->close();
+    }
 
+    /** Load and validate the manifest.json from the extracted directory. */
+    private function loadAndValidateManifest(string $temp_dir): array {
         $manifest_path = RiseupPathUtils::join($temp_dir, 'manifest.json');
         if (!RiseupPathUtils::fileExists($manifest_path)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
@@ -88,8 +100,14 @@ trait ManagerImportTrait {
             throw new Exception('Manifest validation failed: ' . $validation['error']);
         }
 
+        return $manifest;
+    }
+
+    /** Validate the SQLite file referenced by the manifest. */
+    private function validateSnapshotSqlite(array $manifest, string $temp_dir): string {
         $sqlite_filename = $manifest['snapshot']['filename'];
         $sqlite_path = RiseupPathUtils::join($temp_dir, $sqlite_filename);
+
         if (!RiseupPathUtils::fileExists($sqlite_path)) {
             throw new Exception('SQLite file not found in archive: ' . $sqlite_filename);
         }
@@ -99,7 +117,7 @@ trait ManagerImportTrait {
             throw new Exception('SQLite integrity check failed: ' . $integrity['error']);
         }
 
-        return array('manifest' => $manifest, 'sqlite_path' => $sqlite_path);
+        return $sqlite_path;
     }
 
     /**
@@ -162,34 +180,26 @@ trait ManagerImportTrait {
      * @return int|false Snapshot ID or false.
      */
     private function createImportedSnapshotRecord($manifest, $sequence, $filename, $filepath) {
-        $snapshot_data = $manifest['snapshot'];
+        $data = $this->buildImportRecord($manifest['snapshot'], $manifest, $sequence, $filename, $filepath);
+        $result = $this->db->insert(TABLE_SNAPSHOTS, $data);
 
-        $data = array(
-            'sequence' => $sequence,
-            'filename' => $filename,
-            'filepath' => $filepath,
-            'provider' => SNAPSHOT_PROVIDER_NATIVE,
-            'scope' => $snapshot_data['scope'],
+        return $result ? $this->db->lastInsertId() : false;
+    }
+
+    /** Build the database record for an imported snapshot. */
+    private function buildImportRecord(array $snapshot_data, array $manifest, int $sequence, string $filename, string $filepath): array {
+        return array(
+            'sequence' => $sequence, 'filename' => $filename, 'filepath' => $filepath,
+            'provider' => SNAPSHOT_PROVIDER_NATIVE, 'scope' => $snapshot_data['scope'],
             'tables_json' => json_encode($snapshot_data['tables']),
-            'total_rows' => $snapshot_data['total_rows'] ?? 0,
-            'file_size' => filesize($filepath),
-            'trigger_source' => 'import',
-            'status' => SNAPSHOT_STATUS_COMPLETE,
-            'created_at' => date('c'),
-            'completed_at' => date('c'),
+            'total_rows' => $snapshot_data['total_rows'] ?? 0, 'file_size' => filesize($filepath),
+            'trigger_source' => 'import', 'status' => SNAPSHOT_STATUS_COMPLETE,
+            'created_at' => date('c'), 'completed_at' => date('c'),
             'import_source' => json_encode(array(
                 'original_id' => $snapshot_data['id'] ?? null,
                 'original_created_at' => $snapshot_data['created_at'] ?? null,
                 'source_site' => $manifest['source']['site_url'] ?? null,
             )),
         );
-
-        $result = $this->db->insert(TABLE_SNAPSHOTS, $data);
-
-        if ($result) {
-            return $this->db->lastInsertId();
-        }
-
-        return false;
     }
 }

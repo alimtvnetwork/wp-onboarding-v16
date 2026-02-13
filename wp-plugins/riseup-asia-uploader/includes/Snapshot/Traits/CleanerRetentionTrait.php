@@ -22,26 +22,36 @@ trait CleanerRetentionTrait {
      * @return array { deleted, skipped_master, bytes_freed, details }.
      */
     private function cleanByRetention($settings, $dry_run = false) {
-        $result = array(
-            'deleted'        => 0,
-            'skipped_master' => 0,
-            'bytes_freed'    => 0,
-            'details'        => array(),
-        );
+        $resolved = $this->resolveRetentionSnapshots($settings);
+        if (empty($resolved['snapshots'])) {
+            return array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
+        }
 
-        $snapshots = array();
+        return $this->processRetentionDeletions($resolved['snapshots'], $resolved['reason'], $dry_run);
+    }
 
+    /** Resolve which snapshots to delete based on retention settings. */
+    private function resolveRetentionSnapshots(array $settings): array {
         if ($settings['retention_type'] === 'days' && !empty($settings['retention_days'])) {
-            $snapshots = $this->getSnapshotsOlderThan((int) $settings['retention_days']);
-            $reason = "older than {$settings['retention_days']} days";
-        } elseif ($settings['retention_type'] === 'count' && !empty($settings['retention_count'])) {
-            $snapshots = $this->getSnapshotsBeyondCount((int) $settings['retention_count']);
-            $reason = "exceeds max count of {$settings['retention_count']}";
+            return array(
+                'snapshots' => $this->getSnapshotsOlderThan((int) $settings['retention_days']),
+                'reason'    => "older than {$settings['retention_days']} days",
+            );
         }
 
-        if (empty($snapshots)) {
-            return $result;
+        if ($settings['retention_type'] === 'count' && !empty($settings['retention_count'])) {
+            return array(
+                'snapshots' => $this->getSnapshotsBeyondCount((int) $settings['retention_count']),
+                'reason'    => "exceeds max count of {$settings['retention_count']}",
+            );
         }
+
+        return array('snapshots' => array(), 'reason' => '');
+    }
+
+    /** Process retention deletions for a list of snapshots. */
+    private function processRetentionDeletions(array $snapshots, string $reason, bool $dry_run): array {
+        $result = array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
 
         foreach ($snapshots as $snapshot) {
             if ($this->isMasterSnapshot($snapshot)) {
@@ -50,24 +60,28 @@ trait CleanerRetentionTrait {
             }
 
             $result['details'][] = array(
-                'id'       => $snapshot['id'],
-                'filename' => $snapshot['filename'] ?? '',
-                'reason'   => $reason,
+                'id' => $snapshot['id'], 'filename' => $snapshot['filename'] ?? '', 'reason' => $reason,
             );
 
-            if (!$dry_run) {
-                $delete_result = $this->deleteSnapshot($snapshot);
-                if ($delete_result['success']) {
-                    $result['deleted']++;
-                    $result['bytes_freed'] += $delete_result['bytes_freed'];
-                }
-            } else {
-                $result['deleted']++;
-                $result['bytes_freed'] += $snapshot['size'] ?? 0;
-            }
+            $this->applyRetentionDelete($snapshot, $dry_run, $result);
         }
 
         return $result;
+    }
+
+    /** Apply a single retention deletion (or simulate in dry-run). */
+    private function applyRetentionDelete(array $snapshot, bool $dry_run, array &$result) {
+        if ($dry_run) {
+            $result['deleted']++;
+            $result['bytes_freed'] += $snapshot['size'] ?? 0;
+            return;
+        }
+
+        $delete_result = $this->deleteSnapshot($snapshot);
+        if ($delete_result['success']) {
+            $result['deleted']++;
+            $result['bytes_freed'] += $delete_result['bytes_freed'];
+        }
     }
 
     /**

@@ -78,19 +78,8 @@ trait DatabaseConnectionTrait {
             $this->file_logger->info('Database initialization complete');
 
             return true;
-
-        } catch (PDOException $e) {
-            $this->file_logger->log_exception($e, 'PDO initialization failed');
-            $this->pdo = null;
-
-            return false;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $this->file_logger->log_exception($e, 'Database initialization failed');
-            $this->pdo = null;
-
-            return false;
-        } catch (Error $e) {
-            $this->file_logger->error('Fatal error during database init: ' . $e->getMessage());
             $this->pdo = null;
 
             return false;
@@ -104,28 +93,11 @@ trait DatabaseConnectionTrait {
         $this->file_logger->info('Running database migration - creating/updating tables');
 
         try {
-            $this->pdo->exec("CREATE TABLE IF NOT EXISTS schema_version (
-                version INTEGER PRIMARY KEY,
-                applied_at TEXT NOT NULL
-            )");
-
-            $stmt = $this->pdo->query("SELECT MAX(version) as v FROM schema_version");
-            $row  = $stmt->fetch(PDO::FETCH_ASSOC);
-            $current = (int) ($row['v'] ?? 0);
+            $this->ensureSchemaVersionTable();
+            $current = $this->getCurrentSchemaVersion();
             $this->file_logger->info('Current schema version', array('version' => $current));
 
-            $this->migrate_v1_transactions($current);
-            $this->create_transaction_indexes();
-            $this->migrate_v2_agent_tables($current);
-            $this->migrate_v3_enhanced_transactions($current);
-            $this->migrate_v4_source_machine($current);
-            $this->migrate_v5_snapshot_tables($current);
-            $this->migrate_v6_remote_plugins_cache($current);
-            $this->migrate_v7_file_hash_cache($current);
-            $this->migrate_v8_snapshot_settings($current);
-            $this->migrate_v9_error_sessions($current);
-            $this->migrate_v10_version_tracking($current);
-            $this->migrate_v11_snapshot_exports($current);
+            $this->runAllMigrations($current);
 
             $this->file_logger->info('Database migration complete');
         } catch (PDOException $e) {
@@ -133,6 +105,38 @@ trait DatabaseConnectionTrait {
 
             throw $e;
         }
+    }
+
+    /** Create the schema_version table if missing. */
+    private function ensureSchemaVersionTable() {
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS schema_version (
+            version INTEGER PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        )");
+    }
+
+    /** Get the current schema version from the database. */
+    private function getCurrentSchemaVersion(): int {
+        $stmt = $this->pdo->query("SELECT MAX(version) as v FROM schema_version");
+        $row  = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return (int) ($row['v'] ?? 0);
+    }
+
+    /** Run all pending migrations in sequence. */
+    private function runAllMigrations(int $current) {
+        $this->migrate_v1_transactions($current);
+        $this->create_transaction_indexes();
+        $this->migrate_v2_agent_tables($current);
+        $this->migrate_v3_enhanced_transactions($current);
+        $this->migrate_v4_source_machine($current);
+        $this->migrate_v5_snapshot_tables($current);
+        $this->migrate_v6_remote_plugins_cache($current);
+        $this->migrate_v7_file_hash_cache($current);
+        $this->migrate_v8_snapshot_settings($current);
+        $this->migrate_v9_error_sessions($current);
+        $this->migrate_v10_version_tracking($current);
+        $this->migrate_v11_snapshot_exports($current);
     }
 
     /**
