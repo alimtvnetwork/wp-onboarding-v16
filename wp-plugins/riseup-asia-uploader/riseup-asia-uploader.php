@@ -243,76 +243,7 @@ class RiseupAsia {
 // PLUGIN INITIALIZATION
 // =============================================================================
 
-/**
- * Activation hook: ensure log directories and files exist on first activation.
- */
-function riseup_asia_activate() {
-    try {
-        $constants_file = __DIR__ . '/includes/constants.php';
-        if (file_exists($constants_file)) {
-            require_once $constants_file;
-        }
-
-        $helpers_file = __DIR__ . '/includes/Helpers/BooleanHelpers.php';
-        if (file_exists($helpers_file)) {
-            require_once $helpers_file;
-        }
-
-        $upload_dir = wp_upload_dir();
-        $hasError = isset($upload_dir['error']) && $upload_dir['error'];
-        if ($hasError) {
-            return;
-        }
-
-        $base_dir = $upload_dir['basedir'] . '/' . UPLOADS_SUBDIR;
-        $logs_dir = $base_dir . '/' . LOGS_SUBDIR;
-
-        if (RiseupBooleanHelpers::is_dir_missing($base_dir)) {
-            wp_mkdir_p($base_dir);
-        }
-        if (RiseupBooleanHelpers::is_dir_missing($logs_dir)) {
-            wp_mkdir_p($logs_dir);
-        }
-
-        $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
-        $version = defined('PLUGIN_VERSION') ? PLUGIN_VERSION : 'unknown';
-
-        $log_file = $logs_dir . '/' . LOG_FILENAME;
-        @file_put_contents($log_file, sprintf(
-            "[%s] [INFO] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"version\":\"%s\",\"php\":\"%s\",\"wp\":\"%s\"}\n",
-            $timestamp, $version, phpversion(), get_bloginfo('version')
-        ), FILE_APPEND | LOCK_EX);
-
-        $error_file = $logs_dir . '/' . ERROR_LOG_FILENAME;
-        @file_put_contents($error_file, sprintf(
-            "[%s] [INFO] Plugin activated — error log initialized (v%s)\n",
-            $timestamp, $version
-        ), FILE_APPEND | LOCK_EX);
-
-        $stacktrace_file = $logs_dir . '/' . STACKTRACE_FILENAME;
-        if (RiseupBooleanHelpers::is_file_missing($stacktrace_file)) {
-            @file_put_contents($stacktrace_file, sprintf(
-                "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
-                $timestamp
-            ));
-        }
-
-        if (class_exists('RiseupInitHelpers')) {
-            RiseupInitHelpers::addSecurityFiles($base_dir);
-        } else {
-            $htaccess = $base_dir . '/.htaccess';
-            if (RiseupBooleanHelpers::is_file_missing($htaccess)) {
-                @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
-            }
-            $index = $base_dir . '/index.php';
-            if (RiseupBooleanHelpers::is_file_missing($index)) {
-                @file_put_contents($index, "<?php\n// Silence is golden.\n");
-            }
-        }
-    } catch (\Throwable $e) {
-        error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
-    }
-}
+require_once __DIR__ . '/includes/Activation/ActivationHandler.php';
 
 register_activation_hook(__FILE__, 'riseup_asia_activate');
 
