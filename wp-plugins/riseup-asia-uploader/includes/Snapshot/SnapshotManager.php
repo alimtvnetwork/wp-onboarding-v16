@@ -446,65 +446,50 @@ class RiseupSnapshotManager {
     public function exportSnapshot($snapshot_id) {
         $provider = $this->getProvider();
         if (!$provider) {
-            return array(
-                'success' => false,
-                'error' => 'No snapshot provider available',
-            );
+            return array('success' => false, 'error' => 'No snapshot provider available');
         }
 
         $snapshot = $provider->getSnapshot($snapshot_id);
         if (!$snapshot) {
-            return array(
-                'success' => false,
-                'error' => 'Snapshot not found',
-                'code' => ERR_SNAPSHOT_NOT_FOUND,
-            );
+            return array('success' => false, 'error' => 'Snapshot not found', 'code' => ERR_SNAPSHOT_NOT_FOUND);
         }
 
         $filepath = $snapshot['filepath'];
         if (!RiseupPathUtils::fileExists($filepath)) {
-            return array(
-                'success' => false,
-                'error' => 'Snapshot file not found',
-            );
+            return array('success' => false, 'error' => 'Snapshot file not found');
         }
 
-        // Determine ZIP path
+        return $this->createSnapshotZip($snapshot_id, $filepath, $snapshot);
+    }
+
+    /**
+     * Create a ZIP archive from a snapshot file with manifest.
+     *
+     * @param int    $snapshot_id Snapshot ID.
+     * @param string $filepath   Path to the SQLite file.
+     * @param array  $snapshot   Snapshot record.
+     * @return array Result with filepath, filename, size.
+     */
+    private function createSnapshotZip(int $snapshot_id, string $filepath, array $snapshot): array {
         $zip_path = preg_replace('/\.sqlite$/', '.zip', $filepath);
 
-        // Create ZIP
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             $this->log(LOG_LEVEL_ERROR, 'Failed to create ZIP file', array('path' => $zip_path));
-            return array(
-                'success' => false,
-                'error' => 'Failed to create ZIP file',
-            );
+            return array('success' => false, 'error' => 'Failed to create ZIP file');
         }
 
-        // Add SQLite file
         $zip->addFile($filepath, basename($filepath));
-
-        // Create and add manifest
         $manifest = $this->createExportManifest($snapshot);
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-
         $zip->close();
 
         $size = filesize($zip_path);
-
         $this->log(LOG_LEVEL_INFO, 'Snapshot exported to ZIP', array(
-            'snapshot_id' => $snapshot_id,
-            'zip_path' => $zip_path,
-            'size' => RiseupPathUtils::formatBytes($size),
+            'snapshot_id' => $snapshot_id, 'zip_path' => $zip_path, 'size' => RiseupPathUtils::formatBytes($size),
         ));
 
-        return array(
-            'success' => true,
-            'filepath' => $zip_path,
-            'filename' => basename($zip_path),
-            'size' => $size,
-        );
+        return array('success' => true, 'filepath' => $zip_path, 'filename' => basename($zip_path), 'size' => $size);
     }
 
     /**

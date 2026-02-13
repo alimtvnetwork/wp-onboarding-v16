@@ -705,17 +705,14 @@ class RiseupDatabase {
     ) {
         if (!$this->is_ready()) {
             $this->file_logger->warn('Database not ready, cannot log transaction');
-
             return false;
         }
 
         try {
             $this->file_logger->debug('Logging transaction', array(
-                'action' => $action,
-                'status' => $status,
-                'enhanced' => $enhanced,
+                'action' => $action, 'status' => $status, 'enhanced' => $enhanced,
             ));
-            
+
             $record = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
                 ->create()
                 ->set('action', $action)
@@ -728,46 +725,38 @@ class RiseupDatabase {
                 ->set('status', $status)
                 ->set('error_msg', $error_msg)
                 ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'));
-            
-            // Apply enhanced fields if provided
-            if (!empty($enhanced['plugin_file'])) {
-                $record->set('plugin_file', $enhanced['plugin_file']);
-            }
 
-            if (isset($enhanced['was_active'])) {
-                $record->set('was_active', $enhanced['was_active'] ? 1 : 0);
-            }
-
-            if (!empty($enhanced['triggered_by'])) {
-                $record->set('triggered_by', $enhanced['triggered_by']);
-            }
-
-            if (!empty($enhanced['agent_site_id'])) {
-                $record->set('agent_site_id', (int) $enhanced['agent_site_id']);
-            }
-
-            if (!empty($enhanced['source_machine'])) {
-                $record->set('source_machine', $enhanced['source_machine']);
-            }
-
-            if (!empty($enhanced['plugin_version'])) {
-                $record->set('plugin_version', $enhanced['plugin_version']);
-            }
-
-            if (!empty($enhanced['upload_source'])) {
-                $record->set('upload_source', $enhanced['upload_source']);
-            }
-            
+            $this->applyEnhancedFields($record, $enhanced);
             $result = $record->save();
-                
             $this->file_logger->info('Transaction logged', array('id' => $result));
 
             return $result;
-            
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to log transaction');
-
             return false;
+        }
+    }
+
+    /**
+     * Apply enhanced metadata fields to a transaction record.
+     *
+     * @param object $record   ORM record instance.
+     * @param array  $enhanced Enhanced fields array.
+     */
+    private function applyEnhancedFields($record, array $enhanced) {
+        $string_fields = array('plugin_file', 'triggered_by', 'source_machine', 'plugin_version', 'upload_source');
+        foreach ($string_fields as $field) {
+            if (!empty($enhanced[$field])) {
+                $record->set($field, $enhanced[$field]);
+            }
+        }
+
+        if (!empty($enhanced['agent_site_id'])) {
+            $record->set('agent_site_id', (int) $enhanced['agent_site_id']);
+        }
+
+        if (isset($enhanced['was_active'])) {
+            $record->set('was_active', $enhanced['was_active'] ? 1 : 0);
         }
     }
 
@@ -958,41 +947,35 @@ class RiseupDatabase {
         }
 
         try {
-            $stats = array();
-
-            // Total transactions
-            $stats['total_transactions'] = RiseupORM::for_table(self::TABLE_TRANSACTIONS)->count();
-
-            // Transactions by action
-            $by_action = RiseupORM::raw_execute(
-                "SELECT action, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY action"
+            return array(
+                'total_transactions' => RiseupORM::for_table(self::TABLE_TRANSACTIONS)->count(),
+                'by_action'          => $this->countByColumn('action'),
+                'by_status'          => $this->countByColumn('status'),
+                'last_24h'           => RiseupORM::for_table(self::TABLE_TRANSACTIONS)
+                    ->where_gte('created_at', gmdate('Y-m-d\TH:i:s\Z', time() - 86400))
+                    ->count(),
             );
-            $stats['by_action'] = array();
-            foreach ($by_action as $row) {
-                $stats['by_action'][$row['action']] = (int) $row['count'];
-            }
-
-            // Transactions by status
-            $by_status = RiseupORM::raw_execute(
-                "SELECT status, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY status"
-            );
-            $stats['by_status'] = array();
-            foreach ($by_status as $row) {
-                $stats['by_status'][$row['status']] = (int) $row['count'];
-            }
-
-            // Last 24 hours
-            $yesterday = gmdate('Y-m-d\TH:i:s\Z', time() - 86400);
-            $stats['last_24h'] = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
-                ->where_gte('created_at', $yesterday)
-                ->count();
-
-            return $stats;
         } catch (Exception $e) {
             $this->file_logger->log_exception($e, 'Failed to get stats');
-
             return array();
         }
+    }
+
+    /**
+     * Count rows grouped by a column in the transactions table.
+     *
+     * @param string $column Column name to group by.
+     * @return array Associative array of column_value => count.
+     */
+    private function countByColumn(string $column): array {
+        $rows = RiseupORM::raw_execute(
+            "SELECT {$column}, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY {$column}"
+        );
+        $result = array();
+        foreach ($rows as $row) {
+            $result[$row[$column]] = (int) $row['count'];
+        }
+        return $result;
     }
 
     /**

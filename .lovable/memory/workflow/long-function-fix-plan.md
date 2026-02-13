@@ -163,19 +163,16 @@ Each sub-method receives `$safe_register` closure as a parameter. Result: `regis
 
 ---
 
-## Phase 12 — Remaining subsystem files (🟡 scattered)
-**Files:**
-- `Database.php`: `query_transactions()`, `log_transaction()`, `get_stats()`
-- `SnapshotScheduler.php`: `calculateNextRunTime()` (~44 lines), `getStatus()` (~40+ lines)
-- `SnapshotManager.php`: `exportSnapshot()` (~60 lines), `listSnapshots()`, `updateSettings()`
-- `SnapshotOrchestrator.php`: `executeIncrementalBackup()`, `createZipExport()` (~50+ lines)
-- `Admin.php`: `render_settings_page()`, `save_settings()`
-- `FileCache.php`: `scanDirectory()`, `getManifest()`
-- `UpdateResolver.php`: `resolve_url()`
-- `PostManager.php`: `create_post()`
-- `AgentManager.php`: various methods
+## Phase 12 — Remaining subsystem files (🟡 scattered) ✅ DONE
+**Refactored 8 functions across 6 files:**
+- `Database.php`: `log_transaction()` → extracted `applyEnhancedFields()`; `get_stats()` → extracted `countByColumn()`
+- `SnapshotScheduler.php`: `calculateNextRunTime()` → extracted `nextDailyRun()`, `nextWeeklyRun()`, `nextMonthlyRun()`
+- `SnapshotManager.php`: `exportSnapshot()` → extracted `createSnapshotZip()`
+- `SnapshotOrchestrator.php`: `createZipExport()` → extracted `addDirectoryToZip()`, `validateZipExport()`; `executeIncrementalBackup()` → extracted `resolveMasterDir()`
+- `FileCache.php`: `getManifest()` → extracted `reconcileManifest()`, `resolveFileEntry()`, `pruneStaleEntries()`
+- `UpdateResolver.php`: `resolve_url()` → extracted `followSingleRedirect()`, `logResolvedUrl()`
 
-**Fix:** Case-by-case extraction when each file is touched.
+**Remaining (borderline/data-only, skipped):** `apply_filters()` (flat filter chain), `render_settings_page()` (data definition), `getSettings()` (defaults array), `getStatus()` (17 lines)
 
 ---
 

@@ -89,87 +89,101 @@ class RiseupFileCache {
             return $this->fullScan($pluginDir, $ignore);
         }
 
-        // Load existing cache entries for this plugin
         $cachedEntries = $this->loadCachedEntries($pluginSlug);
-
-        // Scan filesystem
         $diskFiles = array();
         $this->scanDirectory($pluginDir, $pluginDir, $ignore, $diskFiles);
 
-        $files = array();
-        $cachedCount = 0;
-        $computedCount = 0;
-        $cachedPaths = array();
-
-        foreach ($diskFiles as $fileInfo) {
-            $path = $fileInfo['path'];
-            $mtime = $fileInfo['mtime'];
-            $size = $fileInfo['size'];
-            $cachedPaths[$path] = true;
-
-            // Check if we have a valid cache entry
-            if (isset($cachedEntries[$path])) {
-                $cached = $cachedEntries[$path];
-                $cachedMtime = $cached['modified_at'];
-
-                // Compare modification time (UTC ISO 8601)
-                $mtimeStr = gmdate('c', $mtime);
-                if ($cachedMtime === $mtimeStr && (int)$cached['file_size'] === $size) {
-                    // File unchanged - use cached hash
-                    $files[] = array(
-                        'path'       => $path,
-                        'hash'       => $cached['md5_hash'],
-                        'modifiedAt' => $cachedMtime,
-                        'size'       => (int)$cached['file_size'],
-                    );
-                    $cachedCount++;
-                    continue;
-                }
-            }
-
-            // File is new or changed - compute hash
-            $fullPath = $pluginDir . '/' . str_replace('/', DIRECTORY_SEPARATOR, $path);
-            $hash = @md5_file($fullPath);
-            if ($hash === false) {
-                $hash = '';
-            }
-            $mtimeStr = gmdate('c', $mtime);
-
-            $files[] = array(
-                'path'       => $path,
-                'hash'       => $hash,
-                'modifiedAt' => $mtimeStr,
-                'size'       => $size,
-            );
-
-            // Update cache
-            $this->upsertCacheEntry($pluginSlug, $path, $hash, $mtimeStr, $size);
-            $computedCount++;
-        }
-
-        // Remove cache entries for deleted files
-        $removedCount = 0;
-        foreach ($cachedEntries as $cachedPath => $entry) {
-            if (!isset($cachedPaths[$cachedPath])) {
-                $this->deleteCacheEntry($pluginSlug, $cachedPath);
-                $removedCount++;
-            }
-        }
+        $result = $this->reconcileManifest($pluginSlug, $pluginDir, $diskFiles, $cachedEntries);
 
         $this->logger->info('FileCache: Manifest built', array(
             'slug'     => $pluginSlug,
-            'total'    => count($files),
-            'cached'   => $cachedCount,
-            'computed' => $computedCount,
-            'removed'  => $removedCount,
+            'total'    => count($result['files']),
+            'cached'   => $result['cached'],
+            'computed' => $result['computed'],
+            'removed'  => $result['removed'],
         ));
 
+        return $result;
+    }
+
+    /**
+     * Reconcile disk files against cached entries to build the manifest.
+     *
+     * @param string $pluginSlug    Plugin slug.
+     * @param string $pluginDir     Plugin directory path.
+     * @param array  $diskFiles     Files found on disk.
+     * @param array  $cachedEntries Existing cache entries.
+     * @return array{files: array, cached: int, computed: int, removed: int}
+     */
+    private function reconcileManifest(string $pluginSlug, string $pluginDir, array $diskFiles, array $cachedEntries): array {
+        $files = array();
+        $cachedCount = 0;
+        $computedCount = 0;
+        $activePaths = array();
+
+        foreach ($diskFiles as $fileInfo) {
+            $entry = $this->resolveFileEntry($pluginSlug, $pluginDir, $fileInfo, $cachedEntries);
+            $files[] = $entry['file'];
+            $activePaths[$fileInfo['path']] = true;
+            $entry['cached'] ? $cachedCount++ : $computedCount++;
+        }
+
+        $removedCount = $this->pruneStaleEntries($pluginSlug, $cachedEntries, $activePaths);
+
+        return array('files' => $files, 'cached' => $cachedCount, 'computed' => $computedCount, 'removed' => $removedCount);
+    }
+
+    /**
+     * Resolve a single file entry: use cache if valid, otherwise compute hash.
+     *
+     * @param string $pluginSlug    Plugin slug.
+     * @param string $pluginDir     Plugin directory path.
+     * @param array  $fileInfo      Disk file info (path, mtime, size).
+     * @param array  $cachedEntries Existing cache entries.
+     * @return array{file: array, cached: bool}
+     */
+    private function resolveFileEntry(string $pluginSlug, string $pluginDir, array $fileInfo, array $cachedEntries): array {
+        $path = $fileInfo['path'];
+        $mtimeStr = gmdate('c', $fileInfo['mtime']);
+
+        if (isset($cachedEntries[$path])) {
+            $cached = $cachedEntries[$path];
+            if ($cached['modified_at'] === $mtimeStr && (int) $cached['file_size'] === $fileInfo['size']) {
+                return array(
+                    'file'   => array('path' => $path, 'hash' => $cached['md5_hash'], 'modifiedAt' => $mtimeStr, 'size' => (int) $cached['file_size']),
+                    'cached' => true,
+                );
+            }
+        }
+
+        $fullPath = $pluginDir . '/' . str_replace('/', DIRECTORY_SEPARATOR, $path);
+        $hash = @md5_file($fullPath) ?: '';
+
+        $this->upsertCacheEntry($pluginSlug, $path, $hash, $mtimeStr, $fileInfo['size']);
+
         return array(
-            'files'    => $files,
-            'cached'   => $cachedCount,
-            'computed' => $computedCount,
-            'removed'  => $removedCount,
+            'file'   => array('path' => $path, 'hash' => $hash, 'modifiedAt' => $mtimeStr, 'size' => $fileInfo['size']),
+            'cached' => false,
         );
+    }
+
+    /**
+     * Remove cache entries for files that no longer exist on disk.
+     *
+     * @param string $pluginSlug    Plugin slug.
+     * @param array  $cachedEntries All cached entries.
+     * @param array  $activePaths   Paths that still exist on disk.
+     * @return int Number of entries removed.
+     */
+    private function pruneStaleEntries(string $pluginSlug, array $cachedEntries, array $activePaths): int {
+        $removed = 0;
+        foreach ($cachedEntries as $path => $entry) {
+            if (!isset($activePaths[$path])) {
+                $this->deleteCacheEntry($pluginSlug, $path);
+                $removed++;
+            }
+        }
+        return $removed;
     }
 
     /**

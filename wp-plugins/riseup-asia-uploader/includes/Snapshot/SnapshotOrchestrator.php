@@ -536,60 +536,69 @@ class RiseupSnapshotOrchestrator {
     private function createZipExport($snapshot_dir, $title) {
         try {
             $zip_filename = sanitize_title($title) . '_' . date('Y-m-d_His') . '.zip';
-            $base_dir = dirname($snapshot_dir);
-            $zip_path = $base_dir . '/' . $zip_filename;
-            $dir_basename = basename($snapshot_dir);
+            $zip_path = dirname($snapshot_dir) . '/' . $zip_filename;
 
             $zip = new ZipArchive();
             if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
                 return array('success' => false, 'error' => 'Failed to create ZIP');
             }
 
-            // Recursively add all files from snapshot directory
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($snapshot_dir, RecursiveDirectoryIterator::SKIP_DOTS),
-                RecursiveIteratorIterator::SELF_FIRST
-            );
-
-            $file_count = 0;
-            foreach ($iterator as $item) {
-                $relative = substr($item->getPathname(), strlen($snapshot_dir) + 1);
-                $relative = str_replace('\\', '/', $relative);
-
-                if ($item->isDir()) {
-                    $zip->addEmptyDir($relative);
-                } else {
-                    $zip->addFile($item->getPathname(), $relative);
-                    $file_count++;
-                }
-            }
-
-            // Explicit close per zip-creation-rules
+            $file_count = $this->addDirectoryToZip($zip, $snapshot_dir);
             $zip->close();
 
-            $size = filesize($zip_path);
-            if ($size === 0) {
-                @unlink($zip_path);
-                return array('success' => false, 'error' => 'ZIP export is empty');
-            }
-
-            $this->log('INFO', 'ZIP export created', array(
-                'filename'   => $zip_filename,
-                'files'      => $file_count,
-                'size'       => $this->formatBytes($size),
-            ));
-
-            return array(
-                'success'  => true,
-                'path'     => $zip_path,
-                'filename' => $zip_filename,
-                'size'     => $size,
-                'files'    => $file_count,
-            );
-
+            return $this->validateZipExport($zip_path, $zip_filename, $file_count);
         } catch (Exception $e) {
             return array('success' => false, 'error' => $e->getMessage());
         }
+    }
+
+    /**
+     * Recursively add all files from a directory to a ZIP archive.
+     *
+     * @param ZipArchive $zip ZIP archive instance.
+     * @param string     $dir Directory to add.
+     * @return int Number of files added.
+     */
+    private function addDirectoryToZip(ZipArchive $zip, string $dir): int {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        $count = 0;
+        foreach ($iterator as $item) {
+            $relative = str_replace('\\', '/', substr($item->getPathname(), strlen($dir) + 1));
+            if ($item->isDir()) {
+                $zip->addEmptyDir($relative);
+            } else {
+                $zip->addFile($item->getPathname(), $relative);
+                $count++;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
+     * Validate a ZIP export file and return result metadata.
+     *
+     * @param string $path     ZIP file path.
+     * @param string $filename ZIP filename.
+     * @param int    $files    Number of files in archive.
+     * @return array Result array.
+     */
+    private function validateZipExport(string $path, string $filename, int $files): array {
+        $size = filesize($path);
+        if ($size === 0) {
+            @unlink($path);
+            return array('success' => false, 'error' => 'ZIP export is empty');
+        }
+
+        $this->log('INFO', 'ZIP export created', array(
+            'filename' => $filename, 'files' => $files, 'size' => $this->formatBytes($size),
+        ));
+
+        return array('success' => true, 'path' => $path, 'filename' => $filename, 'size' => $size, 'files' => $files);
     }
 
     /**
@@ -669,27 +678,8 @@ class RiseupSnapshotOrchestrator {
         $this->log('INFO', 'Starting incremental backup orchestration', $options);
 
         try {
-            // Locate the master (full) snapshot directory
             $incremental = RiseupIncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
-
-            // If a specific master ID was provided, resolve its filepath
-            $master_dir = null;
-            if (!empty($options['master_snapshot_id'])) {
-                $pdo = $this->db->get_pdo();
-                if ($pdo) {
-                    $stmt = $pdo->prepare("SELECT filepath FROM " . TABLE_SNAPSHOTS . " WHERE id = ? AND status = ?");
-                    $stmt->execute(array($options['master_snapshot_id'], SNAPSHOT_STATUS_COMPLETE));
-                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                    if ($row && is_dir($row['filepath']) && file_exists($row['filepath'] . '/a-root.db')) {
-                        $master_dir = $row['filepath'];
-                    }
-                }
-            }
-
-            // Fallback: find the latest full snapshot
-            if (!$master_dir) {
-                $master_dir = $incremental->findLatestMasterSnapshot();
-            }
+            $master_dir = $this->resolveMasterDir($options, $incremental);
 
             if (!$master_dir) {
                 return array(
@@ -708,18 +698,35 @@ class RiseupSnapshotOrchestrator {
             ));
 
             return $result;
-
         } catch (Exception $e) {
             $this->log('ERROR', 'Incremental backup orchestration failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
-            return array(
-                'success' => false,
-                'error'   => $e->getMessage(),
-                'phase'   => 'incremental_orchestration',
-            );
+            return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental_orchestration');
         }
+    }
+
+    /**
+     * Resolve the master snapshot directory for incremental backups.
+     *
+     * @param array  $options     Backup options (may include master_snapshot_id).
+     * @param object $incremental Incremental backup instance.
+     * @return string|null Master directory path or null.
+     */
+    private function resolveMasterDir(array $options, $incremental): ?string {
+        if (!empty($options['master_snapshot_id'])) {
+            $pdo = $this->db->get_pdo();
+            if ($pdo) {
+                $stmt = $pdo->prepare("SELECT filepath FROM " . TABLE_SNAPSHOTS . " WHERE id = ? AND status = ?");
+                $stmt->execute(array($options['master_snapshot_id'], SNAPSHOT_STATUS_COMPLETE));
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($row && is_dir($row['filepath']) && file_exists($row['filepath'] . '/a-root.db')) {
+                    return $row['filepath'];
+                }
+            }
+        }
+
+        return $incremental->findLatestMasterSnapshot();
     }
 
     /**
