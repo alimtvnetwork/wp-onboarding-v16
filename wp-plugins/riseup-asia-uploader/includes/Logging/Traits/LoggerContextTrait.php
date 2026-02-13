@@ -17,7 +17,7 @@ trait LoggerContextTrait {
      *
      * @return RiseupDatabase
      */
-    private function get_db() {
+    private function getDb() {
         if ($this->db === null) {
             $this->db = RiseupDatabase::get_instance();
         }
@@ -29,9 +29,9 @@ trait LoggerContextTrait {
      *
      * @return string IP address.
      */
-    private function get_client_ip() {
-        $ip_keys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');
-        foreach ($ip_keys as $key) {
+    private function getClientIp() {
+        $ipKeys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');
+        foreach ($ipKeys as $key) {
             if (empty($_SERVER[$key])) {
                 continue;
             }
@@ -52,10 +52,10 @@ trait LoggerContextTrait {
      *
      * @return string|null Source machine hostname or null.
      */
-    private function get_source_machine() {
-        $header_key = 'HTTP_X_RISEUP_SOURCE_MACHINE';
-        if (!empty($_SERVER[$header_key])) {
-            $machine = preg_replace('/[^a-zA-Z0-9.\\\\-_]/', '', $_SERVER[$header_key]);
+    private function getSourceMachine() {
+        $headerKey = 'HTTP_X_RISEUP_SOURCE_MACHINE';
+        if (!empty($_SERVER[$headerKey])) {
+            $machine = preg_replace('/[^a-zA-Z0-9.\\\\-_]/', '', $_SERVER[$headerKey]);
             return !empty($machine) ? $machine : null;
         }
         return null;
@@ -66,14 +66,14 @@ trait LoggerContextTrait {
      *
      * @return array User info with 'login' and 'id'.
      */
-    private function get_user_info() {
+    private function getUserInfo() {
         if (RiseupBooleanHelpers::is_func_missing('wp_get_current_user')) {
             return array('login' => 'anonymous', 'id' => 0);
         }
 
-        $current_user = wp_get_current_user();
-        if ($current_user && $current_user->ID > 0) {
-            return array('login' => $current_user->user_login, 'id' => $current_user->ID);
+        $currentUser = wp_get_current_user();
+        if ($currentUser && $currentUser->ID > 0) {
+            return array('login' => $currentUser->user_login, 'id' => $currentUser->ID);
         }
         return array('login' => 'anonymous', 'id' => 0);
     }
@@ -81,20 +81,20 @@ trait LoggerContextTrait {
     /**
      * Build enhanced fields with source machine and plugin version.
      *
-     * @param array $extra_enhanced Extra enhanced fields to merge.
+     * @param array $extraEnhanced Extra enhanced fields to merge.
      * @return array Enhanced fields.
      */
-    private function buildEnhancedFields(array $extra_enhanced = array()): array {
+    private function buildEnhancedFields(array $extraEnhanced = array()): array {
         $enhanced = array();
-        $source_machine = $this->get_source_machine();
-        if ($source_machine) {
-            $enhanced['source_machine'] = $source_machine;
+        $sourceMachine = $this->getSourceMachine();
+        if ($sourceMachine) {
+            $enhanced['source_machine'] = $sourceMachine;
         }
         if (empty($enhanced['plugin_version']) && defined('PLUGIN_VERSION')) {
             $enhanced['plugin_version'] = PLUGIN_VERSION;
         }
-        if (!empty($extra_enhanced)) {
-            $enhanced = array_merge($enhanced, $extra_enhanced);
+        if (!empty($extraEnhanced)) {
+            $enhanced = array_merge($enhanced, $extraEnhanced);
         }
         return $enhanced;
     }

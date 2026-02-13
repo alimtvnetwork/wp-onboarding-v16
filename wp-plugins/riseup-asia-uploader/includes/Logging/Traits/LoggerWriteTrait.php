@@ -17,22 +17,22 @@ trait LoggerWriteTrait {
     /**
      * Write to log file.
      *
-     * @param string $entry    Log entry.
-     * @param bool   $is_error Whether this is an error.
+     * @param string $entry   Log entry.
+     * @param bool   $isError Whether this is an error.
      * @return bool True on success.
      */
-    private function write($entry, $is_error = false) {
-        if (!$this->initialized) {
-            if (!$this->initialize_paths()) {
+    private function write($entry, $isError = false) {
+        if (!$this->isInitialized) {
+            if (!$this->initializePaths()) {
                 error_log('[Riseup Asia] ' . trim($entry));
                 return false;
             }
         }
 
-        $result = @file_put_contents($this->log_file, $entry, FILE_APPEND | LOCK_EX);
+        $result = @file_put_contents($this->logFile, $entry, FILE_APPEND | LOCK_EX);
 
-        if ($is_error) {
-            @file_put_contents($this->error_file, $entry, FILE_APPEND | LOCK_EX);
+        if ($isError) {
+            @file_put_contents($this->errorFile, $entry, FILE_APPEND | LOCK_EX);
         }
 
         return $result !== false;
@@ -41,18 +41,18 @@ trait LoggerWriteTrait {
     /**
      * Write a stack trace entry to the dedicated stacktrace.txt file.
      *
-     * @param string $message     Error message.
-     * @param string $file        Source file.
-     * @param int    $line        Source line number.
-     * @param string $stack_trace Stack trace string.
+     * @param string $message    Error message.
+     * @param string $file       Source file.
+     * @param int    $line       Source line number.
+     * @param string $stackTrace Stack trace string.
      */
-    private function write_stacktrace($message, $file, $line, $stack_trace) {
-        if (empty($stack_trace)) {
+    private function writeStacktrace($message, $file, $line, $stackTrace) {
+        if (empty($stackTrace)) {
             return;
         }
 
-        if (!$this->initialized) {
-            if (!$this->initialize_paths()) {
+        if (!$this->isInitialized) {
+            if (!$this->initializePaths()) {
                 return;
             }
         }
@@ -62,30 +62,30 @@ trait LoggerWriteTrait {
         $entry  = $separator . PHP_EOL;
         $entry .= sprintf("[%s] %s (%s:%d)", $timestamp, $message, basename($file), $line) . PHP_EOL;
         $entry .= str_repeat('-', 80) . PHP_EOL;
-        $entry .= $stack_trace . PHP_EOL;
+        $entry .= $stackTrace . PHP_EOL;
         $entry .= $separator . PHP_EOL . PHP_EOL;
 
-        @file_put_contents($this->stacktrace_file, $entry, FILE_APPEND | LOCK_EX);
+        @file_put_contents($this->stacktraceFile, $entry, FILE_APPEND | LOCK_EX);
     }
 
     /**
      * Persist an error/warn entry to the error_sessions SQLite table.
      *
-     * @param string $level       Log level.
-     * @param string $message     Error message.
-     * @param string $file        Source file path.
-     * @param int    $line        Source line number.
-     * @param array  $context     Additional context data.
-     * @param string $stack_trace Optional stack trace string.
+     * @param string $level      Log level.
+     * @param string $message    Error message.
+     * @param string $file       Source file path.
+     * @param int    $line       Source line number.
+     * @param array  $context    Additional context data.
+     * @param string $stackTrace Optional stack trace string.
      */
-    private function persist_to_error_sessions($level, $message, $file, $line, $context = array(), $stack_trace = '') {
+    private function persistToErrorSessions($level, $message, $file, $line, $context = array(), $stackTrace = '') {
         try {
             $pdo = $this->getErrorSessionsPdo();
             if (!$pdo) {
                 return;
             }
 
-            $this->insertErrorSession($pdo, $level, $message, $file, $line, $context, $stack_trace);
+            $this->insertErrorSession($pdo, $level, $message, $file, $line, $context, $stackTrace);
         } catch (\Throwable $e) {
             // Silently ignore - we're in the logger, can't recurse
         }
@@ -110,14 +110,14 @@ trait LoggerWriteTrait {
     }
 
     /** Insert an error session record and set unseen flag. */
-    private function insertErrorSession(PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stack_trace) {
+    private function insertErrorSession(PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stackTrace) {
         $now = gmdate('Y-m-d\TH:i:s\Z');
-        $context_json = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
+        $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 
         $stmt = $pdo->prepare(
             'INSERT INTO error_sessions (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute(array($level, $message, $file, $line, $context_json, $stack_trace ?: null, $now));
+        $stmt->execute(array($level, $message, $file, $line, $contextJson, $stackTrace ?: null, $now));
 
         $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '1', '{$now}')");
     }

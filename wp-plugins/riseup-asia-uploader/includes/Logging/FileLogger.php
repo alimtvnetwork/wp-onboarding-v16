@@ -40,34 +40,35 @@ class RiseupFileLogger {
     private static $instance = null;
 
     /** @var string|null */
-    private $base_dir = null;
+    private $baseDir = null;
 
     /** @var string|null */
-    private $logs_dir = null;
+    private $logsDir = null;
 
     /** @var string|null */
-    private $log_file = null;
+    private $logFile = null;
 
     /** @var string|null */
-    private $error_file = null;
+    private $errorFile = null;
 
     /** @var string|null */
-    private $stacktrace_file = null;
+    private $stacktraceFile = null;
 
     /** @var bool */
-    private $initialized = false;
+    private $isInitialized = false;
 
     /** @var array<string, bool> */
-    private $dedup_hashes = array();
+    private $dedupHashes = array();
 
     /** @var array|null */
-    private $request_metadata_cache = null;
+    private $requestMetadataCache = null;
 
     /** @return RiseupFileLogger */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 

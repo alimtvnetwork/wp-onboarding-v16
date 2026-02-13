@@ -15,13 +15,13 @@ trait ErrorLogHandlerTrait {
             $result = array('version' => PLUGIN_VERSION, 'settings' => $settings);
 
             if ($settings['include_error_log']) {
-                $result['error_log'] = $this->read_log_tail($this->file_logger->get_error_file(), $settings['max_lines']);
+                $result['error_log'] = $this->readLogTail($this->file_logger->getErrorFile(), $settings['max_lines']);
             }
             if ($settings['include_full_log']) {
-                $result['full_log'] = $this->read_log_tail($this->file_logger->get_log_file(), $settings['max_lines']);
+                $result['full_log'] = $this->readLogTail($this->file_logger->getLogFile(), $settings['max_lines']);
             }
             if ($settings['include_stacktrace']) {
-                $result['stacktrace_log'] = $this->read_log_tail($this->file_logger->get_stacktrace_file(), $settings['max_lines']);
+                $result['stacktrace_log'] = $this->readLogTail($this->file_logger->getStacktraceFile(), $settings['max_lines']);
             }
 
             return RiseupEnvelopeBuilder::success()->autoDetectRequestedAt()->setSingleResult($result)->toResponse();
@@ -31,13 +31,13 @@ trait ErrorLogHandlerTrait {
     /** Resolve log retrieval settings from admin defaults and query param overrides. */
     private function resolveLogSettings($request): array {
         $settings     = RiseupAdmin::get_settings();
-        $log_settings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
+        $logSettings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
 
         $resolved = array(
-            'include_error_log'  => isset($log_settings['include_error_log']) ? (bool) $log_settings['include_error_log'] : true,
-            'include_full_log'   => isset($log_settings['include_full_log']) ? (bool) $log_settings['include_full_log'] : false,
-            'include_stacktrace' => isset($log_settings['include_stacktrace']) ? (bool) $log_settings['include_stacktrace'] : true,
-            'max_lines'          => isset($log_settings['max_lines']) ? (int) $log_settings['max_lines'] : 500,
+            'include_error_log'  => isset($logSettings['include_error_log']) ? (bool) $logSettings['include_error_log'] : true,
+            'include_full_log'   => isset($logSettings['include_full_log']) ? (bool) $logSettings['include_full_log'] : false,
+            'include_stacktrace' => isset($logSettings['include_stacktrace']) ? (bool) $logSettings['include_stacktrace'] : true,
+            'max_lines'          => isset($logSettings['max_lines']) ? (int) $logSettings['max_lines'] : 500,
         );
 
         foreach (array('include_error_log', 'include_full_log', 'include_stacktrace') as $key) {
@@ -53,32 +53,32 @@ trait ErrorLogHandlerTrait {
     }
 
     /** Read the last N lines of a log file. */
-    private function read_log_tail($file_path, $max_lines) {
+    private function readLogTail($filePath, $maxLines) {
         $result = array(
-            'exists' => false, 'file' => basename($file_path), 'path' => $file_path,
+            'exists' => false, 'file' => basename($filePath), 'path' => $filePath,
             'content' => '', 'lines' => 0, 'total_size' => 0, 'truncated' => false,
         );
 
-        $isFileUnreadable = RiseupBooleanHelpers::is_file_unreadable($file_path);
+        $isFileUnreadable = RiseupBooleanHelpers::is_file_unreadable($filePath);
         if ($isFileUnreadable) {
             return $result;
         }
 
         $result['exists']     = true;
-        $result['total_size'] = filesize($file_path);
+        $result['total_size'] = filesize($filePath);
 
-        $all_lines = file($file_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if ($all_lines === false) {
+        $allLines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($allLines === false) {
             $result['content'] = 'Failed to read file';
             return $result;
         }
 
-        $total_lines = count($all_lines);
-        $result['truncated'] = ($total_lines > $max_lines);
-        $lines = ($total_lines > $max_lines) ? array_slice($all_lines, -$max_lines) : $all_lines;
+        $totalLines = count($allLines);
+        $result['truncated'] = ($totalLines > $maxLines);
+        $lines = ($totalLines > $maxLines) ? array_slice($allLines, -$maxLines) : $allLines;
 
         $result['lines']       = count($lines);
-        $result['total_lines'] = $total_lines;
+        $result['total_lines'] = $totalLines;
         $result['content']     = implode("\n", $lines);
 
         return $result;

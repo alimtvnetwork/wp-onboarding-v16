@@ -29,7 +29,7 @@ class RiseupLogger {
     private $db = null;
 
     /** @var RiseupFileLogger */
-    private $file_logger;
+    private $fileLogger;
 
     /** @var RiseupLogger|null */
     private static $instance = null;
@@ -39,16 +39,17 @@ class RiseupLogger {
      *
      * @return RiseupLogger
      */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
     /** Constructor. */
     private function __construct() {
-        $this->file_logger = RiseupFileLogger::get_instance();
-        $this->file_logger->info('Transaction logger initialized');
+        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->fileLogger->info('Transaction logger initialized');
     }
 }

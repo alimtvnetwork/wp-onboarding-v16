@@ -25,17 +25,17 @@ trait AdminErrorAjaxTrait {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        $db = RiseupDatabase::get_instance();
-        $pdo = $db->get_pdo();
+        $db = RiseupDatabase::getInstance();
+        $pdo = $db->getPdo();
 
         $stmt = $pdo->query('SELECT MAX(id) FROM error_sessions');
-        $max_id = (int) $stmt->fetchColumn();
+        $maxId = (int) $stmt->fetchColumn();
         $now = gmdate('Y-m-d\TH:i:s\Z');
 
-        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '{$max_id}', '{$now}')");
+        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '{$maxId}', '{$now}')");
         $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        wp_send_json_success(array('message' => 'All errors marked as seen', 'last_seen_id' => $max_id));
+        wp_send_json_success(array('message' => 'All errors marked as seen', 'last_seen_id' => $maxId));
     }
 
     /**
@@ -47,8 +47,8 @@ trait AdminErrorAjaxTrait {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        $db = RiseupDatabase::get_instance();
-        $pdo = $db->get_pdo();
+        $db = RiseupDatabase::getInstance();
+        $pdo = $db->getPdo();
 
         $pdo->exec('DELETE FROM error_sessions');
         $now = gmdate('Y-m-d\TH:i:s\Z');
@@ -64,15 +64,15 @@ trait AdminErrorAjaxTrait {
      * @param string $type One of 'log', 'error', 'stacktrace'.
      * @return string|false File path or false if invalid type.
      */
-    private function resolve_log_file_path($type) {
-        $logger = RiseupFileLogger::get_instance();
+    private function resolveLogFilePath($type) {
+        $logger = RiseupFileLogger::getInstance();
         switch ($type) {
             case 'log':
-                return $logger->get_log_file();
+                return $logger->getLogFile();
             case 'error':
-                return $logger->get_error_file();
+                return $logger->getErrorFile();
             case 'stacktrace':
-                return $logger->get_stacktrace_file();
+                return $logger->getStacktraceFile();
             default:
                 return false;
         }
@@ -88,7 +88,7 @@ trait AdminErrorAjaxTrait {
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
-        $path = $this->resolve_log_file_path($type);
+        $path = $this->resolveLogFilePath($type);
 
         if ($path === false) {
             wp_send_json_error(array('message' => 'Invalid file type'));
@@ -110,14 +110,14 @@ trait AdminErrorAjaxTrait {
 
         if ($exists) {
             $size = filesize($path);
-            $max_bytes = 512 * 1024;
-            if ($size > $max_bytes) {
+            $maxBytes = 512 * 1024;
+            if ($size > $maxBytes) {
                 $fp = fopen($path, 'r');
-                fseek($fp, -$max_bytes, SEEK_END);
+                fseek($fp, -$maxBytes, SEEK_END);
                 fgets($fp);
-                $content = fread($fp, $max_bytes);
+                $content = fread($fp, $maxBytes);
                 fclose($fp);
-                $content = '... (truncated, showing last ' . round($max_bytes / 1024) . 'KB) ...' . PHP_EOL . $content;
+                $content = '... (truncated, showing last ' . round($maxBytes / 1024) . 'KB) ...' . PHP_EOL . $content;
             } else {
                 $content = file_get_contents($path);
             }
@@ -141,7 +141,7 @@ trait AdminErrorAjaxTrait {
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
-        $path = $this->resolve_log_file_path($type);
+        $path = $this->resolveLogFilePath($type);
 
         if ($path === false) {
             wp_send_json_error(array('message' => 'Invalid file type'));

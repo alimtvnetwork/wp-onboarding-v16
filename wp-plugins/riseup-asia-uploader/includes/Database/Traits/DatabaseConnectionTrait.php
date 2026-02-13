@@ -18,20 +18,20 @@ trait DatabaseConnectionTrait {
      * @return bool True if successful.
      */
     public function init() {
-        if ($this->init_attempted) {
+        if ($this->isInitAttempted) {
             return $this->pdo !== null;
         }
 
-        $this->init_attempted = true;
-        $this->file_logger->info('Starting database initialization');
+        $this->isInitAttempted = true;
+        $this->fileLogger->info('Starting database initialization');
 
         try {
-            $this->db_path = $this->get_database_path();
-            $this->file_logger->info('Database path resolved', array('path' => $this->db_path));
+            $this->dbPath = $this->getDatabasePath();
+            $this->fileLogger->info('Database path resolved', array('path' => $this->dbPath));
 
-            return $this->init_database();
+            return $this->initDatabase();
         } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Database init failed');
+            $this->fileLogger->logException($e, 'Database init failed');
 
             return false;
         }
@@ -40,46 +40,46 @@ trait DatabaseConnectionTrait {
     /**
      * Get the database file path.
      */
-    private function get_database_path() {
-        $this->file_logger->debug('Resolving database path');
-        $base_dir = $this->file_logger->get_base_dir();
-        $this->file_logger->debug('Base directory', array('dir' => $base_dir));
+    private function getDatabasePath() {
+        $this->fileLogger->debug('Resolving database path');
+        $baseDir = $this->fileLogger->getBaseDir();
+        $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
-        if (RiseupPathUtils::is_dir_missing($base_dir, true)) {
-            $this->file_logger->error('Failed to create base directory', array('dir' => $base_dir));
+        if (RiseupPathUtils::is_dir_missing($baseDir, true)) {
+            $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
 
-            throw new Exception('Failed to create data directory: ' . $base_dir);
+            throw new Exception('Failed to create data directory: ' . $baseDir);
         }
 
-        $db_path = RiseupPathUtils::get_db_path();
-        $this->file_logger->info('Database path set', array('path' => $db_path));
+        $dbPath = RiseupPathUtils::get_db_path();
+        $this->fileLogger->info('Database path set', array('path' => $dbPath));
 
-        return $db_path;
+        return $dbPath;
     }
 
     /**
      * Initialize the database connection and create tables.
      */
-    private function init_database() {
-        $this->file_logger->info('Initializing PDO connection');
+    private function initDatabase() {
+        $this->fileLogger->info('Initializing PDO connection');
 
         try {
-            $this->pdo = RiseupInitHelpers::initSqliteConnection($this->db_path, $this->file_logger);
+            $this->pdo = RiseupInitHelpers::initSqliteConnection($this->dbPath, $this->fileLogger);
 
             if ($this->pdo === null) {
                 return false;
             }
 
-            $this->file_logger->debug('Configuring ORM');
+            $this->fileLogger->debug('Configuring ORM');
             RiseupORM::configure($this->pdo);
-            $this->file_logger->info('ORM configured');
+            $this->fileLogger->info('ORM configured');
 
-            $this->create_tables();
-            $this->file_logger->info('Database initialization complete');
+            $this->createTables();
+            $this->fileLogger->info('Database initialization complete');
 
             return true;
         } catch (\Throwable $e) {
-            $this->file_logger->log_exception($e, 'Database initialization failed');
+            $this->fileLogger->logException($e, 'Database initialization failed');
             $this->pdo = null;
 
             return false;
@@ -89,19 +89,19 @@ trait DatabaseConnectionTrait {
     /**
      * Create database tables (migration orchestrator).
      */
-    private function create_tables() {
-        $this->file_logger->info('Running database migration - creating/updating tables');
+    private function createTables() {
+        $this->fileLogger->info('Running database migration - creating/updating tables');
 
         try {
             $this->ensureSchemaVersionTable();
             $current = $this->getCurrentSchemaVersion();
-            $this->file_logger->info('Current schema version', array('version' => $current));
+            $this->fileLogger->info('Current schema version', array('version' => $current));
 
             $this->runAllMigrations($current);
 
-            $this->file_logger->info('Database migration complete');
+            $this->fileLogger->info('Database migration complete');
         } catch (PDOException $e) {
-            $this->file_logger->log_exception($e, 'Database migration failed');
+            $this->fileLogger->logException($e, 'Database migration failed');
 
             throw $e;
         }
@@ -142,9 +142,9 @@ trait DatabaseConnectionTrait {
     /**
      * Record a schema version.
      */
-    private function record_migration($version) {
+    private function recordMigration($version) {
         $this->pdo->exec("INSERT INTO schema_version (version, applied_at) VALUES ({$version}, '" . gmdate('Y-m-d\TH:i:s\Z') . "')");
-        $this->file_logger->info("Migration v{$version} applied successfully");
+        $this->fileLogger->info("Migration v{$version} applied successfully");
     }
 
     /**
@@ -152,8 +152,8 @@ trait DatabaseConnectionTrait {
      *
      * @return PDO|null
      */
-    public function get_pdo() {
-        if (!$this->init_attempted) {
+    public function getPdo() {
+        if (!$this->isInitAttempted) {
             $this->init();
         }
 
@@ -165,8 +165,8 @@ trait DatabaseConnectionTrait {
      *
      * @return bool
      */
-    public function is_ready() {
-        if (!$this->init_attempted) {
+    public function isReady() {
+        if (!$this->isInitAttempted) {
             $this->init();
         }
 

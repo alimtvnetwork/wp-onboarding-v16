@@ -24,15 +24,15 @@ trait LoggerFormatTrait {
      * @param array  $context Additional context.
      * @return string Formatted log entry.
      */
-    private function format_entry($level, $message, $file, $line, $context = array()) {
+    private function formatEntry($level, $message, $file, $line, $context = array()) {
         $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
         $basename  = basename($file);
 
         $entry = sprintf("[%s] [%s] %s (%s:%d)", $timestamp, $level, $message, $basename, $line);
 
         if (!empty($context)) {
-            $json_flags = defined('JSON_UNESCAPED_SLASHES') ? JSON_UNESCAPED_SLASHES : 0;
-            $entry .= ' ' . json_encode($context, $json_flags);
+            $jsonFlags = defined('JSON_UNESCAPED_SLASHES') ? JSON_UNESCAPED_SLASHES : 0;
+            $entry .= ' ' . json_encode($context, $jsonFlags);
         }
 
         return $entry . PHP_EOL;
@@ -44,7 +44,7 @@ trait LoggerFormatTrait {
      * @param array $trace debug_backtrace result.
      * @return string Formatted stack trace.
      */
-    private function format_backtrace($trace) {
+    private function formatBacktrace($trace) {
         $lines = array();
         foreach ($trace as $i => $frame) {
             $file = isset($frame['file']) ? basename($frame['file']) : '<internal>';
@@ -61,9 +61,9 @@ trait LoggerFormatTrait {
      *
      * @return array Associative array with request metadata keys.
      */
-    private function get_request_metadata() {
-        if ($this->request_metadata_cache !== null) {
-            return $this->request_metadata_cache;
+    private function getRequestMetadata() {
+        if ($this->requestMetadataCache !== null) {
+            return $this->requestMetadataCache;
         }
 
         $meta = array();
@@ -71,7 +71,7 @@ trait LoggerFormatTrait {
             ? $this->buildCliRequestMeta()
             : $this->buildHttpRequestMeta();
 
-        $this->request_metadata_cache = $meta;
+        $this->requestMetadataCache = $meta;
 
         return $meta;
     }
@@ -106,8 +106,8 @@ trait LoggerFormatTrait {
      * @param array $context Existing context.
      * @return array Context enriched with request metadata.
      */
-    private function enrich_context_with_request($context) {
-        $meta = $this->get_request_metadata();
+    private function enrichContextWithRequest($context) {
+        $meta = $this->getRequestMetadata();
         if (!isset($context['_request'])) {
             $context = array_merge($meta, $context);
         }
@@ -118,15 +118,15 @@ trait LoggerFormatTrait {
      * Prepare context for logging by enriching with request metadata and
      * optionally building an invocation chain from a backtrace.
      *
-     * @param array      $context       Existing context array.
-     * @param array|null $trace         Optional debug_backtrace result.
-     * @param bool       $include_chain Whether to build _invocation_chain.
+     * @param array      $context      Existing context array.
+     * @param array|null $trace        Optional debug_backtrace result.
+     * @param bool       $includeChain Whether to build _invocation_chain.
      * @return array Enriched context.
      */
-    private function prepare_context($context, $trace = null, $include_chain = false) {
-        $context = $this->enrich_context_with_request($context);
+    private function prepareContext($context, $trace = null, $includeChain = false) {
+        $context = $this->enrichContextWithRequest($context);
 
-        $shouldSkipChain = !$include_chain || $trace === null || isset($context['_invocation_chain']);
+        $shouldSkipChain = !$includeChain || $trace === null || isset($context['_invocation_chain']);
         if ($shouldSkipChain) {
             return $context;
         }

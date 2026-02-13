@@ -15,119 +15,119 @@ trait LoggerActionsTrait {
     /**
      * Log a plugin operation.
      *
-     * @param string      $action         Action type.
-     * @param string      $plugin_slug    Plugin slug.
-     * @param string      $status         Status.
-     * @param array       $details        Additional details.
-     * @param string|null $error_msg      Error message if failed.
-     * @param array       $extra_enhanced Extra enhanced fields.
+     * @param string      $action        Action type.
+     * @param string      $pluginSlug    Plugin slug.
+     * @param string      $status        Status.
+     * @param array       $details       Additional details.
+     * @param string|null $errorMsg      Error message if failed.
+     * @param array       $extraEnhanced Extra enhanced fields.
      * @return int|false Insert ID or false.
      */
-    public function log_plugin_action($action, $plugin_slug, $status = STATUS_SUCCESS, $details = array(), $error_msg = null, $extra_enhanced = array()) {
-        $this->file_logger->info('Logging plugin action', array(
-            'action' => $action, 'plugin' => $plugin_slug, 'status' => $status,
+    public function logPluginAction($action, $pluginSlug, $status = STATUS_SUCCESS, $details = array(), $errorMsg = null, $extraEnhanced = array()) {
+        $this->fileLogger->info('Logging plugin action', array(
+            'action' => $action, 'plugin' => $pluginSlug, 'status' => $status,
         ));
 
-        $user = $this->get_user_info();
-        $enhanced = $this->buildEnhancedFields($extra_enhanced);
+        $user = $this->getUserInfo();
+        $enhanced = $this->buildEnhancedFields($extraEnhanced);
 
-        return $this->get_db()->log_transaction(
-            $action, $plugin_slug, null, $user['login'], $user['id'],
-            $this->get_client_ip(), $details, $status, $error_msg, $enhanced
+        return $this->getDb()->log_transaction(
+            $action, $pluginSlug, null, $user['login'], $user['id'],
+            $this->getClientIp(), $details, $status, $errorMsg, $enhanced
         );
     }
 
     /**
      * Log a post operation.
      *
-     * @param string      $action    Action type.
-     * @param int         $post_id   Post ID.
-     * @param string      $status    Status.
-     * @param array       $details   Additional details.
-     * @param string|null $error_msg Error message if failed.
+     * @param string      $action   Action type.
+     * @param int         $postId   Post ID.
+     * @param string      $status   Status.
+     * @param array       $details  Additional details.
+     * @param string|null $errorMsg Error message if failed.
      * @return int|false Insert ID or false.
      */
-    public function log_post_action($action, $post_id, $status = STATUS_SUCCESS, $details = array(), $error_msg = null) {
-        $this->file_logger->info('Logging post action', array(
-            'action' => $action, 'post_id' => $post_id, 'status' => $status,
+    public function logPostAction($action, $postId, $status = STATUS_SUCCESS, $details = array(), $errorMsg = null) {
+        $this->fileLogger->info('Logging post action', array(
+            'action' => $action, 'post_id' => $postId, 'status' => $status,
         ));
 
-        $user = $this->get_user_info();
+        $user = $this->getUserInfo();
         $enhanced = $this->buildEnhancedFields();
 
-        return $this->get_db()->log_transaction(
-            $action, null, $post_id, $user['login'], $user['id'],
-            $this->get_client_ip(), $details, $status, $error_msg, $enhanced
+        return $this->getDb()->log_transaction(
+            $action, null, $postId, $user['login'], $user['id'],
+            $this->getClientIp(), $details, $status, $errorMsg, $enhanced
         );
     }
 
     /** Log an authentication failure. */
-    public function log_auth_failure($reason, $details = array()) {
-        $this->file_logger->warn('Auth failure', array('reason' => $reason));
-        $provided_user = isset($details['username']) ? $details['username'] : 'unknown';
+    public function logAuthFailure($reason, $details = array()) {
+        $this->fileLogger->warn('Auth failure', array('reason' => $reason));
+        $providedUser = isset($details['username']) ? $details['username'] : 'unknown';
         $enhanced = $this->buildEnhancedFields();
 
-        return $this->get_db()->log_transaction(
-            ACTION_AUTH_FAILED, null, null, $provided_user, null,
-            $this->get_client_ip(), $details, STATUS_FAILED, $reason, $enhanced
+        return $this->getDb()->log_transaction(
+            ACTION_AUTH_FAILED, null, null, $providedUser, null,
+            $this->getClientIp(), $details, STATUS_FAILED, $reason, $enhanced
         );
     }
 
     /** Log upload initiated. */
-    public function log_upload_initiated($plugin_slug, $details = array(), $extra_enhanced = array()) {
-        return $this->log_plugin_action(ACTION_UPLOAD_INITIATED, $plugin_slug, STATUS_SUCCESS, $details, null, $extra_enhanced);
+    public function logUploadInitiated($pluginSlug, $details = array(), $extraEnhanced = array()) {
+        return $this->logPluginAction(ACTION_UPLOAD_INITIATED, $pluginSlug, STATUS_SUCCESS, $details, null, $extraEnhanced);
     }
 
     /** Log upload success. */
-    public function log_upload($plugin_slug, $details = array(), $extra_enhanced = array()) {
-        return $this->log_plugin_action(ACTION_UPLOAD, $plugin_slug, STATUS_SUCCESS, $details, null, $extra_enhanced);
+    public function logUpload($pluginSlug, $details = array(), $extraEnhanced = array()) {
+        return $this->logPluginAction(ACTION_UPLOAD, $pluginSlug, STATUS_SUCCESS, $details, null, $extraEnhanced);
     }
 
     /** Log upload failure. */
-    public function log_upload_failed($plugin_slug, $error, $details = array()) {
-        $this->file_logger->error('Upload failed', array('plugin' => $plugin_slug, 'error' => $error));
-        return $this->log_plugin_action(ACTION_UPLOAD, $plugin_slug, STATUS_FAILED, $details, $error);
+    public function logUploadFailed($pluginSlug, $error, $details = array()) {
+        $this->fileLogger->error('Upload failed', array('plugin' => $pluginSlug, 'error' => $error));
+        return $this->logPluginAction(ACTION_UPLOAD, $pluginSlug, STATUS_FAILED, $details, $error);
     }
 
     /** Log plugin enable. */
-    public function log_enable($plugin_slug, $details = array()) {
-        return $this->log_plugin_action(ACTION_ENABLE, $plugin_slug, STATUS_SUCCESS, $details);
+    public function logEnable($pluginSlug, $details = array()) {
+        return $this->logPluginAction(ACTION_ENABLE, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log plugin disable. */
-    public function log_disable($plugin_slug, $details = array()) {
-        return $this->log_plugin_action(ACTION_DISABLE, $plugin_slug, STATUS_SUCCESS, $details);
+    public function logDisable($pluginSlug, $details = array()) {
+        return $this->logPluginAction(ACTION_DISABLE, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log plugin delete. */
-    public function log_delete($plugin_slug, $details = array()) {
-        return $this->log_plugin_action(ACTION_DELETE, $plugin_slug, STATUS_SUCCESS, $details);
+    public function logDelete($pluginSlug, $details = array()) {
+        return $this->logPluginAction(ACTION_DELETE, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log file replace. */
-    public function log_file_replace($plugin_slug, $file_path, $details = array()) {
-        $details['file_path'] = $file_path;
-        return $this->log_plugin_action(ACTION_FILE_REPLACE, $plugin_slug, STATUS_SUCCESS, $details);
+    public function logFileReplace($pluginSlug, $filePath, $details = array()) {
+        $details['file_path'] = $filePath;
+        return $this->logPluginAction(ACTION_FILE_REPLACE, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log file delete. */
-    public function log_file_delete($plugin_slug, $file_path, $details = array()) {
-        $details['file_path'] = $file_path;
-        return $this->log_plugin_action(ACTION_FILE_DELETE, $plugin_slug, STATUS_SUCCESS, $details);
+    public function logFileDelete($pluginSlug, $filePath, $details = array()) {
+        $details['file_path'] = $filePath;
+        return $this->logPluginAction(ACTION_FILE_DELETE, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log post creation. */
-    public function log_post_create($post_id, $details = array()) {
-        return $this->log_post_action(ACTION_POST_CREATE, $post_id, STATUS_SUCCESS, $details);
+    public function logPostCreate($postId, $details = array()) {
+        return $this->logPostAction(ACTION_POST_CREATE, $postId, STATUS_SUCCESS, $details);
     }
 
     /** Log post update. */
-    public function log_post_update($post_id, $details = array()) {
-        return $this->log_post_action(ACTION_POST_UPDATE, $post_id, STATUS_SUCCESS, $details);
+    public function logPostUpdate($postId, $details = array()) {
+        return $this->logPostAction(ACTION_POST_UPDATE, $postId, STATUS_SUCCESS, $details);
     }
 
     /** Log category creation. */
-    public function log_category_create($term_id, $details = array()) {
-        return $this->log_post_action(ACTION_CATEGORY_CREATE, $term_id, STATUS_SUCCESS, $details);
+    public function logCategoryCreate($termId, $details = array()) {
+        return $this->logPostAction(ACTION_CATEGORY_CREATE, $termId, STATUS_SUCCESS, $details);
     }
 }

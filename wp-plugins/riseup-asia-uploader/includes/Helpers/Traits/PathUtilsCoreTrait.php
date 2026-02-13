@@ -18,15 +18,15 @@ trait PathUtilsCoreTrait {
     private static $logger = null;
 
     /** @var bool */
-    private static $bootstrapping = false;
+    private static $isBootstrapping = false;
 
     /**
      * Get logger instance (null-safe, re-entrancy guard).
      *
      * @return RiseupFileLogger|null
      */
-    private static function get_logger() {
-        if (self::$bootstrapping) {
+    private static function getLogger() {
+        if (self::$isBootstrapping) {
             return null;
         }
 
@@ -43,15 +43,15 @@ trait PathUtilsCoreTrait {
 
     /** Initialize the logger with re-entrancy guard. */
     private static function initializeLogger(): ?RiseupFileLogger {
-        self::$bootstrapping = true;
+        self::$isBootstrapping = true;
         try {
-            self::$logger = RiseupFileLogger::get_instance();
+            self::$logger = RiseupFileLogger::getInstance();
         } catch (\Throwable $e) {
             error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
             self::$logger = null;
         }
 
-        self::$bootstrapping = false;
+        self::$isBootstrapping = false;
 
         return self::$logger;
     }
@@ -63,16 +63,16 @@ trait PathUtilsCoreTrait {
      * @param string $message Log message.
      * @param array  $context Optional context.
      */
-    private static function safe_log($level, $message, $context = array()) {
+    private static function safeLog($level, $message, $context = array()) {
         $upper = strtoupper($level);
         $method = strtolower($level);
 
-        if (self::$bootstrapping) {
+        if (self::$isBootstrapping) {
             error_log('[Riseup Asia] [' . $upper . '] ' . $message);
             return;
         }
 
-        $logger = self::get_logger();
+        $logger = self::getLogger();
         if ($logger !== null) {
             $logger->$method($message, $context);
         } else {
@@ -100,28 +100,28 @@ trait PathUtilsCoreTrait {
     }
 
     /** @return string Base path (wp-content/uploads/riseup-asia-uploader). */
-    public static function get_base_dir() {
-        $upload_dir = wp_upload_dir();
-        return self::join($upload_dir['basedir'], UPLOADS_SUBDIR);
+    public static function getBaseDir() {
+        $uploadDir = wp_upload_dir();
+        return self::join($uploadDir['basedir'], UPLOADS_SUBDIR);
     }
 
     /** @return string Full path to logs directory. */
-    public static function get_logs_dir() {
-        return self::join(self::get_base_dir(), LOGS_SUBDIR);
+    public static function getLogsDir() {
+        return self::join(self::getBaseDir(), LOGS_SUBDIR);
     }
 
     /** @return string Full path to snapshots directory. */
-    public static function get_snapshots_dir() {
-        return self::join(self::get_base_dir(), SNAPSHOTS_SUBDIR);
+    public static function getSnapshotsDir() {
+        return self::join(self::getBaseDir(), SNAPSHOTS_SUBDIR);
     }
 
     /** @return string Full path to temp directory. */
-    public static function get_temp_dir() {
-        return self::join(self::get_base_dir(), TEMP_SUBDIR);
+    public static function getTempDir() {
+        return self::join(self::getBaseDir(), TEMP_SUBDIR);
     }
 
     /** @return string Full path to SQLite database file. */
-    public static function get_db_path() {
-        return self::join(self::get_base_dir(), DB_FILENAME);
+    public static function getDbPath() {
+        return self::join(self::getBaseDir(), DB_FILENAME);
     }
 }

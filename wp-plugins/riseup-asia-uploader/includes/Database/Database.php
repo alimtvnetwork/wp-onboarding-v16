@@ -52,23 +52,23 @@ class RiseupDatabase {
     private $pdo = null;
 
     /** @var string */
-    private $db_path;
+    private $dbPath;
 
     /** @var RiseupFileLogger */
-    private $file_logger;
+    private $fileLogger;
 
     /** @var RiseupDatabase|null */
     private static $instance = null;
 
     /** @var bool */
-    private $init_attempted = false;
+    private $isInitAttempted = false;
 
     /**
      * Get singleton instance.
      *
      * @return RiseupDatabase
      */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -80,7 +80,7 @@ class RiseupDatabase {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = RiseupFileLogger::get_instance();
-        $this->file_logger->info('Database constructor called');
+        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->fileLogger->info('Database constructor called');
     }
 }

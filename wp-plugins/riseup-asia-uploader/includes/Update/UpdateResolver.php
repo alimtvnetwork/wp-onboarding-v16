@@ -34,7 +34,7 @@ class RiseupUpdateResolver {
     const DEFAULT_CACHE_DAYS = 7;
 
     /** @var RiseupFileLogger */
-    private $file_logger;
+    private $fileLogger;
 
     /** @var RiseupDatabase */
     private $db;
@@ -47,10 +47,11 @@ class RiseupUpdateResolver {
      *
      * @return RiseupUpdateResolver
      */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
@@ -58,14 +59,14 @@ class RiseupUpdateResolver {
      * Constructor.
      */
     private function __construct() {
-        $this->file_logger = RiseupFileLogger::get_instance();
-        $this->db = RiseupDatabase::get_instance();
+        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->db = RiseupDatabase::getInstance();
 
-        $settings = $this->get_settings();
+        $settings = $this->getSettings();
         if (!empty($settings['enabled'])) {
             add_filter(HookType::PreSetSiteTransientUpdatePlugins->value, array($this, 'check_for_plugin_update'));
             add_filter(HookType::PluginsApi->value, array($this, 'plugin_info'), 10, 3);
-            $this->file_logger->info('Auto-update hooks registered');
+            $this->fileLogger->info('Auto-update hooks registered');
         }
     }
 
@@ -74,7 +75,7 @@ class RiseupUpdateResolver {
      *
      * @return array Settings array with defaults.
      */
-    public function get_settings() {
+    public function getSettings() {
         $defaults = array(
             'enabled' => false, 'master_url' => '', 'resolved_url' => '', 'resolved_at' => '',
             'cache_days' => self::DEFAULT_CACHE_DAYS, 'last_check' => '', 'last_error' => '',
@@ -90,8 +91,8 @@ class RiseupUpdateResolver {
      * @param array $settings Settings to save.
      * @return bool True on success.
      */
-    public function save_settings($settings) {
-        $current = $this->get_settings();
+    public function saveSettings($settings) {
+        $current = $this->getSettings();
         $merged = wp_parse_args($settings, $current);
         return update_option(self::OPTION_NAME, $merged);
     }
