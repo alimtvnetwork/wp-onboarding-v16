@@ -1,7 +1,7 @@
 # PHP Coding Standards
 
-> **Version:** 3.0.0  
-> **Updated:** 2026-02-12  
+> **Version:** 4.0.0  
+> **Updated:** 2026-02-13  
 > **Applies to:** WordPress companion plugins (PHP 7.4+)
 
 ---
@@ -156,7 +156,7 @@ Every endpoint path, action name, capability string, option key, **hook name**, 
 
 > **See [enums.md](./enums.md)** for the full enum specification (v4.0.0), including file naming rules, namespace conventions, and all enum/const class definitions.
 
-### Hook Names — Hook enum
+### Hook Names — HookType enum
 
 ```php
 // ❌ FORBIDDEN: Magic hook strings
@@ -164,12 +164,12 @@ add_action('init', [$this, 'setup']);
 add_action('rest_api_init', [$this, 'register_routes']);
 add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
 
-// ✅ REQUIRED: Hook names from Hook enum
-use RiseupAsia\Enums\Hook;
+// ✅ REQUIRED: Hook names from HookType enum
+use RiseupAsia\Enums\HookType;
 
-add_action(Hook::Init->value, [$this, 'setup']);
-add_action(Hook::RestApiInit->value, [$this, 'register_routes']);
-add_action(Hook::PluginsLoaded->value, [$this, 'on_plugins_loaded']);
+add_action(HookType::Init->value, [$this, 'setup']);
+add_action(HookType::RestApiInit->value, [$this, 'register_routes']);
+add_action(HookType::PluginsLoaded->value, [$this, 'on_plugins_loaded']);
 ```
 
 ### Action Names — Named Composed Constants
@@ -194,7 +194,7 @@ $url = rest_url(REST_NAMESPACE . '/' . ACTION_UPLOAD);
 define('REST_NAMESPACE', 'riseup-asia-uploader/v1');
 define('ACTION_UPLOAD', 'upload');
 define('REST_URL_UPLOAD', REST_NAMESPACE . '/' . ACTION_UPLOAD);
-define('HOOK_AJAX_UPLOAD', Hook::ajax(ACTION_UPLOAD));
+define('HOOK_AJAX_UPLOAD', HookType::ajax(ACTION_UPLOAD));
 
 // In handlers — clean, readable, no concatenation:
 add_action(HOOK_AJAX_UPLOAD, [$this, 'handle']);
@@ -281,9 +281,9 @@ $path = RiseupPathUtils::getRootDb();
 
 ## Initialization — No WordPress Calls in Constructors
 
-### Rule: Lazy initialization with Hook enum
+### Rule: Lazy initialization with HookType enum
 
-Never call WordPress functions (`add_action`, `register_rest_route`, etc.) in class constructors. All hook registrations must use `Hook` enum cases:
+Never call WordPress functions (`add_action`, `register_rest_route`, etc.) in class constructors. All hook registrations must use `HookType` enum cases:
 
 ```php
 // ❌ FORBIDDEN: WordPress call in constructor + magic string
@@ -293,8 +293,8 @@ class MyPlugin {
     }
 }
 
-// ✅ REQUIRED: Lazy initialization with Hook enum
-use RiseupAsia\Enums\Hook;
+// ✅ REQUIRED: Lazy initialization with HookType enum
+use RiseupAsia\Enums\HookType;
 
 class MyPlugin {
     private $initialized = false;
@@ -305,7 +305,7 @@ class MyPlugin {
         }
 
         $this->initialized = true;
-        add_action(Hook::Init->value, [$this, 'setup']);
+        add_action(HookType::Init->value, [$this, 'setup']);
     }
 }
 ```
@@ -394,10 +394,10 @@ if ($has_permission) { ... }
 
 ---
 
-## Code Style — Braces, Nesting & Spacing
+## Code Style — Braces, Nesting, Spacing & Function Size
 
 > These rules apply across **all languages** (PHP, TypeScript, Go).  
-> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — this section repeats the rules with PHP-specific examples.
+> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — this section repeats key rules with PHP-specific examples.
 
 ### Rule 1: Always use braces — no single-line returns
 
@@ -418,9 +418,9 @@ if ($error === null) {
 }
 ```
 
-### Rule 2: No nested `if` — flatten with combined checks or early returns
+### Rule 2: Zero nested `if` — absolute ban
 
-Nested `if` blocks reduce readability. Combine conditions into a single `if`, or use early returns to flatten the logic. If a helper function already handles the null/empty check internally (e.g., `ErrorChecker::is_fatal_error()` already returns `false` for `null`), rely on it — don't wrap it in a redundant outer guard.
+Nested `if` blocks are **absolutely forbidden** — zero tolerance, no exceptions. Flatten using early returns, combined conditions, or extracted helper functions. If a helper function already handles the null/empty check internally (e.g., `ErrorChecker::is_fatal_error()` already returns `false` for `null`), rely on it — don't wrap it in a redundant outer guard.
 
 ```php
 // ❌ FORBIDDEN: Nested if — redundant null guard
@@ -591,12 +591,37 @@ add_action(Hook::Init->value, [$this, 'setup']);
 
 ---
 
+### Rule 6: Maximum 15 lines per function
+
+> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+
+Every function/method body must be **15 lines or fewer** (excluding blank lines, comments, and the signature). Extract logic into small, well-named helper functions.
+
+```php
+// ❌ FORBIDDEN: 25+ line function
+public function handle_upload($request) {
+    // validation, processing, logging, response... all inline
+}
+
+// ✅ REQUIRED: Short top-level, helpers do the work
+public function handle_upload($request) {
+    $params = $this->extract_upload_params($request);
+    $this->validate_upload($params);
+    $result = $this->process_upload($params);
+    $this->log_upload($result);
+
+    return $this->envelope->success($result);
+}
+```
+
+---
+
 ## Forbidden Patterns
 
 | Pattern | Why | Alternative |
 |---------|-----|-------------|
 | `catch (Exception $e)` | Misses PHP 7+ `Error` types | `catch (\Throwable $e)` |
-| Magic strings in hooks | Unmaintainable, typo-prone | `Hook::*->value` enum cases |
+| Magic strings in hooks | Unmaintainable, typo-prone | `HookType::*->value` enum cases |
 | Inline concatenation at call site | Hard to read, duplicated | Compose a named constant first |
 | Magic strings in handlers | Unmaintainable | `constants.php` |
 | `wp_die()` in REST handlers | Breaks JSON responses | `wp_send_json_error()` |
@@ -605,19 +630,16 @@ add_action(Hook::Init->value, [$this, 'setup']);
 | Constructor WordPress calls | Load order issues | Lazy initialization |
 | `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
 | Inline `!class_exists('PDO')` checks | Duplicated logic | `ErrorChecker::is_invalid_pdo_extension()` |
-| `return` without blank line after statements | Poor readability | Blank line before `return` when preceded by other statements |
+| Nested `if` | **Zero tolerance** — absolute ban | Flatten with early returns or combined conditions |
+| Functions > 15 lines | Hard to read, test, review | Extract helpers |
+| `return` without blank line after statements | Poor readability | Blank line before `return` |
 | Single-line `if (...) return;` | Easy to miss, inconsistent | Always use braces `{ }` |
-| No blank line after `}` before more code | Poor readability | Blank line after `}` when followed by more code |
-| Nested `if` when conditions can combine | Hard to read, unnecessary depth | Flatten with combined condition or early return |
-| Inline multi-part `if` condition (2+ operators) | Hard to read, not reusable | Extract to named `$is_*` variable or dedicated method |
-| `$error && in_array(...)` inline | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
-| `RiseupBooleanHelpers::is_falsy/is_truthy/is_null/is_set/is_empty/has_content` | Trivial wrappers around native PHP (deprecated 1.19.0) | Native `!$x`, `(bool)$x`, `$x === null`, `$x !== null`, `empty($x)`, `!empty($x)` |
-| `RiseupBooleanHelpers` for generic boolean logic | Obscures intent, adds indirection | Semantic methods (`is_disabled()`) or domain-specific helpers (`is_dir_missing()`) |
+| Inline multi-part `if` condition (2+ operators) | Hard to read, not reusable | Extract to named `$is_*` variable or method |
+| `RiseupBooleanHelpers::is_falsy/is_truthy/...` | Trivial wrappers (deprecated) | Native PHP operators |
 | `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
-| Inline `E_*` → string mapping | Duplicated type-label arrays | `ErrorChecker::get_type_label($type)` via `ErrorType::TYPE_LABELS` |
-| `$value` for booleans | Ambiguous naming | `$is_value`, `$has_value` |
-| `current_user_can('manage_options')` | Magic capability string | `Capability::ManageOptions->value` |
-| `'POST'` or `WP_REST_Server::CREATABLE` in routes | Inconsistent method refs | `HttpMethod::Post->value` |
+| `!file_exists()` / `!is_dir()` | Raw negation | `is_file_missing()` / `is_dir_missing()` |
+| `current_user_can('manage_options')` | Magic string | `CapabilityType::ManageOptions->value` |
+| `'POST'` in routes | Inconsistent | `HttpMethodType::Post->value` |
 
 ---
 

@@ -1,7 +1,7 @@
 # Golang Coding Standards
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-09  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-13  
 > **Applies to:** All Go backend code
 
 ---
@@ -201,6 +201,59 @@ func (s *PublishService) Upload(ctx context.Context, req UploadRequest) error { 
 | `map[string]interface{}` in APIs | Untyped | Defined structs |
 | `!fileExists(path)` raw negation | Easy to miss `!` | `IsFileMissing(path)` guard |
 | `!strings.Contains(s, x)` raw negation | Same | `IsMissingSubstring(s, x)` |
+| Nested `if` (any depth) | **Zero tolerance** | Flatten with early returns or combined |
+| Functions > 15 lines | Hard to read | Extract small helpers |
+
+---
+
+## Function Size — Max 15 Lines
+
+> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 6
+
+Every function body must be **15 lines or fewer**. Extract logic into small, well-named helpers.
+
+```go
+// ❌ FORBIDDEN: Long function
+func ProcessUpload(ctx context.Context, req UploadRequest) error {
+    // 20+ lines of validation, upload, logging...
+}
+
+// ✅ REQUIRED: Decomposed
+func ProcessUpload(ctx context.Context, req UploadRequest) error {
+    if err := validateUpload(req); err != nil {
+        return err
+    }
+
+    result, err := executeUpload(ctx, req)
+    if err != nil {
+        return apperror.Wrap(err, "E5001", "upload failed")
+    }
+
+    return logAndRespond(ctx, result)
+}
+```
+
+---
+
+## Zero Nested `if` — Absolute Ban
+
+> **Canonical source:** [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rule 2 & 7
+
+Nested `if` blocks are **absolutely forbidden** — zero tolerance. Flatten with combined conditions or early returns.
+
+```go
+// ❌ FORBIDDEN
+if err != nil {
+    if resp != nil {
+        handleError(resp)
+    }
+}
+
+// ✅ REQUIRED
+if err != nil && resp != nil {
+    handleError(resp)
+}
+```
 
 ---
 
@@ -233,4 +286,4 @@ if IsMissingSubstring(s, substr) { ... }
 
 ---
 
-*Golang standards specification created: 2026-02-09*
+*Golang standards specification v2.0.0 — 2026-02-13*

@@ -1,7 +1,7 @@
 # PHP Forbidden Patterns — Quick Reference Checklist
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-12  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-13  
 > **Consolidates:** [README.md](./README.md), [enums.md](./enums.md), [WP Error Handling](../07-wordpress-plugin-development/07-error-handling.md)
 
 ---
@@ -31,23 +31,23 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 | # | ❌ Forbidden | ✅ Required | Source |
 |---|-------------|------------|--------|
-| 2.1 | `add_action('init', ...)` | `add_action(Hook::Init->value, ...)` | `Hook::Init` |
-| 2.2 | `add_action('plugins_loaded', ...)` | `add_action(Hook::PluginsLoaded->value, ...)` | `Hook::PluginsLoaded` |
-| 2.3 | `add_action('rest_api_init', ...)` | `add_action(Hook::RestApiInit->value, ...)` | `Hook::RestApiInit` |
-| 2.4 | `add_action('admin_init', ...)` | `add_action(Hook::AdminInit->value, ...)` | `Hook::AdminInit` |
-| 2.5 | `add_action('admin_menu', ...)` | `add_action(Hook::AdminMenu->value, ...)` | `Hook::AdminMenu` |
-| 2.6 | `add_action('admin_notices', ...)` | `add_action(Hook::AdminNotices->value, ...)` | `Hook::AdminNotices` |
-| 2.7 | `add_action('admin_enqueue_scripts', ...)` | `add_action(Hook::AdminEnqueue->value, ...)` | `Hook::AdminEnqueue` |
-| 2.8 | `add_action('activated_plugin', ...)` | `add_action(Hook::ActivatedPlugin->value, ...)` | `Hook::ActivatedPlugin` |
-| 2.9 | `add_action('deactivated_plugin', ...)` | `add_action(Hook::DeactivatedPlugin->value, ...)` | `Hook::DeactivatedPlugin` |
-| 2.10 | `add_action('deleted_plugin', ...)` | `add_action(Hook::DeletedPlugin->value, ...)` | `Hook::DeletedPlugin` |
-| 2.11 | `add_filter('rest_post_dispatch', ...)` | `add_filter(Hook::RestPostDispatch->value, ...)` | `Hook::RestPostDispatch` |
-| 2.12 | `add_filter('cron_schedules', ...)` | `add_filter(Hook::CronSchedules->value, ...)` | `Hook::CronSchedules` |
-| 2.13 | `add_action('wp_ajax_my_action', ...)` | `define('HOOK_AJAX_MY_ACTION', Hook::ajax(ACTION_MY_ACTION));` then `add_action(HOOK_AJAX_MY_ACTION, ...)` | Named composed constant |
-| 2.14 | `add_action(Hook::ajax(ACTION_X), ...)` inline | Compose a named constant first, then use it | No inline concatenation at call site |
+| 2.1 | `add_action('init', ...)` | `add_action(HookType::Init->value, ...)` | `HookType::Init` |
+| 2.2 | `add_action('plugins_loaded', ...)` | `add_action(HookType::PluginsLoaded->value, ...)` | `HookType::PluginsLoaded` |
+| 2.3 | `add_action('rest_api_init', ...)` | `add_action(HookType::RestApiInit->value, ...)` | `HookType::RestApiInit` |
+| 2.4 | `add_action('admin_init', ...)` | `add_action(HookType::AdminInit->value, ...)` | `HookType::AdminInit` |
+| 2.5 | `add_action('admin_menu', ...)` | `add_action(HookType::AdminMenu->value, ...)` | `HookType::AdminMenu` |
+| 2.6 | `add_action('admin_notices', ...)` | `add_action(HookType::AdminNotices->value, ...)` | `HookType::AdminNotices` |
+| 2.7 | `add_action('admin_enqueue_scripts', ...)` | `add_action(HookType::AdminEnqueue->value, ...)` | `HookType::AdminEnqueue` |
+| 2.8 | `add_action('activated_plugin', ...)` | `add_action(HookType::ActivatedPlugin->value, ...)` | `HookType::ActivatedPlugin` |
+| 2.9 | `add_action('deactivated_plugin', ...)` | `add_action(HookType::DeactivatedPlugin->value, ...)` | `HookType::DeactivatedPlugin` |
+| 2.10 | `add_action('deleted_plugin', ...)` | `add_action(HookType::DeletedPlugin->value, ...)` | `HookType::DeletedPlugin` |
+| 2.11 | `add_filter('rest_post_dispatch', ...)` | `add_filter(HookType::RestPostDispatch->value, ...)` | `HookType::RestPostDispatch` |
+| 2.12 | `add_filter('cron_schedules', ...)` | `add_filter(HookType::CronSchedules->value, ...)` | `HookType::CronSchedules` |
+| 2.13 | `add_action('wp_ajax_my_action', ...)` | `define('HOOK_AJAX_MY_ACTION', HookType::ajax(ACTION_MY_ACTION));` then `add_action(HOOK_AJAX_MY_ACTION, ...)` | Named composed constant |
+| 2.14 | `add_action(HookType::ajax(ACTION_X), ...)` inline | Compose a named constant first, then use it | No inline concatenation at call site |
 | 2.15 | `rest_url(REST_NAMESPACE . '/' . ACTION_X)` | `define('REST_URL_X', REST_NAMESPACE . '/' . ACTION_X);` then `rest_url(REST_URL_X)` | No inline concatenation at call site |
-| 2.16 | `current_user_can('manage_options')` | `current_user_can(Capability::ManageOptions->value)` | `Capability` enum |
-| 2.17 | `'POST'` or `WP_REST_Server::CREATABLE` in routes | `HttpMethod::Post->value` | `HttpMethod` enum |
+| 2.16 | `current_user_can('manage_options')` | `current_user_can(CapabilityType::ManageOptions->value)` | `CapabilityType` enum |
+| 2.17 | `'POST'` or `WP_REST_Server::CREATABLE` in routes | `HttpMethodType::Post->value` | `HttpMethodType` enum |
 
 ---
 
@@ -86,20 +86,21 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 |---|-------------|------------|-----|
 | 5.1 | WordPress calls in `__construct()` | Lazy `initialize()` method with guard | Load order issues; WP may not be ready |
 | 5.2 | Raw `require_once` for non-foundation files | `OnboardIncludeFiles` loader utility | Loader logs failures with stack trace |
-| 5.3 | `define()` for categorized constants | Native backed enum (`Hook`, `Capability`, `HttpMethod`, etc.) | Enums group related constants with PHPDoc |
+| 5.3 | `define()` for categorized constants | Native backed enum (`HookType`, `CapabilityType`, `HttpMethodType`, etc.) | Enums group related constants with PHPDoc |
 
-> **Exception for 5.3:** Plugin-specific custom hooks (e.g., `RISEUP_CRON_SNAPSHOT_*`) may use `define()` in `constants.php` when they are plugin-scoped and not WordPress core hooks.
+> **Exception for 5.3:** Plugin-specific custom hooks (e.g., `CRON_SNAPSHOT_*`) may use `define()` in `constants.php` when they are plugin-scoped and not WordPress core hooks.
 
 ---
 
-## 6. Condition Complexity (All Languages)
+## 6. Condition Complexity & Function Size (All Languages)
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
 | 6.1 | Inline `if` with 2+ operators (`&&`, `\|\|`, `!`) | Extract to named `$is_*`/`$has_*` variable or method | Reads as intent, not implementation |
 | 6.2 | `$error && in_array($error['type'], [...])` | `ErrorChecker::is_fatal_error($error)` | Reusable, self-documenting |
 | 6.3 | `!class_exists('PDO') \|\| !extension_loaded(...)` | `ErrorChecker::is_invalid_pdo_extension()` | Centralized check |
-| 6.4 | Nested `if` when outer check is handled by inner function | Use the function directly (it handles null) | Redundant guard |
+| 6.4 | Nested `if` (any depth) | **Zero tolerance** — flatten with early returns or combined conditions | Absolute ban |
+| 6.5 | Functions > 15 lines | Extract helpers; each function does one thing | Max 15 lines per function body |
 
 ---
 
@@ -121,7 +122,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] No inline E_* → string maps — use `ErrorChecker::get_type_label()`
 [ ] No `wp_die()` in REST handlers
 [ ] No `error_log()` — use structured logger
-[ ] No string literals in add_action/add_filter — use `Hook::*->value`
+[ ] No string literals in add_action/add_filter — use `HookType::*->value`
 [ ] No inline concatenation at call sites — compose named constants first
 [ ] No manual path concatenation — use `RiseupPathUtils` accessors
 [ ] No `RiseupBooleanHelpers` trivial wrappers — use semantic methods
@@ -138,8 +139,9 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] Blank line before `return` when preceded by other statements
 [ ] No single-line `if (...) return;` — always use braces
 [ ] Blank line after closing `}` when followed by more code
-[ ] No nested `if` — flatten with combined conditions or early returns
+[ ] No nested `if` — ZERO TOLERANCE — absolute ban
 [ ] No inline multi-part `if` (2+ operators) — extract to `$is_*` variable or method
+[ ] Functions max 15 lines — extract helpers for longer logic
 ```
 
 ---
@@ -147,11 +149,12 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 ## Cross-References
 
 - [PHP Coding Standards](./README.md) — Full spec with examples
-- [PHP Enum Classes](./enums.md) — `Hook`, `Capability`, `HttpMethod`, `PathConst`, `ErrorType`, `ErrorChecker`
+- [PHP Enum Classes](./enums.md) — `HookType`, `CapabilityType`, `HttpMethodType`, `PathConst`, `ErrorType`, `ErrorChecker`
+- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rules 1-7 (braces, nesting, spacing, function size)
 - [WordPress Error Handling](../07-wordpress-plugin-development/07-error-handling.md) — Complete error handling patterns
 - [WordPress Initialization](../07-wordpress-plugin-development/01-initialization-patterns.md) — Bootstrap patterns
 - [WordPress API Design](../07-wordpress-plugin-development/04-api-design.md) — REST endpoint patterns
 
 ---
 
-*Forbidden patterns checklist v1.0.0 — 2026-02-12*
+*Forbidden patterns checklist v2.0.0 — 2026-02-13*
