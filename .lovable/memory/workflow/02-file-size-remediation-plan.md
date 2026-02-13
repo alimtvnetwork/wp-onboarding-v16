@@ -1,232 +1,69 @@
-# File Size Remediation Plan — Max 200 Lines Per File
+# File Size Remediation Plan — Phase 1 Detail: Main Plugin Split
 
 Updated: 2026-02-13
 
-## Overview
+## Strategy: PHP Traits
 
-**Goal**: No PHP file exceeds 200 lines of code. After file splitting is complete, scan for remaining 15-line method violations.
+Class methods stay callable via `array($this, 'method')` route callbacks. Standalone pre-class functions move to separate files directly.
 
-## Current File Size Audit
+## Extraction Map
 
-| File | Lines | Over by | Priority |
-|------|-------|---------|----------|
-| `riseup-asia-uploader.php` | 5,604 | 5,404 | 🔴 Critical |
-| `templates/admin-errors.php` | ~1,200+ | ~1,000+ | 🔴 Critical |
-| `templates/admin-settings.php` | ~1,200+ | ~1,000+ | 🔴 Critical |
-| `templates/admin-snapshots.php` | ~1,000+ | ~800+ | 🔴 Critical |
-| `templates/admin-logs.php` | ~800+ | ~600+ | 🔴 Critical |
-| `templates/admin-agents.php` | ~800+ | ~600+ | 🔴 Critical |
-| `Admin/Admin.php` | 1,017 | 817 | 🔴 Critical |
-| `Agent/AgentManager.php` | 807 | 607 | 🟠 High |
-| `Update/UpdateResolver.php` | 599 | 399 | 🟠 High |
-| `Post/PostManager.php` | 487 | 287 | 🟠 High |
-| `Logging/Logger.php` | ~550 | ~350 | 🟠 High |
-| `Logging/FileLogger.php` | ~580 | ~380 | 🟠 High |
-| `Database/Database.php` | ~1,200+ | ~1,000+ | 🔴 Critical |
-| `Database/Orm.php` | ~500+ | ~300+ | 🟠 High |
-| `Database/FileCache.php` | ~400+ | ~200+ | 🟡 Medium |
-| `Database/RootDb.php` | ~400+ | ~200+ | 🟡 Medium |
-| `Snapshot/IncrementalBackup.php` | ~600+ | ~400+ | 🟠 High |
-| `Snapshot/SnapshotOrchestrator.php` | ~600+ | ~400+ | 🟠 High |
-| `Snapshot/SnapshotWorker.php` | ~600+ | ~400+ | 🟠 High |
-| `Snapshot/RestoreEngine.php` | ~500+ | ~300+ | 🟠 High |
-| `Snapshot/SnapshotManager.php` | ~500+ | ~300+ | 🟠 High |
-| `Snapshot/SnapshotExporter.php` | ~400+ | ~200+ | 🟡 Medium |
-| `Snapshot/SnapshotImport.php` | ~400+ | ~200+ | 🟡 Medium |
-| `Helpers/PathUtils.php` | ~400+ | ~200+ | 🟡 Medium |
+### Standalone Function Files
 
-Files already ≤200 lines (no action needed):
-- `Enums/*.php` (all small enum files)
-- `Helpers/BooleanHelpers.php`, `ErrorChecker.php`, `EnvelopeBuilder.php`, `InitHelpers.php`
-- `Upload/UploadIgnore.php`
-- `Snapshot/SqliteSchemaConverter.php`, `SnapshotCleaner.php`, `SnapshotDetector.php`, `SnapshotFactory.php`
-- `Snapshot/SnapshotProviderInterface.php`, `SnapshotProviderNative.php`, `SnapshotProviderUpdraft.php`, `SnapshotProviderWpReset.php`
-- `Snapshot/SnapshotScheduler.php`, `DependencyAnalyzer.php`
-- `constants.php`
+| File | Source Lines | Functions | ~Lines |
+|------|-------------|-----------|--------|
+| `ErrorHandling/FrameBuilder.php` | 25-191 | `riseup_build_single_frame`, `riseup_exception_to_frames`, `riseup_backtrace_to_frames`, `riseup_build_trace_lines`, `riseup_build_structured_frames`, `riseup_build_fatal_frames`, `riseup_build_fatal_details` | ~175 |
+| `ErrorHandling/FatalErrorHandler.php` | 192-359 | `riseup_build_fatal_response`, `riseup_log_fatal_to_file`, `riseup_clean_output_buffers`, `riseup_emit_fatal_json_response`, `riseup_build_fatal_fallback`, `riseup_fatal_error_handler`, `riseup_error_type_to_string` + `register_shutdown_function` | ~180 |
 
----
+### Trait Files (class methods)
 
-## Phase 1: Split `riseup-asia-uploader.php` (5,604 → ~28 files × ≤200)
+| File | Source Lines | Methods | ~Lines |
+|------|-------------|---------|--------|
+| `Traits/LifecycleHooksTrait.php` | 550-739 | `on_plugin_activated`, `on_plugin_deactivated`, `on_plugin_deleted`, `detect_trigger_source`, `is_rest_request`, `extract_plugin_slug` | ~195 |
+| `Traits/RouteRegistrationTrait.php` | 747-955 | `register_routes`, `register_utility_routes`, `register_post_routes`, `register_log_routes`, `register_catch_all_route` | ~195 |
+| `Traits/PluginRoutesTrait.php` | 806-1090 | `register_plugin_routes`, `register_agent_routes`, `register_snapshot_routes` | ~200 |
+| `Traits/InvalidRouteTrait.php` | 1092-1231 | `handle_invalid_route`, `buildInvalidRouteTrace`, `formatBacktraceLines`, `formatFramesSummary`, `enrich_error_response`, `injectErrorMetadata`, `logRestApiError` | ~145 |
+| `Traits/AuthTrait.php` | 1233-1550 | `is_endpoint_enabled`, `is_auth_required`, `build_permission_callback`, `check_plugin_permission`, `check_post_permission`, `check_logs_permission`, `check_status_permission`, `resolve_auth_header`, `authenticate_user`, `build_missing_auth_error`, `check_authenticated_only`, `check_authenticated_capability` | ~200 |
+| `Traits/StatusHandlerTrait.php` | 1552-1820 | `handle_status`, `detectLiveVersion`, `collectRegisteredRoutes`, `loadEndpointsReference`, `buildStatusPayload`, `buildFeatureFlags`, `handle_openapi`, `loadOpenApiSpec`, `handle_opcache_reset`, `invalidatePluginFiles` | ~200 |
+| `Traits/UploadPipelineTrait.php` | 1822-2091 | `handle_upload`, `executeUploadPipeline`, `logUploadInitiated`, `processUploadExtraction`, `buildUploadResponse`, `parse_upload_input`, `parse_multipart_input`, `parse_base64_input`, `build_upload_params` | ~200 |
+| `Traits/UploadExtractionTrait.php` | 2093-2476 | `validate_and_write_zip`, `remove_duplicate_plugins`, `pre_log_self_update`, `deactivate_if_updating`, `extract_to_plugins_dir`, `reset_opcache_and_find_plugin`, `activate_if_needed`, `detect_installed_version` | ~200 |
+| `Traits/PluginListTrait.php` | 2478-2593 + 2940-3003 | `handle_list_plugins`, `collectPluginList`, `handle_plugin_files`, `scanPluginFilesWithCache`, `handle_plugin_file_content` | ~195 |
+| `Traits/PluginExportTrait.php` | 3005-3131 | `handle_export_self`, `handle_export_plugin` | ~135 |
+| `Traits/PostHandlerTrait.php` | 3133-3285 | `handle_list_posts`, `handle_create_post`, `handle_list_categories`, `handle_create_category`, `handle_query_logs`, `buildLogQueryFilters`, `handle_logs_stats` | ~160 |
+| `Traits/PluginLifecycleTrait.php` | 3287-3601 | `handle_plugin_exists`, `load_plugin_functions`, `resolve_plugin_from_request`, `handle_enable_plugin`, `handle_disable_plugin`, `handle_delete_plugin`, `log_plugin_lifecycle` | ~200 |
+| `Traits/SyncHandlerTrait.php` | 2594-2930 | `handle_sync_manifest`, `generateSyncManifest`, `handle_sync_push`, `executeSyncPush`, `processSyncFile`, `isSyncPathTraversal`, `syncReplaceFile`, `syncDeleteFile`, `cleanEmptyParentDirs`, `updateSyncCounters`, `logSyncCompletion`, `scan_directory_for_files` | ~200 |
+| `Traits/ResponseTrait.php` | 3607-4046 | `safe_execute`, `error_response`, `logErrorWithBacktrace`, `get_exception_code` | ~115 |
+| `Traits/ErrorLogTrait.php` | 3641-3976 | `handle_error_logs`, `resolveLogSettings`, `handle_error_sessions`, `isTableExists`, `buildErrorSessionQuery`, `countErrorSessions`, `fetchErrorSessions`, `enrichErrorEntries`, `parseContextJson`, `count_unseen_errors`, `parse_stack_trace_string`, `parseTraceFrame`, `read_log_tail` | ~200 |
+| `Traits/AgentHandlerTrait.php` | 4306-4530 | `handle_list_agents`, `handle_add_agent`, `handle_get_agent`, `handle_remove_agent`, `handle_test_agent`, `handle_sync_agent`, `handle_agent_action`, `handle_agent_history` | ~200 |
+| `Traits/SnapshotCrudTrait.php` | 4532-4827 | `handle_list_snapshots`, `handle_schedule_snapshot`, `handle_create_snapshot`, `executePerTableSnapshot`, `executeLegacySnapshot`, `logSnapshotResult`, `handle_get_snapshot`, `handle_snapshot_info` (alias), `handle_delete_snapshot`, `isPerTableSnapshot`, `resolveSnapshotDir` | ~200 |
+| `Traits/SnapshotExportTrait.php` | 4828-5107 | `handle_export_snapshot`, `handle_snapshot_download`, `buildDownloadResponse`, `handle_snapshot_download_file`, `validateAndResolveExport`, `sendZipHeaders`, `streamZipFile`, `handle_import_snapshot` | ~200 |
+| `Traits/SnapshotBackupTrait.php` | 5108-5499 | `handle_restore_snapshot`, `parseRestoreOptions`, `routeRestoreToEngine`, `handle_get/update_snapshot_settings`, `handle_list_snapshot_providers`, `handle_list_snapshot_tables`, `handle_analyze_dependencies`, `handle_export_pertable`, `handle_full_backup`, `handle_incremental_backup`, `handle_snapshot_cleanup`, `handle_snapshot_progress` | ~200 |
+| `Traits/FileSystemTrait.php` | 4047-4304 | `get_temp_dir`, `find_plugin_file`, `find_plugin_file_from_filesystem`, `detect_plugin_slug_from_zip`, `delete_directory`, `copy_directory`, `add_dir_to_zip` | ~200 |
 
-The main plugin file is the largest offender. It contains REST route registration, request handlers, upload logic, plugin management, OpenAPI spec, and fatal error handling — all in one monolith.
+### Main File After Extraction (~200 lines)
 
-### Proposed extraction targets:
+Contents:
+- Plugin header (20 lines)
+- `use` imports (5 lines)
+- `require_once` for ErrorHandling files (5 lines)
+- Dependency loading section with DependencyLoader manifest (55 lines)
+- `require_once` for all Trait files (25 lines)
+- Class `RiseupAsia` with `use` trait statements (20 lines)
+- Properties + constructor (70 lines)
+- `riseup_asia_activate()` + `riseup_asia_init()` (extracted to Init/PluginActivation.php if needed)
 
-| New File | Domain | Methods to Extract |
-|----------|--------|--------------------|
-| `includes/Routes/UtilityRoutes.php` | Route registration | `register_utility_routes()` |
-| `includes/Routes/PluginRoutes.php` | Route registration | `register_plugin_routes()` |
-| `includes/Routes/PostRoutes.php` | Route registration | `register_post_routes()` |
-| `includes/Routes/LogRoutes.php` | Route registration | `register_log_routes()` |
-| `includes/Routes/AgentRoutes.php` | Route registration | `register_agent_routes()` |
-| `includes/Routes/SnapshotRoutes.php` | Route registration | `register_snapshot_routes()` |
-| `includes/Routes/CatchAllRoute.php` | Route registration | `register_catch_all_route()` |
-| `includes/Handlers/StatusHandler.php` | Request handlers | `handle_status()`, status helpers |
-| `includes/Handlers/UploadHandler.php` | Request handlers | `handle_upload()`, upload pipeline helpers |
-| `includes/Handlers/PluginHandler.php` | Request handlers | `handle_list_plugins()`, `handle_plugin_files()`, `handle_single_plugin_file()` |
-| `includes/Handlers/ExportHandler.php` | Request handlers | `handle_export_self()`, zip helpers |
-| `includes/Handlers/OpenApiHandler.php` | Request handlers | `handle_openapi()` |
-| `includes/Handlers/OpcacheHandler.php` | Request handlers | `handle_opcache_reset()` |
-| `includes/Handlers/SnapshotDownloadHandler.php` | Request handlers | `handle_snapshot_download()` |
-| `includes/Handlers/ErrorLogHandler.php` | Request handlers | error log endpoint handlers |
-| `includes/Handlers/LogHandler.php` | Request handlers | log retrieval handlers |
-| `includes/Plugin/PluginDiscovery.php` | Plugin utilities | `find_plugin_file()`, `get_plugin_base_dir()`, extraction helpers |
-| `includes/Plugin/PluginExtractor.php` | Plugin utilities | `extract_to_plugins_dir()`, extraction helpers |
-| `includes/Auth/AuthMiddleware.php` | Authentication | `authenticate_request()`, auth helpers |
-| `includes/ErrorHandling/FatalErrorHandler.php` | Fatal errors | `riseup_fatal_error_handler()`, related helpers |
-| `includes/ErrorHandling/ShutdownHandler.php` | Shutdown | shutdown registration, error capture |
-| `includes/Init/PluginBootstrap.php` | Initialization | constructor logic, dependency loading, init sequence |
+## Execution Waves
 
-After extraction, `riseup-asia-uploader.php` should contain ONLY:
-- Plugin header comment
-- Constants definition
-- `require_once` calls to load extracted files
-- Plugin activation/deactivation hooks
-- The `RiseupAsiaUploader` class shell (delegating to extracted classes)
+### Wave 1 (8 files)
+ErrorHandling/FrameBuilder.php, ErrorHandling/FatalErrorHandler.php, Traits/LifecycleHooksTrait.php, Traits/RouteRegistrationTrait.php, Traits/PluginRoutesTrait.php, Traits/InvalidRouteTrait.php, Traits/AuthTrait.php, Traits/StatusHandlerTrait.php
 
-### Status: ⬜ NOT STARTED
+### Wave 2 (7 files)
+Traits/UploadPipelineTrait.php, Traits/UploadExtractionTrait.php, Traits/PluginListTrait.php, Traits/PluginExportTrait.php, Traits/PostHandlerTrait.php, Traits/PluginLifecycleTrait.php, Traits/SyncHandlerTrait.php
 
----
+### Wave 3 (6 files)
+Traits/ResponseTrait.php, Traits/ErrorLogTrait.php, Traits/AgentHandlerTrait.php, Traits/SnapshotCrudTrait.php, Traits/SnapshotExportTrait.php, Traits/SnapshotBackupTrait.php, Traits/FileSystemTrait.php
 
-## Phase 2: Split `Admin/Admin.php` (1,017 → ~5 files × ≤200)
+### Wave 4 (1 file)
+Rewrite riseup-asia-uploader.php as shell (~200 lines)
 
-| New File | Methods to Extract |
-|----------|--------------------|
-| `Admin/AdminMenu.php` | `add_admin_menu()`, `registerMainMenu()`, `registerSubmenus()`, `registerErrorSubmenu()` |
-| `Admin/AdminSettings.php` | `register_settings()`, `get_settings()`, defaults, AJAX settings handlers |
-| `Admin/AdminAssets.php` | `enqueue_admin_assets()` |
-| `Admin/AdminAjax.php` | All `ajax_*` methods (snapshot settings, cleanup, storage stats, error flash, log file ops) |
-| `Admin/AdminRenderers.php` | `render_logs_page()`, `render_errors_page()`, `render_global_error_notice()`, query helpers |
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Phase 3: Split `Agent/AgentManager.php` (807 → ~4 files × ≤200)
-
-| New File | Methods to Extract |
-|----------|--------------------|
-| `Agent/AgentEncryption.php` | `encrypt()`, `decrypt()` |
-| `Agent/AgentCrud.php` | `addAgent()`, `updateAgent()`, `deleteAgent()`, `getAgent()`, `listAgents()` |
-| `Agent/AgentApi.php` | `apiRequest()`, `resolveAgentBaseUrl()`, `parseAgentResponse()`, HTTP helpers |
-| `Agent/AgentPluginOps.php` | `getRemotePlugins()`, `uploadToAgent()`, remote plugin operations |
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Phase 4: Split `Database/Database.php` (~1,200 → ~6 files × ≤200)
-
-| New File | Methods to Extract |
-|----------|--------------------|
-| `Database/DatabaseConnection.php` | `get_pdo()`, `is_ready()`, connection management |
-| `Database/DatabaseMigrations.php` | All `migrate_v*` methods, schema versioning |
-| `Database/DatabaseTransactions.php` | `log_transaction()`, `query_transactions()`, `apply_filters()` |
-| `Database/DatabaseErrors.php` | Error session queries, error log methods |
-| `Database/DatabaseSnapshots.php` | Snapshot-related table operations |
-| `Database/DatabaseCleanup.php` | Cleanup, pruning, maintenance methods |
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Phase 5: Split remaining oversized files
-
-### 5a: `Update/UpdateResolver.php` (599 → ~3 files)
-| New File | Methods |
-|----------|---------|
-| `Update/UpdateSettings.php` | `get_settings()`, `save_settings()`, defaults |
-| `Update/UpdateUrlResolver.php` | `resolve_url()`, redirect-following logic |
-| `Update/UpdateChecker.php` | `check_for_plugin_update()`, `plugin_info()`, `fetch_update_info()` |
-
-### 5b: `Post/PostManager.php` (487 → ~3 files)
-| New File | Methods |
-|----------|---------|
-| `Post/PostCreator.php` | `createPost()`, validation, category assignment |
-| `Post/PostUpdater.php` | `updatePost()`, field mapping |
-| `Post/CategoryManager.php` | `createCategory()`, `listCategories()` |
-
-### 5c: `Logging/Logger.php` (~550 → ~3 files)
-| New File | Methods |
-|----------|---------|
-| `Logging/TransactionLogger.php` | `log_transaction()`, `log_upload()`, `log_post_action()` |
-| `Logging/LogContext.php` | `get_client_ip()`, `get_source_machine()`, `get_user_info()` |
-
-### 5d: `Logging/FileLogger.php` (~580 → ~3 files)
-| New File | Methods |
-|----------|---------|
-| `Logging/FileLogWriter.php` | File writing, rotation, formatting |
-| `Logging/FileLogReader.php` | File reading, tail, search |
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Phase 6: Split oversized Snapshot files
-
-Target files (each → 2-3 smaller files):
-- `SnapshotOrchestrator.php` → `SnapshotOrchestrator.php` + `SnapshotOrchestratorHelpers.php`
-- `IncrementalBackup.php` → `IncrementalBackup.php` + `IncrementalExporter.php`
-- `SnapshotWorker.php` → `SnapshotWorker.php` + `SnapshotTableProcessor.php`
-- `RestoreEngine.php` → `RestoreEngine.php` + `RestoreTableHandler.php`
-- `SnapshotManager.php` → `SnapshotManager.php` + `SnapshotQueries.php`
-- `SnapshotExporter.php` → `SnapshotExporter.php` + `SnapshotZipBuilder.php`
-- `SnapshotImport.php` → `SnapshotImport.php` + `SnapshotImportParser.php`
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Phase 7: Split oversized template files
-
-Templates are HTML-heavy with embedded PHP. Split by tab/section:
-- `admin-errors.php` → `admin-errors-sessions.php`, `admin-errors-log.php`, `admin-errors-styles.php`, `admin-errors-scripts.php`
-- `admin-settings.php` → `admin-settings-endpoints.php`, `admin-settings-update.php`, `admin-settings-scripts.php`
-- `admin-snapshots.php` → `admin-snapshots-list.php`, `admin-snapshots-actions.php`, `admin-snapshots-scripts.php`
-- `admin-logs.php` → `admin-logs-table.php`, `admin-logs-filters.php`, `admin-logs-scripts.php`
-- `admin-agents.php` → `admin-agents-list.php`, `admin-agents-form.php`, `admin-agents-scripts.php`
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Phase 8: Split remaining Helpers and Database files
-
-- `Helpers/PathUtils.php` → may need splitting if >200
-- `Database/Orm.php` → `Orm.php` + `OrmQueryBuilder.php`
-- `Database/FileCache.php` → likely close to 200, evaluate
-- `Database/RootDb.php` → likely close to 200, evaluate
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Phase 9: Final 15-line method body scan
-
-After all file splits are complete:
-1. Scan every PHP file for functions exceeding 15 lines
-2. Extract helpers to bring all methods into compliance
-3. Verify zero violations remain
-
-### Status: ⬜ NOT STARTED
-
----
-
-## Execution Order
-
-1. **Phase 1** (Critical) — Main plugin file split
-2. **Phase 2** (Critical) — Admin split
-3. **Phase 4** (Critical) — Database split
-4. **Phase 3** (High) — AgentManager split
-5. **Phase 5** (High) — UpdateResolver, PostManager, Logging splits
-6. **Phase 6** (High) — Snapshot splits
-7. **Phase 7** (Medium) — Template splits
-8. **Phase 8** (Medium) — Remaining helpers/DB files
-9. **Phase 9** (Final) — 15-line method scan and fix
-
-## Notes
-
-- Each phase must update `require_once` / `use` statements and the DependencyLoader manifest
-- Singleton patterns must remain in the primary class file; extracted files contain trait-like helper methods or standalone classes
-- Templates use `include` / `require` for partials
-- After each phase, verify no broken references
+## Status: ⬜ Wave 1 NOT STARTED
