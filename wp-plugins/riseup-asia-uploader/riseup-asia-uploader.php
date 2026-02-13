@@ -1036,44 +1036,68 @@ class RiseupAsia {
         $invalid_path = $request->get_param('invalid_path');
         $method = $request->get_method();
 
-        $this->file_logger->warn('Invalid route requested', array(
-            'path'   => $invalid_path,
-            'method' => $method,
-        ));
+        $this->file_logger->warn('Invalid route requested', array('path' => $invalid_path, 'method' => $method));
 
-        // Generate stack trace for diagnostics
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-        $frames = function_exists('riseup_backtrace_to_frames')
-            ? riseup_backtrace_to_frames($backtrace)
-            : array();
+        $trace = $this->buildInvalidRouteTrace($method, $invalid_path, $backtrace);
 
-        $trace_lines = array();
-        foreach ($backtrace as $i => $frame) {
-            $file = isset($frame['file']) ? basename($frame['file']) : '[internal]';
-            $line = isset($frame['line']) ? $frame['line'] : '?';
-            $func = isset($frame['function']) ? $frame['function'] : '';
-            $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
-            $trace_lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
-        }
-
-        return RiseupEnvelopeBuilder::error(
-            "No endpoint found for: {$method} /{$invalid_path}",
-            HTTP_NOT_FOUND
-        )
+        return RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalid_path}", HTTP_NOT_FOUND)
             ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
-            ->setErrors(array(
-                'BackendMessage'              => "Route not found: {$method} /{$invalid_path}",
-                'DelegatedServiceErrorStack'  => $trace_lines,
-                'Backend'                     => array_map(function($f) {
-                    $file = isset($f['fileBase']) ? $f['fileBase'] : '';
-                    $line = isset($f['line']) ? $f['line'] : 0;
-                    $fn = isset($f['function']) ? $f['function'] : '';
-                    $cls = isset($f['class']) ? $f['class'] . '::' : '';
-                    return "{$file}:{$line} {$cls}{$fn}";
-                }, $frames),
-                'Frontend'                    => array(),
-            ))
+            ->setErrors($trace)
             ->toResponse();
+    }
+
+    /**
+     * Build structured trace data for invalid route diagnostics.
+     *
+     * @param string $method    HTTP method.
+     * @param string $path      Requested path.
+     * @param array  $backtrace Debug backtrace.
+     * @return array Structured error trace.
+     */
+    private function buildInvalidRouteTrace(string $method, string $path, array $backtrace): array {
+        $frames = function_exists('riseup_backtrace_to_frames') ? riseup_backtrace_to_frames($backtrace) : array();
+
+        return array(
+            'BackendMessage'             => "Route not found: {$method} /{$path}",
+            'DelegatedServiceErrorStack' => $this->formatBacktraceLines($backtrace),
+            'Backend'                    => $this->formatFramesSummary($frames),
+            'Frontend'                   => array(),
+        );
+    }
+
+    /**
+     * Format backtrace into human-readable trace lines.
+     *
+     * @param array $backtrace Debug backtrace.
+     * @return array Formatted trace lines.
+     */
+    private function formatBacktraceLines(array $backtrace): array {
+        $lines = array();
+        foreach ($backtrace as $i => $frame) {
+            $file  = isset($frame['file']) ? basename($frame['file']) : '[internal]';
+            $line  = isset($frame['line']) ? $frame['line'] : '?';
+            $func  = isset($frame['function']) ? $frame['function'] : '';
+            $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
+            $lines[] = "#{$i} {$file}({$line}): {$class}{$func}()";
+        }
+        return $lines;
+    }
+
+    /**
+     * Format structured frames into summary strings.
+     *
+     * @param array $frames Structured frame objects.
+     * @return array Summary strings.
+     */
+    private function formatFramesSummary(array $frames): array {
+        return array_map(function($f) {
+            $file = isset($f['fileBase']) ? $f['fileBase'] : '';
+            $line = isset($f['line']) ? $f['line'] : 0;
+            $fn   = isset($f['function']) ? $f['function'] : '';
+            $cls  = isset($f['class']) ? $f['class'] . '::' : '';
+            return "{$file}:{$line} {$cls}{$fn}";
+        }, $frames);
     }
 
     /**
@@ -1460,100 +1484,123 @@ class RiseupAsia {
     public function handle_status($request) {
         $this->file_logger->info('Status endpoint called');
 
-        // Collect all registered REST routes for our namespace
-        $registered_routes = array();
-        $rest_server = rest_get_server();
-        $all_routes = $rest_server->get_routes();
-        $ns_prefix = '/' . API_FULL_NAMESPACE;
-
-        foreach ($all_routes as $route => $handlers) {
-            if (strpos($route, $ns_prefix) === 0) {
-                $methods = array();
-                foreach ($handlers as $handler) {
-                    if (isset($handler['methods'])) {
-                        if (is_array($handler['methods'])) {
-                            $methods = array_merge($methods, array_keys($handler['methods']));
-                        } elseif (is_string($handler['methods'])) {
-                            $methods[] = $handler['methods'];
-                        }
-                    }
-                }
-                $registered_routes[] = array(
-                    'route'   => $route,
-                    'methods' => array_values(array_unique($methods)),
-                );
-            }
-        }
-
-        // Load endpoints.json reference
-        $endpoints_ref = null;
-        $endpoints_file = plugin_dir_path(__FILE__) . 'data/endpoints.json';
-        if (file_exists($endpoints_file)) {
-            $endpoints_content = @file_get_contents($endpoints_file);
-            if ($endpoints_content !== false) {
-                $endpoints_ref = json_decode($endpoints_content, true);
-            }
-        }
-
-        // =====================================================================
-        // VERSION DETECTION — Read from the actual plugin file on disk to
-        // avoid stale PLUGIN_VERSION constant after self-updates. OPcache
-        // may cache the old constants.php bytecode across requests.
-        // =====================================================================
-        $live_version = PLUGIN_VERSION; // default fallback
-        $main_plugin_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
-        clearstatcache(true, $main_plugin_file);
-        if (file_exists($main_plugin_file)) {
-            if (function_exists('opcache_invalidate')) {
-                opcache_invalidate($main_plugin_file, true);
-                $constants_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/includes/constants.php';
-                if (file_exists($constants_file)) {
-                    opcache_invalidate($constants_file, true);
-                }
-            }
-            $header_content = file_get_contents($main_plugin_file, false, null, 0, 8192);
-            if ($header_content !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $header_content, $ver_matches)) {
-                $live_version = $ver_matches[1];
-            }
-        }
-
-        // Gather additional diagnostic details
+        $live_version = $this->detectLiveVersion();
         $db_available = $this->db !== null;
-        $site_url = get_site_url();
-        $plugin_file = plugin_basename(__FILE__);
-        $active_plugins = get_option('active_plugins', array());
-        $is_active = in_array($plugin_file, $active_plugins, true);
 
         return RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . API_FULL_NAMESPACE . ENDPOINT_STATUS)
-            ->setSingleResult(array(
-                'Plugin'           => PLUGIN_NAME,
-                'Version'          => $live_version,
-                'Slug'             => PLUGIN_SLUG,
-                'Api'              => API_FULL_NAMESPACE,
-                'SiteUrl'          => $site_url,
-                'Wp'               => get_bloginfo('version'),
-                'Php'              => PHP_VERSION,
-                'IsActive'         => $is_active,
-                'DbAvailable'      => $db_available,
-                'ServerTime'       => gmdate('c'),
-                'Timezone'         => wp_timezone_string(),
-                'Features'         => array(
-                    'PluginUpload'   => true,
-                    'PluginManage'   => true,
-                    'FileOperations' => true,
-                    'DeltaSync'      => true,
-                    'PostPublish'    => true,
-                    'CategoryManage' => true,
-                    'TransactionLog' => $db_available,
-                    'ExportSelf'     => true,
-                    'Snapshots'      => $db_available,
-                    'Agents'         => $db_available,
-                ),
-                'RegisteredRoutes' => $registered_routes,
-                'EndpointsRef'     => $endpoints_ref,
-            ))
+            ->setSingleResult($this->buildStatusPayload($live_version, $db_available))
             ->toResponse();
+    }
+
+    /**
+     * Detect the live plugin version from the file header on disk.
+     *
+     * Bypasses OPcache to read the actual version after self-updates.
+     *
+     * @return string Live version string.
+     */
+    private function detectLiveVersion(): string {
+        $main_plugin_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
+        clearstatcache(true, $main_plugin_file);
+
+        if (!file_exists($main_plugin_file)) {
+            return PLUGIN_VERSION;
+        }
+
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($main_plugin_file, true);
+            $constants_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/includes/constants.php';
+            if (file_exists($constants_file)) {
+                opcache_invalidate($constants_file, true);
+            }
+        }
+
+        $header = file_get_contents($main_plugin_file, false, null, 0, 8192);
+        if ($header !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $header, $m)) {
+            return $m[1];
+        }
+
+        return PLUGIN_VERSION;
+    }
+
+    /**
+     * Collect all registered REST routes for the plugin namespace.
+     *
+     * @return array Route entries with route path and methods.
+     */
+    private function collectRegisteredRoutes(): array {
+        $routes = array();
+        $ns_prefix = '/' . API_FULL_NAMESPACE;
+
+        foreach (rest_get_server()->get_routes() as $route => $handlers) {
+            if (strpos($route, $ns_prefix) !== 0) {
+                continue;
+            }
+            $methods = array();
+            foreach ($handlers as $handler) {
+                if (!isset($handler['methods'])) {
+                    continue;
+                }
+                $methods = array_merge($methods, is_array($handler['methods'])
+                    ? array_keys($handler['methods'])
+                    : array($handler['methods']));
+            }
+            $routes[] = array('route' => $route, 'methods' => array_values(array_unique($methods)));
+        }
+
+        return $routes;
+    }
+
+    /**
+     * Load the endpoints.json reference file.
+     *
+     * @return array|null Decoded endpoints reference or null.
+     */
+    private function loadEndpointsReference(): ?array {
+        $path = plugin_dir_path(__FILE__) . 'data/endpoints.json';
+        if (!file_exists($path)) {
+            return null;
+        }
+        $content = @file_get_contents($path);
+        return ($content !== false) ? json_decode($content, true) : null;
+    }
+
+    /**
+     * Build the full status payload array.
+     *
+     * @param string $version     Live plugin version.
+     * @param bool   $dbAvailable Whether the database is available.
+     * @return array Status payload.
+     */
+    private function buildStatusPayload(string $version, bool $dbAvailable): array {
+        return array(
+            'Plugin'           => PLUGIN_NAME,
+            'Version'          => $version,
+            'Slug'             => PLUGIN_SLUG,
+            'Api'              => API_FULL_NAMESPACE,
+            'SiteUrl'          => get_site_url(),
+            'Wp'               => get_bloginfo('version'),
+            'Php'              => PHP_VERSION,
+            'IsActive'         => in_array(plugin_basename(__FILE__), get_option('active_plugins', array()), true),
+            'DbAvailable'      => $dbAvailable,
+            'ServerTime'       => gmdate('c'),
+            'Timezone'         => wp_timezone_string(),
+            'Features'         => array(
+                'PluginUpload'   => true,
+                'PluginManage'   => true,
+                'FileOperations' => true,
+                'DeltaSync'      => true,
+                'PostPublish'    => true,
+                'CategoryManage' => true,
+                'TransactionLog' => $dbAvailable,
+                'ExportSelf'     => true,
+                'Snapshots'      => $dbAvailable,
+                'Agents'         => $dbAvailable,
+            ),
+            'RegisteredRoutes' => $this->collectRegisteredRoutes(),
+            'EndpointsRef'     => $this->loadEndpointsReference(),
+        );
     }
 
     /**
@@ -2457,130 +2504,202 @@ class RiseupAsia {
                 return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
             }
 
-            $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-            $results = array();
-            $files_updated = 0;
-            $files_deleted = 0;
-            $files_ignored = 0;
-            $ignored_files = array();
-
-            foreach ($files as $file) {
-                $path = isset($file['path']) ? $file['path'] : '';
-                $action = isset($file['action']) ? $file['action'] : '';
-                $content = isset($file['content']) ? $file['content'] : '';
-
-                if (empty($path) || empty($action)) {
-                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
-                    continue;
-                }
-
-                // Check ignore patterns
-                if ($ignore && $ignore->is_ignored($path)) {
-                    $files_ignored++;
-                    $ignored_files[] = $path;
-                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => MSG_FILE_IGNORED);
-                    continue;
-                }
-
-                $full_path = $plugin_dir . '/' . $path;
-
-                // Security: prevent path traversal
-                $real_plugin_dir = realpath($plugin_dir);
-                $resolved = realpath(dirname($full_path));
-                if ($resolved === false) {
-                    // Directory doesn't exist yet for new files
-                    $resolved = $plugin_dir;
-                }
-                if (strpos($resolved, $real_plugin_dir) !== 0 && $action !== SYNC_ACTION_DELETE) {
-                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Path traversal detected');
-                    continue;
-                }
-
-                if ($action === SYNC_ACTION_REPLACE) {
-                    // Decode base64 content and write file
-                    $decoded = base64_decode($content, true);
-                    if ($decoded === false) {
-                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Invalid base64 content');
-                        continue;
-                    }
-                    $dir = dirname($full_path);
-                    if (RiseupBooleanHelpers::is_dir_missing($dir)) {
-                        RiseupPathUtils::ensureDir($dir);
-                    }
-                    if (file_put_contents($full_path, $decoded) !== false) {
-                        $files_updated++;
-                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'success');
-                    } else {
-                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Failed to write file');
-                    }
-
-                } elseif ($action === SYNC_ACTION_DELETE) {
-                    // Delete the file from remote
-                    if (file_exists($full_path)) {
-                        // Log deletion to audit trail
-                        $this->file_logger->info('Sync delete', array('slug' => $slug, 'path' => $path));
-                        if ($this->db) {
-                            $this->db->log_transaction(
-                                ACTION_SYNC_DELETE,
-                                $slug,
-                                STATUS_SUCCESS,
-                                'Deleted via sync: ' . $path,
-                                null,
-                                null,
-                                TRIGGERED_BY_API
-                            );
-                        }
-                        if (unlink($full_path)) {
-                            $files_deleted++;
-                            $results[] = array('path' => $path, 'action' => $action, 'status' => 'success');
-                            // Clean up empty parent directories
-                            $parent = dirname($full_path);
-                            while ($parent !== $plugin_dir && is_dir($parent) && count(scandir($parent)) <= 2) {
-                                rmdir($parent);
-                                $parent = dirname($parent);
-                            }
-                        } else {
-                            $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Failed to delete file');
-                        }
-                    } else {
-                        // File already doesn't exist — treat as success
-                        $files_deleted++;
-                        $results[] = array('path' => $path, 'action' => $action, 'status' => 'success', 'reason' => 'Already absent');
-                    }
-                } else {
-                    $results[] = array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Unknown action: ' . $action);
-                }
-            }
-
-            // Log overall sync operation
-            if ($this->db) {
-                $this->db->log_transaction(
-                    ACTION_SYNC,
-                    $slug,
-                    STATUS_SUCCESS,
-                    sprintf('Sync: %d updated, %d deleted, %d ignored', $files_updated, $files_deleted, $files_ignored),
-                    null,
-                    null,
-                    TRIGGERED_BY_API
-                );
-            }
-
-            // Invalidate file cache after sync
-            $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
-            $fileCache->invalidate($slug);
-
-            return new WP_REST_Response(array(
-                'success'       => true,
-                'files_updated' => $files_updated,
-                'files_deleted' => $files_deleted,
-                'files_ignored' => $files_ignored,
-                'ignored_files' => $ignored_files,
-                'results'       => $results,
-            ), HTTP_OK);
+            $result = $this->executeSyncPush($slug, $files, $plugin_dir);
+            return new WP_REST_Response($result, HTTP_OK);
         } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Sync push error');
             return $this->error_response('Sync push failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /**
+     * Execute the sync push operation across all files.
+     *
+     * @param string $slug       Plugin slug.
+     * @param array  $files      Files to sync.
+     * @param string $plugin_dir Plugin directory path.
+     * @return array Sync result payload.
+     */
+    private function executeSyncPush(string $slug, array $files, string $plugin_dir): array {
+        $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $counters = array('files_updated' => 0, 'files_deleted' => 0, 'files_ignored' => 0);
+        $results = array();
+        $ignored_files = array();
+
+        foreach ($files as $file) {
+            $entry = $this->processSyncFile($file, $plugin_dir, $slug, $ignore);
+            $results[] = $entry;
+            $this->updateSyncCounters($entry, $counters, $ignored_files);
+        }
+
+        $this->logSyncCompletion($slug, $counters);
+        RiseupFileCache::getInstance($this->file_logger, $this->db)->invalidate($slug);
+
+        return array('success' => true) + $counters + array('ignored_files' => $ignored_files, 'results' => $results);
+    }
+
+    /**
+     * Process a single file in the sync push operation.
+     *
+     * @param array  $file       File entry with path, action, content.
+     * @param string $plugin_dir Plugin directory path.
+     * @param string $slug       Plugin slug.
+     * @param mixed  $ignore     Ignore pattern matcher.
+     * @return array Result entry for this file.
+     */
+    private function processSyncFile(array $file, string $plugin_dir, string $slug, $ignore): array {
+        $path   = isset($file['path']) ? $file['path'] : '';
+        $action = isset($file['action']) ? $file['action'] : '';
+
+        if (empty($path) || empty($action)) {
+            return array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
+        }
+        if ($ignore && $ignore->is_ignored($path)) {
+            return array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => MSG_FILE_IGNORED);
+        }
+
+        $full_path = $plugin_dir . '/' . $path;
+        if ($this->isSyncPathTraversal($full_path, $plugin_dir, $action)) {
+            return array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Path traversal detected');
+        }
+
+        if ($action === SYNC_ACTION_REPLACE) {
+            return $this->syncReplaceFile($path, $action, isset($file['content']) ? $file['content'] : '', $full_path);
+        }
+        if ($action === SYNC_ACTION_DELETE) {
+            return $this->syncDeleteFile($path, $action, $full_path, $plugin_dir, $slug);
+        }
+
+        return array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Unknown action: ' . $action);
+    }
+
+    /**
+     * Check for path traversal in sync operations.
+     *
+     * @param string $full_path  Resolved file path.
+     * @param string $plugin_dir Plugin directory root.
+     * @param string $action     Sync action type.
+     * @return bool True if path traversal detected.
+     */
+    private function isSyncPathTraversal(string $full_path, string $plugin_dir, string $action): bool {
+        $real_plugin_dir = realpath($plugin_dir);
+        $resolved = realpath(dirname($full_path));
+        if ($resolved === false) {
+            $resolved = $plugin_dir;
+        }
+        return (strpos($resolved, $real_plugin_dir) !== 0 && $action !== SYNC_ACTION_DELETE);
+    }
+
+    /**
+     * Replace (create/update) a file during sync.
+     *
+     * @param string $path      Relative file path.
+     * @param string $action    Action type.
+     * @param string $content   Base64-encoded content.
+     * @param string $full_path Absolute file path.
+     * @return array Result entry.
+     */
+    private function syncReplaceFile(string $path, string $action, string $content, string $full_path): array {
+        $decoded = base64_decode($content, true);
+        if ($decoded === false) {
+            return array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Invalid base64 content');
+        }
+
+        $dir = dirname($full_path);
+        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
+            RiseupPathUtils::ensureDir($dir);
+        }
+
+        $written = file_put_contents($full_path, $decoded) !== false;
+        $status = $written ? 'success' : 'error';
+        $result = array('path' => $path, 'action' => $action, 'status' => $status);
+        if (!$written) {
+            $result['reason'] = 'Failed to write file';
+        }
+        return $result;
+    }
+
+    /**
+     * Delete a file during sync with audit trail.
+     *
+     * @param string $path       Relative file path.
+     * @param string $action     Action type.
+     * @param string $full_path  Absolute file path.
+     * @param string $plugin_dir Plugin directory root.
+     * @param string $slug       Plugin slug.
+     * @return array Result entry.
+     */
+    private function syncDeleteFile(string $path, string $action, string $full_path, string $plugin_dir, string $slug): array {
+        if (!file_exists($full_path)) {
+            return array('path' => $path, 'action' => $action, 'status' => 'success', 'reason' => 'Already absent');
+        }
+
+        $this->file_logger->info('Sync delete', array('slug' => $slug, 'path' => $path));
+        if ($this->db) {
+            $this->db->log_transaction(ACTION_SYNC_DELETE, $slug, STATUS_SUCCESS, 'Deleted via sync: ' . $path, null, null, TRIGGERED_BY_API);
+        }
+
+        if (!unlink($full_path)) {
+            return array('path' => $path, 'action' => $action, 'status' => 'error', 'reason' => 'Failed to delete file');
+        }
+
+        $this->cleanEmptyParentDirs($full_path, $plugin_dir);
+        return array('path' => $path, 'action' => $action, 'status' => 'success');
+    }
+
+    /**
+     * Remove empty parent directories up to the plugin root.
+     *
+     * @param string $filepath Deleted file path.
+     * @param string $stop_dir Directory to stop at.
+     */
+    private function cleanEmptyParentDirs(string $filepath, string $stop_dir) {
+        $parent = dirname($filepath);
+        while ($parent !== $stop_dir && is_dir($parent) && count(scandir($parent)) <= 2) {
+            rmdir($parent);
+            $parent = dirname($parent);
+        }
+    }
+
+    /**
+     * Update sync counters based on a file result entry.
+     *
+     * @param array $entry        File result entry.
+     * @param array &$counters    Counters reference.
+     * @param array &$ignored     Ignored files list reference.
+     */
+    private function updateSyncCounters(array $entry, array &$counters, array &$ignored) {
+        if ($entry['status'] === 'ignored') {
+            $counters['files_ignored']++;
+            $ignored[] = $entry['path'];
+            return;
+        }
+        if ($entry['status'] !== 'success') {
+            return;
+        }
+        if ($entry['action'] === SYNC_ACTION_REPLACE) {
+            $counters['files_updated']++;
+        }
+        if ($entry['action'] === SYNC_ACTION_DELETE) {
+            $counters['files_deleted']++;
+        }
+    }
+
+    /**
+     * Log the completion of a sync push operation.
+     *
+     * @param string $slug     Plugin slug.
+     * @param array  $counters Sync counters.
+     */
+    private function logSyncCompletion(string $slug, array $counters) {
+        if (!$this->db) {
+            return;
+        }
+        $this->db->log_transaction(
+            ACTION_SYNC, $slug, STATUS_SUCCESS,
+            sprintf('Sync: %d updated, %d deleted, %d ignored', $counters['files_updated'], $counters['files_deleted'], $counters['files_ignored']),
+            null, null, TRIGGERED_BY_API
+        );
     }
 
     /**
@@ -3351,54 +3470,17 @@ class RiseupAsia {
         return $this->safe_execute(function() use ($request) {
             $this->file_logger->info('Error logs endpoint called');
 
-            // Get log retrieval settings
-            $settings      = RiseupAdmin::get_settings();
-            $log_settings  = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
-            $include_error      = isset($log_settings['include_error_log']) ? (bool) $log_settings['include_error_log'] : true;
-            $include_full       = isset($log_settings['include_full_log']) ? (bool) $log_settings['include_full_log'] : false;
-            $include_stacktrace = isset($log_settings['include_stacktrace']) ? (bool) $log_settings['include_stacktrace'] : true;
-            $max_lines          = isset($log_settings['max_lines']) ? (int) $log_settings['max_lines'] : 500;
+            $settings = $this->resolveLogSettings($request);
+            $result = array('version' => PLUGIN_VERSION, 'settings' => $settings);
 
-            // Allow query param overrides (bounded by settings)
-            if ($request->get_param('include_error_log') !== null) {
-                $include_error = (bool) $request->get_param('include_error_log');
+            if ($settings['include_error_log']) {
+                $result['error_log'] = $this->read_log_tail($this->file_logger->get_error_file(), $settings['max_lines']);
             }
-            if ($request->get_param('include_full_log') !== null) {
-                $include_full = (bool) $request->get_param('include_full_log');
+            if ($settings['include_full_log']) {
+                $result['full_log'] = $this->read_log_tail($this->file_logger->get_log_file(), $settings['max_lines']);
             }
-            if ($request->get_param('include_stacktrace') !== null) {
-                $include_stacktrace = (bool) $request->get_param('include_stacktrace');
-            }
-            if ($request->get_param('max_lines') !== null) {
-                $max_lines = max(10, min(5000, (int) $request->get_param('max_lines')));
-            }
-
-            $result = array(
-                'version'  => PLUGIN_VERSION,
-                'settings' => array(
-                    'include_error_log'  => $include_error,
-                    'include_full_log'   => $include_full,
-                    'include_stacktrace' => $include_stacktrace,
-                    'max_lines'          => $max_lines,
-                ),
-            );
-
-            // Read error log
-            if ($include_error) {
-                $error_path = $this->file_logger->get_error_file();
-                $result['error_log'] = $this->read_log_tail($error_path, $max_lines);
-            }
-
-            // Read full log
-            if ($include_full) {
-                $log_path = $this->file_logger->get_log_file();
-                $result['full_log'] = $this->read_log_tail($log_path, $max_lines);
-            }
-
-            // Read stacktrace log
-            if ($include_stacktrace) {
-                $stacktrace_path = $this->file_logger->get_stacktrace_file();
-                $result['stacktrace_log'] = $this->read_log_tail($stacktrace_path, $max_lines);
+            if ($settings['include_stacktrace']) {
+                $result['stacktrace_log'] = $this->read_log_tail($this->file_logger->get_stacktrace_file(), $settings['max_lines']);
             }
 
             return RiseupEnvelopeBuilder::success()
@@ -3406,6 +3488,35 @@ class RiseupAsia {
                 ->setSingleResult($result)
                 ->toResponse();
         }, 'error_logs');
+    }
+
+    /**
+     * Resolve log retrieval settings from admin defaults and query param overrides.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return array Resolved settings.
+     */
+    private function resolveLogSettings($request): array {
+        $settings     = RiseupAdmin::get_settings();
+        $log_settings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
+
+        $resolved = array(
+            'include_error_log'  => isset($log_settings['include_error_log']) ? (bool) $log_settings['include_error_log'] : true,
+            'include_full_log'   => isset($log_settings['include_full_log']) ? (bool) $log_settings['include_full_log'] : false,
+            'include_stacktrace' => isset($log_settings['include_stacktrace']) ? (bool) $log_settings['include_stacktrace'] : true,
+            'max_lines'          => isset($log_settings['max_lines']) ? (int) $log_settings['max_lines'] : 500,
+        );
+
+        foreach (array('include_error_log', 'include_full_log', 'include_stacktrace') as $key) {
+            if ($request->get_param($key) !== null) {
+                $resolved[$key] = (bool) $request->get_param($key);
+            }
+        }
+        if ($request->get_param('max_lines') !== null) {
+            $resolved['max_lines'] = max(10, min(5000, (int) $request->get_param('max_lines')));
+        }
+
+        return $resolved;
     }
 
     /**
@@ -3429,121 +3540,134 @@ class RiseupAsia {
         return $this->safe_execute(function() use ($request) {
             $this->file_logger->info('Error sessions endpoint called');
 
-            $db = RiseupDatabase::get_instance();
-            $pdo = $db->get_pdo();
-
+            $pdo = RiseupDatabase::get_instance()->get_pdo();
             if (!$pdo) {
-                return $this->error_response(
-                    'Database not available (PDO/pdo_sqlite extension may not be installed)',
-                    HTTP_SERVER_ERROR
-                );
+                return $this->error_response('Database not available (PDO/pdo_sqlite extension may not be installed)', HTTP_SERVER_ERROR);
             }
-
-            // Check if error_sessions table exists
-            $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
-            if (!$check->fetchColumn()) {
+            if (!$this->isTableExists($pdo, 'error_sessions')) {
                 return RiseupEnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
-                    ->autoDetectRequestedAt()
-                    ->setResults(array())
-                    ->toResponse();
+                    ->autoDetectRequestedAt()->setResults(array())->toResponse();
             }
 
-            // Parse query params
-            $level    = sanitize_text_field($request->get_param('level') ?: '');
-            $search   = sanitize_text_field($request->get_param('search') ?: '');
-            $since_id = (int) ($request->get_param('since_id') ?: 0);
-            $limit    = max(1, min(1000, (int) ($request->get_param('limit') ?: 100)));
-            $offset   = max(0, (int) ($request->get_param('offset') ?: 0));
-
-            // Build query
-            $where  = array();
-            $params = array();
-
-            if (!empty($level)) {
-                $where[]  = 'level = ?';
-                $params[] = strtoupper($level);
-            }
-            if (!empty($search)) {
-                $where[]  = 'message LIKE ?';
-                $params[] = '%' . $search . '%';
-            }
-            if ($since_id > 0) {
-                $where[]  = 'id > ?';
-                $params[] = $since_id;
-            }
-
-            $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-
-            // Count total
-            $count_stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$where_sql}");
-            $count_stmt->execute($params);
-            $total = (int) $count_stmt->fetchColumn();
-
-            // Fetch entries
-            $query_sql = "SELECT * FROM error_sessions {$where_sql} ORDER BY id DESC LIMIT ? OFFSET ?";
-            $stmt = $pdo->prepare($query_sql);
-            $query_params = array_merge($params, array($limit, $offset));
-            $stmt->execute($query_params);
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Enrich entries: parse context_json back to object
-            $entries = array();
-            foreach ($rows as $row) {
-                $entry = array(
-                    'id'          => (int) $row['id'],
-                    'level'       => $row['level'],
-                    'message'     => $row['message'],
-                    'file'        => $row['file'],
-                    'fileBase'    => $row['file'] ? basename($row['file']) : null,
-                    'line'        => $row['line'] ? (int) $row['line'] : null,
-                    'stackTrace'  => $row['stack_trace'],
-                    'context'     => null,
-                    'created_at'  => $row['created_at'],
-                );
-
-                // Parse context JSON
-                if (!empty($row['context_json'])) {
-                    $decoded = json_decode($row['context_json'], true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        $entry['context'] = $decoded;
-                    } else {
-                        $entry['context'] = $row['context_json'];
-                    }
-                }
-
-                // Generate stackTraceFrames from stack trace string if available
-                if (!empty($row['stack_trace'])) {
-                    $entry['stackTraceFrames'] = $this->parse_stack_trace_string($row['stack_trace']);
-                }
-
-                $entries[] = $entry;
-            }
-
-            // Flash state
-            $last_seen_id = 0;
-            $has_unseen   = false;
-            try {
-                $fs = $pdo->query("SELECT key, value FROM flash_state");
-                if ($fs) {
-                    while ($frow = $fs->fetch(PDO::FETCH_ASSOC)) {
-                        if ($frow['key'] === 'last_seen_error_id') {
-                            $last_seen_id = (int) $frow['value'];
-                        }
-                        if ($frow['key'] === 'has_unseen_errors') {
-                            $has_unseen = ($frow['value'] === '1');
-                        }
-                    }
-                }
-            } catch (Throwable $e) {
-                // flash_state table may not exist
-            }
+            $query   = $this->buildErrorSessionQuery($request);
+            $total   = $this->countErrorSessions($pdo, $query);
+            $rows    = $this->fetchErrorSessions($pdo, $query);
+            $entries = $this->enrichErrorEntries($rows);
 
             return RiseupEnvelopeBuilder::success()
                 ->autoDetectRequestedAt()
                 ->setResults($entries)
-                ->setPagination($total, $limit, $limit > 0 ? (int) floor($offset / $limit) + 1 : 1)
+                ->setPagination($total, $query['limit'], $query['limit'] > 0 ? (int) floor($query['offset'] / $query['limit']) + 1 : 1)
                 ->toResponse();
         }, 'error_sessions');
+    }
+
+    /**
+     * Check if a table exists in the SQLite database.
+     *
+     * @param PDO    $pdo   Database connection.
+     * @param string $table Table name.
+     * @return bool True if table exists.
+     */
+    private function isTableExists(PDO $pdo, string $table): bool {
+        $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");
+        return (bool) $check->fetchColumn();
+    }
+
+    /**
+     * Build query parameters for error sessions listing.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return array Query components: where_sql, params, limit, offset.
+     */
+    private function buildErrorSessionQuery($request): array {
+        $level    = sanitize_text_field($request->get_param('level') ?: '');
+        $search   = sanitize_text_field($request->get_param('search') ?: '');
+        $since_id = (int) ($request->get_param('since_id') ?: 0);
+        $limit    = max(1, min(1000, (int) ($request->get_param('limit') ?: 100)));
+        $offset   = max(0, (int) ($request->get_param('offset') ?: 0));
+
+        $where  = array();
+        $params = array();
+        if (!empty($level))  { $where[] = 'level = ?';      $params[] = strtoupper($level); }
+        if (!empty($search)) { $where[] = 'message LIKE ?'; $params[] = '%' . $search . '%'; }
+        if ($since_id > 0)   { $where[] = 'id > ?';         $params[] = $since_id; }
+
+        return array(
+            'where_sql' => !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '',
+            'params'    => $params,
+            'limit'     => $limit,
+            'offset'    => $offset,
+        );
+    }
+
+    /**
+     * Count total error sessions matching the query.
+     *
+     * @param PDO   $pdo   Database connection.
+     * @param array $query Query components.
+     * @return int Total count.
+     */
+    private function countErrorSessions(PDO $pdo, array $query): int {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$query['where_sql']}");
+        $stmt->execute($query['params']);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Fetch error sessions matching the query.
+     *
+     * @param PDO   $pdo   Database connection.
+     * @param array $query Query components.
+     * @return array Raw rows.
+     */
+    private function fetchErrorSessions(PDO $pdo, array $query): array {
+        $sql = "SELECT * FROM error_sessions {$query['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(array_merge($query['params'], array($query['limit'], $query['offset'])));
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Enrich raw error session rows with parsed context and stack trace frames.
+     *
+     * @param array $rows Raw database rows.
+     * @return array Enriched entries.
+     */
+    private function enrichErrorEntries(array $rows): array {
+        $entries = array();
+        foreach ($rows as $row) {
+            $entry = array(
+                'id'         => (int) $row['id'],
+                'level'      => $row['level'],
+                'message'    => $row['message'],
+                'file'       => $row['file'],
+                'fileBase'   => $row['file'] ? basename($row['file']) : null,
+                'line'       => $row['line'] ? (int) $row['line'] : null,
+                'stackTrace' => $row['stack_trace'],
+                'context'    => $this->parseContextJson($row['context_json'] ?? ''),
+                'created_at' => $row['created_at'],
+            );
+            if (!empty($row['stack_trace'])) {
+                $entry['stackTraceFrames'] = $this->parse_stack_trace_string($row['stack_trace']);
+            }
+            $entries[] = $entry;
+        }
+        return $entries;
+    }
+
+    /**
+     * Parse a JSON context string safely.
+     *
+     * @param string $json JSON string.
+     * @return mixed Decoded value, raw string on failure, or null if empty.
+     */
+    private function parseContextJson(string $json) {
+        if (empty($json)) {
+            return null;
+        }
+        $decoded = json_decode($json, true);
+        return (json_last_error() === JSON_ERROR_NONE) ? $decoded : $json;
     }
 
     /**
@@ -4242,64 +4366,72 @@ class RiseupAsia {
             $body = $request->get_json_params();
             $scope = isset($body['scope']) ? sanitize_key($body['scope']) : 'all';
 
-            // Log activity: snapshot creation initiated
-            $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_CREATE,
-                'snapshot',
-                STATUS_SUCCESS,
-                array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated')
-            );
+            $this->logger->log_plugin_action(ACTION_SNAPSHOT_CREATE, 'snapshot', STATUS_SUCCESS,
+                array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
-            $settings = $manager->getSettings();
+            $isPerTable = (($manager->getSettings()['mode'] ?? 'per_table') === 'per_table');
 
-            // Route to full orchestrator when mode is per_table
-            if (($settings['mode'] ?? 'per_table') === 'per_table') {
-                $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
-                $result = $orchestrator->executeFullBackup(array(
-                    'title'            => $body['title'] ?? null,
-                    'scope'            => $scope,
-                    'include_plugins'  => $body['include_plugins'] ?? null,
-                    'plugin_selection' => $body['plugin_selection'] ?? null,
-                    'compression'      => $body['compression'] ?? null,
-                ));
+            $result = $isPerTable
+                ? $this->executePerTableSnapshot($body, $scope, $manager)
+                : $this->executeLegacySnapshot($body, $scope, $manager);
 
-                // Log result
-                $this->logger->log_plugin_action(
-                    ACTION_SNAPSHOT_CREATE,
-                    'snapshot',
-                    $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
-                    array('scope' => $scope, 'mode' => 'per_table', 'phase' => 'complete'),
-                    $result['success'] ? null : ($result['error'] ?? 'Unknown error')
-                );
-
-                $status_code = $result['success'] ? 201 : 500;
-                return new WP_REST_Response($result, $status_code);
-            }
-
-            // Legacy single-db mode via provider
-            $options = array(
-                'scope'   => $scope,
-                'trigger' => SNAPSHOT_TRIGGER_API,
-                'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
-            );
-
-            $this->file_logger->info('Creating snapshot via API (legacy mode)', array('scope' => $options['scope']));
-
-            $result = $manager->createSnapshot($options);
-
-            // Log result
-            $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_CREATE,
-                'snapshot',
-                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
-                array('scope' => $scope, 'mode' => 'legacy', 'phase' => 'complete'),
-                $result['success'] ? null : ($result['error'] ?? 'Unknown error')
-            );
-
-            $status_code = $result['success'] ? 201 : 500;
-            return new WP_REST_Response($result, $status_code);
+            $this->logSnapshotResult(ACTION_SNAPSHOT_CREATE, $scope, $isPerTable ? 'per_table' : 'legacy', $result);
+            return new WP_REST_Response($result, $result['success'] ? 201 : 500);
         }, 'create_snapshot');
+    }
+
+    /**
+     * Execute a per-table snapshot via the orchestrator.
+     *
+     * @param array  $body    Request body.
+     * @param string $scope   Snapshot scope.
+     * @param object $manager Snapshot manager instance.
+     * @return array Result array.
+     */
+    private function executePerTableSnapshot(array $body, string $scope, $manager): array {
+        $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
+        return $orchestrator->executeFullBackup(array(
+            'title'            => $body['title'] ?? null,
+            'scope'            => $scope,
+            'include_plugins'  => $body['include_plugins'] ?? null,
+            'plugin_selection' => $body['plugin_selection'] ?? null,
+            'compression'      => $body['compression'] ?? null,
+        ));
+    }
+
+    /**
+     * Execute a legacy single-db snapshot via the manager.
+     *
+     * @param array  $body    Request body.
+     * @param string $scope   Snapshot scope.
+     * @param object $manager Snapshot manager instance.
+     * @return array Result array.
+     */
+    private function executeLegacySnapshot(array $body, string $scope, $manager): array {
+        $this->file_logger->info('Creating snapshot via API (legacy mode)', array('scope' => $scope));
+        return $manager->createSnapshot(array(
+            'scope'   => $scope,
+            'trigger' => SNAPSHOT_TRIGGER_API,
+            'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
+        ));
+    }
+
+    /**
+     * Log a snapshot operation result to the audit trail.
+     *
+     * @param string $action Action constant.
+     * @param string $scope  Snapshot scope.
+     * @param string $mode   Execution mode (per_table, legacy, etc.).
+     * @param array  $result Operation result.
+     */
+    private function logSnapshotResult(string $action, string $scope, string $mode, array $result) {
+        $this->logger->log_plugin_action(
+            $action, 'snapshot',
+            $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
+            array('scope' => $scope, 'mode' => $mode, 'phase' => 'complete'),
+            $result['success'] ? null : ($result['error'] ?? 'Unknown error')
+        );
     }
 
     /**
@@ -4378,68 +4510,66 @@ class RiseupAsia {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
+            $options = $this->parseRestoreOptions($body);
 
-            $options = array(
-                'confirm'            => !empty($body['confirm']),
-                'create_backup'      => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
-                'require_backup'     => !empty($body['requireBackup']),
-                'mode'               => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
-                'tables'             => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
-                'strict'             => !empty($body['strict']),
-                'apply_incrementals' => isset($body['applyIncrementals']) ? (bool) $body['applyIncrementals'] : true,
-            );
-
-            // Log activity: restore initiated
-            $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_RESTORE,
-                'snapshot',
-                STATUS_SUCCESS,
-                array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated')
-            );
-
+            $this->logger->log_plugin_action(ACTION_SNAPSHOT_RESTORE, 'snapshot', STATUS_SUCCESS,
+                array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated'));
             $this->file_logger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $result = $this->routeRestoreToEngine($id, $options, $manager);
 
-            // Check if this is a per-table snapshot (has a snapshot directory with a-root.db)
-            $snapshot = $manager->getSnapshotById($id);
-            if ($snapshot && $this->isPerTableSnapshot($snapshot)) {
-                // Route through the new per-table Restore Engine
-                $snapshot_dir = $this->resolveSnapshotDir($snapshot);
-                if ($snapshot_dir && file_exists($snapshot_dir . '/a-root.db')) {
-                    $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
-                    $engine = RiseupRestoreEngine::getInstance($this->file_logger, $this->db, $orchestrator);
-                    $result = $engine->execute($snapshot_dir, $options);
+            $mode = $result['_mode'] ?? 'legacy';
+            unset($result['_mode']);
+            $this->logSnapshotResult(ACTION_SNAPSHOT_RESTORE, '', $mode, $result);
 
-                    // Log result
-                    $this->logger->log_plugin_action(
-                        ACTION_SNAPSHOT_RESTORE,
-                        'snapshot',
-                        $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
-                        array('snapshot_id' => $id, 'mode' => 'per_table', 'phase' => 'complete'),
-                        $result['success'] ? null : ($result['error'] ?? 'Restore failed')
-                    );
-
-                    $status_code = $result['success'] ? 200 : 400;
-                    return new WP_REST_Response($result, $status_code);
-                }
-            }
-
-            // Fallback to legacy single-file restore
-            $result = $manager->restoreSnapshot($id, $options);
-
-            // Log result
-            $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_RESTORE,
-                'snapshot',
-                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
-                array('snapshot_id' => $id, 'mode' => 'legacy', 'phase' => 'complete'),
-                $result['success'] ? null : ($result['error'] ?? 'Restore failed')
-            );
-
-            $status_code = $result['success'] ? 200 : 400;
-            return new WP_REST_Response($result, $status_code);
+            return new WP_REST_Response($result, $result['success'] ? 200 : 400);
         }, 'restore_snapshot');
+    }
+
+    /**
+     * Parse restore options from the request body.
+     *
+     * @param array $body Request body.
+     * @return array Parsed restore options.
+     */
+    private function parseRestoreOptions(array $body): array {
+        return array(
+            'confirm'            => !empty($body['confirm']),
+            'create_backup'      => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
+            'require_backup'     => !empty($body['requireBackup']),
+            'mode'               => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
+            'tables'             => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
+            'strict'             => !empty($body['strict']),
+            'apply_incrementals' => isset($body['applyIncrementals']) ? (bool) $body['applyIncrementals'] : true,
+        );
+    }
+
+    /**
+     * Route a restore operation to the appropriate engine.
+     *
+     * @param int    $id      Snapshot ID.
+     * @param array  $options Restore options.
+     * @param object $manager Snapshot manager instance.
+     * @return array Result with _mode metadata.
+     */
+    private function routeRestoreToEngine(int $id, array $options, $manager): array {
+        $snapshot = $manager->getSnapshotById($id);
+
+        if ($snapshot && $this->isPerTableSnapshot($snapshot)) {
+            $dir = $this->resolveSnapshotDir($snapshot);
+            if ($dir && file_exists($dir . '/a-root.db')) {
+                $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
+                $engine = RiseupRestoreEngine::getInstance($this->file_logger, $this->db, $orchestrator);
+                $result = $engine->execute($dir, $options);
+                $result['_mode'] = 'per_table';
+                return $result;
+            }
+        }
+
+        $result = $manager->restoreSnapshot($id, $options);
+        $result['_mode'] = 'legacy';
+        return $result;
     }
 
     /**
@@ -4639,49 +4769,46 @@ class RiseupAsia {
 
         if ($exportId <= 0 || empty($token)) {
             return new WP_REST_Response(array(
-                'success' => false,
-                'error'   => 'Missing id or token parameter',
-                'code'    => ERR_EXPORT_TOKEN_INVALID,
+                'success' => false, 'error' => 'Missing id or token parameter', 'code' => ERR_EXPORT_TOKEN_INVALID,
             ), 400);
         }
 
         require_once dirname(__FILE__) . '/includes/Snapshot/SnapshotExporter.php';
-        $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
-        $export = $exporter->validateDownloadToken($exportId, $token);
+        $export = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db)->validateDownloadToken($exportId, $token);
 
         if (!$export) {
             return new WP_REST_Response(array(
-                'success' => false,
-                'error'   => 'Invalid or expired download token',
-                'code'    => ERR_EXPORT_TOKEN_INVALID,
+                'success' => false, 'error' => 'Invalid or expired download token', 'code' => ERR_EXPORT_TOKEN_INVALID,
             ), 403);
         }
 
+        $this->streamZipFile($exportId, $export);
+    }
+
+    /**
+     * Stream a ZIP file to the client with proper headers.
+     *
+     * @param int   $exportId Export record ID.
+     * @param array $export   Export record with zip_path and zip_filename.
+     */
+    private function streamZipFile(int $exportId, array $export) {
         $filepath = $export['zip_path'];
         $filename = $export['zip_filename'];
         $filesize = filesize($filepath);
 
-        // Log the download
-        $this->logger->log_plugin_action(
-            ACTION_SNAPSHOT_ZIP_DOWNLOAD,
-            'snapshot',
-            STATUS_SUCCESS,
-            array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming')
-        );
+        $this->logger->log_plugin_action(ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_SUCCESS,
+            array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming'));
 
-        // Stream the file
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Content-Length: ' . $filesize);
         header('Cache-Control: no-cache, must-revalidate');
         header('Pragma: no-cache');
 
-        // Flush output buffers
         while (ob_get_level()) {
             ob_end_clean();
         }
 
-        // Stream file to client
         $handle = fopen($filepath, 'rb');
         if ($handle) {
             while (!feof($handle)) {
@@ -4690,11 +4817,10 @@ class RiseupAsia {
             }
             fclose($handle);
         } else {
-            // Fallback
             readfile($filepath);
         }
 
-        exit; // Stop WordPress from processing further
+        exit;
     }
 
     /**
