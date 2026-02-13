@@ -136,17 +136,15 @@ Each sub-method receives `$safe_register` closure as a parameter. Result: `regis
 
 ---
 
-## Phase 10 — `SnapshotScheduler.php`: Cron executors (🟠 ~260 lines combined)
+## Phase 10 — `SnapshotScheduler.php`: Cron executors (🟠 ~260 lines combined) ✅ DONE
 **Functions:**
 - `executeScheduledSnapshot()` — ~49 lines (L340–390)
 - `executeImmediateSnapshot()` — ~59 lines (L400–460)
 - `executeCronRestore()` — ~56 lines (L467–523)
 - `executeCronIncremental()` — ~52 lines (L526–578)
 - `executeCleanup()` — ~44 lines (L581–625)
-**Current:** Each follows identical try-catch + audit-log pattern with slight variations.
-**Fix:** Extract shared `executeCronJob(string $action, callable $work): void` wrapper that handles try-catch + audit trail. Each executor becomes ~10 lines: build args → call shared wrapper.
+**Result:** Extracted shared infrastructure (`executeCronJob`, `logCronResult`, `buildCronResult`, `createOrchestrator`, `invokeBackup`). Each public executor is now a 3-line delegate. Five private `run*()` work methods each ≤15 lines.
 
-**Est. impact:** 1 file, 5 functions reduced → 5 × ~10-line wrappers + 1 × ~20-line shared executor.
 
 ---
 
