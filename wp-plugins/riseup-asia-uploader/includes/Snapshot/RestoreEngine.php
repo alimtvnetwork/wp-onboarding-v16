@@ -74,7 +74,7 @@ class RiseupRestoreEngine {
         $this->logger = $logger;
         $this->db = $db;
         $this->orchestrator = $orchestrator;
-        $this->batchSize = RISEUP_SNAPSHOT_BATCH_SIZE;
+        $this->batchSize = SNAPSHOT_BATCH_SIZE;
     }
 
     /**
@@ -97,7 +97,7 @@ class RiseupRestoreEngine {
             return array(
                 'success' => false,
                 'error'   => 'Restore requires explicit confirmation (confirm=true)',
-                'code'    => RISEUP_ERR_RESTORE_NO_CONFIRM,
+                'code'    => ERR_RESTORE_NO_CONFIRM,
             );
         }
 
@@ -587,13 +587,13 @@ class RiseupRestoreEngine {
 
         try {
             $stmt = $pdo->prepare(
-                "INSERT INTO " . RISEUP_TABLE_TRANSACTIONS .
+                "INSERT INTO " . TABLE_TRANSACTIONS .
                 " (plugin, action, status, details, source, created_at) VALUES (?, ?, ?, ?, ?, ?)"
             );
             $stmt->execute(array(
-                RISEUP_SLUG,
-                RISEUP_ACTION_SNAPSHOT_RESTORE,
-                RISEUP_STATUS_SUCCESS,
+                PLUGIN_SLUG,
+                ACTION_SNAPSHOT_RESTORE,
+                STATUS_SUCCESS,
                 json_encode(array(
                     'directory'       => basename($snapshot_dir),
                     'tables_restored' => $tables_restored,

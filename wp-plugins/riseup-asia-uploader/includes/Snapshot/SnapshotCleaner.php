@@ -262,9 +262,9 @@ class RiseupSnapshotCleaner {
         $cutoff = date('c', strtotime("-{$days} days"));
 
         return $this->db->query_all(
-            'SELECT id, filepath, filename, size, scope, type FROM ' . RISEUP_TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, size, scope, type FROM ' . TABLE_SNAPSHOTS .
             ' WHERE status = ? AND created_at < ? ORDER BY created_at ASC',
-            array(RISEUP_SNAPSHOT_STATUS_COMPLETE, $cutoff)
+            array(SNAPSHOT_STATUS_COMPLETE, $cutoff)
         ) ?: array();
     }
 
@@ -276,8 +276,8 @@ class RiseupSnapshotCleaner {
      */
     private function getSnapshotsBeyondCount($count) {
         $total_result = $this->db->query_single(
-            'SELECT COUNT(*) as cnt FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE status = ?',
-            array(RISEUP_SNAPSHOT_STATUS_COMPLETE)
+            'SELECT COUNT(*) as cnt FROM ' . TABLE_SNAPSHOTS . ' WHERE status = ?',
+            array(SNAPSHOT_STATUS_COMPLETE)
         );
 
         if (!$total_result || $total_result['cnt'] <= $count) {
@@ -287,9 +287,9 @@ class RiseupSnapshotCleaner {
         $to_delete = $total_result['cnt'] - $count;
 
         return $this->db->query_all(
-            'SELECT id, filepath, filename, size, scope, type FROM ' . RISEUP_TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, size, scope, type FROM ' . TABLE_SNAPSHOTS .
             ' WHERE status = ? ORDER BY created_at ASC LIMIT ?',
-            array(RISEUP_SNAPSHOT_STATUS_COMPLETE, $to_delete)
+            array(SNAPSHOT_STATUS_COMPLETE, $to_delete)
         ) ?: array();
     }
 
@@ -352,11 +352,11 @@ class RiseupSnapshotCleaner {
         }
 
         // Delete database record
-        $this->db->delete(RISEUP_TABLE_SNAPSHOTS, array('id' => $snapshot['id']));
+        $this->db->delete(TABLE_SNAPSHOTS, array('id' => $snapshot['id']));
 
         // Delete progress records
         $this->db->execute(
-            'DELETE FROM ' . RISEUP_TABLE_SNAPSHOT_PROGRESS . ' WHERE snapshot_id = ?',
+            'DELETE FROM ' . TABLE_SNAPSHOT_PROGRESS . ' WHERE snapshot_id = ?',
             array($snapshot['id'])
         );
 
@@ -392,15 +392,15 @@ class RiseupSnapshotCleaner {
     private function cascadeDeleteIncrementalRecords($parent_dir) {
         try {
             $incrementals = $this->db->query_all(
-                'SELECT id FROM ' . RISEUP_TABLE_SNAPSHOTS .
+                'SELECT id FROM ' . TABLE_SNAPSHOTS .
                 " WHERE scope = 'incremental' AND filepath LIKE ?",
                 array($parent_dir . '/incremental/%')
             ) ?: array();
 
             foreach ($incrementals as $inc) {
-                $this->db->delete(RISEUP_TABLE_SNAPSHOTS, array('id' => $inc['id']));
+                $this->db->delete(TABLE_SNAPSHOTS, array('id' => $inc['id']));
                 $this->db->execute(
-                    'DELETE FROM ' . RISEUP_TABLE_SNAPSHOT_PROGRESS . ' WHERE snapshot_id = ?',
+                    'DELETE FROM ' . TABLE_SNAPSHOT_PROGRESS . ' WHERE snapshot_id = ?',
                     array($inc['id'])
                 );
             }
@@ -439,7 +439,7 @@ class RiseupSnapshotCleaner {
 
         // Get all known filenames from database
         $db_files = $this->db->query_all(
-            'SELECT filepath, filename FROM ' . RISEUP_TABLE_SNAPSHOTS
+            'SELECT filepath, filename FROM ' . TABLE_SNAPSHOTS
         ) ?: array();
 
         $db_filepaths = array_column($db_files, 'filepath');
@@ -521,17 +521,17 @@ class RiseupSnapshotCleaner {
             'ids'     => array(),
         );
 
-        $stuck_hours = defined('RISEUP_SNAPSHOT_STUCK_HOURS') ? RISEUP_SNAPSHOT_STUCK_HOURS : 24;
+        $stuck_hours = defined('SNAPSHOT_STUCK_HOURS') ? SNAPSHOT_STUCK_HOURS : 24;
         $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
 
         // Find stuck running, pending, or failed snapshots
         $stuck = $this->db->query_all(
-            'SELECT id, filepath, filename, status FROM ' . RISEUP_TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, status FROM ' . TABLE_SNAPSHOTS .
             ' WHERE status IN (?, ?, ?) AND created_at < ?',
             array(
-                RISEUP_SNAPSHOT_STATUS_PENDING,
-                RISEUP_SNAPSHOT_STATUS_RUNNING,
-                RISEUP_SNAPSHOT_STATUS_FAILED,
+                SNAPSHOT_STATUS_PENDING,
+                SNAPSHOT_STATUS_RUNNING,
+                SNAPSHOT_STATUS_FAILED,
                 $cutoff
             )
         ) ?: array();
@@ -542,9 +542,9 @@ class RiseupSnapshotCleaner {
             if (!$dry_run) {
                 // Mark as failed (preserve for diagnostics)
                 $this->db->execute(
-                    'UPDATE ' . RISEUP_TABLE_SNAPSHOTS . ' SET status = ?, error = ? WHERE id = ?',
+                    'UPDATE ' . TABLE_SNAPSHOTS . ' SET status = ?, error = ? WHERE id = ?',
                     array(
-                        RISEUP_SNAPSHOT_STATUS_FAILED,
+                        SNAPSHOT_STATUS_FAILED,
                         "Auto-cleaned: stuck for >{$stuck_hours} hours",
                         $snapshot['id']
                     )
@@ -597,9 +597,9 @@ class RiseupSnapshotCleaner {
                     COALESCE(SUM(size), 0) as total_size,
                     MIN(created_at) as oldest,
                     MAX(created_at) as newest
-                FROM ' . RISEUP_TABLE_SNAPSHOTS .
+                FROM ' . TABLE_SNAPSHOTS .
                 ' WHERE status = ?',
-                array(RISEUP_SNAPSHOT_STATUS_COMPLETE)
+                array(SNAPSHOT_STATUS_COMPLETE)
             );
 
             if ($db_stats) {
@@ -687,14 +687,14 @@ class RiseupSnapshotCleaner {
      */
     private function loadSettings($overrides) {
         $defaults = array(
-            'retention_type'  => defined('RISEUP_RETENTION_TYPE_DAYS') ? RISEUP_RETENTION_TYPE_DAYS : 'days',
-            'retention_days'  => defined('RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT') ? RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT : 30,
-            'retention_count' => defined('RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT') ? RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT : 10,
+            'retention_type'  => defined('RETENTION_TYPE_DAYS') ? RETENTION_TYPE_DAYS : 'days',
+            'retention_days'  => defined('SNAPSHOT_RETENTION_DAYS_DEFAULT') ? SNAPSHOT_RETENTION_DAYS_DEFAULT : 30,
+            'retention_count' => defined('SNAPSHOT_RETENTION_COUNT_DEFAULT') ? SNAPSHOT_RETENTION_COUNT_DEFAULT : 10,
         );
 
         // Load from WP options
         $saved = get_option(
-            defined('RISEUP_OPTION_SNAPSHOT_SETTINGS') ? RISEUP_OPTION_SNAPSHOT_SETTINGS : 'riseup_snapshot_settings',
+            defined('OPTION_SNAPSHOT_SETTINGS') ? OPTION_SNAPSHOT_SETTINGS : 'riseup_snapshot_settings',
             array()
         );
         if (is_array($saved)) {

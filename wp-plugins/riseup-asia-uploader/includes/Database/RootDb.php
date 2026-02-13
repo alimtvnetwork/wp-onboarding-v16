@@ -178,7 +178,7 @@ class RiseupRootDb {
             gethostname() ?: php_uname('n'),
             $mysql_version,
             $wp_version,
-            RISEUP_VERSION,
+            PLUGIN_VERSION,
             isset($config['settings']) ? json_encode($config['settings']) : null,
         ));
 
