@@ -314,6 +314,12 @@ class MyPlugin {
 
 ## Boolean Logic
 
+### Rule: No raw negations — use positive guard functions
+
+> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
+
+**Never use `!` on a function call in a condition.** Every negative check must be wrapped in a positively named guard function that reads as a single intent. See the canonical spec for the full cross-language rule and all guard function tables.
+
 ### Rule: Use semantic method names — no trivial wrapper helpers
 
 Boolean checks must be self-documenting through **semantic method names** on the object itself. Trivial wrappers that merely restate native PHP operators are **prohibited** — they add indirection without clarity.

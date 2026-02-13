@@ -62,7 +62,9 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 ---
 
-## 4. Boolean Logic
+## 4. Boolean Logic & No Raw Negations
+
+> **Canonical source:** [No Raw Negations](../01-coding-guidelines/no-negatives.md)
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
@@ -70,6 +72,11 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | 4.2 | `RiseupBooleanHelpers::isTruthy(...)` | `$is_value` | Unnecessary indirection |
 | 4.3 | `!$plugin->is_active()` | `$plugin->is_disabled()` | Negation is easy to miss; use semantic inverse |
 | 4.4 | `$value` for boolean variables | `$is_value`, `$has_permission` | Ambiguous naming; must use `$is_*` / `$has_*` prefix |
+| 4.5 | `!file_exists($path)` | `RiseupBooleanHelpers::is_file_missing($path)` | Raw negation; use positive guard |
+| 4.6 | `!is_dir($path)` | `RiseupBooleanHelpers::is_dir_missing($path)` | Raw negation; use positive guard |
+| 4.7 | `!class_exists('X')` | `RiseupBooleanHelpers::is_class_missing('X')` | Raw negation; use positive guard |
+| 4.8 | `!function_exists('f')` | `RiseupBooleanHelpers::is_func_missing('f')` | Raw negation; use positive guard |
+| 4.9 | `!extension_loaded('e')` | `RiseupBooleanHelpers::is_extension_missing('e')` | Raw negation; use positive guard |
 
 ---
 
@@ -117,8 +124,14 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 [ ] No string literals in add_action/add_filter — use `Hook::*->value`
 [ ] No inline concatenation at call sites — compose named constants first
 [ ] No manual path concatenation — use `RiseupPathUtils` accessors
-[ ] No `RiseupBooleanHelpers` — use semantic methods
+[ ] No `RiseupBooleanHelpers` trivial wrappers — use semantic methods
 [ ] No `!$obj->is_active()` — use `$obj->is_disabled()`
+[ ] No `!file_exists()` — use `is_file_missing()`
+[ ] No `!is_dir()` — use `is_dir_missing()`
+[ ] No `!class_exists()` — use `is_class_missing()`
+[ ] No `!function_exists()` — use `is_func_missing()`
+[ ] No `!extension_loaded()` — use `is_extension_missing()`
+[ ] No raw `!` on any function call — use positive guard function
 [ ] No boolean vars without `$is_*` / `$has_*` prefix
 [ ] No WordPress calls in constructors
 [ ] No inline `!class_exists('PDO')` — use `ErrorChecker::is_invalid_pdo_extension()`

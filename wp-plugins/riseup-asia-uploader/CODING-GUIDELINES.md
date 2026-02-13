@@ -22,7 +22,7 @@ This document codifies the mandatory development standards for the WordPress com
 - **camelCase** for all methods: `ensureDir()`, `isSafePath()`, `formatBytes()`.
 
 ### Constants
-- **SCREAMING_SNAKE_CASE** with `RISEUP_` prefix: `RISEUP_UPLOADS_SUBDIR`, `RISEUP_ACTION_UPLOAD`.
+- **SCREAMING_SNAKE_CASE** without `RISEUP_` prefix: `REST_NAMESPACE`, `ACTION_UPLOAD`.
 
 ---
 
@@ -65,20 +65,23 @@ Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php`
 
 ---
 
-## 4. Boolean Helpers
+## 4. Boolean Helpers — No Raw Negations
 
-All boolean logic must use `RiseupBooleanHelpers` instead of raw negations or null checks.
+> **Canonical source:** [No Raw Negations spec](../../spec/01-coding-guidelines/no-negatives.md)
 
-| ❌ Raw PHP | ✅ Semantic Helper |
-|-----------|-------------------|
+**Never use `!` on a function call in a condition.** All boolean logic must use positively named guard functions from `RiseupBooleanHelpers` instead of raw negations.
+
+| ❌ Forbidden (raw negation) | ✅ Required (positive guard) |
+|----------------------------|------------------------------|
+| `!file_exists($path)` | `RiseupBooleanHelpers::is_file_missing($path)` |
 | `!is_dir($path)` | `RiseupBooleanHelpers::is_dir_missing($path)` |
-| `!file_exists($f)` | `RiseupBooleanHelpers::is_file_missing($f)` |
-| `!$var` | `RiseupBooleanHelpers::is_falsy($var)` |
-| `$var === null` | `RiseupBooleanHelpers::is_null($var)` |
-| `!empty($str)` | `RiseupBooleanHelpers::has_content($str)` |
 | `!class_exists('X')` | `RiseupBooleanHelpers::is_class_missing('X')` |
 | `!function_exists('f')` | `RiseupBooleanHelpers::is_func_missing('f')` |
 | `!extension_loaded('e')` | `RiseupBooleanHelpers::is_extension_missing('e')` |
+| `!$plugin->is_active()` | `$plugin->is_disabled()` |
+| `!$var` (falsy check) | Native `!$var` is OK for simple booleans |
+
+**Note:** Trivial wrappers like `is_falsy()`, `is_truthy()`, `is_null()`, `is_set()`, `is_empty()`, `has_content()` are **deprecated** — use native PHP instead. Only domain-specific guards (file/dir/class/extension checks) are allowed because they encapsulate multi-step logic with safety guards.
 
 ---
 
