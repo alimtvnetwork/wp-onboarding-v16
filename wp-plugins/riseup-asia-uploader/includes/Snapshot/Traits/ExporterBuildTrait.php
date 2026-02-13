@@ -1,6 +1,8 @@
 <?php
 /**
- * ExporterBuildTrait — ZIP build logic and file collection for snapshot exports.
+ * ExporterBuildTrait — ZIP build logic for snapshot exports.
+ *
+ * Shell trait — file collection delegated to ExporterBuildCollectTrait.
  *
  * @package RiseupAsiaUploader
  * @since   1.57.0
@@ -10,7 +12,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once __DIR__ . '/ExporterBuildCollectTrait.php';
+
 trait ExporterBuildTrait {
+
+    use ExporterBuildCollectTrait;
 
     /**
      * Build a ZIP archive containing the full snapshot + all incremental children.
@@ -57,14 +63,7 @@ trait ExporterBuildTrait {
         }
     }
 
-    /**
-     * Insert a "building" export record.
-     *
-     * @param PDO    $pdo         PDO instance.
-     * @param int    $snapshotId  Snapshot ID.
-     * @param string $zipFilename ZIP filename.
-     * @param string $zipPath     ZIP path.
-     */
+    /** Insert a "building" export record. */
     private function insertBuildingRecord(PDO $pdo, int $snapshotId, string $zipFilename, string $zipPath) {
         $stmt = $pdo->prepare(
             'INSERT OR REPLACE INTO ' . TABLE_SNAPSHOT_EXPORTS .
@@ -74,17 +73,7 @@ trait ExporterBuildTrait {
         $stmt->execute(array($snapshotId, $zipFilename, $zipPath, json_encode(array($snapshotId)), SNAPSHOT_EXPORT_STATUS_BUILDING));
     }
 
-    /**
-     * Assemble the ZIP archive with full + incremental + manifest.
-     *
-     * @param PDO    $pdo         PDO instance.
-     * @param array  $snapshot    Snapshot record.
-     * @param int    $snapshotId  Snapshot ID.
-     * @param string $snapshotDir Snapshot directory.
-     * @param string $zipPath     Output ZIP path.
-     * @param string $zipFilename ZIP filename.
-     * @return array Result.
-     */
+    /** Assemble the ZIP archive with full + incremental + manifest. */
     private function assembleZipArchive(PDO $pdo, array $snapshot, int $snapshotId, string $snapshotDir, string $zipPath, string $zipFilename): array {
         $files = $this->collectSnapshotFiles($snapshotDir);
         if (empty($files)) {
@@ -120,13 +109,7 @@ trait ExporterBuildTrait {
         return array('success' => true, 'cached' => false, 'export' => $export);
     }
 
-    /**
-     * Add files to ZIP with compression.
-     *
-     * @param ZipArchive $zip    ZIP archive.
-     * @param array      $files  Map of absolute path => relative path.
-     * @param string     $prefix Path prefix for entries.
-     */
+    /** Add files to ZIP with compression. */
     private function addFilesToZip(ZipArchive $zip, array $files, string $prefix) {
         foreach ($files as $absolutePath => $relativePath) {
             $entryName = $prefix . $relativePath;
@@ -138,15 +121,7 @@ trait ExporterBuildTrait {
         }
     }
 
-    /**
-     * Add manifest.json to ZIP archive.
-     *
-     * @param ZipArchive $zip          ZIP archive.
-     * @param array      $snapshot     Snapshot record.
-     * @param int        $snapshotId   Snapshot ID.
-     * @param array      $includedIds  Included snapshot IDs.
-     * @param array      $incrementals Incremental records.
-     */
+    /** Add manifest.json to ZIP archive. */
     private function addManifestToZip(ZipArchive $zip, array $snapshot, int $snapshotId, array $includedIds, array $incrementals) {
         $manifest = array(
             'version' => PLUGIN_VERSION, 'created_at' => gmdate('c'), 'snapshot_id' => $snapshotId,
@@ -158,16 +133,7 @@ trait ExporterBuildTrait {
         $zip->addFromString('manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    /**
-     * Finalize the export record after ZIP creation.
-     *
-     * @param PDO    $pdo          PDO instance.
-     * @param int    $snapshotId   Snapshot ID.
-     * @param array  $includedIds  Included snapshot IDs.
-     * @param array  $incrementals Incremental records.
-     * @param string $zipPath      ZIP file path.
-     * @param string $zipFilename  ZIP filename.
-     */
+    /** Finalize the export record after ZIP creation. */
     private function finalizeExportRecord(PDO $pdo, int $snapshotId, array $includedIds, array $incrementals, string $zipPath, string $zipFilename) {
         $zipSize = filesize($zipPath);
         $stmt = $pdo->prepare(
@@ -178,84 +144,5 @@ trait ExporterBuildTrait {
         $this->log('INFO', 'ZIP export built successfully', array(
             'snapshot_id' => $snapshotId, 'filename' => $zipFilename, 'size' => RiseupPathUtils::formatBytes($zipSize),
         ));
-    }
-
-    /**
-     * Collect all .sqlite and .db files from a snapshot directory.
-     *
-     * @param string $dir Snapshot directory.
-     * @return array Map of absolute path => relative path.
-     */
-    private function collectSnapshotFiles($dir) {
-        $files = array();
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
-            return $files;
-        }
-
-        $iterator = new DirectoryIterator($dir);
-        foreach ($iterator as $file) {
-            if ($file->isDot() || $file->isDir()) {
-                continue;
-            }
-            $ext = strtolower($file->getExtension());
-            if (in_array($ext, array('sqlite', 'db'), true)) {
-                $files[$file->getPathname()] = $file->getFilename();
-            }
-        }
-        return $files;
-    }
-
-    /**
-     * Collect all .sqlite files from incremental subdirectories.
-     *
-     * @param string $incrementalDir The incremental/ directory path.
-     * @return array Map of absolute path => relative path.
-     */
-    private function collectIncrementalFiles($incrementalDir) {
-        $files = array();
-        if (RiseupBooleanHelpers::is_dir_missing($incrementalDir)) {
-            return $files;
-        }
-
-        $subdirs = new DirectoryIterator($incrementalDir);
-        foreach ($subdirs as $subdir) {
-            if ($subdir->isDot() || !$subdir->isDir()) {
-                continue;
-            }
-            $subdirName = $subdir->getFilename();
-            $innerIterator = new DirectoryIterator($subdir->getPathname());
-            foreach ($innerIterator as $file) {
-                if ($file->isDot() || $file->isDir()) {
-                    continue;
-                }
-                $ext = strtolower($file->getExtension());
-                if (in_array($ext, array('sqlite', 'db'), true)) {
-                    $files[$file->getPathname()] = $subdirName . '/' . $file->getFilename();
-                }
-            }
-        }
-        return $files;
-    }
-
-    /**
-     * Get all incremental snapshots belonging to a full snapshot.
-     *
-     * @param int    $parentId   Parent full snapshot ID.
-     * @param string $parentName Parent snapshot filename.
-     * @return array List of incremental snapshot records.
-     */
-    private function getIncrementalSnapshots($parentId, $parentName) {
-        $pdo = $this->db->get_pdo();
-        if (!$pdo) {
-            return array();
-        }
-
-        $stmt = $pdo->prepare(
-            'SELECT id, filename, filepath, scope, status, created_at FROM ' . TABLE_SNAPSHOTS .
-            ' WHERE scope = \'incremental\' AND filepath LIKE ? AND status = ? ORDER BY created_at ASC'
-        );
-        $parentDir = '%/' . $parentName . '/incremental/%';
-        $stmt->execute(array($parentDir, SNAPSHOT_STATUS_COMPLETE));
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
