@@ -158,7 +158,7 @@ Updated: 2026-02-13
 
 ---
 
-## Phase 15 — Snapshot subsystem files (🟠🟡 ~12 functions)
+## Phase 15 — Snapshot subsystem files (🟠🟡 ~12 functions) ✅ DONE
 
 ### 15A — `executeSyncBackup()` in SnapshotOrchestrator.php (~100 lines, L206–305)
 **Fix:** Extract:
