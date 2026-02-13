@@ -66,4 +66,16 @@ Traits/ResponseTrait.php, Traits/ErrorLogTrait.php, Traits/AgentHandlerTrait.php
 ### Wave 4 (1 file)
 Rewrite riseup-asia-uploader.php as shell (~200 lines)
 
-## Status: ⬜ Wave 1 NOT STARTED
+## Status: ✅ Wave 1 COMPLETE — 8 files created
+
+Files created:
+- `includes/ErrorHandling/FrameBuilder.php` (~180 lines)
+- `includes/ErrorHandling/FatalErrorHandler.php` (~175 lines)
+- `includes/Traits/LifecycleHooksTrait.php` (~185 lines)
+- `includes/Traits/RouteRegistrationTrait.php` (~155 lines)
+- `includes/Traits/PluginRoutesTrait.php` (~200 lines)
+- `includes/Traits/InvalidRouteTrait.php` (~150 lines)
+- `includes/Traits/AuthTrait.php` (~200 lines)
+- `includes/Traits/StatusHandlerTrait.php` (~200 lines)
+
+Next: Wave 2 — UploadPipeline, UploadExtraction, PluginList, PluginExport, PostHandler, PluginLifecycle, SyncHandler traits
