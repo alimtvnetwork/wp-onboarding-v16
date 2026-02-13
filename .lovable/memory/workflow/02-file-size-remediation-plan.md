@@ -62,22 +62,12 @@ Traits/UploadPipelineTrait.php, Traits/UploadExtractionTrait.php, Traits/PluginL
 
 Next: Wave 3 — ResponseTrait, ErrorLogTrait, AgentHandlerTrait, SnapshotCrudTrait, SnapshotExportTrait, SnapshotBackupTrait, FileSystemTrait
 
-### Wave 3 (6 files)
+### Wave 3 (7 files) ✅ COMPLETE
 Traits/ResponseTrait.php, Traits/ErrorLogTrait.php, Traits/AgentHandlerTrait.php, Traits/SnapshotCrudTrait.php, Traits/SnapshotExportTrait.php, Traits/SnapshotBackupTrait.php, Traits/FileSystemTrait.php
 
 ### Wave 4 (1 file)
 Rewrite riseup-asia-uploader.php as shell (~200 lines)
 
-## Status: ✅ Wave 1 COMPLETE — 8 files created
+## Status: ✅ Waves 1–3 COMPLETE — 22 trait/utility files created
 
-Files created:
-- `includes/ErrorHandling/FrameBuilder.php` (~180 lines)
-- `includes/ErrorHandling/FatalErrorHandler.php` (~175 lines)
-- `includes/Traits/LifecycleHooksTrait.php` (~185 lines)
-- `includes/Traits/RouteRegistrationTrait.php` (~155 lines)
-- `includes/Traits/PluginRoutesTrait.php` (~200 lines)
-- `includes/Traits/InvalidRouteTrait.php` (~150 lines)
-- `includes/Traits/AuthTrait.php` (~200 lines)
-- `includes/Traits/StatusHandlerTrait.php` (~200 lines)
-
-Next: Wave 2 — UploadPipeline, UploadExtraction, PluginList, PluginExport, PostHandler, PluginLifecycle, SyncHandler traits
+Next: Wave 4 — Rewrite main plugin file as ~200-line shell with `use` trait statements
