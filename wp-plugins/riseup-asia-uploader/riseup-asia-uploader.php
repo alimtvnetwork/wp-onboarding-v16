@@ -5153,23 +5153,17 @@ function riseup_asia_activate() {
             require_once $constants_file;
         }
 
-        // Load boolean helpers for path utils
-        $helpers_file = __DIR__ . '/includes/class-boolean-helpers.php';
+        // Load boolean helpers (foundation file — raw require_once allowed)
+        $helpers_file = __DIR__ . '/includes/Helpers/BooleanHelpers.php';
         if (file_exists($helpers_file)) {
             require_once $helpers_file;
-        }
-
-        // Load init helpers for directory creation
-        $init_file = __DIR__ . '/includes/class-init-helpers.php';
-        if (file_exists($init_file)) {
-            require_once $init_file;
         }
 
         // Resolve base directory and create logs folder
         $upload_dir = wp_upload_dir();
         if (!isset($upload_dir['error']) || !$upload_dir['error']) {
-            $base_dir = $upload_dir['basedir'] . '/' . RISEUP_UPLOADS_SUBDIR;
-            $logs_dir = $base_dir . '/' . RISEUP_LOGS_SUBDIR;
+            $base_dir = $upload_dir['basedir'] . '/' . UPLOADS_SUBDIR;
+            $logs_dir = $base_dir . '/' . LOGS_SUBDIR;
 
             // Create base + logs directories
             if (!is_dir($base_dir)) {
@@ -5180,9 +5174,9 @@ function riseup_asia_activate() {
             }
 
             // Write activation marker to log file
-            $log_file = $logs_dir . '/' . RISEUP_LOG_FILENAME;
+            $log_file = $logs_dir . '/' . LOG_FILENAME;
             $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
-            $version = defined('RISEUP_VERSION') ? RISEUP_VERSION : 'unknown';
+            $version = defined('PLUGIN_VERSION') ? PLUGIN_VERSION : 'unknown';
             $entry = sprintf(
                 "[%s] [INFO] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"version\":\"%s\",\"php\":\"%s\",\"wp\":\"%s\"}\n",
                 $timestamp,
@@ -5193,7 +5187,7 @@ function riseup_asia_activate() {
             @file_put_contents($log_file, $entry, FILE_APPEND | LOCK_EX);
 
             // Also write to error log for visibility
-            $error_file = $logs_dir . '/' . RISEUP_ERROR_LOG_FILENAME;
+            $error_file = $logs_dir . '/' . ERROR_LOG_FILENAME;
             @file_put_contents($error_file, sprintf(
                 "[%s] [INFO] Plugin activated — error log initialized (v%s)\n",
                 $timestamp,
@@ -5201,7 +5195,7 @@ function riseup_asia_activate() {
             ), FILE_APPEND | LOCK_EX);
 
             // Initialize stacktrace.txt
-            $stacktrace_file = $logs_dir . '/' . RISEUP_STACKTRACE_FILENAME;
+            $stacktrace_file = $logs_dir . '/' . STACKTRACE_FILENAME;
             if (!file_exists($stacktrace_file)) {
                 @file_put_contents($stacktrace_file, sprintf(
                     "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
