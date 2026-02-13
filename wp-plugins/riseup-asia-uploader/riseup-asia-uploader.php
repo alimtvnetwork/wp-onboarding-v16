@@ -653,7 +653,7 @@ class RiseupAsia {
      * @return void
      */
     public function register_routes() {
-        $this->file_logger->info('Registering REST API routes', array('namespace' => RISEUP_API_FULL_NAMESPACE));
+        $this->file_logger->info('Registering REST API routes', array('namespace' => API_FULL_NAMESPACE));
 
         $registered = 0;
         $failed = 0;
@@ -666,7 +666,7 @@ class RiseupAsia {
         // against undefined constants crashing the entire register_routes method.
         $safe_register = function ($endpoint_const, $args) use (&$registered, &$failed) {
             try {
-                register_rest_route(RISEUP_API_FULL_NAMESPACE, '/' . $endpoint_const, $args);
+                register_rest_route(API_FULL_NAMESPACE, '/' . $endpoint_const, $args);
                 $registered++;
             } catch (Throwable $e) {
                 $failed++;
@@ -675,49 +675,49 @@ class RiseupAsia {
         };
 
         // Status endpoint (authenticated - requires valid credentials).
-        $safe_register(RISEUP_ENDPOINT_STATUS, array(
+        $safe_register(ENDPOINT_STATUS, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_status'),
             'permission_callback' => $this->build_permission_callback('status', array($this, 'check_status_permission')),
         ));
 
         // OpenAPI specification endpoint (authenticated).
-        $safe_register(RISEUP_ENDPOINT_OPENAPI, array(
+        $safe_register(ENDPOINT_OPENAPI, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_openapi'),
             'permission_callback' => $this->build_permission_callback('openapi', array($this, 'check_status_permission')),
         ));
 
         // OPcache reset endpoint (used by upload script after self-updates).
-        $safe_register(RISEUP_ENDPOINT_OPCACHE_RESET, array(
+        $safe_register(ENDPOINT_OPCACHE_RESET, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_opcache_reset'),
             'permission_callback' => $this->build_permission_callback('opcache_reset', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin upload endpoint.
-        $safe_register(RISEUP_ENDPOINT_UPLOAD, array(
+        $safe_register(ENDPOINT_UPLOAD, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_upload'),
             'permission_callback' => $this->build_permission_callback('upload', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin list endpoint.
-        $safe_register(RISEUP_ENDPOINT_PLUGINS, array(
+        $safe_register(ENDPOINT_PLUGINS, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_list_plugins'),
             'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
         ));
 
         // Export-self endpoint.
-        $safe_register(RISEUP_ENDPOINT_EXPORT_SELF, array(
+        $safe_register(ENDPOINT_EXPORT_SELF, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_export_self'),
             'permission_callback' => $this->build_permission_callback('export_self', array($this, 'check_plugin_permission')),
         ));
 
         // Blog post endpoints.
-        $safe_register(RISEUP_ENDPOINT_POSTS, array(
+        $safe_register(ENDPOINT_POSTS, array(
             array(
                 'methods'             => HttpMethod::Get->value,
                 'callback'            => array($this, 'handle_list_posts'),
@@ -731,7 +731,7 @@ class RiseupAsia {
         ));
 
         // Category endpoints.
-        $safe_register(RISEUP_ENDPOINT_CATEGORIES, array(
+        $safe_register(ENDPOINT_CATEGORIES, array(
             array(
                 'methods'             => HttpMethod::Get->value,
                 'callback'            => array($this, 'handle_list_categories'),
@@ -745,77 +745,77 @@ class RiseupAsia {
         ));
 
         // Transaction log endpoints.
-        $safe_register(RISEUP_ENDPOINT_LOGS, array(
+        $safe_register(ENDPOINT_LOGS, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_query_logs'),
             'permission_callback' => $this->build_permission_callback('logs', array($this, 'check_logs_permission')),
         ));
 
         // Logs stats endpoint.
-        $safe_register(RISEUP_ENDPOINT_LOGS_STATS, array(
+        $safe_register(ENDPOINT_LOGS_STATS, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_logs_stats'),
             'permission_callback' => $this->build_permission_callback('logs_stats', array($this, 'check_logs_permission')),
         ));
 
         // Plugin files listing endpoint - fixed URL, slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_PLUGIN_FILES, array(
+        $safe_register(ENDPOINT_PLUGIN_FILES, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_plugin_files'),
             'permission_callback' => $this->build_permission_callback('plugin_files', array($this, 'check_plugin_permission')),
         ));
 
         // Sync manifest endpoint - fixed URL, slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_SYNC_MANIFEST, array(
+        $safe_register(ENDPOINT_SYNC_MANIFEST, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_sync_manifest'),
             'permission_callback' => $this->build_permission_callback('sync_manifest', array($this, 'check_plugin_permission')),
         ));
 
         // Sync push endpoint - receives delta files (replacements + deletions).
-        $safe_register(RISEUP_ENDPOINT_SYNC, array(
+        $safe_register(ENDPOINT_SYNC, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_sync_push'),
             'permission_callback' => $this->build_permission_callback('sync_push', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin file content endpoint - fixed URL, slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_PLUGIN_FILE, array(
+        $safe_register(ENDPOINT_PLUGIN_FILE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_plugin_file_content'),
             'permission_callback' => $this->build_permission_callback('plugin_file', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin existence check endpoint (lightweight pre-flight) - slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_PLUGIN_EXISTS, array(
+        $safe_register(ENDPOINT_PLUGIN_EXISTS, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_plugin_exists'),
             'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin enable endpoint (activate plugin) - slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_PLUGIN_ENABLE, array(
+        $safe_register(ENDPOINT_PLUGIN_ENABLE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_enable_plugin'),
             'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin disable endpoint (deactivate plugin) - slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_PLUGIN_DISABLE, array(
+        $safe_register(ENDPOINT_PLUGIN_DISABLE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_disable_plugin'),
             'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin delete endpoint (remove plugin) - slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_PLUGIN_DELETE, array(
+        $safe_register(ENDPOINT_PLUGIN_DELETE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_delete_plugin'),
             'permission_callback' => $this->build_permission_callback('plugins', array($this, 'check_plugin_permission')),
         ));
 
         // Plugin export endpoint - fixed URL, slug in JSON body.
-        $safe_register(RISEUP_ENDPOINT_PLUGIN_EXPORT, array(
+        $safe_register(ENDPOINT_PLUGIN_EXPORT, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_export_plugin'),
             'permission_callback' => $this->build_permission_callback('plugin_export', array($this, 'check_plugin_permission')),
@@ -868,56 +868,56 @@ class RiseupAsia {
         // =================================================================
 
         // List snapshots
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_LIST, array(
+        $safe_register(ENDPOINT_SNAPSHOT_LIST, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_list_snapshots'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Schedule snapshot
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_SCHEDULE, array(
+        $safe_register(ENDPOINT_SNAPSHOT_SCHEDULE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_schedule_snapshot'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Get snapshot info (fixed endpoint, ID in JSON body)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_INFO, array(
+        $safe_register(ENDPOINT_SNAPSHOT_INFO, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_snapshot_info'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Delete snapshot (fixed endpoint, ID in JSON body)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_DELETE, array(
+        $safe_register(ENDPOINT_SNAPSHOT_DELETE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_delete_snapshot'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Restore snapshot (fixed endpoint, ID in JSON body)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_RESTORE, array(
+        $safe_register(ENDPOINT_SNAPSHOT_RESTORE, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_restore_snapshot'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Export snapshot as ZIP (fixed endpoint, ID in JSON body)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_EXPORT, array(
+        $safe_register(ENDPOINT_SNAPSHOT_EXPORT, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_export_snapshot'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Import snapshot from ZIP
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_IMPORT, array(
+        $safe_register(ENDPOINT_SNAPSHOT_IMPORT, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_import_snapshot'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Snapshot settings
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_SETTINGS, array(
+        $safe_register(ENDPOINT_SNAPSHOT_SETTINGS, array(
             array(
                 'methods'             => HttpMethod::Get->value,
                 'callback'            => array($this, 'handle_get_snapshot_settings'),
@@ -931,14 +931,14 @@ class RiseupAsia {
         ));
 
         // Snapshot providers
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_PROVIDERS, array(
+        $safe_register(ENDPOINT_SNAPSHOT_PROVIDERS, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_list_snapshot_providers'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Available tables
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_TABLES, array(
+        $safe_register(ENDPOINT_SNAPSHOT_TABLES, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_list_snapshot_tables'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
@@ -959,42 +959,42 @@ class RiseupAsia {
         ));
 
         // Full backup endpoint (end-to-end orchestration)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_FULL_BACKUP, array(
+        $safe_register(ENDPOINT_SNAPSHOT_FULL_BACKUP, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_full_backup'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Incremental backup endpoint
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_INCREMENTAL, array(
+        $safe_register(ENDPOINT_SNAPSHOT_INCREMENTAL, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_incremental_backup'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Snapshot cleanup endpoint
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_CLEANUP, array(
+        $safe_register(ENDPOINT_SNAPSHOT_CLEANUP, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_snapshot_cleanup'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Snapshot job progress endpoint (Phase 4)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_PROGRESS, array(
+        $safe_register(ENDPOINT_SNAPSHOT_PROGRESS, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_snapshot_progress'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Snapshot ZIP download request (Feature D: returns URL or building status)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD, array(
+        $safe_register(ENDPOINT_SNAPSHOT_DOWNLOAD, array(
             'methods'             => HttpMethod::Post->value,
             'callback'            => array($this, 'handle_snapshot_download'),
             'permission_callback' => $this->build_permission_callback('snapshots', array($this, 'check_plugin_permission')),
         ));
 
         // Snapshot ZIP file serve (Feature D: streams the ZIP via nonce-validated URL)
-        $safe_register(RISEUP_ENDPOINT_SNAPSHOT_DOWNLOAD_FILE, array(
+        $safe_register(ENDPOINT_SNAPSHOT_DOWNLOAD_FILE, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_snapshot_download_file'),
             'permission_callback' => '__return_true', // Nonce-validated in handler
@@ -1002,8 +1002,8 @@ class RiseupAsia {
 
         // Media upload endpoint
         try {
-            if (defined('RISEUP_ENDPOINT_MEDIA')) {
-                $safe_register(RISEUP_ENDPOINT_MEDIA, array(
+            if (defined('ENDPOINT_MEDIA')) {
+                $safe_register(ENDPOINT_MEDIA, array(
                     'methods'             => HttpMethod::Post->value,
                     'callback'            => array($this, 'handle_media_upload'),
                     'permission_callback' => $this->build_permission_callback('media', array($this, 'check_plugin_permission')),
@@ -1014,14 +1014,14 @@ class RiseupAsia {
         }
 
         // Error logs retrieval endpoint - returns error.txt and log.txt as JSON
-        $safe_register(RISEUP_ENDPOINT_ERROR_LOGS, array(
+        $safe_register(ENDPOINT_ERROR_LOGS, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_error_logs'),
             'permission_callback' => $this->build_permission_callback('error_logs', array($this, 'check_logs_permission')),
         ));
 
         // Error sessions endpoint - returns structured error entries from SQLite DB
-        $safe_register(RISEUP_ENDPOINT_ERROR_SESSIONS, array(
+        $safe_register(ENDPOINT_ERROR_SESSIONS, array(
             'methods'             => HttpMethod::Get->value,
             'callback'            => array($this, 'handle_error_sessions'),
             'permission_callback' => $this->build_permission_callback('error_logs', array($this, 'check_logs_permission')),
@@ -1072,7 +1072,7 @@ class RiseupAsia {
 
         return RiseupEnvelopeBuilder::error(
             "No endpoint found for: {$method} /{$invalid_path}",
-            RISEUP_HTTP_NOT_FOUND
+            HTTP_NOT_FOUND
         )
             ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
             ->setErrors(array(
@@ -1104,7 +1104,7 @@ class RiseupAsia {
     public function enrich_error_response($response, $server, $request) {
         // Only process our namespace
         $route = $request->get_route();
-        if (strpos($route, '/' . RISEUP_API_FULL_NAMESPACE) === false) {
+        if (strpos($route, '/' . API_FULL_NAMESPACE) === false) {
             return $response;
         }
 
@@ -1120,7 +1120,7 @@ class RiseupAsia {
 
         // Inject metadata into the response
         if (!isset($data['plugin_version'])) {
-            $data['plugin_version'] = RISEUP_VERSION;
+            $data['plugin_version'] = PLUGIN_VERSION;
         }
         if (!isset($data['timestamp'])) {
             $data['timestamp'] = gmdate('c');
@@ -1134,7 +1134,7 @@ class RiseupAsia {
             'route'          => $route,
             'status'         => $status,
             'message'        => isset($data['message']) ? $data['message'] : (isset($data['Status']['Message']) ? $data['Status']['Message'] : 'Unknown'),
-            'plugin_version' => RISEUP_VERSION,
+            'plugin_version' => PLUGIN_VERSION,
         ));
 
         $response->set_data($data);
@@ -1202,7 +1202,7 @@ class RiseupAsia {
      */
     public function check_plugin_permission($request) {
         $this->file_logger->debug('Checking plugin permission');
-        return $this->check_authenticated_capability($request, RISEUP_CAP_MANAGE_PLUGINS);
+        return $this->check_authenticated_capability($request, CAP_MANAGE_PLUGINS);
     }
 
     /**
@@ -1214,7 +1214,7 @@ class RiseupAsia {
      */
     public function check_post_permission($request) {
         $this->file_logger->debug('Checking post permission');
-        return $this->check_authenticated_capability($request, RISEUP_CAP_MANAGE_POSTS);
+        return $this->check_authenticated_capability($request, CAP_MANAGE_POSTS);
     }
 
     /**
@@ -1226,7 +1226,7 @@ class RiseupAsia {
      */
     public function check_logs_permission($request) {
         $this->file_logger->debug('Checking logs permission');
-        return $this->check_authenticated_capability($request, RISEUP_CAP_VIEW_LOGS);
+        return $this->check_authenticated_capability($request, CAP_VIEW_LOGS);
     }
 
     /**
@@ -1284,9 +1284,9 @@ class RiseupAsia {
                 $this->logger->log_auth_failure('Missing Authorization header');
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
+                    MSG_UNAUTHORIZED,
                     array(
-                        'status' => RISEUP_HTTP_UNAUTHORIZED,
+                        'status' => HTTP_UNAUTHORIZED,
                         'headers' => array('WWW-Authenticate' => 'Basic realm="WordPress Application Password"'),
                     )
                 );
@@ -1298,8 +1298,8 @@ class RiseupAsia {
                 $this->logger->log_auth_failure('Invalid Authorization header format');
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
-                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                    MSG_UNAUTHORIZED,
+                    array('status' => HTTP_UNAUTHORIZED)
                 );
             }
 
@@ -1309,8 +1309,8 @@ class RiseupAsia {
                 $this->logger->log_auth_failure('Invalid credentials format');
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
-                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                    MSG_UNAUTHORIZED,
+                    array('status' => HTTP_UNAUTHORIZED)
                 );
             }
 
@@ -1328,8 +1328,8 @@ class RiseupAsia {
                 );
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
-                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                    MSG_UNAUTHORIZED,
+                    array('status' => HTTP_UNAUTHORIZED)
                 );
             }
 
@@ -1341,8 +1341,8 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Authentication error');
             return new WP_Error(
                 'rest_forbidden',
-                RISEUP_MSG_UNAUTHORIZED,
-                array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                MSG_UNAUTHORIZED,
+                array('status' => HTTP_UNAUTHORIZED)
             );
         }
     }
@@ -1390,8 +1390,8 @@ class RiseupAsia {
                 $this->logger->log_auth_failure('Missing Authorization header');
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
-                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                    MSG_UNAUTHORIZED,
+                    array('status' => HTTP_UNAUTHORIZED)
                 );
             }
 
@@ -1401,8 +1401,8 @@ class RiseupAsia {
                 $this->logger->log_auth_failure('Invalid Authorization header format');
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
-                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                    MSG_UNAUTHORIZED,
+                    array('status' => HTTP_UNAUTHORIZED)
                 );
             }
 
@@ -1412,8 +1412,8 @@ class RiseupAsia {
                 $this->logger->log_auth_failure('Invalid credentials format');
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
-                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                    MSG_UNAUTHORIZED,
+                    array('status' => HTTP_UNAUTHORIZED)
                 );
             }
 
@@ -1431,8 +1431,8 @@ class RiseupAsia {
                 );
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_UNAUTHORIZED,
-                    array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                    MSG_UNAUTHORIZED,
+                    array('status' => HTTP_UNAUTHORIZED)
                 );
             }
 
@@ -1452,8 +1452,8 @@ class RiseupAsia {
                 );
                 return new WP_Error(
                     'rest_forbidden',
-                    RISEUP_MSG_FORBIDDEN,
-                    array('status' => RISEUP_HTTP_FORBIDDEN)
+                    MSG_FORBIDDEN,
+                    array('status' => HTTP_FORBIDDEN)
                 );
             }
 
@@ -1463,8 +1463,8 @@ class RiseupAsia {
             $this->file_logger->log_exception($e, 'Authentication error');
             return new WP_Error(
                 'rest_forbidden',
-                RISEUP_MSG_UNAUTHORIZED,
-                array('status' => RISEUP_HTTP_UNAUTHORIZED)
+                MSG_UNAUTHORIZED,
+                array('status' => HTTP_UNAUTHORIZED)
             );
         }
     }
@@ -1487,7 +1487,7 @@ class RiseupAsia {
         $registered_routes = array();
         $rest_server = rest_get_server();
         $all_routes = $rest_server->get_routes();
-        $ns_prefix = '/' . RISEUP_API_FULL_NAMESPACE;
+        $ns_prefix = '/' . API_FULL_NAMESPACE;
 
         foreach ($all_routes as $route => $handlers) {
             if (strpos($route, $ns_prefix) === 0) {
@@ -1523,13 +1523,13 @@ class RiseupAsia {
         // avoid stale RISEUP_VERSION constant after self-updates. OPcache
         // may cache the old constants.php bytecode across requests.
         // =====================================================================
-        $live_version = RISEUP_VERSION; // default fallback
-        $main_plugin_file = WP_PLUGIN_DIR . '/' . RISEUP_SLUG . '/' . RISEUP_SLUG . '.php';
+        $live_version = PLUGIN_VERSION; // default fallback
+        $main_plugin_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
         clearstatcache(true, $main_plugin_file);
         if (file_exists($main_plugin_file)) {
             if (function_exists('opcache_invalidate')) {
                 opcache_invalidate($main_plugin_file, true);
-                $constants_file = WP_PLUGIN_DIR . '/' . RISEUP_SLUG . '/includes/constants.php';
+                $constants_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/includes/constants.php';
                 if (file_exists($constants_file)) {
                     opcache_invalidate($constants_file, true);
                 }
@@ -1548,12 +1548,12 @@ class RiseupAsia {
         $is_active = in_array($plugin_file, $active_plugins, true);
 
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . RISEUP_ENDPOINT_STATUS)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . ENDPOINT_STATUS)
             ->setSingleResult(array(
-                'Plugin'           => RISEUP_NAME,
+                'Plugin'           => PLUGIN_NAME,
                 'Version'          => $live_version,
-                'Slug'             => RISEUP_SLUG,
-                'Api'              => RISEUP_API_FULL_NAMESPACE,
+                'Slug'             => PLUGIN_SLUG,
+                'Api'              => API_FULL_NAMESPACE,
                 'SiteUrl'          => $site_url,
                 'Wp'               => get_bloginfo('version'),
                 'Php'              => PHP_VERSION,
@@ -1597,7 +1597,7 @@ class RiseupAsia {
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'OpenAPI specification file not found',
-            ), RISEUP_HTTP_NOT_FOUND);
+            ), HTTP_NOT_FOUND);
         }
 
         $spec_content = file_get_contents($spec_file);
@@ -1606,7 +1606,7 @@ class RiseupAsia {
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'Failed to read OpenAPI specification',
-            ), RISEUP_HTTP_SERVER_ERROR);
+            ), HTTP_SERVER_ERROR);
         }
 
         $spec = json_decode($spec_content, true);
@@ -1615,13 +1615,13 @@ class RiseupAsia {
             return new WP_REST_Response(array(
                 'success' => false,
                 'error'   => 'Invalid OpenAPI specification format',
-            ), RISEUP_HTTP_SERVER_ERROR);
+            ), HTTP_SERVER_ERROR);
         }
 
         // Update the server URL dynamically.
         $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
 
-        return new WP_REST_Response($spec, RISEUP_HTTP_OK);
+        return new WP_REST_Response($spec, HTTP_OK);
     }
 
     // =========================================================================
@@ -1655,11 +1655,11 @@ class RiseupAsia {
         }
 
         // Also invalidate specific plugin files
-        $plugin_dir = WP_PLUGIN_DIR . '/' . RISEUP_SLUG;
+        $plugin_dir = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG;
         $invalidated = 0;
         if (function_exists('opcache_invalidate')) {
             $files_to_invalidate = array(
-                $plugin_dir . '/' . RISEUP_SLUG . '.php',
+                $plugin_dir . '/' . PLUGIN_SLUG . '.php',
                 $plugin_dir . '/includes/constants.php',
             );
             foreach ($files_to_invalidate as $file) {
@@ -1676,7 +1676,7 @@ class RiseupAsia {
         wp_cache_delete('plugins', 'plugins');
 
         return RiseupEnvelopeBuilder::success('OPcache reset complete')
-            ->setRequestedAt('/' . RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_OPCACHE_RESET)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_OPCACHE_RESET)
             ->setSingleResult($result)
             ->toResponse();
     }
