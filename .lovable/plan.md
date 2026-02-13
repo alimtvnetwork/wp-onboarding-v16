@@ -1,10 +1,10 @@
 
 
 
-## Plan: WP Plugin Publish — Feature Roadmap & Type Safety Remediation
+## Plan: WP Plugin Publish — Feature Roadmap & Remediation
 
 > Created: 2026-02-12  
-> Status: **Features A–E1 complete. E2 in progress. F (Type Safety Remediation) planned.**
+> Status: **Features A–E1, F, G, H complete. E2 in progress.**
 
 ---
 
@@ -319,7 +319,7 @@ interface ActivityEntry {
 | F5 | **Update methods.ts** | ✅ Done | Medium | All `Record<string, unknown>` and `request<unknown>` replaced with specific types |
 | F6 | **Generic envelope** | ✅ Done | Small | Made `RawEnvelope<T = unknown>` generic with typed `Results: T[]` |
 | F7 | **Magic string migration** | ✅ Done | Large | Migrated 50+ inline magic string comparisons across 12 files to use const references from `src/lib/constants.ts`. Added new const objects: `PublishOperationStatus`, `PublishStageName`, `PublishStageStatus`, `SyncStatus`, `DeployStatus`, `ConnectionTestStep`, `ConnectionTestStatus`, `PublishActionType`, `LogLevel`, `SessionType`. Updated: `publishStore.ts`, `GlobalPublishProgress.tsx`, `Sessions.tsx`, `PublishHistory.tsx`, `CorePluginDashboard.tsx`, `TestResultRow.tsx`, `LiveTestProgress.tsx`, `DeployUploaderDialog.tsx`, `useConnectionTestLogs.ts`, `RecentPublishes.tsx`, `publishHistoryUtils.ts`. |
-| F8 | **Activity metadata typing** | 🟡 High | Medium | Discriminated union for `ActivityEntry.metadata` |
+| F8 | **Activity metadata typing** | ✅ Done | Medium | Discriminated union for `ActivityEntry.metadata` |
 
 ### Execution Order
 1. F1 → F5 (types then methods)
@@ -418,6 +418,27 @@ class Riseup_Admin {
     }
 }
 ```
+
+---
+
+## Feature H: PHP Coding Standards Remediation ✅ COMPLETE
+
+### Status: All phases complete
+
+Enforced project-wide PHP coding standards: 200-line file limit, 15-line function logic limit, and zero raw function negations.
+
+### Phases
+
+| # | Task | Status | Description |
+|---|------|--------|-------------|
+| H1 | **File-size remediation (200-line limit)** | ✅ Done | Decomposed all oversized PHP files into focused trait-based classes. Every file under 200 lines (excluding `riseup-asia-uploader.php` shell and `constants.php` definitions). |
+| H2 | **Function-size remediation (15-line limit)** | ✅ Done | Refactored all functions exceeding 15 logic lines via early returns, helper extraction, and combined conditions. 16 phases completed. |
+| H3 | **Raw function negation cleanup** | ✅ Done | Replaced all `!file_exists()`, `!function_exists()`, `!class_exists()`, `!in_array()`, `!is_file()`, `!is_dir()`, `!is_readable()`, `!copy()`, `!extension_loaded()` with semantic `BooleanHelpers` guards (`is_file_missing`, `is_func_missing`, `is_class_missing`, `is_not_in_list`, `is_not_regular_file`, `is_not_directory`, `is_file_unreadable`, `is_copy_failed`, `is_extension_missing`, `is_class_not_loaded`). Zero violations remaining. |
+
+### References
+- **Trait decomposition map:** `.lovable/memory/architecture/php/trait-decomposition-map.md`
+- **Boolean guard implementation:** `.lovable/memory/architecture/php/boolean-guard-implementation`
+- **Remediation strategy:** `.lovable/memory/workflow/remediation-strategy-priority`
 
 ---
 
