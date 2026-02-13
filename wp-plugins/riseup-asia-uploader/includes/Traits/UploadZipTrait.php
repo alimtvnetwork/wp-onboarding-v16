@@ -12,14 +12,25 @@ if (!defined('ABSPATH')) {
 
 trait UploadZipTrait
 {
-    /**
-     * Write ZIP content to temp file and validate its structure.
-     *
-     * @param string $zip_content Raw ZIP bytes.
-     * @param string $slug        Optional slug hint.
-     * @return array|WP_REST_Response Array with temp_file and slug, or error response.
-     */
+    /** Write ZIP content to temp file and validate its structure. */
     private function validate_and_write_zip($zip_content, $slug) {
+        $temp_file = $this->writeZipToTemp($zip_content, $slug);
+        if ($temp_file instanceof WP_REST_Response) {
+            return $temp_file;
+        }
+
+        $detected_slug = $this->validateZipStructure($temp_file, $slug);
+        if ($detected_slug instanceof WP_REST_Response) {
+            return $detected_slug;
+        }
+
+        $final_slug = !empty($slug) ? $slug : $detected_slug;
+        $this->file_logger->info('Plugin slug determined', array('slug' => $final_slug));
+        return array('temp_file' => $temp_file, 'slug' => $final_slug);
+    }
+
+    /** Write ZIP content to a temp file. */
+    private function writeZipToTemp(string $zip_content, string $slug) {
         $temp_dir  = $this->get_temp_dir();
         $temp_file = $temp_dir . '/' . ($slug ?: 'plugin_' . time()) . '.zip';
 
@@ -30,6 +41,11 @@ trait UploadZipTrait
             return $this->error_response(MSG_UPLOAD_FAILED, HTTP_SERVER_ERROR);
         }
 
+        return $temp_file;
+    }
+
+    /** Validate ZIP archive and detect plugin slug. */
+    private function validateZipStructure(string $temp_file, string $slug) {
         $this->file_logger->debug('Validating ZIP archive');
         $zip = new ZipArchive();
         if ($zip->open($temp_file) !== true) {
@@ -49,21 +65,10 @@ trait UploadZipTrait
             return $this->error_response('Could not detect plugin in ZIP', HTTP_BAD_REQUEST);
         }
 
-        if (empty($slug)) {
-            $slug = $detected_slug;
-        }
-
-        $this->file_logger->info('Plugin slug determined', array('slug' => $slug));
-        return array('temp_file' => $temp_file, 'slug' => $slug);
+        return $detected_slug;
     }
 
-    /**
-     * Remove duplicate plugin folders that share the same slug or TextDomain.
-     *
-     * @param string $slug        Target plugin slug.
-     * @param string $plugins_dir Absolute path to wp-content/plugins.
-     * @return int Number of duplicates removed.
-     */
+    /** Remove duplicate plugin folders that share the same slug or TextDomain. */
     private function remove_duplicate_plugins($slug, $plugins_dir) {
         if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -73,31 +78,8 @@ trait UploadZipTrait
         $duplicates_removed = 0;
 
         foreach ($all_plugins as $pfile => $pdata) {
-            $pdir = dirname($pfile);
-            $isSkippable = ($pdir === '.' || $pdir === $slug);
-            if ($isSkippable) {
-                continue;
-            }
-
-            $hasMatchingTextDomain = (isset($pdata['TextDomain']) && $pdata['TextDomain'] === $slug);
-            $hasMatchingSlugInPath = (isset($pdata['Name']) && strpos(strtolower($pfile), $slug) !== false);
-            if (!$hasMatchingTextDomain && !$hasMatchingSlugInPath) {
-                continue;
-            }
-
-            $dup_dir = $plugins_dir . '/' . $pdir;
-            $this->file_logger->warn('Duplicate plugin folder detected', array(
-                'duplicate_dir' => $pdir, 'target_slug' => $slug,
-            ));
-
-            if (is_plugin_active($pfile)) {
-                deactivate_plugins($pfile);
-            }
-
-            if (is_dir($dup_dir)) {
-                $this->delete_directory($dup_dir);
-                $duplicates_removed++;
-            }
+            $removed = $this->removeSingleDuplicate($pfile, $pdata, $slug, $plugins_dir);
+            $duplicates_removed += $removed ? 1 : 0;
         }
 
         if ($duplicates_removed > 0) {
@@ -107,9 +89,40 @@ trait UploadZipTrait
         return $duplicates_removed;
     }
 
-    /**
-     * Pre-log self-update activity before files are replaced.
-     */
+    /** Check and remove a single duplicate plugin. Returns true if removed. */
+    private function removeSingleDuplicate(string $pfile, array $pdata, string $slug, string $plugins_dir): bool {
+        $pdir = dirname($pfile);
+        if ($pdir === '.' || $pdir === $slug) {
+            return false;
+        }
+
+        if (!$this->isDuplicatePlugin($pdata, $pfile, $slug)) {
+            return false;
+        }
+
+        $dup_dir = $plugins_dir . '/' . $pdir;
+        $this->file_logger->warn('Duplicate plugin folder detected', array('duplicate_dir' => $pdir, 'target_slug' => $slug));
+
+        if (is_plugin_active($pfile)) {
+            deactivate_plugins($pfile);
+        }
+
+        if (is_dir($dup_dir)) {
+            $this->delete_directory($dup_dir);
+            return true;
+        }
+
+        return false;
+    }
+
+    /** Check if a plugin entry is a duplicate of the target slug. */
+    private function isDuplicatePlugin(array $pdata, string $pfile, string $slug): bool {
+        $hasMatchingTextDomain = (isset($pdata['TextDomain']) && $pdata['TextDomain'] === $slug);
+        $hasMatchingSlugInPath = (isset($pdata['Name']) && strpos(strtolower($pfile), $slug) !== false);
+        return $hasMatchingTextDomain || $hasMatchingSlugInPath;
+    }
+
+    /** Pre-log self-update activity before files are replaced. */
     private function pre_log_self_update($slug, $upload_source, $client_version, $file_size) {
         $old_version = PLUGIN_VERSION;
         $this->file_logger->info('Self-update detected, pre-logging activity', array('old_version' => $old_version));

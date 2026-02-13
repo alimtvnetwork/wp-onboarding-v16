@@ -25,7 +25,6 @@ trait UploadInstallActivateTrait
 
         if (!$plugin_file) {
             $this->logger->log_upload_failed($slug, 'Could not find plugin file after extraction');
-
             return $this->error_response('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
         }
 
@@ -56,46 +55,59 @@ trait UploadInstallActivateTrait
 
         $result = activate_plugin($plugin_file);
         if (is_wp_error($result)) {
-            $error_msg = $result->get_error_message();
-            $this->logger->log_upload_failed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
-            return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
-                ->setSingleResult(array(
-                    'plugin_slug' => $slug, 'is_update' => $is_update,
-                    'activated' => false, 'activation_error' => $error_msg,
-                ))
-                ->toResponse();
+            return $this->buildActivationFailureResponse($slug, $is_update, $result->get_error_message());
         }
 
         return array('activated' => true);
     }
 
+    /** Build response for failed activation after upload. */
+    private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
+        $this->logger->log_upload_failed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
+        return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
+            ->setSingleResult(array(
+                'plugin_slug' => $slug, 'is_update' => $is_update,
+                'activated' => false, 'activation_error' => $error_msg,
+            ))
+            ->toResponse();
+    }
+
     /** Detect the installed plugin version from disk. */
     private function detect_installed_version($plugin_file, $slug, $is_self_update, $client_version) {
-        $installed_version = '';
-        $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
-
-        clearstatcache(true, $full_path);
-        if (file_exists($full_path)) {
-            $file_contents = file_get_contents($full_path, false, null, 0, 8192);
-            if ($file_contents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $file_contents, $matches)) {
-                $installed_version = $matches[1];
-            }
-        }
+        $installed_version = $this->readVersionFromFile($plugin_file);
 
         if (empty($installed_version)) {
-            $plugin_data = get_plugin_data($full_path, false, false);
-            if (!empty($plugin_data['Version'])) {
-                $installed_version = $plugin_data['Version'];
-            }
+            $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin_file, false, false);
+            $installed_version = $plugin_data['Version'] ?? '';
         }
 
-        if ($is_self_update) {
-            $version = $client_version ?: ($installed_version ?: PLUGIN_VERSION);
-        } else {
-            $version = $installed_version ?: ($client_version ?: PLUGIN_VERSION);
-        }
-
+        $version = $this->resolveEffectiveVersion($installed_version, $client_version, $is_self_update);
         return array('version' => $version);
+    }
+
+    /** Read the version header from a plugin's main PHP file. */
+    private function readVersionFromFile(string $plugin_file): string {
+        $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
+        clearstatcache(true, $full_path);
+
+        if (!file_exists($full_path)) {
+            return '';
+        }
+
+        $file_contents = file_get_contents($full_path, false, null, 0, 8192);
+        if ($file_contents !== false && preg_match('/Version:\s*([0-9]+\.[0-9]+\.[0-9]+)/', $file_contents, $matches)) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    /** Resolve the effective version based on self-update status and available sources. */
+    private function resolveEffectiveVersion(string $installed, string $client, bool $is_self_update): string {
+        if ($is_self_update) {
+            return $client ?: ($installed ?: PLUGIN_VERSION);
+        }
+        return $installed ?: ($client ?: PLUGIN_VERSION);
     }
 }

@@ -18,13 +18,7 @@ trait ImportExecutionTrait {
 
     use ImportExecutionFileTrait;
 
-    /**
-     * Import a per-table snapshot (with a-root.db).
-     *
-     * @param string $tempDir    Extracted temp directory.
-     * @param string $rootDbPath Full path to a-root.db.
-     * @return array Result.
-     */
+    /** Import a per-table snapshot (with a-root.db). */
     private function importPerTable($tempDir, $rootDbPath) {
         $this->log('INFO', 'Detected per-table snapshot format');
         $snapshotRoot = dirname($rootDbPath);
@@ -80,13 +74,7 @@ trait ImportExecutionTrait {
         );
     }
 
-    /**
-     * Move snapshot to final location in snapshots directory.
-     *
-     * @param string $snapshotRoot Source directory.
-     * @param array  $metadata     Snapshot metadata.
-     * @return string Destination directory path.
-     */
+    /** Move snapshot to final location in snapshots directory. */
     private function moveSnapshotToFinalLocation(string $snapshotRoot, array $metadata): string {
         $snapshotsDir = RiseupPathUtils::getSnapshotsDir();
         if (!RiseupPathUtils::ensureDir($snapshotsDir, true)) {
@@ -95,50 +83,55 @@ trait ImportExecutionTrait {
 
         $title = $metadata['title'] ?? 'imported';
         $folderName = date('Y-m-d') . '_imported_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $title);
-        $destDir = RiseupPathUtils::join($snapshotsDir, $folderName);
-
-        $counter = 1;
-        while (RiseupPathUtils::dirExists($destDir)) {
-            $destDir = RiseupPathUtils::join($snapshotsDir, $folderName . '_' . $counter);
-            $counter++;
-        }
+        $destDir = $this->resolveUniqueDest(RiseupPathUtils::join($snapshotsDir, $folderName), $snapshotsDir, $folderName);
 
         $this->copyDirectory($snapshotRoot, $destDir);
         return $destDir;
     }
 
-    /**
-     * Register the imported snapshot in the database.
-     *
-     * @param array  $metadata     Metadata from a-root.db.
-     * @param array  $tables       Table inventory.
-     * @param array  $incrementals Incremental records.
-     * @param array  $plugins      Plugin records.
-     * @param string $destDir      Final destination directory.
-     * @return int Snapshot ID.
-     */
+    /** Resolve a unique destination directory path. */
+    private function resolveUniqueDest(string $destDir, string $snapshotsDir, string $folderName): string {
+        $counter = 1;
+        while (RiseupPathUtils::dirExists($destDir)) {
+            $destDir = RiseupPathUtils::join($snapshotsDir, $folderName . '_' . $counter);
+            $counter++;
+        }
+        return $destDir;
+    }
+
+    /** Register the imported snapshot in the database. */
     private function registerImportedSnapshot($metadata, $tables, $incrementals, $plugins, $destDir) {
         $tableNames = array_map(function($t) { return $t['table_name']; }, $tables);
+        $record = $this->buildSnapshotRecord($metadata, $tables, $incrementals, $plugins, $destDir, $tableNames);
 
-        $result = $this->db->insert(TABLE_SNAPSHOTS, array(
+        $result = $this->db->insert(TABLE_SNAPSHOTS, $record);
+        if ($result) {
+            return $this->db->lastInsertId();
+        }
+        throw new Exception('Failed to create snapshot record in database');
+    }
+
+    /** Build the snapshot database record for import. */
+    private function buildSnapshotRecord(array $metadata, array $tables, array $incrementals, array $plugins, string $destDir, array $tableNames): array {
+        return array(
             'sequence' => $this->manager->getNextSequence(), 'filename' => basename($destDir),
             'filepath' => $destDir, 'provider' => SNAPSHOT_PROVIDER_NATIVE,
             'scope' => SNAPSHOT_SCOPE_ALL, 'tables_json' => json_encode($tableNames),
             'total_rows' => $metadata['total_rows'] ?? 0, 'file_size' => $this->getDirectorySize($destDir),
             'trigger_source' => 'import', 'status' => SNAPSHOT_STATUS_COMPLETE,
             'created_at' => date('c'), 'completed_at' => date('c'),
-            'import_source' => json_encode(array(
-                'original_title' => $metadata['title'] ?? null, 'original_type' => $metadata['type'] ?? null,
-                'original_created_at' => $metadata['created_at'] ?? null,
-                'wp_version' => $metadata['wp_version'] ?? null, 'mysql_version' => $metadata['mysql_version'] ?? null,
-                'table_count' => count($tables), 'incremental_count' => count($incrementals),
-                'plugin_count' => count($plugins), 'format' => 'per_table',
-            )),
-        ));
+            'import_source' => json_encode($this->buildImportSourceMeta($metadata, $tables, $incrementals, $plugins)),
+        );
+    }
 
-        if ($result) {
-            return $this->db->lastInsertId();
-        }
-        throw new Exception('Failed to create snapshot record in database');
+    /** Build the import_source metadata. */
+    private function buildImportSourceMeta(array $metadata, array $tables, array $incrementals, array $plugins): array {
+        return array(
+            'original_title' => $metadata['title'] ?? null, 'original_type' => $metadata['type'] ?? null,
+            'original_created_at' => $metadata['created_at'] ?? null,
+            'wp_version' => $metadata['wp_version'] ?? null, 'mysql_version' => $metadata['mysql_version'] ?? null,
+            'table_count' => count($tables), 'incremental_count' => count($incrementals),
+            'plugin_count' => count($plugins), 'format' => 'per_table',
+        );
     }
 }

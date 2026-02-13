@@ -48,14 +48,7 @@ trait AgentHandlerCrudTrait {
         return $this->safe_execute(function() use ($request) {
             $this->file_logger->info('Adding agent site');
 
-            $data = array(
-                'name'         => $request->get_param('name'),
-                'url'          => $request->get_param('url'),
-                'username'     => $request->get_param('username'),
-                'app_password' => $request->get_param('app_password'),
-                'redirect_url' => $request->get_param('redirect_url'),
-            );
-
+            $data = $this->extractAgentData($request);
             $manager = RiseupAgentManager::getInstance();
             $result = $manager->addAgent($data);
 
@@ -64,11 +57,20 @@ trait AgentHandlerCrudTrait {
             }
 
             return new WP_REST_Response(array(
-                'success'  => true,
-                'agent_id' => $result,
-                'message'  => 'Agent site added successfully',
+                'success' => true, 'agent_id' => $result, 'message' => 'Agent site added successfully',
             ), 201);
         }, 'add_agent');
+    }
+
+    /** Extract agent data from a REST request. */
+    private function extractAgentData($request): array {
+        return array(
+            'name'         => $request->get_param('name'),
+            'url'          => $request->get_param('url'),
+            'username'     => $request->get_param('username'),
+            'app_password' => $request->get_param('app_password'),
+            'redirect_url' => $request->get_param('redirect_url'),
+        );
     }
 
     /**

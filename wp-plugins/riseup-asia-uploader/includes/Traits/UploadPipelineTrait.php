@@ -18,12 +18,7 @@ trait UploadPipelineTrait
 {
     use UploadParserTrait;
 
-    /**
-     * Handle plugin upload (multipart or base64 ZIP).
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
+    /** Handle plugin upload (multipart or base64 ZIP). */
     public function handle_upload($request) {
         $this->file_logger->info('Upload endpoint called');
 
@@ -35,12 +30,7 @@ trait UploadPipelineTrait
         }
     }
 
-    /**
-     * Execute the full upload pipeline: parse, validate, extract, activate, respond.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
+    /** Execute the full upload pipeline: parse, validate, extract, activate, respond. */
     private function executeUploadPipeline($request) {
         $input = $this->parse_upload_input($request);
         if ($input instanceof WP_REST_Response) {
@@ -62,11 +52,7 @@ trait UploadPipelineTrait
         return $this->buildUploadResponse($result, $input);
     }
 
-    /**
-     * Log upload initiated event if slug is known.
-     *
-     * @param array $input Parsed upload input.
-     */
+    /** Log upload initiated event if slug is known. */
     private function logUploadInitiated(array $input) {
         if (empty($input['slug'])) {
             return;
@@ -83,34 +69,32 @@ trait UploadPipelineTrait
         ));
     }
 
-    /**
-     * Build the final upload success response and log the result.
-     *
-     * @param array $result Upload result.
-     * @param array $input  Original upload input.
-     * @return WP_REST_Response
-     */
+    /** Build the final upload success response and log the result. */
     private function buildUploadResponse(array $result, array $input) {
+        $this->logUploadResult($result, $input);
+        return $this->buildUploadEnvelope($result, $input);
+    }
+
+    /** Log the upload result to the activity logger. */
+    private function logUploadResult(array $result, array $input) {
         if (!$result['is_self_update']) {
             $this->logger->log_upload($result['slug'], array(
-                'is_update'      => $result['is_update'],
-                'activated'      => $result['activated'],
-                'file_size'      => strlen($input['zip_content']),
-                'plugin_version' => $result['plugin_version'],
+                'is_update' => $result['is_update'], 'activated' => $result['activated'],
+                'file_size' => strlen($input['zip_content']), 'plugin_version' => $result['plugin_version'],
             ), array(
-                'plugin_version' => $result['plugin_version'],
-                'upload_source'  => $input['upload_source'],
+                'plugin_version' => $result['plugin_version'], 'upload_source' => $input['upload_source'],
             ));
         }
 
         $this->file_logger->info('Upload complete', array(
-            'slug'           => $result['slug'],
-            'is_update'      => $result['is_update'],
-            'activated'      => $result['activated'],
-            'plugin_version' => $result['plugin_version'],
-            'upload_source'  => $input['upload_source'],
+            'slug' => $result['slug'], 'is_update' => $result['is_update'],
+            'activated' => $result['activated'], 'plugin_version' => $result['plugin_version'],
+            'upload_source' => $input['upload_source'],
         ));
+    }
 
+    /** Build the upload envelope response. */
+    private function buildUploadEnvelope(array $result, array $input): WP_REST_Response {
         return RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
             ->setSingleResult(array(
