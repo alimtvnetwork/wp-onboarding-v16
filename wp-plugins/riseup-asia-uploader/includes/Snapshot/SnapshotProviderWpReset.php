@@ -31,7 +31,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      *
      * @var string
      */
-    protected $provider_id = RISEUP_SNAPSHOT_PROVIDER_WP_RESET;
+    protected $provider_id = SNAPSHOT_PROVIDER_WP_RESET;
 
     /**
      * Provider name.
@@ -102,11 +102,11 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
             return array(
                 'success' => false,
                 'error' => 'WP Reset is not available',
-                'code' => RISEUP_ERR_PROVIDER_NOT_AVAILABLE,
+                'code' => ERR_PROVIDER_NOT_AVAILABLE,
             );
         }
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Creating snapshot via WP Reset', $options);
+        $this->log(LOG_LEVEL_INFO, 'Creating snapshot via WP Reset', $options);
 
         try {
             // TODO: Implement WP Reset integration
@@ -119,7 +119,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
             );
 
         } catch (Exception $e) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'WP Reset snapshot failed', array(
+            $this->log(LOG_LEVEL_ERROR, 'WP Reset snapshot failed', array(
                 'error' => $e->getMessage(),
             ));
 
@@ -195,7 +195,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      */
     public function getSnapshot($snapshot_id) {
         return $this->db->query_single(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE id = ? AND provider = ?',
+            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE id = ? AND provider = ?',
             array($snapshot_id, $this->provider_id)
         );
     }
@@ -209,12 +209,12 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      */
     public function listSnapshots($limit = 50, $offset = 0) {
         $snapshots = $this->db->query_all(
-            'SELECT * FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
         );
 
         $total = $this->db->query_single(
-            'SELECT COUNT(*) as count FROM ' . RISEUP_TABLE_SNAPSHOTS . ' WHERE provider = ?',
+            'SELECT COUNT(*) as count FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ?',
             array($this->provider_id)
         );
 

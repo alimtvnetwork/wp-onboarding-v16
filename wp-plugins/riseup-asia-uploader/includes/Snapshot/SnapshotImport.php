@@ -353,13 +353,13 @@ class RiseupSnapshotImport {
             'sequence'       => $this->manager->getNextSequence(),
             'filename'       => basename($destDir),
             'filepath'       => $destDir,
-            'provider'       => RISEUP_SNAPSHOT_PROVIDER_NATIVE,
-            'scope'          => RISEUP_SNAPSHOT_SCOPE_ALL,
+            'provider'       => SNAPSHOT_PROVIDER_NATIVE,
+            'scope'          => SNAPSHOT_SCOPE_ALL,
             'tables_json'    => json_encode($tableNames),
             'total_rows'     => $metadata['total_rows'] ?? 0,
             'file_size'      => $this->getDirectorySize($destDir),
             'trigger_source' => 'import',
-            'status'         => RISEUP_SNAPSHOT_STATUS_COMPLETE,
+            'status'         => SNAPSHOT_STATUS_COMPLETE,
             'created_at'     => date('c'),
             'completed_at'   => date('c'),
             'import_source'  => json_encode(array(
@@ -375,7 +375,7 @@ class RiseupSnapshotImport {
             )),
         );
 
-        $result = $this->db->insert(RISEUP_TABLE_SNAPSHOTS, $data);
+        $result = $this->db->insert(TABLE_SNAPSHOTS, $data);
         if ($result) {
             return $this->db->lastInsertId();
         }

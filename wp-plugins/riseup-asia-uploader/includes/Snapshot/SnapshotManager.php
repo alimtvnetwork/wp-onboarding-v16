@@ -110,11 +110,11 @@ class RiseupSnapshotManager {
             return array(
                 'success' => false,
                 'error' => 'No snapshot provider available',
-                'code' => RISEUP_ERR_PROVIDER_NOT_AVAILABLE,
+                'code' => ERR_PROVIDER_NOT_AVAILABLE,
             );
         }
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Creating snapshot', array(
+        $this->log(LOG_LEVEL_INFO, 'Creating snapshot', array(
             'provider' => $provider->getProviderId(),
             'scope' => isset($options['scope']) ? $options['scope'] : 'default',
         ));
@@ -138,7 +138,7 @@ class RiseupSnapshotManager {
             return array(
                 'success' => false,
                 'error' => 'Restore requires explicit confirmation (confirm=true)',
-                'code' => RISEUP_ERR_RESTORE_NO_CONFIRM,
+                'code' => ERR_RESTORE_NO_CONFIRM,
             );
         }
 
@@ -147,7 +147,7 @@ class RiseupSnapshotManager {
             return array(
                 'success' => false,
                 'error' => 'No snapshot provider available',
-                'code' => RISEUP_ERR_PROVIDER_NOT_AVAILABLE,
+                'code' => ERR_PROVIDER_NOT_AVAILABLE,
             );
         }
 
@@ -157,7 +157,7 @@ class RiseupSnapshotManager {
             return array(
                 'success' => false,
                 'error' => 'Snapshot not found',
-                'code' => RISEUP_ERR_SNAPSHOT_NOT_FOUND,
+                'code' => ERR_SNAPSHOT_NOT_FOUND,
             );
         }
 
@@ -170,7 +170,7 @@ class RiseupSnapshotManager {
                 // Resolve master directory from filepath (incremental path is master_dir/incremental/folder)
                 $master_dir = dirname(dirname($snapshot['filepath']));
                 if (!is_dir($master_dir) || !file_exists($master_dir . '/a-root.db')) {
-                    $this->log(RISEUP_LOG_LEVEL_ERROR, 'Incremental restore blocked: parent full snapshot missing', array(
+                    $this->log(LOG_LEVEL_ERROR, 'Incremental restore blocked: parent full snapshot missing', array(
                         'snapshot_id'   => $snapshot_id,
                         'master_dir'    => $master_dirname,
                         'expected_path' => $master_dir,
@@ -178,13 +178,13 @@ class RiseupSnapshotManager {
                     return array(
                         'success' => false,
                         'error'   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
-                        'code'    => RISEUP_ERR_INCREMENTAL_NO_PARENT,
+                        'code'    => ERR_INCREMENTAL_NO_PARENT,
                     );
                 }
             }
         }
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Starting snapshot restore', array(
+        $this->log(LOG_LEVEL_INFO, 'Starting snapshot restore', array(
             'snapshot_id' => $snapshot_id,
             'filename' => $snapshot['filename'],
             'create_backup' => !empty($options['create_backup']),
@@ -196,11 +196,11 @@ class RiseupSnapshotManager {
             $backup_result = $this->createPreRestoreBackup($snapshot_id);
             if ($backup_result['success']) {
                 $backup_id = $backup_result['snapshot_id'];
-                $this->log(RISEUP_LOG_LEVEL_INFO, 'Pre-restore backup created', array(
+                $this->log(LOG_LEVEL_INFO, 'Pre-restore backup created', array(
                     'backup_id' => $backup_id,
                 ));
             } else {
-                $this->log(RISEUP_LOG_LEVEL_WARN, 'Failed to create pre-restore backup', array(
+                $this->log(LOG_LEVEL_WARN, 'Failed to create pre-restore backup', array(
                     'error' => $backup_result['error'],
                 ));
                 // Continue with restore anyway unless strict mode
@@ -218,13 +218,13 @@ class RiseupSnapshotManager {
 
         if ($result['success']) {
             $result['backup_id'] = $backup_id;
-            $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot restored successfully', array(
+            $this->log(LOG_LEVEL_INFO, 'Snapshot restored successfully', array(
                 'snapshot_id' => $snapshot_id,
                 'tables' => $result['tables'] ?? 0,
                 'rows' => $result['rows'] ?? 0,
             ));
         } else {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Snapshot restore failed', array(
+            $this->log(LOG_LEVEL_ERROR, 'Snapshot restore failed', array(
                 'snapshot_id' => $snapshot_id,
                 'error' => $result['error'],
             ));
@@ -276,7 +276,7 @@ class RiseupSnapshotManager {
                 );
             }
 
-            $this->log(RISEUP_LOG_LEVEL_INFO, 'Restoring tables', array(
+            $this->log(LOG_LEVEL_INFO, 'Restoring tables', array(
                 'count' => count($tables),
                 'mode' => $mode,
             ));
@@ -289,13 +289,13 @@ class RiseupSnapshotManager {
                 if ($result['success']) {
                     $total_rows += $result['rows'];
                     $restored_tables++;
-                    $this->log(RISEUP_LOG_LEVEL_INFO, sprintf(
+                    $this->log(LOG_LEVEL_INFO, sprintf(
                         'Table %s restored (%d rows)',
                         $table,
                         $result['rows']
                     ));
                 } else {
-                    $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to restore table: ' . $table, array(
+                    $this->log(LOG_LEVEL_ERROR, 'Failed to restore table: ' . $table, array(
                         'error' => $result['error'],
                     ));
                     // Continue with other tables unless strict mode
@@ -316,7 +316,7 @@ class RiseupSnapshotManager {
             );
 
         } catch (Exception $e) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Restore exception', array(
+            $this->log(LOG_LEVEL_ERROR, 'Restore exception', array(
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ));
@@ -358,7 +358,7 @@ class RiseupSnapshotManager {
                 $this->wpdb->query("TRUNCATE TABLE `{$table}`");
 
                 // Get all rows from SQLite
-                $batch_size = RISEUP_SNAPSHOT_BATCH_SIZE;
+                $batch_size = SNAPSHOT_BATCH_SIZE;
                 $offset = 0;
                 $total_rows = 0;
 
@@ -427,8 +427,8 @@ class RiseupSnapshotManager {
         }
 
         return $provider->createSnapshot(array(
-            'scope' => RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
-            'trigger' => RISEUP_SNAPSHOT_TRIGGER_API,
+            'scope' => SNAPSHOT_SCOPE_WORDPRESS,
+            'trigger' => SNAPSHOT_TRIGGER_API,
             'pre_restore_of' => $original_snapshot_id,
         ));
     }
@@ -453,7 +453,7 @@ class RiseupSnapshotManager {
             return array(
                 'success' => false,
                 'error' => 'Snapshot not found',
-                'code' => RISEUP_ERR_SNAPSHOT_NOT_FOUND,
+                'code' => ERR_SNAPSHOT_NOT_FOUND,
             );
         }
 
@@ -471,7 +471,7 @@ class RiseupSnapshotManager {
         // Create ZIP
         $zip = new ZipArchive();
         if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to create ZIP file', array('path' => $zip_path));
+            $this->log(LOG_LEVEL_ERROR, 'Failed to create ZIP file', array('path' => $zip_path));
             return array(
                 'success' => false,
                 'error' => 'Failed to create ZIP file',
@@ -489,7 +489,7 @@ class RiseupSnapshotManager {
 
         $size = filesize($zip_path);
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot exported to ZIP', array(
+        $this->log(LOG_LEVEL_INFO, 'Snapshot exported to ZIP', array(
             'snapshot_id' => $snapshot_id,
             'zip_path' => $zip_path,
             'size' => RiseupPathUtils::formatBytes($size),
@@ -511,7 +511,7 @@ class RiseupSnapshotManager {
      */
     private function createExportManifest($snapshot) {
         return array(
-            'version' => RISEUP_VERSION,
+            'version' => PLUGIN_VERSION,
             'format_version' => '1.0',
             'created_at' => date('c'),
             'exported_at' => date('c'),
@@ -559,7 +559,7 @@ class RiseupSnapshotManager {
             );
         }
 
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Importing snapshot from ZIP', array(
+        $this->log(LOG_LEVEL_INFO, 'Importing snapshot from ZIP', array(
             'path' => $uploaded_path,
             'size' => RiseupPathUtils::formatBytes(filesize($uploaded_path)),
         ));
@@ -646,7 +646,7 @@ class RiseupSnapshotManager {
             // Cleanup temp directory
             $this->deleteDirectory($temp_dir);
 
-            $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot imported successfully', array(
+            $this->log(LOG_LEVEL_INFO, 'Snapshot imported successfully', array(
                 'snapshot_id' => $snapshot_id,
                 'filename' => $new_filename,
             ));
@@ -665,7 +665,7 @@ class RiseupSnapshotManager {
                 $this->deleteDirectory($temp_dir);
             }
 
-            $this->log(RISEUP_LOG_LEVEL_ERROR, 'Snapshot import failed', array(
+            $this->log(LOG_LEVEL_ERROR, 'Snapshot import failed', array(
                 'error' => $e->getMessage(),
             ));
 
@@ -785,7 +785,7 @@ class RiseupSnapshotManager {
             )),
         );
 
-        $result = $this->db->insert(RISEUP_TABLE_SNAPSHOTS, $data);
+        $result = $this->db->insert(TABLE_SNAPSHOTS, $data);
 
         if ($result) {
             return $this->db->lastInsertId();
@@ -893,7 +893,7 @@ class RiseupSnapshotManager {
                     $settings[$key] = $this->castSettingValue($row['value'], $row['type']);
                 }
             } catch (Exception $e) {
-                $this->log(RISEUP_LOG_LEVEL_WARN, 'Failed to read snapshot_settings from SQLite', array('error' => $e->getMessage()));
+                $this->log(LOG_LEVEL_WARN, 'Failed to read snapshot_settings from SQLite', array('error' => $e->getMessage()));
             }
         }
         
@@ -905,13 +905,13 @@ class RiseupSnapshotManager {
             'storage_path'       => 'snapshots/',
             'include_plugins'    => true,
             'plugin_selection'   => 'all',
-            'retention_days'     => RISEUP_SNAPSHOT_RETENTION_DAYS_DEFAULT,
-            'retention_count'    => RISEUP_SNAPSHOT_RETENTION_COUNT_DEFAULT,
+            'retention_days'     => SNAPSHOT_RETENTION_DAYS_DEFAULT,
+            'retention_count'    => SNAPSHOT_RETENTION_COUNT_DEFAULT,
             'compression'        => true,
-            'batch_size'         => RISEUP_SNAPSHOT_BATCH_SIZE,
-            'provider'           => RISEUP_SNAPSHOT_PROVIDER_AUTO,
-            'scope'              => RISEUP_SNAPSHOT_SCOPE_WORDPRESS,
-            'frequency'          => RISEUP_SNAPSHOT_FREQ_MANUAL,
+            'batch_size'         => SNAPSHOT_BATCH_SIZE,
+            'provider'           => SNAPSHOT_PROVIDER_AUTO,
+            'scope'              => SNAPSHOT_SCOPE_WORDPRESS,
+            'frequency'          => SNAPSHOT_FREQ_MANUAL,
             'schedule_time'      => '03:00',
             'pre_restore_backup' => true,
             'custom_tables'      => array(),
@@ -941,7 +941,7 @@ class RiseupSnapshotManager {
                     $stmt->execute(array($dbKey, $dbValue, $type, $now));
                 }
             } catch (Exception $e) {
-                $this->log(RISEUP_LOG_LEVEL_ERROR, 'Failed to update snapshot_settings', array('error' => $e->getMessage()));
+                $this->log(LOG_LEVEL_ERROR, 'Failed to update snapshot_settings', array('error' => $e->getMessage()));
             }
         }
 
@@ -953,7 +953,7 @@ class RiseupSnapshotManager {
         }
 
         $result = $this->getSettings();
-        $this->log(RISEUP_LOG_LEVEL_INFO, 'Snapshot settings updated', array(
+        $this->log(LOG_LEVEL_INFO, 'Snapshot settings updated', array(
             'keys' => array_keys($settings),
         ));
 
