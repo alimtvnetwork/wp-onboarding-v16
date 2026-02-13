@@ -135,7 +135,6 @@ class RiseupSnapshotManager {
      * @return array Result with success status.
      */
     public function restoreSnapshot($snapshot_id, $options = array()) {
-        // Verify confirmation flag for safety
         if (empty($options['confirm']) || $options['confirm'] !== true) {
             return array(
                 'success' => false,
@@ -146,45 +145,17 @@ class RiseupSnapshotManager {
 
         $provider = $this->getProvider();
         if (!$provider) {
-            return array(
-                'success' => false,
-                'error' => 'No snapshot provider available',
-                'code' => ERR_PROVIDER_NOT_AVAILABLE,
-            );
+            return array('success' => false, 'error' => 'No snapshot provider available', 'code' => ERR_PROVIDER_NOT_AVAILABLE);
         }
 
-        // Get snapshot details
         $snapshot = $provider->getSnapshot($snapshot_id);
         if (!$snapshot) {
-            return array(
-                'success' => false,
-                'error' => 'Snapshot not found',
-                'code' => ERR_SNAPSHOT_NOT_FOUND,
-            );
+            return array('success' => false, 'error' => 'Snapshot not found', 'code' => ERR_SNAPSHOT_NOT_FOUND);
         }
 
-        // --- Incremental restore guard: parent full snapshot must exist ---
-        if (isset($snapshot['scope']) && $snapshot['scope'] === 'incremental') {
-            $tables_meta = json_decode($snapshot['tables_json'] ?? '{}', true);
-            $master_dirname = $tables_meta['master'] ?? null;
-
-            if ($master_dirname) {
-                // Resolve master directory from filepath (incremental path is master_dir/incremental/folder)
-                $master_dir = dirname(dirname($snapshot['filepath']));
-                $isMasterMissing = RiseupBooleanHelpers::is_dir_missing($master_dir) || RiseupBooleanHelpers::is_file_missing($master_dir . '/a-root.db');
-                if ($isMasterMissing) {
-                    $this->log(LOG_LEVEL_ERROR, 'Incremental restore blocked: parent full snapshot missing', array(
-                        'snapshot_id'   => $snapshot_id,
-                        'master_dir'    => $master_dirname,
-                        'expected_path' => $master_dir,
-                    ));
-                    return array(
-                        'success' => false,
-                        'error'   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
-                        'code'    => ERR_INCREMENTAL_NO_PARENT,
-                    );
-                }
-            }
+        $guard = $this->validateIncrementalParent($snapshot, $snapshot_id);
+        if ($guard !== null) {
+            return $guard;
         }
 
         $this->log(LOG_LEVEL_INFO, 'Starting snapshot restore', array(
@@ -193,47 +164,92 @@ class RiseupSnapshotManager {
             'create_backup' => !empty($options['create_backup']),
         ));
 
-        // Create pre-restore backup if requested (default true)
-        $backup_id = null;
-        if (!isset($options['create_backup']) || $options['create_backup'] === true) {
-            $backup_result = $this->createPreRestoreBackup($snapshot_id);
-            if ($backup_result['success']) {
-                $backup_id = $backup_result['snapshot_id'];
-                $this->log(LOG_LEVEL_INFO, 'Pre-restore backup created', array(
-                    'backup_id' => $backup_id,
-                ));
-            } else {
-                $this->log(LOG_LEVEL_WARN, 'Failed to create pre-restore backup', array(
-                    'error' => $backup_result['error'],
-                ));
-                // Continue with restore anyway unless strict mode
-                if (!empty($options['require_backup'])) {
-                    return array(
-                        'success' => false,
-                        'error' => 'Pre-restore backup failed: ' . $backup_result['error'],
-                    );
-                }
-            }
+        $backup_id = $this->handlePreRestoreBackup($options, $snapshot_id);
+        if ($backup_id instanceof array) {
+            return $backup_id; // Error array from strict-mode failure
         }
 
-        // Execute restore via provider
         $result = $this->executeRestore($snapshot, $options);
 
         if ($result['success']) {
             $result['backup_id'] = $backup_id;
             $this->log(LOG_LEVEL_INFO, 'Snapshot restored successfully', array(
-                'snapshot_id' => $snapshot_id,
-                'tables' => $result['tables'] ?? 0,
-                'rows' => $result['rows'] ?? 0,
+                'snapshot_id' => $snapshot_id, 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
             ));
         } else {
             $this->log(LOG_LEVEL_ERROR, 'Snapshot restore failed', array(
-                'snapshot_id' => $snapshot_id,
-                'error' => $result['error'],
+                'snapshot_id' => $snapshot_id, 'error' => $result['error'],
             ));
         }
 
         return $result;
+    }
+
+    /**
+     * Validate that an incremental snapshot's parent full snapshot exists.
+     *
+     * @param array $snapshot    Snapshot record.
+     * @param int   $snapshot_id Snapshot ID (for logging).
+     * @return array|null Error array if blocked, null if OK.
+     */
+    private function validateIncrementalParent($snapshot, $snapshot_id) {
+        $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === 'incremental');
+        if (!$isIncremental) {
+            return null;
+        }
+
+        $tables_meta = json_decode($snapshot['tables_json'] ?? '{}', true);
+        $master_dirname = $tables_meta['master'] ?? null;
+
+        if (!$master_dirname) {
+            return null;
+        }
+
+        $master_dir = dirname(dirname($snapshot['filepath']));
+        $isMasterMissing = RiseupBooleanHelpers::is_dir_missing($master_dir) || RiseupBooleanHelpers::is_file_missing($master_dir . '/a-root.db');
+        if (!$isMasterMissing) {
+            return null;
+        }
+
+        $this->log(LOG_LEVEL_ERROR, 'Incremental restore blocked: parent full snapshot missing', array(
+            'snapshot_id' => $snapshot_id, 'master_dir' => $master_dirname, 'expected_path' => $master_dir,
+        ));
+
+        return array(
+            'success' => false,
+            'error'   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
+            'code'    => ERR_INCREMENTAL_NO_PARENT,
+        );
+    }
+
+    /**
+     * Handle pre-restore backup creation with optional strict enforcement.
+     *
+     * @param array $options     Restore options.
+     * @param int   $snapshot_id Snapshot being restored.
+     * @return int|null|array Backup ID on success, null if skipped, error array if strict-mode failure.
+     */
+    private function handlePreRestoreBackup($options, $snapshot_id) {
+        $shouldBackup = (!isset($options['create_backup']) || $options['create_backup'] === true);
+        if (!$shouldBackup) {
+            return null;
+        }
+
+        $backup_result = $this->createPreRestoreBackup($snapshot_id);
+
+        if ($backup_result['success']) {
+            $this->log(LOG_LEVEL_INFO, 'Pre-restore backup created', array('backup_id' => $backup_result['snapshot_id']));
+
+            return $backup_result['snapshot_id'];
+        }
+
+        $this->log(LOG_LEVEL_WARN, 'Failed to create pre-restore backup', array('error' => $backup_result['error']));
+
+        if (!empty($options['require_backup'])) {
+            return array('success' => false, 'error' => 'Pre-restore backup failed: ' . $backup_result['error']);
+        }
+
+        return null;
     }
 
     /**
@@ -247,41 +263,21 @@ class RiseupSnapshotManager {
         $start_time = microtime(true);
         $filepath = $snapshot['filepath'];
 
-        // Validate file exists
         if (!RiseupPathUtils::fileExists($filepath)) {
-            return array(
-                'success' => false,
-                'error' => 'Snapshot file not found: ' . basename($filepath),
-            );
+            return array('success' => false, 'error' => 'Snapshot file not found: ' . basename($filepath));
         }
 
         try {
-            // Open SQLite database
             $sqlite = new PDO('sqlite:' . $filepath);
             $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-            // Get tables to restore
-            $tables_json = $snapshot['tables_json'];
-            $all_tables = json_decode($tables_json, true);
-
-            // Filter by mode if selective
-            $mode = isset($options['mode']) ? $options['mode'] : 'full';
-            if ($mode === 'selective' && !empty($options['tables'])) {
-                $tables = array_intersect($all_tables, $options['tables']);
-            } else {
-                $tables = $all_tables;
-            }
-
+            $tables = $this->getRestoreTables($snapshot, $options);
             if (empty($tables)) {
-                return array(
-                    'success' => false,
-                    'error' => 'No tables to restore',
-                );
+                return array('success' => false, 'error' => 'No tables to restore');
             }
 
             $this->log(LOG_LEVEL_INFO, 'Restoring tables', array(
-                'count' => count($tables),
-                'mode' => $mode,
+                'count' => count($tables), 'mode' => $options['mode'] ?? 'full',
             ));
 
             $total_rows = 0;
@@ -292,42 +288,43 @@ class RiseupSnapshotManager {
                 if ($result['success']) {
                     $total_rows += $result['rows'];
                     $restored_tables++;
-                    $this->log(LOG_LEVEL_INFO, sprintf(
-                        'Table %s restored (%d rows)',
-                        $table,
-                        $result['rows']
-                    ));
-                } else {
-                    $this->log(LOG_LEVEL_ERROR, 'Failed to restore table: ' . $table, array(
-                        'error' => $result['error'],
-                    ));
-                    // Continue with other tables unless strict mode
-                    if (!empty($options['strict'])) {
-                        throw new Exception('Table restore failed: ' . $table);
-                    }
+                    $this->log(LOG_LEVEL_INFO, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
+                    continue;
+                }
+
+                $this->log(LOG_LEVEL_ERROR, 'Failed to restore table: ' . $table, array('error' => $result['error']));
+                if (!empty($options['strict'])) {
+                    throw new Exception('Table restore failed: ' . $table);
                 }
             }
 
-            $sqlite = null; // Close connection
-            $duration = microtime(true) - $start_time;
+            $sqlite = null;
 
-            return array(
-                'success' => true,
-                'tables' => $restored_tables,
-                'rows' => $total_rows,
-                'duration' => $duration,
-            );
-
+            return array('success' => true, 'tables' => $restored_tables, 'rows' => $total_rows, 'duration' => microtime(true) - $start_time);
         } catch (Exception $e) {
-            $this->log(LOG_LEVEL_ERROR, 'Restore exception', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-            return array(
-                'success' => false,
-                'error' => $e->getMessage(),
-            );
+            $this->log(LOG_LEVEL_ERROR, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+
+            return array('success' => false, 'error' => $e->getMessage());
         }
+    }
+
+    /**
+     * Determine which tables to restore based on mode and options.
+     *
+     * @param array $snapshot Snapshot record.
+     * @param array $options  Restore options with optional 'mode' and 'tables' keys.
+     * @return array List of table names to restore.
+     */
+    private function getRestoreTables($snapshot, $options) {
+        $all_tables = json_decode($snapshot['tables_json'], true);
+        $mode = isset($options['mode']) ? $options['mode'] : 'full';
+
+        $isSelective = ($mode === 'selective' && !empty($options['tables']));
+        if ($isSelective) {
+            return array_intersect($all_tables, $options['tables']);
+        }
+
+        return $all_tables;
     }
 
     /**
@@ -339,82 +336,86 @@ class RiseupSnapshotManager {
      */
     private function restoreTable($sqlite, $table) {
         try {
-            // Check if table exists in SQLite
             $check = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");
             if (!$check->fetch()) {
                 return array('success' => false, 'error' => 'Table not found in snapshot', 'rows' => 0);
             }
 
-            // Get column info from SQLite
             $columns_result = $sqlite->query("PRAGMA table_info('{$table}')");
             $columns = $columns_result->fetchAll(PDO::FETCH_ASSOC);
             $column_names = array_column($columns, 'name');
 
-            // Truncate MySQL table (use transaction for safety)
-            $this->wpdb->query("START TRANSACTION");
+            return $this->truncateAndInsert($sqlite, $table, $column_names);
+        } catch (Exception $e) {
+            return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
+        }
+    }
 
-            try {
-                // Disable foreign key checks
-                $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
+    /**
+     * Truncate a MySQL table and batch-insert rows from SQLite.
+     *
+     * @param PDO    $sqlite       SQLite PDO connection.
+     * @param string $table        Table name.
+     * @param array  $column_names Column name list.
+     * @return array Result with success and rows count.
+     */
+    private function truncateAndInsert($sqlite, $table, $column_names) {
+        $this->wpdb->query("START TRANSACTION");
 
-                // Truncate the table
-                $this->wpdb->query("TRUNCATE TABLE `{$table}`");
+        try {
+            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
+            $this->wpdb->query("TRUNCATE TABLE `{$table}`");
 
-                // Get all rows from SQLite
-                $batch_size = SNAPSHOT_BATCH_SIZE;
-                $offset = 0;
-                $total_rows = 0;
+            $count_stmt = $sqlite->query("SELECT COUNT(*) FROM `{$table}`");
+            $row_count = $count_stmt->fetchColumn();
 
-                // Count total rows
-                $count_stmt = $sqlite->query("SELECT COUNT(*) FROM `{$table}`");
-                $row_count = $count_stmt->fetchColumn();
+            $total_rows = $this->insertBatchFromSqlite($sqlite, $table, $column_names, $row_count);
 
-                while ($offset < $row_count) {
-                    $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$batch_size} OFFSET {$offset}")->fetchAll(PDO::FETCH_ASSOC);
+            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
+            $this->wpdb->query("COMMIT");
 
-                    foreach ($rows as $row) {
-                        // Build INSERT statement
-                        $values = array();
-                        $placeholders = array();
+            return array('success' => true, 'rows' => $total_rows);
+        } catch (Exception $e) {
+            $this->wpdb->query("ROLLBACK");
+            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
+            throw $e;
+        }
+    }
 
-                        foreach ($column_names as $col) {
-                            $values[] = isset($row[$col]) ? $row[$col] : null;
-                            $placeholders[] = '%s';
-                        }
+    /**
+     * Batch-insert rows from a SQLite table into MySQL.
+     *
+     * @param PDO    $sqlite       SQLite PDO connection.
+     * @param string $table        Table name.
+     * @param array  $column_names Column name list.
+     * @param int    $row_count    Total row count for offset pagination.
+     * @return int Total rows inserted.
+     */
+    private function insertBatchFromSqlite($sqlite, $table, $column_names, $row_count) {
+        $batch_size = SNAPSHOT_BATCH_SIZE;
+        $offset = 0;
+        $total_rows = 0;
+        $columns_sql = '`' . implode('`, `', $column_names) . '`';
+        $placeholders_sql = implode(', ', array_fill(0, count($column_names), '%s'));
 
-                        $columns_sql = '`' . implode('`, `', $column_names) . '`';
-                        $placeholders_sql = implode(', ', $placeholders);
+        while ($offset < $row_count) {
+            $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$batch_size} OFFSET {$offset}")->fetchAll(PDO::FETCH_ASSOC);
 
-                        $sql = "INSERT INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders_sql})";
-                        $prepared = $this->wpdb->prepare($sql, $values);
-                        $this->wpdb->query($prepared);
-
-                        $total_rows++;
-                    }
-
-                    $offset += $batch_size;
+            foreach ($rows as $row) {
+                $values = array();
+                foreach ($column_names as $col) {
+                    $values[] = isset($row[$col]) ? $row[$col] : null;
                 }
 
-                // Re-enable foreign key checks
-                $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-
-                $this->wpdb->query("COMMIT");
-
-                return array('success' => true, 'rows' => $total_rows);
-
-            } catch (Exception $e) {
-                $this->wpdb->query("ROLLBACK");
-                $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-                throw $e;
+                $sql = "INSERT INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders_sql})";
+                $this->wpdb->query($this->wpdb->prepare($sql, $values));
+                $total_rows++;
             }
 
-        } catch (Exception $e) {
-            return array(
-                'success' => false,
-                'error' => $e->getMessage(),
-                'rows' => 0,
-            );
+            $offset += $batch_size;
         }
+
+        return $total_rows;
     }
 
     /**
