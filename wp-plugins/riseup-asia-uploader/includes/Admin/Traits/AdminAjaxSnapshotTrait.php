@@ -35,46 +35,67 @@ trait AdminAjaxSnapshotTrait {
      */
     private function parseSnapshotSettingsFromPost(): array {
         $settings = array();
-        $text_fields = array(
-            'preferred_provider', 'schedule_frequency', 'schedule_time',
-            'default_scope', 'retention_type',
-        );
+        $this->parsePostTextFields($settings);
+        $this->parsePostIntFields($settings);
+        $this->parsePostBoolFields($settings);
+        $this->parsePostWorkerPool($settings);
+        $this->parsePostStorageMode($settings);
 
-        foreach ($text_fields as $field) {
+        return $settings;
+    }
+
+    /** Parse text fields from $_POST into settings. */
+    private function parsePostTextFields(array &$settings) {
+        $fields = array('preferred_provider', 'schedule_frequency', 'schedule_time', 'default_scope', 'retention_type');
+        foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 $settings[$field] = sanitize_text_field($_POST[$field]);
             }
         }
+    }
 
-        $int_fields = array('schedule_day', 'retention_days', 'retention_count', 'max_snapshot_size_mb', 'batch_size');
-        foreach ($int_fields as $field) {
+    /** Parse integer fields from $_POST into settings. */
+    private function parsePostIntFields(array &$settings) {
+        $fields = array('schedule_day', 'retention_days', 'retention_count', 'max_snapshot_size_mb', 'batch_size');
+        foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 $settings[$field] = intval($_POST[$field]);
             }
         }
+    }
 
-        $bool_fields = array('schedule_enabled', 'pre_restore_backup');
-        foreach ($bool_fields as $field) {
+    /** Parse boolean fields from $_POST into settings. */
+    private function parsePostBoolFields(array &$settings) {
+        $fields = array('schedule_enabled', 'pre_restore_backup');
+        foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 $settings[$field] = ($_POST[$field] === '1');
             }
         }
+    }
 
-        if (isset($_POST['worker_pool_size'])) {
-            $settings['worker_pool_size'] = max(
-                SNAPSHOT_WORKER_POOL_MIN,
-                min(SNAPSHOT_WORKER_POOL_MAX, intval($_POST['worker_pool_size']))
-            );
+    /** Parse worker_pool_size with clamping from $_POST. */
+    private function parsePostWorkerPool(array &$settings) {
+        if (!isset($_POST['worker_pool_size'])) {
+            return;
         }
 
-        if (isset($_POST['storage_mode'])) {
-            $mode = sanitize_text_field($_POST['storage_mode']);
-            if (in_array($mode, array('single', 'per-table'))) {
-                $settings['storage_mode'] = $mode;
-            }
+        $settings['worker_pool_size'] = max(
+            SNAPSHOT_WORKER_POOL_MIN,
+            min(SNAPSHOT_WORKER_POOL_MAX, intval($_POST['worker_pool_size']))
+        );
+    }
+
+    /** Parse storage_mode with validation from $_POST. */
+    private function parsePostStorageMode(array &$settings) {
+        if (!isset($_POST['storage_mode'])) {
+            return;
         }
 
-        return $settings;
+        $mode = sanitize_text_field($_POST['storage_mode']);
+        if (in_array($mode, array('single', 'per-table'))) {
+            $settings['storage_mode'] = $mode;
+        }
     }
 
     /**

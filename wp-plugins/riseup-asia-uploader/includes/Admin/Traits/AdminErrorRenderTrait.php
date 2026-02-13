@@ -91,6 +91,18 @@ trait AdminErrorRenderTrait {
         $per_page = 50;
         $offset = ($page - 1) * $per_page;
 
+        $filter = $this->buildErrorFilters($defaults);
+        $total = $this->countFilteredErrors($pdo, $filter);
+        $total_pages = max(1, ceil($total / $per_page));
+        $errors = $this->fetchFilteredErrors($pdo, $filter, $per_page, $offset);
+
+        return $this->assembleErrorPageResult($errors, $total, $total_pages, $page, $defaults);
+    }
+
+    /**
+     * Build WHERE clause and params from filter defaults.
+     */
+    private function buildErrorFilters(array $defaults): array {
         $where = array();
         $params = array();
 
@@ -106,35 +118,55 @@ trait AdminErrorRenderTrait {
 
         $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$where_sql}");
-        $stmt->execute($params);
-        $total = (int) $stmt->fetchColumn();
-        $total_pages = max(1, ceil($total / $per_page));
+        return array('where_sql' => $where_sql, 'params' => $params);
+    }
 
-        $stmt = $pdo->prepare("SELECT * FROM error_sessions {$where_sql} ORDER BY id DESC LIMIT ? OFFSET ?");
-        $stmt->execute(array_merge($params, array($per_page, $offset)));
-        $errors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    /**
+     * Count total filtered error sessions.
+     */
+    private function countFilteredErrors(PDO $pdo, array $filter): int {
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$filter['where_sql']}");
+        $stmt->execute($filter['params']);
 
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Fetch paginated filtered error sessions.
+     */
+    private function fetchFilteredErrors(PDO $pdo, array $filter, int $per_page, int $offset): array {
+        $stmt = $pdo->prepare("SELECT * FROM error_sessions {$filter['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?");
+        $stmt->execute(array_merge($filter['params'], array($per_page, $offset)));
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Assemble the final error page result array.
+     */
+    private function assembleErrorPageResult(array $errors, int $total, int $total_pages, int $page, array $defaults): array {
         $last_seen_id = $this->get_flash_value('last_seen_error_id', 0);
         $has_unseen = ($this->get_flash_value('has_unseen_errors', '0') === '1');
         $unseen_count = $this->get_unseen_error_count();
-        $latest_error_time = '';
-        if (!empty($errors) && $has_unseen) {
-            $latest_error_time = date('Y-m-d H:i:s', strtotime($errors[0]['created_at']));
-        }
+        $latest_error_time = $this->resolveLatestErrorTime($errors, $has_unseen);
 
         return array(
-            'errors'            => $errors,
-            'total'             => $total,
-            'total_pages'       => $total_pages,
-            'page'              => $page,
-            'last_seen_id'      => $last_seen_id,
-            'has_unseen'        => $has_unseen,
-            'unseen_count'      => $unseen_count,
-            'latest_error_time' => $latest_error_time,
-            'filter_level'      => $defaults['filter_level'],
-            'filter_search'     => $defaults['filter_search'],
-            'db_error_message'  => '',
+            'errors' => $errors, 'total' => $total, 'total_pages' => $total_pages,
+            'page' => $page, 'last_seen_id' => $last_seen_id, 'has_unseen' => $has_unseen,
+            'unseen_count' => $unseen_count, 'latest_error_time' => $latest_error_time,
+            'filter_level' => $defaults['filter_level'], 'filter_search' => $defaults['filter_search'],
+            'db_error_message' => '',
         );
+    }
+
+    /**
+     * Resolve the latest error time string.
+     */
+    private function resolveLatestErrorTime(array $errors, bool $has_unseen): string {
+        if (empty($errors) || !$has_unseen) {
+            return '';
+        }
+
+        return date('Y-m-d H:i:s', strtotime($errors[0]['created_at']));
     }
 }

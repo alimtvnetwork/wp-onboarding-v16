@@ -59,6 +59,17 @@ trait NativeTableExportTrait {
      * @return array Export result.
      */
     private function exportTableRows($sqlite, $table, int $count): array {
+        $insert = $this->prepareInsertStatement($sqlite, $table);
+
+        $sqlite->beginTransaction();
+        $result = $this->executeBatchExport($insert['stmt'], $table, $count);
+        $sqlite->commit();
+
+        return array('success' => true, 'rows' => $result['exported'], 'bytes' => $result['bytes']);
+    }
+
+    /** Prepare the INSERT statement for a table. */
+    private function prepareInsertStatement(PDO $sqlite, string $table): array {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
         $column_names = array_column($columns, 'Field');
         $placeholders = implode(', ', array_fill(0, count($column_names), '?'));
@@ -66,12 +77,15 @@ trait NativeTableExportTrait {
 
         $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$column_list}) VALUES ({$placeholders})");
 
+        return array('stmt' => $stmt);
+    }
+
+    /** Execute batched row export from MySQL to SQLite. */
+    private function executeBatchExport(PDOStatement $stmt, string $table, int $count): array {
         $batch_size = SNAPSHOT_BATCH_SIZE;
         $offset = 0;
         $exported = 0;
         $bytes = 0;
-
-        $sqlite->beginTransaction();
 
         while ($offset < $count) {
             $rows = $this->wpdb->get_results(
@@ -89,8 +103,7 @@ trait NativeTableExportTrait {
             $this->logExportProgress($table, $offset, $count, $batch_size);
         }
 
-        $sqlite->commit();
-        return array('success' => true, 'rows' => $exported, 'bytes' => $bytes);
+        return array('exported' => $exported, 'bytes' => $bytes);
     }
 
     /**

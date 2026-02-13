@@ -42,43 +42,66 @@ class RiseupInitHelpers {
      * @return PDO|null PDO instance on success, null on failure.
      */
     public static function initSqliteConnection($db_path, $logger) {
-        if (RiseupBooleanHelpers::is_class_missing('PDO')) {
-            if (!self::$pdo_unavailable_warned) {
-                $logger->warn('[INIT] PDO class not found - PHP PDO extension not installed. Database features will be skipped.');
-                self::$pdo_unavailable_warned = true;
-            }
+        $prereqError = self::checkSqlitePrerequisites($logger);
+        if ($prereqError) {
             return null;
+        }
+
+        return self::createPdoConnection($db_path, $logger);
+    }
+
+    /** Check that PDO and pdo_sqlite extensions are available. */
+    private static function checkSqlitePrerequisites($logger): bool {
+        if (RiseupBooleanHelpers::is_class_missing('PDO')) {
+            self::warnPdoUnavailable($logger, 'PDO class not found - PHP PDO extension not installed.');
+
+            return true;
         }
 
         if (RiseupBooleanHelpers::is_extension_missing('pdo_sqlite')) {
-            if (!self::$pdo_unavailable_warned) {
-                $logger->warn('[INIT] PDO SQLite extension not loaded. Database features will be skipped.');
-                self::$pdo_unavailable_warned = true;
-            }
-            return null;
+            self::warnPdoUnavailable($logger, 'PDO SQLite extension not loaded.');
+
+            return true;
         }
 
+        return false;
+    }
+
+    /** Log a PDO unavailability warning once. */
+    private static function warnPdoUnavailable($logger, string $message) {
+        if (self::$pdo_unavailable_warned) {
+            return;
+        }
+
+        $logger->warn('[INIT] ' . $message . ' Database features will be skipped.');
+        self::$pdo_unavailable_warned = true;
+    }
+
+    /** Create and configure a PDO SQLite connection. */
+    private static function createPdoConnection(string $db_path, $logger): ?PDO {
         try {
             $pdo = new PDO('sqlite:' . $db_path);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-
-            if (defined('DB_WAL_MODE') && DB_WAL_MODE) {
-                $pdo->exec('PRAGMA journal_mode = WAL');
-            }
-
-            $pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');
+            self::applySqlitePragmas($pdo);
 
             $logger->info('[INIT] SQLite connection established', array('path' => $db_path));
-            return $pdo;
 
+            return $pdo;
         } catch (PDOException $e) {
-            $logger->error('[INIT] SQLite connection failed: ' . $e->getMessage(), array(
-                'path' => $db_path,
-                'code' => $e->getCode(),
-            ));
+            $logger->error('[INIT] SQLite connection failed: ' . $e->getMessage(), array('path' => $db_path, 'code' => $e->getCode()));
+
             return null;
         }
+    }
+
+    /** Apply PRAGMA settings to a SQLite connection. */
+    private static function applySqlitePragmas(PDO $pdo) {
+        if (defined('DB_WAL_MODE') && DB_WAL_MODE) {
+            $pdo->exec('PRAGMA journal_mode = WAL');
+        }
+
+        $pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');
     }
 
     /**

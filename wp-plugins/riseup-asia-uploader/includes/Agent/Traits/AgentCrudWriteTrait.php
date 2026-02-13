@@ -21,12 +21,10 @@ trait AgentCrudWriteTrait {
     public function addAgent($data) {
         $this->file_logger->info('Adding agent site', array('name' => $data['name'], 'url' => $data['url']));
 
-        if (empty($data['name']) || empty($data['url']) || empty($data['username']) || empty($data['app_password'])) {
-            return new WP_Error('missing_fields', 'Name, URL, username, and application password are required');
+        $validationError = $this->validateAgentData($data);
+        if ($validationError) {
+            return $validationError;
         }
-
-        $url = $this->normalizeUrl($data['url']);
-        $encrypted_password = $this->encrypt($data['app_password']);
 
         try {
             $pdo = $this->db->get_pdo();
@@ -34,28 +32,43 @@ trait AgentCrudWriteTrait {
                 return new WP_Error('db_error', 'Database not available');
             }
 
-            $stmt = $pdo->prepare("INSERT INTO agent_sites 
-                (name, url, username, app_password_encrypted, redirect_url, status, created_at) 
-                VALUES (?, ?, ?, ?, ?, 'pending', ?)");
-
-            $stmt->execute(array(
-                sanitize_text_field($data['name']),
-                esc_url_raw($url),
-                sanitize_user($data['username']),
-                $encrypted_password,
-                isset($data['redirect_url']) ? esc_url_raw($data['redirect_url']) : null,
-                gmdate('Y-m-d\TH:i:s\Z'),
-            ));
-
-            $agent_id = (int) $pdo->lastInsertId();
-            $this->file_logger->info('Agent site added', array('id' => $agent_id));
-
-            return $agent_id;
-
+            return $this->insertAgentRecord($pdo, $data);
         } catch (PDOException $e) {
             $this->file_logger->log_exception($e, 'Failed to add agent site');
+
             return new WP_Error('db_error', 'Failed to save agent site: ' . $e->getMessage());
         }
+    }
+
+    /** Validate required agent fields. */
+    private function validateAgentData(array $data): ?WP_Error {
+        $hasAllFields = !empty($data['name']) && !empty($data['url']) && !empty($data['username']) && !empty($data['app_password']);
+        if ($hasAllFields) {
+            return null;
+        }
+
+        return new WP_Error('missing_fields', 'Name, URL, username, and application password are required');
+    }
+
+    /** Insert a new agent site record. */
+    private function insertAgentRecord(PDO $pdo, array $data): int {
+        $stmt = $pdo->prepare(
+            "INSERT INTO agent_sites (name, url, username, app_password_encrypted, redirect_url, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending', ?)"
+        );
+
+        $stmt->execute(array(
+            sanitize_text_field($data['name']),
+            esc_url_raw($this->normalizeUrl($data['url'])),
+            sanitize_user($data['username']),
+            $this->encrypt($data['app_password']),
+            isset($data['redirect_url']) ? esc_url_raw($data['redirect_url']) : null,
+            gmdate('Y-m-d\TH:i:s\Z'),
+        ));
+
+        $agent_id = (int) $pdo->lastInsertId();
+        $this->file_logger->info('Agent site added', array('id' => $agent_id));
+
+        return $agent_id;
     }
 
     /**
