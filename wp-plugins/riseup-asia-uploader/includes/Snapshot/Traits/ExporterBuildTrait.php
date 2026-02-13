@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once __DIR__ . '/ExporterBuildCollectTrait.php';
 
 trait ExporterBuildTrait {
@@ -28,7 +30,7 @@ trait ExporterBuildTrait {
         $snapshotId = (int) $snapshot['id'];
         $snapshotDir = dirname($snapshot['filepath']);
 
-        $this->log('INFO', 'Building ZIP export', array('snapshot_id' => $snapshotId, 'dir' => basename($snapshotDir)));
+        $this->log(LogLevelType::Info->value, 'Building ZIP export', array('snapshot_id' => $snapshotId, 'dir' => basename($snapshotDir)));
 
         $exportsDir = $this->ensureExportsDir();
         if (!$exportsDir) {
@@ -76,7 +78,7 @@ trait ExporterBuildTrait {
         try {
             return $this->assembleZipArchive($pdo, $snapshot, $snapshotId, $snapshotDir, $zipMeta['path'], $zipMeta['filename']);
         } catch (Exception $e) {
-            $this->log('ERROR', 'ZIP export build failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+            $this->log(LogLevelType::Error->value, 'ZIP export build failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             $this->cleanupFailedExport($pdo, $snapshotId, $zipMeta['path']);
 
             return array('success' => false, 'error' => 'ZIP build failed: ' . $e->getMessage(), 'code' => ERR_EXPORT_BUILD_FAILED);
@@ -191,7 +193,7 @@ trait ExporterBuildTrait {
         );
         $stmt->execute(array(SNAPSHOT_EXPORT_STATUS_VALID, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
 
-        $this->log('INFO', 'ZIP export built successfully', array(
+        $this->log(LogLevelType::Info->value, 'ZIP export built successfully', array(
             'snapshot_id' => $snapshotId, 'filename' => $zipFilename, 'size' => RiseupPathUtils::formatBytes($zipSize),
         ));
     }

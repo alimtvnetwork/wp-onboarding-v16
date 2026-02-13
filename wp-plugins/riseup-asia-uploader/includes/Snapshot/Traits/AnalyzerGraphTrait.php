@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait AnalyzerGraphTrait {
 
     /**
@@ -85,7 +87,7 @@ trait AnalyzerGraphTrait {
 
         if (count($sorted) < count($all_tables)) {
             $cycled = array_diff($all_tables, $sorted);
-            $this->log('WARN', 'Cycle detected in table dependencies', array(
+            $this->log(LogLevelType::Warn->value, 'Cycle detected in table dependencies', array(
                 'cycled_tables' => array_values($cycled),
                 'sorted_count'  => count($sorted),
                 'total_count'   => count($all_tables),
@@ -96,7 +98,7 @@ trait AnalyzerGraphTrait {
             }
         }
 
-        $this->log('INFO', 'Topological sort complete', array(
+        $this->log(LogLevelType::Info->value, 'Topological sort complete', array(
             'table_count' => count($sorted),
         ));
 

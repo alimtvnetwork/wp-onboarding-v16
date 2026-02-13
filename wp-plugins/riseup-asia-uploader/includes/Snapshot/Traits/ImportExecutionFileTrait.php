@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ImportExecutionFileTrait {
 
     /**
@@ -44,7 +46,7 @@ trait ImportExecutionFileTrait {
         foreach ($incrementals as $inc) {
             $incDir = RiseupPathUtils::join($snapshotRoot, $inc['relative_path']);
             if (!RiseupPathUtils::dirExists($incDir)) {
-                $this->log('WARN', 'Incremental directory missing, skipping', array('folder' => $inc['folder_name']));
+                $this->log(LogLevelType::Warn->value, 'Incremental directory missing, skipping', array('folder' => $inc['folder_name']));
                 continue;
             }
             $incFiles = glob(RiseupPathUtils::join($incDir, '*.sqlite'));
@@ -64,7 +66,7 @@ trait ImportExecutionFileTrait {
         foreach ($plugins as $plugin) {
             $zipPath = RiseupPathUtils::join($snapshotRoot, $plugin['zip_file']);
             if (!RiseupPathUtils::fileExists($zipPath)) {
-                $this->log('WARN', 'Plugin archive missing, skipping', array('plugin' => $plugin['plugin_slug']));
+                $this->log(LogLevelType::Warn->value, 'Plugin archive missing, skipping', array('plugin' => $plugin['plugin_slug']));
                 continue;
             }
             if (!empty($plugin['checksum_md5'])) {

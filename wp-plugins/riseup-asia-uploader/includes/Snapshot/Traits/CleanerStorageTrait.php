@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait CleanerStorageTrait {
 
     /**
@@ -65,7 +67,7 @@ trait CleanerStorageTrait {
             }
 
         } catch (\Throwable $e) {
-            $this->log('ERROR', 'Failed to get storage stats', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to get storage stats', array('error' => $e->getMessage()));
         }
 
         return $stats;
@@ -102,7 +104,7 @@ trait CleanerStorageTrait {
             $estimate['bytes_formatted'] = RiseupPathUtils::formatBytes($estimate['bytes']);
 
         } catch (\Throwable $e) {
-            $this->log('ERROR', 'Failed to estimate cleanup', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array('error' => $e->getMessage()));
         }
 
         return $estimate;

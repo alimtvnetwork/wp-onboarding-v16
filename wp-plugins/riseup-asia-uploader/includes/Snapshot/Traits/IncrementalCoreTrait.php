@@ -6,6 +6,8 @@
  * @since   1.14.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait IncrementalCoreTrait {
 
     /** Prepare the incremental directory and load master inventory. */
@@ -29,7 +31,7 @@ trait IncrementalCoreTrait {
             return array('success' => false, 'error' => 'Failed to create incremental directory: ' . $folder_name);
         }
 
-        $this->log('INFO', 'Incremental directory created', array('sequence' => $sequence, 'folder_name' => $folder_name));
+        $this->log(LogLevelType::Info->value, 'Incremental directory created', array('sequence' => $sequence, 'folder_name' => $folder_name));
 
         return array('success' => true, 'rootPdo' => $rootPdo, 'master_tables' => $master_tables, 'sequence' => $sequence, 'folder_name' => $folder_name, 'incremental_dir' => $incremental_dir);
     }
@@ -63,7 +65,7 @@ trait IncrementalCoreTrait {
 
         $snapshot_id = $this->registerIncrementalSnapshot($title, $masterDir, $folderName, $sequence, $export['tables_changed'], $export['total_new_rows'], $incrementalDir);
 
-        $this->log('INFO', 'Incremental backup complete', array(
+        $this->log(LogLevelType::Info->value, 'Incremental backup complete', array(
             'snapshot_id' => $snapshot_id, 'sequence' => $sequence,
             'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
             'errors' => count($export['errors']), 'duration' => round($duration, 2) . 's',

@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once dirname(__FILE__) . '/Traits/RootDbSchemaTrait.php';
 require_once dirname(__FILE__) . '/Traits/RootDbRegistrationTrait.php';
 
@@ -56,7 +58,7 @@ class RiseupRootDb {
      * @return PDO The opened PDO connection.
      */
     public function create($filepath) {
-        $this->log('INFO', 'Creating a-root.db', array('path' => $filepath));
+        $this->log(LogLevelType::Info->value, 'Creating a-root.db', array('path' => $filepath));
 
         $dir = dirname($filepath);
         if (RiseupBooleanHelpers::is_dir_missing($dir)) {
@@ -68,7 +70,7 @@ class RiseupRootDb {
         $pdo->exec('PRAGMA journal_mode = WAL');
 
         $this->createSchema($pdo);
-        $this->log('INFO', 'a-root.db schema created');
+        $this->log(LogLevelType::Info->value, 'a-root.db schema created');
 
         return $pdo;
     }

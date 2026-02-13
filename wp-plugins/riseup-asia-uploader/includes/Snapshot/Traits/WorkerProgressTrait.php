@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait WorkerProgressTrait {
 
     /**
@@ -31,7 +33,7 @@ trait WorkerProgressTrait {
                     " SET rows_total = {$count} WHERE snapshot_id = 0 AND table_name = '{$table}'");
             }
         } catch (Exception $e) {
-            $this->log('WARN', 'Failed to init progress records', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Warn->value, 'Failed to init progress records', array('error' => $e->getMessage()));
         }
     }
 

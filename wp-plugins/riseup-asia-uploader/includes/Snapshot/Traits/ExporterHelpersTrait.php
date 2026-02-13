@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait ExporterHelpersTrait {
 
     /**
@@ -33,12 +35,12 @@ trait ExporterHelpersTrait {
         }
 
         if ($snapshot['scope'] === 'incremental') {
-            $this->log('WARN', 'Cannot export incremental snapshot directly', array('id' => $snapshotId));
+            $this->log(LogLevelType::Warn->value, 'Cannot export incremental snapshot directly', array('id' => $snapshotId));
             return null;
         }
 
         if ($snapshot['status'] !== SNAPSHOT_STATUS_COMPLETE) {
-            $this->log('WARN', 'Snapshot not complete', array('id' => $snapshotId, 'status' => $snapshot['status']));
+            $this->log(LogLevelType::Warn->value, 'Snapshot not complete', array('id' => $snapshotId, 'status' => $snapshot['status']));
             return null;
         }
 
@@ -104,13 +106,13 @@ trait ExporterHelpersTrait {
     private function log($level, $message, $context = array()) {
         $context['class'] = 'RiseupSnapshotExporter';
         switch ($level) {
-            case 'ERROR':
+            case LogLevelType::Error->value:
                 $this->logger->error('[SnapshotExporter] ' . $message, $context);
                 break;
-            case 'WARN':
+            case LogLevelType::Warn->value:
                 $this->logger->warn('[SnapshotExporter] ' . $message, $context);
                 break;
-            case 'DEBUG':
+            case LogLevelType::Debug->value:
                 $this->logger->debug('[SnapshotExporter] ' . $message, $context);
                 break;
             default:

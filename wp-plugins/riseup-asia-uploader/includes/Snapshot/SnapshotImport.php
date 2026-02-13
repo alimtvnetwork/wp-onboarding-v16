@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once dirname(__FILE__) . '/Traits/ImportValidationTrait.php';
 require_once dirname(__FILE__) . '/Traits/ImportExecutionTrait.php';
 
@@ -64,7 +66,7 @@ class RiseupSnapshotImport {
             return $guardError;
         }
 
-        $this->log('INFO', 'Starting snapshot import', array(
+        $this->log(LogLevelType::Info->value, 'Starting snapshot import', array(
             'path' => basename($uploadedPath),
             'size' => RiseupPathUtils::formatBytes(filesize($uploadedPath)),
         ));
@@ -144,7 +146,7 @@ class RiseupSnapshotImport {
         if (RiseupPathUtils::dirExists($tempDir)) {
             $this->deleteDirectory($tempDir);
         }
-        $this->log('ERROR', 'Snapshot import failed', array('error' => $e->getMessage()));
+        $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
     }
 
     /**

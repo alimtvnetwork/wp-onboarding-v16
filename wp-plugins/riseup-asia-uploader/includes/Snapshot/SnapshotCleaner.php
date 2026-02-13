@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once dirname(__FILE__) . '/Traits/CleanerRetentionTrait.php';
 require_once dirname(__FILE__) . '/Traits/CleanerDeletionTrait.php';
 require_once dirname(__FILE__) . '/Traits/CleanerOrphanTrait.php';
@@ -84,7 +86,7 @@ class RiseupSnapshotCleaner {
             + $results['orphans']['removed']
             + $results['stuck']['cleaned'];
 
-        $this->log('INFO', 'Cleanup complete', array(
+        $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
             'deleted_total' => $total_deleted,
             'space_freed'   => RiseupPathUtils::format_bytes($results['space_freed_bytes']),
             'duration'      => $results['duration'],
@@ -127,7 +129,7 @@ class RiseupSnapshotCleaner {
     private function executeRetentionPhase($settings, $dry_run, $results) {
         try {
             if ($settings['retention_type'] === 'none') {
-                $this->log('DEBUG', 'Retention policy is "none" - skipping policy cleanup');
+                $this->log(LogLevelType::Debug->value, 'Retention policy is "none" - skipping policy cleanup');
             } else {
                 $retention = $this->cleanByRetention($settings, $dry_run);
                 $results['retention'] = $retention;
@@ -135,7 +137,7 @@ class RiseupSnapshotCleaner {
             }
         } catch (\Throwable $e) {
             $results['errors'][] = 'Retention cleanup: ' . $e->getMessage();
-            $this->log('ERROR', 'Retention cleanup failed', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array('error' => $e->getMessage()));
         }
         return $results;
     }
@@ -154,7 +156,7 @@ class RiseupSnapshotCleaner {
             $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
         } catch (\Throwable $e) {
             $results['errors'][] = 'Orphan cleanup: ' . $e->getMessage();
-            $this->log('ERROR', 'Orphan cleanup failed', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array('error' => $e->getMessage()));
         }
         return $results;
     }
@@ -172,7 +174,7 @@ class RiseupSnapshotCleaner {
             $results['stuck'] = $stuck;
         } catch (\Throwable $e) {
             $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();
-            $this->log('ERROR', 'Stuck snapshot cleanup failed', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array('error' => $e->getMessage()));
         }
         return $results;
     }

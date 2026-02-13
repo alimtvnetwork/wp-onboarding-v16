@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\LogLevelType;
+
 require_once dirname(__FILE__) . '/RestoreSqliteValidationTrait.php';
 
 trait RestoreTableTrait {
@@ -43,12 +45,12 @@ trait RestoreTableTrait {
             if ($result['success']) {
                 $tables_restored++;
                 $total_rows += $result['rows'];
-                $this->log('INFO', sprintf('Restored: %s (%d rows)', $table, $result['rows']));
+                $this->log(LogLevelType::Info->value, sprintf('Restored: %s (%d rows)', $table, $result['rows']));
                 continue;
             }
 
             $errors[] = $table . ': ' . $result['error'];
-            $this->log('ERROR', 'Restore failed: ' . $table, array('error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Restore failed: ' . $table, array('error' => $result['error']));
 
             if (!empty($options['strict'])) {
                 throw new Exception('Strict mode: table restore failed for ' . $table);
@@ -74,7 +76,7 @@ trait RestoreTableTrait {
 
         $sqlite_path = $snapshotDir . '/' . $table_info['sqlite_file'];
         if (RiseupBooleanHelpers::is_file_missing($sqlite_path)) {
-            $this->log('ERROR', 'SQLite file missing for table', array('table' => $table, 'file' => $table_info['sqlite_file']));
+            $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array('table' => $table, 'file' => $table_info['sqlite_file']));
             return array('success' => false, 'error' => 'SQLite file missing (' . $table_info['sqlite_file'] . ')', 'rows' => 0);
         }
 

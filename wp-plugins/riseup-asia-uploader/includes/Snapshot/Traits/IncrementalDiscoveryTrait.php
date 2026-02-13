@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\LogLevelType;
+
 trait IncrementalDiscoveryTrait {
 
     /**
@@ -41,7 +43,7 @@ trait IncrementalDiscoveryTrait {
 
             return null;
         } catch (Exception $e) {
-            $this->log('ERROR', 'Failed to find master snapshot from DB', array('error' => $e->getMessage()));
+            $this->log(LogLevelType::Error->value, 'Failed to find master snapshot from DB', array('error' => $e->getMessage()));
             return null;
         }
     }
