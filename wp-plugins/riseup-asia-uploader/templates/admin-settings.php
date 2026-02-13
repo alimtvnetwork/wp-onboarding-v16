@@ -21,7 +21,7 @@ if (!defined('ABSPATH')) {
     <h1>
         <span class="dashicons dashicons-admin-settings"></span>
         <?php esc_html_e('Riseup Asia Uploader - Settings', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
     </h1>
 
     <p class="description">
@@ -43,15 +43,15 @@ if (!defined('ABSPATH')) {
             <table class="form-table">
                 <tr>
                     <th><?php esc_html_e('Version', 'riseup-asia-uploader'); ?></th>
-                    <td><code><?php echo esc_html(RISEUP_VERSION); ?></code></td>
+                    <td><code><?php echo esc_html(PLUGIN_VERSION); ?></code></td>
                 </tr>
                 <tr>
                     <th><?php esc_html_e('API Namespace', 'riseup-asia-uploader'); ?></th>
-                    <td><code><?php echo esc_html(RISEUP_API_FULL_NAMESPACE); ?></code></td>
+                    <td><code><?php echo esc_html(API_FULL_NAMESPACE); ?></code></td>
                 </tr>
                 <tr>
                     <th><?php esc_html_e('REST API Base', 'riseup-asia-uploader'); ?></th>
-                    <td><code><?php echo esc_url(rest_url(RISEUP_API_FULL_NAMESPACE)); ?></code></td>
+                    <td><code><?php echo esc_url(rest_url(API_FULL_NAMESPACE)); ?></code></td>
                 </tr>
             </table>
         </div>
@@ -155,7 +155,7 @@ if (!defined('ABSPATH')) {
                     <th scope="row"><?php esc_html_e('Available Version', 'riseup-asia-uploader'); ?></th>
                     <td>
                         <strong><?php echo esc_html($update_settings['new_version']); ?></strong>
-                        <?php if (version_compare($update_settings['new_version'], RISEUP_VERSION, '>')): ?>
+                        <?php if (version_compare($update_settings['new_version'], PLUGIN_VERSION, '>')): ?>
                             <span class="dashicons dashicons-arrow-up-alt" style="color: #46b450;"></span>
                             <span style="color: #46b450;"><?php esc_html_e('Update available!', 'riseup-asia-uploader'); ?></span>
                         <?php endif; ?>
@@ -418,13 +418,13 @@ if (!defined('ABSPATH')) {
                     <td>
                         <div style="display: flex; align-items: center; gap: 12px; max-width: 340px;">
                             <input type="range" id="snap_worker_pool_size" 
-                                   min="<?php echo esc_attr(RISEUP_SNAPSHOT_WORKER_POOL_MIN); ?>" 
-                                   max="<?php echo esc_attr(RISEUP_SNAPSHOT_WORKER_POOL_MAX); ?>" 
+                                   min="<?php echo esc_attr(SNAPSHOT_WORKER_POOL_MIN); ?>" 
+                                   max="<?php echo esc_attr(SNAPSHOT_WORKER_POOL_MAX); ?>" 
                                    value="<?php echo esc_attr($snapshot_settings['worker_pool_size']); ?>" 
                                    style="flex: 1; accent-color: #2271b1;">
                             <span id="snap_worker_pool_value" style="font-family: monospace; font-size: 14px; min-width: 24px; text-align: center; font-weight: 600; color: #2271b1;"><?php echo esc_html($snapshot_settings['worker_pool_size']); ?></span>
                         </div>
-                        <p class="description"><?php printf(esc_html__('Number of concurrent backup workers (%d–%d). Higher values export faster but use more resources.', 'riseup-asia-uploader'), RISEUP_SNAPSHOT_WORKER_POOL_MIN, RISEUP_SNAPSHOT_WORKER_POOL_MAX); ?></p>
+                        <p class="description"><?php printf(esc_html__('Number of concurrent backup workers (%d–%d). Higher values export faster but use more resources.', 'riseup-asia-uploader'), SNAPSHOT_WORKER_POOL_MIN, SNAPSHOT_WORKER_POOL_MAX); ?></p>
                     </td>
                 </tr>
             </table>
@@ -573,7 +573,7 @@ if (!defined('ABSPATH')) {
                 <tr>
                     <th scope="row"><?php esc_html_e('Endpoint', 'riseup-asia-uploader'); ?></th>
                     <td>
-                        <code><?php echo esc_html(rest_url(RISEUP_API_FULL_NAMESPACE . '/' . RISEUP_ENDPOINT_ERROR_LOGS)); ?></code>
+                        <code><?php echo esc_html(rest_url(API_FULL_NAMESPACE . '/' . ENDPOINT_ERROR_LOGS)); ?></code>
                         <p class="description"><?php esc_html_e('GET request with Basic Auth. Returns JSON with error_log, full_log, and/or stacktrace_log fields.', 'riseup-asia-uploader'); ?></p>
                     </td>
                 </tr>

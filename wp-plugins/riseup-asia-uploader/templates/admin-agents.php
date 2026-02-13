@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
     <h1>
         <span class="dashicons dashicons-networking"></span>
         <?php esc_html_e('Riseup Asia Uploader - Agent Sites', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
     </h1>
 
     <p class="description">
@@ -272,7 +272,7 @@ if (!defined('ABSPATH')) {
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
-    var apiBase = '<?php echo esc_js(rest_url(RISEUP_API_FULL_NAMESPACE)); ?>';
+    var apiBase = '<?php echo esc_js(rest_url(API_FULL_NAMESPACE)); ?>';
     var nonce = '<?php echo wp_create_nonce('wp_rest'); ?>';
     var currentAgentId = null;
 

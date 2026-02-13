@@ -52,7 +52,7 @@ $nonce = wp_create_nonce('riseup_admin_nonce');
     <h1>
         <span class="dashicons dashicons-warning"></span>
         <?php esc_html_e('Error Log', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(RISEUP_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
         <?php if ($unseen_count > 0): ?>
             <span class="error-count-badge"><?php echo esc_html($unseen_count); ?></span>
         <?php endif; ?>
