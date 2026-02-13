@@ -135,10 +135,10 @@ trait PathUtilsFileTrait {
      */
     public static function get_free_space($path) {
         $path = self::join($path);
-        while (!is_dir($path) && $path !== dirname($path)) {
+        while (RiseupBooleanHelpers::is_not_directory($path) && $path !== dirname($path)) {
             $path = dirname($path);
         }
-        if (!is_dir($path)) {
+        if (RiseupBooleanHelpers::is_not_directory($path)) {
             return false;
         }
         return @disk_free_space($path);
