@@ -77,22 +77,25 @@ trait DetectorSettingsTrait {
             return $this->provider_instances[$provider_id];
         }
 
-        $providers = $this->detectAvailableProviders();
-        $available = false;
-        foreach ($providers as $provider) {
-            if ($provider['id'] === $provider_id && $provider['available']) {
-                $available = true;
-                break;
-            }
-        }
-
-        if (!$available) {
-            throw new Exception(sprintf('Snapshot provider "%s" is not available', $provider_id));
-        }
+        $this->assertProviderAvailable($provider_id);
 
         $instance = $this->instantiateProvider($provider_id);
         $this->provider_instances[$provider_id] = $instance;
+
         return $instance;
+    }
+
+    /** Assert a provider is available, throwing if not. */
+    private function assertProviderAvailable(string $provider_id) {
+        $providers = $this->detectAvailableProviders();
+        foreach ($providers as $provider) {
+            $isMatch = ($provider['id'] === $provider_id && $provider['available']);
+            if ($isMatch) {
+                return;
+            }
+        }
+
+        throw new Exception(sprintf('Snapshot provider "%s" is not available', $provider_id));
     }
 
     /**
@@ -154,11 +157,4 @@ trait DetectorSettingsTrait {
         }
         return $result;
     }
-
-    /**
-     * Validate and sanitize settings.
-     *
-     * @param array $settings Settings to validate.
-     * @return array Validated settings.
-     */
 }

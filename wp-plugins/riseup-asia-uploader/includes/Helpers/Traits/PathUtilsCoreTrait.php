@@ -28,20 +28,28 @@ trait PathUtilsCoreTrait {
             return null;
         }
 
-        if (self::$logger === null) {
-            if (!class_exists('RiseupFileLogger', false)) {
-                return null;
-            }
-
-            self::$bootstrapping = true;
-            try {
-                self::$logger = RiseupFileLogger::get_instance();
-            } catch (\Throwable $e) {
-                error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
-                self::$logger = null;
-            }
-            self::$bootstrapping = false;
+        if (self::$logger !== null) {
+            return self::$logger;
         }
+
+        if (!class_exists('RiseupFileLogger', false)) {
+            return null;
+        }
+
+        return self::initializeLogger();
+    }
+
+    /** Initialize the logger with re-entrancy guard. */
+    private static function initializeLogger(): ?RiseupFileLogger {
+        self::$bootstrapping = true;
+        try {
+            self::$logger = RiseupFileLogger::get_instance();
+        } catch (\Throwable $e) {
+            error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
+            self::$logger = null;
+        }
+
+        self::$bootstrapping = false;
 
         return self::$logger;
     }

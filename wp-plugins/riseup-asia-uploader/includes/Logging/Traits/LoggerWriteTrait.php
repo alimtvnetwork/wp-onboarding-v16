@@ -80,32 +80,45 @@ trait LoggerWriteTrait {
      */
     private function persist_to_error_sessions($level, $message, $file, $line, $context = array(), $stack_trace = '') {
         try {
-            if (RiseupBooleanHelpers::is_class_missing('RiseupDatabase')) {
-                return;
-            }
-
-            $db = RiseupDatabase::get_instance();
-            $pdo = $db->get_pdo();
+            $pdo = $this->getErrorSessionsPdo();
             if (!$pdo) {
                 return;
             }
 
-            $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
-            if (!$check->fetchColumn()) {
-                return;
-            }
-
-            $now = gmdate('Y-m-d\TH:i:s\Z');
-            $context_json = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
-
-            $stmt = $pdo->prepare(
-                'INSERT INTO error_sessions (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-            );
-            $stmt->execute(array($level, $message, $file, $line, $context_json, $stack_trace ?: null, $now));
-
-            $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '1', '{$now}')");
+            $this->insertErrorSession($pdo, $level, $message, $file, $line, $context, $stack_trace);
         } catch (\Throwable $e) {
             // Silently ignore - we're in the logger, can't recurse
         }
+    }
+
+    /** Get a PDO connection with error_sessions table available. */
+    private function getErrorSessionsPdo(): ?PDO {
+        if (RiseupBooleanHelpers::is_class_missing('RiseupDatabase')) {
+            return null;
+        }
+
+        $db = RiseupDatabase::get_instance();
+        $pdo = $db->get_pdo();
+        if (!$pdo) {
+            return null;
+        }
+
+        $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
+        $tableExists = $check && $check->fetchColumn();
+
+        return $tableExists ? $pdo : null;
+    }
+
+    /** Insert an error session record and set unseen flag. */
+    private function insertErrorSession(PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stack_trace) {
+        $now = gmdate('Y-m-d\TH:i:s\Z');
+        $context_json = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO error_sessions (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute(array($level, $message, $file, $line, $context_json, $stack_trace ?: null, $now));
+
+        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '1', '{$now}')");
     }
 }
