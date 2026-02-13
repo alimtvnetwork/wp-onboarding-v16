@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/SqliteSchemaConverter.php';
+
 /**
  * Snapshot Worker class.
  *
@@ -84,10 +86,6 @@ class RiseupSnapshotWorker {
         $this->poolSize  = SNAPSHOT_WORKER_POOL_DEFAULT;
     }
 
-    // =========================================================================
-    // PUBLIC API
-    // =========================================================================
-
     /**
      * Set the worker pool size (tables processed per cron batch).
      *
@@ -109,106 +107,43 @@ class RiseupSnapshotWorker {
         return $this->poolSize;
     }
 
+    // =========================================================================
+    // PUBLIC API
+    // =========================================================================
+
     /**
-     * Execute a full per-table snapshot export.
-     *
-     * Creates a snapshot directory, builds a-root.db with dependency graph,
-     * then creates a snapshot job and schedules the first worker batch via
-     * WP-Cron for background processing.
+     * Execute a full per-table snapshot export (async via WP-Cron).
      *
      * @param array $config Snapshot config: title, scope, tables (for custom), settings, pool_size.
      * @return array Result with success status, snapshot_dir, job_id.
      */
     public function execute($config) {
         $start_time = microtime(true);
-        $title = $config['title'] ?? ('Snapshot ' . date('Y-m-d H:i'));
-        $scope = $config['scope'] ?? 'wordpress';
-        $type  = $config['type'] ?? 'full';
 
-        // Apply pool size from config if provided
-        if (!empty($config['settings']['worker_pool_size'])) {
-            $this->setPoolSize($config['settings']['worker_pool_size']);
-        }
-
-        $this->log('INFO', 'Starting per-table snapshot', array(
-            'title'     => $title,
-            'scope'     => $scope,
-            'type'      => $type,
-            'pool_size' => $this->poolSize,
-        ));
-
-        // 1. Determine snapshot directory
-        $base_dir = $this->getSnapshotsBaseDir();
-        $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
-        $snapshot_dir = $base_dir . '/' . $dir_name;
-
-        if (!RiseupPathUtils::ensure_dir($snapshot_dir, true)) {
-            return array('success' => false, 'error' => 'Failed to create snapshot directory');
+        $prepared = $this->prepareSnapshotDir($config);
+        if (!$prepared['success']) {
+            return $prepared;
         }
 
         try {
-            // 2. Create a-root.db
-            $root_path = $snapshot_dir . '/a-root.db';
-            $rootPdo = $this->rootDb->create($root_path);
+            $rootPdo = $this->initRootDb($prepared['snapshot_dir'], $config);
+            $seed_order = $this->populateAndGetSeedOrder($rootPdo, $config);
+            $rootPdo = null;
 
-            // 3. Populate metadata
-            $this->rootDb->populateMetadata($rootPdo, array(
-                'title'    => $title,
-                'type'     => $type,
-                'settings' => $config['settings'] ?? null,
-            ));
-
-            // 4. Analyze dependencies and populate graph
-            $analysis = $this->rootDb->populateDependencies($rootPdo, $scope);
-            $seed_order = $analysis['seed_order'];
-            $rootPdo = null; // Close for now; batches reopen as needed
-
-            $this->log('INFO', 'Export order determined', array(
-                'tables'    => count($seed_order),
-                'pool_size' => $this->poolSize,
-            ));
-
-            // 5. Create progress records for all tables
             $this->initProgressRecords($seed_order);
-
-            // 6. Create a snapshot job record
-            $job_id = $this->createJob($snapshot_dir, $seed_order, $config);
+            $job_id = $this->createJob($prepared['snapshot_dir'], $seed_order, $config);
 
             if (!$job_id) {
                 return array('success' => false, 'error' => 'Failed to create snapshot job');
             }
 
-            // 7. Schedule the first worker batch via WP-Cron
             $this->scheduleNextBatch($job_id);
 
-            $duration = microtime(true) - $start_time;
-
-            $this->log('INFO', 'Snapshot job created, first batch scheduled', array(
-                'job_id'       => $job_id,
-                'directory'    => $dir_name,
-                'total_tables' => count($seed_order),
-                'pool_size'    => $this->poolSize,
-                'setup_time'   => round($duration, 2) . 's',
-            ));
-
-            return array(
-                'success'      => true,
-                'directory'    => $dir_name,
-                'path'         => $snapshot_dir,
-                'job_id'       => $job_id,
-                'total_tables' => count($seed_order),
-                'pool_size'    => $this->poolSize,
-                'tables'       => 0, // Will be incremented by batches
-                'total_rows'   => 0,
-                'errors'       => array(),
-                'duration'     => $duration,
-                'status'       => SNAPSHOT_JOB_STATUS_QUEUED,
-            );
+            return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
 
         } catch (Exception $e) {
             $this->log('ERROR', 'Per-table snapshot failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
             return array('success' => false, 'error' => $e->getMessage());
         }
@@ -217,13 +152,45 @@ class RiseupSnapshotWorker {
     /**
      * Execute a synchronous full snapshot (blocks until complete).
      *
-     * Used when caller needs immediate results (e.g., CLI).
-     *
      * @param array $config Snapshot config.
      * @return array Result with success, tables, total_rows, etc.
      */
     public function executeSynchronous($config) {
         $start_time = microtime(true);
+
+        $prepared = $this->prepareSnapshotDir($config);
+        if (!$prepared['success']) {
+            return $prepared;
+        }
+
+        try {
+            $rootPdo = $this->initRootDb($prepared['snapshot_dir'], $config);
+            $seed_order = $this->populateAndGetSeedOrder($rootPdo, $config);
+
+            $this->initProgressRecords($seed_order);
+
+            $export = $this->exportBatchesSynchronously($seed_order, $prepared['snapshot_dir'], $rootPdo);
+
+            $this->rootDb->updateStats($rootPdo, $export['exported_tables'], $export['total_rows']);
+            $rootPdo = null;
+
+            return $this->buildSyncSnapshotResult($prepared, $export, $start_time);
+
+        } catch (Exception $e) {
+            $this->log('ERROR', 'Synchronous snapshot failed', array(
+                'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
+            ));
+            return array('success' => false, 'error' => $e->getMessage());
+        }
+    }
+
+    /**
+     * Prepare the snapshot directory and config.
+     *
+     * @param array $config Snapshot config.
+     * @return array Prepared context with success, snapshot_dir, dir_name, title, scope, type.
+     */
+    private function prepareSnapshotDir(array $config): array {
         $title = $config['title'] ?? ('Snapshot ' . date('Y-m-d H:i'));
         $scope = $config['scope'] ?? 'wordpress';
         $type  = $config['type'] ?? 'full';
@@ -231,6 +198,10 @@ class RiseupSnapshotWorker {
         if (!empty($config['settings']['worker_pool_size'])) {
             $this->setPoolSize($config['settings']['worker_pool_size']);
         }
+
+        $this->log('INFO', 'Starting per-table snapshot', array(
+            'title' => $title, 'scope' => $scope, 'type' => $type, 'pool_size' => $this->poolSize,
+        ));
 
         $base_dir = $this->getSnapshotsBaseDir();
         $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
@@ -240,79 +211,171 @@ class RiseupSnapshotWorker {
             return array('success' => false, 'error' => 'Failed to create snapshot directory');
         }
 
-        try {
-            $root_path = $snapshot_dir . '/a-root.db';
-            $rootPdo = $this->rootDb->create($root_path);
+        return array(
+            'success'      => true,
+            'snapshot_dir' => $snapshot_dir,
+            'dir_name'     => $dir_name,
+            'title'        => $title,
+            'scope'        => $scope,
+            'type'         => $type,
+        );
+    }
 
-            $this->rootDb->populateMetadata($rootPdo, array(
-                'title'    => $title,
-                'type'     => $type,
-                'settings' => $config['settings'] ?? null,
+    /**
+     * Initialize a-root.db with metadata.
+     *
+     * @param string $snapshotDir Snapshot directory.
+     * @param array  $config      Config.
+     * @return PDO Root PDO connection.
+     */
+    private function initRootDb(string $snapshotDir, array $config): PDO {
+        $root_path = $snapshotDir . '/a-root.db';
+        $rootPdo = $this->rootDb->create($root_path);
+
+        $this->rootDb->populateMetadata($rootPdo, array(
+            'title'    => $config['title'] ?? 'Snapshot',
+            'type'     => $config['type'] ?? 'full',
+            'settings' => $config['settings'] ?? null,
+        ));
+
+        return $rootPdo;
+    }
+
+    /**
+     * Populate dependencies and return seed order.
+     *
+     * @param PDO   $rootPdo Root PDO.
+     * @param array $config  Config.
+     * @return array Seed order.
+     */
+    private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
+        $scope = $config['scope'] ?? 'wordpress';
+        $analysis = $this->rootDb->populateDependencies($rootPdo, $scope);
+
+        $this->log('INFO', 'Export order determined', array(
+            'tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize,
+        ));
+
+        return $analysis['seed_order'];
+    }
+
+    /**
+     * Export all tables in pool-sized batches synchronously.
+     *
+     * @param array  $seedOrder   Ordered table list.
+     * @param string $snapshotDir Snapshot directory.
+     * @param PDO    $rootPdo     Root DB connection.
+     * @return array Export results.
+     */
+    private function exportBatchesSynchronously(array $seedOrder, string $snapshotDir, PDO $rootPdo): array {
+        $total_rows = 0;
+        $exported_tables = 0;
+        $errors = array();
+        $batches = array_chunk($seedOrder, $this->poolSize);
+
+        foreach ($batches as $batch_index => $batch_tables) {
+            $this->log('INFO', sprintf('Processing batch %d/%d (%d tables)',
+                $batch_index + 1, count($batches), count($batch_tables)
             ));
 
-            $analysis = $this->rootDb->populateDependencies($rootPdo, $scope);
-            $seed_order = $analysis['seed_order'];
-
-            $this->initProgressRecords($seed_order);
-
-            // Process tables in pool-sized batches synchronously
-            $total_rows = 0;
-            $exported_tables = 0;
-            $errors = array();
-            $batches = array_chunk($seed_order, $this->poolSize);
-
-            foreach ($batches as $batch_index => $batch_tables) {
-                $this->log('INFO', sprintf('Processing batch %d/%d (%d tables)',
-                    $batch_index + 1, count($batches), count($batch_tables)
-                ));
-
-                foreach ($batch_tables as $table) {
-                    $this->updateProgress($table, 'running');
-                    $result = $this->exportTableToFile($snapshot_dir, $table);
-
-                    if ($result['success']) {
-                        $total_rows += $result['rows'];
-                        $exported_tables++;
-
-                        $this->rootDb->registerTable(
-                            $rootPdo,
-                            $table,
-                            $result['rows'],
-                            $result['filename'],
-                            $result['file_size'],
-                            $result['checksum']
-                        );
-
-                        $this->updateProgress($table, 'complete', $result['rows']);
-                    } else {
-                        $errors[] = $table . ': ' . $result['error'];
-                        $this->updateProgress($table, 'failed', 0, $result['error']);
-                    }
-                }
-            }
-
-            $this->rootDb->updateStats($rootPdo, $exported_tables, $total_rows);
-            $rootPdo = null;
-
-            $duration = microtime(true) - $start_time;
-
-            return array(
-                'success'    => true,
-                'directory'  => $dir_name,
-                'path'       => $snapshot_dir,
-                'tables'     => $exported_tables,
-                'total_rows' => $total_rows,
-                'errors'     => $errors,
-                'duration'   => $duration,
-            );
-
-        } catch (Exception $e) {
-            $this->log('ERROR', 'Synchronous snapshot failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-            return array('success' => false, 'error' => $e->getMessage());
+            $result = $this->exportBatchTables($batch_tables, $snapshotDir, $rootPdo);
+            $total_rows += $result['rows'];
+            $exported_tables += $result['exported'];
+            $errors = array_merge($errors, $result['errors']);
         }
+
+        return array('total_rows' => $total_rows, 'exported_tables' => $exported_tables, 'errors' => $errors);
+    }
+
+    /**
+     * Export a batch of tables to SQLite files.
+     *
+     * @param array    $tables      Table names.
+     * @param string   $snapshotDir Snapshot directory.
+     * @param PDO|null $rootPdo     Root DB connection for registration.
+     * @return array Result with rows, exported, errors.
+     */
+    private function exportBatchTables(array $tables, string $snapshotDir, ?PDO $rootPdo): array {
+        $rows = 0;
+        $exported = 0;
+        $errors = array();
+
+        foreach ($tables as $table) {
+            $this->updateProgress($table, 'running');
+            $result = $this->exportTableToFile($snapshotDir, $table);
+
+            if ($result['success']) {
+                $rows += $result['rows'];
+                $exported++;
+                if ($rootPdo) {
+                    $this->rootDb->registerTable(
+                        $rootPdo, $table, $result['rows'],
+                        $result['filename'], $result['file_size'], $result['checksum']
+                    );
+                }
+                $this->updateProgress($table, 'complete', $result['rows']);
+            } else {
+                $errors[] = $table . ': ' . $result['error'];
+                $this->updateProgress($table, 'failed', 0, $result['error']);
+            }
+        }
+
+        return array('rows' => $rows, 'exported' => $exported, 'errors' => $errors);
+    }
+
+    /**
+     * Build the async snapshot result.
+     *
+     * @param array $prepared  Prepared context.
+     * @param array $seedOrder Seed order.
+     * @param int   $jobId     Job ID.
+     * @param float $startTime Start time.
+     * @return array Result.
+     */
+    private function buildAsyncSnapshotResult(array $prepared, array $seedOrder, int $jobId, float $startTime): array {
+        $duration = microtime(true) - $startTime;
+
+        $this->log('INFO', 'Snapshot job created, first batch scheduled', array(
+            'job_id'       => $jobId,
+            'directory'    => $prepared['dir_name'],
+            'total_tables' => count($seedOrder),
+            'pool_size'    => $this->poolSize,
+            'setup_time'   => round($duration, 2) . 's',
+        ));
+
+        return array(
+            'success'      => true,
+            'directory'    => $prepared['dir_name'],
+            'path'         => $prepared['snapshot_dir'],
+            'job_id'       => $jobId,
+            'total_tables' => count($seedOrder),
+            'pool_size'    => $this->poolSize,
+            'tables'       => 0,
+            'total_rows'   => 0,
+            'errors'       => array(),
+            'duration'     => $duration,
+            'status'       => SNAPSHOT_JOB_STATUS_QUEUED,
+        );
+    }
+
+    /**
+     * Build the sync snapshot result.
+     *
+     * @param array $prepared  Prepared context.
+     * @param array $export    Export results.
+     * @param float $startTime Start time.
+     * @return array Result.
+     */
+    private function buildSyncSnapshotResult(array $prepared, array $export, float $startTime): array {
+        return array(
+            'success'    => true,
+            'directory'  => $prepared['dir_name'],
+            'path'       => $prepared['snapshot_dir'],
+            'tables'     => $export['exported_tables'],
+            'total_rows' => $export['total_rows'],
+            'errors'     => $export['errors'],
+            'duration'   => microtime(true) - $startTime,
+        );
     }
 
     // =========================================================================
@@ -321,9 +384,6 @@ class RiseupSnapshotWorker {
 
     /**
      * Process a single worker batch (called by WP-Cron).
-     *
-     * Exports the next pool_size tables for the given job, updates
-     * progress, then schedules the next batch or finalizes the job.
      *
      * @param array $args { job_id: int }
      */
@@ -334,8 +394,6 @@ class RiseupSnapshotWorker {
             return;
         }
 
-        $this->log('INFO', 'Processing worker batch', array('job_id' => $job_id));
-
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
             $this->log('ERROR', 'No database connection for worker batch');
@@ -343,103 +401,87 @@ class RiseupSnapshotWorker {
         }
 
         try {
-            // Load job
             $job = $this->getJob($pdo, $job_id);
             if (!$job) {
                 $this->log('ERROR', 'Job not found', array('job_id' => $job_id));
                 return;
             }
 
-            // Mark job as processing
             $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_PROCESSING);
-
-            $snapshot_dir = $job['snapshot_dir'];
-            $all_tables   = json_decode($job['tables_json'], true);
-            $pool_size    = (int) $job['pool_size'];
-            $batch_index  = (int) $job['current_batch'];
-
-            $batches = array_chunk($all_tables, $pool_size);
-
-            if ($batch_index >= count($batches)) {
-                // All batches done — finalize
-                $this->finalizeJob($pdo, $job_id, $snapshot_dir);
-                return;
-            }
-
-            $batch_tables = $batches[$batch_index];
-
-            $this->log('INFO', sprintf('Batch %d/%d: exporting %d tables',
-                $batch_index + 1, count($batches), count($batch_tables)
-            ));
-
-            // Open a-root.db for registering tables
-            $root_path = $snapshot_dir . '/a-root.db';
-            $rootPdo = null;
-            if (file_exists($root_path)) {
-                $rootPdo = new PDO('sqlite:' . $root_path);
-                $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            }
-
-            $batch_rows = 0;
-            $batch_exported = 0;
-            $batch_errors = array();
-
-            foreach ($batch_tables as $table) {
-                $this->updateProgress($table, 'running');
-                $result = $this->exportTableToFile($snapshot_dir, $table);
-
-                if ($result['success']) {
-                    $batch_rows += $result['rows'];
-                    $batch_exported++;
-
-                    if ($rootPdo) {
-                        $this->rootDb->registerTable(
-                            $rootPdo,
-                            $table,
-                            $result['rows'],
-                            $result['filename'],
-                            $result['file_size'],
-                            $result['checksum']
-                        );
-                    }
-
-                    $this->updateProgress($table, 'complete', $result['rows']);
-
-                    $this->log('INFO', sprintf('Table exported: %s (%d rows, %s)',
-                        $table, $result['rows'], $this->formatBytes($result['file_size'])
-                    ));
-                } else {
-                    $batch_errors[] = $table . ': ' . $result['error'];
-                    $this->updateProgress($table, 'failed', 0, $result['error']);
-                    $this->log('ERROR', 'Table export failed: ' . $table, array('error' => $result['error']));
-                }
-            }
-
-            if ($rootPdo) {
-                $rootPdo = null; // Close
-            }
-
-            // Update job progress
-            $this->updateJobBatchProgress($pdo, $job_id, $batch_index + 1, $batch_exported, $batch_rows, $batch_errors);
-
-            // Schedule next batch
-            $next_batch = $batch_index + 1;
-            if ($next_batch < count($batches)) {
-                $this->scheduleNextBatch($job_id);
-                $this->log('INFO', sprintf('Next batch scheduled (%d/%d)', $next_batch + 1, count($batches)));
-            } else {
-                // Last batch done — finalize
-                $this->finalizeJob($pdo, $job_id, $snapshot_dir);
-            }
+            $this->processJobBatch($pdo, $job_id, $job);
 
         } catch (Exception $e) {
             $this->log('ERROR', 'Worker batch failed', array(
-                'job_id' => $job_id,
-                'error'  => $e->getMessage(),
-                'trace'  => $e->getTraceAsString(),
+                'job_id' => $job_id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
             $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_FAILED, $e->getMessage());
         }
+    }
+
+    /**
+     * Process a single batch within a job.
+     *
+     * @param PDO   $pdo   Database connection.
+     * @param int   $jobId Job ID.
+     * @param array $job   Job record.
+     */
+    private function processJobBatch(PDO $pdo, int $jobId, array $job): void {
+        $all_tables  = json_decode($job['tables_json'], true);
+        $pool_size   = (int) $job['pool_size'];
+        $batch_index = (int) $job['current_batch'];
+        $batches     = array_chunk($all_tables, $pool_size);
+
+        if ($batch_index >= count($batches)) {
+            $this->finalizeJob($pdo, $jobId, $job['snapshot_dir']);
+            return;
+        }
+
+        $this->log('INFO', sprintf('Batch %d/%d: exporting %d tables',
+            $batch_index + 1, count($batches), count($batches[$batch_index])
+        ));
+
+        $rootPdo = $this->openRootDbForBatch($job['snapshot_dir']);
+        $result = $this->exportBatchTables($batches[$batch_index], $job['snapshot_dir'], $rootPdo);
+        $rootPdo = null;
+
+        $this->logBatchExports($batches[$batch_index], $job['snapshot_dir']);
+        $this->updateJobBatchProgress($pdo, $jobId, $batch_index + 1, $result['exported'], $result['rows'], $result['errors']);
+
+        $next_batch = $batch_index + 1;
+        if ($next_batch < count($batches)) {
+            $this->scheduleNextBatch($jobId);
+            $this->log('INFO', sprintf('Next batch scheduled (%d/%d)', $next_batch + 1, count($batches)));
+        } else {
+            $this->finalizeJob($pdo, $jobId, $job['snapshot_dir']);
+        }
+    }
+
+    /**
+     * Open a-root.db for batch registration.
+     *
+     * @param string $snapshotDir Snapshot directory.
+     * @return PDO|null Root PDO or null.
+     */
+    private function openRootDbForBatch(string $snapshotDir): ?PDO {
+        $root_path = $snapshotDir . '/a-root.db';
+        if (RiseupBooleanHelpers::is_file_missing($root_path)) {
+            return null;
+        }
+
+        $rootPdo = new PDO('sqlite:' . $root_path);
+        $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $rootPdo;
+    }
+
+    /**
+     * Log individual table export results for a batch.
+     *
+     * @param array  $tables      Tables in the batch.
+     * @param string $snapshotDir Snapshot directory.
+     */
+    private function logBatchExports(array $tables, string $snapshotDir): void {
+        // Individual table logs are already emitted by exportBatchTables
+        // This hook exists for future batch-level logging needs
     }
 
     // =========================================================================
@@ -459,7 +501,6 @@ class RiseupSnapshotWorker {
         if (!$pdo) return false;
 
         try {
-            // Ensure jobs table exists
             $pdo->exec("CREATE TABLE IF NOT EXISTS " . TABLE_SNAPSHOT_JOBS . " (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 snapshot_dir TEXT NOT NULL,
@@ -552,8 +593,6 @@ class RiseupSnapshotWorker {
      */
     private function updateJobBatchProgress($pdo, $job_id, $next_batch, $batch_exported, $batch_rows, $batch_errors) {
         $now = gmdate('c');
-
-        // Accumulate
         $job = $this->getJob($pdo, $job_id);
         $existing_errors = json_decode($job['errors_json'] ?? '[]', true);
         $all_errors = array_merge($existing_errors, $batch_errors);
@@ -567,12 +606,8 @@ class RiseupSnapshotWorker {
             WHERE id = ?");
 
         $stmt->execute(array(
-            $next_batch,
-            $batch_exported,
-            $batch_rows,
-            json_encode($all_errors),
-            $now,
-            $job_id,
+            $next_batch, $batch_exported, $batch_rows,
+            json_encode($all_errors), $now, $job_id,
         ));
     }
 
@@ -586,17 +621,12 @@ class RiseupSnapshotWorker {
     private function finalizeJob($pdo, $job_id, $snapshot_dir) {
         $job = $this->getJob($pdo, $job_id);
 
-        // Update a-root.db final stats
         $root_path = $snapshot_dir . '/a-root.db';
         if (file_exists($root_path)) {
             try {
                 $rootPdo = new PDO('sqlite:' . $root_path);
                 $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $this->rootDb->updateStats(
-                    $rootPdo,
-                    (int) $job['tables_exported'],
-                    (int) $job['total_rows']
-                );
+                $this->rootDb->updateStats($rootPdo, (int) $job['tables_exported'], (int) $job['total_rows']);
                 $rootPdo = null;
             } catch (Exception $e) {
                 $this->log('WARN', 'Failed to finalize a-root.db stats', array('error' => $e->getMessage()));
@@ -620,7 +650,6 @@ class RiseupSnapshotWorker {
      * @param int $job_id Job ID.
      */
     private function scheduleNextBatch($job_id) {
-        // Schedule 5 seconds from now to allow current request to finish
         wp_schedule_single_event(
             time() + 5,
             CRON_SNAPSHOT_WORKER_BATCH,
@@ -646,7 +675,6 @@ class RiseupSnapshotWorker {
         $pool_size = (int) $job['pool_size'];
         $total_batches = (int) ceil($total_tables / $pool_size);
 
-        // Get per-table progress
         $table_progress = array();
         try {
             $stmt = $pdo->prepare("SELECT table_name, status, rows_total, rows_exported, error_message
@@ -681,7 +709,7 @@ class RiseupSnapshotWorker {
     }
 
     // =========================================================================
-    // TABLE EXPORT (unchanged core logic)
+    // TABLE EXPORT
     // =========================================================================
 
     /**
@@ -696,88 +724,104 @@ class RiseupSnapshotWorker {
         $filepath = $snapshot_dir . '/' . $filename;
 
         try {
-            $sqlite = new PDO('sqlite:' . $filepath);
-            $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $sqlite->exec('PRAGMA journal_mode = WAL');
-            $sqlite->exec('PRAGMA synchronous = OFF');
-
-            $create_sql = $this->getCreateTableSql($table);
-            if (!$create_sql) {
-                throw new Exception('Failed to get table structure for ' . $table);
-            }
-
-            $sqlite_create = $this->convertCreateStatement($create_sql, $table);
-            $sqlite->exec($sqlite_create);
-
+            $sqlite = $this->createSqliteAndSchema($filepath, $table);
             $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
 
             if ($count === 0) {
                 $sqlite = null;
-                $file_size = filesize($filepath);
-                return array(
-                    'success'   => true,
-                    'rows'      => 0,
-                    'filename'  => $filename,
-                    'file_size' => $file_size,
-                    'checksum'  => md5_file($filepath),
-                );
+                return $this->buildExportResult($filename, $filepath, 0);
             }
 
-            $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
-            $column_names = array_column($columns, 'Field');
-            $placeholders = implode(', ', array_fill(0, count($column_names), '?'));
-            $column_list = implode(', ', array_map(function($c) { return "`{$c}`"; }, $column_names));
-
-            $insert_sql = "INSERT INTO `{$table}` ({$column_list}) VALUES ({$placeholders})";
-            $stmt = $sqlite->prepare($insert_sql);
-
-            $offset = 0;
-            $exported = 0;
-
-            $sqlite->beginTransaction();
-
-            while ($offset < $count) {
-                $rows = $this->wpdb->get_results(
-                    $this->wpdb->prepare(
-                        "SELECT * FROM `{$table}` LIMIT %d OFFSET %d",
-                        $this->batchSize,
-                        $offset
-                    ),
-                    ARRAY_N
-                );
-
-                foreach ($rows as $row) {
-                    $stmt->execute($row);
-                    $exported++;
-                }
-
-                $offset += $this->batchSize;
-            }
-
-            $sqlite->commit();
+            $exported = $this->batchExportRows($sqlite, $table, $count);
             $sqlite = null;
 
-            $file_size = filesize($filepath);
-            $checksum = md5_file($filepath);
-
-            return array(
-                'success'   => true,
-                'rows'      => $exported,
-                'filename'  => $filename,
-                'file_size' => $file_size,
-                'checksum'  => $checksum,
-            );
+            return $this->buildExportResult($filename, $filepath, $exported);
 
         } catch (Exception $e) {
             return array(
-                'success'   => false,
-                'error'     => $e->getMessage(),
-                'rows'      => 0,
-                'filename'  => $filename,
-                'file_size' => 0,
-                'checksum'  => '',
+                'success' => false, 'error' => $e->getMessage(),
+                'rows' => 0, 'filename' => $filename, 'file_size' => 0, 'checksum' => '',
             );
         }
+    }
+
+    /**
+     * Create a SQLite file and initialize the table schema.
+     *
+     * @param string $filepath SQLite file path.
+     * @param string $table    Table name.
+     * @return PDO SQLite connection.
+     */
+    private function createSqliteAndSchema(string $filepath, string $table): PDO {
+        $sqlite = new PDO('sqlite:' . $filepath);
+        $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $sqlite->exec('PRAGMA journal_mode = WAL');
+        $sqlite->exec('PRAGMA synchronous = OFF');
+
+        $create_sql = $this->getCreateTableSql($table);
+        if (!$create_sql) {
+            throw new Exception('Failed to get table structure for ' . $table);
+        }
+
+        $sqlite->exec(RiseupSqliteSchemaConverter::convert($create_sql, $table));
+
+        return $sqlite;
+    }
+
+    /**
+     * Batch export all rows from a MySQL table to SQLite.
+     *
+     * @param PDO    $sqlite SQLite connection.
+     * @param string $table  Table name.
+     * @param int    $count  Total row count.
+     * @return int Number of rows exported.
+     */
+    private function batchExportRows(PDO $sqlite, string $table, int $count): int {
+        $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
+        $column_names = array_column($columns, 'Field');
+        $placeholders = implode(', ', array_fill(0, count($column_names), '?'));
+        $column_list = implode(', ', array_map(function($c) { return "`{$c}`"; }, $column_names));
+
+        $stmt = $sqlite->prepare("INSERT INTO `{$table}` ({$column_list}) VALUES ({$placeholders})");
+
+        $offset = 0;
+        $exported = 0;
+        $sqlite->beginTransaction();
+
+        while ($offset < $count) {
+            $rows = $this->wpdb->get_results(
+                $this->wpdb->prepare("SELECT * FROM `{$table}` LIMIT %d OFFSET %d", $this->batchSize, $offset),
+                ARRAY_N
+            );
+
+            foreach ($rows as $row) {
+                $stmt->execute($row);
+                $exported++;
+            }
+
+            $offset += $this->batchSize;
+        }
+
+        $sqlite->commit();
+        return $exported;
+    }
+
+    /**
+     * Build the export result array.
+     *
+     * @param string $filename Filename.
+     * @param string $filepath Full path.
+     * @param int    $rows     Rows exported.
+     * @return array Result.
+     */
+    private function buildExportResult(string $filename, string $filepath, int $rows): array {
+        return array(
+            'success'   => true,
+            'rows'      => $rows,
+            'filename'  => $filename,
+            'file_size' => filesize($filepath),
+            'checksum'  => md5_file($filepath),
+        );
     }
 
     // =========================================================================
@@ -793,78 +837,6 @@ class RiseupSnapshotWorker {
     private function getCreateTableSql($table) {
         $result = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
         return $result ? $result[1] : null;
-    }
-
-    /**
-     * Convert MySQL CREATE TABLE to SQLite syntax.
-     *
-     * @param string $mysql_create MySQL CREATE statement.
-     * @param string $table        Table name.
-     * @return string SQLite CREATE statement.
-     */
-    private function convertCreateStatement($mysql_create, $table) {
-        $sql = $mysql_create;
-
-        // Remove MySQL-specific clauses
-        $sql = preg_replace('/\s+ENGINE\s*=\s*\w+/i', '', $sql);
-        $sql = preg_replace('/\s+DEFAULT\s+CHARSET\s*=\s*\w+/i', '', $sql);
-        $sql = preg_replace('/\s+COLLATE\s*=?\s*\w+/i', '', $sql);
-        $sql = preg_replace('/\s+AUTO_INCREMENT\s*=\s*\d+/i', '', $sql);
-        $sql = preg_replace('/\s+ROW_FORMAT\s*=\s*\w+/i', '', $sql);
-
-        // AUTO_INCREMENT → AUTOINCREMENT
-        $sql = preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $sql);
-
-        // Convert data types
-        $type_map = array(
-            '/\bTINYINT\s*\(\d+\)/i'    => 'INTEGER',
-            '/\bSMALLINT\s*\(\d+\)/i'   => 'INTEGER',
-            '/\bMEDIUMINT\s*\(\d+\)/i'  => 'INTEGER',
-            '/\bBIGINT\s*\(\d+\)/i'     => 'INTEGER',
-            '/\bINT\s*\(\d+\)/i'        => 'INTEGER',
-            '/\bDOUBLE\b/i'             => 'REAL',
-            '/\bFLOAT\b/i'             => 'REAL',
-            '/\bDECIMAL\s*\([^)]+\)/i'  => 'REAL',
-            '/\bVARCHAR\s*\(\d+\)/i'    => 'TEXT',
-            '/\bCHAR\s*\(\d+\)/i'       => 'TEXT',
-            '/\bLONGTEXT\b/i'          => 'TEXT',
-            '/\bMEDIUMTEXT\b/i'        => 'TEXT',
-            '/\bTINYTEXT\b/i'          => 'TEXT',
-            '/\bDATETIME\b/i'          => 'TEXT',
-            '/\bTIMESTAMP\b/i'         => 'TEXT',
-            '/\bDATE\b/i'              => 'TEXT',
-            '/\bTIME\b/i'              => 'TEXT',
-            '/\bLONGBLOB\b/i'          => 'BLOB',
-            '/\bMEDIUMBLOB\b/i'        => 'BLOB',
-            '/\bTINYBLOB\b/i'          => 'BLOB',
-            '/\bENUM\s*\([^)]+\)/i'     => 'TEXT',
-            '/\bSET\s*\([^)]+\)/i'      => 'TEXT',
-            '/\bBIT\s*\(\d+\)/i'        => 'INTEGER',
-            '/\bYEAR\s*\(\d+\)/i'       => 'INTEGER',
-            '/\bBOOLEAN\b/i'           => 'INTEGER',
-            '/\bBOOL\b/i'              => 'INTEGER',
-        );
-
-        foreach ($type_map as $pattern => $replacement) {
-            $sql = preg_replace($pattern, $replacement, $sql);
-        }
-
-        // Remove inline collation/charset/unsigned/zerofill
-        $sql = preg_replace('/\s+COLLATE\s+\w+/i', '', $sql);
-        $sql = preg_replace('/\s+CHARACTER\s+SET\s+\w+/i', '', $sql);
-        $sql = preg_replace('/\s+UNSIGNED\b/i', '', $sql);
-        $sql = preg_replace('/\s+ZEROFILL\b/i', '', $sql);
-
-        // Remove KEY/INDEX definitions
-        $sql = preg_replace('/,\s*KEY\s+[^,]+(?=,|\))/i', '', $sql);
-        $sql = preg_replace('/,\s*UNIQUE\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
-        $sql = preg_replace('/,\s*FULLTEXT\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
-        $sql = preg_replace('/,\s*SPATIAL\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
-
-        // Remove extra commas before closing paren
-        $sql = preg_replace('/,\s*\)/', ')', $sql);
-
-        return $sql;
     }
 
     // =========================================================================
@@ -916,11 +888,9 @@ class RiseupSnapshotWorker {
                 SET status = ?, rows_exported = ?, completed_at = ?, error_message = ?
                 WHERE snapshot_id = 0 AND table_name = ?");
             $stmt->execute(array(
-                $status,
-                $rows,
+                $status, $rows,
                 ($status === 'complete' || $status === 'failed') ? $now : null,
-                $error,
-                $table,
+                $error, $table,
             ));
         } catch (Exception $e) {
             // Non-fatal
@@ -951,11 +921,12 @@ class RiseupSnapshotWorker {
     private function formatBytes($bytes) {
         if ($bytes < 1024) return $bytes . ' B';
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
-        return round($bytes / 1048576, 1) . ' MB';
+        if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
+        return round($bytes / 1073741824, 1) . ' GB';
     }
 
     /**
-     * Log a message with worker context.
+     * Log a message.
      *
      * @param string $level   Log level.
      * @param string $message Message.

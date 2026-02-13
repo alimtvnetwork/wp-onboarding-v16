@@ -85,14 +85,72 @@ class RiseupRestoreEngine {
      * @return array Result with success, tables_restored, total_rows, duration, etc.
      */
     public function execute($snapshot_dir, $options = array()) {
-        $start_time = microtime(true);
+        $prereqError = $this->validateRestorePrereqs($snapshot_dir, $options);
+        if ($prereqError) {
+            return $prereqError;
+        }
 
+        $start_time = microtime(true);
         $mode = $options['mode'] ?? 'full';
-        $selected_tables = $options['tables'] ?? array();
-        $create_backup = $options['create_backup'] ?? true;
         $apply_incrementals = $options['apply_incrementals'] ?? true;
 
-        // Validate confirmation
+        $this->log('INFO', 'Starting per-table restore', array(
+            'directory' => basename($snapshot_dir),
+            'mode'      => $mode,
+        ));
+
+        try {
+            $rootPdo = new PDO('sqlite:' . $snapshot_dir . '/a-root.db');
+            $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            $meta = $this->getSnapshotMeta($rootPdo);
+            $restore_order = $this->prepareRestoreOrder($rootPdo, $options);
+
+            if (!$restore_order['success']) {
+                $rootPdo = null;
+                return $restore_order;
+            }
+
+            $ordered_tables = $restore_order['tables'];
+            $table_inventory = $restore_order['inventory'];
+
+            $backup_id = $this->createSafetyBackup($options);
+
+            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
+
+            $master_result = $this->restoreMasterTables($ordered_tables, $table_inventory, $snapshot_dir, $options);
+            $inc_result = $this->applyIncrementalsPhase($rootPdo, $snapshot_dir, $ordered_tables, $mode, $apply_incrementals);
+
+            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
+            $rootPdo = null;
+
+            $duration = microtime(true) - $start_time;
+            $total_rows = $master_result['total_rows'] + $inc_result['total_rows'];
+            $errors = array_merge($master_result['errors'], $inc_result['errors']);
+
+            $this->logAuditRestore($snapshot_dir, $master_result['tables_restored'], $total_rows, $duration);
+
+            return $this->buildRestoreResult(
+                $master_result, $inc_result, $backup_id, $errors, $duration, $meta, $total_rows
+            );
+
+        } catch (Exception $e) {
+            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
+            $this->log('ERROR', 'Restore engine failed', array(
+                'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
+            ));
+            return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'restore');
+        }
+    }
+
+    /**
+     * Validate restore prerequisites (confirmation and root db existence).
+     *
+     * @param string $snapshotDir Snapshot directory.
+     * @param array  $options     Options.
+     * @return array|null Error result or null if valid.
+     */
+    private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
             return array(
                 'success' => false,
@@ -101,197 +159,198 @@ class RiseupRestoreEngine {
             );
         }
 
-        $root_path = $snapshot_dir . '/a-root.db';
+        $root_path = $snapshotDir . '/a-root.db';
         if (RiseupBooleanHelpers::is_file_missing($root_path)) {
             return array(
                 'success' => false,
-                'error'   => 'Snapshot a-root.db not found at: ' . basename($snapshot_dir),
+                'error'   => 'Snapshot a-root.db not found at: ' . basename($snapshotDir),
             );
         }
 
-        $this->log('INFO', 'Starting per-table restore', array(
-            'directory'          => basename($snapshot_dir),
-            'mode'               => $mode,
-            'create_backup'      => $create_backup,
-            'apply_incrementals' => $apply_incrementals,
-            'selected_tables'    => count($selected_tables) > 0 ? count($selected_tables) : 'all',
+        return null;
+    }
+
+    /**
+     * Prepare the restore order from inventory and dependency graph.
+     *
+     * @param PDO   $rootPdo Root DB connection.
+     * @param array $options Restore options.
+     * @return array Result with success, tables, inventory.
+     */
+    private function prepareRestoreOrder(PDO $rootPdo, array $options): array {
+        $mode = $options['mode'] ?? 'full';
+        $selected_tables = $options['tables'] ?? array();
+
+        $table_inventory = $this->getTableInventory($rootPdo);
+        $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
+
+        if ($mode === 'selective' && !empty($selected_tables)) {
+            $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
+                return in_array($t, $selected_tables);
+            }));
+
+            if (empty($restore_order)) {
+                return array('success' => false, 'error' => 'None of the selected tables exist in the snapshot');
+            }
+        }
+
+        $this->log('INFO', 'Restore order determined', array(
+            'tables' => count($restore_order),
+            'order'  => array_slice($restore_order, 0, 10),
         ));
 
-        try {
-            // 1. Open a-root.db
-            $rootPdo = new PDO('sqlite:' . $root_path);
-            $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return array('success' => true, 'tables' => $restore_order, 'inventory' => $table_inventory);
+    }
 
-            // 2. Read snapshot metadata
-            $meta = $this->getSnapshotMeta($rootPdo);
+    /**
+     * Create a pre-restore safety backup if requested.
+     *
+     * @param array $options Restore options.
+     * @return int|null Backup ID or null.
+     */
+    private function createSafetyBackup(array $options): ?int {
+        $create_backup = $options['create_backup'] ?? true;
 
-            // 3. Get table inventory with dependency order
-            $table_inventory = $this->getTableInventory($rootPdo);
-            $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
-
-            // 4. Filter tables for selective mode
-            if ($mode === 'selective' && !empty($selected_tables)) {
-                $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
-                    return in_array($t, $selected_tables);
-                }));
-
-                if (empty($restore_order)) {
-                    $rootPdo = null;
-                    return array(
-                        'success' => false,
-                        'error'   => 'None of the selected tables exist in the snapshot',
-                    );
-                }
-            }
-
-            $this->log('INFO', 'Restore order determined', array(
-                'tables' => count($restore_order),
-                'order'  => array_slice($restore_order, 0, 10), // Log first 10
-            ));
-
-            // 5. Pre-restore safety backup (optional)
-            $backup_id = null;
-            if ($create_backup && $this->orchestrator) {
-                $this->log('INFO', 'Creating pre-restore safety backup');
-                $backup_result = $this->orchestrator->executeFullBackup(array(
-                    'title' => 'Pre-Restore Safety Backup ' . date('Y-m-d H:i'),
-                    'compression' => false, // Skip ZIP for speed
-                    'include_plugins' => false,
-                ));
-
-                if ($backup_result['success']) {
-                    $backup_id = $backup_result['snapshot_id'] ?? null;
-                    $this->log('INFO', 'Pre-restore backup complete', array(
-                        'backup_id' => $backup_id,
-                    ));
-                } else {
-                    $this->log('WARN', 'Pre-restore backup failed (continuing)', array(
-                        'error' => $backup_result['error'] ?? 'Unknown',
-                    ));
-                    // Continue unless strict mode
-                    if (!empty($options['require_backup'])) {
-                        $rootPdo = null;
-                        return array(
-                            'success' => false,
-                            'error'   => 'Pre-restore backup failed: ' . ($backup_result['error'] ?? 'Unknown'),
-                        );
-                    }
-                }
-            }
-
-            // 6. Restore master tables
-            $tables_restored = 0;
-            $total_rows = 0;
-            $errors = array();
-
-            // Disable FK checks for the entire restore
-            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
-
-            foreach ($restore_order as $table) {
-                $table_info = $table_inventory[$table] ?? null;
-                if (!$table_info) {
-                    $errors[] = $table . ': not found in inventory';
-                    continue;
-                }
-
-                $sqlite_path = $snapshot_dir . '/' . $table_info['sqlite_file'];
-                if (RiseupBooleanHelpers::is_file_missing($sqlite_path)) {
-                    $errors[] = $table . ': SQLite file missing (' . $table_info['sqlite_file'] . ')';
-                    $this->log('ERROR', 'SQLite file missing for table', array(
-                        'table' => $table,
-                        'file'  => $table_info['sqlite_file'],
-                    ));
-                    continue;
-                }
-
-                $result = $this->restoreTableFromFile($sqlite_path, $table, 'truncate');
-
-                if ($result['success']) {
-                    $tables_restored++;
-                    $total_rows += $result['rows'];
-                    $this->log('INFO', sprintf('Restored: %s (%d rows)', $table, $result['rows']));
-                } else {
-                    $errors[] = $table . ': ' . $result['error'];
-                    $this->log('ERROR', 'Restore failed: ' . $table, array(
-                        'error' => $result['error'],
-                    ));
-
-                    if (!empty($options['strict'])) {
-                        $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-                        $rootPdo = null;
-                        return array(
-                            'success'         => false,
-                            'error'           => 'Strict mode: table restore failed for ' . $table,
-                            'tables_restored' => $tables_restored,
-                            'total_rows'      => $total_rows,
-                            'errors'          => $errors,
-                        );
-                    }
-                }
-            }
-
-            // 7. Apply incrementals if requested
-            $incrementals_applied = 0;
-            if ($apply_incrementals && $mode !== 'incremental') {
-                $inc_result = $this->applyIncrementals($rootPdo, $snapshot_dir, $restore_order);
-                $incrementals_applied = $inc_result['applied'];
-                $total_rows += $inc_result['total_rows'];
-                if (!empty($inc_result['errors'])) {
-                    $errors = array_merge($errors, $inc_result['errors']);
-                }
-            }
-
-            // 8. If mode is 'incremental' only, skip master and apply latest incremental
-            if ($mode === 'incremental') {
-                $inc_result = $this->applyIncrementals($rootPdo, $snapshot_dir, $restore_order);
-                $incrementals_applied = $inc_result['applied'];
-                $total_rows += $inc_result['total_rows'];
-                if (!empty($inc_result['errors'])) {
-                    $errors = array_merge($errors, $inc_result['errors']);
-                }
-            }
-
-            // Re-enable FK checks
-            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-
-            $rootPdo = null; // Close
-            $duration = microtime(true) - $start_time;
-
-            // Log audit
-            $this->logAuditRestore($snapshot_dir, $tables_restored, $total_rows, $duration);
-
-            $this->log('INFO', 'Per-table restore complete', array(
-                'tables_restored'     => $tables_restored,
-                'total_rows'          => $total_rows,
-                'incrementals_applied' => $incrementals_applied,
-                'errors'              => count($errors),
-                'backup_id'           => $backup_id,
-                'duration'            => round($duration, 2) . 's',
-            ));
-
-            return array(
-                'success'              => true,
-                'tables_restored'      => $tables_restored,
-                'total_rows'           => $total_rows,
-                'incrementals_applied' => $incrementals_applied,
-                'backup_id'            => $backup_id,
-                'errors'               => $errors,
-                'duration'             => $duration,
-                'meta'                 => $meta,
-            );
-
-        } catch (Exception $e) {
-            $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
-            $this->log('ERROR', 'Restore engine failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-            return array(
-                'success' => false,
-                'error'   => $e->getMessage(),
-                'phase'   => 'restore',
-            );
+        if (!$create_backup || !$this->orchestrator) {
+            return null;
         }
+
+        $this->log('INFO', 'Creating pre-restore safety backup');
+        $result = $this->orchestrator->executeFullBackup(array(
+            'title'           => 'Pre-Restore Safety Backup ' . date('Y-m-d H:i'),
+            'compression'     => false,
+            'include_plugins' => false,
+        ));
+
+        if ($result['success']) {
+            $this->log('INFO', 'Pre-restore backup complete', array('backup_id' => $result['snapshot_id'] ?? null));
+            return $result['snapshot_id'] ?? null;
+        }
+
+        $this->log('WARN', 'Pre-restore backup failed (continuing)', array('error' => $result['error'] ?? 'Unknown'));
+
+        if (!empty($options['require_backup'])) {
+            throw new Exception('Pre-restore backup failed: ' . ($result['error'] ?? 'Unknown'));
+        }
+
+        return null;
+    }
+
+    /**
+     * Restore master tables from SQLite files.
+     *
+     * @param array  $restoreOrder   Tables in restore order.
+     * @param array  $tableInventory Table inventory map.
+     * @param string $snapshotDir    Snapshot directory.
+     * @param array  $options        Restore options.
+     * @return array Result with tables_restored, total_rows, errors.
+     */
+    private function restoreMasterTables(array $restoreOrder, array $tableInventory, string $snapshotDir, array $options): array {
+        $tables_restored = 0;
+        $total_rows = 0;
+        $errors = array();
+
+        foreach ($restoreOrder as $table) {
+            $result = $this->restoreSingleMasterTable($table, $tableInventory, $snapshotDir);
+
+            if ($result === null) {
+                $errors[] = $result['error'] ?? $table . ': skipped';
+                continue;
+            }
+
+            if ($result['success']) {
+                $tables_restored++;
+                $total_rows += $result['rows'];
+                $this->log('INFO', sprintf('Restored: %s (%d rows)', $table, $result['rows']));
+                continue;
+            }
+
+            $errors[] = $table . ': ' . $result['error'];
+            $this->log('ERROR', 'Restore failed: ' . $table, array('error' => $result['error']));
+
+            if (!empty($options['strict'])) {
+                throw new Exception('Strict mode: table restore failed for ' . $table);
+            }
+        }
+
+        return array('tables_restored' => $tables_restored, 'total_rows' => $total_rows, 'errors' => $errors);
+    }
+
+    /**
+     * Restore a single master table.
+     *
+     * @param string $table          Table name.
+     * @param array  $tableInventory Table inventory.
+     * @param string $snapshotDir    Snapshot directory.
+     * @return array|null Result or null if missing.
+     */
+    private function restoreSingleMasterTable(string $table, array $tableInventory, string $snapshotDir): ?array {
+        $table_info = $tableInventory[$table] ?? null;
+        if (!$table_info) {
+            return array('success' => false, 'error' => $table . ': not found in inventory', 'rows' => 0);
+        }
+
+        $sqlite_path = $snapshotDir . '/' . $table_info['sqlite_file'];
+        if (RiseupBooleanHelpers::is_file_missing($sqlite_path)) {
+            $this->log('ERROR', 'SQLite file missing for table', array('table' => $table, 'file' => $table_info['sqlite_file']));
+            return array('success' => false, 'error' => 'SQLite file missing (' . $table_info['sqlite_file'] . ')', 'rows' => 0);
+        }
+
+        return $this->restoreTableFromFile($sqlite_path, $table, 'truncate');
+    }
+
+    /**
+     * Apply incrementals phase based on mode.
+     *
+     * @param PDO    $rootPdo         Root DB connection.
+     * @param string $snapshotDir     Snapshot directory.
+     * @param array  $restoreOrder    Restore order.
+     * @param string $mode            Restore mode.
+     * @param bool   $applyIncrementals Whether to apply incrementals.
+     * @return array Result with applied, total_rows, errors.
+     */
+    private function applyIncrementalsPhase(PDO $rootPdo, string $snapshotDir, array $restoreOrder, string $mode, bool $applyIncrementals): array {
+        $shouldApply = ($applyIncrementals && $mode !== 'incremental') || $mode === 'incremental';
+
+        if (!$shouldApply) {
+            return array('applied' => 0, 'total_rows' => 0, 'errors' => array());
+        }
+
+        return $this->applyIncrementals($rootPdo, $snapshotDir, $restoreOrder);
+    }
+
+    /**
+     * Build the final restore result.
+     *
+     * @param array    $masterResult Master restore result.
+     * @param array    $incResult    Incremental result.
+     * @param int|null $backupId     Pre-restore backup ID.
+     * @param array    $errors       All errors.
+     * @param float    $duration     Duration.
+     * @param array    $meta         Snapshot metadata.
+     * @param int      $totalRows    Total rows restored.
+     * @return array Final result.
+     */
+    private function buildRestoreResult(array $masterResult, array $incResult, ?int $backupId, array $errors, float $duration, array $meta, int $totalRows): array {
+        $this->log('INFO', 'Per-table restore complete', array(
+            'tables_restored'      => $masterResult['tables_restored'],
+            'total_rows'           => $totalRows,
+            'incrementals_applied' => $incResult['applied'],
+            'errors'               => count($errors),
+            'backup_id'            => $backupId,
+            'duration'             => round($duration, 2) . 's',
+        ));
+
+        return array(
+            'success'              => true,
+            'tables_restored'      => $masterResult['tables_restored'],
+            'total_rows'           => $totalRows,
+            'incrementals_applied' => $incResult['applied'],
+            'backup_id'            => $backupId,
+            'errors'               => $errors,
+            'duration'             => $duration,
+            'meta'                 => $meta,
+        );
     }
 
     /**
@@ -304,85 +363,110 @@ class RiseupRestoreEngine {
      */
     private function restoreTableFromFile($sqlite_path, $table, $strategy = 'truncate') {
         try {
-            $sqlite = new PDO('sqlite:' . $sqlite_path);
-            $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $validated = $this->openAndValidateSqliteTable($sqlite_path, $table);
+            if (!$validated['success']) {
+                return $validated;
+            }
 
-            // Verify table exists in SQLite
-            $check = $sqlite->query(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='" .
-                str_replace("'", "''", $table) . "'"
+            return $this->batchInsertToMysql(
+                $validated['sqlite'], $table, $validated['columns'],
+                $strategy, $validated['row_count']
             );
-            if (!$check->fetch()) {
-                $sqlite = null;
-                return array('success' => false, 'error' => 'Table not found in SQLite file', 'rows' => 0);
-            }
-
-            // Get columns
-            $columns_result = $sqlite->query("PRAGMA table_info('" . str_replace("'", "''", $table) . "')");
-            $columns = $columns_result->fetchAll(PDO::FETCH_ASSOC);
-            $column_names = array_column($columns, 'name');
-
-            if (empty($column_names)) {
-                $sqlite = null;
-                return array('success' => false, 'error' => 'No columns found in SQLite table', 'rows' => 0);
-            }
-
-            // Start MySQL transaction
-            $this->wpdb->query("START TRANSACTION");
-
-            try {
-                // Truncate if full restore
-                if ($strategy === 'truncate') {
-                    $this->wpdb->query("TRUNCATE TABLE `{$table}`");
-                }
-
-                // Count total rows
-                $row_count = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
-
-                // Batch insert
-                $offset = 0;
-                $total_rows = 0;
-                $columns_sql = '`' . implode('`, `', $column_names) . '`';
-                $placeholders = implode(', ', array_fill(0, count($column_names), '%s'));
-
-                $insert_verb = ($strategy === 'merge') ? 'REPLACE' : 'INSERT';
-                $sql_template = "{$insert_verb} INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders})";
-
-                while ($offset < $row_count) {
-                    $rows = $sqlite->query(
-                        "SELECT * FROM `{$table}` LIMIT {$this->batchSize} OFFSET {$offset}"
-                    )->fetchAll(PDO::FETCH_ASSOC);
-
-                    foreach ($rows as $row) {
-                        $values = array();
-                        foreach ($column_names as $col) {
-                            $values[] = isset($row[$col]) ? $row[$col] : null;
-                        }
-
-                        $prepared = $this->wpdb->prepare($sql_template, $values);
-                        $this->wpdb->query($prepared);
-                        $total_rows++;
-                    }
-
-                    $offset += $this->batchSize;
-                }
-
-                $this->wpdb->query("COMMIT");
-                $sqlite = null;
-
-                return array('success' => true, 'rows' => $total_rows);
-
-            } catch (Exception $e) {
-                $this->wpdb->query("ROLLBACK");
-                throw $e;
-            }
 
         } catch (Exception $e) {
-            return array(
-                'success' => false,
-                'error'   => $e->getMessage(),
-                'rows'    => 0,
-            );
+            return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
+        }
+    }
+
+    /**
+     * Open a SQLite file and validate the table exists with columns.
+     *
+     * @param string $sqlitePath Path to SQLite file.
+     * @param string $table      Table name.
+     * @return array Result with sqlite, columns, row_count, or error.
+     */
+    private function openAndValidateSqliteTable(string $sqlitePath, string $table): array {
+        $sqlite = new PDO('sqlite:' . $sqlitePath);
+        $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $check = $sqlite->query(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='" .
+            str_replace("'", "''", $table) . "'"
+        );
+        if (!$check->fetch()) {
+            $sqlite = null;
+            return array('success' => false, 'error' => 'Table not found in SQLite file', 'rows' => 0);
+        }
+
+        $columns = $sqlite->query("PRAGMA table_info('" . str_replace("'", "''", $table) . "')")
+            ->fetchAll(PDO::FETCH_ASSOC);
+        $column_names = array_column($columns, 'name');
+
+        if (empty($column_names)) {
+            $sqlite = null;
+            return array('success' => false, 'error' => 'No columns found in SQLite table', 'rows' => 0);
+        }
+
+        $row_count = (int) $sqlite->query("SELECT COUNT(*) FROM `{$table}`")->fetchColumn();
+
+        return array(
+            'success'   => true,
+            'sqlite'    => $sqlite,
+            'columns'   => $column_names,
+            'row_count' => $row_count,
+        );
+    }
+
+    /**
+     * Batch insert rows from SQLite into MySQL.
+     *
+     * @param PDO    $sqlite   SQLite connection.
+     * @param string $table    Table name.
+     * @param array  $columns  Column names.
+     * @param string $strategy Insert strategy (truncate or merge).
+     * @param int    $rowCount Total row count.
+     * @return array Result with success, rows.
+     */
+    private function batchInsertToMysql(PDO $sqlite, string $table, array $columns, string $strategy, int $rowCount): array {
+        $this->wpdb->query("START TRANSACTION");
+
+        try {
+            if ($strategy === 'truncate') {
+                $this->wpdb->query("TRUNCATE TABLE `{$table}`");
+            }
+
+            $columns_sql = '`' . implode('`, `', $columns) . '`';
+            $placeholders = implode(', ', array_fill(0, count($columns), '%s'));
+            $insert_verb = ($strategy === 'merge') ? 'REPLACE' : 'INSERT';
+            $sql_template = "{$insert_verb} INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders})";
+
+            $total_rows = 0;
+            $offset = 0;
+
+            while ($offset < $rowCount) {
+                $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$this->batchSize} OFFSET {$offset}")
+                    ->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($rows as $row) {
+                    $values = array();
+                    foreach ($columns as $col) {
+                        $values[] = isset($row[$col]) ? $row[$col] : null;
+                    }
+                    $this->wpdb->query($this->wpdb->prepare($sql_template, $values));
+                    $total_rows++;
+                }
+
+                $offset += $this->batchSize;
+            }
+
+            $this->wpdb->query("COMMIT");
+            $sqlite = null;
+
+            return array('success' => true, 'rows' => $total_rows);
+
+        } catch (Exception $e) {
+            $this->wpdb->query("ROLLBACK");
+            throw $e;
         }
     }
 
@@ -410,53 +494,54 @@ class RiseupRestoreEngine {
         $errors = array();
 
         foreach ($incrementals as $inc) {
-            $inc_dir = $snapshot_dir . '/' . rtrim($inc['relative_path'], '/');
-            if (RiseupBooleanHelpers::is_dir_missing($inc_dir)) {
-                $errors[] = 'Incremental directory missing: ' . $inc['folder_name'];
-                $this->log('WARN', 'Incremental directory missing', array(
-                    'folder' => $inc['folder_name'],
-                ));
+            $result = $this->applySingleIncremental($inc, $snapshot_dir, $restore_order);
+            $total_rows += $result['rows'];
+            $applied++;
+            if (!empty($result['errors'])) {
+                $errors = array_merge($errors, $result['errors']);
+            }
+        }
+
+        return array('applied' => $applied, 'total_rows' => $total_rows, 'errors' => $errors);
+    }
+
+    /**
+     * Apply a single incremental backup.
+     *
+     * @param array  $inc          Incremental record.
+     * @param string $snapshotDir  Snapshot directory.
+     * @param array  $restoreOrder Restore order.
+     * @return array Result with rows, errors.
+     */
+    private function applySingleIncremental(array $inc, string $snapshotDir, array $restoreOrder): array {
+        $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
+        if (RiseupBooleanHelpers::is_dir_missing($inc_dir)) {
+            $this->log('WARN', 'Incremental directory missing', array('folder' => $inc['folder_name']));
+            return array('rows' => 0, 'errors' => array('Incremental directory missing: ' . $inc['folder_name']));
+        }
+
+        $this->log('INFO', 'Applying incremental: ' . $inc['folder_name']);
+
+        $sqlite_files = glob($inc_dir . '/*.sqlite');
+        $inc_rows = 0;
+        $errors = array();
+
+        foreach ($sqlite_files as $sqlite_file) {
+            $table = basename($sqlite_file, '.sqlite');
+            if (!in_array($table, $restoreOrder)) {
                 continue;
             }
 
-            $this->log('INFO', 'Applying incremental: ' . $inc['folder_name']);
-
-            // Find all SQLite files in this incremental
-            $sqlite_files = glob($inc_dir . '/*.sqlite');
-            $inc_rows = 0;
-
-            foreach ($sqlite_files as $sqlite_file) {
-                $table = basename($sqlite_file, '.sqlite');
-
-                // Only restore tables in our restore order
-                if (!in_array($table, $restore_order)) {
-                    continue;
-                }
-
-                // Use REPLACE strategy for incrementals (merge, don't truncate)
-                $result = $this->restoreTableFromFile($sqlite_file, $table, 'merge');
-
-                if ($result['success']) {
-                    $inc_rows += $result['rows'];
-                    $this->log('INFO', sprintf('Incremental %s: %s (+%d rows)',
-                        $inc['folder_name'], $table, $result['rows']
-                    ));
-                } else {
-                    $errors[] = sprintf('Incremental %s/%s: %s',
-                        $inc['folder_name'], $table, $result['error']
-                    );
-                }
+            $result = $this->restoreTableFromFile($sqlite_file, $table, 'merge');
+            if ($result['success']) {
+                $inc_rows += $result['rows'];
+                $this->log('INFO', sprintf('Incremental %s: %s (+%d rows)', $inc['folder_name'], $table, $result['rows']));
+            } else {
+                $errors[] = sprintf('Incremental %s/%s: %s', $inc['folder_name'], $table, $result['error']);
             }
-
-            $total_rows += $inc_rows;
-            $applied++;
         }
 
-        return array(
-            'applied'    => $applied,
-            'total_rows' => $total_rows,
-            'errors'     => $errors,
-        );
+        return array('rows' => $inc_rows, 'errors' => $errors);
     }
 
     /**
@@ -496,9 +581,6 @@ class RiseupRestoreEngine {
     /**
      * Determine the restore order using the dependency graph (topological sort).
      *
-     * Parent tables (referenced tables) are restored first, then children.
-     * Tables not in the dependency graph are appended at the end.
-     *
      * @param PDO   $rootPdo        a-root.db PDO.
      * @param array $table_inventory Table inventory map.
      * @return array Ordered list of table names.
@@ -506,22 +588,32 @@ class RiseupRestoreEngine {
     private function getRestoreOrder($rootPdo, $table_inventory) {
         $all_tables = array_keys($table_inventory);
 
-        // Read dependency graph
         $deps = $rootPdo->query(
             "SELECT parent_table, child_table FROM table_dependencies"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($deps)) {
-            // No dependencies — return alphabetical order
             sort($all_tables);
             return $all_tables;
         }
 
-        // Build adjacency list (parent → children)
+        $graph = $this->buildDependencyGraph($all_tables, $deps);
+
+        return $this->topologicalSort($graph['adjacency'], $graph['in_degree'], $all_tables);
+    }
+
+    /**
+     * Build an adjacency list and in-degree map from dependencies.
+     *
+     * @param array $allTables All table names.
+     * @param array $deps      Dependency records.
+     * @return array Graph with adjacency and in_degree.
+     */
+    private function buildDependencyGraph(array $allTables, array $deps): array {
         $graph = array();
         $in_degree = array();
 
-        foreach ($all_tables as $t) {
+        foreach ($allTables as $t) {
             $graph[$t] = array();
             $in_degree[$t] = 0;
         }
@@ -530,7 +622,6 @@ class RiseupRestoreEngine {
             $parent = $dep['parent_table'];
             $child = $dep['child_table'];
 
-            // Only include edges for tables in our inventory
             if (!isset($graph[$parent]) || !isset($graph[$child])) {
                 continue;
             }
@@ -539,9 +630,20 @@ class RiseupRestoreEngine {
             $in_degree[$child]++;
         }
 
-        // Kahn's algorithm (topological sort)
+        return array('adjacency' => $graph, 'in_degree' => $in_degree);
+    }
+
+    /**
+     * Perform Kahn's topological sort.
+     *
+     * @param array $graph    Adjacency list.
+     * @param array $inDegree In-degree map.
+     * @param array $allTables All table names.
+     * @return array Sorted table names.
+     */
+    private function topologicalSort(array $graph, array $inDegree, array $allTables): array {
         $queue = array();
-        foreach ($in_degree as $table => $degree) {
+        foreach ($inDegree as $table => $degree) {
             if ($degree === 0) {
                 $queue[] = $table;
             }
@@ -549,20 +651,19 @@ class RiseupRestoreEngine {
 
         $sorted = array();
         while (!empty($queue)) {
-            sort($queue); // Deterministic order within same level
+            sort($queue);
             $table = array_shift($queue);
             $sorted[] = $table;
 
             foreach ($graph[$table] as $child) {
-                $in_degree[$child]--;
-                if ($in_degree[$child] === 0) {
+                $inDegree[$child]--;
+                if ($inDegree[$child] === 0) {
                     $queue[] = $child;
                 }
             }
         }
 
-        // Append any tables not covered by the graph (orphans)
-        foreach ($all_tables as $t) {
+        foreach ($allTables as $t) {
             if (!in_array($t, $sorted)) {
                 $sorted[] = $t;
             }

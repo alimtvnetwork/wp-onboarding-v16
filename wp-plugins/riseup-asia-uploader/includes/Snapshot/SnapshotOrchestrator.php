@@ -89,33 +89,11 @@ class RiseupSnapshotOrchestrator {
     /**
      * Execute a full end-to-end backup (dispatcher).
      *
-     * Delegates to executeAsyncBackup or executeSyncBackup based on the
-     * 'async' option (defaults to true).
-     *
      * @param array $options Options: title, scope, include_plugins, plugin_selection, compression, async.
      * @return array Result with success, path, zip_path, stats.
      */
     public function executeFullBackup($options = array()) {
-        // Read settings (merge with overrides)
-        $settings = $this->manager->getSettings();
-        $title = $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i'));
-        $scope = $options['scope'] ?? $settings['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
-        $include_plugins = $options['include_plugins'] ?? $settings['include_plugins'] ?? true;
-        $plugin_selection = $options['plugin_selection'] ?? $settings['plugin_selection'] ?? 'all';
-        $compression = $options['compression'] ?? $settings['compression'] ?? true;
-
-        // Apply worker pool size from settings
-        $pool_size = $settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT;
-        $this->worker->setPoolSize($pool_size);
-
-        $resolved = array(
-            'title'            => $title,
-            'scope'            => $scope,
-            'include_plugins'  => $include_plugins,
-            'plugin_selection' => $plugin_selection,
-            'compression'      => $compression,
-            'settings'         => $settings,
-        );
+        $resolved = $this->resolveBackupOptions($options);
 
         $this->log('INFO', 'Starting full backup orchestration', $resolved);
 
@@ -129,76 +107,110 @@ class RiseupSnapshotOrchestrator {
     }
 
     /**
-     * Execute an asynchronous (cron-based) backup.
+     * Resolve and merge backup options with settings defaults.
      *
-     * Creates a job and schedules the first cron batch. The caller polls
-     * the progress endpoint until the job completes.
+     * @param array $options User-provided options.
+     * @return array Resolved options.
+     */
+    private function resolveBackupOptions(array $options): array {
+        $settings = $this->manager->getSettings();
+        $pool_size = $settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT;
+        $this->worker->setPoolSize($pool_size);
+
+        return array(
+            'title'            => $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i')),
+            'scope'            => $options['scope'] ?? $settings['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
+            'include_plugins'  => $options['include_plugins'] ?? $settings['include_plugins'] ?? true,
+            'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? 'all',
+            'compression'      => $options['compression'] ?? $settings['compression'] ?? true,
+            'settings'         => $settings,
+        );
+    }
+
+    /**
+     * Execute an asynchronous (cron-based) backup.
      *
      * @param array $resolved Resolved options from executeFullBackup.
      * @return array Result with job_id, snapshot_id, and status.
      */
     private function executeAsyncBackup($resolved) {
         try {
-            $worker_result = $this->worker->execute(array(
-                'title'    => $resolved['title'],
-                'scope'    => $resolved['scope'],
-                'type'     => 'full',
-                'settings' => $resolved['settings'],
-            ));
+            $worker_result = $this->runWorkerExport($resolved, true);
 
             if (!$worker_result['success']) {
-                return array(
-                    'success' => false,
-                    'error'   => 'Table export failed: ' . ($worker_result['error'] ?? 'Unknown error'),
-                    'phase'   => 'table_export',
-                );
+                return $this->buildPhaseError('table_export', $worker_result);
             }
 
-            $snapshot_dir = $worker_result['path'];
+            $this->logAsyncJobCreated($worker_result);
 
-            $this->log('INFO', 'Async backup job created', array(
-                'job_id'       => $worker_result['job_id'] ?? null,
-                'total_tables' => $worker_result['total_tables'] ?? null,
-                'pool_size'    => $worker_result['pool_size'] ?? null,
-                'directory'    => $worker_result['directory'] ?? null,
-            ));
-
-            // Register snapshot record in pending state
             $snapshot_id = $this->registerSnapshot(
                 $resolved['title'], $resolved['scope'], $worker_result,
-                array('count' => 0, 'total_size' => 0), $snapshot_dir
+                array('count' => 0, 'total_size' => 0), $worker_result['path']
             );
 
-            return array(
-                'success'      => true,
-                'async'        => true,
-                'job_id'       => $worker_result['job_id'] ?? null,
-                'snapshot_id'  => $snapshot_id,
-                'directory'    => $worker_result['directory'] ?? null,
-                'path'         => $snapshot_dir,
-                'total_tables' => $worker_result['total_tables'] ?? null,
-                'pool_size'    => $worker_result['pool_size'] ?? null,
-                'status'       => $worker_result['status'] ?? null,
-            );
+            return $this->buildAsyncResult($worker_result, $snapshot_id);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Async backup failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-
-            return array(
-                'success' => false,
-                'error'   => $e->getMessage(),
-                'phase'   => 'async_orchestration',
-            );
+            return $this->buildExceptionResult($e, 'async_orchestration');
         }
     }
 
     /**
-     * Execute a synchronous (blocking) backup.
+     * Run the worker export phase.
      *
-     * Blocks until all tables are exported, optionally snapshots plugins,
-     * and creates a ZIP archive.
+     * @param array $resolved Resolved options.
+     * @param bool  $async    Whether to use async mode.
+     * @return array Worker result.
+     */
+    private function runWorkerExport(array $resolved, bool $async): array {
+        $config = array(
+            'title'    => $resolved['title'],
+            'scope'    => $resolved['scope'],
+            'type'     => 'full',
+            'settings' => $resolved['settings'],
+        );
+
+        return $async
+            ? $this->worker->execute($config)
+            : $this->worker->executeSynchronous($config);
+    }
+
+    /**
+     * Log async job creation details.
+     *
+     * @param array $result Worker result.
+     */
+    private function logAsyncJobCreated(array $result): void {
+        $this->log('INFO', 'Async backup job created', array(
+            'job_id'       => $result['job_id'] ?? null,
+            'total_tables' => $result['total_tables'] ?? null,
+            'pool_size'    => $result['pool_size'] ?? null,
+            'directory'    => $result['directory'] ?? null,
+        ));
+    }
+
+    /**
+     * Build the async backup result array.
+     *
+     * @param array $workerResult Worker result.
+     * @param int   $snapshotId   Snapshot ID.
+     * @return array Async result.
+     */
+    private function buildAsyncResult(array $workerResult, $snapshotId): array {
+        return array(
+            'success'      => true,
+            'async'        => true,
+            'job_id'       => $workerResult['job_id'] ?? null,
+            'snapshot_id'  => $snapshotId,
+            'directory'    => $workerResult['directory'] ?? null,
+            'path'         => $workerResult['path'],
+            'total_tables' => $workerResult['total_tables'] ?? null,
+            'pool_size'    => $workerResult['pool_size'] ?? null,
+            'status'       => $workerResult['status'] ?? null,
+        );
+    }
+
+    /**
+     * Execute a synchronous (blocking) backup.
      *
      * @param array $resolved Resolved options from executeFullBackup.
      * @return array Result with snapshot_id, tables, total_rows, zip info.
@@ -207,108 +219,178 @@ class RiseupSnapshotOrchestrator {
         $start_time = microtime(true);
 
         try {
-            $worker_result = $this->worker->executeSynchronous(array(
-                'title'    => $resolved['title'],
-                'scope'    => $resolved['scope'],
-                'type'     => 'full',
-                'settings' => $resolved['settings'],
-            ));
+            $worker_result = $this->runWorkerExport($resolved, false);
 
             if (!$worker_result['success']) {
-                return array(
-                    'success' => false,
-                    'error'   => 'Table export failed: ' . ($worker_result['error'] ?? 'Unknown error'),
-                    'phase'   => 'table_export',
-                );
+                return $this->buildPhaseError('table_export', $worker_result);
             }
 
             $snapshot_dir = $worker_result['path'];
+            $this->logTableExportComplete($worker_result);
 
-            $this->log('INFO', 'Table export complete', array(
-                'tables'     => $worker_result['tables'],
-                'total_rows' => $worker_result['total_rows'],
-                'directory'  => $worker_result['directory'],
-            ));
-
-            // Plugin snapshots (optional)
-            $plugin_stats = array('count' => 0, 'total_size' => 0);
-            if ($resolved['include_plugins']) {
-                $plugin_stats = $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']);
-                $this->log('INFO', 'Plugin snapshots complete', array(
-                    'count'      => $plugin_stats['count'],
-                    'total_size' => $this->formatBytes($plugin_stats['total_size']),
-                ));
-            }
-
-            // Register in snapshots table for tracking
+            $plugin_stats = $this->executePluginSnapshots($snapshot_dir, $resolved);
             $snapshot_id = $this->registerSnapshot(
                 $resolved['title'], $resolved['scope'], $worker_result,
                 $plugin_stats, $snapshot_dir
             );
 
-            // ZIP export (optional)
-            $zip_path = null;
-            $zip_size = 0;
-            if ($resolved['compression']) {
-                $zip_result = $this->createZipExport($snapshot_dir, $resolved['title']);
-                if ($zip_result['success']) {
-                    $zip_path = $zip_result['path'];
-                    $zip_size = $zip_result['size'];
-                    $this->log('INFO', 'ZIP export complete', array(
-                        'path' => basename($zip_path),
-                        'size' => $this->formatBytes($zip_size),
-                    ));
-                } else {
-                    $this->log('WARN', 'ZIP export failed (non-fatal)', array(
-                        'error' => $zip_result['error'],
-                    ));
-                }
-            }
-
+            $zip_result = $this->executeZipExportPhase($snapshot_dir, $resolved);
             $duration = microtime(true) - $start_time;
 
-            $this->log('INFO', 'Sync backup orchestration complete', array(
-                'snapshot_id'   => $snapshot_id,
-                'tables'        => $worker_result['tables'],
-                'total_rows'    => $worker_result['total_rows'],
-                'plugins'       => $plugin_stats['count'],
-                'zip'           => $zip_path ? basename($zip_path) : 'disabled',
-                'duration'      => round($duration, 2) . 's',
-                'worker_errors' => count($worker_result['errors'] ?? array()),
-            ));
+            $this->logSyncComplete($snapshot_id, $worker_result, $plugin_stats, $zip_result, $duration);
 
-            return array(
-                'success'      => true,
-                'snapshot_id'  => $snapshot_id,
-                'directory'    => $worker_result['directory'],
-                'path'         => $snapshot_dir,
-                'tables'       => $worker_result['tables'],
-                'total_rows'   => $worker_result['total_rows'],
-                'plugins'      => $plugin_stats['count'],
-                'zip_path'     => $zip_path,
-                'zip_size'     => $zip_size,
-                'duration'     => $duration,
-                'errors'       => $worker_result['errors'] ?? array(),
-            );
+            return $this->buildSyncResult($worker_result, $plugin_stats, $zip_result, $snapshot_id, $duration);
         } catch (Exception $e) {
-            $this->log('ERROR', 'Sync backup failed', array(
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ));
-
-            return array(
-                'success' => false,
-                'error'   => $e->getMessage(),
-                'phase'   => 'sync_orchestration',
-            );
+            return $this->buildExceptionResult($e, 'sync_orchestration');
         }
     }
 
     /**
-     * Snapshot installed WordPress plugins as ZIP files.
+     * Execute the plugin snapshots phase.
      *
-     * Thin orchestrator: collects eligible plugins, opens a-root.db for
-     * registration, then archives each plugin individually.
+     * @param string $snapshotDir Snapshot directory.
+     * @param array  $resolved    Resolved options.
+     * @return array Plugin stats.
+     */
+    private function executePluginSnapshots(string $snapshotDir, array $resolved): array {
+        $plugin_stats = array('count' => 0, 'total_size' => 0);
+
+        if (!$resolved['include_plugins']) {
+            return $plugin_stats;
+        }
+
+        $plugin_stats = $this->snapshotPlugins($snapshotDir, $resolved['plugin_selection']);
+        $this->log('INFO', 'Plugin snapshots complete', array(
+            'count'      => $plugin_stats['count'],
+            'total_size' => $this->formatBytes($plugin_stats['total_size']),
+        ));
+
+        return $plugin_stats;
+    }
+
+    /**
+     * Execute the optional ZIP export phase.
+     *
+     * @param string $snapshotDir Snapshot directory.
+     * @param array  $resolved    Resolved options.
+     * @return array ZIP result with path and size.
+     */
+    private function executeZipExportPhase(string $snapshotDir, array $resolved): array {
+        if (!$resolved['compression']) {
+            return array('path' => null, 'size' => 0);
+        }
+
+        $zip_result = $this->createZipExport($snapshotDir, $resolved['title']);
+
+        if ($zip_result['success']) {
+            $this->log('INFO', 'ZIP export complete', array(
+                'path' => basename($zip_result['path']),
+                'size' => $this->formatBytes($zip_result['size']),
+            ));
+            return array('path' => $zip_result['path'], 'size' => $zip_result['size']);
+        }
+
+        $this->log('WARN', 'ZIP export failed (non-fatal)', array('error' => $zip_result['error']));
+        return array('path' => null, 'size' => 0);
+    }
+
+    /**
+     * Build the sync backup result array.
+     *
+     * @param array  $workerResult Worker result.
+     * @param array  $pluginStats  Plugin stats.
+     * @param array  $zipResult    ZIP result.
+     * @param int    $snapshotId   Snapshot ID.
+     * @param float  $duration     Duration in seconds.
+     * @return array Sync result.
+     */
+    private function buildSyncResult(array $workerResult, array $pluginStats, array $zipResult, $snapshotId, float $duration): array {
+        return array(
+            'success'      => true,
+            'snapshot_id'  => $snapshotId,
+            'directory'    => $workerResult['directory'],
+            'path'         => $workerResult['path'],
+            'tables'       => $workerResult['tables'],
+            'total_rows'   => $workerResult['total_rows'],
+            'plugins'      => $pluginStats['count'],
+            'zip_path'     => $zipResult['path'],
+            'zip_size'     => $zipResult['size'],
+            'duration'     => $duration,
+            'errors'       => $workerResult['errors'] ?? array(),
+        );
+    }
+
+    /**
+     * Log table export completion.
+     *
+     * @param array $result Worker result.
+     */
+    private function logTableExportComplete(array $result): void {
+        $this->log('INFO', 'Table export complete', array(
+            'tables'     => $result['tables'],
+            'total_rows' => $result['total_rows'],
+            'directory'  => $result['directory'],
+        ));
+    }
+
+    /**
+     * Log sync backup completion.
+     *
+     * @param int   $snapshotId   Snapshot ID.
+     * @param array $workerResult Worker result.
+     * @param array $pluginStats  Plugin stats.
+     * @param array $zipResult    ZIP result.
+     * @param float $duration     Duration.
+     */
+    private function logSyncComplete($snapshotId, array $workerResult, array $pluginStats, array $zipResult, float $duration): void {
+        $this->log('INFO', 'Sync backup orchestration complete', array(
+            'snapshot_id'   => $snapshotId,
+            'tables'        => $workerResult['tables'],
+            'total_rows'    => $workerResult['total_rows'],
+            'plugins'       => $pluginStats['count'],
+            'zip'           => $zipResult['path'] ? basename($zipResult['path']) : 'disabled',
+            'duration'      => round($duration, 2) . 's',
+            'worker_errors' => count($workerResult['errors'] ?? array()),
+        ));
+    }
+
+    /**
+     * Build a phase error result.
+     *
+     * @param string $phase  Phase name.
+     * @param array  $result Worker result with error.
+     * @return array Error result.
+     */
+    private function buildPhaseError(string $phase, array $result): array {
+        return array(
+            'success' => false,
+            'error'   => 'Table export failed: ' . ($result['error'] ?? 'Unknown error'),
+            'phase'   => $phase,
+        );
+    }
+
+    /**
+     * Build an exception error result.
+     *
+     * @param Exception $e     Exception.
+     * @param string    $phase Phase name.
+     * @return array Error result.
+     */
+    private function buildExceptionResult(Exception $e, string $phase): array {
+        $this->log('ERROR', ucfirst(str_replace('_', ' ', $phase)) . ' failed', array(
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ));
+
+        return array(
+            'success' => false,
+            'error'   => $e->getMessage(),
+            'phase'   => $phase,
+        );
+    }
+
+    /**
+     * Snapshot installed WordPress plugins as ZIP files.
      *
      * @param string $snapshot_dir Snapshot directory.
      * @param string $selection    'all' or 'selective' (only active).
@@ -318,23 +400,11 @@ class RiseupSnapshotOrchestrator {
         $plugins_dir = $snapshot_dir . '/plugins';
         if (!RiseupPathUtils::ensure_dir($plugins_dir, true)) {
             $this->log('ERROR', 'Failed to create plugins directory');
-
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }
 
         $plugins_to_snapshot = $this->collectPluginsToSnapshot($selection);
-
-        // Open a-root.db to register plugin snapshots
-        $root_path = $snapshot_dir . '/a-root.db';
-        $rootPdo = null;
-        if (file_exists($root_path)) {
-            try {
-                $rootPdo = new PDO('sqlite:' . $root_path);
-                $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            } catch (Exception $e) {
-                $this->log('WARN', 'Could not open a-root.db for plugin registration', array('error' => $e->getMessage()));
-            }
-        }
+        $rootPdo = $this->openRootDbForPlugins($snapshot_dir);
 
         $count = 0;
         $total_size = 0;
@@ -342,11 +412,9 @@ class RiseupSnapshotOrchestrator {
 
         foreach ($plugins_to_snapshot as $plugin_file => $info) {
             $result = $this->archiveSinglePlugin($info, $plugins_dir, $rootPdo);
-
             if ($result === null) {
-                continue; // skipped (single-file plugin)
+                continue;
             }
-
             if ($result['success']) {
                 $total_size += $result['size'];
                 $count++;
@@ -354,15 +422,35 @@ class RiseupSnapshotOrchestrator {
             }
         }
 
-        if ($rootPdo) {
-            $rootPdo = null; // Close
-        }
+        $rootPdo = null;
 
         return array(
             'count'      => $count,
             'total_size' => $total_size,
             'plugins'    => $plugin_list,
         );
+    }
+
+    /**
+     * Open a-root.db for plugin registration.
+     *
+     * @param string $snapshotDir Snapshot directory.
+     * @return PDO|null PDO connection or null.
+     */
+    private function openRootDbForPlugins(string $snapshotDir): ?PDO {
+        $root_path = $snapshotDir . '/a-root.db';
+        if (RiseupBooleanHelpers::is_file_missing($root_path)) {
+            return null;
+        }
+
+        try {
+            $pdo = new PDO('sqlite:' . $root_path);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            return $pdo;
+        } catch (Exception $e) {
+            $this->log('WARN', 'Could not open a-root.db for plugin registration', array('error' => $e->getMessage()));
+            return null;
+        }
     }
 
     /**
@@ -386,7 +474,6 @@ class RiseupSnapshotOrchestrator {
                 $slug = basename($plugin_file, '.php');
             }
 
-            // Skip self
             if ($slug === PLUGIN_SLUG) {
                 continue;
             }
@@ -426,55 +513,66 @@ class RiseupSnapshotOrchestrator {
 
         if (RiseupBooleanHelpers::is_dir_missing($plugin_path)) {
             $this->log('INFO', 'Skipping single-file plugin: ' . $slug);
-
             return null;
         }
 
         $zip_filename = $slug . '.zip';
         $zip_path = $plugins_dir . '/' . $zip_filename;
-
         $zip_result = $this->createPluginZip($plugin_path, $zip_path, $slug);
 
         if (!$zip_result['success']) {
-            $this->log('WARN', 'Failed to archive plugin: ' . $slug, array(
-                'error' => $zip_result['error'],
-            ));
-
+            $this->log('WARN', 'Failed to archive plugin: ' . $slug, array('error' => $zip_result['error']));
             return array('success' => false);
         }
 
-        $file_size = filesize($zip_path);
-        $checksum = md5_file($zip_path);
+        $entry = $this->buildPluginEntry($info, $zip_filename, $zip_path);
 
-        $entry = array(
-            'slug'    => $slug,
-            'name'    => $info['name'],
-            'version' => $info['version'],
-            'zip'     => $zip_filename,
-            'size'    => $file_size,
-        );
-
-        // Register in a-root.db
         if ($rootPdo) {
-            $this->rootDb->registerPluginSnapshot($rootPdo, array(
-                'plugin_slug'     => $slug,
-                'plugin_name'     => $info['name'],
-                'plugin_version'  => $info['version'],
-                'zip_file'        => 'plugins/' . $zip_filename,
-                'file_size_bytes' => $file_size,
-                'checksum_md5'    => $checksum,
-            ));
+            $this->registerPluginInRootDb($rootPdo, $info, $zip_filename, $zip_path);
         }
 
         $this->log('INFO', sprintf('Plugin archived: %s (%s)',
-            $info['name'], $this->formatBytes($file_size)
+            $info['name'], $this->formatBytes($entry['size'])
         ));
 
+        return array('success' => true, 'size' => $entry['size'], 'entry' => $entry);
+    }
+
+    /**
+     * Build a plugin entry array.
+     *
+     * @param array  $info        Plugin info.
+     * @param string $zipFilename ZIP filename.
+     * @param string $zipPath     Full ZIP path.
+     * @return array Plugin entry.
+     */
+    private function buildPluginEntry(array $info, string $zipFilename, string $zipPath): array {
         return array(
-            'success' => true,
-            'size'    => $file_size,
-            'entry'   => $entry,
+            'slug'    => $info['slug'],
+            'name'    => $info['name'],
+            'version' => $info['version'],
+            'zip'     => $zipFilename,
+            'size'    => filesize($zipPath),
         );
+    }
+
+    /**
+     * Register a plugin snapshot in a-root.db.
+     *
+     * @param PDO    $rootPdo     Root DB connection.
+     * @param array  $info        Plugin info.
+     * @param string $zipFilename ZIP filename.
+     * @param string $zipPath     Full ZIP path.
+     */
+    private function registerPluginInRootDb(PDO $rootPdo, array $info, string $zipFilename, string $zipPath): void {
+        $this->rootDb->registerPluginSnapshot($rootPdo, array(
+            'plugin_slug'     => $info['slug'],
+            'plugin_name'     => $info['name'],
+            'plugin_version'  => $info['version'],
+            'zip_file'        => 'plugins/' . $zipFilename,
+            'file_size_bytes' => filesize($zipPath),
+            'checksum_md5'    => md5_file($zipPath),
+        ));
     }
 
     /**
@@ -492,7 +590,7 @@ class RiseupSnapshotOrchestrator {
                 return array('success' => false, 'error' => 'Failed to create ZIP');
             }
 
-            $source_dir = rtrim($source_dir, '/\\');
+            $source_dir = rtrim($source_dir, '/\\\\');
             $iterator = new RecursiveIteratorIterator(
                 new RecursiveDirectoryIterator($source_dir, RecursiveDirectoryIterator::SKIP_DOTS),
                 RecursiveIteratorIterator::SELF_FIRST
@@ -509,10 +607,8 @@ class RiseupSnapshotOrchestrator {
                 }
             }
 
-            // Explicit close (not defer!) per zip-creation-rules
             $zip->close();
 
-            // Verify non-zero size
             $size = filesize($zip_path);
             if ($size === 0) {
                 @unlink($zip_path);
@@ -618,48 +714,11 @@ class RiseupSnapshotOrchestrator {
         }
 
         try {
-            // Get next sequence
-            $seq_result = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TABLE_SNAPSHOTS);
-            $row = $seq_result->fetch(PDO::FETCH_ASSOC);
-            $sequence = ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
-
-            $now = gmdate('c');
-            $filename = basename($snapshot_dir);
-
-            // Build tables list from worker
-            $tables_json = json_encode(array(
-                'exported'       => $worker_result['tables'] ?? 0,
-                'total_rows'     => $worker_result['total_rows'] ?? 0,
-                'errors'         => $worker_result['errors'] ?? array(),
-                'plugins'        => $plugin_stats['count'] ?? 0,
-                'plugin_details' => $plugin_stats['plugins'] ?? array(),
-            ));
-
-            $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOTS . "
-                (sequence, filename, filepath, provider, scope, tables_json, total_rows,
-                 file_size, trigger_source, status, created_at, completed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-            // Calculate total directory size
+            $sequence = $this->getNextSnapshotSequence($pdo);
+            $tables_json = $this->buildSnapshotTablesJson($worker_result, $plugin_stats);
             $dir_size = $this->getDirectorySize($snapshot_dir);
 
-            $stmt->execute(array(
-                $sequence,
-                $filename,
-                $snapshot_dir,
-                SNAPSHOT_PROVIDER_NATIVE,
-                $scope,
-                $tables_json,
-                $worker_result['total_rows'] ?? 0,
-                $dir_size,
-                SNAPSHOT_TRIGGER_API,
-                SNAPSHOT_STATUS_COMPLETE,
-                $now,
-                $now,
-            ));
-
-            return (int)$pdo->lastInsertId();
-
+            return $this->insertSnapshotRecord($pdo, $sequence, $snapshot_dir, $scope, $tables_json, $worker_result, $dir_size);
         } catch (Exception $e) {
             $this->log('ERROR', 'Failed to register snapshot', array('error' => $e->getMessage()));
             return false;
@@ -667,9 +726,65 @@ class RiseupSnapshotOrchestrator {
     }
 
     /**
-     * Execute an incremental backup against the latest full snapshot.
+     * Get the next snapshot sequence number.
      *
-     * Delegates to RiseupIncrementalBackup after locating the master directory.
+     * @param PDO $pdo Database connection.
+     * @return int Next sequence.
+     */
+    private function getNextSnapshotSequence(PDO $pdo): int {
+        $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TABLE_SNAPSHOTS)
+            ->fetch(PDO::FETCH_ASSOC);
+        return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
+    }
+
+    /**
+     * Build the tables JSON metadata for a snapshot.
+     *
+     * @param array $workerResult Worker result.
+     * @param array $pluginStats  Plugin stats.
+     * @return string JSON string.
+     */
+    private function buildSnapshotTablesJson(array $workerResult, array $pluginStats): string {
+        return json_encode(array(
+            'exported'       => $workerResult['tables'] ?? 0,
+            'total_rows'     => $workerResult['total_rows'] ?? 0,
+            'errors'         => $workerResult['errors'] ?? array(),
+            'plugins'        => $pluginStats['count'] ?? 0,
+            'plugin_details' => $pluginStats['plugins'] ?? array(),
+        ));
+    }
+
+    /**
+     * Insert a snapshot record into the database.
+     *
+     * @param PDO    $pdo          Database connection.
+     * @param int    $sequence     Sequence number.
+     * @param string $snapshotDir  Snapshot directory.
+     * @param string $scope        Table scope.
+     * @param string $tablesJson   Tables JSON metadata.
+     * @param array  $workerResult Worker result.
+     * @param int    $dirSize      Directory size in bytes.
+     * @return int Snapshot ID.
+     */
+    private function insertSnapshotRecord(PDO $pdo, int $sequence, string $snapshotDir, string $scope, string $tablesJson, array $workerResult, int $dirSize): int {
+        $now = gmdate('c');
+        $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOTS . "
+            (sequence, filename, filepath, provider, scope, tables_json, total_rows,
+             file_size, trigger_source, status, created_at, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+
+        $stmt->execute(array(
+            $sequence, basename($snapshotDir), $snapshotDir,
+            SNAPSHOT_PROVIDER_NATIVE, $scope, $tablesJson,
+            $workerResult['total_rows'] ?? 0, $dirSize,
+            SNAPSHOT_TRIGGER_API, SNAPSHOT_STATUS_COMPLETE, $now, $now,
+        ));
+
+        return (int)$pdo->lastInsertId();
+    }
+
+    /**
+     * Execute an incremental backup against the latest full snapshot.
      *
      * @param array $options Options: title, master_snapshot_id (optional).
      * @return array Result with success, path, tables_changed, total_new_rows, etc.
@@ -699,10 +814,7 @@ class RiseupSnapshotOrchestrator {
 
             return $result;
         } catch (Exception $e) {
-            $this->log('ERROR', 'Incremental backup orchestration failed', array(
-                'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
-            ));
-            return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental_orchestration');
+            return $this->buildExceptionResult($e, 'incremental_orchestration');
         }
     }
 
@@ -717,79 +829,4 @@ class RiseupSnapshotOrchestrator {
         if (!empty($options['master_snapshot_id'])) {
             $pdo = $this->db->get_pdo();
             if ($pdo) {
-                $stmt = $pdo->prepare("SELECT filepath FROM " . TABLE_SNAPSHOTS . " WHERE id = ? AND status = ?");
-                $stmt->execute(array($options['master_snapshot_id'], SNAPSHOT_STATUS_COMPLETE));
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                if ($row && is_dir($row['filepath']) && file_exists($row['filepath'] . '/a-root.db')) {
-                    return $row['filepath'];
-                }
-            }
-        }
-
-        return $incremental->findLatestMasterSnapshot();
-    }
-
-    /**
-     * Get total size of a directory recursively.
-     *
-     * @param string $dir Directory path.
-     * @return int Total size in bytes.
-     */
-    private function getDirectorySize($dir) {
-        $size = 0;
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) return 0;
-
-        $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
-        );
-
-        foreach ($iterator as $file) {
-            if ($file->isFile()) {
-                $size += $file->getSize();
-            }
-        }
-
-        return $size;
-    }
-
-    /**
-     * Format bytes to human-readable string.
-     *
-     * @param int $bytes Byte count.
-     * @return string Formatted string.
-     */
-    private function formatBytes($bytes) {
-        if ($bytes < 1024) return $bytes . ' B';
-        if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
-        if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
-        return round($bytes / 1073741824, 1) . ' GB';
-    }
-
-    /**
-     * Log a message with orchestrator context.
-     *
-     * @param string $level   Log level.
-     * @param string $message Message.
-     * @param array  $context Context data.
-     */
-    private function log($level, $message, $context = array()) {
-        $prefix = '[SNAPSHOT] [ORCHESTRATOR]';
-        $full = $prefix . ' ' . $message;
-        if (!empty($context)) {
-            $full .= ' ' . json_encode($context);
-        }
-
-        if ($this->logger) {
-            switch ($level) {
-                case 'WARN':
-                    $this->logger->warn($full);
-                    break;
-                case 'ERROR':
-                    $this->logger->error($full);
-                    break;
-                default:
-                    $this->logger->info($full);
-            }
-        }
-    }
-}
+                $stmt = $pdo->
