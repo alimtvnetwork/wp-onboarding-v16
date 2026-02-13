@@ -38,7 +38,7 @@ trait DetectorValidationTrait {
         $defaults = array('preferred_provider' => SNAPSHOT_PROVIDER_AUTO, 'schedule_frequency' => SNAPSHOT_FREQ_DAILY, 'default_scope' => SNAPSHOT_SCOPE_WORDPRESS, 'retention_type' => 'days');
 
         foreach ($rules as $key => $valid) {
-            if (!in_array($settings[$key], $valid)) {
+            if (RiseupBooleanHelpers::is_not_in_list($settings[$key], $valid)) {
                 $settings[$key] = $defaults[$key];
             }
         }
@@ -64,7 +64,7 @@ trait DetectorValidationTrait {
     /** Validate storage_mode, schedule_time, and custom_tables. */
     private function validateMiscFields(array &$settings) {
         $valid_storage = array('single', 'per-table');
-        if (!in_array($settings['storage_mode'] ?? 'per-table', $valid_storage)) {
+        if (RiseupBooleanHelpers::is_not_in_list($settings['storage_mode'] ?? 'per-table', $valid_storage)) {
             $settings['storage_mode'] = 'per-table';
         }
 

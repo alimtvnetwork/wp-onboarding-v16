@@ -110,7 +110,7 @@ trait CleanerOrphanTrait {
                 continue;
             }
 
-            if (!isset($db_filenames[$entry]) && !in_array($full_path, $db_filepaths)) {
+            if (!isset($db_filenames[$entry]) && RiseupBooleanHelpers::is_not_in_list($full_path, $db_filepaths)) {
                 $result['files'][] = $entry;
                 if (!$dry_run) {
                     $dir_size = $this->getDirectorySize($full_path);

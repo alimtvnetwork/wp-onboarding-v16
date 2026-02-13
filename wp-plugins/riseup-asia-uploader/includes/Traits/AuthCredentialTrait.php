@@ -30,7 +30,7 @@ trait AuthCredentialTrait
 
     /** Attempt to resolve Authorization from getallheaders(). */
     private function resolveFromGetallheaders() {
-        if (!function_exists('getallheaders')) {
+        if (RiseupBooleanHelpers::is_func_missing('getallheaders')) {
             return null;
         }
 

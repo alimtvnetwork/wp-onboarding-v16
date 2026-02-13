@@ -70,7 +70,7 @@ trait AgentHandlerActionTrait {
             ));
 
             $allowed_actions = array('enable', 'disable', 'delete');
-            if (!in_array($action, $allowed_actions)) {
+            if (RiseupBooleanHelpers::is_not_in_list($action, $allowed_actions)) {
                 return $this->error_response('Invalid action. Allowed: ' . implode(', ', $allowed_actions), 400);
             }
 

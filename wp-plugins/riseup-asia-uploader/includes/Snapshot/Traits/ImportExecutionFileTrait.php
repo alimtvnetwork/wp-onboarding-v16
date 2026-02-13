@@ -95,7 +95,7 @@ trait ImportExecutionFileTrait {
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath, $destPath);
             } else {
-                if (!copy($srcPath, $destPath)) {
+                if (RiseupBooleanHelpers::is_copy_failed($srcPath, $destPath)) {
                     throw new Exception("Failed to copy file: {$entry}");
                 }
             }

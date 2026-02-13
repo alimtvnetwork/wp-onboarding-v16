@@ -65,7 +65,7 @@ trait PathUtilsFileTrait {
             return true;
         }
 
-        if (!is_file($path)) {
+        if (RiseupBooleanHelpers::is_not_regular_file($path)) {
             self::safe_log('error', '[PATH] Path is not a file', array('path' => $path));
             return false;
         }
@@ -98,7 +98,7 @@ trait PathUtilsFileTrait {
             return true;
         }
 
-        if (!is_dir($path)) {
+        if (RiseupBooleanHelpers::is_not_directory($path)) {
             self::safe_log('error', '[PATH] Path is not a directory', array('path' => $path));
             return false;
         }

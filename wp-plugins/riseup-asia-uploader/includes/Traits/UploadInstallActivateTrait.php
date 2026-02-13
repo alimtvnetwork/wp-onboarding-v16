@@ -91,7 +91,7 @@ trait UploadInstallActivateTrait
         $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
         clearstatcache(true, $full_path);
 
-        if (!file_exists($full_path)) {
+        if (RiseupBooleanHelpers::is_file_missing($full_path)) {
             return '';
         }
 
