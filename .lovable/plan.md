@@ -425,7 +425,7 @@ class Riseup_Admin {
 
 ### Status: All phases complete
 
-Enforced project-wide PHP coding standards: 200-line file limit, 15-line function logic limit, and zero raw function negations.
+Enforced project-wide PHP coding standards: 200-line file limit, 15-line function logic limit, zero raw function negations, and zero magic strings for HTTP methods and log levels.
 
 ### Phases
 
@@ -434,6 +434,8 @@ Enforced project-wide PHP coding standards: 200-line file limit, 15-line functio
 | H1 | **File-size remediation (200-line limit)** | ✅ Done | Decomposed all oversized PHP files into focused trait-based classes. Every file under 200 lines (excluding `riseup-asia-uploader.php` shell and `constants.php` definitions). |
 | H2 | **Function-size remediation (15-line limit)** | ✅ Done | Refactored all functions exceeding 15 logic lines via early returns, helper extraction, and combined conditions. 16 phases completed. |
 | H3 | **Raw function negation cleanup** | ✅ Done | Replaced all `!file_exists()`, `!function_exists()`, `!class_exists()`, `!in_array()`, `!is_file()`, `!is_dir()`, `!is_readable()`, `!copy()`, `!extension_loaded()` with semantic `BooleanHelpers` guards (`is_file_missing`, `is_func_missing`, `is_class_missing`, `is_not_in_list`, `is_not_regular_file`, `is_not_directory`, `is_file_unreadable`, `is_copy_failed`, `is_extension_missing`, `is_class_not_loaded`). Zero violations remaining. |
+| H4 | **HTTP method magic string cleanup** | ✅ Done | Replaced 5 raw `'GET'`, `'POST'`, `'PUT'`, `'PATCH'` strings in Agent traits (`AgentRemoteCoreTrait.php`, `AgentRemoteActionTrait.php`) with `HttpMethodType::*->value` enum references. Zero violations remaining. |
+| H5 | **Log level magic string cleanup** | ✅ Done | Replaced ~643 raw `'INFO'`, `'ERROR'`, `'WARN'`, `'DEBUG'` strings across 40 files with `LogLevelType::*->value` enum references. Updated all `$this->log()` calls, `safe_log()` calls, and switch-case dispatchers. Updated `safe_log` in `PathUtilsCoreTrait` to normalize uppercase enum values via `strtolower()`. Zero violations remaining. |
 
 ### References
 - **Trait decomposition map:** `.lovable/memory/architecture/php/trait-decomposition-map.md`
