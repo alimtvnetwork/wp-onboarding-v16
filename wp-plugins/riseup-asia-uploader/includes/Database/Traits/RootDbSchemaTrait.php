@@ -1,0 +1,127 @@
+<?php
+/**
+ * RootDb Schema Trait — schema creation, metadata population, dependency graph.
+ *
+ * @package RiseupAsiaUploader
+ * @since   1.12.0
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+trait RootDbSchemaTrait {
+
+    /**
+     * Create the standard a-root.db schema.
+     *
+     * @param PDO $pdo SQLite PDO connection.
+     */
+    private function createSchema($pdo) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_meta (
+            id              INTEGER PRIMARY KEY,
+            title           TEXT NOT NULL,
+            type            TEXT NOT NULL,
+            created_at      TEXT NOT NULL,
+            created_by      TEXT,
+            mysql_version   TEXT,
+            wp_version      TEXT,
+            plugin_version  TEXT,
+            table_count     INTEGER,
+            total_rows      INTEGER,
+            config_json     TEXT
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_tables (
+            id              INTEGER PRIMARY KEY,
+            table_name      TEXT NOT NULL UNIQUE,
+            row_count       INTEGER NOT NULL,
+            sqlite_file     TEXT NOT NULL,
+            file_size_bytes INTEGER,
+            checksum_md5    TEXT,
+            exported_at     TEXT NOT NULL
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS table_dependencies (
+            id              INTEGER PRIMARY KEY,
+            parent_table    TEXT NOT NULL,
+            child_table     TEXT NOT NULL,
+            fk_column       TEXT NOT NULL,
+            ref_column      TEXT NOT NULL,
+            UNIQUE(child_table, fk_column)
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS incremental_backups (
+            id              INTEGER PRIMARY KEY,
+            sequence_num    INTEGER NOT NULL,
+            folder_name     TEXT NOT NULL,
+            created_at      TEXT NOT NULL,
+            tables_changed  INTEGER,
+            total_new_rows  INTEGER,
+            relative_path   TEXT NOT NULL
+        )");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS plugin_snapshots (
+            id              INTEGER PRIMARY KEY,
+            plugin_slug     TEXT NOT NULL,
+            plugin_name     TEXT,
+            plugin_version  TEXT,
+            zip_file        TEXT NOT NULL,
+            file_size_bytes INTEGER,
+            checksum_md5    TEXT
+        )");
+    }
+
+    /**
+     * Populate metadata in a-root.db.
+     *
+     * @param PDO   $pdo    SQLite PDO connection.
+     * @param array $config Metadata config with keys: title, type, settings.
+     */
+    public function populateMetadata($pdo, $config) {
+        global $wpdb;
+        $mysql_version = $wpdb->get_var("SELECT VERSION()");
+        $wp_version = get_bloginfo('version');
+
+        $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_meta
+            (id, title, type, created_at, created_by, mysql_version, wp_version, plugin_version, table_count, total_rows, config_json)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)");
+
+        $stmt->execute(array(
+            $config['title'] ?? 'Untitled Snapshot', $config['type'] ?? 'full',
+            gmdate('c'), gethostname() ?: php_uname('n'),
+            $mysql_version, $wp_version, PLUGIN_VERSION,
+            isset($config['settings']) ? json_encode($config['settings']) : null,
+        ));
+
+        $this->log('INFO', 'Metadata populated', array(
+            'title' => $config['title'] ?? 'Untitled', 'mysql_version' => $mysql_version, 'wp_version' => $wp_version,
+        ));
+    }
+
+    /**
+     * Populate dependency graph in a-root.db.
+     *
+     * @param PDO    $pdo   SQLite PDO connection.
+     * @param string $scope Table scope for analysis.
+     * @return array Analysis result.
+     */
+    public function populateDependencies($pdo, $scope = 'all') {
+        $analysis = $this->analyzer->analyze($scope);
+
+        $stmt = $pdo->prepare("INSERT OR IGNORE INTO table_dependencies
+            (parent_table, child_table, fk_column, ref_column) VALUES (?, ?, ?, ?)");
+
+        $pdo->beginTransaction();
+        foreach ($analysis['dependencies'] as $dep) {
+            $stmt->execute(array($dep['parent_table'], $dep['child_table'], $dep['fk_column'], $dep['ref_column']));
+        }
+        $pdo->commit();
+
+        $this->log('INFO', 'Dependencies populated', array(
+            'edges' => count($analysis['dependencies']), 'tables' => count($analysis['tables']),
+        ));
+
+        return $analysis;
+    }
+}
