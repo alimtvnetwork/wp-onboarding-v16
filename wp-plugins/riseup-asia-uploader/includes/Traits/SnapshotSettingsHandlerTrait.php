@@ -1,0 +1,59 @@
+<?php
+/**
+ * SnapshotSettingsHandlerTrait — settings, providers, tables, dependencies handlers.
+ *
+ * @package RiseupAsiaUploader
+ */
+
+trait SnapshotSettingsHandlerTrait {
+
+    /** Handle getting snapshot settings. */
+    public function handle_get_snapshot_settings($request) {
+        return $this->safe_execute(function() {
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            return new WP_REST_Response(array('success' => true, 'settings' => $manager->getSettings()), 200);
+        }, 'get_snapshot_settings');
+    }
+
+    /** Handle updating snapshot settings. */
+    public function handle_update_snapshot_settings($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+            $this->file_logger->info('Updating snapshot settings', array('keys' => array_keys($body)));
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $updated = $manager->updateSettings($body);
+            $this->logger->log_plugin_action('snapshot_settings_update', 'snapshot', STATUS_SUCCESS, array('keys' => array_keys($body)));
+            return new WP_REST_Response(array('success' => true, 'settings' => $updated), 200);
+        }, 'update_snapshot_settings');
+    }
+
+    /** Handle listing snapshot providers. */
+    public function handle_list_snapshot_providers($request) {
+        return $this->safe_execute(function() {
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            return new WP_REST_Response(array('success' => true, 'providers' => $manager->getProviders()), 200);
+        }, 'list_snapshot_providers');
+    }
+
+    /** Handle listing available database tables. */
+    public function handle_list_snapshot_tables($request) {
+        return $this->safe_execute(function() {
+            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            return new WP_REST_Response(array('success' => true, 'tables' => $manager->getAvailableTables()), 200);
+        }, 'list_snapshot_tables');
+    }
+
+    /** Handle dependency analysis request. */
+    public function handle_analyze_dependencies($request) {
+        return $this->safe_execute(function() use ($request) {
+            $body = $request->get_json_params();
+            $scope = isset($body['scope']) ? $body['scope'] : 'all';
+            $analyzer = RiseupDependencyAnalyzer::getInstance($this->file_logger);
+            $analysis = $analyzer->analyze($scope);
+            return new WP_REST_Response(array(
+                'success' => true, 'tables' => $analysis['tables'], 'dependencies' => $analysis['dependencies'],
+                'seed_order' => $analysis['seed_order'], 'table_count' => $analysis['table_count'], 'dep_count' => $analysis['dep_count'],
+            ), 200);
+        }, 'analyze_dependencies');
+    }
+}
