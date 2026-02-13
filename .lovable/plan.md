@@ -467,6 +467,71 @@ Enforce camelCase naming for all PHP properties, methods, and parameters. Add en
 
 ---
 
+## Feature J: constants.php Enum & Domain Decomposition
+
+### Status: ⬚ Pending
+
+### Problem Statement
+
+`constants.php` is 927 lines of raw `define()` calls — the largest file in the project and exempt from the 200-line limit only because it has no logic. However, many constants represent discrete choice sets (action names, status values, snapshot scopes, trigger types) that should be native PHP 8.1+ backed enums for type safety and IDE autocompletion. The remaining constants (table names, error codes, HTTP status codes, config defaults) should be grouped into focused `final class` constant holders under `includes/Constants/`.
+
+### Architecture
+
+```
+includes/Enums/
+├── ActionType.php         ← enum ActionType: string (enable, disable, delete, upload, ...)
+├── StatusType.php         ← enum StatusType: string (success, failed, pending, ...)
+├── SnapshotScopeType.php  ← enum SnapshotScopeType: string (wordpress, content, custom, all)
+├── SnapshotStatusType.php ← enum SnapshotStatusType: string (scheduled, running, complete, failed)
+├── TriggerType.php        ← enum TriggerType: string (manual, cron, api)
+├── SyncActionType.php     ← enum SyncActionType: string (create, update, delete)
+
+includes/Constants/
+├── TableConst.php         ← final class (TABLE_SNAPSHOTS, TABLE_ACTIVITY_LOGS, ...)
+├── ErrorCodeConst.php     ← final class (ERR_SNAPSHOT_NOT_FOUND, ERR_PROVIDER_NOT_AVAILABLE, ...)
+├── HttpConst.php          ← final class (HTTP_OK, HTTP_CREATED, HTTP_BAD_REQUEST, ...)
+├── DefaultConst.php       ← final class (DEFAULT_LIMIT, MAX_LIMIT, SNAPSHOT_BATCH_SIZE, ...)
+├── EndpointConst.php      ← final class (REST route path segments)
+└── CronConst.php          ← final class (CRON_SNAPSHOT_*, schedule names)
+```
+
+### Phases
+
+| # | Task | Status | Description |
+|---|------|--------|-------------|
+| J1 | **Audit constants.php** | ⬚ Pending | Categorize all ~180 constants into enum candidates vs const-class candidates. Produce migration checklist. |
+| J2 | **Create ActionType enum** | ⬚ Pending | Migrate ACTION_ENABLE, ACTION_DISABLE, ACTION_DELETE, ACTION_UPLOAD, etc. (~20 constants) to `ActionType` enum. Update all callers. |
+| J3 | **Create StatusType enum** | ⬚ Pending | Migrate STATUS_SUCCESS, STATUS_FAILED, STATUS_PENDING (~5 constants) to `StatusType` enum. Update all callers. |
+| J4 | **Create SnapshotScopeType + SnapshotStatusType enums** | ⬚ Pending | Migrate SNAPSHOT_SCOPE_*, SNAPSHOT_STATUS_*, SNAPSHOT_TYPE_*, SNAPSHOT_TRIGGER_* (~15 constants). |
+| J5 | **Create SyncActionType enum** | ⬚ Pending | Migrate SYNC_ACTION_* (~3 constants). |
+| J6 | **Create Constants/ domain classes** | ⬚ Pending | Group remaining non-enum constants (tables, error codes, HTTP codes, defaults, endpoints, cron) into focused `final class` holders. |
+| J7 | **Shrink constants.php** | ⬚ Pending | Remove migrated defines, keep only backward-compat aliases if needed. Target: <200 lines or elimination. |
+| J8 | **Update memory & specs** | ⬚ Pending | Document new enum/const architecture in memory and specs. |
+
+### Execution Order
+
+1. **J1** — Audit and categorize
+2. **J2 + J3** — Core enums (action + status — highest usage)
+3. **J4 + J5** — Domain enums (snapshot + sync)
+4. **J6** — Const classes for non-enum values
+5. **J7** — Shrink/remove constants.php
+6. **J8** — Documentation
+
+### Dependencies
+
+- Feature I (camelCase) should complete I6/I7 first to avoid conflicting renames
+- Feature G (enum migration) provides the pattern and namespace (`RiseupAsia\Enums`)
+
+### Acceptance Criteria
+
+- Zero raw `define()` calls for values that represent discrete choice sets
+- `constants.php` either eliminated or reduced to <200 lines of true config constants
+- All new enums under `RiseupAsia\Enums` namespace with `Type` suffix
+- All new const classes under `includes/Constants/` with `Const` suffix
+- Zero callers reference old `define()` names directly (backward-compat aliases acceptable during transition)
+
+---
+
 ## Pending / Backlog
 
 | Item | Feature | Status | Description |
