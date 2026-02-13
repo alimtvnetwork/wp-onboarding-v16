@@ -307,6 +307,9 @@ class RiseupSnapshotOrchestrator {
     /**
      * Snapshot installed WordPress plugins as ZIP files.
      *
+     * Thin orchestrator: collects eligible plugins, opens a-root.db for
+     * registration, then archives each plugin individually.
+     *
      * @param string $snapshot_dir Snapshot directory.
      * @param string $selection    'all' or 'selective' (only active).
      * @return array Stats: count, total_size, plugins[].
@@ -315,44 +318,11 @@ class RiseupSnapshotOrchestrator {
         $plugins_dir = $snapshot_dir . '/plugins';
         if (!RiseupPathUtils::ensure_dir($plugins_dir, true)) {
             $this->log('ERROR', 'Failed to create plugins directory');
+
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }
 
-        // Get installed plugins
-        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
-        $all_plugins = get_plugins();
-        $active_plugins = get_option('active_plugins', array());
-
-        // Filter based on selection
-        $plugins_to_snapshot = array();
-        foreach ($all_plugins as $plugin_file => $plugin_data) {
-            $slug = dirname($plugin_file);
-            if ($slug === '.') {
-                $slug = basename($plugin_file, '.php');
-            }
-
-            // Skip self
-            if ($slug === PLUGIN_SLUG) {
-                continue;
-            }
-
-            if ($selection === 'all' || in_array($plugin_file, $active_plugins)) {
-                $plugins_to_snapshot[$plugin_file] = array(
-                    'slug'    => $slug,
-                    'name'    => $plugin_data['Name'] ?? $slug,
-                    'version' => $plugin_data['Version'] ?? '0.0.0',
-                );
-            }
-        }
-
-        $this->log('INFO', 'Snapshotting plugins', array(
-            'total'     => count($all_plugins),
-            'selected'  => count($plugins_to_snapshot),
-            'selection' => $selection,
-        ));
+        $plugins_to_snapshot = $this->collectPluginsToSnapshot($selection);
 
         // Open a-root.db to register plugin snapshots
         $root_path = $snapshot_dir . '/a-root.db';
@@ -371,53 +341,16 @@ class RiseupSnapshotOrchestrator {
         $plugin_list = array();
 
         foreach ($plugins_to_snapshot as $plugin_file => $info) {
-            $slug = $info['slug'];
-            $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
+            $result = $this->archiveSinglePlugin($info, $plugins_dir, $rootPdo);
 
-            if (RiseupBooleanHelpers::is_dir_missing($plugin_path)) {
-                // Single-file plugin — skip ZIP, not a directory
-                $this->log('INFO', 'Skipping single-file plugin: ' . $slug);
-                continue;
+            if ($result === null) {
+                continue; // skipped (single-file plugin)
             }
 
-            $zip_filename = $slug . '.zip';
-            $zip_path = $plugins_dir . '/' . $zip_filename;
-
-            $zip_result = $this->createPluginZip($plugin_path, $zip_path, $slug);
-
-            if ($zip_result['success']) {
-                $file_size = filesize($zip_path);
-                $checksum = md5_file($zip_path);
-                $total_size += $file_size;
+            if ($result['success']) {
+                $total_size += $result['size'];
                 $count++;
-
-                $plugin_list[] = array(
-                    'slug'    => $slug,
-                    'name'    => $info['name'],
-                    'version' => $info['version'],
-                    'zip'     => $zip_filename,
-                    'size'    => $file_size,
-                );
-
-                // Register in a-root.db
-                if ($rootPdo) {
-                    $this->rootDb->registerPluginSnapshot($rootPdo, array(
-                        'plugin_slug'    => $slug,
-                        'plugin_name'    => $info['name'],
-                        'plugin_version' => $info['version'],
-                        'zip_file'       => 'plugins/' . $zip_filename,
-                        'file_size_bytes' => $file_size,
-                        'checksum_md5'   => $checksum,
-                    ));
-                }
-
-                $this->log('INFO', sprintf('Plugin archived: %s (%s)',
-                    $info['name'], $this->formatBytes($file_size)
-                ));
-            } else {
-                $this->log('WARN', 'Failed to archive plugin: ' . $slug, array(
-                    'error' => $zip_result['error'],
-                ));
+                $plugin_list[] = $result['entry'];
             }
         }
 
@@ -429,6 +362,118 @@ class RiseupSnapshotOrchestrator {
             'count'      => $count,
             'total_size' => $total_size,
             'plugins'    => $plugin_list,
+        );
+    }
+
+    /**
+     * Collect the list of plugins eligible for snapshotting.
+     *
+     * @param string $selection 'all' or 'selective' (only active).
+     * @return array Associative array keyed by plugin_file with slug, name, version.
+     */
+    private function collectPluginsToSnapshot($selection) {
+        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        $all_plugins = get_plugins();
+        $active_plugins = get_option('active_plugins', array());
+        $plugins_to_snapshot = array();
+
+        foreach ($all_plugins as $plugin_file => $plugin_data) {
+            $slug = dirname($plugin_file);
+            if ($slug === '.') {
+                $slug = basename($plugin_file, '.php');
+            }
+
+            // Skip self
+            if ($slug === PLUGIN_SLUG) {
+                continue;
+            }
+
+            $isEligible = ($selection === 'all' || in_array($plugin_file, $active_plugins));
+            if (!$isEligible) {
+                continue;
+            }
+
+            $plugins_to_snapshot[$plugin_file] = array(
+                'slug'    => $slug,
+                'name'    => $plugin_data['Name'] ?? $slug,
+                'version' => $plugin_data['Version'] ?? '0.0.0',
+            );
+        }
+
+        $this->log('INFO', 'Snapshotting plugins', array(
+            'total'     => count($all_plugins),
+            'selected'  => count($plugins_to_snapshot),
+            'selection' => $selection,
+        ));
+
+        return $plugins_to_snapshot;
+    }
+
+    /**
+     * Archive a single plugin as a ZIP and register it in a-root.db.
+     *
+     * @param array    $info        Plugin info with slug, name, version.
+     * @param string   $plugins_dir Destination directory for ZIP files.
+     * @param PDO|null $rootPdo     Open a-root.db connection (nullable).
+     * @return array|null Result with success, size, entry — or null if skipped.
+     */
+    private function archiveSinglePlugin($info, $plugins_dir, $rootPdo) {
+        $slug = $info['slug'];
+        $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
+
+        if (RiseupBooleanHelpers::is_dir_missing($plugin_path)) {
+            $this->log('INFO', 'Skipping single-file plugin: ' . $slug);
+
+            return null;
+        }
+
+        $zip_filename = $slug . '.zip';
+        $zip_path = $plugins_dir . '/' . $zip_filename;
+
+        $zip_result = $this->createPluginZip($plugin_path, $zip_path, $slug);
+
+        if (!$zip_result['success']) {
+            $this->log('WARN', 'Failed to archive plugin: ' . $slug, array(
+                'error' => $zip_result['error'],
+            ));
+
+            return array('success' => false);
+        }
+
+        $file_size = filesize($zip_path);
+        $checksum = md5_file($zip_path);
+
+        $entry = array(
+            'slug'    => $slug,
+            'name'    => $info['name'],
+            'version' => $info['version'],
+            'zip'     => $zip_filename,
+            'size'    => $file_size,
+        );
+
+        // Register in a-root.db
+        if ($rootPdo) {
+            $this->rootDb->registerPluginSnapshot($rootPdo, array(
+                'plugin_slug'     => $slug,
+                'plugin_name'     => $info['name'],
+                'plugin_version'  => $info['version'],
+                'zip_file'        => 'plugins/' . $zip_filename,
+                'file_size_bytes' => $file_size,
+                'checksum_md5'    => $checksum,
+            ));
+        }
+
+        $this->log('INFO', sprintf('Plugin archived: %s (%s)',
+            $info['name'], $this->formatBytes($file_size)
+        ));
+
+        return array(
+            'success' => true,
+            'size'    => $file_size,
+            'entry'   => $entry,
         );
     }
 
