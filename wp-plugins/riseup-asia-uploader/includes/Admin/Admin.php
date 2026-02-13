@@ -98,7 +98,15 @@ class RiseupAdmin {
      * Add admin menu items.
      */
     public function add_admin_menu() {
-        // Main menu
+        $this->registerMainMenu();
+        $this->registerSubmenus();
+        $this->registerErrorSubmenu();
+    }
+
+    /**
+     * Register the main admin menu page.
+     */
+    private function registerMainMenu() {
         add_menu_page(
             __('Riseup Asia Uploader', 'riseup-asia-uploader'),
             __('Riseup Uploader', 'riseup-asia-uploader'),
@@ -108,53 +116,36 @@ class RiseupAdmin {
             'dashicons-upload',
             80
         );
+    }
 
-        // Logs submenu (same as main page)
-        add_submenu_page(
-            'riseup-asia-uploader',
-            __('Activity Logs', 'riseup-asia-uploader'),
-            __('Activity Logs', 'riseup-asia-uploader'),
-            CapabilityType::ManageOptions->value,
-            'riseup-asia-uploader',
-            array($this, 'render_logs_page')
+    /**
+     * Register standard submenus.
+     */
+    private function registerSubmenus() {
+        $submenus = array(
+            array('riseup-asia-uploader', 'Activity Logs', 'render_logs_page'),
+            array('riseup-asia-settings', 'Settings', 'render_settings_page'),
+            array('riseup-asia-agents', 'Agent Sites', 'render_agents_page'),
+            array('riseup-asia-snapshots', 'Snapshots', 'render_snapshots_page'),
         );
 
-        // Settings submenu
-        add_submenu_page(
-            'riseup-asia-uploader',
-            __('Settings', 'riseup-asia-uploader'),
-            __('Settings', 'riseup-asia-uploader'),
-            CapabilityType::ManageOptions->value,
-            'riseup-asia-settings',
-            array($this, 'render_settings_page')
-        );
-
-        // Agent Sites submenu
-        add_submenu_page(
-            'riseup-asia-uploader',
-            __('Agent Sites', 'riseup-asia-uploader'),
-            __('Agent Sites', 'riseup-asia-uploader'),
-            CapabilityType::ManageOptions->value,
-            'riseup-asia-agents',
-            array($this, 'render_agents_page')
-        );
-
-        // Snapshots submenu
-        add_submenu_page(
-            'riseup-asia-uploader',
-            __('Snapshots', 'riseup-asia-uploader'),
-            __('Snapshots', 'riseup-asia-uploader'),
-            CapabilityType::ManageOptions->value,
-            'riseup-asia-snapshots',
-            array($this, 'render_snapshots_page')
-        );
-
-        // Error Log submenu with notification bubble
-        $error_bubble = '';
-        $unseen = $this->get_unseen_error_count();
-        if ($unseen > 0) {
-            $error_bubble = sprintf(' <span class="riseup-error-bubble">%d</span>', $unseen);
+        foreach ($submenus as $item) {
+            add_submenu_page(
+                'riseup-asia-uploader',
+                __($item[1], 'riseup-asia-uploader'),
+                __($item[1], 'riseup-asia-uploader'),
+                CapabilityType::ManageOptions->value,
+                $item[0],
+                array($this, $item[2])
+            );
         }
+    }
+
+    /**
+     * Register the error log submenu with notification bubble.
+     */
+    private function registerErrorSubmenu() {
+        $error_bubble = $this->buildErrorBubble();
 
         add_submenu_page(
             'riseup-asia-uploader',
@@ -164,6 +155,20 @@ class RiseupAdmin {
             'riseup-asia-errors',
             array($this, 'render_errors_page')
         );
+    }
+
+    /**
+     * Build the error count bubble HTML.
+     *
+     * @return string HTML string or empty.
+     */
+    private function buildErrorBubble(): string {
+        $unseen = $this->get_unseen_error_count();
+        if ($unseen <= 0) {
+            return '';
+        }
+
+        return sprintf(' <span class="riseup-error-bubble">%d</span>', $unseen);
     }
 
     /**
@@ -242,12 +247,30 @@ class RiseupAdmin {
      */
     public function sanitize_update_settings($input) {
         $current = get_option(RiseupUpdateResolver::OPTION_NAME, array());
-        
-        $sanitized = array(
+
+        $sanitized = $this->buildSanitizedUpdateFields($input, $current);
+
+        // If master URL changed, clear cache
+        if (isset($current['master_url']) && $current['master_url'] !== $sanitized['master_url']) {
+            $sanitized['resolved_url'] = '';
+            $sanitized['resolved_at'] = '';
+        }
+
+        return $sanitized;
+    }
+
+    /**
+     * Build sanitized update settings fields.
+     *
+     * @param array $input   Raw input.
+     * @param array $current Current settings.
+     * @return array Sanitized fields.
+     */
+    private function buildSanitizedUpdateFields(array $input, array $current): array {
+        return array(
             'enabled'      => !empty($input['enabled']),
             'master_url'   => isset($input['master_url']) ? esc_url_raw($input['master_url']) : '',
             'cache_days'   => isset($input['cache_days']) ? max(1, min(30, (int) $input['cache_days'])) : 7,
-            // Preserve these from current settings
             'resolved_url' => isset($current['resolved_url']) ? $current['resolved_url'] : '',
             'resolved_at'  => isset($current['resolved_at']) ? $current['resolved_at'] : '',
             'last_check'   => isset($current['last_check']) ? $current['last_check'] : '',
@@ -256,14 +279,6 @@ class RiseupAdmin {
             'new_version'  => isset($current['new_version']) ? $current['new_version'] : '',
             'update_info'  => isset($current['update_info']) ? $current['update_info'] : array(),
         );
-        
-        // If master URL changed, clear cache
-        if (isset($current['master_url']) && $current['master_url'] !== $sanitized['master_url']) {
-            $sanitized['resolved_url'] = '';
-            $sanitized['resolved_at'] = '';
-        }
-        
-        return $sanitized;
     }
 
     /**
@@ -305,32 +320,50 @@ class RiseupAdmin {
      * Render the logs page.
      */
     public function render_logs_page() {
-        // Get filters from query params
-        $filters = array(
-            'action'         => isset($_GET['filter_action']) ? sanitize_text_field($_GET['filter_action']) : '',
-            'user'           => isset($_GET['filter_user']) ? sanitize_text_field($_GET['filter_user']) : '',
-            'status'         => isset($_GET['filter_status']) ? sanitize_text_field($_GET['filter_status']) : '',
-            'plugin'         => isset($_GET['filter_plugin']) ? sanitize_text_field($_GET['filter_plugin']) : '',
-            'from'           => isset($_GET['filter_from']) ? sanitize_text_field($_GET['filter_from']) : '',
-            'to'             => isset($_GET['filter_to']) ? sanitize_text_field($_GET['filter_to']) : '',
-            'triggered_by'   => isset($_GET['filter_triggered_by']) ? sanitize_text_field($_GET['filter_triggered_by']) : '',
-            'source_machine' => isset($_GET['filter_source_machine']) ? sanitize_text_field($_GET['filter_source_machine']) : '',
-            'upload_source'  => isset($_GET['filter_upload_source']) ? sanitize_text_field($_GET['filter_upload_source']) : '',
-        );
-
+        $filters = $this->buildLogFilters();
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $per_page = 50;
         $offset = ($page - 1) * $per_page;
 
-        // Get logs from database
         $db = RiseupDatabase::get_instance();
         $result = $db->query_transactions($filters, $per_page, $offset);
         $logs = $result['logs'];
         $total = $result['total'];
         $total_pages = ceil($total / $per_page);
 
-        // Action labels for display
-        $action_labels = array(
+        $action_labels = $this->getActionLabels();
+
+        include dirname(__FILE__) . '/../templates/admin-logs.php';
+    }
+
+    /**
+     * Build log filters from query parameters.
+     *
+     * @return array Filter values.
+     */
+    private function buildLogFilters(): array {
+        $keys = array(
+            'action' => 'filter_action', 'user' => 'filter_user', 'status' => 'filter_status',
+            'plugin' => 'filter_plugin', 'from' => 'filter_from', 'to' => 'filter_to',
+            'triggered_by' => 'filter_triggered_by', 'source_machine' => 'filter_source_machine',
+            'upload_source' => 'filter_upload_source',
+        );
+
+        $filters = array();
+        foreach ($keys as $key => $param) {
+            $filters[$key] = isset($_GET[$param]) ? sanitize_text_field($_GET[$param]) : '';
+        }
+
+        return $filters;
+    }
+
+    /**
+     * Get action label map for display.
+     *
+     * @return array Action labels.
+     */
+    private function getActionLabels(): array {
+        return array(
             'upload_initiated' => 'Upload Initiated',
             'upload'          => 'Plugin Upload',
             'upload_active'   => 'Upload & Activate',
@@ -347,8 +380,6 @@ class RiseupAdmin {
             'auth_failed'     => 'Auth Failed',
             'export_self'     => 'Export Self',
         );
-
-        include dirname(__FILE__) . '/../templates/admin-logs.php';
     }
 
     /**
@@ -358,14 +389,24 @@ class RiseupAdmin {
         $settings = self::get_settings();
         $update_settings = RiseupUpdateResolver::get_instance()->get_settings();
 
-        // Snapshot settings
         require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
         $detector = RiseupSnapshotFactory::detector();
         $snapshot_settings = $detector->getSettings();
         $snapshot_providers = $detector->detectAvailableProviders();
 
-        // Endpoint metadata for display — grouped by category
-        $endpoint_groups = array(
+        $endpoint_groups = $this->buildEndpointGroups();
+        $endpoints_meta = $this->flattenEndpointGroups($endpoint_groups);
+
+        include dirname(__FILE__) . '/../templates/admin-settings.php';
+    }
+
+    /**
+     * Build endpoint group metadata for display.
+     *
+     * @return array Endpoint groups.
+     */
+    private function buildEndpointGroups(): array {
+        return array(
             'core' => array(
                 'label' => __('Core Operations', 'riseup-asia-uploader'),
                 'icon'  => 'dashicons-admin-tools',
@@ -382,44 +423,51 @@ class RiseupAdmin {
                 'label' => __('Content Management', 'riseup-asia-uploader'),
                 'icon'  => 'dashicons-edit-page',
                 'endpoints' => array(
-                    'posts'        => array('label' => 'Blog Posts', 'desc' => 'Create and manage posts'),
-                    'categories'   => array('label' => 'Categories', 'desc' => 'Create and manage categories'),
+                    'posts'      => array('label' => 'Blog Posts', 'desc' => 'Create and manage posts'),
+                    'categories' => array('label' => 'Categories', 'desc' => 'Create and manage categories'),
                 ),
             ),
             'monitoring' => array(
                 'label' => __('Monitoring & Logs', 'riseup-asia-uploader'),
                 'icon'  => 'dashicons-chart-area',
                 'endpoints' => array(
-                    'logs'         => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
-                    'logs_stats'   => array('label' => 'Logs Stats', 'desc' => 'Get log statistics'),
-                    'error_logs'   => array('label' => 'Error Logs', 'desc' => 'Fetch error log sessions'),
+                    'logs'       => array('label' => 'Logs API', 'desc' => 'Fetch transaction logs'),
+                    'logs_stats' => array('label' => 'Logs Stats', 'desc' => 'Get log statistics'),
+                    'error_logs' => array('label' => 'Error Logs', 'desc' => 'Fetch error log sessions'),
                 ),
             ),
             'backup' => array(
                 'label' => __('Backups & Snapshots', 'riseup-asia-uploader'),
                 'icon'  => 'dashicons-database',
                 'endpoints' => array(
-                    'snapshots'    => array('label' => 'Snapshots', 'desc' => 'Database snapshot operations and scheduling'),
+                    'snapshots' => array('label' => 'Snapshots', 'desc' => 'Database snapshot operations and scheduling'),
                 ),
             ),
             'docs' => array(
                 'label' => __('Documentation', 'riseup-asia-uploader'),
                 'icon'  => 'dashicons-media-document',
                 'endpoints' => array(
-                    'openapi'      => array('label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'),
+                    'openapi' => array('label' => 'OpenAPI Spec', 'desc' => 'API documentation endpoint'),
                 ),
             ),
         );
+    }
 
-        // Flatten for backward compatibility
+    /**
+     * Flatten endpoint groups for backward compatibility.
+     *
+     * @param array $groups Endpoint groups.
+     * @return array Flat endpoint metadata.
+     */
+    private function flattenEndpointGroups(array $groups): array {
         $endpoints_meta = array();
-        foreach ($endpoint_groups as $group) {
+        foreach ($groups as $group) {
             foreach ($group['endpoints'] as $key => $meta) {
                 $endpoints_meta[$key] = $meta;
             }
         }
 
-        include dirname(__FILE__) . '/../templates/admin-settings.php';
+        return $endpoints_meta;
     }
 
     /**
@@ -491,63 +539,42 @@ class RiseupAdmin {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
+        $settings = $this->parseSnapshotSettingsFromPost();
+        $this->applySnapshotSettings($settings);
+    }
+
+    /**
+     * Parse snapshot settings from $_POST data.
+     *
+     * @return array Parsed settings.
+     */
+    private function parseSnapshotSettingsFromPost(): array {
         $settings = array();
+        $text_fields = array(
+            'preferred_provider', 'schedule_frequency', 'schedule_time',
+            'default_scope', 'retention_type',
+        );
 
-        // Provider
-        if (isset($_POST['preferred_provider'])) {
-            $settings['preferred_provider'] = sanitize_text_field($_POST['preferred_provider']);
+        foreach ($text_fields as $field) {
+            if (isset($_POST[$field])) {
+                $settings[$field] = sanitize_text_field($_POST[$field]);
+            }
         }
 
-        // Scheduling
-        if (isset($_POST['schedule_enabled'])) {
-            $settings['schedule_enabled'] = ($_POST['schedule_enabled'] === '1');
+        $int_fields = array('schedule_day', 'retention_days', 'retention_count', 'max_snapshot_size_mb', 'batch_size');
+        foreach ($int_fields as $field) {
+            if (isset($_POST[$field])) {
+                $settings[$field] = intval($_POST[$field]);
+            }
         }
 
-        if (isset($_POST['schedule_frequency'])) {
-            $settings['schedule_frequency'] = sanitize_text_field($_POST['schedule_frequency']);
+        $bool_fields = array('schedule_enabled', 'pre_restore_backup');
+        foreach ($bool_fields as $field) {
+            if (isset($_POST[$field])) {
+                $settings[$field] = ($_POST[$field] === '1');
+            }
         }
 
-        if (isset($_POST['schedule_time'])) {
-            $settings['schedule_time'] = sanitize_text_field($_POST['schedule_time']);
-        }
-
-        if (isset($_POST['schedule_day'])) {
-            $settings['schedule_day'] = intval($_POST['schedule_day']);
-        }
-
-        // Scope
-        if (isset($_POST['default_scope'])) {
-            $settings['default_scope'] = sanitize_text_field($_POST['default_scope']);
-        }
-
-        // Retention
-        if (isset($_POST['retention_type'])) {
-            $settings['retention_type'] = sanitize_text_field($_POST['retention_type']);
-        }
-
-        if (isset($_POST['retention_days'])) {
-            $settings['retention_days'] = intval($_POST['retention_days']);
-        }
-
-        if (isset($_POST['retention_count'])) {
-            $settings['retention_count'] = intval($_POST['retention_count']);
-        }
-
-        // Safety
-        if (isset($_POST['pre_restore_backup'])) {
-            $settings['pre_restore_backup'] = ($_POST['pre_restore_backup'] === '1');
-        }
-
-        // Limits
-        if (isset($_POST['max_snapshot_size_mb'])) {
-            $settings['max_snapshot_size_mb'] = intval($_POST['max_snapshot_size_mb']);
-        }
-
-        if (isset($_POST['batch_size'])) {
-            $settings['batch_size'] = intval($_POST['batch_size']);
-        }
-
-        // Worker Pool & Storage Mode (Phase 5)
         if (isset($_POST['worker_pool_size'])) {
             $settings['worker_pool_size'] = max(
                 SNAPSHOT_WORKER_POOL_MIN,
@@ -556,18 +583,25 @@ class RiseupAdmin {
         }
 
         if (isset($_POST['storage_mode'])) {
-            $valid_modes = array('single', 'per-table');
             $mode = sanitize_text_field($_POST['storage_mode']);
-            if (in_array($mode, $valid_modes)) {
+            if (in_array($mode, array('single', 'per-table'))) {
                 $settings['storage_mode'] = $mode;
             }
         }
 
+        return $settings;
+    }
+
+    /**
+     * Apply parsed snapshot settings and sync cron.
+     *
+     * @param array $settings Parsed settings.
+     */
+    private function applySnapshotSettings(array $settings) {
         require_once dirname(__FILE__) . '/../Snapshot/SnapshotFactory.php';
         $detector = RiseupSnapshotFactory::detector();
         $result = $detector->updateSettings($settings);
 
-        // Re-sync cron schedule if scheduling changed
         if (isset($settings['schedule_enabled']) || isset($settings['schedule_frequency'])) {
             $scheduler = RiseupSnapshotFactory::scheduler();
             $scheduler->syncScheduleWithSettings();
@@ -641,76 +675,12 @@ class RiseupAdmin {
      * Render the error log page.
      */
     public function render_errors_page() {
-        // Safe defaults so the template always renders
-        $errors = array();
-        $total = 0;
-        $total_pages = 1;
-        $page = 1;
-        $last_seen_id = 0;
-        $has_unseen = false;
-        $unseen_count = 0;
-        $latest_error_time = '';
-        $filter_level = isset($_GET['filter_level']) ? sanitize_text_field($_GET['filter_level']) : '';
-        $filter_search = isset($_GET['filter_search']) ? sanitize_text_field($_GET['filter_search']) : '';
-        $db_error_message = '';
+        $defaults = $this->getErrorPageDefaults();
+        extract($defaults);
 
         try {
-            $db = RiseupDatabase::get_instance();
-            $pdo = $db->get_pdo();
-
-            if (!$pdo) {
-                $db_error_message = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
-            } else {
-                // Check if error_sessions table exists
-                $table_check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
-                $table_exists = $table_check && $table_check->fetchColumn();
-
-                if (!$table_exists) {
-                    $db_error_message = __('The error_sessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
-                } else {
-                    $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-                    $per_page = 50;
-                    $offset = ($page - 1) * $per_page;
-
-                    // Build query
-                    $where = array();
-                    $params = array();
-
-                    if (!empty($filter_level)) {
-                        $where[] = 'level = ?';
-                        $params[] = $filter_level;
-                    }
-
-                    if (!empty($filter_search)) {
-                        $where[] = 'message LIKE ?';
-                        $params[] = '%' . $filter_search . '%';
-                    }
-
-                    $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
-
-                    // Count
-                    $count_sql = "SELECT COUNT(*) FROM error_sessions {$where_sql}";
-                    $stmt = $pdo->prepare($count_sql);
-                    $stmt->execute($params);
-                    $total = (int) $stmt->fetchColumn();
-                    $total_pages = max(1, ceil($total / $per_page));
-
-                    // Fetch
-                    $query_sql = "SELECT * FROM error_sessions {$where_sql} ORDER BY id DESC LIMIT ? OFFSET ?";
-                    $stmt = $pdo->prepare($query_sql);
-                    $query_params = array_merge($params, array($per_page, $offset));
-                    $stmt->execute($query_params);
-                    $errors = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                    // Flash state
-                    $last_seen_id = $this->get_flash_value('last_seen_error_id', 0);
-                    $has_unseen = ($this->get_flash_value('has_unseen_errors', '0') === '1');
-                    $unseen_count = $this->get_unseen_error_count();
-                    if (!empty($errors) && $has_unseen) {
-                        $latest_error_time = date('Y-m-d H:i:s', strtotime($errors[0]['created_at']));
-                    }
-                }
-            }
+            $result = $this->fetchErrorsForPage($defaults);
+            extract($result);
         } catch (Throwable $e) {
             $db_error_message = sprintf(
                 __('Database error: %s', 'riseup-asia-uploader'),
@@ -719,6 +689,114 @@ class RiseupAdmin {
         }
 
         include dirname(__FILE__) . '/../templates/admin-errors.php';
+    }
+
+    /**
+     * Get safe default values for the error page.
+     *
+     * @return array Default variables.
+     */
+    private function getErrorPageDefaults(): array {
+        return array(
+            'errors'           => array(),
+            'total'            => 0,
+            'total_pages'      => 1,
+            'page'             => 1,
+            'last_seen_id'     => 0,
+            'has_unseen'       => false,
+            'unseen_count'     => 0,
+            'latest_error_time' => '',
+            'filter_level'     => isset($_GET['filter_level']) ? sanitize_text_field($_GET['filter_level']) : '',
+            'filter_search'    => isset($_GET['filter_search']) ? sanitize_text_field($_GET['filter_search']) : '',
+            'db_error_message' => '',
+        );
+    }
+
+    /**
+     * Fetch errors for the admin page with pagination and filters.
+     *
+     * @param array $defaults Default page variables.
+     * @return array Updated page variables.
+     */
+    private function fetchErrorsForPage(array $defaults): array {
+        $db = RiseupDatabase::get_instance();
+        $pdo = $db->get_pdo();
+
+        if (!$pdo) {
+            $defaults['db_error_message'] = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
+
+            return $defaults;
+        }
+
+        $table_check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
+        $table_exists = $table_check && $table_check->fetchColumn();
+
+        if (!$table_exists) {
+            $defaults['db_error_message'] = __('The error_sessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
+
+            return $defaults;
+        }
+
+        return $this->queryErrorPage($pdo, $defaults);
+    }
+
+    /**
+     * Query error sessions for page rendering.
+     *
+     * @param PDO   $pdo      Database connection.
+     * @param array $defaults Default variables.
+     * @return array Updated variables.
+     */
+    private function queryErrorPage(PDO $pdo, array $defaults): array {
+        $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
+        $per_page = 50;
+        $offset = ($page - 1) * $per_page;
+
+        $where = array();
+        $params = array();
+
+        if (!empty($defaults['filter_level'])) {
+            $where[] = 'level = ?';
+            $params[] = $defaults['filter_level'];
+        }
+
+        if (!empty($defaults['filter_search'])) {
+            $where[] = 'message LIKE ?';
+            $params[] = '%' . $defaults['filter_search'] . '%';
+        }
+
+        $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$where_sql}");
+        $stmt->execute($params);
+        $total = (int) $stmt->fetchColumn();
+        $total_pages = max(1, ceil($total / $per_page));
+
+        $stmt = $pdo->prepare("SELECT * FROM error_sessions {$where_sql} ORDER BY id DESC LIMIT ? OFFSET ?");
+        $stmt->execute(array_merge($params, array($per_page, $offset)));
+        $errors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $last_seen_id = $this->get_flash_value('last_seen_error_id', 0);
+        $has_unseen = ($this->get_flash_value('has_unseen_errors', '0') === '1');
+        $unseen_count = $this->get_unseen_error_count();
+        $latest_error_time = '';
+        if (!empty($errors) && $has_unseen) {
+            $latest_error_time = date('Y-m-d H:i:s', strtotime($errors[0]['created_at']));
+        }
+
+        return array(
+            'errors'            => $errors,
+            'total'             => $total,
+            'total_pages'       => $total_pages,
+            'page'              => $page,
+            'last_seen_id'      => $last_seen_id,
+            'has_unseen'        => $has_unseen,
+            'unseen_count'      => $unseen_count,
+            'latest_error_time' => $latest_error_time,
+            'filter_level'      => $defaults['filter_level'],
+            'filter_search'     => $defaults['filter_search'],
+            'db_error_message'  => '',
+        );
     }
 
     /**
@@ -877,18 +955,27 @@ class RiseupAdmin {
             wp_send_json_error(array('message' => 'Invalid file type'));
         }
 
+        wp_send_json_success($this->readLogFileContent($path));
+    }
+
+    /**
+     * Read a log file's content with size-based truncation.
+     *
+     * @param string $path File path.
+     * @return array File content data.
+     */
+    private function readLogFileContent(string $path): array {
+        $exists = file_exists($path);
         $content = '';
         $size = 0;
-        $exists = file_exists($path);
 
         if ($exists) {
             $size = filesize($path);
-            // Limit to last 500KB to avoid memory issues
             $max_bytes = 512 * 1024;
             if ($size > $max_bytes) {
                 $fp = fopen($path, 'r');
                 fseek($fp, -$max_bytes, SEEK_END);
-                fgets($fp); // skip partial line
+                fgets($fp);
                 $content = fread($fp, $max_bytes);
                 fclose($fp);
                 $content = '... (truncated, showing last ' . round($max_bytes / 1024) . 'KB) ...' . PHP_EOL . $content;
@@ -897,12 +984,12 @@ class RiseupAdmin {
             }
         }
 
-        wp_send_json_success(array(
+        return array(
             'content'  => $content,
             'exists'   => $exists,
             'size'     => $size,
             'filename' => basename($path),
-        ));
+        );
     }
 
     /**
