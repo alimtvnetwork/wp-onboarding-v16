@@ -8,16 +8,7 @@
 
 trait IncrementalExportTrait {
 
-    /**
-     * Export delta rows (id > last_max_id) for a table to an incremental SQLite file.
-     *
-     * @param string $incremental_dir Incremental directory path.
-     * @param string $table           MySQL table name.
-     * @param string $pk_column       Primary key column.
-     * @param int    $last_max_id     Last max ID from previous backup.
-     * @param int    $expected_count  Expected number of new rows.
-     * @return array Result.
-     */
+    /** Export delta rows (id > last_max_id) for a table to an incremental SQLite file. */
     private function exportDeltaRows($incremental_dir, $table, $pk_column, $last_max_id, $expected_count) {
         $filename = $table . '.sqlite';
         $filepath = $incremental_dir . '/' . $filename;
@@ -36,9 +27,7 @@ trait IncrementalExportTrait {
         }
     }
 
-    /**
-     * Create a SQLite file and initialize the table schema.
-     */
+    /** Create a SQLite file and initialize the table schema. */
     private function createIncrementalSqliteTable(string $filepath, string $table): PDO {
         $sqlite = new PDO('sqlite:' . $filepath);
         $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -54,28 +43,39 @@ trait IncrementalExportTrait {
         return $sqlite;
     }
 
-    /**
-     * Batch export delta rows from MySQL to SQLite.
-     */
+    /** Batch export delta rows from MySQL to SQLite. */
     private function batchExportDelta(PDO $sqlite, string $table, string $pkColumn, int $lastMaxId): int {
+        $prepared = $this->prepareDeltaBatchStatement($sqlite, $table);
+        $sqlite->beginTransaction();
+
+        $exported = $this->executeDeltaBatchLoop($prepared['stmt'], $table, $pkColumn, $lastMaxId);
+
+        $sqlite->commit();
+        return $exported;
+    }
+
+    /** Prepare column list and INSERT statement for delta batch. */
+    private function prepareDeltaBatchStatement(PDO $sqlite, string $table): array {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
         $column_names = array_column($columns, 'Field');
         $placeholders = implode(', ', array_fill(0, count($column_names), '?'));
         $column_list = implode(', ', array_map(function($c) { return "`{$c}`"; }, $column_names));
 
         $stmt = $sqlite->prepare("INSERT OR REPLACE INTO `{$table}` ({$column_list}) VALUES ({$placeholders})");
+        return array('stmt' => $stmt, 'columns' => $column_names);
+    }
 
+    /** Execute the batch loop fetching and inserting delta rows. */
+    private function executeDeltaBatchLoop(PDOStatement $stmt, string $table, string $pkColumn, int $lastMaxId): int {
         $offset = 0;
         $exported = 0;
-        $sqlite->beginTransaction();
 
         while (true) {
             $rows = $this->wpdb->get_results(
                 $this->wpdb->prepare(
                     "SELECT * FROM `{$table}` WHERE `{$pkColumn}` > %d ORDER BY `{$pkColumn}` ASC LIMIT %d OFFSET %d",
                     $lastMaxId, $this->batchSize, $offset
-                ),
-                ARRAY_N
+                ), ARRAY_N
             );
 
             if (empty($rows)) {
@@ -86,11 +86,9 @@ trait IncrementalExportTrait {
                 $stmt->execute($row);
                 $exported++;
             }
-
             $offset += $this->batchSize;
         }
 
-        $sqlite->commit();
         return $exported;
     }
 }

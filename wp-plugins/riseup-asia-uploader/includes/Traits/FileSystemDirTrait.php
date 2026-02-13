@@ -99,22 +99,26 @@ trait FileSystemDirTrait {
             if ($file === '.' || $file === '..') {
                 continue;
             }
-
-            $src_path = $src_dir . '/' . $file;
-            $zip_path = $zip_dir . '/' . $file;
-
-            $relative = str_replace($src_dir . '/', '', $src_path);
-            if ($ignore->shouldIgnore($relative)) {
-                continue;
-            }
-
-            if (is_dir($src_path)) {
-                $this->add_dir_to_zip($zip, $src_path, $zip_path, $ignore);
-            } else {
-                $zip->addFile($src_path, $zip_path);
-            }
+            $this->processZipEntry($zip, $src_dir, $zip_dir, $file, $ignore);
         }
 
         closedir($dir);
+    }
+
+    /** Process a single directory entry for ZIP archival. */
+    private function processZipEntry($zip, string $src_dir, string $zip_dir, string $file, $ignore) {
+        $src_path = $src_dir . '/' . $file;
+        $zip_path = $zip_dir . '/' . $file;
+
+        $relative = str_replace($src_dir . '/', '', $src_path);
+        if ($ignore->shouldIgnore($relative)) {
+            return;
+        }
+
+        if (is_dir($src_path)) {
+            $this->add_dir_to_zip($zip, $src_path, $zip_path, $ignore);
+        } else {
+            $zip->addFile($src_path, $zip_path);
+        }
     }
 }

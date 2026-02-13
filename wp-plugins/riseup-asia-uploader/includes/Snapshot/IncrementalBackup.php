@@ -47,9 +47,7 @@ class RiseupIncrementalBackup {
     /** @var RiseupIncrementalBackup|null */
     private static $instance = null;
 
-    /**
-     * Get singleton instance.
-     */
+    /** Get singleton instance. */
     public static function getInstance($logger = null, $db = null, $rootDb = null) {
         if (self::$instance === null && $logger && $db && $rootDb) {
             self::$instance = new self($logger, $db, $rootDb);
@@ -67,13 +65,7 @@ class RiseupIncrementalBackup {
         $this->batchSize = SNAPSHOT_BATCH_SIZE;
     }
 
-    /**
-     * Execute an incremental backup against a master snapshot.
-     *
-     * @param string $master_dir Path to the master (full) snapshot directory.
-     * @param array  $options    Options: title.
-     * @return array Result.
-     */
+    /** Execute an incremental backup against a master snapshot. */
     public function execute($master_dir, $options = array()) {
         $start_time = microtime(true);
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
@@ -85,6 +77,11 @@ class RiseupIncrementalBackup {
 
         $this->log('INFO', 'Starting incremental backup', array('master_dir' => basename($master_dir), 'title' => $title));
 
+        return $this->executeIncrementalPipeline($root_path, $title, $master_dir, $start_time);
+    }
+
+    /** Run the incremental backup pipeline (prepare, export, register, finalize). */
+    private function executeIncrementalPipeline(string $root_path, string $title, string $master_dir, float $start_time): array {
         try {
             $prepared = $this->prepareIncrementalDir($root_path);
             if (!$prepared['success']) {
@@ -93,12 +90,7 @@ class RiseupIncrementalBackup {
 
             $export = $this->exportChangedTables($prepared['master_tables'], $prepared['incremental_dir'], $prepared['rootPdo'], $prepared['sequence']);
 
-            $this->rootDb->registerIncremental($prepared['rootPdo'], array(
-                'sequence_num' => $prepared['sequence'], 'folder_name' => $prepared['folder_name'],
-                'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
-                'relative_path' => 'incremental/' . $prepared['folder_name'] . '/',
-            ));
-
+            $this->registerIncrementalInRoot($prepared, $export);
             $prepared['rootPdo'] = null;
 
             return $this->finalizeIncremental($title, $master_dir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $start_time);
@@ -106,6 +98,15 @@ class RiseupIncrementalBackup {
             $this->log('ERROR', 'Incremental backup failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental');
         }
+    }
+
+    /** Register the incremental export in the root database. */
+    private function registerIncrementalInRoot(array $prepared, array $export) {
+        $this->rootDb->registerIncremental($prepared['rootPdo'], array(
+            'sequence_num' => $prepared['sequence'], 'folder_name' => $prepared['folder_name'],
+            'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
+            'relative_path' => 'incremental/' . $prepared['folder_name'] . '/',
+        ));
     }
 
     /** Get the base snapshots directory. */

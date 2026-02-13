@@ -8,9 +8,7 @@
 
 trait IncrementalRegistrationTrait {
 
-    /**
-     * Register the incremental snapshot in the tracking table.
-     */
+    /** Register the incremental snapshot in the tracking table. */
     private function registerIncrementalSnapshot($title, $master_dir, $folder_name, $sequence, $tables_changed, $total_new_rows, $incremental_dir) {
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
@@ -75,35 +73,50 @@ trait IncrementalRegistrationTrait {
         return (int)$pdo->lastInsertId();
     }
 
-    /**
-     * Invalidate any cached ZIP export for the parent full snapshot.
-     */
+    /** Invalidate any cached ZIP export for the parent full snapshot. */
     private function invalidateParentZipExport($master_dir) {
         try {
-            $pdo = $this->db->get_pdo();
-            if (!$pdo) {
-                return;
-            }
-
-            $stmt = $pdo->prepare('SELECT id FROM ' . TABLE_SNAPSHOTS . ' WHERE filepath = ? AND status = ? LIMIT 1');
-            $stmt->execute(array($master_dir, SNAPSHOT_STATUS_COMPLETE));
-            $parent = $stmt->fetch(PDO::FETCH_ASSOC);
-
+            $parent = $this->findParentSnapshot($master_dir);
             if (!$parent) {
-                $this->log('DEBUG', 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($master_dir)));
                 return;
             }
 
-            require_once dirname(__FILE__) . '/../SnapshotExporter.php';
-            $exporter = RiseupSnapshotExporter::getInstance($this->logger, $this->db);
-            if ($exporter) {
-                $invalidated = $exporter->invalidateZip((int) $parent['id']);
-                $this->log('INFO', 'Parent ZIP export invalidated after incremental backup', array(
-                    'parent_id' => $parent['id'], 'invalidated' => $invalidated,
-                ));
-            }
+            $this->doInvalidateZip($parent, $master_dir);
         } catch (Exception $e) {
             $this->log('WARN', 'Failed to invalidate parent ZIP export', array('error' => $e->getMessage()));
         }
+    }
+
+    /** Find the parent snapshot record by filepath. */
+    private function findParentSnapshot(string $master_dir): ?array {
+        $pdo = $this->db->get_pdo();
+        if (!$pdo) {
+            return null;
+        }
+
+        $stmt = $pdo->prepare('SELECT id FROM ' . TABLE_SNAPSHOTS . ' WHERE filepath = ? AND status = ? LIMIT 1');
+        $stmt->execute(array($master_dir, SNAPSHOT_STATUS_COMPLETE));
+        $parent = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$parent) {
+            $this->log('DEBUG', 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($master_dir)));
+            return null;
+        }
+
+        return $parent;
+    }
+
+    /** Perform the actual ZIP invalidation for a parent snapshot. */
+    private function doInvalidateZip(array $parent, string $master_dir) {
+        require_once dirname(__FILE__) . '/../SnapshotExporter.php';
+        $exporter = RiseupSnapshotExporter::getInstance($this->logger, $this->db);
+        if (!$exporter) {
+            return;
+        }
+
+        $invalidated = $exporter->invalidateZip((int) $parent['id']);
+        $this->log('INFO', 'Parent ZIP export invalidated after incremental backup', array(
+            'parent_id' => $parent['id'], 'invalidated' => $invalidated,
+        ));
     }
 }

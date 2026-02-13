@@ -26,24 +26,26 @@ trait PluginLifecycleHelpersTrait {
         }
 
         try {
-            $plugin_file = $this->find_plugin_file($slug);
-            $exists = (bool) $plugin_file;
-            $status = $exists ? (is_plugin_active($plugin_file) ? 'active' : 'inactive') : 'not_installed';
-
-            return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_EXISTS)
-                ->setSingleResult(array(
-                    'plugin_slug'  => $slug,
-                    'exists'       => $exists,
-                    'status'       => $status,
-                    'plugin_file'  => $exists ? $plugin_file : null,
-                    'requestUrl'   => $_SERVER['REQUEST_URI'] ?? '',
-                    'responseUrl'  => home_url(),
-                ))
-                ->toResponse();
+            return $this->buildPluginExistsResponse($slug);
         } catch (Throwable $e) {
             return $this->error_response('Failed to check plugin existence: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
+    }
+
+    /** Build the plugin existence check response. */
+    private function buildPluginExistsResponse(string $slug): WP_REST_Response {
+        $plugin_file = $this->find_plugin_file($slug);
+        $exists = (bool) $plugin_file;
+        $status = $exists ? (is_plugin_active($plugin_file) ? 'active' : 'inactive') : 'not_installed';
+
+        return RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_EXISTS)
+            ->setSingleResult(array(
+                'plugin_slug' => $slug, 'exists' => $exists, 'status' => $status,
+                'plugin_file' => $exists ? $plugin_file : null,
+                'requestUrl' => $_SERVER['REQUEST_URI'] ?? '', 'responseUrl' => home_url(),
+            ))
+            ->toResponse();
     }
 
     /**

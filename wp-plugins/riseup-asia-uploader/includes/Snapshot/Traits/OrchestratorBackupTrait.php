@@ -71,22 +71,28 @@ trait OrchestratorBackupTrait {
                 return $this->buildPhaseError('table_export', $worker_result);
             }
 
-            $snapshot_dir = $worker_result['path'];
-            $plugin_stats = $resolved['include_plugins'] ? $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']) : array('count' => 0, 'total_size' => 0);
-            $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $worker_result, $plugin_stats, $snapshot_dir);
-            $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array('path' => null, 'size' => 0);
-
-            $duration = microtime(true) - $start_time;
-            return array(
-                'success' => true, 'snapshot_id' => $snapshot_id, 'directory' => $worker_result['directory'],
-                'path' => $worker_result['path'], 'tables' => $worker_result['tables'],
-                'total_rows' => $worker_result['total_rows'], 'plugins' => $plugin_stats['count'],
-                'zip_path' => $zip_result['path'], 'zip_size' => $zip_result['size'],
-                'duration' => $duration, 'errors' => $worker_result['errors'] ?? array(),
-            );
+            $context = $this->finalizeSyncExport($resolved, $worker_result);
+            $context['duration'] = microtime(true) - $start_time;
+            $context['errors'] = $worker_result['errors'] ?? array();
+            return $context;
         } catch (Exception $e) {
             return $this->buildExceptionResult($e, 'sync_orchestration');
         }
+    }
+
+    /** Register snapshot, snapshot plugins, and create ZIP for sync backup. */
+    private function finalizeSyncExport(array $resolved, array $worker_result): array {
+        $snapshot_dir = $worker_result['path'];
+        $plugin_stats = $resolved['include_plugins'] ? $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']) : array('count' => 0, 'total_size' => 0);
+        $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $worker_result, $plugin_stats, $snapshot_dir);
+        $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array('path' => null, 'size' => 0);
+
+        return array(
+            'success' => true, 'snapshot_id' => $snapshot_id, 'directory' => $worker_result['directory'],
+            'path' => $worker_result['path'], 'tables' => $worker_result['tables'],
+            'total_rows' => $worker_result['total_rows'], 'plugins' => $plugin_stats['count'],
+            'zip_path' => $zip_result['path'], 'zip_size' => $zip_result['size'],
+        );
     }
 
     private function runWorkerExport(array $resolved, bool $async): array {
