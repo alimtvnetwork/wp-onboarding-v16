@@ -2,17 +2,19 @@
 /**
  * ManagerImportTrait — Snapshot ZIP import operations.
  *
- * Shell trait — validation delegated to ManagerImportValidationTrait.
+ * Shell trait — delegates to ManagerImportValidationTrait and ManagerImportRecordTrait.
  *
  * @package RiseupAsiaUploader
  * @since   2.0.0
  */
 
 require_once __DIR__ . '/ManagerImportValidationTrait.php';
+require_once __DIR__ . '/ManagerImportRecordTrait.php';
 
 trait ManagerImportTrait {
 
     use ManagerImportValidationTrait;
+    use ManagerImportRecordTrait;
 
     /**
      * Import a snapshot from an uploaded ZIP file.
@@ -35,7 +37,6 @@ trait ManagerImportTrait {
         ));
 
         $temp_dir = RiseupPathUtils::join(RiseupPathUtils::getTempDir(), 'import_' . uniqid());
-
         if (!RiseupPathUtils::ensureDir($temp_dir, false)) {
             return array('success' => false, 'error' => 'Failed to create temp directory');
         }
@@ -78,7 +79,6 @@ trait ManagerImportTrait {
         if ($zip->open($uploaded_path) !== true) {
             throw new Exception('Failed to open ZIP file');
         }
-
         $zip->extractTo($temp_dir);
         $zip->close();
     }
@@ -125,9 +125,8 @@ trait ManagerImportTrait {
      *
      * @param array  $manifest    Parsed manifest.
      * @param string $sqlite_path Path to validated SQLite file.
-     * @param string $temp_dir    Temp directory (for cleanup reference).
+     * @param string $temp_dir    Temp directory.
      * @return array Success result.
-     * @throws Exception On failure.
      */
     private function moveAndRecordSnapshot($manifest, $sqlite_path, $temp_dir) {
         $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
@@ -135,7 +134,7 @@ trait ManagerImportTrait {
             throw new Exception('Failed to ensure snapshots directory');
         }
 
-        $sequence = $this->getNextSequence();
+        $sequence = $this->getNextImportSequence();
         $new_filename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
         $dest_path = RiseupPathUtils::join($snapshots_dir, $new_filename);
 
@@ -157,49 +156,6 @@ trait ManagerImportTrait {
             'success' => true, 'snapshot_id' => $snapshot_id, 'filename' => $new_filename,
             'tables' => count($manifest['snapshot']['tables']),
             'rows' => $manifest['snapshot']['total_rows'],
-        );
-    }
-
-    /**
-     * Get the next sequence number.
-     *
-     * @return int Next sequence.
-     */
-    private function getNextSequence() {
-        $result = $this->db->query_single('SELECT MAX(sequence) as max_seq FROM ' . TABLE_SNAPSHOTS);
-        return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
-    }
-
-    /**
-     * Create a database record for an imported snapshot.
-     *
-     * @param array  $manifest Original manifest.
-     * @param int    $sequence New sequence number.
-     * @param string $filename New filename.
-     * @param string $filepath Full path.
-     * @return int|false Snapshot ID or false.
-     */
-    private function createImportedSnapshotRecord($manifest, $sequence, $filename, $filepath) {
-        $data = $this->buildImportRecord($manifest['snapshot'], $manifest, $sequence, $filename, $filepath);
-        $result = $this->db->insert(TABLE_SNAPSHOTS, $data);
-
-        return $result ? $this->db->lastInsertId() : false;
-    }
-
-    /** Build the database record for an imported snapshot. */
-    private function buildImportRecord(array $snapshot_data, array $manifest, int $sequence, string $filename, string $filepath): array {
-        return array(
-            'sequence' => $sequence, 'filename' => $filename, 'filepath' => $filepath,
-            'provider' => SNAPSHOT_PROVIDER_NATIVE, 'scope' => $snapshot_data['scope'],
-            'tables_json' => json_encode($snapshot_data['tables']),
-            'total_rows' => $snapshot_data['total_rows'] ?? 0, 'file_size' => filesize($filepath),
-            'trigger_source' => 'import', 'status' => SNAPSHOT_STATUS_COMPLETE,
-            'created_at' => date('c'), 'completed_at' => date('c'),
-            'import_source' => json_encode(array(
-                'original_id' => $snapshot_data['id'] ?? null,
-                'original_created_at' => $snapshot_data['created_at'] ?? null,
-                'source_site' => $manifest['source']['site_url'] ?? null,
-            )),
         );
     }
 }
