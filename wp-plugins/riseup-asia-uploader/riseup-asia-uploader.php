@@ -42,6 +42,8 @@ require_once __DIR__ . '/includes/Enums/PathConst.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
 require_once __DIR__ . '/includes/Enums/LogLevelType.php';
 require_once __DIR__ . '/includes/Enums/ActionType.php';
+require_once __DIR__ . '/includes/Enums/StatusType.php';
+require_once __DIR__ . '/includes/Enums/PostStatusType.php';
 
 // Error checker (uses RiseupAsia\Enums\ErrorType internally)
 require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';

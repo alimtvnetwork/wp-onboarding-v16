@@ -531,7 +531,7 @@ includes/Constants/
 |---|------|--------|-------------|
 | J1 | **Audit constants.php** | ✅ Done | Full audit: 180 constants categorized into 15 enum candidates (75 constants) + 10 const-class candidates (96 constants) + 9 already-migrated aliases. See `memory/workflow/03-j1-constants-audit.md`. |
 | J2 | **Create ActionType enum** | ✅ Done | Created `ActionType` backed enum with 42 cases + helper methods (`isSnapshot()`, `isAgent()`, `isUpdate()`, `isLifecycle()`). Migrated all 42 `ACTION_*` defines to backward-compat aliases. Updated 16 caller files to use `ActionType::Case->value`. Zero remaining direct `ACTION_*` references in non-template PHP files. |
-| J3 | **Create StatusType + PostStatusType enums** | ⬚ Pending | Migrate STATUS_* (2) + POST_STATUS_* (3) = 5 constants. |
+| J3 | **Create StatusType + PostStatusType enums** | ✅ Done | Created `StatusType` (2 cases + `isSuccess()`/`isFailed()`) and `PostStatusType` (3 cases + `isPublic()`, `validValues()`). All `POST_STATUS_*` callers migrated (PostManager, PostCrudTrait). `STATUS_*` callers (309 matches, 22 files) use backward-compat aliases — full caller migration deferred to J7 batch pass. |
 | J4a | **Create SnapshotStatusType + SnapshotJobStatusType** | ⬚ Pending | 9 constants covering snapshot lifecycle states. |
 | J4b | **Create SnapshotScopeType + SnapshotFrequencyType + SnapshotTypeType** | ⬚ Pending | 10 constants covering snapshot configuration choices. |
 | J4c | **Create SnapshotProviderType + SnapshotTriggerType + SnapshotExportStatusType + RetentionType** | ⬚ Pending | 13 constants covering snapshot infrastructure. |

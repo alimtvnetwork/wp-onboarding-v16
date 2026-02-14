@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\PostStatusType;
 
 trait PostCrudTrait {
 
@@ -97,7 +98,7 @@ trait PostCrudTrait {
         $post_data = array(
             'post_title'   => sanitize_text_field($data['title']),
             'post_content' => wp_kses_post($data['content']),
-            'post_status'  => $this->validatePostStatus($data['status'] ?? POST_STATUS_DRAFT),
+            'post_status'  => $this->validatePostStatus($data['status'] ?? PostStatusType::Draft->value),
             'post_type'    => 'post',
         );
 
