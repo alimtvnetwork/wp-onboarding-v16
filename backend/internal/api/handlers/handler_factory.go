@@ -96,12 +96,12 @@ func handleSiteActionByID(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if Services == nil || Services.SiteService == nil {
-			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
+			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
 			return
 		}
 		siteID, err := getIDParam(r, "id")
 		if err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
+			respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidId.String())
 			return
 		}
 		result, err := fn(r.Context(), siteID)
@@ -121,12 +121,12 @@ func handleSiteActionByIDWithOpts(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if Services == nil || Services.SiteService == nil {
-			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
+			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
 			return
 		}
 		siteID, err := getIDParam(r, "id")
 		if err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
+			respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidId.String())
 			return
 		}
 		opts := decodeOptionalOpts(r)

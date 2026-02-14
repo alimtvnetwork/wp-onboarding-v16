@@ -48,6 +48,15 @@ const (
 
 	// ResponseMessageFileIgnored indicates the file was ignored by .uploadignore.
 	ResponseMessageFileIgnored ResponseMessageType = "File ignored by .uploadignore"
+
+	// ResponseMessageInvalidRequestBody indicates the request body could not be decoded.
+	ResponseMessageInvalidRequestBody ResponseMessageType = "Invalid request body"
+
+	// ResponseMessageServiceNotAvailable indicates a required service is unavailable.
+	ResponseMessageServiceNotAvailable ResponseMessageType = "Service not available"
+
+	// ResponseMessageInvalidId indicates an invalid or malformed identifier.
+	ResponseMessageInvalidId ResponseMessageType = "Invalid ID"
 )
 
 // IsEqual checks type-safe equality against another ResponseMessageType.
