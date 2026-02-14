@@ -38,29 +38,13 @@ if (!defined('MIN_PHP_VERSION')) {
 }
 
 // =============================================================================
-// PATHS - All relative to wp-content/uploads/{plugin-slug}/
+// PATHS - Only UPLOADS_SUBDIR (plugin identity slug) remains here.
+// Other path constants migrated to PathSubdirType, PathDatabaseType,
+// PathLogFileType, and PathConfigType enums.
 // =============================================================================
 
 if (!defined('UPLOADS_SUBDIR')) {
     define('UPLOADS_SUBDIR', 'riseup-asia-uploader');
-}
-if (!defined('LOGS_SUBDIR')) {
-    define('LOGS_SUBDIR', 'logs');
-}
-if (!defined('LOG_FILENAME')) {
-    define('LOG_FILENAME', 'log.txt');
-}
-if (!defined('ERROR_LOG_FILENAME')) {
-    define('ERROR_LOG_FILENAME', 'error.txt');
-}
-if (!defined('STACKTRACE_FILENAME')) {
-    define('STACKTRACE_FILENAME', 'stacktrace.txt');
-}
-if (!defined('DB_FILENAME')) {
-    define('DB_FILENAME', 'riseup-asia-uploader.db');
-}
-if (!defined('TEMP_SUBDIR')) {
-    define('TEMP_SUBDIR', 'temp');
 }
 
 // =============================================================================
@@ -541,10 +525,7 @@ if (!defined('TABLE_SNAPSHOT_PROGRESS')) {
     define('TABLE_SNAPSHOT_PROGRESS', 'snapshot_progress');
 }
 
-// Snapshot folders
-if (!defined('SNAPSHOTS_SUBDIR')) {
-    define('SNAPSHOTS_SUBDIR', 'snapshots');
-}
+// Snapshot folders — migrated to PathSubdirType::Snapshots
 
 // Snapshot defaults
 if (!defined('SNAPSHOT_BATCH_SIZE')) {
@@ -768,9 +749,7 @@ if (!defined('SNAPSHOT_EXPORT_STATUS_BUILDING')) {
     define('SNAPSHOT_EXPORT_STATUS_BUILDING', 'building');
 }
 
-if (!defined('SNAPSHOT_EXPORTS_SUBDIR')) {
-    define('SNAPSHOT_EXPORTS_SUBDIR', 'exports');
-}
+// SNAPSHOT_EXPORTS_SUBDIR — migrated to PathSubdirType::Exports
 
 if (!defined('ERR_EXPORT_NOT_FOUND')) {
     define('ERR_EXPORT_NOT_FOUND', 'EXPORT_NOT_FOUND');
