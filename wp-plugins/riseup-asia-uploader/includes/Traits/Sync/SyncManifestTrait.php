@@ -15,17 +15,17 @@ trait SyncManifestTrait
     /**
      * Handle sync manifest endpoint.
      */
-    public function handle_sync_manifest($request) {
+    public function handleSyncManifest($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
 
         try {
             return $this->generateSyncManifest($slug);
         } catch (Throwable $e) {
-            return $this->error_response('Failed to generate sync manifest: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to generate sync manifest: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -39,11 +39,11 @@ trait SyncManifestTrait
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
         if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-            return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
         }
 
         $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-        $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
+        $fileCache = RiseupFileCache::getInstance($this->fileLogger, $this->db);
         $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
 
         return new WP_REST_Response(array(
@@ -60,7 +60,7 @@ trait SyncManifestTrait
     /**
      * Recursively scan a directory and collect file info with hashes.
      */
-    private function scan_directory_for_files($base_dir, $dir, $ignore, &$files) {
+    private function scanDirectoryForFiles($base_dir, $dir, $ignore, &$files) {
         $items = @scandir($dir);
         if ($items === false) {
             return;
@@ -79,7 +79,7 @@ trait SyncManifestTrait
             }
 
             if (is_dir($full_path)) {
-                $this->scan_directory_for_files($base_dir, $full_path, $ignore, $files);
+                $this->scanDirectoryForFiles($base_dir, $full_path, $ignore, $files);
             } else {
                 $files[] = $this->buildFileEntry($rel_path, $full_path);
             }

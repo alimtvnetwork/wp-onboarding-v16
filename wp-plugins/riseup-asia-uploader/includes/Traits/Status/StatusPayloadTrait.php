@@ -15,8 +15,8 @@ trait StatusPayloadTrait {
     /**
      * Handle status check.
      */
-    public function handle_status($request) {
-        $this->file_logger->info('Status endpoint called');
+    public function handleStatus($request) {
+        $this->fileLogger->info('Status endpoint called');
 
         $live_version = $this->detectLiveVersion();
         $db_available = $this->db !== null;

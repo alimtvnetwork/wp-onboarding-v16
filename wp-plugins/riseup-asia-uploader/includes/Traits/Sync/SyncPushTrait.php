@@ -15,27 +15,27 @@ use RiseupAsia\Enums\ActionType;
 trait SyncPushTrait
 {
     /** Handle sync push endpoint. */
-    public function handle_sync_push($request) {
+    public function handleSyncPush($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : '';
         $files = isset($body['files']) ? $body['files'] : array();
 
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
         if (empty($files) || !is_array($files)) {
-            return $this->error_response('Files array is required', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Files array is required', HTTP_BAD_REQUEST);
         }
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-                return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+                return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
             }
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
             return new WP_REST_Response($result, HTTP_OK);
         } catch (Throwable $e) {
-            return $this->error_response('Sync push failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -53,7 +53,7 @@ trait SyncPushTrait
         }
 
         $this->logSyncCompletion($slug, $counters);
-        RiseupFileCache::getInstance($this->file_logger, $this->db)->invalidate($slug);
+        RiseupFileCache::getInstance($this->fileLogger, $this->db)->invalidate($slug);
 
         return array('success' => true) + $counters + array('ignored_files' => $ignored_files, 'results' => $results);
     }

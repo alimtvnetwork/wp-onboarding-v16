@@ -13,19 +13,19 @@ if (!defined('ABSPATH')) {
 trait UploadInstallActivateTrait
 {
     /** Reset OPcache and locate the plugin's main file. */
-    private function reset_opcache_and_find_plugin($slug) {
+    private function resetOpcacheAndFindPlugin($slug) {
         if (function_exists('opcache_reset')) {
             opcache_reset();
         }
 
-        $plugin_file = $this->find_plugin_file($slug);
+        $plugin_file = $this->findPluginFile($slug);
         if (!empty($plugin_file)) {
             $this->invalidatePluginCache($plugin_file, $slug);
         }
 
         if (!$plugin_file) {
-            $this->logger->log_upload_failed($slug, 'Could not find plugin file after extraction');
-            return $this->error_response('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
+            $this->logger->logUploadFailed($slug, 'Could not find plugin file after extraction');
+            return $this->errorResponse('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
         }
 
         return $plugin_file;
@@ -48,7 +48,7 @@ trait UploadInstallActivateTrait
     }
 
     /** Activate the plugin if requested or if it was previously active. */
-    private function activate_if_needed($plugin_file, $slug, $activate, $was_active, $is_update) {
+    private function activateIfNeeded($plugin_file, $slug, $activate, $was_active, $is_update) {
         if (!$activate && !$was_active) {
             return array('activated' => false);
         }
@@ -63,7 +63,7 @@ trait UploadInstallActivateTrait
 
     /** Build response for failed activation after upload. */
     private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
-        $this->logger->log_upload_failed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
+        $this->logger->logUploadFailed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
         return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
             ->setSingleResult(array(
@@ -74,7 +74,7 @@ trait UploadInstallActivateTrait
     }
 
     /** Detect the installed plugin version from disk. */
-    private function detect_installed_version($plugin_file, $slug, $is_self_update, $client_version) {
+    private function detectInstalledVersion($plugin_file, $slug, $is_self_update, $client_version) {
         $installed_version = $this->readVersionFromFile($plugin_file);
 
         if (empty($installed_version)) {

@@ -20,14 +20,14 @@ trait UploadInstallExtractTrait
      * @param string $target_dir Absolute path to plugin directory.
      * @return bool Whether the plugin was previously active.
      */
-    private function deactivate_if_updating($slug, $is_update, $target_dir) {
-        $this->file_logger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array('slug' => $slug));
+    private function deactivateIfUpdating($slug, $is_update, $target_dir) {
+        $this->fileLogger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array('slug' => $slug));
 
         if (!$is_update) {
             return false;
         }
 
-        $plugin_file = $this->find_plugin_file($slug);
+        $plugin_file = $this->findPluginFile($slug);
         $was_active = false;
 
         if ($plugin_file) {
@@ -37,7 +37,7 @@ trait UploadInstallExtractTrait
             }
         }
 
-        $this->delete_directory($target_dir);
+        $this->deleteDirectory($target_dir);
         return $was_active;
     }
 
@@ -51,7 +51,7 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zip_result) {
         $context = $this->prepareExtractionContext($input, $zip_result);
 
-        $was_active = $this->deactivate_if_updating($context['slug'], $context['is_update'], $context['target_dir']);
+        $was_active = $this->deactivateIfUpdating($context['slug'], $context['is_update'], $context['target_dir']);
 
         $stepResult = $this->executeExtractionSteps($context, $was_active, $input);
         if ($stepResult instanceof WP_REST_Response) {
@@ -67,11 +67,11 @@ trait UploadInstallExtractTrait
         $target_dir = WP_PLUGIN_DIR . '/' . $slug;
         $is_update  = is_dir($target_dir);
 
-        $this->remove_duplicate_plugins($slug, WP_PLUGIN_DIR);
+        $this->removeDuplicatePlugins($slug, WP_PLUGIN_DIR);
 
         $is_self_update = ($slug === PLUGIN_SLUG && $is_update);
         if ($is_self_update) {
-            $this->pre_log_self_update($slug, $input['upload_source'], $input['client_plugin_version'], strlen($input['zip_content']));
+            $this->preLogSelfUpdate($slug, $input['upload_source'], $input['client_plugin_version'], strlen($input['zip_content']));
         }
 
         return array(
@@ -83,22 +83,22 @@ trait UploadInstallExtractTrait
 
     /** Execute extraction, opcache reset, activation, and version detection. */
     private function executeExtractionSteps(array $ctx, bool $was_active, array $input) {
-        $extract_result = $this->extract_to_plugins_dir($ctx['temp_file'], $ctx['slug'], $ctx['target_dir']);
+        $extract_result = $this->extractToPluginsDir($ctx['temp_file'], $ctx['slug'], $ctx['target_dir']);
         if ($extract_result instanceof WP_REST_Response) {
             return $extract_result;
         }
 
-        $plugin_file = $this->reset_opcache_and_find_plugin($ctx['slug']);
+        $plugin_file = $this->resetOpcacheAndFindPlugin($ctx['slug']);
         if ($plugin_file instanceof WP_REST_Response) {
             return $plugin_file;
         }
 
-        $activation = $this->activate_if_needed($plugin_file, $ctx['slug'], $input['activate'], $was_active, $ctx['is_update']);
+        $activation = $this->activateIfNeeded($plugin_file, $ctx['slug'], $input['activate'], $was_active, $ctx['is_update']);
         if ($activation instanceof WP_REST_Response) {
             return $activation;
         }
 
-        $version_info = $this->detect_installed_version($plugin_file, $ctx['slug'], $ctx['is_self_update'], $input['client_plugin_version']);
+        $version_info = $this->detectInstalledVersion($plugin_file, $ctx['slug'], $ctx['is_self_update'], $input['client_plugin_version']);
 
         return array(
             'slug' => $ctx['slug'], 'is_update' => $ctx['is_update'], 'activated' => $activation['activated'],
@@ -109,8 +109,8 @@ trait UploadInstallExtractTrait
     /**
      * Extract ZIP to a temp directory, then move to the correct plugin location.
      */
-    private function extract_to_plugins_dir($temp_file, $slug, $target_dir) {
-        $temp_extract_dir = $this->get_temp_dir() . '/extract_' . uniqid();
+    private function extractToPluginsDir($temp_file, $slug, $target_dir) {
+        $temp_extract_dir = $this->getTempDir() . '/extract_' . uniqid();
         wp_mkdir_p($temp_extract_dir);
 
         $extractError = $this->openAndExtractZip($temp_file, $temp_extract_dir);
@@ -120,14 +120,14 @@ trait UploadInstallExtractTrait
 
         $extracted_folders = glob($temp_extract_dir . '/*', GLOB_ONLYDIR);
         if (empty($extracted_folders)) {
-            $this->delete_directory($temp_extract_dir);
-            $this->logger->log_upload_failed($slug, 'No folder found in extracted ZIP');
+            $this->deleteDirectory($temp_extract_dir);
+            $this->logger->logUploadFailed($slug, 'No folder found in extracted ZIP');
 
-            return $this->error_response('No folder found in extracted ZIP', HTTP_SERVER_ERROR);
+            return $this->errorResponse('No folder found in extracted ZIP', HTTP_SERVER_ERROR);
         }
 
         $this->moveExtractedPlugin($extracted_folders[0], $target_dir);
-        $this->delete_directory($temp_extract_dir);
+        $this->deleteDirectory($temp_extract_dir);
 
         return true;
     }
@@ -137,9 +137,9 @@ trait UploadInstallExtractTrait
         $zip = new ZipArchive();
         if ($zip->open($temp_file) !== true) {
             @unlink($temp_file);
-            $this->delete_directory($temp_extract_dir);
+            $this->deleteDirectory($temp_extract_dir);
 
-            return $this->error_response('Failed to open ZIP for extraction', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Failed to open ZIP for extraction', HTTP_SERVER_ERROR);
         }
 
         $zip->extractTo($temp_extract_dir);
@@ -152,12 +152,12 @@ trait UploadInstallExtractTrait
     /** Move extracted plugin folder to target, with copy fallback. */
     private function moveExtractedPlugin(string $extracted_folder, string $target_dir) {
         if (rename($extracted_folder, $target_dir)) {
-            $this->file_logger->info('Plugin installed to correct location');
+            $this->fileLogger->info('Plugin installed to correct location');
 
             return;
         }
 
-        $this->copy_directory($extracted_folder, $target_dir);
-        $this->delete_directory($extracted_folder);
+        $this->copyDirectory($extracted_folder, $target_dir);
+        $this->deleteDirectory($extracted_folder);
     }
 }

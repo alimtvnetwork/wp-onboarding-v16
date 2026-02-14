@@ -15,7 +15,7 @@ trait FileSystemDirTrait {
     /**
      * Get temp directory path.
      */
-    private function get_temp_dir() {
+    private function getTempDir() {
         $temp_dir = RiseupPathUtils::getTempDir();
         RiseupPathUtils::ensureDir($temp_dir);
         return $temp_dir;
@@ -24,7 +24,7 @@ trait FileSystemDirTrait {
     /**
      * Detect plugin slug from ZIP file.
      */
-    private function detect_plugin_slug_from_zip($zip) {
+    private function detectPluginSlugFromZip($zip) {
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
             if (preg_match('/^([^\/]+)\/[^\/]+\.php$/', $name, $matches)) {
@@ -40,7 +40,7 @@ trait FileSystemDirTrait {
     /**
      * Delete a directory recursively.
      */
-    private function delete_directory($dir) {
+    private function deleteDirectory($dir) {
         if (RiseupBooleanHelpers::is_dir_missing($dir)) {
             return false;
         }
@@ -49,7 +49,7 @@ trait FileSystemDirTrait {
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
             if (is_dir($path)) {
-                $this->delete_directory($path);
+                $this->deleteDirectory($path);
             } else {
                 @unlink($path);
             }
@@ -61,7 +61,7 @@ trait FileSystemDirTrait {
     /**
      * Copy a directory recursively.
      */
-    private function copy_directory($src, $dst) {
+    private function copyDirectory($src, $dst) {
         if (RiseupBooleanHelpers::is_dir_missing($src)) {
             return false;
         }
@@ -75,7 +75,7 @@ trait FileSystemDirTrait {
             $src_path = $src . '/' . $file;
             $dst_path = $dst . '/' . $file;
             if (is_dir($src_path)) {
-                $this->copy_directory($src_path, $dst_path);
+                $this->copyDirectory($src_path, $dst_path);
             } else {
                 copy($src_path, $dst_path);
             }
@@ -87,7 +87,7 @@ trait FileSystemDirTrait {
     /**
      * Add directory to ZIP recursively.
      */
-    private function add_dir_to_zip($zip, $src_dir, $zip_dir, $ignore) {
+    private function addDirToZip($zip, $src_dir, $zip_dir, $ignore) {
         $dir = opendir($src_dir);
         if (!$dir) {
             return;
@@ -116,7 +116,7 @@ trait FileSystemDirTrait {
         }
 
         if (is_dir($src_path)) {
-            $this->add_dir_to_zip($zip, $src_path, $zip_path, $ignore);
+            $this->addDirToZip($zip, $src_path, $zip_path, $ignore);
         } else {
             $zip->addFile($src_path, $zip_path);
         }
