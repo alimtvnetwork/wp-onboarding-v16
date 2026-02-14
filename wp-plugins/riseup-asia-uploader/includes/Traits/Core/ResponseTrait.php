@@ -7,6 +7,8 @@
  * @package RiseupAsiaUploader
  */
 
+use RiseupAsia\Enums\HttpStatusType;
+
 trait ResponseTrait {
 
     /**
@@ -35,7 +37,7 @@ trait ResponseTrait {
 
             return $this->errorResponse(
                 "Error in {$context}: " . $e->getMessage(),
-                HTTP_SERVER_ERROR,
+                HttpStatusType::ServerError->value,
                 $e
             );
         }

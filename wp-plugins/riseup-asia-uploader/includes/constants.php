@@ -34,7 +34,7 @@ if (!defined('MIN_WP_VERSION')) {
     define('MIN_WP_VERSION', '5.6');
 }
 if (!defined('MIN_PHP_VERSION')) {
-    define('MIN_PHP_VERSION', '7.4');
+    define('MIN_PHP_VERSION', '8.2');
 }
 
 // =============================================================================
@@ -77,100 +77,9 @@ if (!defined('DB_WAL_MODE')) {
     define('DB_WAL_MODE', true);
 }
 
-// =============================================================================
-// RESPONSE MESSAGES
-// =============================================================================
+// RESPONSE MESSAGES — migrated to ResponseMessageType enum
 
-if (!defined('MSG_SUCCESS')) {
-    define('MSG_SUCCESS', 'Operation completed successfully');
-}
-if (!defined('MSG_UNAUTHORIZED')) {
-    define('MSG_UNAUTHORIZED', 'Authentication required');
-}
-if (!defined('MSG_FORBIDDEN')) {
-    define('MSG_FORBIDDEN', 'Insufficient permissions');
-}
-if (!defined('MSG_INVALID_REQUEST')) {
-    define('MSG_INVALID_REQUEST', 'Invalid request data');
-}
-if (!defined('MSG_PLUGIN_NOT_FOUND')) {
-    define('MSG_PLUGIN_NOT_FOUND', 'Plugin not found');
-}
-if (!defined('MSG_UPLOAD_FAILED')) {
-    define('MSG_UPLOAD_FAILED', 'Upload failed');
-}
-if (!defined('MSG_ACTIVATION_FAILED')) {
-    define('MSG_ACTIVATION_FAILED', 'Plugin activation failed');
-}
-if (!defined('MSG_DEACTIVATION_FAILED')) {
-    define('MSG_DEACTIVATION_FAILED', 'Plugin deactivation failed');
-}
-if (!defined('MSG_DELETE_FAILED')) {
-    define('MSG_DELETE_FAILED', 'Plugin deletion failed');
-}
-if (!defined('MSG_POST_CREATE_FAILED')) {
-    define('MSG_POST_CREATE_FAILED', 'Post creation failed');
-}
-if (!defined('MSG_POST_UPDATE_FAILED')) {
-    define('MSG_POST_UPDATE_FAILED', 'Post update failed');
-}
-if (!defined('MSG_CATEGORY_CREATE_FAILED')) {
-    define('MSG_CATEGORY_CREATE_FAILED', 'Category creation failed');
-}
-if (!defined('MSG_MEDIA_UPLOAD_FAILED')) {
-    define('MSG_MEDIA_UPLOAD_FAILED', 'Media upload failed');
-}
-if (!defined('MSG_DB_ERROR')) {
-    define('MSG_DB_ERROR', 'Database error');
-}
-if (!defined('MSG_FILE_IGNORED')) {
-    define('MSG_FILE_IGNORED', 'File ignored by .uploadignore');
-}
-
-// =============================================================================
-// PAGINATION DEFAULTS
-// =============================================================================
-
-if (!defined('DEFAULT_LIMIT')) {
-    define('DEFAULT_LIMIT', 50);
-}
-if (!defined('MAX_LIMIT')) {
-    define('MAX_LIMIT', 500);
-}
-
-// =============================================================================
-// IGNORE FILE
-// =============================================================================
-
-if (!defined('IGNORE_FILENAME')) {
-    define('IGNORE_FILENAME', '.uploadignore');
-}
-
-// =============================================================================
-// HTTP STATUS CODES
-// =============================================================================
-
-if (!defined('HTTP_OK')) {
-    define('HTTP_OK', 200);
-}
-if (!defined('HTTP_CREATED')) {
-    define('HTTP_CREATED', 201);
-}
-if (!defined('HTTP_BAD_REQUEST')) {
-    define('HTTP_BAD_REQUEST', 400);
-}
-if (!defined('HTTP_UNAUTHORIZED')) {
-    define('HTTP_UNAUTHORIZED', 401);
-}
-if (!defined('HTTP_FORBIDDEN')) {
-    define('HTTP_FORBIDDEN', 403);
-}
-if (!defined('HTTP_NOT_FOUND')) {
-    define('HTTP_NOT_FOUND', 404);
-}
-if (!defined('HTTP_SERVER_ERROR')) {
-    define('HTTP_SERVER_ERROR', 500);
-}
+// HTTP STATUS CODES — migrated to HttpStatusType enum
 
 // =============================================================================
 // LOGGING PREFIX
@@ -221,31 +130,9 @@ if (!defined('SNAPSHOT_WORKER_POOL_DEFAULT')) {
 
 // CRON_SNAPSHOT_* constants removed — use HookType::CronSnapshot*->value instead.
 
-// =============================================================================
-// SNAPSHOT ERROR CODES
-// =============================================================================
+// SNAPSHOT ERROR CODES — migrated to SnapshotErrorType enum
 
-if (!defined('ERR_SNAPSHOT_LOCK_EXISTS')) {
-    define('ERR_SNAPSHOT_LOCK_EXISTS', 'SNAPSHOT_LOCK_EXISTS');
-}
-if (!defined('ERR_SNAPSHOT_NOT_FOUND')) {
-    define('ERR_SNAPSHOT_NOT_FOUND', 'SNAPSHOT_NOT_FOUND');
-}
-if (!defined('ERR_SNAPSHOT_CORRUPT')) {
-    define('ERR_SNAPSHOT_CORRUPT', 'SNAPSHOT_CORRUPT');
-}
-if (!defined('ERR_SNAPSHOT_TOO_LARGE')) {
-    define('ERR_SNAPSHOT_TOO_LARGE', 'SNAPSHOT_TOO_LARGE');
-}
-if (!defined('ERR_RESTORE_FAILED')) {
-    define('ERR_RESTORE_FAILED', 'RESTORE_FAILED');
-}
-if (!defined('ERR_RESTORE_NO_CONFIRM')) {
-    define('ERR_RESTORE_NO_CONFIRM', 'RESTORE_NO_CONFIRM');
-}
-if (!defined('ERR_PROVIDER_NOT_AVAILABLE')) {
-    define('ERR_PROVIDER_NOT_AVAILABLE', 'PROVIDER_NOT_AVAILABLE');
-}
+// ENDPOINT_ERROR_LOGS, ENDPOINT_ERROR_SESSIONS — migrated to EndpointType enum
 
 // WordPress options key for snapshot settings
 if (!defined('OPTION_SNAPSHOT_SETTINGS')) {
@@ -260,32 +147,6 @@ if (!defined('SNAPSHOT_STUCK_HOURS')) {
     define('SNAPSHOT_STUCK_HOURS', 24);
 }
 
-if (!defined('ERR_INCREMENTAL_NO_PARENT')) {
-    define('ERR_INCREMENTAL_NO_PARENT', 'INCREMENTAL_NO_PARENT');
-}
-
-// =============================================================================
-// SNAPSHOT ZIP EXPORT ERROR CODES
-// =============================================================================
-
-if (!defined('ERR_EXPORT_NOT_FOUND')) {
-    define('ERR_EXPORT_NOT_FOUND', 'EXPORT_NOT_FOUND');
-}
-if (!defined('ERR_EXPORT_BUILD_FAILED')) {
-    define('ERR_EXPORT_BUILD_FAILED', 'EXPORT_BUILD_FAILED');
-}
-if (!defined('ERR_EXPORT_TOKEN_INVALID')) {
-    define('ERR_EXPORT_TOKEN_INVALID', 'EXPORT_TOKEN_INVALID');
-}
-
-// =============================================================================
-// PHP LOG RETRIEVAL ENDPOINT
-// =============================================================================
-
-if (!defined('ENDPOINT_ERROR_LOGS')) {
-    define('ENDPOINT_ERROR_LOGS', 'error-logs');
-}
-
 if (!defined('OPTION_LOG_RETRIEVAL')) {
     define('OPTION_LOG_RETRIEVAL', 'riseup_log_retrieval_settings');
 }
@@ -294,6 +155,21 @@ if (!defined('LOG_RETRIEVAL_MAX_LINES')) {
     define('LOG_RETRIEVAL_MAX_LINES', 500);
 }
 
-if (!defined('ENDPOINT_ERROR_SESSIONS')) {
-    define('ENDPOINT_ERROR_SESSIONS', 'error-sessions');
+// =============================================================================
+// PAGINATION DEFAULTS
+// =============================================================================
+
+if (!defined('DEFAULT_LIMIT')) {
+    define('DEFAULT_LIMIT', 50);
+}
+if (!defined('MAX_LIMIT')) {
+    define('MAX_LIMIT', 500);
+}
+
+// =============================================================================
+// IGNORE FILE
+// =============================================================================
+
+if (!defined('IGNORE_FILENAME')) {
+    define('IGNORE_FILENAME', '.uploadignore');
 }

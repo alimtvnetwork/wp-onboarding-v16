@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 
@@ -53,7 +54,7 @@ trait NativeSnapshotCreateTrait {
         }
         if ($this->isLocked()) {
             $this->log(LogLevelType::Warn->value, 'Snapshot already in progress (locked)');
-            return array('success' => false, 'error' => 'Another snapshot operation is in progress', 'code' => ERR_SNAPSHOT_LOCK_EXISTS);
+            return array('success' => false, 'error' => 'Another snapshot operation is in progress', 'code' => SnapshotErrorType::LockExists->value);
         }
         return null;
     }

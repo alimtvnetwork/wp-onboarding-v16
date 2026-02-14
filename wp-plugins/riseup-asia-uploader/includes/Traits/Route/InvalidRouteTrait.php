@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\HttpStatusType;
+
 trait InvalidRouteTrait
 {
     public function handleInvalidRoute(WP_REST_Request $request): WP_REST_Response {
@@ -21,7 +23,7 @@ trait InvalidRouteTrait
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
         $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
 
-        return RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HTTP_NOT_FOUND)
+        return RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HttpStatusType::NotFound->value)
             ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
             ->setErrors($trace)
             ->toResponse();

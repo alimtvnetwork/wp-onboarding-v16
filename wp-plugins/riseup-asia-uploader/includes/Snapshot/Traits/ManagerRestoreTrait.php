@@ -11,6 +11,7 @@
 require_once __DIR__ . '/ManagerRestoreValidationTrait.php';
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotErrorType;
 
 trait ManagerRestoreTrait {
 
@@ -48,17 +49,17 @@ trait ManagerRestoreTrait {
     /** Validate all pre-conditions for a restore operation. */
     private function guardRestorePreConditions(int $snapshot_id, array $options) {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
-            return array('success' => false, 'error' => 'Restore requires explicit confirmation (confirm=true)', 'code' => ERR_RESTORE_NO_CONFIRM);
+            return array('success' => false, 'error' => 'Restore requires explicit confirmation (confirm=true)', 'code' => SnapshotErrorType::RestoreNoConfirm->value);
         }
 
         $provider = $this->getProvider();
         if (!$provider) {
-            return array('success' => false, 'error' => 'No snapshot provider available', 'code' => ERR_PROVIDER_NOT_AVAILABLE);
+            return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $snapshot = $provider->getSnapshot($snapshot_id);
         if (!$snapshot) {
-            return array('success' => false, 'error' => 'Snapshot not found', 'code' => ERR_SNAPSHOT_NOT_FOUND);
+            return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
 
         return $this->validateIncrementalParent($snapshot, $snapshot_id);

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\ResponseMessageType;
 
 trait AdminErrorAjaxTrait {
 
@@ -22,7 +23,7 @@ trait AdminErrorAjaxTrait {
     public function ajaxDismissErrorFlash() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
+            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
         $db = RiseupDatabase::getInstance();
@@ -44,7 +45,7 @@ trait AdminErrorAjaxTrait {
     public function ajaxClearErrorSessions() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
+            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
         $db = RiseupDatabase::getInstance();
@@ -84,7 +85,7 @@ trait AdminErrorAjaxTrait {
     public function ajaxReadLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
+            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';
@@ -137,7 +138,7 @@ trait AdminErrorAjaxTrait {
     public function ajaxClearLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
-            wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
+            wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
         $type = isset($_POST['file_type']) ? sanitize_text_field($_POST['file_type']) : '';

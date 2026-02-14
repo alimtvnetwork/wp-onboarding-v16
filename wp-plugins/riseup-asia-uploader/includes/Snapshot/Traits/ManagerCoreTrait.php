@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
 
 trait ManagerCoreTrait {
@@ -25,7 +26,7 @@ trait ManagerCoreTrait {
     public function createSnapshot($options = array()) {
         $provider = $this->getProvider();
         if (!$provider) {
-            return array('success' => false, 'error' => 'No snapshot provider available', 'code' => ERR_PROVIDER_NOT_AVAILABLE);
+            return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot', array(

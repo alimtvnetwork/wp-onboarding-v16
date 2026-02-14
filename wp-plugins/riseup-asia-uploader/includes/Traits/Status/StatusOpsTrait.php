@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpStatusType;
 
 trait StatusOpsTrait {
 
@@ -27,7 +28,7 @@ trait StatusOpsTrait {
 
         $spec['servers'][0]['variables']['baseUrl']['default'] = get_site_url();
 
-        return new WP_REST_Response($spec, HTTP_OK);
+        return new WP_REST_Response($spec, HttpStatusType::Ok->value);
     }
 
     /**
@@ -47,7 +48,7 @@ trait StatusOpsTrait {
     private function buildSpecError(string $message, string $path): WP_REST_Response {
         $this->fileLogger->error($message, array('path' => $path));
 
-        return new WP_REST_Response(array('success' => false, 'error' => $message), HTTP_NOT_FOUND);
+        return new WP_REST_Response(array('success' => false, 'error' => $message), HttpStatusType::NotFound->value);
     }
 
     /** Read and parse the spec JSON file. */
@@ -55,13 +56,13 @@ trait StatusOpsTrait {
         $spec_content = file_get_contents($spec_file);
         if ($spec_content === false) {
             $this->fileLogger->error('Failed to read OpenAPI spec file');
-            return new WP_REST_Response(array('success' => false, 'error' => 'Failed to read OpenAPI specification'), HTTP_SERVER_ERROR);
+            return new WP_REST_Response(array('success' => false, 'error' => 'Failed to read OpenAPI specification'), HttpStatusType::ServerError->value);
         }
 
         $spec = json_decode($spec_content, true);
         if ($spec === null) {
             $this->fileLogger->error('Invalid JSON in OpenAPI spec file');
-            return new WP_REST_Response(array('success' => false, 'error' => 'Invalid OpenAPI specification format'), HTTP_SERVER_ERROR);
+            return new WP_REST_Response(array('success' => false, 'error' => 'Invalid OpenAPI specification format'), HttpStatusType::ServerError->value);
         }
 
         return $spec;

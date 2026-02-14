@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\StatusType;
 
 trait SnapshotImportStreamTrait {
@@ -42,7 +43,7 @@ trait SnapshotImportStreamTrait {
 
         if ($exportId <= 0 || empty($token)) {
             return new WP_REST_Response(array(
-                'success' => false, 'error' => 'Missing id or token parameter', 'code' => ERR_EXPORT_TOKEN_INVALID,
+                'success' => false, 'error' => 'Missing id or token parameter', 'code' => SnapshotErrorType::ExportTokenInvalid->value,
             ), 400);
         }
 
@@ -51,7 +52,7 @@ trait SnapshotImportStreamTrait {
 
         if (!$export) {
             return new WP_REST_Response(array(
-                'success' => false, 'error' => 'Invalid or expired download token', 'code' => ERR_EXPORT_TOKEN_INVALID,
+                'success' => false, 'error' => 'Invalid or expired download token', 'code' => SnapshotErrorType::ExportTokenInvalid->value,
             ), 403);
         }
 

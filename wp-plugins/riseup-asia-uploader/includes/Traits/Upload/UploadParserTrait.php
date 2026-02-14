@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\UploadSourceType;
 
 trait UploadParserTrait {
@@ -44,13 +46,13 @@ trait UploadParserTrait {
 
         if ($upload['error'] !== UPLOAD_ERR_OK) {
             $this->fileLogger->error('Multipart upload error', array('code' => $upload['error']));
-            return $this->errorResponse('File upload failed (error code: ' . $upload['error'] . ')', HTTP_BAD_REQUEST);
+            return $this->errorResponse('File upload failed (error code: ' . $upload['error'] . ')', HttpStatusType::BadRequest->value);
         }
 
         $zip_content = file_get_contents($upload['tmp_name']);
         if ($zip_content === false) {
             $this->fileLogger->error('Failed to read uploaded file');
-            return $this->errorResponse('Failed to read uploaded file', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Failed to read uploaded file', HttpStatusType::ServerError->value);
         }
 
         $body_params = $request->get_body_params();
@@ -68,14 +70,14 @@ trait UploadParserTrait {
 
         if (empty($data['plugin_zip'])) {
             $this->fileLogger->warn('Upload failed: plugin_zip required');
-            return $this->errorResponse(MSG_INVALID_REQUEST . ': plugin_zip is required (send as multipart file or base64 JSON)', HTTP_BAD_REQUEST);
+            return $this->errorResponse(ResponseMessageType::InvalidRequest->value . ': plugin_zip is required (send as multipart file or base64 JSON)', HttpStatusType::BadRequest->value);
         }
 
         $this->fileLogger->info('Processing base64 JSON upload');
         $zip_content = base64_decode($data['plugin_zip']);
         if ($zip_content === false) {
             $this->fileLogger->error('Invalid base64 data');
-            return $this->errorResponse('Invalid base64 data', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Invalid base64 data', HttpStatusType::BadRequest->value);
         }
 
         return $this->buildUploadParams($zip_content, $data);

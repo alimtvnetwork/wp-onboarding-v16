@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
 
 trait PluginLifecycleHelpersTrait {
 
@@ -24,13 +26,13 @@ trait PluginLifecycleHelpersTrait {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
 
         try {
             return $this->buildPluginExistsResponse($slug);
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to check plugin existence: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to check plugin existence: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -68,7 +70,7 @@ trait PluginLifecycleHelpersTrait {
 
             return null;
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to load WordPress plugin functions: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to load WordPress plugin functions: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -83,19 +85,19 @@ trait PluginLifecycleHelpersTrait {
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
 
         if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
 
         try {
             $plugin_file = $this->findPluginFile($slug);
 
             if (!$plugin_file) {
-                return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+                return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
 
             return array('slug' => $slug, 'plugin_file' => $plugin_file);
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to locate plugin: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to locate plugin: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 

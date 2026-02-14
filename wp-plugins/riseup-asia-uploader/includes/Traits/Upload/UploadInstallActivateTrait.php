@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
 
 trait UploadInstallActivateTrait
 {
@@ -27,7 +29,7 @@ trait UploadInstallActivateTrait
 
         if (!$plugin_file) {
             $this->logger->logUploadFailed($slug, 'Could not find plugin file after extraction');
-            return $this->errorResponse('Could not find plugin file after extraction', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Could not find plugin file after extraction', HttpStatusType::ServerError->value);
         }
 
         return $plugin_file;
@@ -65,8 +67,8 @@ trait UploadInstallActivateTrait
 
     /** Build response for failed activation after upload. */
     private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
-        $this->logger->logUploadFailed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
-        return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
+        $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $error_msg);
+        return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::Upload->value)
             ->setSingleResult(array(
                 'plugin_slug' => $slug, 'is_update' => $is_update,

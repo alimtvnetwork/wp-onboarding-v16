@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 
@@ -37,13 +38,13 @@ trait ExporterBuildTrait {
 
         $exportsDir = $this->ensureExportsDir();
         if (!$exportsDir) {
-            return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => ERR_EXPORT_BUILD_FAILED);
+            return array('success' => false, 'error' => 'Failed to create exports directory', 'code' => SnapshotErrorType::ExportBuildFailed->value);
         }
 
         $zipMeta = $this->prepareZipPaths($exportsDir, $snapshot);
         $pdo = $this->db->getPdo();
         if (!$pdo) {
-            return array('success' => false, 'error' => 'Database unavailable', 'code' => ERR_EXPORT_BUILD_FAILED);
+            return array('success' => false, 'error' => 'Database unavailable', 'code' => SnapshotErrorType::ExportBuildFailed->value);
         }
 
         $this->insertBuildingRecord($pdo, $snapshotId, $zipMeta['filename'], $zipMeta['path']);
@@ -84,7 +85,7 @@ trait ExporterBuildTrait {
             $this->log(LogLevelType::Error->value, 'ZIP export build failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             $this->cleanupFailedExport($pdo, $snapshotId, $zipMeta['path']);
 
-            return array('success' => false, 'error' => 'ZIP build failed: ' . $e->getMessage(), 'code' => ERR_EXPORT_BUILD_FAILED);
+            return array('success' => false, 'error' => 'ZIP build failed: ' . $e->getMessage(), 'code' => SnapshotErrorType::ExportBuildFailed->value);
         }
     }
 
@@ -114,7 +115,7 @@ trait ExporterBuildTrait {
         if (empty($files)) {
             $this->deleteExportRecord($pdo->lastInsertId() ?: $snapshotId);
 
-            return array('success' => false, 'error' => 'No snapshot files found to export', 'code' => ERR_EXPORT_BUILD_FAILED);
+            return array('success' => false, 'error' => 'No snapshot files found to export', 'code' => SnapshotErrorType::ExportBuildFailed->value);
         }
 
         $incrementalData = $this->gatherIncrementalData($snapshotId, $snapshot, $snapshotDir);
