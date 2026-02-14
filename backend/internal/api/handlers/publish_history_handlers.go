@@ -8,12 +8,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // ListPublishHistory returns paginated publish history
 func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PublishHistoryService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Publish history service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Publish history service not available")
 		return
 	}
 
@@ -36,7 +37,7 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 
 	entries, total, err := Services.PublishHistoryService.List(limit, offset, filters)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E8001", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E8001", err.Error())
 		return
 	}
 
@@ -51,19 +52,19 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 // GetPublishHistoryByID returns a single publish history entry
 func GetPublishHistoryByID(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PublishHistoryService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Publish history service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Publish history service not available")
 		return
 	}
 
 	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid ID")
 		return
 	}
 
 	entry, err := Services.PublishHistoryService.GetByID(id)
 	if err != nil {
-		respondError(w, http.StatusNotFound, "E8002", err.Error())
+		respondError(w, wordpress.HttpStatusNotFound, "E8002", err.Error())
 		return
 	}
 	respondSuccess(w, entry)
@@ -72,13 +73,13 @@ func GetPublishHistoryByID(w http.ResponseWriter, r *http.Request) {
 // GetPublishHistoryStats returns aggregate statistics
 func GetPublishHistoryStats(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PublishHistoryService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Publish history service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Publish history service not available")
 		return
 	}
 
 	stats, err := Services.PublishHistoryService.GetStats()
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E8003", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E8003", err.Error())
 		return
 	}
 	respondSuccess(w, stats)
@@ -87,18 +88,18 @@ func GetPublishHistoryStats(w http.ResponseWriter, r *http.Request) {
 // DeletePublishHistoryEntry removes a single entry
 func DeletePublishHistoryEntry(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PublishHistoryService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Publish history service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Publish history service not available")
 		return
 	}
 
 	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid ID")
 		return
 	}
 
 	if err := Services.PublishHistoryService.Delete(id); err != nil {
-		respondError(w, http.StatusInternalServerError, "E8004", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E8004", err.Error())
 		return
 	}
 	respondSuccess(w, ActionResponse{Deleted: true})
@@ -107,7 +108,7 @@ func DeletePublishHistoryEntry(w http.ResponseWriter, r *http.Request) {
 // ClearPublishHistory removes all entries
 func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PublishHistoryService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Publish history service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Publish history service not available")
 		return
 	}
 
@@ -117,13 +118,13 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.NewDecoder(r.Body).Decode(&input)
 	if !input.Confirm {
-		respondError(w, http.StatusBadRequest, "E1002", "Confirmation required")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Confirmation required")
 		return
 	}
 
 	count, err := Services.PublishHistoryService.Clear()
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E8005", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E8005", err.Error())
 		return
 	}
 	respondSuccess(w, ActionResponse{Cleared: true, Count: int(count)})

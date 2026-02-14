@@ -5,6 +5,8 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // PublishInput represents the request body for publishing
@@ -41,7 +43,7 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.PublishService.Publish(r.Context(), pluginID, siteID, input)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E5006", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E5006", err.Error())
 		return
 	}
 	respondSuccess(w, result)
@@ -78,7 +80,7 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.BackupService.Restore(r.Context(), backupID); err != nil {
-		respondError(w, http.StatusInternalServerError, "E6002", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E6002", err.Error())
 		return
 	}
 	respondSuccess(w, ActionResponse{Restored: true})
@@ -132,7 +134,7 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 
 	versions, err := VersionService.GetVersions(r.Context(), pluginID, siteID, limit)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E8001", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E8001", err.Error())
 		return
 	}
 	respondSuccess(w, versions)

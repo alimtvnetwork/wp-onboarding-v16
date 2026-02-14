@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // E2EServiceInterface defines E2E test service methods
@@ -40,7 +41,7 @@ func GetE2ECases(w http.ResponseWriter, r *http.Request) {
 	suiteID := vars["id"]
 	cases, err := E2EService.GetCases(r.Context(), suiteID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E7002", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E7002", err.Error())
 		return
 	}
 	respondSuccess(w, cases)
@@ -59,7 +60,7 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 
 	run, err := E2EService.StartRun(r.Context(), opts)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E7003", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E7003", err.Error())
 		return
 	}
 	respondCreated(w, run)
@@ -81,7 +82,7 @@ func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
 
 	runs, err := E2EService.ListRuns(r.Context(), limit)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E7001", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E7001", err.Error())
 		return
 	}
 	respondSuccess(w, runs)
@@ -97,7 +98,7 @@ func GetE2ERun(w http.ResponseWriter, r *http.Request) {
 
 	run, err := E2EService.GetRun(r.Context(), runID)
 	if err != nil {
-		respondError(w, http.StatusNotFound, "E7001", err.Error())
+		respondError(w, wordpress.HttpStatusNotFound, "E7001", err.Error())
 		return
 	}
 	respondSuccess(w, run)
@@ -112,7 +113,7 @@ func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
 	runID := vars["id"]
 
 	if err := E2EService.AbortRun(r.Context(), runID); err != nil {
-		respondError(w, http.StatusBadRequest, "E7003", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E7003", err.Error())
 		return
 	}
 	respondSuccess(w, ActionResponse{Aborted: true})
@@ -127,7 +128,7 @@ func DeleteE2ERun(w http.ResponseWriter, r *http.Request) {
 	runID := vars["id"]
 
 	if err := E2EService.DeleteRun(r.Context(), runID); err != nil {
-		respondError(w, http.StatusBadRequest, "E7001", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E7001", err.Error())
 		return
 	}
 	respondDeleted(w)

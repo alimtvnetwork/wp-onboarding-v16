@@ -5,6 +5,8 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // GetPlugins returns all registered plugins
@@ -27,7 +29,7 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 
 	plugin, err := Services.PluginService.Create(r.Context(), input)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E3002", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E3002", err.Error())
 		return
 	}
 	respondCreated(w, plugin)
@@ -58,7 +60,7 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 
 	plugin, err := Services.PluginService.Update(r.Context(), id, input)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E3004", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E3004", err.Error())
 		return
 	}
 	respondSuccess(w, plugin)
@@ -96,7 +98,7 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 
 	mapping, err := Services.PluginService.CreateMapping(r.Context(), id, input)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E3007", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E3007", err.Error())
 		return
 	}
 	respondCreated(w, mapping)
@@ -129,7 +131,7 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.PluginService.UpdateMappingsForPlugin(r.Context(), id, input.SiteIDs, input.RemoteSlug); err != nil {
-		respondError(w, http.StatusBadRequest, "E3009", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E3009", err.Error())
 		return
 	}
 
@@ -176,7 +178,7 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, pluginIDs); err != nil {
-		respondError(w, http.StatusBadRequest, "E3011", err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E3011", err.Error())
 		return
 	}
 
@@ -215,13 +217,13 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.Path == "" {
-		respondError(w, http.StatusBadRequest, "E1002", "Path is required")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Path is required")
 		return
 	}
 
 	result, err := Services.PluginService.ScanDirectory(r.Context(), input.Path)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E6003", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E6003", err.Error())
 		return
 	}
 
@@ -258,7 +260,7 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(input.Paths) == 0 {
-		respondError(w, http.StatusBadRequest, "E1002", "At least one path is required")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "At least one path is required")
 		return
 	}
 
@@ -314,7 +316,7 @@ func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 
 	changes, err := Services.SyncService.GetFileChanges(r.Context(), id, siteID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E4001", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E4001", err.Error())
 		return
 	}
 	respondSuccess(w, changes)

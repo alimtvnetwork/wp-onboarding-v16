@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/ziputil"
 )
 
@@ -40,7 +41,7 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E4001", "Failed to read log file: "+err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E4001", "Failed to read log file: "+err.Error())
 		return
 	}
 
@@ -56,7 +57,7 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 
 // GetError returns a specific error by ID
 func GetError(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	respondError(w, wordpress.HttpStatusNotImplemented, "E9004", "Not implemented")
 }
 
 // ClearErrors removes all error logs
@@ -108,7 +109,7 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 
 	content, err := os.ReadFile(logPath)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E4001", "Failed to read log file: "+err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E4001", "Failed to read log file: "+err.Error())
 		return
 	}
 
@@ -148,16 +149,16 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			respondError(w, http.StatusNotFound, "E9001", "Log file not found: "+filename)
+			respondError(w, wordpress.HttpStatusNotFound, "E9001", "Log file not found: "+filename)
 			return
 		}
-		respondError(w, http.StatusInternalServerError, "E9002", "Failed to read log file: "+err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to read log file: "+err.Error())
 		return
 	}
 
 	content, err := os.ReadFile(path)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E9002", "Failed to read log file: "+err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to read log file: "+err.Error())
 		return
 	}
 
@@ -192,7 +193,7 @@ func DownloadErrorBundle(w http.ResponseWriter, r *http.Request) {
 	errorExists := fileExists(errorFile)
 
 	if !logExists && !errorExists {
-		respondError(w, http.StatusNotFound, "E9001", "No error log files found")
+		respondError(w, wordpress.HttpStatusNotFound, "E9001", "No error log files found")
 		return
 	}
 
@@ -312,5 +313,5 @@ func GetSettings(w http.ResponseWriter, r *http.Request) {
 
 // UpdateSettings updates application settings
 func UpdateSettings(w http.ResponseWriter, r *http.Request) {
-	respondError(w, http.StatusNotImplemented, "E9004", "Not implemented")
+	respondError(w, wordpress.HttpStatusNotImplemented, "E9004", "Not implemented")
 }

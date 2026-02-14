@@ -7,6 +7,8 @@ package handlers
 import (
 	"context"
 	"net/http"
+
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // --- Generic Handler Factories ---
@@ -31,7 +33,7 @@ func handleActionByID(
 		}
 		result, err := fn(r.Context(), id)
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, errCode, err.Error())
+			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
 			return
 		}
 		respondSuccess(w, result)
@@ -57,7 +59,7 @@ func handleDeleteByID(
 			return
 		}
 		if err := fn(r.Context(), id); err != nil {
-			respondError(w, http.StatusBadRequest, errCode, err.Error())
+			respondError(w, wordpress.HttpStatusBadRequest, errCode, err.Error())
 			return
 		}
 		respondDeleted(w)
@@ -78,7 +80,7 @@ func handleListNilSafe(
 		}
 		result, err := fn(r.Context())
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, errCode, err.Error())
+			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
 			return
 		}
 		respondSuccess(w, result)
@@ -94,17 +96,17 @@ func handleSiteActionByID(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if Services == nil || Services.SiteService == nil {
-			respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 			return
 		}
 		siteID, err := getIDParam(r, "id")
 		if err != nil {
-			respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+			respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 			return
 		}
 		result, err := fn(r.Context(), siteID)
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, errCode, err.Error())
+			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
 			return
 		}
 		respondSuccess(w, result)
@@ -119,18 +121,18 @@ func handleSiteActionByIDWithOpts(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if Services == nil || Services.SiteService == nil {
-			respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 			return
 		}
 		siteID, err := getIDParam(r, "id")
 		if err != nil {
-			respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+			respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 			return
 		}
 		opts := decodeOptionalOpts(r)
 		result, err := fn(r.Context(), siteID, opts)
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, errCode, err.Error())
+			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
 			return
 		}
 		respondCreated(w, result)
@@ -151,7 +153,7 @@ func handleNoArgs(
 		}
 		result, err := fn(r.Context())
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, errCode, err.Error())
+			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
 			return
 		}
 		respondSuccess(w, result)
@@ -182,7 +184,7 @@ func handleTwoIDs(
 		}
 		result, err := fn(r.Context(), id1, id2)
 		if err != nil {
-			respondError(w, http.StatusInternalServerError, errCode, err.Error())
+			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
 			return
 		}
 		respondSuccess(w, result)

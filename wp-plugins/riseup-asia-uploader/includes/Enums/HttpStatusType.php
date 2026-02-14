@@ -24,9 +24,11 @@ enum HttpStatusType: int
     case Unauthorized = 401;
     case Forbidden   = 403;
     case NotFound    = 404;
+    case Conflict    = 409;
     case RequestTimeout = 408;
     case TooManyRequests = 429;
     case ServerError = 500;
+    case NotImplemented = 501;
     case BadGateway  = 502;
     case ServiceUnavailable = 503;
     case GatewayTimeout = 504;
