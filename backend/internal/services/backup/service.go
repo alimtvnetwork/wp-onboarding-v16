@@ -84,7 +84,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	if err != nil {
 		s.broadcastLog(mappingID, "error", "create", fmt.Sprintf("Failed to create backup file: %v", err), nil)
 		return nil, apperror.Wrap(err, apperror.ErrBackupCreate, "failed to create backup file").
-			WithContext("path", backupPath)
+			WithPath(backupPath)
 	}
 	file.Close()
 
@@ -209,7 +209,7 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	if err != nil {
 		s.broadcastLog(0, "error", "cleanup", fmt.Sprintf("Cleanup failed: %v", err), nil)
 		return apperror.Wrap(err, apperror.ErrFSRead, "cleanup failed").
-			WithContext("backupDir", s.backupDir)
+			WithBackupDir(s.backupDir)
 	}
 
 	s.log.Info("Backup cleanup complete")
@@ -239,7 +239,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create output directory: %v", err), nil)
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create output directory").
-			WithContext("path", outputPath)
+			WithPath(outputPath)
 	}
 
 	// Create zip file
@@ -247,7 +247,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 	if err != nil {
 		s.broadcastLog(0, "error", "create", fmt.Sprintf("Failed to create zip file: %v", err), nil)
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create zip file").
-			WithContext("path", outputPath)
+			WithPath(outputPath)
 	}
 	defer zipFile.Close()
 
@@ -368,7 +368,7 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 	if err != nil {
 		s.broadcastLog(0, "error", "open", fmt.Sprintf("Failed to open zip: %v", err), nil)
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to open zip").
-			WithContext("path", zipPath)
+			WithPath(zipPath)
 	}
 	defer reader.Close()
 
@@ -376,14 +376,14 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 	if _, err := os.Stat(destDir); err == nil && !overwrite {
 		s.broadcastLog(0, "error", "check", "Destination exists, overwrite not enabled", nil)
 		return nil, apperror.New(apperror.ErrFSWrite, "destination exists, use overwrite=true to replace").
-			WithContext("path", destDir)
+			WithPath(destDir)
 	}
 
 	// Create destination directory
 	if err := os.MkdirAll(destDir, 0755); err != nil {
 		s.broadcastLog(0, "error", "prepare", fmt.Sprintf("Failed to create destination: %v", err), nil)
 		return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create destination").
-			WithContext("path", destDir)
+			WithPath(destDir)
 	}
 
 	var filesCount int
@@ -411,7 +411,7 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
 			s.broadcastLog(0, "error", "mkdir", fmt.Sprintf("Failed to create directory: %v", err), nil)
 			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to create directory").
-				WithContext("path", destPath)
+				WithPath(destPath)
 		}
 
 		// Extract file
@@ -419,8 +419,8 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		if err != nil {
 			s.broadcastLog(0, "error", "extract", fmt.Sprintf("Failed to extract %s: %v", file.Name, err), nil)
 			return nil, apperror.Wrap(err, apperror.ErrFSWrite, "failed to extract file").
-				WithContext("file", file.Name).
-				WithContext("destPath", destPath)
+				WithFile(file.Name).
+				WithDestPath(destPath)
 		}
 
 		filesCount++

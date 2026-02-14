@@ -105,7 +105,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Plugin, error)
 
 	if err == sql.ErrNoRows {
 		return nil, apperror.New(apperror.ErrNotFound, "plugin not found").
-			WithContext("pluginId", id)
+			WithPluginID(id)
 	}
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin")
@@ -176,7 +176,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Plugin
 			return s.GetByID(ctx, existingID)
 		}
 		return nil, apperror.New(apperror.ErrDuplicate, "plugin path already registered").
-			WithContext("path", input.Path)
+			WithPath(input.Path)
 	}
 	if err != sql.ErrNoRows {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to check plugin path uniqueness")

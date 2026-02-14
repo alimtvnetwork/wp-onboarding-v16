@@ -54,7 +54,7 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 		"SELECT Name, Url, Username, PasswordEncrypted FROM Sites WHERE Id = ?", siteID,
 	).Scan(&siteName, &siteURL, &username, &passwordEncrypted)
 	if err != nil {
-		return nil, apperror.Wrap(err, "E4001", "site not found").WithContext("siteId", siteID)
+		return nil, apperror.Wrap(err, "E4001", "site not found").WithSiteID(siteID)
 	}
 
 	check := &models.SiteHealthCheck{
