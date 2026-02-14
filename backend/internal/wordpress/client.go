@@ -261,7 +261,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == HttpStatusNotFound.Int() {
 		c.progress("rest_api_check", "error", "REST API not found - is permalink structure set?", ProgressDetails{"url": c.baseURL})
 		return nil, apperror.New(apperror.ErrWPAPIDisabled, "WordPress REST API not found - ensure permalinks are enabled").
 			WithContext("url", c.baseURL)
@@ -292,7 +292,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 401 {
+	if resp.StatusCode == HttpStatusUnauthorized.Int() {
 		c.progress("auth_check", "error", "Invalid username or application password", ProgressDetails{
 			"hint": "Generate an application password in WordPress: Users → Profile → Application Passwords",
 			"url":  c.baseURL,
@@ -301,13 +301,13 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			WithContext("url", c.baseURL).
 			WithContext("username", c.username)
 	}
-	if resp.StatusCode == 403 {
+	if resp.StatusCode == HttpStatusForbidden.Int() {
 		c.progress("auth_check", "error", "Access forbidden - user lacks permissions", ProgressDetails{"url": c.baseURL})
 		return nil, apperror.New(apperror.ErrWPAuth, "authentication failed: user lacks required permissions").
 			WithContext("url", c.baseURL).
 			WithContext("statusCode", resp.StatusCode)
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		body, _ := io.ReadAll(resp.Body)
 		c.progress("auth_check", "error", fmt.Sprintf("Unexpected response: %d", resp.StatusCode), ProgressDetails{
 			"body": string(body),
@@ -353,7 +353,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 401 || resp.StatusCode == 403 {
+	if resp.StatusCode == HttpStatusUnauthorized.Int() || resp.StatusCode == HttpStatusForbidden.Int() {
 		c.progress("plugin_access_check", "error", "User cannot manage plugins - requires administrator role", ProgressDetails{
 			"userRoles": result.UserRoles,
 			"url":       c.baseURL,
@@ -362,7 +362,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 			WithContext("url", c.baseURL).
 			WithContext("statusCode", resp.StatusCode)
 	}
-	if resp.StatusCode == 200 {
+	if resp.StatusCode == HttpStatusOk.Int() {
 		result.CanManagePlugins = true
 		c.progress("plugin_access_check", "success", "Plugin management access confirmed", ProgressDetails{"url": c.baseURL})
 	} else {
@@ -388,7 +388,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 		// Non-fatal - just report
 	} else {
 		defer resp.Body.Close()
-		if resp.StatusCode == 201 {
+		if resp.StatusCode == HttpStatusCreated.Int() {
 			// Successfully created - now delete it
 			var createdPost struct {
 				ID int `json:"id"`
@@ -405,7 +405,7 @@ func (c *Client) TestConnection() (*ConnectionInfo, error) {
 					"url":        c.baseURL,
 				})
 			}
-		} else if resp.StatusCode == 401 || resp.StatusCode == 403 {
+		} else if resp.StatusCode == HttpStatusUnauthorized.Int() || resp.StatusCode == HttpStatusForbidden.Int() {
 			c.progress("write_test", "warning", "User cannot create posts", ProgressDetails{"url": c.baseURL})
 		} else {
 			c.progress("write_test", "warning", fmt.Sprintf("Write test returned %d", resp.StatusCode), ProgressDetails{"url": c.baseURL})
@@ -425,7 +425,7 @@ func (c *Client) GetPlugins() ([]PluginInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get plugins list",
@@ -455,7 +455,7 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == HttpStatusNotFound.Int() {
 		return nil, &APIError{
 			Operation:    "get plugin (not found)",
 			Method:       "GET",
@@ -467,7 +467,7 @@ func (c *Client) GetPlugin(slug string) (*PluginInfo, error) {
 		}
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get plugin",

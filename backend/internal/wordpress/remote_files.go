@@ -58,7 +58,7 @@ func (c *Client) GetPluginSyncManifest(ctx context.Context, slug string) ([]Remo
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	body := string(bodyBytes)
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		return nil, &APIError{
 			Operation:    "get sync manifest",
 			Method:       "POST",
@@ -105,11 +105,11 @@ func (c *Client) GetPluginFilesViaRiseup(ctx context.Context, slug string) ([]Re
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	body := string(bodyBytes)
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == HttpStatusNotFound.Int() {
 		return nil, fmt.Errorf("plugin not found on remote: %s", slug)
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		return nil, &APIError{
 			Operation:    "get plugin files",
 			Method:       "POST",
@@ -341,11 +341,11 @@ func (c *Client) GetPluginFileContent(ctx context.Context, pluginSlug, filePath 
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
-	if resp.StatusCode == 404 {
+	if resp.StatusCode == HttpStatusNotFound.Int() {
 		return "", fmt.Errorf("file not found on remote: %s", filePath)
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		return "", &APIError{
 			Operation:    "get file content",
 			Method:       "POST",
