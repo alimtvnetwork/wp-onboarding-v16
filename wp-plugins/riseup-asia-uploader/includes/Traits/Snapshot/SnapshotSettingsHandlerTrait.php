@@ -5,6 +5,10 @@
  * @package RiseupAsiaUploader
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 use RiseupAsia\Enums\StatusType;
 
 trait SnapshotSettingsHandlerTrait {

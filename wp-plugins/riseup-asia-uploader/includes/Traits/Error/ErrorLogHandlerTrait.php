@@ -5,6 +5,10 @@
  * @package RiseupAsiaUploader
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 trait ErrorLogHandlerTrait {
 
     /** Handle error-logs endpoint. */

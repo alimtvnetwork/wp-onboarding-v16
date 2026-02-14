@@ -1,7 +1,7 @@
 # Plan: Pending Work — Consolidated Backlog
 
 > **Updated:** 2026-02-14  
-> **Status:** Enum migration complete — remaining items are Go backend + naming audit
+> **Status:** PHP hardening complete — remaining items are Go backend + naming audit
 
 ---
 
@@ -44,6 +44,9 @@ Also completed (in `.lovable/plan/completed/`):
 | J9: SNAPSHOT_SCOPE/FREQ/PROVIDER/STATUS → enums | All callers migrated across 9 files, zero remaining define() callers |
 | define() alias removal | Zero enum-related define() aliases in constants.php |
 | PHP 8.2+ baseline | Both plugins updated to require PHP 8.2 minimum |
+| Boot sequence enum fix | ResponseMessageType, HttpStatusType, SnapshotErrorType added to require_once in main plugin file |
+| ABSPATH guard audit | 13 trait files missing `if (!defined('ABSPATH')) exit;` — all fixed |
+| Cross-language ResponseMessageType | TypeScript `ResponseMessageType` const added to `src/lib/constants.ts` mirroring Go/PHP |
 
 ---
 

@@ -6,6 +6,10 @@
  * @since   2.0.0
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;

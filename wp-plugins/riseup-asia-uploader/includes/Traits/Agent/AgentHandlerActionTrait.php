@@ -6,6 +6,10 @@
  * @since   2.0.0
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 trait AgentHandlerActionTrait {
 
     /** Handle testing agent connection. */

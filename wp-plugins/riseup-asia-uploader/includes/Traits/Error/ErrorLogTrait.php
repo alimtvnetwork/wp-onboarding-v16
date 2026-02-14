@@ -7,6 +7,10 @@
  * @package RiseupAsiaUploader
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 require_once dirname(__FILE__) . '/ErrorLogHandlerTrait.php';
 require_once dirname(__FILE__) . '/ErrorSessionHandlerTrait.php';
 
