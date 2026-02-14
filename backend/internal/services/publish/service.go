@@ -127,21 +127,21 @@ type Stage struct {
 }
 
 // Publish publishes plugin changes to a WordPress site
-func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts interface{}) (*PublishResult, error) {
+func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any) (*PublishResult, error) {
 	startTime := time.Now()
 	
 	// Parse options
 	options, ok := opts.(PublishOptions)
 	if !ok {
 		// Try to convert from map
-		if m, ok := opts.(map[string]interface{}); ok {
+		if m, ok := opts.(map[string]any); ok {
 			options = PublishOptions{
 				Mode:              getString(m, "mode", "full"),
 				CreateBackup:      getBool(m, "createBackup", true),
 				KeepZipFiles:      getBool(m, "keepZipFiles", false),
 				RollbackOnFailure: getBool(m, "rollbackOnFailure", true),
 			}
-			if files, ok := m["files"].([]interface{}); ok {
+			if files, ok := m["files"].([]any); ok {
 				for _, f := range files {
 					if s, ok := f.(string); ok {
 						options.Files = append(options.Files, s)
@@ -209,7 +209,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 	// Create WordPress client
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
-	s.broadcastDetailedLog(pluginID, siteID, "info", "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), map[string]interface{}{
+	s.broadcastDetailedLog(pluginID, siteID, "info", "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), map[string]any{
 		"siteUrl":  siteInfo.URL,
 		"username": siteInfo.Username,
 	})
@@ -219,7 +219,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	if options.CreateBackup {
 		stage := s.runStage("backup", func() error {
 			s.broadcastProgress(pluginID, siteID, "backup", 10, "Creating backup...")
-			s.broadcastDetailedLog(pluginID, siteID, "info", "backup", "Initiating remote plugin backup", map[string]interface{}{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "backup", "Initiating remote plugin backup", map[string]any{
 				"mappingId":  mapping.ID,
 				"remoteSlug": mapping.RemoteSlug,
 			})
@@ -243,7 +243,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		plug := pluginInfo
 		var err error
 		
-		s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Packaging plugin from: %s", plug.Path), map[string]interface{}{
+		s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Packaging plugin from: %s", plug.Path), map[string]any{
 			"pluginPath":      plug.Path,
 			"pluginName":      plug.Name,
 			"mode":            options.Mode,
@@ -252,7 +252,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		
 		if options.Mode == "selected" && len(options.Files) > 0 {
 			fileCount = len(options.Files)
-			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", fileCount), map[string]interface{}{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", fileCount), map[string]any{
 				"selectedFiles": options.Files,
 			})
 			zipPath, err = s.createSelectiveZip(plug.Path, plug.Name, options.Files)
@@ -266,7 +266,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			if info, statErr := os.Stat(zipPath); statErr == nil {
 				// Log ZIP internal structure for debugging
 				zipEntries := s.getZipStructure(zipPath)
-				s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), map[string]interface{}{
+				s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), map[string]any{
 					"zipPath":  zipPath,
 					"zipSize":  info.Size(),
 					"fileCount": fileCount,
@@ -339,7 +339,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 		// ALWAYS keep ZIP on failure - essential for debugging upload issues
 		if publishFailed {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), map[string]interface{}{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), map[string]any{
 				"zipPath": zipPath,
 				"reason":  "publish_failed",
 			})
@@ -348,7 +348,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 
 		// On success: check user preference
 		if options.KeepZipFiles {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), map[string]interface{}{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), map[string]any{
 				"zipPath":      zipPath,
 				"keepZipFiles": true,
 			})
@@ -356,7 +356,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 		}
 
 		// Success + user doesn't want to keep: remove
-		s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), map[string]interface{}{
+		s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), map[string]any{
 			"keepZipFiles": options.KeepZipFiles,
 		})
 		os.Remove(zipPath)
@@ -398,7 +398,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			errorCtx := StageContext{
 				What:   fmt.Sprintf("Upload ZIP to %s", siteInfo.URL),
 				Result: fmt.Sprintf("FAILED: %s", err.Error()),
-				InnerData: map[string]interface{}{
+				InnerData: map[string]any{
 					"remoteSlug": mapping.RemoteSlug,
 					"attempts":   retryResult.Attempts,
 				},
@@ -427,7 +427,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			successCtx := StageContext{
 				What:   fmt.Sprintf("Upload ZIP (%s)", formatBytes(zipSize)),
 				Result: resultMsg,
-				InnerData: map[string]interface{}{
+				InnerData: map[string]any{
 					"remoteSlug": mapping.RemoteSlug,
 					"activated":  alreadyActivated,
 					"durationMs": time.Since(uploadStartTime).Milliseconds(),
@@ -452,7 +452,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	result.Stages = append(result.Stages, stage)
 	
 	// Broadcast stage complete event for frontend tracking
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status, stage.Duration, map[string]interface{}{
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status, stage.Duration, map[string]any{
 		"remoteSlug": mapping.RemoteSlug,
 		"activated":  alreadyActivated,
 	})
@@ -476,7 +476,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 				Why:    "Enable plugin functionality after upload",
 				Where:  siteInfo.URL,
 				Result: "SKIPPED - plugin activated during upload",
-				InnerData: map[string]interface{}{
+				InnerData: map[string]any{
 					"remoteSlug": mapping.RemoteSlug,
 					"reason":     "already_activated_during_upload",
 				},
@@ -492,7 +492,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 				What:  "Activate plugin via Riseup Asia Uploader",
 				Why:   "Enable plugin after successful upload",
 				Where: endpointURL,
-				InnerData: map[string]interface{}{
+				InnerData: map[string]any{
 					"method":     "POST",
 					"remoteSlug": mapping.RemoteSlug,
 				},
@@ -505,18 +505,18 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 					Why:    "Enable plugin after upload",
 					Where:  endpointURL,
 					Result: fmt.Sprintf("FAILED: %s", err.Error()),
-					InnerData: map[string]interface{}{
+					InnerData: map[string]any{
 						"remoteSlug": mapping.RemoteSlug,
 						"durationMs": time.Since(activateStartTime).Milliseconds(),
 					},
 				}
 				if apiErr, ok := err.(*wordpress.APIError); ok {
-					errorCtx.InnerData["request"] = map[string]interface{}{
+					errorCtx.InnerData["request"] = map[string]any{
 						"method":   apiErr.Method,
 						"endpoint": apiErr.Endpoint,
 						"url":      apiErr.URL,
 					}
-					errorCtx.InnerData["response"] = map[string]interface{}{
+					errorCtx.InnerData["response"] = map[string]any{
 						"status": apiErr.StatusCode,
 						"body":   truncateString(apiErr.ResponseBody, 2000),
 					}
@@ -530,7 +530,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 				Why:    "Enable plugin after upload",
 				Where:  endpointURL,
 				Result: "SUCCESS - plugin is now active",
-				InnerData: map[string]interface{}{
+				InnerData: map[string]any{
 					"remoteSlug": mapping.RemoteSlug,
 					"durationMs": time.Since(activateStartTime).Milliseconds(),
 				},
@@ -550,7 +550,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 	result.Stages = append(result.Stages, stage)
 	
 	// Broadcast stage complete event
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status, stage.Duration, map[string]interface{}{
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status, stage.Duration, map[string]any{
 		"remoteSlug": mapping.RemoteSlug,
 		"skipped":    alreadyActivated,
 	})
@@ -666,7 +666,7 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts inte
 			return "info"
 		}
 		return "error"
-	}(), "complete", completionMessage, map[string]interface{}{
+	}(), "complete", completionMessage, map[string]any{
 		"success":      result.Success,
 		"filesUpdated": result.FilesUpdated,
 		"durationMs":   result.Duration,
@@ -1429,14 +1429,14 @@ func (s *Service) getSiteCredentials(ctx context.Context, siteID int64) (*models
 }
 
 // Helper functions for parsing options
-func getString(m map[string]interface{}, key, defaultVal string) string {
+func getString(m map[string]any, key, defaultVal string) string {
 	if v, ok := m[key].(string); ok {
 		return v
 	}
 	return defaultVal
 }
 
-func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
+func getBool(m map[string]any, key string, defaultVal bool) bool {
 	if v, ok := m[key].(bool); ok {
 		return v
 	}
@@ -1446,7 +1446,7 @@ func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
 // Session logging helper methods
 
 // sessionLog writes a log entry to the session file
-func (s *Service) sessionLog(sessionID, level, step, message string, details map[string]interface{}) {
+func (s *Service) sessionLog(sessionID, level, step, message string, details map[string]any) {
 	if s.sessionService == nil || sessionID == "" {
 		return
 	}
@@ -1515,16 +1515,15 @@ func (s *Service) broadcastProgressWithSession(pluginID, siteID int64, sessionID
 	}
 
 	// Broadcast progress event with session ID
-	s.wsHub.BroadcastWithSession(eventType, map[string]interface{}{
-		"pluginId":  pluginID,
-		"siteId":    siteID,
-		"sessionId": sessionID,
-		"stage":     stage,
-		"step":      step,
-		"status":    status,
-		"progress":  progress,
-		"total":     100,
-		"message":   message,
+	ws.BroadcastWithSession(s.wsHub, eventType, ws.PublishStageProgressData{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Stage:    stage,
+		Step:     step,
+		Status:   status,
+		Progress: progress,
+		Total:    100,
+		Message:  message,
 	}, sessionID)
 
 	// Also broadcast detailed log entry for frontend live log display
