@@ -16,7 +16,7 @@ trait IncrementalRegistrationTrait {
 
     /** Register the incremental snapshot in the tracking table. */
     private function registerIncrementalSnapshot($title, $master_dir, $folder_name, $sequence, $tables_changed, $total_new_rows, $incremental_dir) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return false;
         }
@@ -95,7 +95,7 @@ trait IncrementalRegistrationTrait {
 
     /** Find the parent snapshot record by filepath. */
     private function findParentSnapshot(string $master_dir): ?array {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
         }

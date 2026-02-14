@@ -28,7 +28,7 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanFiles($dry_run = false) {
         $result = array('removed' => 0, 'errors' => array());
 
-        $files = $this->db->query_all('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
+        $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_paths = array_map(function ($f) { return $f['filepath']; }, $files);
 
         $scan_dir = RiseupPathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
@@ -81,7 +81,7 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanSqliteFiles($dry_run = false) {
         $result = array('removed' => 0, 'errors' => array());
 
-        $files = $this->db->query_all('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
+        $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_files = array_map(function ($f) { return $f['filename']; }, $files);
 
         $scan_dir = RiseupPathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
@@ -136,7 +136,7 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanDirectories($dry_run = false) {
         $result = array('removed' => 0, 'errors' => array());
 
-        $files = $this->db->query_all('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
+        $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_paths = array_map(function ($f) { return dirname($f['filepath']); }, $files);
         $known_paths = array_unique($known_paths);
 
@@ -193,7 +193,7 @@ trait CleanerOrphanTrait {
         $stuck_hours = defined('SNAPSHOT_STUCK_HOURS') ? SNAPSHOT_STUCK_HOURS : 24;
         $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
 
-        $stuck = $this->db->query_all(
+        $stuck = $this->db->queryAll(
             'SELECT id, filepath, filename, status FROM ' . TableType::Snapshots->value .
             ' WHERE status IN (?, ?, ?) AND created_at < ?',
             array(

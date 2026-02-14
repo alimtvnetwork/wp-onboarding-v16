@@ -137,7 +137,7 @@ trait OrchestratorBackupTrait {
 
     private function resolveMasterDir(array $options, $incremental): ?string {
         if (!empty($options['master_snapshot_id'])) {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if ($pdo) {
                 $stmt = $pdo->prepare("SELECT filepath FROM " . TableType::Snapshots->value . " WHERE id = ?");
                 $stmt->execute(array($options['master_snapshot_id']));

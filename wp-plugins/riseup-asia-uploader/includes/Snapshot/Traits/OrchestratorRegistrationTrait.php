@@ -18,7 +18,7 @@ trait OrchestratorRegistrationTrait {
      * Register the completed snapshot in the snapshots table.
      */
     private function registerSnapshot($title, $scope, $worker_result, $plugin_stats, $snapshot_dir) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return false;
         }

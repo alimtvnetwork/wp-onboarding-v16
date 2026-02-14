@@ -35,7 +35,7 @@ trait CleanerStorageTrait {
         );
 
         try {
-            $db_stats = $this->db->query_single(
+            $db_stats = $this->db->querySingle(
                 'SELECT 
                     COUNT(*) as count,
                     COALESCE(SUM(size), 0) as total_size,

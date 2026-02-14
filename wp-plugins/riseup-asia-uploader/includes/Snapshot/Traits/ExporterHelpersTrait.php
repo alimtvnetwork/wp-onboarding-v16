@@ -24,7 +24,7 @@ trait ExporterHelpersTrait {
      * @return array|null Snapshot record or null.
      */
     private function getFullSnapshot($snapshotId) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
         }
@@ -57,7 +57,7 @@ trait ExporterHelpersTrait {
      * @return array|null Export record or null.
      */
     private function getValidExport($snapshotId) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
         }
@@ -74,7 +74,7 @@ trait ExporterHelpersTrait {
      * @return array|null
      */
     private function getExportById($exportId) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
         }
@@ -90,7 +90,7 @@ trait ExporterHelpersTrait {
      * @param int $exportId Export ID.
      */
     private function deleteExportRecord($exportId) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return;
         }

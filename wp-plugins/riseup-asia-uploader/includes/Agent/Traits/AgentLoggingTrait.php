@@ -14,7 +14,7 @@ trait AgentLoggingTrait {
 
     public function logAction(int $agentId, string $action, ?string $plugin = null, string $status = 'success', ?array $details = null, ?string $errorMsg = null): int|false {
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return false;
             }
@@ -41,7 +41,7 @@ trait AgentLoggingTrait {
 
     public function getActionHistory(int $agentId, int $limit = 50, int $offset = 0): array {
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return array('total' => 0, 'actions' => array());
             }

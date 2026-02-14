@@ -36,7 +36,7 @@ trait PluginLifecycleHelpersTrait {
 
     /** Build the plugin existence check response. */
     private function buildPluginExistsResponse(string $slug): WP_REST_Response {
-        $plugin_file = $this->find_plugin_file($slug);
+         $plugin_file = $this->findPluginFile($slug);
         $exists = (bool) $plugin_file;
         $status = $exists ? (is_plugin_active($plugin_file) ? 'active' : 'inactive') : 'not_installed';
 
@@ -87,7 +87,7 @@ trait PluginLifecycleHelpersTrait {
         }
 
         try {
-            $plugin_file = $this->find_plugin_file($slug);
+            $plugin_file = $this->findPluginFile($slug);
 
             if (!$plugin_file) {
                 return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);

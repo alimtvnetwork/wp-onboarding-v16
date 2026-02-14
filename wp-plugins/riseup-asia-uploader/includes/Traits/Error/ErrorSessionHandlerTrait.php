@@ -12,7 +12,7 @@ trait ErrorSessionHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error sessions endpoint called');
 
-            $pdo = RiseupDatabase::get_instance()->get_pdo();
+            $pdo = RiseupDatabase::getInstance()->getPdo();
             if (!$pdo) {
                 return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HTTP_SERVER_ERROR);
             }

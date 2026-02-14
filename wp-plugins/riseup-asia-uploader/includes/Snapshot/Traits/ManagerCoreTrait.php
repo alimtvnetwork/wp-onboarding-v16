@@ -58,12 +58,12 @@ trait ManagerCoreTrait {
 
     /** List all snapshots. */
     public function listSnapshots($limit = 50, $offset = 0) {
-        $snapshots = $this->db->query_all(
+        $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($limit, $offset)
         );
 
-        $total = $this->db->query_single('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value);
+        $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value);
 
         return array(
             'snapshots' => $snapshots ?: array(),

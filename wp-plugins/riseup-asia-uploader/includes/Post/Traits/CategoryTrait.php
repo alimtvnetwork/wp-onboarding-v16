@@ -37,11 +37,11 @@ trait CategoryTrait {
             if (is_wp_error($result)) {
                 $errorMsg = $result->get_error_message();
                 $this->fileLogger->error('Category creation failed', array('error' => $errorMsg));
-                $this->logger->log_post_action(ActionType::CategoryCreate->value, 0, StatusType::Failed->value, $data, $errorMsg);
+                $this->logger->logPostAction(ActionType::CategoryCreate->value, 0, StatusType::Failed->value, $data, $errorMsg);
                 return array('success' => false, 'error' => $errorMsg);
             }
 
-            $this->logger->log_category_create($result['term_id'], array(
+            $this->logger->logCategoryCreate($result['term_id'], array(
                 'name' => $data['name'], 'slug' => $args['slug'] ?? '',
             ));
 
