@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait DatabaseMigrationsV4V5Trait {
 
     private function migrate_v4_source_machine(int $current): void {
@@ -18,7 +20,7 @@ trait DatabaseMigrationsV4V5Trait {
         }
 
         $this->fileLogger->info('Applying migration v4: source machine tracking');
-        $table = self::TABLE_TRANSACTIONS;
+        $table = TableType::Transactions->value;
 
         try {
             $this->pdo->exec("ALTER TABLE {$table} ADD COLUMN source_machine TEXT");
@@ -38,7 +40,7 @@ trait DatabaseMigrationsV4V5Trait {
 
         $this->fileLogger->info('Applying migration v5: snapshot system tables');
 
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOTS . " (
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::Snapshots->value . " (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sequence INTEGER NOT NULL,
             filename TEXT NOT NULL UNIQUE,
@@ -58,7 +60,7 @@ trait DatabaseMigrationsV4V5Trait {
             metadata_json TEXT
         )");
 
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOT_PROGRESS . " (
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::SnapshotProgress->value . " (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             snapshot_id INTEGER NOT NULL,
             table_name TEXT NOT NULL,
@@ -68,13 +70,13 @@ trait DatabaseMigrationsV4V5Trait {
             started_at TEXT,
             completed_at TEXT,
             error_message TEXT,
-            FOREIGN KEY (snapshot_id) REFERENCES snapshots(id) ON DELETE CASCADE
+            FOREIGN KEY (snapshot_id) REFERENCES " . TableType::Snapshots->value . "(id) ON DELETE CASCADE
         )");
 
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_created ON " . self::TABLE_SNAPSHOTS . "(created_at DESC)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_status ON " . self::TABLE_SNAPSHOTS . "(status)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_provider ON " . self::TABLE_SNAPSHOTS . "(provider)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_progress_snapshot ON " . self::TABLE_SNAPSHOT_PROGRESS . "(snapshot_id)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_created ON " . TableType::Snapshots->value . "(created_at DESC)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_status ON " . TableType::Snapshots->value . "(status)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_provider ON " . TableType::Snapshots->value . "(provider)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_progress_snapshot ON " . TableType::SnapshotProgress->value . "(snapshot_id)");
 
         $this->record_migration(5);
     }

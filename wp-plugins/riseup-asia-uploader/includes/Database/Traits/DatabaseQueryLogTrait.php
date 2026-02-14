@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait DatabaseQueryLogTrait {
 
     /**
@@ -52,7 +54,7 @@ trait DatabaseQueryLogTrait {
     }
 
     private function buildTransactionRecord(string $action, ?string $pluginSlug, ?int $postId, string $userLogin, ?int $userId, string $ipAddress, array $details, string $status, ?string $errorMsg) {
-        return RiseupORM::for_table(self::TABLE_TRANSACTIONS)
+        return RiseupORM::for_table(TableType::Transactions->value)
             ->create()
             ->set('action', $action)
             ->set('plugin_slug', $pluginSlug)
@@ -111,7 +113,7 @@ trait DatabaseQueryLogTrait {
         }
 
         try {
-            $log = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
+            $log = RiseupORM::for_table(TableType::Transactions->value)
                 ->find_one($id);
 
             if ($log && !empty($log['details'])) {

@@ -73,10 +73,19 @@ if (!defined('LEGACY_NAMESPACE')) {
 // =============================================================================
 // DATABASE CONFIGURATION
 // =============================================================================
+use RiseupAsia\Enums\TableType;
 
-if (!defined('TABLE_TRANSACTIONS')) {
-    define('TABLE_TRANSACTIONS', 'transactions');
-}
+// TABLE_* — backward-compat aliases (canonical source: TableType enum)
+if (!defined('TABLE_TRANSACTIONS'))      { define('TABLE_TRANSACTIONS',      TableType::Transactions->value); }
+if (!defined('TABLE_AGENT_SITES'))       { define('TABLE_AGENT_SITES',       TableType::AgentSites->value); }
+if (!defined('TABLE_AGENT_ACTIONS'))     { define('TABLE_AGENT_ACTIONS',     TableType::AgentActions->value); }
+if (!defined('TABLE_SNAPSHOTS'))         { define('TABLE_SNAPSHOTS',         TableType::Snapshots->value); }
+if (!defined('TABLE_SNAPSHOT_PROGRESS')) { define('TABLE_SNAPSHOT_PROGRESS', TableType::SnapshotProgress->value); }
+if (!defined('TABLE_SNAPSHOT_JOBS'))     { define('TABLE_SNAPSHOT_JOBS',     TableType::SnapshotJobs->value); }
+if (!defined('TABLE_FILE_CACHE'))        { define('TABLE_FILE_CACHE',        TableType::FileCache->value); }
+if (!defined('TABLE_SNAPSHOT_SETTINGS')) { define('TABLE_SNAPSHOT_SETTINGS', TableType::SnapshotSettings->value); }
+if (!defined('TABLE_SNAPSHOT_EXPORTS'))  { define('TABLE_SNAPSHOT_EXPORTS',  TableType::SnapshotExports->value); }
+
 if (!defined('DB_WAL_MODE')) {
     define('DB_WAL_MODE', true);
 }
@@ -271,12 +280,7 @@ if (!defined('ACTION_UPDATE_INSTALL'))  { define('ACTION_UPDATE_INSTALL',  Actio
 // AGENT MANAGEMENT CONSTANTS
 // =============================================================================
 
-if (!defined('TABLE_AGENT_SITES')) {
-    define('TABLE_AGENT_SITES', 'agent_sites');
-}
-if (!defined('TABLE_AGENT_ACTIONS')) {
-    define('TABLE_AGENT_ACTIONS', 'agent_actions');
-}
+// TABLE_AGENT_SITES, TABLE_AGENT_ACTIONS — migrated to TableType enum
 
 // Agent action types
 if (!defined('ACTION_AGENT_ADD'))            { define('ACTION_AGENT_ADD',            ActionType::AgentAdd->value); }
@@ -393,13 +397,7 @@ if (!defined('ACTION_SNAPSHOT_IMPORT'))  { define('ACTION_SNAPSHOT_IMPORT',  Act
 
 // Snapshot REST endpoints — migrated to EndpointType enum
 
-// Snapshot table names
-if (!defined('TABLE_SNAPSHOTS')) {
-    define('TABLE_SNAPSHOTS', 'snapshots');
-}
-if (!defined('TABLE_SNAPSHOT_PROGRESS')) {
-    define('TABLE_SNAPSHOT_PROGRESS', 'snapshot_progress');
-}
+// TABLE_SNAPSHOTS, TABLE_SNAPSHOT_PROGRESS — migrated to TableType enum
 
 // Snapshot folders — migrated to PathSubdirType::Snapshots
 
@@ -449,10 +447,7 @@ if (!defined('SNAPSHOT_JOB_STATUS_FAILED')) {
 
 // Snapshot progress REST endpoint — migrated to EndpointType enum
 
-// Snapshot job table
-if (!defined('TABLE_SNAPSHOT_JOBS')) {
-    define('TABLE_SNAPSHOT_JOBS', 'snapshot_jobs');
-}
+// TABLE_SNAPSHOT_JOBS — migrated to TableType enum
 
 // Snapshot cron hooks
 if (!defined('CRON_SNAPSHOT_SCHEDULED')) {
@@ -534,11 +529,7 @@ if (!defined('ACTION_SNAPSHOT_CLEANUP')) { define('ACTION_SNAPSHOT_CLEANUP', Act
 // FILE CACHE CONSTANTS (Phase 41 - Sync System)
 // =============================================================================
 
-if (!defined('TABLE_FILE_CACHE')) {
-    define('TABLE_FILE_CACHE', 'file_cache');
-}
-
-// Sync endpoints — migrated to EndpointType enum
+// TABLE_FILE_CACHE — migrated to TableType enum
 
 if (!defined('SYNC_ACTION_REPLACE')) {
     define('SYNC_ACTION_REPLACE', 'replace');
@@ -549,13 +540,7 @@ if (!defined('SYNC_ACTION_DELETE')) {
 
 if (!defined('ACTION_SYNC_DELETE')) { define('ACTION_SYNC_DELETE', ActionType::SyncDelete->value); }
 
-// =============================================================================
-// SNAPSHOT SETTINGS TABLE
-// =============================================================================
-
-if (!defined('TABLE_SNAPSHOT_SETTINGS')) {
-    define('TABLE_SNAPSHOT_SETTINGS', 'snapshot_settings');
-}
+// TABLE_SNAPSHOT_SETTINGS — migrated to TableType enum
 
 // ENDPOINT_SNAPSHOT_FULL_BACKUP — migrated to EndpointType enum
 
@@ -585,9 +570,7 @@ if (!defined('ACTION_SNAPSHOT_IMPORT_PERTABLE'))  { define('ACTION_SNAPSHOT_IMPO
 // SNAPSHOT ZIP EXPORT SYSTEM (Feature D)
 // =============================================================================
 
-if (!defined('TABLE_SNAPSHOT_EXPORTS')) {
-    define('TABLE_SNAPSHOT_EXPORTS', 'snapshot_exports');
-}
+// TABLE_SNAPSHOT_EXPORTS — migrated to TableType enum
 
 // ENDPOINT_SNAPSHOT_DOWNLOAD / DOWNLOAD_FILE — migrated to EndpointType enum
 

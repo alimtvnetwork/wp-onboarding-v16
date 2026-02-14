@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait DatabaseMigrationsV9V11Trait {
 
     private function migrate_v9_error_sessions(int $current): void {
@@ -51,7 +53,7 @@ trait DatabaseMigrationsV9V11Trait {
         }
 
         $this->fileLogger->info('Applying migration v10: plugin version and upload source columns');
-        $table   = self::TABLE_TRANSACTIONS;
+        $table   = TableType::Transactions->value;
         $columns = array(
             'plugin_version' => 'TEXT',
             'upload_source'  => 'TEXT',
@@ -78,7 +80,7 @@ trait DatabaseMigrationsV9V11Trait {
 
         $this->fileLogger->info('Applying migration v11: snapshot exports table');
 
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOT_EXPORTS . " (
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::SnapshotExports->value . " (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
             snapshot_id     INTEGER NOT NULL,
             zip_filename    TEXT NOT NULL,
@@ -92,8 +94,8 @@ trait DatabaseMigrationsV9V11Trait {
             UNIQUE(snapshot_id)
         )");
 
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_snapshot ON " . self::TABLE_SNAPSHOT_EXPORTS . "(snapshot_id)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_status ON " . self::TABLE_SNAPSHOT_EXPORTS . "(status)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_snapshot ON " . TableType::SnapshotExports->value . "(snapshot_id)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_status ON " . TableType::SnapshotExports->value . "(status)");
 
         $this->record_migration(11);
     }
