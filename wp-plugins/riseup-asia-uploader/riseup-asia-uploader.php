@@ -61,6 +61,9 @@ require_once __DIR__ . '/includes/Enums/RetentionType.php';
 require_once __DIR__ . '/includes/Enums/AgentStatusType.php';
 require_once __DIR__ . '/includes/Enums/TriggerSourceType.php';
 require_once __DIR__ . '/includes/Enums/SyncActionType.php';
+require_once __DIR__ . '/includes/Enums/ResponseMessageType.php';
+require_once __DIR__ . '/includes/Enums/HttpStatusType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotErrorType.php';
 
 // Error checker (uses RiseupAsia\Enums\ErrorType internally)
 require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';
