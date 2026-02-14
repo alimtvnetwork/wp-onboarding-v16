@@ -9,7 +9,7 @@ import (
 
 // CheckSiteHealth performs a health check on a single site
 var CheckSiteHealth = handleSiteActionByID("E4001",
-	func(ctx context.Context, siteID int64) (interface{}, error) {
+	func(ctx context.Context, siteID int64) (any, error) {
 		return Services.SiteHealthService.CheckSite(ctx, siteID)
 	},
 )
@@ -90,5 +90,5 @@ func ClearSiteHealthHistory(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E4005", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"deleted": deleted})
+	respondSuccess(w, ActionResponse{Deleted: true, Count: int(deleted)})
 }

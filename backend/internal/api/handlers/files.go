@@ -57,7 +57,7 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	plugin, ok := pluginData.(interface{ GetPath() string })
 	if !ok {
 		// Try to get path from map
-		if pm, ok := pluginData.(map[string]interface{}); ok {
+		if pm, ok := pluginData.(map[string]any); ok {
 			if p, ok := pm["path"].(string); ok {
 				pluginPath := p
 				filePath := pathutil.MustJoin(pluginPath, req.Path)
@@ -66,9 +66,9 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 					respondError(w, http.StatusNotFound, "E2002", "File not found: "+err.Error())
 					return
 				}
-				respondSuccess(w, map[string]interface{}{
-					"path":    req.Path,
-					"content": content,
+				respondSuccess(w, FileContentResponse{
+					Path:    req.Path,
+					Content: content,
 				})
 				return
 			}
@@ -86,9 +86,9 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"path":    req.Path,
-		"content": content,
+	respondSuccess(w, FileContentResponse{
+		Path:    req.Path,
+		Content: content,
 	})
 }
 

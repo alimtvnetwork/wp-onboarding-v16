@@ -50,7 +50,7 @@ func PublishPlugin(w http.ResponseWriter, r *http.Request) {
 // PreviewPublish returns a preview of files that will be published
 var PreviewPublish = handleTwoIDs(publishService, "Publish service",
 	"id", "plugin ID", "siteId", "site ID", "E5007",
-	func(ctx context.Context, pluginID, siteID int64) (interface{}, error) {
+	func(ctx context.Context, pluginID, siteID int64) (any, error) {
 		return Services.PublishService.PreviewPublish(ctx, pluginID, siteID)
 	},
 )
@@ -61,7 +61,7 @@ var PreviewPublish = handleTwoIDs(publishService, "Publish service",
 
 // GetBackups returns backup history for a plugin
 var GetBackups = handleActionByID(backupService, "Backup service", "id", "plugin ID", "E6001",
-	func(ctx context.Context, pluginID int64) (interface{}, error) {
+	func(ctx context.Context, pluginID int64) (any, error) {
 		return Services.BackupService.List(ctx, pluginID)
 	},
 )
@@ -81,7 +81,7 @@ func RestoreBackup(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E6002", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"restored": true})
+	respondSuccess(w, ActionResponse{Restored: true})
 }
 
 // DeleteBackup removes a backup file
@@ -95,9 +95,9 @@ var DeleteBackup = handleDeleteByID(backupService, "Backup service", "id", "back
 
 // VersionServiceInterface defines version history service methods
 type VersionServiceInterface interface {
-	GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) (interface{}, error)
-	GetVersion(ctx context.Context, versionID int64) (interface{}, error)
-	Rollback(ctx context.Context, versionID int64) (interface{}, error)
+	GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) (any, error)
+	GetVersion(ctx context.Context, versionID int64) (any, error)
+	Rollback(ctx context.Context, versionID int64) (any, error)
 	DeleteVersion(ctx context.Context, versionID int64) error
 }
 
@@ -107,7 +107,7 @@ var VersionService VersionServiceInterface
 // GetPluginVersions returns version history for a plugin
 func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 	if VersionService == nil {
-		respondSuccess(w, []interface{}{})
+		respondSuccess(w, []any{})
 		return
 	}
 
@@ -140,14 +140,14 @@ func GetPluginVersions(w http.ResponseWriter, r *http.Request) {
 
 // GetPluginVersion returns a specific version entry
 var GetPluginVersion = handleActionByID(versionServiceGetter, "Version service", "versionId", "version ID", "E8002",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return VersionService.GetVersion(ctx, id)
 	},
 )
 
 // RollbackPluginVersion restores a plugin to a previous version
 var RollbackPluginVersion = handleActionByID(versionServiceGetter, "Version service", "versionId", "version ID", "E8003",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return VersionService.Rollback(ctx, id)
 	},
 )

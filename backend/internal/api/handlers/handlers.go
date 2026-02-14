@@ -26,18 +26,18 @@ var Services *ServiceRegistry
 
 // Health returns server health status
 func Health(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, map[string]interface{}{
-		"status":    "ok",
-		"timestamp": time.Now().Format(time.RFC3339),
+	respondSuccess(w, HealthResponse{
+		Status:    "ok",
+		Timestamp: time.Now().Format(time.RFC3339),
 	})
 }
 
 // APIIndex returns API metadata for the base /api/v1 endpoint
 func APIIndex(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, map[string]interface{}{
-		"name":    "WP Plugin Publish API",
-		"version": "v1",
-		"health":  "/api/v1/health",
-		"ws":      "/ws",
+	respondSuccess(w, APIIndexResponse{
+		Name:    "WP Plugin Publish API",
+		Version: "v1",
+		Health:  "/api/v1/health",
+		WS:      "/ws",
 	})
 }

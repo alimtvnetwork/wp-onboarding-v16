@@ -30,7 +30,7 @@ type SiteUpdateInput struct {
 
 // GetSites returns all registered WordPress sites
 var GetSites = handleListNilSafe(siteService, "E2001",
-	func(ctx context.Context) (interface{}, error) {
+	func(ctx context.Context) (any, error) {
 		return Services.SiteService.List(ctx)
 	},
 )
@@ -79,7 +79,7 @@ func CreateSite(w http.ResponseWriter, r *http.Request) {
 
 // GetSite returns a specific site by ID
 var GetSite = handleActionByID(siteService, "Site service", "id", "site ID", "E9001",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetByID(ctx, id)
 	},
 )
@@ -122,7 +122,7 @@ var DeleteSite = handleDeleteByID(siteService, "Site service", "id", "site ID", 
 
 // TestSiteConnection tests the WordPress REST API connection
 var TestSiteConnection = handleActionByID(siteService, "Site service", "id", "site ID", "E3001",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.TestConnection(ctx, id)
 	},
 )
@@ -152,7 +152,7 @@ func TestSiteCredentials(w http.ResponseWriter, r *http.Request) {
 
 // GetSiteCredentials returns decrypted credentials for API Explorer
 var GetSiteCredentials = handleActionByID(siteService, "Site service", "id", "site ID", "E2002",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return Services.SiteService.GetCredentials(ctx, id)
 	},
 )
@@ -254,9 +254,7 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"results": results,
-	})
+	respondSuccess(w, BulkBootstrapResponse{Results: results})
 }
 
 // --- Remote Plugin Management ---
@@ -282,14 +280,14 @@ func parseRemotePluginInput(r *http.Request) (int64, string, error) {
 
 // GetRemotePlugins returns all plugins installed on a remote WordPress site
 var GetRemotePlugins = handleSiteActionByID("E3004",
-	func(ctx context.Context, siteID int64) (interface{}, error) {
+	func(ctx context.Context, siteID int64) (any, error) {
 		return Services.SiteService.GetRemotePlugins(ctx, siteID)
 	},
 )
 
 // ForceSyncRemotePlugins clears cache and fetches fresh plugin data
 var ForceSyncRemotePlugins = handleSiteActionByID("E3004",
-	func(ctx context.Context, siteID int64) (interface{}, error) {
+	func(ctx context.Context, siteID int64) (any, error) {
 		return Services.SiteService.ForceSyncRemotePlugins(ctx, siteID)
 	},
 )
@@ -309,7 +307,7 @@ func ClearRemotePluginsCache(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E3005", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"cleared": true, "siteId": id})
+	respondSuccess(w, ActionResponse{Cleared: true, SiteID: id})
 }
 
 // CheckRemotePluginExists performs a lightweight pre-flight check to verify plugin existence
@@ -334,11 +332,11 @@ func CheckRemotePluginExists(w http.ResponseWriter, r *http.Request) {
 		respondErrorWithSession(w, statusCode, "E3010", err.Error(), err)
 		return
 	}
-	respondSuccess(w, map[string]interface{}{
-		"exists":      exists,
-		"status":      status,
-		"plugin_file": pluginFile,
-		"plugin":      pluginSlug,
+	respondSuccess(w, PluginExistsResponse{
+		Exists:     exists,
+		Status:     status,
+		PluginFile: pluginFile,
+		Plugin:     pluginSlug,
 	})
 }
 
@@ -363,7 +361,7 @@ func EnableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		respondErrorWithSession(w, status, "E3007", err.Error(), err)
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"enabled": true, "plugin": pluginSlug})
+	respondSuccess(w, ActionResponse{Enabled: true, Plugin: pluginSlug})
 }
 
 // DisableRemotePlugin deactivates a plugin on a remote WordPress site
@@ -387,7 +385,7 @@ func DisableRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		respondErrorWithSession(w, status, "E3007", err.Error(), err)
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"disabled": true, "plugin": pluginSlug})
+	respondSuccess(w, ActionResponse{Disabled: true, Plugin: pluginSlug})
 }
 
 // DeleteRemotePlugin removes a plugin from a remote WordPress site (POST with JSON body)
@@ -411,7 +409,7 @@ func DeleteRemotePlugin(w http.ResponseWriter, r *http.Request) {
 		respondErrorWithSession(w, status, "E3010", err.Error(), err)
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"deleted": true, "plugin": pluginSlug})
+	respondSuccess(w, ActionResponse{Deleted: true, Plugin: pluginSlug})
 }
 
 // GetRemotePluginFiles returns the file list for a remote plugin
@@ -467,10 +465,10 @@ func GetRemotePluginFileContent(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E3012", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{
-		"content": content,
-		"plugin":  input.Plugin,
-		"path":    input.Path,
+	respondSuccess(w, FileContentResponse{
+		Content: content,
+		Plugin:  input.Plugin,
+		Path:    input.Path,
 	})
 }
 
@@ -480,8 +478,9 @@ func ClearErrorLogHashes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	count := Services.SiteService.ClearErrorLogHashes()
-	respondSuccess(w, map[string]interface{}{
-		"cleared": count,
-		"message": fmt.Sprintf("Cleared %d error deduplication hashes", count),
+	respondSuccess(w, ActionResponse{
+		Cleared: true,
+		Count:   count,
+		Message: fmt.Sprintf("Cleared %d error deduplication hashes", count),
 	})
 }

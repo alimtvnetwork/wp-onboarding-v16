@@ -16,9 +16,9 @@ var RequestSessionStore middleware.SessionStore
 // GetRequestSessions returns paginated request sessions
 func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
-		respondSuccess(w, map[string]interface{}{
-			"sessions": []interface{}{},
-			"total":    0,
+		respondSuccess(w, PaginatedSessions{
+			Sessions: []any{},
+			Total:    0,
 		})
 		return
 	}
@@ -35,11 +35,11 @@ func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"sessions": sessions,
-		"total":    total,
-		"limit":    limit,
-		"offset":   offset,
+	respondSuccess(w, PaginatedSessions{
+		Sessions: sessions,
+		Total:    total,
+		Limit:    limit,
+		Offset:   offset,
 	})
 }
 
@@ -77,7 +77,7 @@ func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{"deleted": true, "id": id})
+	respondSuccess(w, ActionResponse{Deleted: true, ID: id})
 }
 
 // ClearRequestSessions removes all request sessions
@@ -92,15 +92,15 @@ func ClearRequestSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{"cleared": true})
+	respondSuccess(w, ActionResponse{Cleared: true})
 }
 
 // GetRequestSessionsByError returns request sessions that resulted in errors
 func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
-		respondSuccess(w, map[string]interface{}{
-			"sessions": []interface{}{},
-			"total":    0,
+		respondSuccess(w, PaginatedSessions{
+			Sessions: []any{},
+			Total:    0,
 		})
 		return
 	}
@@ -128,9 +128,9 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"sessions": errorSessions,
-		"total":    len(errorSessions),
+	respondSuccess(w, PaginatedSessions{
+		Sessions: errorSessions,
+		Total:    len(errorSessions),
 	})
 }
 

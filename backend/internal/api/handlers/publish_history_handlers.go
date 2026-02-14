@@ -40,11 +40,11 @@ func ListPublishHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"entries": entries,
-		"total":   total,
-		"limit":   limit,
-		"offset":  offset,
+	respondSuccess(w, PaginatedEntries{
+		Entries: entries,
+		Total:   total,
+		Limit:   limit,
+		Offset:  offset,
 	})
 }
 
@@ -101,7 +101,7 @@ func DeletePublishHistoryEntry(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E8004", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"deleted": true})
+	respondSuccess(w, ActionResponse{Deleted: true})
 }
 
 // ClearPublishHistory removes all entries
@@ -126,5 +126,5 @@ func ClearPublishHistory(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E8005", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"cleared": count})
+	respondSuccess(w, ActionResponse{Cleared: true, Count: int(count)})
 }

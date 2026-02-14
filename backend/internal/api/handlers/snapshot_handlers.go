@@ -17,7 +17,7 @@ import (
 
 // GetRemoteSnapshots returns all snapshots from a remote WordPress site
 var GetRemoteSnapshots = handleSiteActionByID("E3020",
-	func(ctx context.Context, siteID int64) (interface{}, error) {
+	func(ctx context.Context, siteID int64) (any, error) {
 		return Services.SiteService.GetRemoteSnapshots(ctx, siteID)
 	},
 )
@@ -51,7 +51,7 @@ func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // CreateRemoteSnapshot triggers a new snapshot on a remote WordPress site
 var CreateRemoteSnapshot = handleSiteActionByIDWithOpts("E3022",
-	func(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+	func(ctx context.Context, siteID int64, opts map[string]any) (any, error) {
 		return Services.SiteService.CreateRemoteSnapshot(ctx, siteID, opts)
 	},
 )
@@ -79,7 +79,7 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E3023", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"deleted": true, "snapshotId": snapshotID})
+	respondSuccess(w, SnapshotDeleteResponse{Deleted: true, SnapshotID: snapshotID})
 }
 
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote WordPress site
@@ -114,7 +114,7 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 // GetRemoteSnapshotSettings fetches snapshot settings from a remote WordPress site
 var GetRemoteSnapshotSettings = handleSiteActionByID("E3025",
-	func(ctx context.Context, siteID int64) (interface{}, error) {
+	func(ctx context.Context, siteID int64) (any, error) {
 		return Services.SiteService.GetRemoteSnapshotSettings(ctx, siteID)
 	},
 )
@@ -132,7 +132,7 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var settings map[string]interface{}
+	var settings map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
 		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
 		return
@@ -148,7 +148,7 @@ func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 
 // GetRemoteSnapshotProviders returns available snapshot providers on a remote WordPress site
 var GetRemoteSnapshotProviders = handleSiteActionByID("E3027",
-	func(ctx context.Context, siteID int64) (interface{}, error) {
+	func(ctx context.Context, siteID int64) (any, error) {
 		return Services.SiteService.GetRemoteSnapshotProviders(ctx, siteID)
 	},
 )
@@ -259,7 +259,7 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 
 // GetRemoteAvailableTables returns the list of database tables available for snapshotting
 var GetRemoteAvailableTables = handleSiteActionByID("E3029",
-	func(ctx context.Context, siteID int64) (interface{}, error) {
+	func(ctx context.Context, siteID int64) (any, error) {
 		return Services.SiteService.GetRemoteAvailableTables(ctx, siteID)
 	},
 )
@@ -272,14 +272,14 @@ func getSnapshotIDParam(r *http.Request) (int64, error) {
 
 // FullBackupRemoteSnapshot triggers end-to-end full backup orchestration on a remote WordPress site
 var FullBackupRemoteSnapshot = handleSiteActionByIDWithOpts("E3030",
-	func(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+	func(ctx context.Context, siteID int64, opts map[string]any) (any, error) {
 		return Services.SiteService.FullBackupRemoteSnapshot(ctx, siteID, opts)
 	},
 )
 
 // IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote WordPress site
 var IncrementalBackupRemoteSnapshot = handleSiteActionByIDWithOpts("E3031",
-	func(ctx context.Context, siteID int64, opts map[string]interface{}) (interface{}, error) {
+	func(ctx context.Context, siteID int64, opts map[string]any) (any, error) {
 		return Services.SiteService.IncrementalBackupRemoteSnapshot(ctx, siteID, opts)
 	},
 )

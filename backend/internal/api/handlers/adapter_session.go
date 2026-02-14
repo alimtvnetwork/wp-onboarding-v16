@@ -9,10 +9,10 @@ import (
 
 // SessionServiceInterface defines session service methods needed by handlers
 type SessionServiceInterface interface {
-	ListSessions(limit int) (interface{}, error)
-	GetSession(sessionID string) (interface{}, error)
+	ListSessions(limit int) (any, error)
+	GetSession(sessionID string) (any, error)
 	GetSessionLogs(sessionID string) (string, error)
-	GetSessionDiagnostics(sessionID string) (interface{}, error)
+	GetSessionDiagnostics(sessionID string) (any, error)
 	DeleteSession(sessionID string) error
 }
 
@@ -25,7 +25,7 @@ type ErrorHistoryServiceInterface interface {
 	Delete(id int64) error
 	Clear() (int64, error)
 	BulkExport(ids []int64) (string, error)
-	GetStats() (map[string]interface{}, error)
+	GetStats() (map[string]any, error)
 }
 
 // SessionServiceAdapter wraps *session.Service to implement SessionServiceInterface
@@ -33,11 +33,11 @@ type SessionServiceAdapter struct {
 	*session.Service
 }
 
-func (a *SessionServiceAdapter) ListSessions(limit int) (interface{}, error) {
+func (a *SessionServiceAdapter) ListSessions(limit int) (any, error) {
 	return a.Service.ListSessions(limit)
 }
 
-func (a *SessionServiceAdapter) GetSession(sessionID string) (interface{}, error) {
+func (a *SessionServiceAdapter) GetSession(sessionID string) (any, error) {
 	return a.Service.GetSession(sessionID)
 }
 
@@ -45,7 +45,7 @@ func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, error)
 	return a.Service.GetSessionLogs(sessionID)
 }
 
-func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (interface{}, error) {
+func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (any, error) {
 	return a.Service.GetSessionDiagnostics(sessionID)
 }
 
@@ -86,6 +86,6 @@ func (a *ErrorHistoryServiceAdapter) BulkExport(ids []int64) (string, error) {
 	return a.Service.BulkExport(ids)
 }
 
-func (a *ErrorHistoryServiceAdapter) GetStats() (map[string]interface{}, error) {
+func (a *ErrorHistoryServiceAdapter) GetStats() (map[string]any, error) {
 	return a.Service.GetStats()
 }

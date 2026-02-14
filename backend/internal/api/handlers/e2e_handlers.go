@@ -11,12 +11,12 @@ import (
 
 // E2EServiceInterface defines E2E test service methods
 type E2EServiceInterface interface {
-	ListSuites(ctx context.Context) (interface{}, error)
-	GetCases(ctx context.Context, suiteID string) (interface{}, error)
-	StartRun(ctx context.Context, opts interface{}) (interface{}, error)
+	ListSuites(ctx context.Context) (any, error)
+	GetCases(ctx context.Context, suiteID string) (any, error)
+	StartRun(ctx context.Context, opts any) (any, error)
 	AbortRun(ctx context.Context, runID string) error
-	ListRuns(ctx context.Context, limit int) (interface{}, error)
-	GetRun(ctx context.Context, runID string) (interface{}, error)
+	ListRuns(ctx context.Context, limit int) (any, error)
+	GetRun(ctx context.Context, runID string) (any, error)
 	DeleteRun(ctx context.Context, runID string) error
 }
 
@@ -25,7 +25,7 @@ var E2EService E2EServiceInterface
 
 // GetE2ESuites returns all test suites
 var GetE2ESuites = handleListNilSafe(e2eServiceGetter, "E7001",
-	func(ctx context.Context) (interface{}, error) {
+	func(ctx context.Context) (any, error) {
 		return E2EService.ListSuites(ctx)
 	},
 )
@@ -33,7 +33,7 @@ var GetE2ESuites = handleListNilSafe(e2eServiceGetter, "E7001",
 // GetE2ECases returns test cases for a suite
 func GetE2ECases(w http.ResponseWriter, r *http.Request) {
 	if E2EService == nil {
-		respondSuccess(w, []interface{}{})
+		respondSuccess(w, []any{})
 		return
 	}
 	vars := mux.Vars(r)
@@ -52,7 +52,7 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts map[string]interface{}
+	var opts map[string]any
 	if !decodeJSON(w, r, &opts) {
 		return
 	}
@@ -68,7 +68,7 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 // GetE2ERuns returns past test runs
 func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
 	if E2EService == nil {
-		respondSuccess(w, []interface{}{})
+		respondSuccess(w, []any{})
 		return
 	}
 
@@ -115,7 +115,7 @@ func AbortE2ERun(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "E7003", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"aborted": true})
+	respondSuccess(w, ActionResponse{Aborted: true})
 }
 
 // DeleteE2ERun removes a test run
