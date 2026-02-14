@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\PathDatabaseType;
 
 trait PathUtilsCoreTrait {
 
@@ -107,21 +109,21 @@ trait PathUtilsCoreTrait {
 
     /** @return string Full path to logs directory. */
     public static function getLogsDir() {
-        return self::join(self::getBaseDir(), LOGS_SUBDIR);
+        return self::join(self::getBaseDir(), PathSubdirType::Logs->value);
     }
 
     /** @return string Full path to snapshots directory. */
     public static function getSnapshotsDir() {
-        return self::join(self::getBaseDir(), SNAPSHOTS_SUBDIR);
+        return self::join(self::getBaseDir(), PathSubdirType::Snapshots->value);
     }
 
     /** @return string Full path to temp directory. */
     public static function getTempDir() {
-        return self::join(self::getBaseDir(), TEMP_SUBDIR);
+        return self::join(self::getBaseDir(), PathSubdirType::Temp->value);
     }
 
     /** @return string Full path to SQLite database file. */
     public static function getDbPath() {
-        return self::join(self::getBaseDir(), DB_FILENAME);
+        return self::join(self::getBaseDir(), PathDatabaseType::Plugin->value);
     }
 }

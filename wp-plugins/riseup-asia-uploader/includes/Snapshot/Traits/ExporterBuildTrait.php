@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PathSubdirType;
 
 require_once __DIR__ . '/ExporterBuildCollectTrait.php';
 
@@ -50,7 +51,7 @@ trait ExporterBuildTrait {
 
     /** Ensure the exports directory exists with security files. */
     private function ensureExportsDir(): ?string {
-        $exportsDir = RiseupPathUtils::getSnapshotsDir() . '/' . SNAPSHOT_EXPORTS_SUBDIR;
+        $exportsDir = RiseupPathUtils::getSnapshotsDir() . PathSubdirType::Exports->value;
         if (!RiseupBooleanHelpers::is_dir_missing($exportsDir)) {
             return $exportsDir;
         }

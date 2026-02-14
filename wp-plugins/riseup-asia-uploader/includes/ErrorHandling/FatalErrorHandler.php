@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PathLogFileType;
 /**
  * Check whether the last PHP error is a fatal REST API error for our namespace.
  *
@@ -71,7 +72,7 @@ function riseup_log_fatal_to_file($error) {
         riseup_error_type_to_string($error['type'])
     );
     $uploads  = wp_upload_dir();
-    $log_file = $uploads['basedir'] . '/riseup-asia-uploader/fatal-errors.log';
+    $log_file = $uploads['basedir'] . '/riseup-asia-uploader' . PathLogFileType::FatalError->value;
     @file_put_contents($log_file, $log_entry, FILE_APPEND | LOCK_EX);
 }
 

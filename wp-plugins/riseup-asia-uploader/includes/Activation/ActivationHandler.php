@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\PathLogFileType;
 /**
  * Activation hook: ensure log directories and files exist on first activation.
  */
@@ -65,7 +67,7 @@ function riseup_activate_resolve_dirs() {
 
     return array(
         'base' => $upload_dir['basedir'] . '/' . UPLOADS_SUBDIR,
-        'logs' => $upload_dir['basedir'] . '/' . UPLOADS_SUBDIR . '/' . LOGS_SUBDIR,
+        'logs' => $upload_dir['basedir'] . '/' . UPLOADS_SUBDIR . PathSubdirType::Logs->value,
     );
 }
 
@@ -93,19 +95,19 @@ function riseup_activate_write_log_files($logs_dir) {
     $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
     $version = defined('PLUGIN_VERSION') ? PLUGIN_VERSION : 'unknown';
 
-    $log_file = $logs_dir . '/' . LOG_FILENAME;
+    $log_file = $logs_dir . PathLogFileType::Log->value;
     @file_put_contents($log_file, sprintf(
         "[%s] [INFO] Plugin activated (activation hook) (riseup-asia-uploader.php:0) {\"version\":\"%s\",\"php\":\"%s\",\"wp\":\"%s\"}\n",
         $timestamp, $version, phpversion(), get_bloginfo('version')
     ), FILE_APPEND | LOCK_EX);
 
-    $error_file = $logs_dir . '/' . ERROR_LOG_FILENAME;
+    $error_file = $logs_dir . PathLogFileType::Error->value;
     @file_put_contents($error_file, sprintf(
         "[%s] [INFO] Plugin activated — error log initialized (v%s)\n",
         $timestamp, $version
     ), FILE_APPEND | LOCK_EX);
 
-    $stacktrace_file = $logs_dir . '/' . STACKTRACE_FILENAME;
+    $stacktrace_file = $logs_dir . PathLogFileType::Stacktrace->value;
     if (RiseupBooleanHelpers::is_file_missing($stacktrace_file)) {
         @file_put_contents($stacktrace_file, sprintf(
             "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
