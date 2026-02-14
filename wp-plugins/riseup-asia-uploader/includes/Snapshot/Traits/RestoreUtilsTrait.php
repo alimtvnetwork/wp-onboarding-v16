@@ -68,7 +68,7 @@ trait RestoreUtilsTrait {
         try {
             $details = $this->buildAuditDetails($snapshot_dir, $tables_restored, $total_rows, $duration);
             $this->insertAuditRecord($pdo, $details);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to log audit for restore', array('error' => $e->getMessage()));
         }
     }

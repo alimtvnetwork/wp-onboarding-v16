@@ -42,7 +42,7 @@ trait PluginExportTrait
                 'slug'       => PLUGIN_SLUG,
                 'version'    => PLUGIN_VERSION,
             ), HTTP_OK);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');
             return $this->errorResponse('Export failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }

@@ -28,7 +28,7 @@ function riseup_asia_activate() {
         riseup_activate_ensure_dirs($dirs['base'], $dirs['logs']);
         riseup_activate_write_log_files($dirs['logs']);
         riseup_activate_ensure_security($dirs['base']);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
     }
 }

@@ -135,7 +135,7 @@ class RiseupSnapshotCleaner {
                 $results['retention'] = $retention;
                 $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $results['errors'][] = 'Retention cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array('error' => $e->getMessage()));
         }
@@ -154,7 +154,7 @@ class RiseupSnapshotCleaner {
             $orphans = $this->cleanupOrphanFiles($dry_run);
             $results['orphans'] = $orphans;
             $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $results['errors'][] = 'Orphan cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array('error' => $e->getMessage()));
         }
@@ -172,7 +172,7 @@ class RiseupSnapshotCleaner {
         try {
             $stuck = $this->cleanupStuckSnapshots($dry_run);
             $results['stuck'] = $stuck;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array('error' => $e->getMessage()));
         }

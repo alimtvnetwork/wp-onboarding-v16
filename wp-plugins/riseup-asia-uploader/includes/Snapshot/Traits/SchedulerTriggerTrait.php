@@ -118,7 +118,7 @@ trait SchedulerTriggerTrait {
                 'message'       => 'Snapshot has been scheduled and will run in the background.',
             );
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->error('[SCHEDULER] Snapshot Now scheduling failed', array(
                 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));

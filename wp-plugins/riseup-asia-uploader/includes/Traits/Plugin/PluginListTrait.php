@@ -32,7 +32,7 @@ trait PluginListTrait
                 ->setRequestedAt('/' . API_FULL_NAMESPACE . ENDPOINT_PLUGINS)
                 ->setResults($plugins)
                 ->toResponse();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'List plugins error');
 
             return $this->errorResponse('Failed to list plugins: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
@@ -139,7 +139,7 @@ trait PluginListTrait
             }
 
             return $this->readAndReturnFile($validation['real_path'], $validation['file_path']);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }

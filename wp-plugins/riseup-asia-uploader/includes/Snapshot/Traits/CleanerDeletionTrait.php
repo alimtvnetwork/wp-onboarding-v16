@@ -130,7 +130,7 @@ trait CleanerDeletionTrait {
             if ($exporter) {
                 $exporter->removeExports((int) $snapshot_id);
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to remove cached ZIP exports during delete', array(
                 'snapshot_id' => $snapshot_id,
                 'error'       => $e->getMessage(),
@@ -159,7 +159,7 @@ trait CleanerDeletionTrait {
             $this->log(LogLevelType::Debug->value, 'Deleted incremental DB records', array(
                 'count' => count($incrementals),
             ));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to cascade-delete incremental records', array(
                 'error' => $e->getMessage(),
             ));

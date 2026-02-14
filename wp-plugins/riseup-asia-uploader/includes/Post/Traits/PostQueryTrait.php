@@ -60,7 +60,7 @@ trait PostQueryTrait {
                 'limit' => $args['posts_per_page'], 'offset' => $args['offset'],
                 'posts' => $posts,
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'List posts exception');
             return array('success' => false, 'error' => $e->getMessage());
         }

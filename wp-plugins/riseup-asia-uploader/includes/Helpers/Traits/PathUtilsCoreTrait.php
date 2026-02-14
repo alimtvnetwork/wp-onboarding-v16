@@ -46,7 +46,7 @@ trait PathUtilsCoreTrait {
         self::$isBootstrapping = true;
         try {
             self::$logger = RiseupFileLogger::getInstance();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
             self::$logger = null;
         }

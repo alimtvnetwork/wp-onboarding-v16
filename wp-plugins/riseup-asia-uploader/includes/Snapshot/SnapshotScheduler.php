@@ -98,7 +98,7 @@ class RiseupSnapshotScheduler {
             require_once dirname(__FILE__) . '/SnapshotFactory.php';
             $worker = RiseupSnapshotFactory::worker($this->logger, $this->db);
             $worker->processWorkerBatch($args);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->error('[SCHEDULER] Worker batch exception', array(
                 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));

@@ -137,7 +137,7 @@ trait LoggerLevelMethodsTrait {
     /**
      * Log an exception.
      *
-     * @param \Throwable $e       Exception to log.
+     * @param Throwable $e       Exception to log.
      * @param string     $context Additional context message.
      * @return bool
      */
