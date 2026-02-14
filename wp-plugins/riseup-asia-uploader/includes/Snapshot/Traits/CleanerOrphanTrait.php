@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait CleanerOrphanTrait {
 
@@ -31,7 +32,7 @@ trait CleanerOrphanTrait {
         }
 
         $db_files = $this->db->query_all(
-            'SELECT filepath, filename FROM ' . TABLE_SNAPSHOTS
+            'SELECT filepath, filename FROM ' . TableType::Snapshots->value
         ) ?: array();
 
         $db_filepaths = array_column($db_files, 'filepath');
@@ -140,7 +141,7 @@ trait CleanerOrphanTrait {
         $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
 
         $stuck = $this->db->query_all(
-            'SELECT id, filepath, filename, status FROM ' . TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, status FROM ' . TableType::Snapshots->value .
             ' WHERE status IN (?, ?, ?) AND created_at < ?',
             array(
                 SNAPSHOT_STATUS_PENDING,
@@ -155,7 +156,7 @@ trait CleanerOrphanTrait {
 
             if (!$dry_run) {
                 $this->db->execute(
-                    'UPDATE ' . TABLE_SNAPSHOTS . ' SET status = ?, error = ? WHERE id = ?',
+                    'UPDATE ' . TableType::Snapshots->value . ' SET status = ?, error = ? WHERE id = ?',
                     array(
                         SNAPSHOT_STATUS_FAILED,
                         "Auto-cleaned: stuck for >{$stuck_hours} hours",

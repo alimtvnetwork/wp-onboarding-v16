@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait OrchestratorBackupTrait {
 
@@ -138,7 +139,7 @@ trait OrchestratorBackupTrait {
         if (!empty($options['master_snapshot_id'])) {
             $pdo = $this->db->get_pdo();
             if ($pdo) {
-                $stmt = $pdo->prepare("SELECT filepath FROM " . TABLE_SNAPSHOTS . " WHERE id = ?");
+                $stmt = $pdo->prepare("SELECT filepath FROM " . TableType::Snapshots->value . " WHERE id = ?");
                 $stmt->execute(array($options['master_snapshot_id']));
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
                 if ($row && is_dir($row['filepath'])) {

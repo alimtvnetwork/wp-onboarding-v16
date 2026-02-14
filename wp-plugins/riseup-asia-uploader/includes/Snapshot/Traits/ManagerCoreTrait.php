@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait ManagerCoreTrait {
 
@@ -58,11 +59,11 @@ trait ManagerCoreTrait {
     /** List all snapshots. */
     public function listSnapshots($limit = 50, $offset = 0) {
         $snapshots = $this->db->query_all(
-            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TableType::Snapshots->value . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($limit, $offset)
         );
 
-        $total = $this->db->query_single('SELECT COUNT(*) as count FROM ' . TABLE_SNAPSHOTS);
+        $total = $this->db->query_single('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value);
 
         return array(
             'snapshots' => $snapshots ?: array(),

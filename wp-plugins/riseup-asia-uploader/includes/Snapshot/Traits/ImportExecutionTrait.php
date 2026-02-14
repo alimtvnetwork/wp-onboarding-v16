@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 require_once __DIR__ . '/ImportExecutionFileTrait.php';
 
@@ -106,7 +107,7 @@ trait ImportExecutionTrait {
         $tableNames = array_map(function($t) { return $t['table_name']; }, $tables);
         $record = $this->buildSnapshotRecord($metadata, $tables, $incrementals, $plugins, $destDir, $tableNames);
 
-        $result = $this->db->insert(TABLE_SNAPSHOTS, $record);
+        $result = $this->db->insert(TableType::Snapshots->value, $record);
         if ($result) {
             return $this->db->lastInsertId();
         }

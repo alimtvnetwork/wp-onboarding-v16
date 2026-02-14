@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait ManagerImportRecordTrait {
 
     /**
@@ -18,7 +20,7 @@ trait ManagerImportRecordTrait {
      * @return int Next sequence.
      */
     private function getNextImportSequence() {
-        $result = $this->db->query_single('SELECT MAX(sequence) as max_seq FROM ' . TABLE_SNAPSHOTS);
+        $result = $this->db->query_single('SELECT MAX(sequence) as max_seq FROM ' . TableType::Snapshots->value);
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
 
@@ -33,7 +35,7 @@ trait ManagerImportRecordTrait {
      */
     private function createImportedSnapshotRecord($manifest, $sequence, $filename, $filepath) {
         $data = $this->buildImportRecord($manifest['snapshot'], $manifest, $sequence, $filename, $filepath);
-        $result = $this->db->insert(TABLE_SNAPSHOTS, $data);
+        $result = $this->db->insert(TableType::Snapshots->value, $data);
         return $result ? $this->db->lastInsertId() : false;
     }
 

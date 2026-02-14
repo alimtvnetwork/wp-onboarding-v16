@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait CleanerDeletionTrait {
 
@@ -111,9 +112,9 @@ trait CleanerDeletionTrait {
      * @param int $snapshot_id Snapshot ID.
      */
     private function deleteSnapshotRecords($snapshot_id) {
-        $this->db->delete(TABLE_SNAPSHOTS, array('id' => $snapshot_id));
+        $this->db->delete(TableType::Snapshots->value, array('id' => $snapshot_id));
         $this->db->execute(
-            'DELETE FROM ' . TABLE_SNAPSHOT_PROGRESS . ' WHERE snapshot_id = ?',
+            'DELETE FROM ' . TableType::SnapshotProgress->value . ' WHERE snapshot_id = ?',
             array($snapshot_id)
         );
     }
@@ -147,7 +148,7 @@ trait CleanerDeletionTrait {
     private function cascadeDeleteIncrementalRecords($parent_dir) {
         try {
             $incrementals = $this->db->query_all(
-                'SELECT id FROM ' . TABLE_SNAPSHOTS .
+                'SELECT id FROM ' . TableType::Snapshots->value .
                 " WHERE scope = 'incremental' AND filepath LIKE ?",
                 array($parent_dir . '/incremental/%')
             ) ?: array();

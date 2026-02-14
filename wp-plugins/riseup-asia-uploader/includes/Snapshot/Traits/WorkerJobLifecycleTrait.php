@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait WorkerJobLifecycleTrait {
 
@@ -23,7 +24,7 @@ trait WorkerJobLifecycleTrait {
         if (!$pdo) return false;
 
         try {
-            $pdo->exec("CREATE TABLE IF NOT EXISTS " . TABLE_SNAPSHOT_JOBS . " (
+            $pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::SnapshotJobs->value . " (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 snapshot_dir TEXT NOT NULL,
                 tables_json TEXT NOT NULL,
@@ -40,7 +41,7 @@ trait WorkerJobLifecycleTrait {
             )");
 
             $now = gmdate('c');
-            $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOT_JOBS . "
+            $stmt = $pdo->prepare("INSERT INTO " . TableType::SnapshotJobs->value . "
                 (snapshot_dir, tables_json, pool_size, status, config_json, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
 
@@ -64,7 +65,7 @@ trait WorkerJobLifecycleTrait {
      * @return array|null Job record.
      */
     private function getJob($pdo, $job_id) {
-        $stmt = $pdo->prepare("SELECT * FROM " . TABLE_SNAPSHOT_JOBS . " WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT * FROM " . TableType::SnapshotJobs->value . " WHERE id = ?");
         $stmt->execute(array($job_id));
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
@@ -82,7 +83,7 @@ trait WorkerJobLifecycleTrait {
         $now = gmdate('c');
         $completed = ($status === SNAPSHOT_JOB_STATUS_COMPLETE || $status === SNAPSHOT_JOB_STATUS_FAILED) ? $now : null;
 
-        $stmt = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_JOBS . "
+        $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET status = ?, updated_at = ?, completed_at = COALESCE(?, completed_at) WHERE id = ?");
         $stmt->execute(array($status, $now, $completed, $job_id));
 
@@ -90,7 +91,7 @@ trait WorkerJobLifecycleTrait {
             $job = $this->getJob($pdo, $job_id);
             $errors = json_decode($job['errors_json'] ?? '[]', true);
             $errors[] = $error;
-            $stmt2 = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_JOBS . " SET errors_json = ? WHERE id = ?");
+            $stmt2 = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . " SET errors_json = ? WHERE id = ?");
             $stmt2->execute(array(json_encode($errors), $job_id));
         }
     }
@@ -110,7 +111,7 @@ trait WorkerJobLifecycleTrait {
         $job = $this->getJob($pdo, $job_id);
         $all_errors = array_merge(json_decode($job['errors_json'] ?? '[]', true), $batch_errors);
 
-        $stmt = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_JOBS . "
+        $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET current_batch = ?, tables_exported = tables_exported + ?,
                 total_rows = total_rows + ?, errors_json = ?, updated_at = ?
             WHERE id = ?");

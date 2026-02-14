@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait CleanerStorageTrait {
 
@@ -39,7 +40,7 @@ trait CleanerStorageTrait {
                     COALESCE(SUM(size), 0) as total_size,
                     MIN(created_at) as oldest,
                     MAX(created_at) as newest
-                FROM ' . TABLE_SNAPSHOTS .
+                FROM ' . TableType::Snapshots->value .
                 ' WHERE status = ?',
                 array(SNAPSHOT_STATUS_COMPLETE)
             );

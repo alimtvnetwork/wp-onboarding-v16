@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait ExporterBuildCollectTrait {
 
     /**
@@ -83,7 +85,7 @@ trait ExporterBuildCollectTrait {
         }
 
         $stmt = $pdo->prepare(
-            'SELECT id, filename, filepath, scope, status, created_at FROM ' . TABLE_SNAPSHOTS .
+            'SELECT id, filename, filepath, scope, status, created_at FROM ' . TableType::Snapshots->value .
             ' WHERE scope = \'incremental\' AND filepath LIKE ? AND status = ? ORDER BY created_at ASC'
         );
         $parentDir = '%/' . $parentName . '/incremental/%';

@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait OrchestratorRegistrationTrait {
 
@@ -33,7 +34,7 @@ trait OrchestratorRegistrationTrait {
 
     /** Get next snapshot sequence. */
     private function getNextSnapshotSequence(PDO $pdo): int {
-        $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TABLE_SNAPSHOTS)->fetch(PDO::FETCH_ASSOC);
+        $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
         return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
     }
 
@@ -49,7 +50,7 @@ trait OrchestratorRegistrationTrait {
     /** Insert a snapshot record. */
     private function insertSnapshotRecord(PDO $pdo, int $sequence, string $snapshotDir, string $scope, string $tablesJson, array $workerResult, int $dirSize): int {
         $now = gmdate('c');
-        $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOTS . "
+        $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "
             (sequence, filename, filepath, provider, scope, tables_json, total_rows,
              file_size, trigger_source, status, created_at, completed_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");

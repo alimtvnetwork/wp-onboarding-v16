@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait CleanerRetentionTrait {
 
     /**
@@ -107,7 +109,7 @@ trait CleanerRetentionTrait {
         $cutoff = date('c', strtotime("-{$days} days"));
 
         return $this->db->query_all(
-            'SELECT id, filepath, filename, size, scope, type FROM ' . TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
             ' WHERE status = ? AND created_at < ? ORDER BY created_at ASC',
             array(SNAPSHOT_STATUS_COMPLETE, $cutoff)
         ) ?: array();
@@ -121,7 +123,7 @@ trait CleanerRetentionTrait {
      */
     private function getSnapshotsBeyondCount($count) {
         $total_result = $this->db->query_single(
-            'SELECT COUNT(*) as cnt FROM ' . TABLE_SNAPSHOTS . ' WHERE status = ?',
+            'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE status = ?',
             array(SNAPSHOT_STATUS_COMPLETE)
         );
 
@@ -132,7 +134,7 @@ trait CleanerRetentionTrait {
         $to_delete = $total_result['cnt'] - $count;
 
         return $this->db->query_all(
-            'SELECT id, filepath, filename, size, scope, type FROM ' . TABLE_SNAPSHOTS .
+            'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
             ' WHERE status = ? ORDER BY created_at ASC LIMIT ?',
             array(SNAPSHOT_STATUS_COMPLETE, $to_delete)
         ) ?: array();

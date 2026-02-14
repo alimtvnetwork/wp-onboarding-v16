@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\TableType;
 
 trait ExporterPublicApiTrait {
 
@@ -67,7 +68,7 @@ trait ExporterPublicApiTrait {
             $this->log(LogLevelType::Info->value, 'Deleted cached ZIP file', array('path' => basename($export['zip_path'])));
         }
 
-        $stmt = $pdo->prepare('UPDATE ' . TABLE_SNAPSHOT_EXPORTS . ' SET status = ?, expires_at = datetime(\'now\') WHERE id = ?');
+        $stmt = $pdo->prepare('UPDATE ' . TableType::SnapshotExports->value . ' SET status = ?, expires_at = datetime(\'now\') WHERE id = ?');
         $stmt->execute(array(SNAPSHOT_EXPORT_STATUS_EXPIRED, $export['id']));
 
         $this->log(LogLevelType::Info->value, 'Export marked as expired', array('export_id' => $export['id']));
@@ -85,7 +86,7 @@ trait ExporterPublicApiTrait {
             return;
         }
 
-        $stmt = $pdo->prepare('SELECT id, zip_path FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
+        $stmt = $pdo->prepare('SELECT id, zip_path FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ?');
         $stmt->execute(array($fullSnapshotId));
         $exports = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -96,7 +97,7 @@ trait ExporterPublicApiTrait {
             }
         }
 
-        $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
+        $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ?');
         $stmt->execute(array($fullSnapshotId));
 
         $this->log(LogLevelType::Info->value, 'Removed all exports for snapshot', array('snapshot_id' => $fullSnapshotId, 'count' => count($exports)));
@@ -163,7 +164,7 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ? ORDER BY created_at DESC LIMIT 1');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ? ORDER BY created_at DESC LIMIT 1');
         $stmt->execute(array($fullSnapshotId));
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
