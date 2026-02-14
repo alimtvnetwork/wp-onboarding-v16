@@ -200,11 +200,11 @@ func (s *PublishScheduler) executeJob(jobID string) {
 
 	// Broadcast job starting
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventPublishProgress, map[string]any{
-			"type":       "scheduled_job_started",
-			"jobId":      jobID,
-			"pluginId":   job.PluginID,
-			"pluginName": job.PluginName,
+		ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobStartedData{
+			Type:       "scheduled_job_started",
+			JobID:      jobID,
+			PluginID:   job.PluginID,
+			PluginName: job.PluginName,
 		})
 	}
 
@@ -247,13 +247,13 @@ func (s *PublishScheduler) executeJob(jobID string) {
 
 	// Broadcast job complete
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventPublishProgress, map[string]any{
-			"type":       "scheduled_job_complete",
-			"jobId":      jobID,
-			"pluginId":   job.PluginID,
-			"pluginName": job.PluginName,
-			"durationMs": duration,
-			"nextRunAt":  job.NextRunAt,
+		ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobCompleteData{
+			Type:       "scheduled_job_complete",
+			JobID:      jobID,
+			PluginID:   job.PluginID,
+			PluginName: job.PluginName,
+			DurationMs: duration,
+			NextRunAt:  job.NextRunAt,
 		})
 	}
 
@@ -349,27 +349,27 @@ func (s *PublishScheduler) broadcastJobUpdate() {
 	if s.wsHub == nil {
 		return
 	}
-	jobs := make([]map[string]any, 0)
+	jobs := make([]ws.ScheduledJobSummary, 0, len(s.jobs))
 	for _, job := range s.jobs {
-		j := map[string]any{
-			"id":         job.ID,
-			"pluginId":   job.PluginID,
-			"pluginName": job.PluginName,
-			"enabled":    job.Enabled,
-			"schedule":   job.Schedule.CronExpr,
-			"lastStatus": job.LastStatus,
+		j := ws.ScheduledJobSummary{
+			ID:         job.ID,
+			PluginID:   job.PluginID,
+			PluginName: job.PluginName,
+			IsEnabled:  job.Enabled,
+			Schedule:   job.Schedule.CronExpr,
+			LastStatus: job.LastStatus,
 		}
 		if job.NextRunAt != nil {
-			j["nextRunAt"] = job.NextRunAt.Format(time.RFC3339)
+			j.NextRunAt = job.NextRunAt.Format(time.RFC3339)
 		}
 		if job.LastRunAt != nil {
-			j["lastRunAt"] = job.LastRunAt.Format(time.RFC3339)
+			j.LastRunAt = job.LastRunAt.Format(time.RFC3339)
 		}
 		jobs = append(jobs, j)
 	}
-	s.wsHub.Broadcast(ws.EventPublishProgress, map[string]any{
-		"type": "scheduled_jobs_update",
-		"jobs": jobs,
+	ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.ScheduledJobsUpdateData{
+		Type: "scheduled_jobs_update",
+		Jobs: jobs,
 	})
 }
 

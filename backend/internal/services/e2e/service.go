@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"wp-plugin-publish/internal/ws"
 	"wp-plugin-publish/pkg/apperror"
 )
 
@@ -295,9 +296,9 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	s.mu.Unlock()
 
 	if s.broadcast != nil {
-		s.broadcast("e2e:run:started", map[string]any{
-			"runId":      run.ID,
-			"totalTests": run.TotalTests,
+		s.broadcast("e2e:run:started", ws.E2ERunStartedData{
+			RunID:      run.ID,
+			TotalTests: run.TotalTests,
 		})
 	}
 
@@ -349,11 +350,11 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 			}
 
 			if s.broadcast != nil {
-				s.broadcast("e2e:test:completed", map[string]any{
-					"runId":      run.ID,
-					"caseId":     tc.ID,
-					"status":     result.Status,
-					"durationMs": result.DurationMs,
+				s.broadcast("e2e:test:completed", ws.E2ETestCompletedData{
+					RunID:      run.ID,
+					CaseID:     tc.ID,
+					Status:     result.Status,
+					DurationMs: result.DurationMs,
 				})
 			}
 
@@ -379,11 +380,11 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 	`, run.CompletedAt, run.Status, run.PassedTests, run.FailedTests, run.SkippedTests, run.DurationMs, run.ID)
 
 	if s.broadcast != nil {
-		s.broadcast("e2e:run:completed", map[string]any{
-			"runId":  run.ID,
-			"status": run.Status,
-			"passed": run.PassedTests,
-			"failed": run.FailedTests,
+		s.broadcast("e2e:run:completed", ws.E2ERunCompletedData{
+			RunID:  run.ID,
+			Status: run.Status,
+			Passed: run.PassedTests,
+			Failed: run.FailedTests,
 		})
 	}
 
@@ -403,10 +404,10 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 	}
 
 	if s.broadcast != nil {
-		s.broadcast("e2e:test:started", map[string]any{
-			"runId":    run.ID,
-			"caseId":   tc.ID,
-			"caseName": tc.Name,
+		s.broadcast("e2e:test:started", ws.E2ETestStartedData{
+			RunID:    run.ID,
+			CaseID:   tc.ID,
+			CaseName: tc.Name,
 		})
 	}
 
@@ -484,9 +485,9 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 			now, runID)
 
 		if s.broadcast != nil {
-			s.broadcast("e2e:run:completed", map[string]any{
-				"runId":  runID,
-				"status": "aborted",
+			s.broadcast("e2e:run:completed", ws.E2ERunCompletedData{
+				RunID:  runID,
+				Status: "aborted",
 			})
 		}
 
@@ -495,7 +496,7 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 	}
 
 	return apperror.New(apperror.ErrNotFound, "no active run with ID").
-		WithContext("runId", runID)
+		WithRunID(runID)
 }
 
 // ListRuns returns past test runs

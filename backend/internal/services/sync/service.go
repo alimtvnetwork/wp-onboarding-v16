@@ -763,13 +763,13 @@ func (s *serviceImpl) broadcastProgress(pluginID, siteID int64, step string, pro
 		return
 	}
 
-	s.wsHub.Broadcast(ws.EventSyncProgress, map[string]any{
-		"pluginId": pluginID,
-		"siteId":   siteID,
-		"step":     step,
-		"progress": progress,
-		"total":    100,
-		"message":  message,
+	ws.Broadcast(s.wsHub, ws.EventSyncProgress, ws.SyncStepProgressData{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Step:     step,
+		Progress: progress,
+		Total:    100,
+		Message:  message,
 	})
 	
 	// Also broadcast detailed log entry for frontend live log display
