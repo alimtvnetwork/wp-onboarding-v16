@@ -138,7 +138,7 @@ trait SyncPushTrait
         }
 
         if ($this->db) {
-            $this->db->log_transaction(ActionType::SyncDelete->value, $slug, STATUS_SUCCESS, 'Deleted via sync: ' . $path, null, null, TRIGGERED_BY_API);
+            $this->db->logTransaction(ActionType::SyncDelete->value, $slug, STATUS_SUCCESS, 'Deleted via sync: ' . $path, null, null, TRIGGERED_BY_API);
         }
 
         if (!unlink($full_path)) {
@@ -177,7 +177,7 @@ trait SyncPushTrait
         if (!$this->db) {
             return;
         }
-        $this->db->log_transaction(
+        $this->db->logTransaction(
             ActionType::Sync->value, $slug, STATUS_SUCCESS,
             sprintf('Sync: %d updated, %d deleted, %d ignored', $counters['files_updated'], $counters['files_deleted'], $counters['files_ignored']),
             null, null, TRIGGERED_BY_API

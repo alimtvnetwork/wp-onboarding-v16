@@ -15,12 +15,12 @@ use RiseupAsia\Enums\TableType;
 trait FileCacheStoreTrait {
 
     public function invalidate($pluginSlug) {
-        if (!$this->db->is_ready()) {
+        if (!$this->db->isReady()) {
             return 0;
         }
 
         try {
-            $deleted = RiseupORM::for_table(TableType::FileCache->value)
+            $deleted = RiseupORM::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->delete();
 
@@ -41,9 +41,9 @@ trait FileCacheStoreTrait {
 
     private function loadCachedEntries($pluginSlug) {
         try {
-            $rows = RiseupORM::for_table(TableType::FileCache->value)
+            $rows = RiseupORM::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
-                ->find_many();
+                ->findMany();
 
             $entries = array();
             foreach ($rows as $row) {
@@ -61,7 +61,7 @@ trait FileCacheStoreTrait {
 
     private function upsertCacheEntry($pluginSlug, $path, $hash, $modifiedAt, $size) {
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return;
             }
@@ -84,7 +84,7 @@ trait FileCacheStoreTrait {
 
     private function deleteCacheEntry($pluginSlug, $path) {
         try {
-            RiseupORM::for_table(TableType::FileCache->value)
+            RiseupORM::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->where('relative_path', $path)
                 ->delete();

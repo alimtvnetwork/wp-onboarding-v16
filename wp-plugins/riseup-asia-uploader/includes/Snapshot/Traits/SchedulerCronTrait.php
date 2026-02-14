@@ -50,7 +50,7 @@ trait SchedulerCronTrait {
             return;
         }
 
-        $this->db->log_transaction(
+        $this->db->logTransaction(
             $result['action'],
             'snapshot', null, '', null, '',
             $result['audit_data'] ?? array(),

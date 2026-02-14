@@ -33,78 +33,68 @@ class RiseupORM {
     private static $pdo = null;
 
     /** @var string */
-    private $table_name;
+    private $tableName;
 
     /** @var array */
     private $data = array();
 
     /** @var array */
-    private $where_clauses = array();
+    private $whereClauses = array();
 
     /** @var array */
-    private $where_params = array();
+    private $whereParams = array();
 
     /** @var array */
-    private $order_by = array();
+    private $orderBy = array();
 
     /** @var int|null */
-    private $limit_value = null;
+    private $limitValue = null;
 
     /** @var int|null */
-    private $offset_value = null;
+    private $offsetValue = null;
 
     /** @var array */
-    private $select_columns = array('*');
+    private $selectColumns = array('*');
 
     /** @var array */
-    private $group_by = array();
+    private $groupBy = array();
 
     /** @var bool */
-    private $is_new = false;
+    private $isNew = false;
 
     /** @var mixed */
     private $id = null;
 
     /** @var string */
-    private $id_column = 'id';
+    private $idColumn = 'id';
 
     /** @var int */
-    private static $param_counter = 0;
+    private static $paramCounter = 0;
 
     /**
      * Configure the ORM with a PDO instance.
-     *
-     * @param PDO $pdo PDO connection.
      */
-    public static function configure($pdo) {
+    public static function configure(PDO $pdo): void {
         self::$pdo = $pdo;
     }
 
-    /** @return PDO|null */
-    public static function get_pdo() {
+    public static function getPdo(): ?PDO {
         return self::$pdo;
     }
 
     /**
      * Start a query for a specific table.
-     *
-     * @param string $table_name Table name.
-     * @return RiseupORM
      */
-    public static function for_table($table_name) {
+    public static function forTable(string $tableName): self {
         $orm = new self();
-        $orm->table_name = $table_name;
+        $orm->tableName = $tableName;
         return $orm;
     }
 
     /**
      * Execute raw SQL query.
-     *
-     * @param string $sql    SQL query.
-     * @param array  $params Parameters.
-     * @return array Results.
      */
-    public static function raw_execute($sql, $params = array()) {
+    public static function rawExecute(string $sql, array $params = array()): array {
         if (!self::$pdo) {
             return array();
         }
@@ -118,7 +108,7 @@ class RiseupORM {
         }
     }
 
-    /** Private constructor - use for_table() instead. */
+    /** Private constructor - use forTable() instead. */
     private function __construct() {
     }
 }

@@ -14,7 +14,7 @@ use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV6V8Trait {
 
-    private function migrate_v6_remote_plugins_cache(int $current): void {
+    private function migrateV6RemotePluginsCache(int $current): void {
         if ($current >= 6) {
             return;
         }
@@ -30,10 +30,10 @@ trait DatabaseMigrationsV6V8Trait {
         )");
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_rpc_site_id ON remote_plugins_cache(site_id)");
 
-        $this->record_migration(6);
+        $this->recordMigration(6);
     }
 
-    private function migrate_v7_file_hash_cache(int $current): void {
+    private function migrateV7FileHashCache(int $current): void {
         if ($current >= 7) {
             return;
         }
@@ -51,10 +51,10 @@ trait DatabaseMigrationsV6V8Trait {
         )");
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_file_cache_slug ON " . TableType::FileCache->value . "(plugin_slug)");
 
-        $this->record_migration(7);
+        $this->recordMigration(7);
     }
 
-    private function migrate_v8_snapshot_settings(int $current): void {
+    private function migrateV8SnapshotSettings(int $current): void {
         if ($current >= 8) {
             return;
         }
@@ -93,6 +93,6 @@ trait DatabaseMigrationsV6V8Trait {
             $stmt->execute(array($row[0], $row[1], $row[2], $now));
         }
 
-        $this->record_migration(8);
+        $this->recordMigration(8);
     }
 }

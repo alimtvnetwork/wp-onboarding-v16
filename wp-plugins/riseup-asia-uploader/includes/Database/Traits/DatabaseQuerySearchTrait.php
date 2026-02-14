@@ -14,8 +14,8 @@ use RiseupAsia\Enums\TableType;
 
 trait DatabaseQuerySearchTrait {
 
-    public function query_transactions(array $filters = array(), int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
-        if (!$this->is_ready()) {
+    public function queryTransactions(array $filters = array(), int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
+        if (!$this->isReady()) {
             $this->fileLogger->warn('Database not ready for query');
             return array('total' => 0, 'logs' => array());
         }
@@ -34,14 +34,14 @@ trait DatabaseQuerySearchTrait {
     private function executeTransactionQuery(array $filters, int $limit, int $offset): array {
         $this->fileLogger->debug('Querying transactions', array('filters' => $filters));
 
-        $countQuery = RiseupORM::for_table(TableType::Transactions->value);
-        $dataQuery = RiseupORM::for_table(TableType::Transactions->value);
+        $countQuery = RiseupORM::forTable(TableType::Transactions->value);
+        $dataQuery = RiseupORM::forTable(TableType::Transactions->value);
 
-        $this->apply_filters($countQuery, $filters);
-        $this->apply_filters($dataQuery, $filters);
+        $this->applyFilters($countQuery, $filters);
+        $this->applyFilters($dataQuery, $filters);
 
         $total = $countQuery->count();
-        $logs = $dataQuery->order_by_desc('created_at')->limit($limit)->offset($offset)->find_many();
+        $logs = $dataQuery->orderByDesc('created_at')->limit($limit)->offset($offset)->findMany();
 
         $this->decodeLogDetails($logs);
         $this->fileLogger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
@@ -57,7 +57,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function apply_filters($query, array $filters): void {
+    private function applyFilters($query, array $filters): void {
         $this->applyEqualityFilters($query, $filters);
         $this->applyDateRangeFilters($query, $filters);
         $this->applyTextFilters($query, $filters);
@@ -72,7 +72,7 @@ trait DatabaseQuerySearchTrait {
             if (count($actions) === 1) {
                 $query->where('action', $actions[0]);
             } else {
-                $query->where_in('action', $actions);
+                $query->whereIn('action', $actions);
             }
         }
         if (!empty($filters['user'])) {
@@ -91,31 +91,31 @@ trait DatabaseQuerySearchTrait {
 
     private function applyDateRangeFilters($query, array $filters): void {
         if (!empty($filters['from'])) {
-            $query->where_gte('created_at', $filters['from'] . 'T00:00:00Z');
+            $query->whereGte('created_at', $filters['from'] . 'T00:00:00Z');
         }
         if (!empty($filters['to'])) {
-            $query->where_lte('created_at', $filters['to'] . 'T23:59:59Z');
+            $query->whereLte('created_at', $filters['to'] . 'T23:59:59Z');
         }
     }
 
     private function applyTextFilters($query, array $filters): void {
         if (!empty($filters['source_machine'])) {
-            $query->where_like('source_machine', '%' . $filters['source_machine'] . '%');
+            $query->whereLike('source_machine', '%' . $filters['source_machine'] . '%');
         }
     }
 
-    public function get_stats(): array {
-        if (!$this->is_ready()) {
+    public function getStats(): array {
+        if (!$this->isReady()) {
             return array();
         }
 
         try {
             return array(
-                'total_transactions' => RiseupORM::for_table(TableType::Transactions->value)->count(),
+                'total_transactions' => RiseupORM::forTable(TableType::Transactions->value)->count(),
                 'by_action'          => $this->countByColumn('action'),
                 'by_status'          => $this->countByColumn('status'),
-                'last_24h'           => RiseupORM::for_table(TableType::Transactions->value)
-                    ->where_gte('created_at', gmdate('Y-m-d\TH:i:s\Z', time() - 86400))
+                'last_24h'           => RiseupORM::forTable(TableType::Transactions->value)
+                    ->whereGte('created_at', gmdate('Y-m-d\TH:i:s\Z', time() - 86400))
                     ->count(),
             );
         } catch (Exception $e) {
@@ -125,7 +125,7 @@ trait DatabaseQuerySearchTrait {
     }
 
     private function countByColumn(string $column): array {
-        $rows = RiseupORM::raw_execute(
+        $rows = RiseupORM::rawExecute(
             "SELECT {$column}, COUNT(*) as count FROM " . TableType::Transactions->value . " GROUP BY {$column}"
         );
         $result = array();
@@ -135,16 +135,16 @@ trait DatabaseQuerySearchTrait {
         return $result;
     }
 
-    public function cleanup_old_transactions(int $daysToKeep = 365): int {
-        if (!$this->is_ready()) {
+    public function cleanupOldTransactions(int $daysToKeep = 365): int {
+        if (!$this->isReady()) {
             return 0;
         }
 
         try {
             $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($daysToKeep * 86400));
 
-            $deleted = RiseupORM::for_table(TableType::Transactions->value)
-                ->where_lt('created_at', $cutoff)
+            $deleted = RiseupORM::forTable(TableType::Transactions->value)
+                ->whereLt('created_at', $cutoff)
                 ->delete();
 
             $this->fileLogger->info('Cleanup complete', array('deleted' => $deleted));

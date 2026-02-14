@@ -19,7 +19,7 @@ trait DatabaseQueryLogTrait {
      *
      * Uses 10 params due to database record mapping — justified utility exception.
      */
-    public function log_transaction(
+    public function logTransaction(
         string $action,
         ?string $pluginSlug = null,
         ?int $postId = null,
@@ -31,7 +31,7 @@ trait DatabaseQueryLogTrait {
         ?string $errorMsg = null,
         array $enhanced = array()
     ): int|false {
-        if (!$this->is_ready()) {
+        if (!$this->isReady()) {
             $this->fileLogger->warn('Database not ready, cannot log transaction');
             return false;
         }
@@ -54,7 +54,7 @@ trait DatabaseQueryLogTrait {
     }
 
     private function buildTransactionRecord(string $action, ?string $pluginSlug, ?int $postId, string $userLogin, ?int $userId, string $ipAddress, array $details, string $status, ?string $errorMsg) {
-        return RiseupORM::for_table(TableType::Transactions->value)
+        return RiseupORM::forTable(TableType::Transactions->value)
             ->create()
             ->set('action', $action)
             ->set('plugin_slug', $pluginSlug)
@@ -85,8 +85,8 @@ trait DatabaseQueryLogTrait {
         }
     }
 
-    public function log_enhanced_transaction(array $params): int|false {
-        return $this->log_transaction(
+    public function logEnhancedTransaction(array $params): int|false {
+        return $this->logTransaction(
             $params['action'] ?? '',
             $params['plugin_slug'] ?? null,
             $params['post_id'] ?? null,
@@ -107,14 +107,14 @@ trait DatabaseQueryLogTrait {
         );
     }
 
-    public function get_transaction(int $id): ?array {
-        if (!$this->is_ready()) {
+    public function getTransaction(int $id): ?array {
+        if (!$this->isReady()) {
             return null;
         }
 
         try {
-            $log = RiseupORM::for_table(TableType::Transactions->value)
-                ->find_one($id);
+            $log = RiseupORM::forTable(TableType::Transactions->value)
+                ->findOne($id);
 
             if ($log && !empty($log['details'])) {
                 $log['details'] = json_decode($log['details'], true);

@@ -20,7 +20,7 @@ trait OrmMutationTrait {
      * @return $this
      */
     public function create() {
-        $this->is_new = true;
+        $this->isNew = true;
         $this->data = array();
         return $this;
     }
@@ -28,11 +28,9 @@ trait OrmMutationTrait {
     /**
      * Set a column value.
      *
-     * @param string $column Column name.
-     * @param mixed  $value  Value.
      * @return $this
      */
-    public function set($column, $value) {
+    public function set(string $column, $value) {
         $this->data[$column] = $value;
         return $this;
     }
@@ -48,7 +46,7 @@ trait OrmMutationTrait {
         }
 
         try {
-            return $this->is_new ? $this->do_insert() : $this->do_update();
+            return $this->isNew ? $this->doInsert() : $this->doUpdate();
         } catch (PDOException $e) {
             return false;
         }
@@ -59,7 +57,7 @@ trait OrmMutationTrait {
      *
      * @return int|false Insert ID or false.
      */
-    private function do_insert() {
+    private function doInsert() {
         if (empty($this->data)) {
             return false;
         }
@@ -69,7 +67,7 @@ trait OrmMutationTrait {
 
         $sql = sprintf(
             "INSERT INTO %s (%s) VALUES (%s)",
-            $this->table_name,
+            $this->tableName,
             implode(', ', $columns),
             implode(', ', $placeholders)
         );
@@ -90,28 +88,28 @@ trait OrmMutationTrait {
      *
      * @return int Rows affected.
      */
-    private function do_update() {
-        if (empty($this->data) || empty($this->where_clauses)) {
+    private function doUpdate(): int {
+        if (empty($this->data) || empty($this->whereClauses)) {
             return 0;
         }
 
-        $set_clauses = array();
+        $setClauses = array();
         $params = array();
 
         foreach ($this->data as $col => $val) {
-            $param_name = ':set_' . $col;
-            $set_clauses[] = "{$col} = {$param_name}";
-            $params[$param_name] = $val;
+            $paramName = ':set_' . $col;
+            $setClauses[] = "{$col} = {$paramName}";
+            $params[$paramName] = $val;
         }
 
         $sql = sprintf(
             "UPDATE %s SET %s WHERE %s",
-            $this->table_name,
-            implode(', ', $set_clauses),
-            implode(' AND ', $this->where_clauses)
+            $this->tableName,
+            implode(', ', $setClauses),
+            implode(' AND ', $this->whereClauses)
         );
 
-        $params = array_merge($params, $this->where_params);
+        $params = array_merge($params, $this->whereParams);
 
         $stmt = self::$pdo->prepare($sql);
         $stmt->execute($params);
@@ -121,18 +119,16 @@ trait OrmMutationTrait {
 
     /**
      * Delete records.
-     *
-     * @return int Rows deleted.
      */
-    public function delete() {
-        if (!self::$pdo || empty($this->where_clauses)) {
+    public function delete(): int {
+        if (!self::$pdo || empty($this->whereClauses)) {
             return 0;
         }
 
         try {
-            $sql = "DELETE FROM {$this->table_name} WHERE " . implode(' AND ', $this->where_clauses);
+            $sql = "DELETE FROM {$this->tableName} WHERE " . implode(' AND ', $this->whereClauses);
             $stmt = self::$pdo->prepare($sql);
-            $stmt->execute($this->where_params);
+            $stmt->execute($this->whereParams);
             return $stmt->rowCount();
         } catch (PDOException $e) {
             return 0;

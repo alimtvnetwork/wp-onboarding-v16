@@ -66,7 +66,7 @@ trait PostHandlerTrait
             $limit  = $request->get_param('limit') ?? DEFAULT_LIMIT;
             $offset = $request->get_param('offset') ?? 0;
 
-            $result = $this->db->query_transactions($filters, $limit, $offset);
+            $result = $this->db->queryTransactions($filters, $limit, $offset);
             $total = $result['total'];
             $perPage = (int) $limit;
 
@@ -96,7 +96,7 @@ trait PostHandlerTrait
 
         try {
             $this->db->init();
-            $stats = $this->db->get_stats();
+            $stats = $this->db->getStats();
 
             return RiseupEnvelopeBuilder::success()
                 ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::LogsStats->value)
