@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\SnapshotFrequencyType;
 
 trait SchedulerConfigTrait {
 
@@ -17,15 +18,15 @@ trait SchedulerConfigTrait {
      * @return array Modified schedules.
      */
     public function registerCronSchedules($schedules) {
-        if (!isset($schedules[SNAPSHOT_FREQ_WEEKLY])) {
-            $schedules[SNAPSHOT_FREQ_WEEKLY] = array(
+        if (!isset($schedules[SnapshotFrequencyType::Weekly->value])) {
+            $schedules[SnapshotFrequencyType::Weekly->value] = array(
                 'interval' => WEEK_IN_SECONDS,
                 'display' => __('Once Weekly', 'riseup-asia-uploader'),
             );
         }
 
-        if (!isset($schedules[SNAPSHOT_FREQ_MONTHLY])) {
-            $schedules[SNAPSHOT_FREQ_MONTHLY] = array(
+        if (!isset($schedules[SnapshotFrequencyType::Monthly->value])) {
+            $schedules[SnapshotFrequencyType::Monthly->value] = array(
                 'interval' => 30 * DAY_IN_SECONDS,
                 'display' => __('Once Monthly', 'riseup-asia-uploader'),
             );
@@ -57,7 +58,7 @@ trait SchedulerConfigTrait {
             return;
         }
 
-        if ($settings['schedule_frequency'] === SNAPSHOT_FREQ_MANUAL) {
+        if ($settings['schedule_frequency'] === SnapshotFrequencyType::Manual->value) {
             $this->logger->debug('[SCHEDULER] Frequency set to manual - no cron scheduling');
             return;
         }

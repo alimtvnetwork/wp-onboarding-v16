@@ -40,7 +40,10 @@ Also completed (in `.lovable/plan/completed/`):
 | Log level migration | 987 usages of LogLevelType::X->value |
 | J2-J5: Enum types created | 12 new enum files created, bootstrap + constants.php updated |
 | J6-J7: define() alias caller migration | Zero STATUS_*, SNAPSHOT_STATUS_*, SNAPSHOT_PROVIDER_*, TRIGGERED_BY_* callers remain |
+| J8: CRON_SNAPSHOT_* → HookType enum | 6 cases added to HookType, all callers migrated, defines removed |
+| J9: SNAPSHOT_SCOPE/FREQ/PROVIDER/STATUS → enums | All callers migrated across 9 files, zero remaining define() callers |
 | define() alias removal | Zero enum-related define() aliases in constants.php |
+| PHP 8.2+ baseline | Both plugins updated to require PHP 8.2 minimum |
 
 ---
 

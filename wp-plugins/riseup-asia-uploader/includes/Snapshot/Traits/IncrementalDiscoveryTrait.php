@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait IncrementalDiscoveryTrait {
@@ -34,7 +35,7 @@ trait IncrementalDiscoveryTrait {
 
         try {
             $stmt = $pdo->query("SELECT filepath FROM " . TableType::Snapshots->value . "
-                WHERE scope != 'incremental' AND status = '" . SNAPSHOT_STATUS_COMPLETE . "'
+                WHERE scope != 'incremental' AND status = '" . SnapshotStatusType::Complete->value . "'
                 ORDER BY created_at DESC LIMIT 1");
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 

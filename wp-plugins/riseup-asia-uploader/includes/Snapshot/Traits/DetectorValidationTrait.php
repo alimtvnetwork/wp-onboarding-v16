@@ -10,6 +10,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotScopeType;
+
 trait DetectorValidationTrait {
 
     /**
@@ -30,12 +34,12 @@ trait DetectorValidationTrait {
     /** Validate enum-style fields against allowed values. */
     private function validateEnumFields(array &$settings) {
         $rules = array(
-            'preferred_provider' => array(SNAPSHOT_PROVIDER_AUTO, SNAPSHOT_PROVIDER_WP_RESET, SNAPSHOT_PROVIDER_UPDRAFT, SNAPSHOT_PROVIDER_NATIVE),
-            'schedule_frequency' => array(SNAPSHOT_FREQ_MANUAL, SNAPSHOT_FREQ_DAILY, SNAPSHOT_FREQ_WEEKLY, SNAPSHOT_FREQ_MONTHLY),
-            'default_scope'      => array(SNAPSHOT_SCOPE_ALL, SNAPSHOT_SCOPE_WORDPRESS, SNAPSHOT_SCOPE_CONTENT, SNAPSHOT_SCOPE_CUSTOM),
+            'preferred_provider' => array(SnapshotProviderType::Auto->value, SnapshotProviderType::WpReset->value, SnapshotProviderType::Updraft->value, SnapshotProviderType::Native->value),
+            'schedule_frequency' => array(SnapshotFrequencyType::Manual->value, SnapshotFrequencyType::Daily->value, SnapshotFrequencyType::Weekly->value, SnapshotFrequencyType::Monthly->value),
+            'default_scope'      => array(SnapshotScopeType::All->value, SnapshotScopeType::WordPress->value, SnapshotScopeType::Content->value, SnapshotScopeType::Custom->value),
             'retention_type'     => array('days', 'count', 'none'),
         );
-        $defaults = array('preferred_provider' => SNAPSHOT_PROVIDER_AUTO, 'schedule_frequency' => SNAPSHOT_FREQ_DAILY, 'default_scope' => SNAPSHOT_SCOPE_WORDPRESS, 'retention_type' => 'days');
+        $defaults = array('preferred_provider' => SnapshotProviderType::Auto->value, 'schedule_frequency' => SnapshotFrequencyType::Daily->value, 'default_scope' => SnapshotScopeType::WordPress->value, 'retention_type' => 'days');
 
         foreach ($rules as $key => $valid) {
             if (RiseupBooleanHelpers::isNotInList($settings[$key], $valid)) {

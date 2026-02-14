@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotScopeType;
+
 trait NativeTableExportConvertTrait {
 
     /**
@@ -111,13 +113,13 @@ trait NativeTableExportConvertTrait {
         $prefix = $this->wpdb->prefix;
 
         switch ($scope) {
-            case SNAPSHOT_SCOPE_ALL:
+            case SnapshotScopeType::All->value:
                 return $all_tables;
-            case SNAPSHOT_SCOPE_WORDPRESS:
+            case SnapshotScopeType::WordPress->value:
                 return array_filter($all_tables, function($table) use ($prefix) { return strpos($table, $prefix) === 0; });
-            case SNAPSHOT_SCOPE_CONTENT:
+            case SnapshotScopeType::Content->value:
                 return $this->getContentTables($all_tables, $prefix);
-            case SNAPSHOT_SCOPE_CUSTOM:
+            case SnapshotScopeType::Custom->value:
                 return array_filter($all_tables, function($table) use ($custom) { return in_array($table, $custom); });
             default:
                 return array();

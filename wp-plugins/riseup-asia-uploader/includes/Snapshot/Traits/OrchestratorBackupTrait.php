@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\TableType;
 
 trait OrchestratorBackupTrait {
@@ -33,7 +34,7 @@ trait OrchestratorBackupTrait {
 
         return array(
             'title' => $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i')),
-            'scope' => $options['scope'] ?? $settings['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
+            'scope' => $options['scope'] ?? $settings['scope'] ?? SnapshotScopeType::WordPress->value,
             'include_plugins' => $options['include_plugins'] ?? $settings['include_plugins'] ?? true,
             'plugin_selection' => $options['plugin_selection'] ?? $settings['plugin_selection'] ?? 'all',
             'compression' => $options['compression'] ?? $settings['compression'] ?? true,
