@@ -28,32 +28,7 @@ const (
 // NOTE: Plugin Status Values have been migrated to plugin_status_type.go (PluginStatusType).
 // NOTE: Upload Source Values have been migrated to upload_source_type.go (UploadSourceType).
 
-// =============================================================================
-// ERROR MESSAGES
-// =============================================================================
-
-const (
-	// ErrMsgUnauthorized is returned when authentication fails.
-	ErrMsgUnauthorized = "Authentication required"
-
-	// ErrMsgForbidden is returned when the user lacks permission.
-	ErrMsgForbidden = "Insufficient permissions"
-
-	// ErrMsgPluginNotFound is returned when a plugin is not found.
-	ErrMsgPluginNotFound = "Plugin not found"
-
-	// ErrMsgUploadFailed is returned when plugin upload fails.
-	ErrMsgUploadFailed = "Upload failed"
-
-	// ErrMsgActivationFailed is returned when plugin activation fails.
-	ErrMsgActivationFailed = "Plugin activation failed"
-
-	// ErrMsgInvalidRequest is returned for malformed requests.
-	ErrMsgInvalidRequest = "Invalid request data"
-
-	// ErrMsgFileIgnored is returned when a file is ignored by .uploadignore.
-	ErrMsgFileIgnored = "File ignored by .uploadignore"
-)
+// NOTE: Error Messages have been migrated to response_message_type.go (ResponseMessageType).
 
 // =============================================================================
 // DEFAULT VALUES
