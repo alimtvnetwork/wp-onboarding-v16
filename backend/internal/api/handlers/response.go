@@ -21,13 +21,15 @@ func respondJSON(w http.ResponseWriter, status int, data any) {
 	json.NewEncoder(w).Encode(data)
 }
 
-// respondSuccess writes a single-item success envelope
-func respondSuccess(w http.ResponseWriter, data any) {
+// respondSuccess writes a single-item success envelope.
+// Generic: compile-time type checking on the data parameter.
+func respondSuccess[T any](w http.ResponseWriter, data T) {
 	envelope.Write(w, envelope.Success(data))
 }
 
-// respondCreated writes a 201 Created envelope
-func respondCreated(w http.ResponseWriter, data any) {
+// respondCreated writes a 201 Created envelope.
+// Generic: compile-time type checking on the data parameter.
+func respondCreated[T any](w http.ResponseWriter, data T) {
 	envelope.Write(w, envelope.Created(data))
 }
 
@@ -37,12 +39,12 @@ func respondError(w http.ResponseWriter, status int, code, message string) {
 }
 
 // respondErrorWithSession writes an error envelope with session ID and stack traces.
-// Extracts sessionId from apperror context if available, or uses the explicit sessionId.
+// Extracts sessionId from apperror diagnostic if available.
 func respondErrorWithSession(w http.ResponseWriter, status int, code, message string, err error) {
 	resp := envelope.ErrorWithStack(status, code, message)
 	if appErr, ok := err.(*apperror.AppError); ok {
-		if sid, ok := appErr.Context["sessionId"].(string); ok && sid != "" {
-			resp = resp.WithSessionId(sid)
+		if appErr.Diagnostic.SessionID != "" {
+			resp = resp.WithSessionId(appErr.Diagnostic.SessionID)
 		}
 	}
 	envelope.Write(w, resp)
@@ -54,13 +56,15 @@ func respondDeleted(w http.ResponseWriter) {
 }
 
 // respondList writes a paginated list envelope.
+// Generic: compile-time type checking on the data parameter.
 // requestPath is the base URL path used to generate navigation URLs.
-func respondList(w http.ResponseWriter, data any, pg envelope.Pagination, requestPath string) {
+func respondList[T any](w http.ResponseWriter, data T, pg envelope.Pagination, requestPath string) {
 	envelope.Write(w, envelope.List(data, pg, requestPath))
 }
 
-// respondListUnpaginated writes an unpaginated list envelope
-func respondListUnpaginated(w http.ResponseWriter, data any, count int) {
+// respondListUnpaginated writes an unpaginated list envelope.
+// Generic: compile-time type checking on the data parameter.
+func respondListUnpaginated[T any](w http.ResponseWriter, data T, count int) {
 	envelope.Write(w, envelope.ListUnpaginated(data, count))
 }
 
