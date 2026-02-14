@@ -6,8 +6,8 @@
 
 | File | Description |
 |------|-------------|
-| `../plan.md` | Consolidated pending backlog — 11 pending items |
-| `active.md` | Status overview — all major tracks complete |
+| `../plan.md` | Consolidated pending backlog — 4 pending items |
+| `active.md` | Status overview — enum foundation complete |
 | `technical-notes.md` | Root cause analyses, architecture decisions |
 | `completed/` | All completed plan files archived |
 
@@ -38,12 +38,13 @@
 
 | File | Description |
 |------|-------------|
-| `02-naming-convention-refactor-plan.md` | Phases 3, 5, 6 still pending |
-| `03-j1-constants-audit.md` | J2–J7 enum migration phases pending |
+| `02-naming-convention-refactor-plan.md` | Phases 5, 6 still pending |
+| `03-j1-constants-audit.md` | J6-J7 (caller migration + alias removal) pending |
 
 ## Current Focus
 
-**Backlog audit complete.** 11 pending items consolidated in `plan.md`. Priority items:
-1. K3: PathUtils snake_case fix (contains critical bug)
-2. K1: Spec documentation updates
-3. J2–J7: constants.php enum migration
+**4 pending items remaining:**
+1. Define() alias caller migration (~785 references across ~60 files)
+2. Remove define() aliases from constants.php
+3. Go backend interface{} type-safety (~2,680 instances across 58 files)
+4. Naming convention phases 5-6 (hook/path compliance + cleanup)

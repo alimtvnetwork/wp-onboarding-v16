@@ -49,6 +49,18 @@ require_once __DIR__ . '/includes/Enums/LogLevelType.php';
 require_once __DIR__ . '/includes/Enums/ActionType.php';
 require_once __DIR__ . '/includes/Enums/StatusType.php';
 require_once __DIR__ . '/includes/Enums/PostStatusType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotStatusType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotJobStatusType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotScopeType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotFrequencyType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotProviderType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotTriggerType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotExportStatusType.php';
+require_once __DIR__ . '/includes/Enums/SnapshotModeType.php';
+require_once __DIR__ . '/includes/Enums/RetentionType.php';
+require_once __DIR__ . '/includes/Enums/AgentStatusType.php';
+require_once __DIR__ . '/includes/Enums/TriggerSourceType.php';
+require_once __DIR__ . '/includes/Enums/SyncActionType.php';
 
 // Error checker (uses RiseupAsia\Enums\ErrorType internally)
 require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';
