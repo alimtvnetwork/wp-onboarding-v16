@@ -23,80 +23,80 @@ trait PluginRouteRegistrationTrait {
     private function registerPluginRoutes($safeRegister) {
         $perm = array($this, 'checkPluginPermission');
 
-        $safeRegister(EndpointType::Upload->value, array(
+        $safeRegister(EndpointType::Upload->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleUpload'),
             'permission_callback' => $this->buildPermissionCallback('upload', $perm),
         ));
 
-        $safeRegister(EndpointType::Plugins->value, array(
+        $safeRegister(EndpointType::Plugins->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleListPlugins'),
             'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safeRegister(EndpointType::ExportSelf->value, array(
+        $safeRegister(EndpointType::ExportSelf->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleExportSelf'),
             'permission_callback' => $this->buildPermissionCallback('export_self', $perm),
         ));
 
-        $safeRegister(EndpointType::PluginFiles->value, array(
+        $safeRegister(EndpointType::PluginFiles->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handlePluginFiles'),
             'permission_callback' => $this->buildPermissionCallback('plugin_files', $perm),
         ));
 
-        $safeRegister(EndpointType::SyncManifest->value, array(
+        $safeRegister(EndpointType::SyncManifest->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleSyncManifest'),
             'permission_callback' => $this->buildPermissionCallback('sync_manifest', $perm),
         ));
 
-        $safeRegister(EndpointType::Sync->value, array(
+        $safeRegister(EndpointType::Sync->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleSyncPush'),
             'permission_callback' => $this->buildPermissionCallback('sync_push', $perm),
         ));
 
-        $safeRegister(EndpointType::PluginFile->value, array(
+        $safeRegister(EndpointType::PluginFile->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handlePluginFileContent'),
             'permission_callback' => $this->buildPermissionCallback('plugin_file', $perm),
         ));
 
-        $safeRegister(EndpointType::PluginExists->value, array(
+        $safeRegister(EndpointType::PluginExists->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handlePluginExists'),
             'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safeRegister(EndpointType::PluginEnable->value, array(
+        $safeRegister(EndpointType::PluginEnable->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleEnablePlugin'),
             'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safeRegister(EndpointType::PluginDisable->value, array(
+        $safeRegister(EndpointType::PluginDisable->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleDisablePlugin'),
             'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safeRegister(EndpointType::PluginDelete->value, array(
+        $safeRegister(EndpointType::PluginDelete->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleDeletePlugin'),
             'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safeRegister(EndpointType::PluginExport->value, array(
+        $safeRegister(EndpointType::PluginExport->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleExportPlugin'),
             'permission_callback' => $this->buildPermissionCallback('plugin_export', $perm),
         ));
 
         try {
-            $safeRegister(EndpointType::Media->value, array(
+            $safeRegister(EndpointType::Media->route(), array(
                 'methods'             => HttpMethodType::Post->value,
                 'callback'            => array($this, 'handleMediaUpload'),
                 'permission_callback' => $this->buildPermissionCallback('media', $perm),
@@ -124,7 +124,7 @@ trait PluginRouteRegistrationTrait {
 
         foreach ($agent_routes as $route) {
             try {
-                $safeRegister($route['endpoint']->value, array(
+                $safeRegister($route['endpoint']->route(), array(
                     'methods'             => $route['method']->value,
                     'callback'            => array($this, $route['handler']),
                     'permission_callback' => $this->buildPermissionCallback('agents', array($this, 'checkPluginPermission')),

@@ -27,13 +27,13 @@ trait RouteRegistrationTrait
         $registered = 0;
         $failed = 0;
 
-        $safeRegister = function ($endpointConst, $args) use (&$registered, &$failed) {
+        $safeRegister = function (string $route, $args) use (&$registered, &$failed) {
             try {
-                register_rest_route(API_FULL_NAMESPACE, '/' . $endpointConst, $args);
+                register_rest_route(API_FULL_NAMESPACE, $route, $args);
                 $registered++;
             } catch (Throwable $e) {
                 $failed++;
-                $this->fileLogger->error('Failed to register route: ' . $endpointConst . ' - ' . $e->getMessage());
+                $this->fileLogger->error('Failed to register route: ' . $route . ' - ' . $e->getMessage());
             }
         };
 
@@ -54,19 +54,19 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerUtilityRoutes($safeRegister) {
-        $safeRegister(EndpointType::Status->value, array(
+        $safeRegister(EndpointType::Status->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleStatus'),
             'permission_callback' => $this->buildPermissionCallback('status', array($this, 'checkStatusPermission')),
         ));
 
-        $safeRegister(EndpointType::Openapi->value, array(
+        $safeRegister(EndpointType::Openapi->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleOpenapi'),
             'permission_callback' => $this->buildPermissionCallback('openapi', array($this, 'checkStatusPermission')),
         ));
 
-        $safeRegister(EndpointType::OpcacheReset->value, array(
+        $safeRegister(EndpointType::OpcacheReset->route(), array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleOpcacheReset'),
             'permission_callback' => $this->buildPermissionCallback('opcache_reset', array($this, 'checkPluginPermission')),
@@ -79,7 +79,7 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerPostRoutes($safeRegister) {
-        $safeRegister(EndpointType::Posts->value, array(
+        $safeRegister(EndpointType::Posts->route(), array(
             array(
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListPosts'),
@@ -92,7 +92,7 @@ trait RouteRegistrationTrait
             ),
         ));
 
-        $safeRegister(EndpointType::Categories->value, array(
+        $safeRegister(EndpointType::Categories->route(), array(
             array(
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListCategories'),
@@ -112,13 +112,13 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerLogRoutes($safeRegister) {
-        $safeRegister(EndpointType::Logs->value, array(
+        $safeRegister(EndpointType::Logs->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleQueryLogs'),
             'permission_callback' => $this->buildPermissionCallback('logs', array($this, 'checkLogsPermission')),
         ));
 
-        $safeRegister(EndpointType::LogsStats->value, array(
+        $safeRegister(EndpointType::LogsStats->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleLogsStats'),
             'permission_callback' => $this->buildPermissionCallback('logs', array($this, 'checkLogsPermission')),
@@ -131,7 +131,7 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerCatchAllRoute($safeRegister) {
-        $safeRegister('(?P<invalid_path>.+)', array(
+        $safeRegister('/(?P<invalid_path>.+)', array(
             'methods'             => array(
                 HttpMethodType::Get->value,
                 HttpMethodType::Post->value,
