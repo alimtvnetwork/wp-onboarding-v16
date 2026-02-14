@@ -1,0 +1,22 @@
+# Memory: architecture/backend/go-type-remediation-progress
+Updated: 2026-02-14
+
+The Go backend remediation (Feature F) is now COMPLETE across all packages:
+
+## Completed Packages
+1. **handlers** (~999 instances) — Typed response structs in `response_types.go`, `any` alias throughout
+2. **services** (~942 instances) — All 18 service files migrated to `any`
+3. **ws** (~30 instances) — Created 10 typed broadcast data structs (SyncProgressData, ScanProgressData, PublishProgressData, FileChangeData, ErrorData, ConnectionTestProgressData, LogData, OperationLogData, ConnectionConfirmation, IncomingMessage) replacing all `map[string]interface{}` literals
+4. **envelope** — `interface{}` → `any` in all builder functions (Success, Created, Deleted, List, Error)
+5. **models** — Named type aliases `ErrorLogContext`, `ErrorHistoryContext`, `ErrorHistoryRequestBody` for `map[string]any`
+6. **config** — `map[string]interface{}` → `map[string]any` in seedFromConfig
+7. **database** — `PluginVersionRow` type alias, `any` in SetSettingIfNotExists and query args
+8. **dbops** — `ContextFields` type alias for `map[string]any`, `any` in all Exec/Find/Create signatures
+9. **logger** — `interface{}` → `any` in all variadic log methods
+10. **apperror** — `ErrorContext` type alias, `any` in WithContext
+11. **wordpress/client** — `any` in request body parameter
+12. **cmd/server/main** — `any` in E2E adapter signatures, broadcast callback, progress callback
+
+## Remaining (test files only — acceptable per GE-5)
+- `envelope_test.go` — 3 instances (type assertions in test assertions)
+- `remote_files_test.go` — 1 instance (JSON decode in test)

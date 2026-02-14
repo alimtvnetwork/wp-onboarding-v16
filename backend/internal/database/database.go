@@ -172,7 +172,7 @@ func (db *DB) SetSeedVersion(version string) error {
 }
 
 // SetSettingIfNotExists creates a setting only if it doesn't already exist
-func (db *DB) SetSettingIfNotExists(key string, value interface{}) error {
+func (db *DB) SetSettingIfNotExists(key string, value any) error {
 	_, err := db.Exec(`
 		INSERT OR IGNORE INTO AppConfig (Key, Value, UpdatedAt) 
 		VALUES (?, ?, datetime('now'))
@@ -271,7 +271,7 @@ func (db *DB) CreateSeedMapping(pluginID, siteID int64, remoteSlug string, log *
 	ctx := dbops.Context{
 		Table:  "PluginMappings",
 		Logger: log,
-		Fields: map[string]interface{}{
+		Fields: dbops.ContextFields{
 			"pluginId":   pluginID,
 			"siteId":     siteID,
 			"remoteSlug": remoteSlug,
@@ -316,8 +316,11 @@ func (db *DB) CreatePluginVersion(pluginID, siteID int64, version, backupPath st
 	return result.LastInsertId()
 }
 
+// PluginVersionRow holds a single plugin version record from the database.
+type PluginVersionRow = map[string]any
+
 // GetPluginVersions returns version history for a plugin, optionally filtered by site
-func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]map[string]interface{}, error) {
+func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]PluginVersionRow, error) {
 	query := `
 		SELECT pv.Id, pv.PluginId, pv.SiteId, s.Name as SiteName, pv.Version, pv.BackupPath, 
 			   pv.FilesUpdated, pv.GitCommitHash, pv.PublishType, pv.Status, pv.Notes, pv.CreatedAt
@@ -325,7 +328,7 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]map
 		LEFT JOIN Sites s ON pv.SiteId = s.Id
 		WHERE pv.PluginId = ?
 	`
-	args := []interface{}{pluginID}
+	args := []any{pluginID}
 
 	if siteID != nil && *siteID > 0 {
 		query += " AND pv.SiteId = ?"
@@ -341,7 +344,7 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]map
 	}
 	defer rows.Close()
 
-	var versions []map[string]interface{}
+	var versions []PluginVersionRow
 	for rows.Next() {
 		var id, pluginId, siteId, filesUpdated int64
 		var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
@@ -352,7 +355,7 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]map
 			continue
 		}
 
-		v := map[string]interface{}{
+		v := PluginVersionRow{
 			"id":            id,
 			"pluginId":      pluginId,
 			"siteId":        siteId,
@@ -370,13 +373,13 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]map
 	}
 
 	if versions == nil {
-		versions = []map[string]interface{}{}
+		versions = []PluginVersionRow{}
 	}
 	return versions, nil
 }
 
 // GetPluginVersionByID returns a specific version entry
-func (db *DB) GetPluginVersionByID(versionID int64) (map[string]interface{}, error) {
+func (db *DB) GetPluginVersionByID(versionID int64) (PluginVersionRow, error) {
 	var id, pluginId, siteId, filesUpdated int64
 	var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
 
@@ -392,7 +395,7 @@ func (db *DB) GetPluginVersionByID(versionID int64) (map[string]interface{}, err
 		return nil, err
 	}
 
-	return map[string]interface{}{
+	return PluginVersionRow{
 		"id":            id,
 		"pluginId":      pluginId,
 		"siteId":        siteId,

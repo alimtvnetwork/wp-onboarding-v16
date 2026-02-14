@@ -133,7 +133,7 @@ func (c *Client) setStandardHeaders(req *http.Request, contentType string) {
 }
 
 // request makes an authenticated HTTP request to the WordPress API
-func (c *Client) request(method, endpoint string, body interface{}) (*http.Response, error) {
+func (c *Client) request(method, endpoint string, body any) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {
 		jsonBody, err := json.Marshal(body)

@@ -55,10 +55,89 @@ type Client struct {
 
 // Message represents a WebSocket message
 type Message struct {
-	Type      string      `json:"type"`
-	Data      interface{} `json:"data"`
-	Timestamp string      `json:"timestamp"`
-	SessionID string      `json:"sessionId,omitempty"`
+	Type      string `json:"type"`
+	Data      any    `json:"data"`
+	Timestamp string `json:"timestamp"`
+	SessionID string `json:"sessionId,omitempty"`
+}
+
+// --- Typed broadcast data structs (GE pattern: no raw map[string]any in business logic) ---
+
+// SyncProgressData holds sync progress broadcast payload.
+type SyncProgressData struct {
+	PluginID int64  `json:"pluginId"`
+	SiteID   int64  `json:"siteId"`
+	Progress int    `json:"progress"`
+	Total    int    `json:"total"`
+	Message  string `json:"message"`
+}
+
+// ScanProgressData holds scan progress broadcast payload.
+type ScanProgressData struct {
+	PluginID     int64  `json:"pluginId"`
+	FilesScanned int    `json:"filesScanned"`
+	TotalFiles   int    `json:"totalFiles"`
+	CurrentFile  string `json:"currentFile"`
+}
+
+// PublishProgressData holds publish progress broadcast payload.
+type PublishProgressData struct {
+	PluginID int64  `json:"pluginId"`
+	SiteID   int64  `json:"siteId"`
+	Stage    string `json:"stage"`
+	Progress int    `json:"progress"`
+	Message  string `json:"message"`
+}
+
+// FileChangeData holds file change broadcast payload.
+type FileChangeData struct {
+	PluginID   int64  `json:"pluginId"`
+	FilePath   string `json:"filePath"`
+	ChangeType string `json:"changeType"`
+}
+
+// ErrorData holds error broadcast payload.
+type ErrorData struct {
+	Code    string         `json:"code"`
+	Message string         `json:"message"`
+	Context map[string]any `json:"context,omitempty"`
+}
+
+// ConnectionTestProgressData holds connection test progress broadcast payload.
+type ConnectionTestProgressData struct {
+	SiteID  int64          `json:"siteId"`
+	Step    string         `json:"step"`
+	Status  string         `json:"status"`
+	Message string         `json:"message"`
+	Details map[string]any `json:"details,omitempty"`
+}
+
+// LogData holds log broadcast payload.
+type LogData struct {
+	Level   string         `json:"level"`
+	Message string         `json:"message"`
+	Context map[string]any `json:"context,omitempty"`
+}
+
+// OperationLogData holds operation log broadcast payload.
+type OperationLogData struct {
+	OperationType string            `json:"operationType"`
+	PluginID      int64             `json:"pluginId"`
+	SiteID        int64             `json:"siteId"`
+	SessionID     string            `json:"sessionId,omitempty"`
+	Log           OperationLogEntry `json:"log"`
+}
+
+// ConnectionConfirmation holds connection confirmation broadcast payload.
+type ConnectionConfirmation struct {
+	Status   string `json:"status"`
+	ClientID string `json:"clientId"`
+}
+
+// IncomingMessage represents a parsed incoming WebSocket message.
+type IncomingMessage struct {
+	Type string         `json:"type"`
+	Data map[string]any `json:"data"`
 }
 
 // Event types for WebSocket messages
@@ -173,12 +252,12 @@ func (h *Hub) Run() {
 }
 
 // Broadcast sends a message to all connected clients
-func (h *Hub) Broadcast(eventType string, data interface{}) {
+func (h *Hub) Broadcast(eventType string, data any) {
 	h.BroadcastWithSession(eventType, data, "")
 }
 
 // BroadcastWithSession sends a message to all connected clients with a session ID
-func (h *Hub) BroadcastWithSession(eventType string, data interface{}, sessionID string) {
+func (h *Hub) BroadcastWithSession(eventType string, data any, sessionID string) {
 	h.broadcast <- &Message{
 		Type:      eventType,
 		Data:      data,
@@ -189,86 +268,83 @@ func (h *Hub) BroadcastWithSession(eventType string, data interface{}, sessionID
 
 // BroadcastSyncProgress sends a sync progress update
 func (h *Hub) BroadcastSyncProgress(pluginID, siteID int64, progress int, total int, message string) {
-	h.Broadcast(EventSyncProgress, map[string]interface{}{
-		"pluginId": pluginID,
-		"siteId":   siteID,
-		"progress": progress,
-		"total":    total,
-		"message":  message,
+	h.Broadcast(EventSyncProgress, SyncProgressData{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Progress: progress,
+		Total:    total,
+		Message:  message,
 	})
 }
 
 // BroadcastScanProgress sends a scan progress update
 func (h *Hub) BroadcastScanProgress(pluginID int64, filesScanned int, totalFiles int, currentFile string) {
-	h.Broadcast(EventScanProgress, map[string]interface{}{
-		"pluginId":     pluginID,
-		"filesScanned": filesScanned,
-		"totalFiles":   totalFiles,
-		"currentFile":  currentFile,
+	h.Broadcast(EventScanProgress, ScanProgressData{
+		PluginID:     pluginID,
+		FilesScanned: filesScanned,
+		TotalFiles:   totalFiles,
+		CurrentFile:  currentFile,
 	})
 }
 
 // BroadcastPublishProgress sends a publish progress update
 func (h *Hub) BroadcastPublishProgress(pluginID, siteID int64, stage string, progress int, message string) {
-	h.Broadcast(EventPublishProgress, map[string]interface{}{
-		"pluginId": pluginID,
-		"siteId":   siteID,
-		"stage":    stage,
-		"progress": progress,
-		"message":  message,
+	h.Broadcast(EventPublishProgress, PublishProgressData{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Stage:    stage,
+		Progress: progress,
+		Message:  message,
 	})
 }
 
 // BroadcastFileChange notifies clients of a file change
 func (h *Hub) BroadcastFileChange(pluginID int64, filePath, changeType string) {
-	h.Broadcast(EventFileChange, map[string]interface{}{
-		"pluginId":   pluginID,
-		"filePath":   filePath,
-		"changeType": changeType,
+	h.Broadcast(EventFileChange, FileChangeData{
+		PluginID:   pluginID,
+		FilePath:   filePath,
+		ChangeType: changeType,
 	})
 }
 
 // BroadcastError sends an error notification
-func (h *Hub) BroadcastError(code, message string, context map[string]interface{}) {
-	h.Broadcast(EventError, map[string]interface{}{
-		"code":    code,
-		"message": message,
-		"context": context,
+func (h *Hub) BroadcastError(code, message string, context map[string]any) {
+	h.Broadcast(EventError, ErrorData{
+		Code:    code,
+		Message: message,
+		Context: context,
 	})
 }
 
 // BroadcastConnectionTestProgress sends a connection test progress update
-func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]interface{}) {
-	data := map[string]interface{}{
-		"siteId":  siteID,
-		"step":    step,
-		"status":  status,
-		"message": message,
-	}
-	if details != nil {
-		data["details"] = details
-	}
-	h.Broadcast(EventConnectionTestProgress, data)
+func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]any) {
+	h.Broadcast(EventConnectionTestProgress, ConnectionTestProgressData{
+		SiteID:  siteID,
+		Step:    step,
+		Status:  status,
+		Message: message,
+		Details: details,
+	})
 }
 
 // BroadcastLog sends a log message to all clients
-func (h *Hub) BroadcastLog(level string, message string, context map[string]interface{}) {
-	h.Broadcast(EventLog, map[string]interface{}{
-		"level":   level,
-		"message": message,
-		"context": context,
+func (h *Hub) BroadcastLog(level string, message string, context map[string]any) {
+	h.Broadcast(EventLog, LogData{
+		Level:   level,
+		Message: message,
+		Context: context,
 	})
 }
 
 // OperationLogEntry represents a single log entry for an operation
 type OperationLogEntry struct {
-	Timestamp string                 `json:"timestamp"` // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
-	Level     string                 `json:"level"`  // debug, info, warn, error
-	Step      string                 `json:"step"`   // backup, package, upload, activate, etc.
-	Message   string                 `json:"message"`
-	Details   map[string]interface{} `json:"details,omitempty"`
-	File      string                 `json:"file,omitempty"`  // Source file path
-	Line      int                    `json:"line,omitempty"`  // Source line number
+	Timestamp string         `json:"timestamp"` // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
+	Level     string         `json:"level"`  // debug, info, warn, error
+	Step      string         `json:"step"`   // backup, package, upload, activate, etc.
+	Message   string         `json:"message"`
+	Details   map[string]any `json:"details,omitempty"`
+	File      string         `json:"file,omitempty"`  // Source file path
+	Line      int            `json:"line,omitempty"`  // Source line number
 }
 
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
@@ -281,22 +357,22 @@ func (h *Hub) BroadcastOperationLogWithSession(operationType string, pluginID, s
 	if entry.Timestamp == "" {
 		entry.Timestamp = formatLogTimestamp()
 	}
-	h.BroadcastWithSession(EventLog, map[string]interface{}{
-		"operationType": operationType,
-		"pluginId":      pluginID,
-		"siteId":        siteID,
-		"sessionId":     sessionID,
-		"log":           entry,
+	h.BroadcastWithSession(EventLog, OperationLogData{
+		OperationType: operationType,
+		PluginID:      pluginID,
+		SiteID:        siteID,
+		SessionID:     sessionID,
+		Log:           entry,
 	}, sessionID)
 }
 
 // BroadcastPublishLog is a convenience method for publish operation logs
-func (h *Hub) BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details map[string]any) {
 	h.BroadcastPublishLogWithSession(pluginID, siteID, "", level, step, message, details)
 }
 
 // BroadcastPublishLogWithSession is a convenience method for publish operation logs with session
-func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]any) {
 	h.BroadcastOperationLogWithSession("publish", pluginID, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -306,7 +382,7 @@ func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, 
 }
 
 // BroadcastSyncLog is a convenience method for sync operation logs
-func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details map[string]any) {
 	h.BroadcastOperationLog("sync", pluginID, siteID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -316,7 +392,7 @@ func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message stri
 }
 
 // BroadcastSyncLogWithSession is a convenience method for sync operation logs with session
-func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]any) {
 	h.BroadcastOperationLogWithSession("sync", pluginID, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -326,7 +402,7 @@ func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, lev
 }
 
 // BroadcastBackupLog is a convenience method for backup operation logs
-func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, details map[string]any) {
 	h.BroadcastOperationLog("backup", pluginID, 0, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -336,7 +412,7 @@ func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, de
 }
 
 // BroadcastBackupLogWithSession is a convenience method for backup operation logs with session
-func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, step, message string, details map[string]any) {
 	h.BroadcastOperationLogWithSession("backup", pluginID, 0, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -346,12 +422,12 @@ func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, st
 }
 
 // BroadcastRemotePluginLog is a convenience method for remote plugin action logs
-func (h *Hub) BroadcastRemotePluginLog(siteID int64, action, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastRemotePluginLog(siteID int64, action, level, step, message string, details map[string]any) {
 	h.BroadcastRemotePluginLogWithSession(siteID, action, "", level, step, message, details)
 }
 
 // BroadcastRemotePluginLogWithSession is a convenience method for remote plugin action logs with session
-func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details map[string]interface{}) {
+func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details map[string]any) {
 	h.BroadcastOperationLogWithSession("remote_plugin_"+action, 0, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -376,9 +452,9 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	h.register <- client
 
 	// Send connection confirmation
-	h.Broadcast(EventConnection, map[string]string{
-		"status":    "connected",
-		"clientId":  conn.RemoteAddr().String(),
+	h.Broadcast(EventConnection, ConnectionConfirmation{
+		Status:   "connected",
+		ClientID: conn.RemoteAddr().String(),
 	})
 
 	// Start goroutines for reading and writing
@@ -412,10 +488,7 @@ func (c *Client) readPump() {
 
 // handleMessage processes incoming WebSocket messages
 func (c *Client) handleMessage(message []byte) {
-	var msg struct {
-		Type string                 `json:"type"`
-		Data map[string]interface{} `json:"data"`
-	}
+	var msg IncomingMessage
 
 	if err := json.Unmarshal(message, &msg); err != nil {
 		return
