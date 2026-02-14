@@ -200,7 +200,7 @@ func (s *PublishScheduler) executeJob(jobID string) {
 
 	// Broadcast job starting
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventPublishProgress, map[string]interface{}{
+		s.wsHub.Broadcast(ws.EventPublishProgress, map[string]any{
 			"type":       "scheduled_job_started",
 			"jobId":      jobID,
 			"pluginId":   job.PluginID,
@@ -247,7 +247,7 @@ func (s *PublishScheduler) executeJob(jobID string) {
 
 	// Broadcast job complete
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventPublishProgress, map[string]interface{}{
+		s.wsHub.Broadcast(ws.EventPublishProgress, map[string]any{
 			"type":       "scheduled_job_complete",
 			"jobId":      jobID,
 			"pluginId":   job.PluginID,
@@ -349,9 +349,9 @@ func (s *PublishScheduler) broadcastJobUpdate() {
 	if s.wsHub == nil {
 		return
 	}
-	jobs := make([]map[string]interface{}, 0)
+	jobs := make([]map[string]any, 0)
 	for _, job := range s.jobs {
-		j := map[string]interface{}{
+		j := map[string]any{
 			"id":         job.ID,
 			"pluginId":   job.PluginID,
 			"pluginName": job.PluginName,
@@ -367,7 +367,7 @@ func (s *PublishScheduler) broadcastJobUpdate() {
 		}
 		jobs = append(jobs, j)
 	}
-	s.wsHub.Broadcast(ws.EventPublishProgress, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventPublishProgress, map[string]any{
 		"type": "scheduled_jobs_update",
 		"jobs": jobs,
 	})

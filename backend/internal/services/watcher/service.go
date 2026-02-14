@@ -249,7 +249,7 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	)
 
 	// Notify clients that auto-publish is starting
-	s.wsHub.Broadcast(ws.EventAutoPublishTriggered, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventAutoPublishTriggered, map[string]any{
 		"pluginId":   pluginID,
 		"pluginName": p.Name,
 		"changes":    len(changes),
@@ -273,7 +273,7 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 				"siteId", mapping.SiteID,
 				"error", err,
 			)
-			s.wsHub.Broadcast(ws.EventAutoPublishFailed, map[string]interface{}{
+			s.wsHub.Broadcast(ws.EventAutoPublishFailed, map[string]any{
 				"pluginId": pluginID,
 				"siteId":   mapping.SiteID,
 				"siteName": mapping.SiteName,
@@ -282,7 +282,7 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 			continue
 		}
 		successCount++
-		s.wsHub.Broadcast(ws.EventAutoPublishComplete, map[string]interface{}{
+		s.wsHub.Broadcast(ws.EventAutoPublishComplete, map[string]any{
 			"pluginId":     pluginID,
 			"siteId":       mapping.SiteID,
 			"siteName":     mapping.SiteName,
@@ -412,7 +412,7 @@ func (s *Service) broadcastChanges(pluginID int64, changes []FileChange, trigger
 		}
 	}
 
-	s.wsHub.Broadcast(ws.EventFileChange, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventFileChange, map[string]any{
 		"pluginId":    pluginID,
 		"triggerType": triggerType,
 		"changes":     changes,

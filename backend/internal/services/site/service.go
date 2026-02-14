@@ -41,26 +41,26 @@ type Config struct {
 }
 
 // WPClientFactory creates WordPress clients with optional progress callback
-type WPClientFactory func(url, user, pass string, onProgress func(step, status, message string, details map[string]interface{})) *wordpress.Client
+type WPClientFactory func(url, user, pass string, onProgress func(step, status, message string, details map[string]any)) *wordpress.Client
 
 // WSHub interface for broadcasting messages
 type WSHub interface {
-	BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]interface{})
-	BroadcastLog(level string, message string, context map[string]interface{})
-	BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details map[string]interface{})
-	BroadcastWithSession(eventType string, data interface{}, sessionID string)
+	BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]any)
+	BroadcastLog(level string, message string, context map[string]any)
+	BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details map[string]any)
+	BroadcastWithSession(eventType string, data any, sessionID string)
 }
 
 // SessionService interface for session-based logging
 type SessionService interface {
 	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
-	Log(sessionID, level, step, message string, details map[string]interface{})
+	Log(sessionID, level, step, message string, details map[string]any)
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
 	EndSession(sessionID, status, errorMsg string)
 	SaveRequest(sessionID string, req *session.SessionRequest)
 	SaveResponse(sessionID string, resp *session.SessionResponse)
-	SaveError(sessionID string, stackTrace *session.SessionStackTrace, errorMsg string, details map[string]interface{})
+	SaveError(sessionID string, stackTrace *session.SessionStackTrace, errorMsg string, details map[string]any)
 }
 
 // Service provides site management operations
@@ -356,7 +356,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 
 	site, err := s.GetByID(ctx, id)
 	if err != nil {
-		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", map[string]interface{}{"error": err.Error()})
+		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", map[string]any{"error": err.Error()})
 		return nil, err
 	}
 	s.broadcastProgress(id, "fetch_site", "success", fmt.Sprintf("Retrieved site: %s", site.Name), nil)
@@ -365,14 +365,14 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	s.broadcastProgress(id, "decrypt", "running", "Decrypting credentials...", nil)
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", map[string]interface{}{"error": err.Error()})
+		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", map[string]any{"error": err.Error()})
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 	s.broadcastProgress(id, "decrypt", "success", "Credentials decrypted", nil)
 
 	// Create WordPress client with progress callback
 	s.broadcastProgress(id, "connect", "running", fmt.Sprintf("Connecting to %s...", site.URL), nil)
-	progressCallback := func(step, status, message string, details map[string]interface{}) {
+	progressCallback := func(step, status, message string, details map[string]any) {
 		s.broadcastProgress(id, step, status, message, details)
 	}
 	client := s.wpClientFactory(site.URL, site.Username, string(password), progressCallback)
@@ -383,7 +383,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]interface{}{
+		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]any{
 			"url":      site.URL,
 			"username": site.Username,
 		})
@@ -400,7 +400,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), map[string]interface{}{
+	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), map[string]any{
 		"wpVersion": connInfo.WPVersion,
 	})
 
@@ -419,13 +419,13 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	
 	// Broadcast progress (use 0 as siteId for pre-create tests)
 	s.broadcastProgress(0, "start", "running", "Testing connection with provided credentials...", nil)
-	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), map[string]interface{}{
+	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), map[string]any{
 		"originalUrl":   siteURL,
 		"normalizedUrl": normalizedURL,
 	})
 	
 	// Create WordPress client with progress callback
-	progressCallback := func(step, status, message string, details map[string]interface{}) {
+	progressCallback := func(step, status, message string, details map[string]any) {
 		s.broadcastProgress(0, step, status, message, details)
 	}
 	client := s.wpClientFactory(normalizedURL, username, password, progressCallback)
@@ -435,7 +435,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]interface{}{
+		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]any{
 			"url":      normalizedURL,
 			"username": username,
 		})
@@ -448,7 +448,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), map[string]interface{}{
+	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), map[string]any{
 		"wpVersion": connInfo.WPVersion,
 	})
 	s.broadcastProgress(0, "complete", "success", "Connection test completed successfully", nil)
@@ -457,7 +457,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 }
 
 // broadcastProgress sends connection test progress via WebSocket
-func (s *Service) broadcastProgress(siteID int64, step, status, message string, details map[string]interface{}) {
+func (s *Service) broadcastProgress(siteID int64, step, status, message string, details map[string]any) {
 	if s.wsHub != nil {
 		s.wsHub.BroadcastConnectionTestProgress(siteID, step, status, message, details)
 	}
@@ -671,7 +671,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	// Broadcast start
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", map[string]interface{}{
+		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", map[string]any{
 			"siteId":   id,
 			"siteName": site.Name,
 			"siteUrl":  site.URL,
@@ -685,9 +685,9 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	// Create WordPress client with progress callback
-	progressCallback := func(step, status, message string, details map[string]interface{}) {
+	progressCallback := func(step, status, message string, details map[string]any) {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), map[string]interface{}{
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), map[string]any{
 				"siteId":   id,
 				"siteName": site.Name,
 				"step":     step,
@@ -705,7 +705,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", map[string]interface{}{
+		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", map[string]any{
 			"siteId": id,
 			"path":   uploaderPath,
 		})
@@ -715,7 +715,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), map[string]interface{}{"siteId": id})
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), map[string]any{"siteId": id})
 		}
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
@@ -729,26 +729,26 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	if available && namespace != "" {
 		// Uploader is already on the site - use it to update itself
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), map[string]interface{}{"siteId": id})
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), map[string]any{"siteId": id})
 		}
 		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, wordpress.UploadSourceRestAPI)
 	} else {
 		// First-time installation - use Onboard plugin or standard upload
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", map[string]interface{}{"siteId": id})
+			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", map[string]any{"siteId": id})
 		}
 		
 		// Try Onboard plugin first
 		onboardAvailable := s.checkOnboardAvailable(client)
 		if onboardAvailable {
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", map[string]interface{}{"siteId": id})
+				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", map[string]any{"siteId": id})
 			}
 			uploadResult, err = client.UploadPluginViaOnboard(zipPath, true)
 		} else {
 		// No helper plugin available - this is a limitation
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", map[string]interface{}{"siteId": id})
+				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", map[string]any{"siteId": id})
 			}
 			return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
 		}
@@ -756,20 +756,20 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), map[string]interface{}{"siteId": id})
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), map[string]any{"siteId": id})
 		}
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", map[string]interface{}{
+		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", map[string]any{
 			"siteId":    id,
 			"siteName":  site.Name,
 			"activated": uploadResult.Activated,
 		})
 	}
 
-	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", map[string]interface{}{
+	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", map[string]any{
 		"siteId":   id,
 		"siteName": site.Name,
 		"siteUrl":  site.URL,
@@ -1215,7 +1215,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	}
 
 	// Log start
-	s.logRemoteAction(sessionID, siteID, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), map[string]interface{}{
+	s.logRemoteAction(sessionID, siteID, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), map[string]any{
 		"siteId":     siteID,
 		"siteName":   site.Name,
 		"siteUrl":    site.URL,
@@ -1227,7 +1227,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		s.sessionService.SaveRequest(sessionID, &session.SessionRequest{
 			URL:    fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", siteID, pluginSlug, action),
 			Method: "POST",
-			Body: map[string]interface{}{
+			Body: map[string]any{
 				"siteId":     siteID,
 				"pluginSlug": pluginSlug,
 				"action":     action,
@@ -1237,7 +1237,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 	// Broadcast start event
 	if s.wsHub != nil {
-		s.wsHub.BroadcastWithSession("remote_plugin_action_started", map[string]interface{}{
+		s.wsHub.BroadcastWithSession("remote_plugin_action_started", map[string]any{
 			"siteId":     siteID,
 			"siteName":   site.Name,
 			"action":     action,
@@ -1250,7 +1250,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
 		errMsg := "failed to decrypt password"
-		s.logRemoteAction(sessionID, siteID, action, "error", "decrypt", errMsg, map[string]interface{}{"error": err.Error()})
+		s.logRemoteAction(sessionID, siteID, action, "error", "decrypt", errMsg, map[string]any{"error": err.Error()})
 		s.endRemoteSession(sessionID, "error", errMsg)
 		return apperror.Wrap(err, apperror.ErrInternal, errMsg)
 	}
@@ -1263,7 +1263,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.LogStageStart(sessionID, action)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), map[string]interface{}{
+	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), map[string]any{
 		"targetUrl":  site.URL,
 		"pluginSlug": pluginSlug,
 	})
@@ -1290,8 +1290,8 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 				responseBody = rb
 			}
 			// Parse response body for structured storage
-			var parsedBody interface{} = responseBody
-			var bodyMap map[string]interface{}
+			var parsedBody any = responseBody
+			var bodyMap map[string]any
 			if json.Unmarshal([]byte(responseBody), &bodyMap) == nil {
 				parsedBody = bodyMap
 			}
@@ -1328,7 +1328,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 		// Broadcast failure
 		if s.wsHub != nil {
-			s.wsHub.BroadcastWithSession("remote_plugin_action_complete", map[string]interface{}{
+			s.wsHub.BroadcastWithSession("remote_plugin_action_complete", map[string]any{
 				"siteId":       siteID,
 				"action":       action,
 				"pluginSlug":   pluginSlug,
@@ -1355,11 +1355,11 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.URL, action),
 			ResponseURL: site.URL,
 			StatusCode:  200,
-			Body:        map[string]interface{}{"success": true, "action": action, "plugin": pluginSlug},
+			Body:        map[string]any{"success": true, "action": action, "plugin": pluginSlug},
 		})
 		s.sessionService.LogStageEnd(sessionID, action, "success", durationMs)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), map[string]interface{}{
+	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), map[string]any{
 		"durationMs": durationMs,
 	})
 
@@ -1370,7 +1370,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 	// Broadcast success
 	if s.wsHub != nil {
-		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", map[string]interface{}{
+		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", map[string]any{
 			"siteId":     siteID,
 			"siteName":   site.Name,
 			"action":     action,
@@ -1385,11 +1385,11 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 }
 
 // buildPHPStackFrames extracts PHP stack trace frames from error details into typed structs
-func (s *Service) buildPHPStackFrames(details map[string]interface{}) []session.StackFrame {
+func (s *Service) buildPHPStackFrames(details map[string]any) []session.StackFrame {
 	var frames []session.StackFrame
-	if rawFrames, ok := details["stackTraceFrames"].([]interface{}); ok {
+	if rawFrames, ok := details["stackTraceFrames"].([]any); ok {
 		for _, f := range rawFrames {
-			if fm, ok := f.(map[string]interface{}); ok {
+			if fm, ok := f.(map[string]any); ok {
 				frame := session.StackFrame{}
 				if fn, ok := fm["function"].(string); ok {
 					frame.Function = fn
@@ -1411,8 +1411,8 @@ func (s *Service) buildPHPStackFrames(details map[string]interface{}) []session.
 }
 
 // extractErrorDetails extracts PHP stack trace frames and other details from WordPress API errors
-func (s *Service) extractErrorDetails(err error) map[string]interface{} {
-	details := map[string]interface{}{
+func (s *Service) extractErrorDetails(err error) map[string]any {
+	details := map[string]any{
 		"error": err.Error(),
 	}
 
@@ -1435,14 +1435,14 @@ func (s *Service) extractErrorDetails(err error) map[string]interface{} {
 		}
 
 		// Try to parse stackTraceFrames from response body if present
-		var respData map[string]interface{}
+		var respData map[string]any
 		if err := json.Unmarshal([]byte(apiErr.ResponseBody), &respData); err == nil {
 			// Try envelope format first: Errors.Backend and Errors.DelegatedServiceErrorStack
-			if errorsObj, ok := respData["Errors"].(map[string]interface{}); ok {
+			if errorsObj, ok := respData["Errors"].(map[string]any); ok {
 				if backendMsg, ok := errorsObj["BackendMessage"].(string); ok {
 					details["errorMessage"] = backendMsg
 				}
-				if delegatedStack, ok := errorsObj["DelegatedServiceErrorStack"].([]interface{}); ok {
+				if delegatedStack, ok := errorsObj["DelegatedServiceErrorStack"].([]any); ok {
 					lines := make([]string, 0, len(delegatedStack))
 					for _, line := range delegatedStack {
 						if s, ok := line.(string); ok {
@@ -1451,15 +1451,15 @@ func (s *Service) extractErrorDetails(err error) map[string]interface{} {
 					}
 					details["delegatedServiceErrorStack"] = lines
 				}
-				if backendStack, ok := errorsObj["Backend"].([]interface{}); ok && len(backendStack) > 0 {
+				if backendStack, ok := errorsObj["Backend"].([]any); ok && len(backendStack) > 0 {
 					details["phpBackendStack"] = backendStack
 				}
 			}
 
 			// Legacy format: error.details.stackTraceFrames
-			if errObj, ok := respData["error"].(map[string]interface{}); ok {
-				if detailsObj, ok := errObj["details"].(map[string]interface{}); ok {
-					if frames, ok := detailsObj["stackTraceFrames"].([]interface{}); ok {
+			if errObj, ok := respData["error"].(map[string]any); ok {
+				if detailsObj, ok := errObj["details"].(map[string]any); ok {
+					if frames, ok := detailsObj["stackTraceFrames"].([]any); ok {
 						details["stackTraceFrames"] = frames
 					}
 					if file, ok := detailsObj["fileFull"].(string); ok {
@@ -1469,22 +1469,15 @@ func (s *Service) extractErrorDetails(err error) map[string]interface{} {
 						details["errorLine"] = int(line)
 					}
 				}
-				if code, ok := errObj["code"].(string); ok {
-					details["errorCode"] = code
-				}
-				if msg, ok := errObj["message"].(string); ok {
-					details["errorMessage"] = msg
-				}
 			}
 		}
 	}
-
 	return details
 }
 
 // logRemoteAction logs a remote plugin action to session and WebSocket.
 // It extracts human-readable names from the details map for structured logging.
-func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level, step, message string, details map[string]interface{}) {
+func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level, step, message string, details map[string]any) {
 	// Log to session file
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.Log(sessionID, level, step, message, details)
@@ -1554,7 +1547,7 @@ func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 // fetchAndAttachRemotePHPErrors pulls recent PHP error sessions from the remote WordPress
 // site and enriches the error details map with them. It also logs them to the session.
 // This runs best-effort and never returns errors — failures are silently logged.
-func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessionID string, siteID int64, action, pluginSlug, siteName, siteURL string, errDetails map[string]interface{}) {
+func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessionID string, siteID int64, action, pluginSlug, siteName, siteURL string, errDetails map[string]any) {
 	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
 
 	// Fetch error sessions
@@ -1566,9 +1559,9 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 	if result != nil && len(result.Entries) > 0 {
 		// Attach to error details so they appear in error.log.txt and WebSocket broadcast
-		phpErrors := make([]map[string]interface{}, 0, len(result.Entries))
+		phpErrors := make([]map[string]any, 0, len(result.Entries))
 		for _, entry := range result.Entries {
-			phpErr := map[string]interface{}{
+			phpErr := map[string]any{
 				"id":        entry.ID,
 				"level":     entry.Level,
 				"message":   entry.Message,
@@ -1590,12 +1583,12 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
 			fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
-			map[string]interface{}{"phpErrorCount": len(result.Entries)})
+			map[string]any{"phpErrorCount": len(result.Entries)})
 
 		// Log each PHP error to session for full traceability
 		if s.sessionService != nil && sessionID != "" {
 			for _, entry := range result.Entries {
-				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, map[string]interface{}{
+				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, map[string]any{
 					"phpFile":    entry.File,
 					"phpLine":    entry.Line,
 					"phpLevel":   entry.Level,
@@ -1623,7 +1616,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace",
 			fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", logsResult.StackTraceLog.Lines, logsResult.StackTraceLog.TotalSize),
-			map[string]interface{}{
+			map[string]any{
 				"lines":     logsResult.StackTraceLog.Lines,
 				"totalSize": logsResult.StackTraceLog.TotalSize,
 				"truncated": logsResult.StackTraceLog.Truncated,
@@ -1631,7 +1624,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		// Persist stacktrace content to session error.log for diagnostics API
 		if s.sessionService != nil && sessionID != "" {
-			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", map[string]interface{}{
+			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", map[string]any{
 				"content":   logsResult.StackTraceLog.Content,
 				"lines":     logsResult.StackTraceLog.Lines,
 				"truncated": logsResult.StackTraceLog.Truncated,
@@ -1645,7 +1638,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 // logToErrorFile writes error details to data/errors/error.log.txt
 // Uses MD5 deduplication to suppress identical error entries.
 // Format matches the standardized error log spec with full request attribution.
-func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details map[string]interface{}) {
+func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details map[string]any) {
 	// Extract fields from details
 	statusCode := 0
 	if sc, ok := details["statusCode"].(int); ok {
@@ -1785,10 +1778,10 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	}
 
 	// PHP stack trace frames
-	if frames, ok := details["stackTraceFrames"].([]interface{}); ok && len(frames) > 0 {
+	if frames, ok := details["stackTraceFrames"].([]any); ok && len(frames) > 0 {
 		logEntry += "  PHP Stack Trace Frames:\n"
 		for i, frame := range frames {
-			if frameMap, ok := frame.(map[string]interface{}); ok {
+			if frameMap, ok := frame.(map[string]any); ok {
 				file := frameMap["file"]
 				line := frameMap["line"]
 				fn := frameMap["function"]
@@ -1803,7 +1796,7 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	}
 
 	// Remote PHP error sessions (fetched from plugin's SQLite DB)
-	if phpErrors, ok := details["remotePHPErrors"].([]map[string]interface{}); ok && len(phpErrors) > 0 {
+	if phpErrors, ok := details["remotePHPErrors"].([]map[string]any); ok && len(phpErrors) > 0 {
 		logEntry += fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(phpErrors))
 		for i, phpErr := range phpErrors {
 			msg, _ := phpErr["message"].(string)

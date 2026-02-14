@@ -10,7 +10,7 @@ import (
 // --- Plugin CRUD Tests ---
 
 func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult) error {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"name":        "E2E Test Plugin",
 		"path":        s.testPluginPath,
 		"forceCreate": true,
@@ -54,7 +54,7 @@ func (s *serviceImpl) testRegisterPlugin(ctx context.Context, result *TestResult
 }
 
 func (s *serviceImpl) testRegisterInvalidPath(ctx context.Context, result *TestResult) error {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"name": "Invalid Plugin",
 		"path": "/nonexistent/path/e2e-test-invalid",
 	}
@@ -86,7 +86,7 @@ func (s *serviceImpl) testUpdatePlugin(ctx context.Context, result *TestResult) 
 	}
 	defer s.cleanupPlugin(pluginID)
 
-	body := map[string]interface{}{
+	body := map[string]any{
 		"name": "E2E Updated Plugin",
 	}
 	result.RequestData = toJSON(body)
@@ -172,7 +172,7 @@ func (s *serviceImpl) testScanPluginFiles(ctx context.Context, result *TestResul
 // --- Site Connection Tests ---
 
 func (s *serviceImpl) testRegisterSite(ctx context.Context, result *TestResult) error {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"name":     "E2E Test Site",
 		"url":      s.testSiteURL,
 		"username": s.testSiteUsername,
@@ -225,7 +225,7 @@ func (s *serviceImpl) testSiteConnection(ctx context.Context, result *TestResult
 }
 
 func (s *serviceImpl) testInvalidCredentials(ctx context.Context, result *TestResult) error {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"url":      s.testSiteURL,
 		"username": "invalid_user_e2e",
 		"password": "invalid_password_e2e",
@@ -260,7 +260,7 @@ func (s *serviceImpl) testCreatePluginMapping(ctx context.Context, result *TestR
 	}
 	defer s.cleanupSite(siteID)
 
-	body := map[string]interface{}{
+	body := map[string]any{
 		"siteId":     siteID,
 		"remoteSlug": "e2e-test-plugin",
 	}
@@ -329,7 +329,7 @@ func (s *serviceImpl) testPreviewPublish(ctx context.Context, result *TestResult
 	defer s.cleanupPlugin(pluginID)
 	defer s.cleanupSite(siteID)
 
-	body := map[string]interface{}{
+	body := map[string]any{
 		"pluginId": pluginID,
 		"siteId":   siteID,
 	}
@@ -375,7 +375,7 @@ func (s *serviceImpl) testBackupList(ctx context.Context, result *TestResult) er
 
 // createTestPlugin creates a plugin for testing and returns its ID
 func (s *serviceImpl) createTestPlugin() (int64, error) {
-	resp, err := s.api.post("/plugins", map[string]interface{}{
+	resp, err := s.api.post("/plugins", map[string]any{
 		"name":        "E2E Temp Plugin",
 		"path":        s.testPluginPath,
 		"forceCreate": true,
@@ -399,7 +399,7 @@ func (s *serviceImpl) createTestPlugin() (int64, error) {
 
 // createTestSite creates a site for testing and returns its ID
 func (s *serviceImpl) createTestSite() (int64, error) {
-	resp, err := s.api.post("/sites", map[string]interface{}{
+	resp, err := s.api.post("/sites", map[string]any{
 		"name":     "E2E Temp Site",
 		"url":      s.testSiteURL,
 		"username": s.testSiteUsername,
@@ -433,7 +433,7 @@ func (s *serviceImpl) createTestMapping() (int64, int64, error) {
 		s.cleanupPlugin(pluginID)
 		return 0, 0, fmt.Errorf("create site: %w", err)
 	}
-	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", pluginID), map[string]interface{}{
+	_, err = s.api.post(fmt.Sprintf("/plugins/%d/mappings", pluginID), map[string]any{
 		"siteId":     siteID,
 		"remoteSlug": "e2e-test-plugin",
 	})
@@ -480,14 +480,14 @@ func (s *serviceImpl) runCleanup() {
 }
 
 // toJSON marshals to JSON string for logging
-func toJSON(v interface{}) string {
+func toJSON(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)
 }
 
 // redactPassword creates a copy of the map with password redacted
-func redactPassword(m map[string]interface{}) map[string]interface{} {
-	out := make(map[string]interface{})
+func redactPassword(m map[string]any) map[string]any {
+	out := make(map[string]any)
 	for k, v := range m {
 		if k == "password" || k == "applicationPassword" {
 			out[k] = "***REDACTED***"

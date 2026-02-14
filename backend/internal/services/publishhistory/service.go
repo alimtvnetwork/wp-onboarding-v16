@@ -136,9 +136,9 @@ func (s *Service) Clear() (int64, error) {
 	return count, nil
 }
 
-func buildWhereClause(f models.PublishHistoryFilters) (string, []interface{}) {
+func buildWhereClause(f models.PublishHistoryFilters) (string, []any) {
 	var conditions []string
-	var args []interface{}
+	var args []any
 
 	if f.PluginID > 0 {
 		conditions = append(conditions, "PluginID = ?")

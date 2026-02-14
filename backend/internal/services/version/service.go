@@ -36,7 +36,7 @@ func New(cfg Config) *Service {
 }
 
 // GetVersions returns version history for a plugin
-func (s *Service) GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) (interface{}, error) {
+func (s *Service) GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) (any, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -44,7 +44,7 @@ func (s *Service) GetVersions(ctx context.Context, pluginID int64, siteID *int64
 }
 
 // GetVersion returns a specific version entry
-func (s *Service) GetVersion(ctx context.Context, versionID int64) (interface{}, error) {
+func (s *Service) GetVersion(ctx context.Context, versionID int64) (any, error) {
 	return s.db.GetPluginVersionByID(versionID)
 }
 
@@ -75,7 +75,7 @@ func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, fil
 
 	// Broadcast version created event
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventVersionCreated, map[string]interface{}{
+		s.wsHub.Broadcast(ws.EventVersionCreated, map[string]any{
 			"versionId":    versionID,
 			"version":      version,
 			"pluginId":     pluginID,
@@ -89,7 +89,7 @@ func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, fil
 }
 
 // Rollback restores a plugin to a previous version
-func (s *Service) Rollback(ctx context.Context, versionID int64) (interface{}, error) {
+func (s *Service) Rollback(ctx context.Context, versionID int64) (any, error) {
 	// Get version info
 	version, err := s.db.GetPluginVersionByID(versionID)
 	if err != nil {
@@ -116,7 +116,7 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (interface{}, e
 
 	// Broadcast rollback started
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventRollbackStarted, map[string]interface{}{
+		s.wsHub.Broadcast(ws.EventRollbackStarted, map[string]any{
 			"versionId": versionID,
 			"version":   versionStr,
 			"pluginId":  pluginID,
@@ -130,7 +130,7 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (interface{}, e
 	// 3. Activate plugin
 	// For now, return success with TODO note
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"success":       true,
 		"versionId":     versionID,
 		"version":       versionStr,
