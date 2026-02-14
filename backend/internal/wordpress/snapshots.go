@@ -114,10 +114,15 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 	return result.Snapshots, nil
 }
 
+// SnapshotIDRequest holds a snapshot ID for POST endpoints.
+type SnapshotIDRequest struct {
+	ID int64 `json:"id"`
+}
+
 // GetSnapshot returns details for a specific snapshot (ID in JSON body).
 func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsInfo)
-	reqBody := map[string]interface{}{"id": snapshotID}
+	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to fetch snapshot")
@@ -144,8 +149,23 @@ func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
 	return &snapshot, nil
 }
 
+// SnapshotCreateOptions holds options for creating a snapshot.
+type SnapshotCreateOptions struct {
+	Scope  string   `json:"scope,omitempty"`
+	Tables []string `json:"tables,omitempty"`
+	Type   string   `json:"type,omitempty"`
+}
+
+// SnapshotCreateResult holds the result of a create snapshot request.
+type SnapshotCreateResult struct {
+	Success    bool   `json:"success"`
+	SnapshotID int64  `json:"snapshot_id,omitempty"`
+	Message    string `json:"message,omitempty"`
+	Status     string `json:"status,omitempty"`
+}
+
 // CreateSnapshot triggers a new snapshot on the remote site.
-func (c *Client) CreateSnapshot(opts map[string]interface{}) (map[string]interface{}, error) {
+func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResult, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsSchedule)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
@@ -165,18 +185,18 @@ func (c *Client) CreateSnapshot(opts map[string]interface{}) (map[string]interfa
 		}
 	}
 
-	var result map[string]interface{}
+	var result SnapshotCreateResult
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode create snapshot response")
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 // DeleteSnapshot removes a snapshot from the remote site (ID in JSON body).
 func (c *Client) DeleteSnapshot(snapshotID int64) error {
 	endpoint := snapshotEndpoint(EndpointSnapshotsDelete)
-	reqBody := map[string]interface{}{"id": snapshotID}
+	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return apperror.Wrap(err, apperror.ErrInternal, "failed to delete snapshot")
@@ -198,15 +218,27 @@ func (c *Client) DeleteSnapshot(snapshotID int64) error {
 	return nil
 }
 
+// SnapshotRestoreOptions holds options for restoring a snapshot.
+type SnapshotRestoreOptions struct {
+	ID      int64 `json:"id"`
+	Confirm bool  `json:"confirm"`
+}
+
+// SnapshotRestoreResult holds the result of a restore request.
+type SnapshotRestoreResult struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Status  string `json:"status,omitempty"`
+}
+
 // RestoreSnapshot triggers a restore from a snapshot on the remote site (ID in JSON body).
-func (c *Client) RestoreSnapshot(snapshotID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+func (c *Client) RestoreSnapshot(snapshotID int64) (*SnapshotRestoreResult, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsRestore)
-	if opts == nil {
-		opts = map[string]interface{}{}
+	reqBody := SnapshotRestoreOptions{
+		ID:      snapshotID,
+		Confirm: true,
 	}
-	opts["id"] = snapshotID
-	opts["confirm"] = true
-	resp, err := c.request("POST", endpoint, opts)
+	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to restore snapshot")
 	}
@@ -224,12 +256,12 @@ func (c *Client) RestoreSnapshot(snapshotID int64, opts map[string]interface{}) 
 		}
 	}
 
-	var result map[string]interface{}
+	var result SnapshotRestoreResult
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode restore response")
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 // GetSnapshotSettings fetches snapshot settings from the remote site.
@@ -262,7 +294,7 @@ func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
 }
 
 // UpdateSnapshotSettings updates snapshot settings on the remote site.
-func (c *Client) UpdateSnapshotSettings(settings map[string]interface{}) (*SnapshotSettings, error) {
+func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSettings, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsSettings)
 	resp, err := c.request("POST", endpoint, settings)
 	if err != nil {
@@ -294,7 +326,7 @@ func (c *Client) UpdateSnapshotSettings(settings map[string]interface{}) (*Snaps
 // The caller is responsible for closing the response body.
 func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsExport)
-	reqBody := map[string]interface{}{"id": snapshotID}
+	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to export snapshot")
@@ -316,11 +348,21 @@ func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 	return resp, nil
 }
 
+// SnapshotDownloadResult holds the result of a snapshot download request.
+type SnapshotDownloadResult struct {
+	Success          bool   `json:"success"`
+	URL              string `json:"url"`
+	Filename         string `json:"filename"`
+	Size             int64  `json:"size"`
+	Cached           bool   `json:"cached"`
+	IncludedIDs      []int  `json:"included_ids,omitempty"`
+	IncrementalCount int    `json:"incremental_count,omitempty"`
+}
+
 // DownloadSnapshotZip requests a cached ZIP build/download for a snapshot via POST /snapshots/download.
-// Returns JSON with { url, filename, size, cached, included_ids, incremental_count }.
-func (c *Client) DownloadSnapshotZip(snapshotID int64) (map[string]interface{}, error) {
+func (c *Client) DownloadSnapshotZip(snapshotID int64) (*SnapshotDownloadResult, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsDownload)
-	reqBody := map[string]interface{}{"id": snapshotID}
+	reqBody := SnapshotIDRequest{ID: snapshotID}
 	resp, err := c.request("POST", endpoint, reqBody)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to request snapshot download")
@@ -339,11 +381,11 @@ func (c *Client) DownloadSnapshotZip(snapshotID int64) (map[string]interface{}, 
 		}
 	}
 
-	var result map[string]interface{}
+	var result SnapshotDownloadResult
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode download response")
 	}
-	return result, nil
+	return &result, nil
 }
 
 // StreamSnapshotZip downloads the actual ZIP file from the WordPress download-file endpoint.
@@ -436,8 +478,22 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 	return tables, nil
 }
 
+// SnapshotBackupOptions holds options for full/incremental backup triggers.
+type SnapshotBackupOptions struct {
+	Scope  string   `json:"scope,omitempty"`
+	Tables []string `json:"tables,omitempty"`
+}
+
+// SnapshotBackupResult holds the result of a backup operation.
+type SnapshotBackupResult struct {
+	Success    bool   `json:"success"`
+	SnapshotID int64  `json:"snapshot_id,omitempty"`
+	Message    string `json:"message,omitempty"`
+	Status     string `json:"status,omitempty"`
+}
+
 // FullBackup triggers an end-to-end full backup orchestration on the remote site.
-func (c *Client) FullBackup(opts map[string]interface{}) (map[string]interface{}, error) {
+func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsFullBackup)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
@@ -457,16 +513,16 @@ func (c *Client) FullBackup(opts map[string]interface{}) (map[string]interface{}
 		}
 	}
 
-	var result map[string]interface{}
+	var result SnapshotBackupResult
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode full backup response")
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 // IncrementalBackup triggers an incremental backup against the latest master snapshot.
-func (c *Client) IncrementalBackup(opts map[string]interface{}) (map[string]interface{}, error) {
+func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsIncremental)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
@@ -486,17 +542,24 @@ func (c *Client) IncrementalBackup(opts map[string]interface{}) (map[string]inte
 		}
 	}
 
-	var result map[string]interface{}
+	var result SnapshotBackupResult
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode incremental backup response")
 	}
 
-	return result, nil
+	return &result, nil
+}
+
+// SnapshotImportResult holds the result of an import operation.
+type SnapshotImportResult struct {
+	Success    bool   `json:"success"`
+	SnapshotID int64  `json:"snapshot_id,omitempty"`
+	Message    string `json:"message,omitempty"`
 }
 
 // ImportSnapshot uploads a ZIP file to import as a snapshot on the remote site.
 // The zipPath is the local file path to the ZIP archive.
-func (c *Client) ImportSnapshot(zipPath string) (map[string]interface{}, error) {
+func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsImport)
 
 	// Open the file
@@ -539,16 +602,29 @@ func (c *Client) ImportSnapshot(zipPath string) (map[string]interface{}, error) 
 		}
 	}
 
-	var result map[string]interface{}
+	var result SnapshotImportResult
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode import response")
 	}
 
-	return result, nil
+	return &result, nil
+}
+
+// SnapshotCleanupOptions holds options for snapshot cleanup.
+type SnapshotCleanupOptions struct {
+	DryRun bool `json:"dry_run,omitempty"`
+}
+
+// SnapshotCleanupResult holds the result of a cleanup operation.
+type SnapshotCleanupResult struct {
+	Success        bool `json:"success"`
+	OrphansCleaned int  `json:"orphans_cleaned,omitempty"`
+	StuckCleaned   int  `json:"stuck_cleaned,omitempty"`
+	AgedCleaned    int  `json:"aged_cleaned,omitempty"`
 }
 
 // CleanupSnapshots triggers cleanup of old, orphan, and stuck snapshots.
-func (c *Client) CleanupSnapshots(opts map[string]interface{}) (map[string]interface{}, error) {
+func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanupResult, error) {
 	endpoint := snapshotEndpoint(EndpointSnapshotsCleanup)
 	resp, err := c.request("POST", endpoint, opts)
 	if err != nil {
@@ -568,10 +644,10 @@ func (c *Client) CleanupSnapshots(opts map[string]interface{}) (map[string]inter
 		}
 	}
 
-	var result map[string]interface{}
+	var result SnapshotCleanupResult
 	if err := json.Unmarshal(bodyBytes, &result); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decode cleanup response")
 	}
 
-	return result, nil
+	return &result, nil
 }
