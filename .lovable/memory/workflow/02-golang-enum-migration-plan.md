@@ -1,8 +1,9 @@
 # Golang Enum Migration Plan
 
-> **Version:** 1.0.0  
+> **Version:** 1.1.0  
 > **Created:** 2026-02-14  
-> **Status:** Planned  
+> **Updated:** 2026-02-14  
+> **Status:** In Progress  
 > **Depends on:** PHP enum `isEqual()` pattern (completed)
 
 ---
@@ -13,89 +14,49 @@ Migrate `backend/internal/wordpress/constants.go` from flat `const` string group
 
 ---
 
-## Current State
+## Migration Progress
 
-`constants.go` contains **~80 flat string constants** organized in `const()` blocks:
+### ✅ Completed
 
-| Domain | Constants | Example |
-|--------|-----------|---------|
-| Endpoints (Core) | 21 | `EndpointStatus = "/status"` |
-| Endpoints (Snapshot) | 14 | `EndpointSnapshotsList = "/snapshots/list"` |
-| Actions | 16 | `ActionUpload = "upload"` |
-| Statuses | 2 | `StatusSuccess = "success"` |
-| Post Statuses | 3 | `PostStatusPublish = "publish"` |
-| Upload Sources | 4 | `UploadSourceScript = "upload_script"` |
-| HTTP Headers | 5 | `HeaderAuthorization = "Authorization"` |
-| Content Types | 3 | `ContentTypeJSON = "application/json"` |
-| Error Messages | 6 | `ErrMsgUnauthorized = "..."` |
-| Plugin Statuses | 2 | `PluginStatusActive = "active"` |
-| WP Core Endpoints | 6 | `WPCoreAPIRoot = "/wp-json"` |
-| Namespaces | 4 | `RiseupAsiaNamespace = "riseup-asia-uploader/v1"` |
-| Defaults | 2 | `DefaultLimit = 50` |
+| File | Type | Constants | IsEqual | Domain Helpers |
+|------|------|-----------|---------|----------------|
+| `endpoint_type.go` | `EndpointType` | 35 | ✅ | `IsSnapshot()` |
+| `action_type.go` | `ActionType` | 16 | ✅ | `IsLifecycle()` |
+| `status_type.go` | `StatusType` | 2 | ✅ | `IsSuccess()`, `IsFailed()` |
+| `post_status_type.go` | `PostStatusType` | 3 | ✅ | — |
+| `upload_source_type.go` | `UploadSourceType` | 4 | ✅ | — |
+| `header_type.go` | `HeaderType` | 5 | ✅ | — |
+| `content_type.go` | `ContentTypeValue` | 3 | ✅ | — |
+| `plugin_status_type.go` | `PluginStatusType` | 2 | ✅ | `IsActive()` |
+
+### Caller Updates Completed
+
+- `client.go` — `setStandardHeaders` updated to use `.String()` for all header/content type constants
+- `uploader.go` — `UploadPluginViaUploader` signature changed to accept `UploadSourceType`; all `ContentTypeJSON` calls use `.String()`
+- `endpoint_map.go` — `WPEndpointRoute` uses `EndpointType`
+- `snapshots.go` — `snapshotEndpoint()` accepts `EndpointType`
 
 ---
 
-## Target Architecture
+## Remaining (Non-Enum Constants)
 
-### Step 1 — Create typed string enums with `IsEqual()`
-
-Each domain gets its own type and an `IsEqual()` receiver:
-
-```go
-// endpoint_type.go
-package wordpress
-
-type EndpointType string
-
-const (
-    EndpointStatus       EndpointType = "/status"
-    EndpointUpload       EndpointType = "/upload"
-    EndpointPlugins      EndpointType = "/plugins"
-    // ... all endpoint constants
-)
-
-func (e EndpointType) IsEqual(other EndpointType) bool {
-    return e == other
-}
-
-func (e EndpointType) String() string {
-    return string(e)
-}
-```
-
-### Step 2 — Files to create
-
-| File | Type | Constants Count | Has IsEqual |
-|------|------|----------------|-------------|
-| `endpoint_type.go` | `EndpointType` | 35 | ✅ |
-| `action_type.go` | `ActionType` | 16 | ✅ |
-| `status_type.go` | `StatusType` | 2 | ✅ |
-| `post_status_type.go` | `PostStatusType` | 3 | ✅ |
-| `upload_source_type.go` | `UploadSourceType` | 4 | ✅ |
-| `header_type.go` | `HeaderType` | 5 | ✅ |
-| `content_type.go` | `ContentType` | 3 | ✅ |
-| `plugin_status_type.go` | `PluginStatusType` | 2 | ✅ |
-
-### Step 3 — Constants that stay as plain `const`
-
-These do NOT qualify as enums (not discrete "which one?" sets):
+These stay as plain `const` in `constants.go` — they do not qualify as enums:
 
 | Group | Reason |
 |-------|--------|
 | Error messages (`ErrMsg*`) | Display strings, not discrete identifiers |
-| Namespaces | Configuration values, not switchable |
-| WP Core endpoints | External API paths, not our domain |
+| Namespaces (`*Namespace`) | Configuration values, not switchable |
+| WP Core endpoints (`WPCore*`) | External API paths, not our domain |
 | Default values (`DefaultLimit`, `MaxLimit`) | Numeric config |
 | `UploadIgnoreFilename` | Single config value |
 
-### Step 4 — Update all callers
+---
 
-Search for every usage of the old untyped constants and update function signatures to accept the typed enum. Key areas:
+## Pending Work
 
-- `internal/wordpress/client.go` — API call methods
-- `internal/services/publish/` — Upload and sync services
-- `internal/services/snapshot/` — Snapshot service
-- Request/response structs that store action or status values
+### Step 4 — Audit remaining callers for typed signatures
+
+Search all Go callers for remaining usage of `StatusSuccess`, `StatusFailed`, `PluginStatusActive`, `PostStatusPublish`, etc. and update function signatures to accept the typed enums instead of `string` where appropriate.
 
 ### Step 5 — Add domain helpers (matching PHP)
 
@@ -115,16 +76,6 @@ func (e EndpointType) IsSnapshot() bool {
 
 ---
 
-## Migration Order
-
-1. **Create type files** — No breaking changes, new types coexist with old constants
-2. **Update constants to typed** — Change `const EndpointStatus = "/status"` to `const EndpointStatus EndpointType = "/status"`
-3. **Update function signatures** — Accept typed parameters instead of `string`
-4. **Add `IsEqual()` and domain helpers** — Complete the typed API
-5. **Delete old `constants.go`** — Split into domain files, remove monolithic file
-
----
-
 ## Cross-Language Alignment
 
 | Concept | PHP | Go |
@@ -137,4 +88,4 @@ func (e EndpointType) IsSnapshot() bool {
 
 ---
 
-*Golang enum migration plan v1.0.0 — 2026-02-14*
+*Golang enum migration plan v1.1.0 — 2026-02-14*
