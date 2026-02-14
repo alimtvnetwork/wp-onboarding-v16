@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
 
@@ -32,7 +33,7 @@ trait PluginListTrait
             $plugins = $this->collectPluginList();
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . ENDPOINT_PLUGINS)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . EndpointType::Plugins->route())
                 ->setResults($plugins)
                 ->toResponse();
         } catch (Throwable $e) {
