@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotStatusType;
 
 trait NativeSnapshotExecTrait {
 
@@ -26,7 +27,7 @@ trait NativeSnapshotExecTrait {
         }
 
         if (!$this->acquireLock()) {
-            $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_FAILED, 'Failed to acquire lock');
+            $this->updateSnapshotStatus($snapshot_id, SnapshotStatusType::Failed->value, 'Failed to acquire lock');
             return array('success' => false, 'error' => 'Failed to acquire lock');
         }
 
@@ -34,7 +35,7 @@ trait NativeSnapshotExecTrait {
             return $this->runSnapshotExport($snapshot_id, $snapshot['filepath'], $tables, $start_time);
         } catch (Exception $e) {
             $this->log(LogLevelType::Error->value, 'Snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
-            $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_FAILED, $e->getMessage());
+            $this->updateSnapshotStatus($snapshot_id, SnapshotStatusType::Failed->value, $e->getMessage());
             return array('success' => false, 'error' => $e->getMessage());
         } finally {
             $this->releaseLock();
@@ -43,7 +44,7 @@ trait NativeSnapshotExecTrait {
 
     /** Run the core snapshot export loop. */
     private function runSnapshotExport(int $snapshot_id, string $filepath, array $tables, float $start_time): array {
-        $this->updateSnapshotStatus($snapshot_id, SNAPSHOT_STATUS_RUNNING);
+        $this->updateSnapshotStatus($snapshot_id, SnapshotStatusType::Running->value);
         $this->log(LogLevelType::Info->value, 'Starting snapshot export', array(
             'snapshot_id' => $snapshot_id, 'filepath' => $filepath, 'tables' => count($tables),
         ));
@@ -93,7 +94,7 @@ trait NativeSnapshotExecTrait {
         $duration = microtime(true) - $start_time;
 
         $this->finalizeSnapshot($snapshot_id, array(
-            'status' => SNAPSHOT_STATUS_COMPLETE, 'file_size' => $file_size,
+            'status' => SnapshotStatusType::Complete->value, 'file_size' => $file_size,
             'total_rows' => $total_rows, 'table_counts' => $table_counts,
             'duration_ms' => (int)($duration * 1000),
         ));

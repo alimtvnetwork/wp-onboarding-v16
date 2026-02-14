@@ -8,6 +8,10 @@
  * @since   1.9.0
  */
 
+use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotTriggerType;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -54,9 +58,9 @@ trait SchedulerCronTrait {
             $result['action'],
             'snapshot', null, '', null, '',
             $result['audit_data'] ?? array(),
-            $isSuccess ? STATUS_SUCCESS : STATUS_FAILED,
+            $isSuccess ? \RiseupAsia\Enums\StatusType::Success->value : \RiseupAsia\Enums\StatusType::Failed->value,
             $isSuccess ? null : ($result['error'] ?? 'Unknown'),
-            array('triggered_by' => $result['triggered_by'] ?? TRIGGERED_BY_CRON)
+            array('triggered_by' => $result['triggered_by'] ?? \RiseupAsia\Enums\TriggerSourceType::Cron->value)
         );
     }
 
@@ -101,9 +105,9 @@ trait SchedulerCronTrait {
      * @return array Raw orchestrator result.
      */
     private function invokeBackup(object $orchestrator, array $args): array {
-        $snapshotType = $args['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
+        $snapshotType = $args['snapshot_type'] ?? SnapshotModeType::Full->value;
 
-        if ($snapshotType === SNAPSHOT_TYPE_INCREMENTAL) {
+        if ($snapshotType === SnapshotModeType::Incremental->value) {
             return $orchestrator->executeIncrementalBackup(array(
                 'title'              => $args['title'] ?? 'Incremental Backup ' . date('Y-m-d H:i'),
                 'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
@@ -112,8 +116,8 @@ trait SchedulerCronTrait {
 
         return $orchestrator->executeFullBackup(array(
             'title'   => $args['title'] ?? 'Manual Backup ' . date('Y-m-d H:i'),
-            'scope'   => $args['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
-            'trigger' => SNAPSHOT_TRIGGER_MANUAL,
+            'scope'   => $args['scope'] ?? SnapshotScopeType::WordPress->value,
+            'trigger' => SnapshotTriggerType::Manual->value,
             'async'   => true,
         ));
     }

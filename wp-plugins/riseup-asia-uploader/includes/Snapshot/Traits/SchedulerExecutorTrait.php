@@ -13,6 +13,10 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Enums\TriggerSourceType;
 
 trait SchedulerExecutorTrait {
 
@@ -26,13 +30,13 @@ trait SchedulerExecutorTrait {
         list(, $orchestrator) = $this->createOrchestrator();
 
         $result = $orchestrator->executeFullBackup(array(
-            'scope'   => $settings['default_scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
-            'trigger' => SNAPSHOT_TRIGGER_CRON,
+            'scope'   => $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
+            'trigger' => SnapshotTriggerType::Cron->value,
             'title'   => 'Scheduled Backup ' . date('Y-m-d H:i'),
             'async'   => true,
         ));
 
-        return $this->buildCronResult($result, ActionType::SnapshotCreate->value, TRIGGERED_BY_CRON, array(
+        return $this->buildCronResult($result, ActionType::SnapshotCreate->value, TriggerSourceType::Cron->value, array(
             'trigger' => 'cron', 'snapshot_id' => $result['snapshot_id'] ?? null, 'job_id' => $result['job_id'] ?? null,
         ));
     }
@@ -45,11 +49,11 @@ trait SchedulerExecutorTrait {
      */
     private function runImmediateSnapshot(array $args): array {
         list(, $orchestrator) = $this->createOrchestrator();
-        $snapshotType = $args['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
+        $snapshotType = $args['snapshot_type'] ?? SnapshotModeType::Full->value;
         $result = $this->invokeBackup($orchestrator, $args);
 
-        $action = ($snapshotType === SNAPSHOT_TYPE_INCREMENTAL) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
-        return $this->buildCronResult($result, $action, TRIGGERED_BY_DASHBOARD, array(
+        $action = ($snapshotType === SnapshotModeType::Incremental->value) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
+        return $this->buildCronResult($result, $action, TriggerSourceType::Dashboard->value, array(
             'trigger' => 'manual', 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshotType,
         ));
     }
@@ -73,7 +77,7 @@ trait SchedulerExecutorTrait {
 
         $result = $manager->restoreSnapshot($args['snapshot_id'], $restoreOptions);
 
-        return $this->buildCronResult($result, ActionType::SnapshotRestore->value, TRIGGERED_BY_CRON, array(
+        return $this->buildCronResult($result, ActionType::SnapshotRestore->value, TriggerSourceType::Cron->value, array(
             'snapshot_id' => $args['snapshot_id'], 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
         ));
     }
@@ -92,7 +96,7 @@ trait SchedulerExecutorTrait {
             'master_snapshot_id' => $args['master_snapshot_id'] ?? null,
         ));
 
-        return $this->buildCronResult($result, ActionType::SnapshotIncremental->value, TRIGGERED_BY_CRON, array(
+        return $this->buildCronResult($result, ActionType::SnapshotIncremental->value, TriggerSourceType::Cron->value, array(
             'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
         ));
     }
@@ -114,7 +118,7 @@ trait SchedulerExecutorTrait {
         );
         $totalDeleted = array_sum(array_slice($auditData, 0, 3));
 
-        $cronResult = $this->buildCronResult(array('success' => true), ActionType::SnapshotCleanup->value, TRIGGERED_BY_CRON, $auditData);
+        $cronResult = $this->buildCronResult(array('success' => true), ActionType::SnapshotCleanup->value, TriggerSourceType::Cron->value, $auditData);
         $cronResult['skip_audit'] = ($totalDeleted === 0);
         $cronResult['log_data'] = $auditData + array(
             'space_freed'  => RiseupPathUtils::formatBytes($result['space_freed_bytes']),

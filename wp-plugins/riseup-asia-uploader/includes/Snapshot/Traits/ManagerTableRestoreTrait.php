@@ -115,8 +115,8 @@ trait ManagerTableRestoreTrait {
         }
 
         return $provider->createSnapshot(array(
-            'scope' => SNAPSHOT_SCOPE_WORDPRESS,
-            'trigger' => SNAPSHOT_TRIGGER_API,
+            'scope' => \RiseupAsia\Enums\SnapshotScopeType::WordPress->value,
+            'trigger' => \RiseupAsia\Enums\SnapshotTriggerType::Api->value,
             'pre_restore_of' => $original_snapshot_id,
         ));
     }

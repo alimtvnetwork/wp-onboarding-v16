@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 
 require_once __DIR__ . '/ExporterBuildCollectTrait.php';
@@ -104,7 +105,7 @@ trait ExporterBuildTrait {
             ' (snapshot_id, zip_filename, zip_path, zip_size, included_ids, incremental_count, status, created_at)' .
             ' VALUES (?, ?, ?, 0, ?, 0, ?, datetime(\'now\'))'
         );
-        $stmt->execute(array($snapshotId, $zipFilename, $zipPath, json_encode(array($snapshotId)), SNAPSHOT_EXPORT_STATUS_BUILDING));
+        $stmt->execute(array($snapshotId, $zipFilename, $zipPath, json_encode(array($snapshotId)), SnapshotExportStatusType::Building->value));
     }
 
     /** Assemble the ZIP archive with full + incremental + manifest. */
@@ -193,7 +194,7 @@ trait ExporterBuildTrait {
         $stmt = $pdo->prepare(
             'UPDATE ' . TableType::SnapshotExports->value . ' SET status = ?, zip_size = ?, included_ids = ?, incremental_count = ? WHERE snapshot_id = ?'
         );
-        $stmt->execute(array(SNAPSHOT_EXPORT_STATUS_VALID, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
+        $stmt->execute(array(SnapshotExportStatusType::Valid->value, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
 
         $this->log(LogLevelType::Info->value, 'ZIP export built successfully', array(
             'snapshot_id' => $snapshotId, 'filename' => $zipFilename, 'size' => RiseupPathUtils::formatBytes($zipSize),

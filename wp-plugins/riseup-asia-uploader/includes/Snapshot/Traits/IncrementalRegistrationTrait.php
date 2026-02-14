@@ -7,6 +7,9 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TableType;
 
 trait IncrementalRegistrationTrait {
@@ -69,8 +72,8 @@ trait IncrementalRegistrationTrait {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $stmt->execute(array(
-            $sequence, $filename, $filepath, SNAPSHOT_PROVIDER_NATIVE, 'incremental',
-            $tablesJson, $totalRows, $dirSize, SNAPSHOT_TRIGGER_API, SNAPSHOT_STATUS_COMPLETE, $now, $now,
+            $sequence, $filename, $filepath, SnapshotProviderType::Native->value, 'incremental',
+            $tablesJson, $totalRows, $dirSize, SnapshotTriggerType::Api->value, SnapshotStatusType::Complete->value, $now, $now,
         ));
 
         return (int)$pdo->lastInsertId();
@@ -98,7 +101,7 @@ trait IncrementalRegistrationTrait {
         }
 
         $stmt = $pdo->prepare('SELECT id FROM ' . TableType::Snapshots->value . ' WHERE filepath = ? AND status = ? LIMIT 1');
-        $stmt->execute(array($master_dir, SNAPSHOT_STATUS_COMPLETE));
+        $stmt->execute(array($master_dir, SnapshotStatusType::Complete->value));
         $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$parent) {

@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotExportStatusType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait ExporterHelpersTrait {
@@ -40,7 +42,7 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        if ($snapshot['status'] !== SNAPSHOT_STATUS_COMPLETE) {
+        if ($snapshot['status'] !== SnapshotStatusType::Complete->value) {
             $this->log(LogLevelType::Warn->value, 'Snapshot not complete', array('id' => $snapshotId, 'status' => $snapshot['status']));
             return null;
         }
@@ -61,7 +63,7 @@ trait ExporterHelpersTrait {
         }
 
         $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ? AND status = ?');
-        $stmt->execute(array($snapshotId, SNAPSHOT_EXPORT_STATUS_VALID));
+        $stmt->execute(array($snapshotId, SnapshotExportStatusType::Valid->value));
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 

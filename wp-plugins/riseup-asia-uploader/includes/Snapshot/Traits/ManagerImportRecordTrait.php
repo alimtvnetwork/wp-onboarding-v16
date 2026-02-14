@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait ManagerImportRecordTrait {
@@ -43,10 +45,10 @@ trait ManagerImportRecordTrait {
     private function buildImportRecord(array $snapshot_data, array $manifest, int $sequence, string $filename, string $filepath): array {
         return array(
             'sequence' => $sequence, 'filename' => $filename, 'filepath' => $filepath,
-            'provider' => SNAPSHOT_PROVIDER_NATIVE, 'scope' => $snapshot_data['scope'],
+            'provider' => SnapshotProviderType::Native->value, 'scope' => $snapshot_data['scope'],
             'tables_json' => json_encode($snapshot_data['tables']),
             'total_rows' => $snapshot_data['total_rows'] ?? 0, 'file_size' => filesize($filepath),
-            'trigger_source' => 'import', 'status' => SNAPSHOT_STATUS_COMPLETE,
+            'trigger_source' => 'import', 'status' => SnapshotStatusType::Complete->value,
             'created_at' => date('c'), 'completed_at' => date('c'),
             'import_source' => json_encode(array(
                 'original_id' => $snapshot_data['id'] ?? null,

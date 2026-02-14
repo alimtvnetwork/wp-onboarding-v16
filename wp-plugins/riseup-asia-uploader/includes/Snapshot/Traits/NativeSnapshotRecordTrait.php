@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 require_once __DIR__ . '/NativeSnapshotCrudTrait.php';
@@ -83,7 +84,7 @@ trait NativeSnapshotRecordTrait {
         $result = $this->db->insert(TableType::Snapshots->value, array(
             'sequence' => $sequence, 'filename' => $filename . '.sqlite', 'filepath' => $filepath,
             'provider' => $this->provider_id, 'scope' => $scope, 'tables_json' => json_encode($tables),
-            'trigger_source' => $trigger, 'status' => SNAPSHOT_STATUS_PENDING, 'created_at' => date('c'),
+            'trigger_source' => $trigger, 'status' => SnapshotStatusType::Pending->value, 'created_at' => date('c'),
         ));
         return $result ? $this->db->lastInsertId() : false;
     }
@@ -100,7 +101,7 @@ trait NativeSnapshotRecordTrait {
         if ($error) {
             $data['error_message'] = $error;
         }
-        if ($status === SNAPSHOT_STATUS_RUNNING) {
+        if ($status === SnapshotStatusType::Running->value) {
             $data['started_at'] = date('c');
         }
         $this->db->update(TableType::Snapshots->value, $data, array('id' => $snapshot_id));

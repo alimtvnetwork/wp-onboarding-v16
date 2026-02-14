@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\UploadSourceType;
+
 trait UploadParserTrait {
 
     /**
@@ -111,8 +113,8 @@ trait UploadParserTrait {
      * @return string Validated upload source.
      */
     private function resolveUploadSource(array $data): string {
-        $source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UPLOAD_SOURCE_REST_API;
-        $valid_sources = json_decode(UPLOAD_SOURCES_VALID, true);
-        return in_array($source, $valid_sources, true) ? $source : UPLOAD_SOURCE_REST_API;
+        $source = isset($data['upload_source']) ? sanitize_text_field($data['upload_source']) : UploadSourceType::RestApi->value;
+        $validSources = UploadSourceType::validValues();
+        return in_array($source, $validSources, true) ? $source : UploadSourceType::RestApi->value;
     }
 }

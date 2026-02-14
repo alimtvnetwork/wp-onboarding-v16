@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV9V11Trait {
@@ -90,7 +91,7 @@ trait DatabaseMigrationsV9V11Trait {
             incremental_count INTEGER NOT NULL DEFAULT 0,
             created_at      TEXT NOT NULL DEFAULT (datetime('now')),
             expires_at      TEXT,
-            status          TEXT NOT NULL DEFAULT '" . self::SNAPSHOT_EXPORT_STATUS_VALID . "',
+            status          TEXT NOT NULL DEFAULT '" . SnapshotExportStatusType::Valid->value . "',
             UNIQUE(snapshot_id)
         )");
 
