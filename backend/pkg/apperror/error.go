@@ -7,17 +7,20 @@ import (
 	"strings"
 )
 
+// ErrorContext holds structured context for application errors.
+type ErrorContext = map[string]any
+
 // AppError represents a structured application error
 type AppError struct {
-	Code       string                 `json:"code"`
-	Message    string                 `json:"message"`
-	Details    string                 `json:"details,omitempty"`
-	Context    map[string]interface{} `json:"context,omitempty"`
-	File       string                 `json:"file,omitempty"`
-	Line       int                    `json:"line,omitempty"`
-	Function   string                 `json:"function,omitempty"`
-	StackTrace string                 `json:"stackTrace,omitempty"`
-	Cause      error                  `json:"-"`
+	Code       string       `json:"code"`
+	Message    string       `json:"message"`
+	Details    string       `json:"details,omitempty"`
+	Context    ErrorContext `json:"context,omitempty"`
+	File       string       `json:"file,omitempty"`
+	Line       int          `json:"line,omitempty"`
+	Function   string       `json:"function,omitempty"`
+	StackTrace string       `json:"stackTrace,omitempty"`
+	Cause      error        `json:"-"`
 }
 
 // Error implements the error interface
@@ -66,9 +69,9 @@ func (e *AppError) WithDetails(details string) *AppError {
 }
 
 // WithContext adds context key-value pairs
-func (e *AppError) WithContext(key string, value interface{}) *AppError {
+func (e *AppError) WithContext(key string, value any) *AppError {
 	if e.Context == nil {
-		e.Context = make(map[string]interface{})
+		e.Context = make(ErrorContext)
 	}
 	e.Context[key] = value
 	return e

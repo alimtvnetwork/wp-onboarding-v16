@@ -297,7 +297,7 @@ func seedFromConfig(db *database.DB, cfg *Config, log *logger.Logger) error {
 	log.Debug("Seeding default settings")
 
 	// Seed default settings
-	settings := map[string]interface{}{
+	settings := map[string]any{
 		"watcher.pollIntervalMs":     cfg.Watcher.PollIntervalMs,
 		"watcher.debounceMs":         cfg.Watcher.DebounceMs,
 		"backup.retentionDays":       cfg.Backup.RetentionDays,

@@ -76,7 +76,7 @@ func New(cfg Config) *Logger {
 
 // log is the internal logging method with new format:
 // [vX.X.X YYYY-MM-DD HH:MM:SS] [package] Message [LEVEL] [file:line]
-func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
+func (l *Logger) log(level Level, msg string, keyvals ...any) {
 	if level < l.config.Level {
 		return
 	}
@@ -182,33 +182,33 @@ func (l *Logger) log(level Level, msg string, keyvals ...interface{}) {
 }
 
 // Debug logs a debug message
-func (l *Logger) Debug(msg string, keyvals ...interface{}) {
+func (l *Logger) Debug(msg string, keyvals ...any) {
 	l.log(LevelDebug, msg, keyvals...)
 }
 
 // Info logs an info message
-func (l *Logger) Info(msg string, keyvals ...interface{}) {
+func (l *Logger) Info(msg string, keyvals ...any) {
 	l.log(LevelInfo, msg, keyvals...)
 }
 
 // Warn logs a warning message
-func (l *Logger) Warn(msg string, keyvals ...interface{}) {
+func (l *Logger) Warn(msg string, keyvals ...any) {
 	l.log(LevelWarn, msg, keyvals...)
 }
 
 // Error logs an error message with full stack trace
-func (l *Logger) Error(msg string, keyvals ...interface{}) {
+func (l *Logger) Error(msg string, keyvals ...any) {
 	l.log(LevelError, msg, keyvals...)
 }
 
 // Fatal logs a fatal message with full stack trace and exits
-func (l *Logger) Fatal(msg string, keyvals ...interface{}) {
+func (l *Logger) Fatal(msg string, keyvals ...any) {
 	l.log(LevelFatal, msg, keyvals...)
 	os.Exit(1)
 }
 
 // WithContext returns a child logger with additional context
-func (l *Logger) WithContext(keyvals ...interface{}) *Logger {
+func (l *Logger) WithContext(keyvals ...any) *Logger {
 	// TODO: Implement context inheritance
 	return l
 }

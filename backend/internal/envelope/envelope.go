@@ -19,7 +19,7 @@ import (
 type Response struct {
 	Status       Status        `json:"Status"`
 	Attributes   Attributes    `json:"Attributes"`
-	Results      interface{}   `json:"Results"`
+	Results      any           `json:"Results"`
 	Navigation   *Navigation   `json:"Navigation,omitempty"`
 	Errors       *Errors       `json:"Errors,omitempty"`
 	MethodsStack *MethodsStack `json:"MethodsStack,omitempty"`
@@ -119,7 +119,7 @@ func GetDebugConfig() DebugConfig {
 // --- Builder Functions ---
 
 // Success creates a single-item success response (slim envelope).
-func Success(data interface{}) Response {
+func Success(data any) Response {
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -132,12 +132,12 @@ func Success(data interface{}) Response {
 			IsSingle:   true,
 			IsMultiple: false,
 		},
-		Results: []interface{}{data},
+		Results: []any{data},
 	}
 }
 
 // Created creates a single-item 201 response.
-func Created(data interface{}) Response {
+func Created(data any) Response {
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -150,7 +150,7 @@ func Created(data interface{}) Response {
 			IsSingle:   true,
 			IsMultiple: false,
 		},
-		Results: []interface{}{data},
+		Results: []any{data},
 	}
 }
 
@@ -168,13 +168,13 @@ func Deleted() Response {
 			IsSingle:   false,
 			IsMultiple: false,
 		},
-		Results: []interface{}{},
+		Results: []any{},
 	}
 }
 
 // List creates a paginated list response with navigation URL links.
 // requestPath is the base URL path (e.g., "/api/v1/plugins") used to generate navigation URLs.
-func List(data interface{}, pg Pagination, requestPath string) Response {
+func List(data any, pg Pagination, requestPath string) Response {
 	nav := pg.NavigationURLs(requestPath)
 	return Response{
 		Status: Status{
@@ -198,7 +198,7 @@ func List(data interface{}, pg Pagination, requestPath string) Response {
 }
 
 // ListUnpaginated creates a list response without pagination metadata.
-func ListUnpaginated(data interface{}, count int) Response {
+func ListUnpaginated(data any, count int) Response {
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -230,7 +230,7 @@ func Error(statusCode int, code, message string) Response {
 		Attributes: Attributes{
 			HasAnyErrors: true,
 		},
-		Results: []interface{}{},
+		Results: []any{},
 	}
 	if globalDebug.IncludeErrors {
 		resp.Errors = &Errors{

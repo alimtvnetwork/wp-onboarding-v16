@@ -6,6 +6,12 @@ import (
 	"time"
 )
 
+// ErrorHistoryContext holds structured context for error history entries.
+type ErrorHistoryContext = map[string]any
+
+// ErrorHistoryRequestBody holds structured request body data for error history entries.
+type ErrorHistoryRequestBody = map[string]any
+
 // ErrorHistory represents a captured error/notification for persistent storage
 type ErrorHistory struct {
 	ID                  int64                  `json:"id"`
@@ -15,12 +21,12 @@ type ErrorHistory struct {
 	Message             string                 `json:"message"`             // Main error message
 	Details             string                 `json:"details,omitempty"`   // Additional details
 	ContextJSON         string                 `json:"-"`                   // Raw JSON context
-	Context             map[string]interface{} `json:"context,omitempty"`   // Parsed context
+	Context             ErrorHistoryContext     `json:"context,omitempty"`   // Parsed context
 	StackTrace          string                 `json:"stackTrace,omitempty"`
 	Endpoint            string                 `json:"endpoint,omitempty"`  // API endpoint that failed
 	Method              string                 `json:"method,omitempty"`    // HTTP method
 	RequestBodyJSON     string                 `json:"-"`                   // Raw request body JSON
-	RequestBody         map[string]interface{} `json:"requestBody,omitempty"`
+	RequestBody         ErrorHistoryRequestBody `json:"requestBody,omitempty"`
 	ResponseStatus      int                    `json:"responseStatus,omitempty"`
 	SessionID           string                 `json:"sessionId,omitempty"`
 	SessionType         string                 `json:"sessionType,omitempty"`
@@ -50,28 +56,28 @@ type PHPStackFrame struct {
 
 // ErrorHistoryInput represents the input for creating an error history entry
 type ErrorHistoryInput struct {
-	ErrorID            string                 `json:"errorId"`
-	Code               string                 `json:"code"`
-	Level              string                 `json:"level"`
-	Message            string                 `json:"message"`
-	Details            string                 `json:"details,omitempty"`
-	Context            map[string]interface{} `json:"context,omitempty"`
-	StackTrace         string                 `json:"stackTrace,omitempty"`
-	Endpoint           string                 `json:"endpoint,omitempty"`
-	Method             string                 `json:"method,omitempty"`
-	RequestBody        map[string]interface{} `json:"requestBody,omitempty"`
-	ResponseStatus     int                    `json:"responseStatus,omitempty"`
-	SessionID          string                 `json:"sessionId,omitempty"`
-	SessionType        string                 `json:"sessionType,omitempty"`
-	PHPStackFrames     []PHPStackFrame        `json:"phpStackFrames,omitempty"`
-	BackendLogs        []string               `json:"backendLogs,omitempty"`
-	BackendStackTrace  string                 `json:"backendStackTrace,omitempty"`
-	SiteURL            string                 `json:"siteUrl,omitempty"`
-	TriggerComponent   string                 `json:"triggerComponent,omitempty"`
-	TriggerAction      string                 `json:"triggerAction,omitempty"`
-	InvocationChain    []string               `json:"invocationChain,omitempty"`
-	UIClickPath        string                 `json:"uiClickPath,omitempty"`
-	MarkdownReport     string                 `json:"markdownReport,omitempty"`
+	ErrorID            string                  `json:"errorId"`
+	Code               string                  `json:"code"`
+	Level              string                  `json:"level"`
+	Message            string                  `json:"message"`
+	Details            string                  `json:"details,omitempty"`
+	Context            ErrorHistoryContext      `json:"context,omitempty"`
+	StackTrace         string                  `json:"stackTrace,omitempty"`
+	Endpoint           string                  `json:"endpoint,omitempty"`
+	Method             string                  `json:"method,omitempty"`
+	RequestBody        ErrorHistoryRequestBody `json:"requestBody,omitempty"`
+	ResponseStatus     int                     `json:"responseStatus,omitempty"`
+	SessionID          string                  `json:"sessionId,omitempty"`
+	SessionType        string                  `json:"sessionType,omitempty"`
+	PHPStackFrames     []PHPStackFrame         `json:"phpStackFrames,omitempty"`
+	BackendLogs        []string                `json:"backendLogs,omitempty"`
+	BackendStackTrace  string                  `json:"backendStackTrace,omitempty"`
+	SiteURL            string                  `json:"siteUrl,omitempty"`
+	TriggerComponent   string                  `json:"triggerComponent,omitempty"`
+	TriggerAction      string                  `json:"triggerAction,omitempty"`
+	InvocationChain    []string                `json:"invocationChain,omitempty"`
+	UIClickPath        string                  `json:"uiClickPath,omitempty"`
+	MarkdownReport     string                  `json:"markdownReport,omitempty"`
 }
 
 // ErrorHistoryFilters for querying error history

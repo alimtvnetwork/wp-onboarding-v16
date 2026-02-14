@@ -39,7 +39,7 @@ type SessionLogEntry struct {
 	Timestamp string                 `json:"timestamp"`
 	Level     string                 `json:"level"`
 	Message   string                 `json:"message"`
-	Details   map[string]interface{} `json:"details,omitempty"`
+	Details   map[string]any `json:"details,omitempty"`
 }
 
 // SessionStore interface for persisting request sessions

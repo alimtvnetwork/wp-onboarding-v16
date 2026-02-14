@@ -116,19 +116,22 @@ type PluginVersion struct {
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
+// ErrorLogContext holds structured context for error log entries.
+type ErrorLogContext = map[string]any
+
 // ErrorLog represents an application error entry
 type ErrorLog struct {
-	ID         int64     `json:"id"`
-	Code       string    `json:"code"`
-	Level      string    `json:"level"`
-	Message    string    `json:"message"`
-	Details    string    `json:"details,omitempty"`
-	Context    map[string]interface{} `json:"context,omitempty"`
-	File       string    `json:"file,omitempty"`
-	Line       int       `json:"line,omitempty"`
-	Function   string    `json:"function,omitempty"`
-	StackTrace string    `json:"stackTrace,omitempty"`
-	CreatedAt  time.Time `json:"createdAt"`
+	ID         int64           `json:"id"`
+	Code       string          `json:"code"`
+	Level      string          `json:"level"`
+	Message    string          `json:"message"`
+	Details    string          `json:"details,omitempty"`
+	Context    ErrorLogContext `json:"context,omitempty"`
+	File       string          `json:"file,omitempty"`
+	Line       int             `json:"line,omitempty"`
+	Function   string          `json:"function,omitempty"`
+	StackTrace string          `json:"stackTrace,omitempty"`
+	CreatedAt  time.Time       `json:"createdAt"`
 }
 
 // Settings represents application settings

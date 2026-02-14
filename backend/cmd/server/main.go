@@ -224,7 +224,7 @@ func main() {
 	if cfg.E2E.Enabled {
 		e2eSvc := e2e.New(e2e.Config{
 			DB:               db.DB,
-			Broadcast:        func(event string, data interface{}) { wsHub.Broadcast(event, data) },
+			Broadcast:        func(event string, data any) { wsHub.Broadcast(event, data) },
 			BaseURL:          fmt.Sprintf("http://localhost:%d", cfg.Server.Port),
 			TestPluginPath:   cfg.E2E.TestPluginPath,
 			TestSiteURL:      cfg.E2E.TestSiteURL,
@@ -343,7 +343,7 @@ func parseLogLevel(level string) logger.Level {
 // initServices creates and wires all application services
 func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logger.Logger) *Services {
 	// WordPress REST API client factory with progress callback support
-	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details map[string]interface{})) *wordpress.Client {
+	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details map[string]any)) *wordpress.Client {
 		return wordpress.NewClient(wordpress.ClientConfig{
 			BaseURL:         siteURL,
 			Username:        username,
@@ -467,19 +467,19 @@ type E2EServiceAdapter struct {
 	svc e2e.Service
 }
 
-func (a *E2EServiceAdapter) ListSuites(ctx context.Context) (interface{}, error) {
+func (a *E2EServiceAdapter) ListSuites(ctx context.Context) (any, error) {
 	return a.svc.ListSuites(ctx)
 }
 
-func (a *E2EServiceAdapter) GetCases(ctx context.Context, suiteID string) (interface{}, error) {
+func (a *E2EServiceAdapter) GetCases(ctx context.Context, suiteID string) (any, error) {
 	return a.svc.GetCases(ctx, suiteID)
 }
 
-func (a *E2EServiceAdapter) StartRun(ctx context.Context, opts interface{}) (interface{}, error) {
+func (a *E2EServiceAdapter) StartRun(ctx context.Context, opts any) (any, error) {
 	// Convert opts from map to RunOptions
 	runOpts := e2e.RunOptions{}
-	if m, ok := opts.(map[string]interface{}); ok {
-		if suites, ok := m["suites"].([]interface{}); ok {
+	if m, ok := opts.(map[string]any); ok {
+		if suites, ok := m["suites"].([]any); ok {
 			for _, s := range suites {
 				if str, ok := s.(string); ok {
 					runOpts.Suites = append(runOpts.Suites, str)
@@ -500,11 +500,11 @@ func (a *E2EServiceAdapter) AbortRun(ctx context.Context, runID string) error {
 	return a.svc.AbortRun(ctx, runID)
 }
 
-func (a *E2EServiceAdapter) ListRuns(ctx context.Context, limit int) (interface{}, error) {
+func (a *E2EServiceAdapter) ListRuns(ctx context.Context, limit int) (any, error) {
 	return a.svc.ListRuns(ctx, limit)
 }
 
-func (a *E2EServiceAdapter) GetRun(ctx context.Context, runID string) (interface{}, error) {
+func (a *E2EServiceAdapter) GetRun(ctx context.Context, runID string) (any, error) {
 	return a.svc.GetRun(ctx, runID)
 }
 

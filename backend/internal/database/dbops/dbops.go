@@ -51,12 +51,15 @@ type Result struct {
 	Exists       bool // True if row already existed (for INSERT OR IGNORE)
 }
 
+// ContextFields holds structured metadata fields for database operation logging.
+type ContextFields = map[string]any
+
 // Context provides metadata for logging database operations
 type Context struct {
-	Table     string                 // Table name for logging
-	Operation string                 // Operation type: INSERT, UPDATE, DELETE, SELECT
-	Logger    *logger.Logger         // Logger instance for output
-	Fields    map[string]interface{} // Additional fields to log
+	Table     string         // Table name for logging
+	Operation string         // Operation type: INSERT, UPDATE, DELETE, SELECT
+	Logger    *logger.Logger // Logger instance for output
+	Fields    ContextFields  // Additional fields to log
 }
 
 // captureStackTrace returns a formatted stack trace string from the call site
@@ -99,7 +102,7 @@ func getCallerInfo(skip int) (file string, line int) {
 }
 
 // ExecInsert executes an INSERT operation and returns detailed result with logging
-func ExecInsert(db interface{ Exec(string, ...interface{}) (sql.Result, error) }, ctx Context, query string, args ...interface{}) (*Result, error) {
+func ExecInsert(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Context, query string, args ...any) (*Result, error) {
 	ctx.Operation = "INSERT"
 	
 	result, err := db.Exec(query, args...)
@@ -123,7 +126,7 @@ func ExecInsert(db interface{ Exec(string, ...interface{}) (sql.Result, error) }
 }
 
 // ExecUpdate executes an UPDATE operation and returns detailed result with logging
-func ExecUpdate(db interface{ Exec(string, ...interface{}) (sql.Result, error) }, ctx Context, query string, args ...interface{}) (*Result, error) {
+func ExecUpdate(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Context, query string, args ...any) (*Result, error) {
 	ctx.Operation = "UPDATE"
 
 	result, err := db.Exec(query, args...)
@@ -143,7 +146,7 @@ func ExecUpdate(db interface{ Exec(string, ...interface{}) (sql.Result, error) }
 }
 
 // ExecDelete executes a DELETE operation and returns detailed result with logging
-func ExecDelete(db interface{ Exec(string, ...interface{}) (sql.Result, error) }, ctx Context, query string, args ...interface{}) (*Result, error) {
+func ExecDelete(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Context, query string, args ...any) (*Result, error) {
 	ctx.Operation = "DELETE"
 
 	result, err := db.Exec(query, args...)
@@ -166,14 +169,14 @@ func ExecDelete(db interface{ Exec(string, ...interface{}) (sql.Result, error) }
 // Returns (id, created, error) where created is true if a new record was inserted
 func FindOrCreate(
 	db interface {
-		QueryRow(string, ...interface{}) *sql.Row
-		Exec(string, ...interface{}) (sql.Result, error)
+		QueryRow(string, ...any) *sql.Row
+		Exec(string, ...any) (sql.Result, error)
 	},
 	ctx Context,
 	selectQuery string,
-	selectArgs []interface{},
+	selectArgs []any,
 	insertQuery string,
-	insertArgs []interface{},
+	insertArgs []any,
 ) (int64, bool, error) {
 	// First, try to find existing
 	var id int64
@@ -181,7 +184,7 @@ func FindOrCreate(
 	if err == nil {
 		// Record exists
 		if ctx.Logger != nil {
-			fields := mergeFields(ctx.Fields, map[string]interface{}{
+			fields := mergeFields(ctx.Fields, ContextFields{
 				"table":     ctx.Table,
 				"operation": "FIND",
 				"id":        id,
@@ -218,7 +221,7 @@ func FindOrCreate(
 			return 0, false, err
 		}
 		if ctx.Logger != nil {
-			fields := mergeFields(ctx.Fields, map[string]interface{}{
+			fields := mergeFields(ctx.Fields, ContextFields{
 				"table":     ctx.Table,
 				"operation": "FIND_AFTER_RACE",
 				"id":        id,
@@ -241,10 +244,10 @@ func FindOrCreate(
 // CreateMapping creates a many-to-many relationship record with proper logging
 // Returns (created bool, error) - created is true only if a new row was inserted
 func CreateMapping(
-	db interface{ Exec(string, ...interface{}) (sql.Result, error) },
+	db interface{ Exec(string, ...any) (sql.Result, error) },
 	ctx Context,
 	query string,
-	args ...interface{},
+	args ...any,
 ) (bool, error) {
 	ctx.Operation = "INSERT_MAPPING"
 
@@ -259,7 +262,7 @@ func CreateMapping(
 		if isConstraintViolation {
 			// Not a real error for mappings - just means it exists
 			if ctx.Logger != nil {
-				fields := mergeFields(ctx.Fields, map[string]interface{}{
+				fields := mergeFields(ctx.Fields, ContextFields{
 					"table":     ctx.Table,
 					"operation": "INSERT_MAPPING",
 					"exists":    true,
@@ -280,7 +283,7 @@ func CreateMapping(
 	if created {
 		if ctx.Logger != nil {
 			id, _ := result.LastInsertId()
-			fields := mergeFields(ctx.Fields, map[string]interface{}{
+			fields := mergeFields(ctx.Fields, ContextFields{
 				"table":        ctx.Table,
 				"operation":    "INSERT_MAPPING",
 				"affectedRows": rows,
@@ -291,7 +294,7 @@ func CreateMapping(
 		}
 	} else {
 		if ctx.Logger != nil {
-			fields := mergeFields(ctx.Fields, map[string]interface{}{
+			fields := mergeFields(ctx.Fields, ContextFields{
 				"table":     ctx.Table,
 				"operation": "INSERT_MAPPING",
 				"exists":    true,
@@ -305,14 +308,14 @@ func CreateMapping(
 }
 
 // logSuccess logs a successful database operation
-func logSuccess(ctx Context, res *Result, query string, args []interface{}) {
+func logSuccess(ctx Context, res *Result, query string, args []any) {
 	if ctx.Logger == nil {
 		return
 	}
 
 	file, line := getCallerInfo(3)
 	
-	fields := mergeFields(ctx.Fields, map[string]interface{}{
+	fields := mergeFields(ctx.Fields, ContextFields{
 		"table":        ctx.Table,
 		"operation":    ctx.Operation,
 		"affectedRows": res.AffectedRows,
@@ -333,7 +336,7 @@ func logSuccess(ctx Context, res *Result, query string, args []interface{}) {
 }
 
 // logError logs a failed database operation with stack trace
-func logError(ctx Context, err error, query string, args []interface{}) {
+func logError(ctx Context, err error, query string, args []any) {
 	if ctx.Logger == nil {
 		return
 	}
@@ -341,7 +344,7 @@ func logError(ctx Context, err error, query string, args []interface{}) {
 	file, line := getCallerInfo(3)
 	stack := captureStackTrace(3)
 
-	fields := mergeFields(ctx.Fields, map[string]interface{}{
+	fields := mergeFields(ctx.Fields, ContextFields{
 		"table":      ctx.Table,
 		"operation":  ctx.Operation,
 		"error":      err.Error(),
@@ -353,8 +356,8 @@ func logError(ctx Context, err error, query string, args []interface{}) {
 }
 
 // mergeFields merges two field maps
-func mergeFields(base, extra map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
+func mergeFields(base, extra ContextFields) ContextFields {
+	result := make(ContextFields)
 	for k, v := range base {
 		result[k] = v
 	}
@@ -365,8 +368,8 @@ func mergeFields(base, extra map[string]interface{}) map[string]interface{} {
 }
 
 // toSlice converts a map to a slice of key-value pairs for logger
-func toSlice(m map[string]interface{}) []interface{} {
-	slice := make([]interface{}, 0, len(m)*2)
+func toSlice(m ContextFields) []any {
+	slice := make([]any, 0, len(m)*2)
 	for k, v := range m {
 		slice = append(slice, k, v)
 	}
