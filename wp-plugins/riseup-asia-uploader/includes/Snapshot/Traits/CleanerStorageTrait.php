@@ -66,7 +66,7 @@ trait CleanerStorageTrait {
                 }
             }
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to get storage stats', array('error' => $e->getMessage()));
         }
 
@@ -103,7 +103,7 @@ trait CleanerStorageTrait {
             $estimate['bytes']           = array_sum(array_column($snapshots, 'size'));
             $estimate['bytes_formatted'] = RiseupPathUtils::formatBytes($estimate['bytes']);
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array('error' => $e->getMessage()));
         }
 

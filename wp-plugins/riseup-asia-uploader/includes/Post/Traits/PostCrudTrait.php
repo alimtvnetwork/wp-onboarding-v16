@@ -51,7 +51,7 @@ trait PostCrudTrait {
             ));
 
             return array('success' => true, 'post' => $this->formatPost(get_post($post_id)));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Post creation exception');
             return array('success' => false, 'error' => $e->getMessage());
         }
@@ -87,7 +87,7 @@ trait PostCrudTrait {
 
             $updated_post = get_post($post_id);
             return array('success' => true, 'post' => $this->formatPost($updated_post, true));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->file_logger->log_exception($e, 'Post update exception');
             return array('success' => false, 'error' => $e->getMessage());
         }

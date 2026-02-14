@@ -25,7 +25,7 @@ trait SchedulerCronTrait {
         try {
             $result = $work();
             $this->logCronResult($label, $result);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->error("[SCHEDULER] Exception during {$label}", array(
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

@@ -113,7 +113,7 @@ trait CleanerUtilsTrait {
                 empty($results['errors']) ? STATUS_SUCCESS : STATUS_FAILED,
                 TRIGGERED_BY_API
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to log cleanup action', array('error' => $e->getMessage()));
         }
     }

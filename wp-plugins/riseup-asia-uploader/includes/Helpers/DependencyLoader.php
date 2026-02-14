@@ -55,7 +55,7 @@ class RiseupDependencyLoader {
             self::recordResult($label, $path, true, null);
 
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             self::recordResult($label, $path, false, $e->getMessage());
 
             return false;

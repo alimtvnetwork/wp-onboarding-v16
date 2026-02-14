@@ -81,7 +81,7 @@ trait RootDbRegistrationTrait {
                 'meta' => $meta, 'tables' => $tables, 'dependencies' => $deps,
                 'incrementals' => $incrementals, 'plugins' => $plugins,
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to read a-root.db', array('path' => $filepath, 'error' => $e->getMessage()));
             return null;
         }

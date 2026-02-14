@@ -86,7 +86,7 @@ trait LoggerWriteTrait {
             }
 
             $this->insertErrorSession($pdo, $level, $message, $file, $line, $context, $stackTrace);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Silently ignore - we're in the logger, can't recurse
         }
     }

@@ -86,7 +86,7 @@ trait LifecycleHooksTrait
             ));
 
             $this->logger->logPluginAction($action, $slug, STATUS_SUCCESS, $details);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->error('Failed to log plugin lifecycle: ' . $e->getMessage());
         }
     }

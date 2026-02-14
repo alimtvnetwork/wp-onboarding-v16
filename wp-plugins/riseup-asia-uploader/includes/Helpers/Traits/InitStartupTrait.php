@@ -26,7 +26,7 @@ trait InitStartupTrait {
 
         try {
             $result = $init_fn();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $error = $e->getMessage();
         }
 

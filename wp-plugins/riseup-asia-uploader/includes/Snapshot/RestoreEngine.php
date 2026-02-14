@@ -100,7 +100,7 @@ class RiseupRestoreEngine {
 
         try {
             return $this->executeRestoreWorkflow($snapshot_dir, $options);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return $this->handleRestoreFailure($e);
         }
     }
@@ -174,10 +174,10 @@ class RiseupRestoreEngine {
     /**
      * Handle restore failure with FK cleanup.
      *
-     * @param \Throwable $e Exception.
+     * @param Throwable $e Exception.
      * @return array Failure result.
      */
-    private function handleRestoreFailure(\Throwable $e): array {
+    private function handleRestoreFailure(Throwable $e): array {
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
         $this->log(LogLevelType::Error->value, 'Restore engine failed', array(
             'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),

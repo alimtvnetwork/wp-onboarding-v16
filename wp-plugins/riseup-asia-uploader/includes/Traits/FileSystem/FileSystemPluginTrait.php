@@ -43,7 +43,7 @@ trait FileSystemPluginTrait {
             if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->log_exception($e, 'findPluginFile: Failed to load plugin.php');
         }
     }
@@ -56,7 +56,7 @@ trait FileSystemPluginTrait {
             } else {
                 wp_cache_delete('plugins', 'plugins');
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->warn('findPluginFile: Failed to clear plugin cache', array(
                 'error' => $e->getMessage(),
             ));
@@ -67,7 +67,7 @@ trait FileSystemPluginTrait {
     private function safeGetPlugins() {
         try {
             return get_plugins();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->log_exception($e, 'findPluginFile: get_plugins() threw an exception');
             return null;
         }
@@ -107,7 +107,7 @@ trait FileSystemPluginTrait {
             }
 
             return $this->findSingleFilePlugin($slug);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->log_exception($e, 'findPluginFileFromFilesystem: Filesystem scan failed');
         }
 

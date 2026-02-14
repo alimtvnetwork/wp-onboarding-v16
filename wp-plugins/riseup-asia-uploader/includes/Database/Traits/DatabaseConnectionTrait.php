@@ -78,7 +78,7 @@ trait DatabaseConnectionTrait {
             $this->fileLogger->info('Database initialization complete');
 
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Database initialization failed');
             $this->pdo = null;
 
