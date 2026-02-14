@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\EndpointType;
 
 trait SnapshotRouteRegistrationTrait {
 
@@ -22,28 +23,28 @@ trait SnapshotRouteRegistrationTrait {
     private function registerSnapshotRoutes($safeRegister) {
         $perm = $this->buildPermissionCallback('snapshots', array($this, 'checkPluginPermission'));
 
-        $safeRegister(ENDPOINT_SNAPSHOT_LIST, array(
+        $safeRegister(EndpointType::SnapshotList->value, array(
             'methods' => HttpMethodType::Get->value, 'callback' => array($this, 'handleListSnapshots'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_SCHEDULE, array(
+        $safeRegister(EndpointType::SnapshotSchedule->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleScheduleSnapshot'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_INFO, array(
+        $safeRegister(EndpointType::SnapshotInfo->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleSnapshotInfo'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_DELETE, array(
+        $safeRegister(EndpointType::SnapshotDelete->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleDeleteSnapshot'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_RESTORE, array(
+        $safeRegister(EndpointType::SnapshotRestore->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleRestoreSnapshot'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_EXPORT, array(
+        $safeRegister(EndpointType::SnapshotExport->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleExportSnapshot'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_IMPORT, array(
+        $safeRegister(EndpointType::SnapshotImport->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleImportSnapshot'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_SETTINGS, array(
+        $safeRegister(EndpointType::SnapshotSettings->value, array(
             array(
                 'methods' => HttpMethodType::Get->value, 'callback' => array($this, 'handleGetSnapshotSettings'), 'permission_callback' => $perm,
             ),
@@ -51,34 +52,34 @@ trait SnapshotRouteRegistrationTrait {
                 'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleUpdateSnapshotSettings'), 'permission_callback' => $perm,
             ),
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_PROVIDERS, array(
+        $safeRegister(EndpointType::SnapshotProviders->value, array(
             'methods' => HttpMethodType::Get->value, 'callback' => array($this, 'handleListSnapshotProviders'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_TABLES, array(
+        $safeRegister(EndpointType::SnapshotTables->value, array(
             'methods' => HttpMethodType::Get->value, 'callback' => array($this, 'handleListSnapshotTables'), 'permission_callback' => $perm,
         ));
-        $safeRegister('snapshots/dependencies', array(
+        $safeRegister(EndpointType::SnapshotDependencies->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleAnalyzeDependencies'), 'permission_callback' => $perm,
         ));
-        $safeRegister('snapshots/export-pertable', array(
+        $safeRegister(EndpointType::SnapshotExportPertable->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleExportPertable'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_FULL_BACKUP, array(
+        $safeRegister(EndpointType::SnapshotFullBackup->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleFullBackup'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_INCREMENTAL, array(
+        $safeRegister(EndpointType::SnapshotIncremental->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleIncrementalBackup'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_CLEANUP, array(
+        $safeRegister(EndpointType::SnapshotCleanup->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleSnapshotCleanup'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_PROGRESS, array(
+        $safeRegister(EndpointType::SnapshotProgress->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleSnapshotProgress'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_DOWNLOAD, array(
+        $safeRegister(EndpointType::SnapshotDownload->value, array(
             'methods' => HttpMethodType::Post->value, 'callback' => array($this, 'handleSnapshotDownload'), 'permission_callback' => $perm,
         ));
-        $safeRegister(ENDPOINT_SNAPSHOT_DOWNLOAD_FILE, array(
+        $safeRegister(EndpointType::SnapshotDownloadFile->value, array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleSnapshotDownloadFile'),
             'permission_callback' => '__return_true', // Nonce-validated in handler

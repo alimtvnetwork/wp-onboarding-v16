@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\EndpointType;
 
 trait SnapshotExportHandlerTrait {
 
@@ -62,7 +63,7 @@ trait SnapshotExportHandlerTrait {
                 'success'  => true,
                 'filename' => $result['filename'],
                 'size'     => $result['size'],
-                'downloadUrl' => rest_url(API_FULL_NAMESPACE . '/' . ENDPOINT_SNAPSHOTS . '/' . $id . '/download'),
+                'downloadUrl' => rest_url(API_FULL_NAMESPACE . '/' . EndpointType::SnapshotList->value . '/' . $id . '/download'),
             ), 200);
         }, 'export_snapshot');
     }
@@ -138,7 +139,7 @@ trait SnapshotExportHandlerTrait {
                 'created_at'        => $export['created_at'] ?? '',
                 'status'            => $export['status'] ?? 'valid',
             )))
-            ->setRequestedAt('/' . ENDPOINT_SNAPSHOT_DOWNLOAD)
+            ->setRequestedAt('/' . EndpointType::SnapshotDownload->value)
             ->toResponse();
     }
 }

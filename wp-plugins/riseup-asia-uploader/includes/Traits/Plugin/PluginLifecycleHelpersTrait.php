@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\EndpointType;
+
 trait PluginLifecycleHelpersTrait {
 
     /**
@@ -39,7 +41,7 @@ trait PluginLifecycleHelpersTrait {
         $status = $exists ? (is_plugin_active($plugin_file) ? 'active' : 'inactive') : 'not_installed';
 
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_EXISTS)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::PluginExists->value)
             ->setSingleResult(array(
                 'plugin_slug' => $slug, 'exists' => $exists, 'status' => $status,
                 'plugin_file' => $exists ? $plugin_file : null,

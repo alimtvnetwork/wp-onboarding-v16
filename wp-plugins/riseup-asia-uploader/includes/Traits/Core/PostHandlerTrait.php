@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\EndpointType;
+
 trait PostHandlerTrait
 {
     public function handleListPosts(\WP_REST_Request $request): \WP_REST_Response {
@@ -69,7 +71,7 @@ trait PostHandlerTrait
             $perPage = (int) $limit;
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_LOGS)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::Logs->value)
                 ->setResults($result['logs'])
                 ->setPagination($total, $perPage, $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1)
                 ->toResponse();
@@ -97,7 +99,7 @@ trait PostHandlerTrait
             $stats = $this->db->get_stats();
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_LOGS_STATS)
+                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::LogsStats->value)
                 ->setSingleResult($stats)
                 ->toResponse();
         } catch (Throwable $e) {

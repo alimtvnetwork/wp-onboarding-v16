@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\EndpointType;
+
 trait StatusPayloadTrait {
 
     /**
@@ -22,7 +24,7 @@ trait StatusPayloadTrait {
         $db_available = $this->db !== null;
 
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . ENDPOINT_STATUS)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::Status->value)
             ->setSingleResult($this->buildStatusPayload($live_version, $db_available))
             ->toResponse();
     }

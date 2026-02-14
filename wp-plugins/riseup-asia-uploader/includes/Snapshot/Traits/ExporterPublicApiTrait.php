@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\EndpointType;
 
 trait ExporterPublicApiTrait {
 
@@ -114,7 +115,7 @@ trait ExporterPublicApiTrait {
         }
 
         $nonce = wp_create_nonce('riseup_snapshot_download_' . $exportId);
-        return rest_url(API_FULL_NAMESPACE . '/' . ENDPOINT_SNAPSHOT_DOWNLOAD_FILE . '?token=' . $nonce . '&id=' . $exportId);
+        return rest_url(API_FULL_NAMESPACE . '/' . EndpointType::SnapshotDownloadFile->value . '?token=' . $nonce . '&id=' . $exportId);
     }
 
     /**
