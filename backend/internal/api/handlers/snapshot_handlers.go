@@ -195,7 +195,7 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Length", cl)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(wordpress.HttpStatusOk.Int())
 	io.Copy(w, resp.Body)
 }
 
@@ -254,7 +254,7 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Snapshot-Size", strconv.FormatInt(int64(size), 10))
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(wordpress.HttpStatusOk.Int())
 	io.Copy(w, zipResp.Body)
 }
 

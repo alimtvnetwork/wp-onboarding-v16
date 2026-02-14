@@ -78,7 +78,7 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 	accept := r.Header.Get("Accept")
 	if accept == "text/plain" {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(wordpress.HttpStatusOk.Int())
 		w.Write([]byte(logs))
 		return
 	}
