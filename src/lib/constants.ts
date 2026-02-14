@@ -339,3 +339,30 @@ export const SessionType = {
 } as const;
 
 export type SessionType = (typeof SessionType)[keyof typeof SessionType];
+
+// ---------------------------------------------------------------------------
+// Response Message Type (mirrors Go/PHP ResponseMessageType enum)
+// ---------------------------------------------------------------------------
+
+export const ResponseMessageType = {
+  Success: "Operation completed successfully",
+  Unauthorized: "Authentication required",
+  Forbidden: "Insufficient permissions",
+  InvalidRequest: "Invalid request data",
+  PluginNotFound: "Plugin not found",
+  UploadFailed: "Upload failed",
+  ActivationFailed: "Plugin activation failed",
+  DeactivationFailed: "Plugin deactivation failed",
+  DeleteFailed: "Plugin deletion failed",
+  PostCreateFailed: "Post creation failed",
+  PostUpdateFailed: "Post update failed",
+  CategoryCreateFailed: "Category creation failed",
+  MediaUploadFailed: "Media upload failed",
+  DbError: "Database error",
+  FileIgnored: "File ignored by .uploadignore",
+  InvalidRequestBody: "Invalid request body",
+  ServiceNotAvailable: "Service not available",
+  InvalidId: "Invalid ID",
+} as const;
+
+export type ResponseMessageType = (typeof ResponseMessageType)[keyof typeof ResponseMessageType];
