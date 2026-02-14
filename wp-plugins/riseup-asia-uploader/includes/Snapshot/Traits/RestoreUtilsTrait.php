@@ -62,7 +62,7 @@ trait RestoreUtilsTrait {
      * @param float  $duration        Duration in seconds.
      */
     private function logAuditRestore($snapshot_dir, $tables_restored, $total_rows, $duration) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return;
         }

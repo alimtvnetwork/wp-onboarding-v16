@@ -41,7 +41,7 @@ trait ExporterBuildTrait {
         }
 
         $zipMeta = $this->prepareZipPaths($exportsDir, $snapshot);
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return array('success' => false, 'error' => 'Database unavailable', 'code' => ERR_EXPORT_BUILD_FAILED);
         }

@@ -17,7 +17,7 @@ trait WorkerJobProgressTrait {
      * @return array|null Progress info or null.
      */
     public function getJobProgress($job_id) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) return null;
 
         $job = $this->getJob($pdo, $job_id);

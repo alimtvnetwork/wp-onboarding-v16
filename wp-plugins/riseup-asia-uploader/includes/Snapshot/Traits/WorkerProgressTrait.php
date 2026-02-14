@@ -17,7 +17,7 @@ trait WorkerProgressTrait {
      * @param array $tables Table names.
      */
     private function initProgressRecords($tables) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) return;
 
         try {
@@ -47,7 +47,7 @@ trait WorkerProgressTrait {
      * @param string|null $error  Error message if failed.
      */
     private function updateProgress($table, $status, $rows = 0, $error = null) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) return;
 
         try {

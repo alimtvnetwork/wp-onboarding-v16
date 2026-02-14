@@ -72,7 +72,7 @@ trait SnapshotProviderHelpersTrait {
 
     /** Get the next sequence number for snapshots. */
     protected function getNextSequence() {
-        $result = $this->db->query_single('SELECT MAX(sequence) as max_seq FROM ' . TableType::Snapshots->value);
+        $result = $this->db->querySingle('SELECT MAX(sequence) as max_seq FROM ' . TableType::Snapshots->value);
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
 

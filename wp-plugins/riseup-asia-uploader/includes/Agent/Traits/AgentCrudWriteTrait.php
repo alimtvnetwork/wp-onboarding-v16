@@ -21,7 +21,7 @@ trait AgentCrudWriteTrait {
         }
 
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return new \WP_Error('db_error', 'Database not available');
             }
@@ -65,7 +65,7 @@ trait AgentCrudWriteTrait {
         $this->fileLogger->info('Updating agent site', array('id' => $id));
 
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return new \WP_Error('db_error', 'Database not available');
             }
@@ -141,7 +141,7 @@ trait AgentCrudWriteTrait {
         $this->fileLogger->info('Removing agent site', array('id' => $id));
 
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return new \WP_Error('db_error', 'Database not available');
             }

@@ -118,7 +118,7 @@ trait NativeSnapshotCrudTrait {
      * @return array|null Snapshot or null.
      */
     public function getSnapshot($snapshot_id) {
-        return $this->db->query_single('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ?', array($snapshot_id));
+        return $this->db->querySingle('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ?', array($snapshot_id));
     }
 
     /**
@@ -129,11 +129,11 @@ trait NativeSnapshotCrudTrait {
      * @return array List result.
      */
     public function listSnapshots($limit = 50, $offset = 0) {
-        $snapshots = $this->db->query_all(
+        $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
         );
-        $total = $this->db->query_single('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
+        $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
         return array('snapshots' => $snapshots ?: array(), 'total' => $total ? (int)$total['count'] : 0);
     }
 

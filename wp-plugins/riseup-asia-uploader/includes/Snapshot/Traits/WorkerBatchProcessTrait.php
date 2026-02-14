@@ -23,7 +23,7 @@ trait WorkerBatchProcessTrait {
             return;
         }
 
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             $this->log(LogLevelType::Error->value, 'No database connection for worker batch');
             return;

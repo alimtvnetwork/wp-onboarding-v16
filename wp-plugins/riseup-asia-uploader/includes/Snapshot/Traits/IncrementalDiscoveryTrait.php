@@ -27,7 +27,7 @@ trait IncrementalDiscoveryTrait {
 
     /** Find the latest master snapshot from the database. */
     private function findMasterFromDb(): ?string {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
         }

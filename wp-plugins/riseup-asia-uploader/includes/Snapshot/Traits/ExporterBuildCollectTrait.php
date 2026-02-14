@@ -80,7 +80,7 @@ trait ExporterBuildCollectTrait {
      * @return array List of incremental snapshot records.
      */
     private function getIncrementalSnapshots($parentId, $parentName) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) {
             return array();
         }

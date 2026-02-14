@@ -21,7 +21,7 @@ trait WorkerJobLifecycleTrait {
      * @return int|false Job ID.
      */
     private function createJob($snapshot_dir, $tables, $config) {
-        $pdo = $this->db->get_pdo();
+        $pdo = $this->db->getPdo();
         if (!$pdo) return false;
 
         try {

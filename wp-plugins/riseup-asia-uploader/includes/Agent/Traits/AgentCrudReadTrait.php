@@ -14,7 +14,7 @@ trait AgentCrudReadTrait {
 
     public function getAgent(int $id, bool $includePassword = false): ?array {
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return null;
             }
@@ -40,7 +40,7 @@ trait AgentCrudReadTrait {
 
     public function listAgents(array $filters = array(), int $limit = 100, int $offset = 0): array {
         try {
-            $pdo = $this->db->get_pdo();
+            $pdo = $this->db->getPdo();
             if (!$pdo) {
                 return array('total' => 0, 'agents' => array());
             }

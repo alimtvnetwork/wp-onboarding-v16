@@ -104,7 +104,7 @@ trait CleanerRetentionTrait {
     private function getSnapshotsOlderThan($days) {
         $cutoff = date('c', strtotime("-{$days} days"));
 
-        return $this->db->query_all(
+        return $this->db->queryAll(
             'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
             ' WHERE status = ? AND created_at < ? ORDER BY created_at ASC',
             array(SnapshotStatusType::Complete->value, $cutoff)
@@ -113,7 +113,7 @@ trait CleanerRetentionTrait {
 
     /** Get snapshots beyond the count limit. */
     private function getSnapshotsBeyondCount($count) {
-        $total_result = $this->db->query_single(
+        $total_result = $this->db->querySingle(
             'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE status = ?',
             array(SnapshotStatusType::Complete->value)
         );
@@ -124,7 +124,7 @@ trait CleanerRetentionTrait {
 
         $to_delete = $total_result['cnt'] - $count;
 
-        return $this->db->query_all(
+        return $this->db->queryAll(
             'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
             ' WHERE status = ? ORDER BY created_at ASC LIMIT ?',
             array(SnapshotStatusType::Complete->value, $to_delete)

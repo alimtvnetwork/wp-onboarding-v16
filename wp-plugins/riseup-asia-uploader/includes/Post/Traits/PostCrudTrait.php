@@ -40,7 +40,7 @@ trait PostCrudTrait {
             $this->fileLogger->info('Post created', array('post_id' => $postId));
             $this->assignCategories($postId, $data['categories'] ?? array());
 
-            $this->logger->log_post_create($postId, array(
+            $this->logger->logPostCreate($postId, array(
                 'title' => $data['title'], 'slug' => get_post_field('post_name', $postId),
                 'status' => $postData['post_status'], 'categories' => $data['categories'] ?? array(),
             ));
@@ -69,7 +69,7 @@ trait PostCrudTrait {
             }
 
             $this->assignCategories($postId, $data['categories'] ?? null);
-            $this->logger->log_post_update($postId, $data);
+            $this->logger->logPostUpdate($postId, $data);
             $this->fileLogger->info('Post updated', array('post_id' => $postId));
 
             $updatedPost = get_post($postId);
@@ -111,7 +111,7 @@ trait PostCrudTrait {
     private function handlePostError(string $action, int $postId, string $title, string $errorMsg, array $data = array()): array {
         $this->fileLogger->error('Post operation failed', array('error' => $errorMsg));
         $details = !empty($title) ? array('title' => $title) : $data;
-        $this->logger->log_post_action($action, $postId, StatusType::Failed->value, $details, $errorMsg);
+        $this->logger->logPostAction($action, $postId, StatusType::Failed->value, $details, $errorMsg);
         return array('success' => false, 'error' => $errorMsg);
     }
 
