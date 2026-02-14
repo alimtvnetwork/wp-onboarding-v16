@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Enums\SnapshotStatusType;
 
 trait CleanerRetentionTrait {
 
@@ -99,32 +100,22 @@ trait CleanerRetentionTrait {
         return false;
     }
 
-    /**
-     * Get snapshots older than N days.
-     *
-     * @param int $days Retention days.
-     * @return array Snapshot records.
-     */
+    /** Get snapshots older than N days. */
     private function getSnapshotsOlderThan($days) {
         $cutoff = date('c', strtotime("-{$days} days"));
 
         return $this->db->query_all(
             'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
             ' WHERE status = ? AND created_at < ? ORDER BY created_at ASC',
-            array(SNAPSHOT_STATUS_COMPLETE, $cutoff)
+            array(SnapshotStatusType::Complete->value, $cutoff)
         ) ?: array();
     }
 
-    /**
-     * Get snapshots beyond the count limit.
-     *
-     * @param int $count Number to keep.
-     * @return array Snapshot records to delete.
-     */
+    /** Get snapshots beyond the count limit. */
     private function getSnapshotsBeyondCount($count) {
         $total_result = $this->db->query_single(
             'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE status = ?',
-            array(SNAPSHOT_STATUS_COMPLETE)
+            array(SnapshotStatusType::Complete->value)
         );
 
         if (!$total_result || $total_result['cnt'] <= $count) {
@@ -136,7 +127,7 @@ trait CleanerRetentionTrait {
         return $this->db->query_all(
             'SELECT id, filepath, filename, size, scope, type FROM ' . TableType::Snapshots->value .
             ' WHERE status = ? ORDER BY created_at ASC LIMIT ?',
-            array(SNAPSHOT_STATUS_COMPLETE, $to_delete)
+            array(SnapshotStatusType::Complete->value, $to_delete)
         ) ?: array();
     }
 }

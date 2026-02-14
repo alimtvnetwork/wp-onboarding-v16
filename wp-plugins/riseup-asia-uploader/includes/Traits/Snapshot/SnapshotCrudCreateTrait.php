@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\SnapshotTriggerType;
 
 trait SnapshotCrudCreateTrait {
 
@@ -29,7 +31,7 @@ trait SnapshotCrudCreateTrait {
             $body = $request->get_json_params();
             $scope = isset($body['scope']) ? sanitize_key($body['scope']) : 'all';
 
-            $this->logger->logPluginAction(ActionType::SnapshotCreate->value, 'snapshot', STATUS_SUCCESS,
+            $this->logger->logPluginAction(ActionType::SnapshotCreate->value, 'snapshot', StatusType::Success->value,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
             $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
@@ -65,7 +67,7 @@ trait SnapshotCrudCreateTrait {
         $this->fileLogger->info('Creating snapshot via API (legacy mode)', array('scope' => $scope));
         return $manager->createSnapshot(array(
             'scope'   => $scope,
-            'trigger' => SNAPSHOT_TRIGGER_API,
+            'trigger' => SnapshotTriggerType::Api->value,
             'tables'  => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
         ));
     }
@@ -76,7 +78,7 @@ trait SnapshotCrudCreateTrait {
     private function logSnapshotResult(string $action, string $scope, string $mode, array $result) {
         $this->logger->logPluginAction(
             $action, 'snapshot',
-            $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
+            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
             array('scope' => $scope, 'mode' => $mode, 'phase' => 'complete'),
             $result['success'] ? null : ($result['error'] ?? 'Unknown error')
         );

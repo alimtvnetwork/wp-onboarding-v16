@@ -11,6 +11,9 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\SyncActionType;
+use RiseupAsia\Enums\TriggerSourceType;
 
 trait SyncPushTrait
 {
@@ -91,10 +94,10 @@ trait SyncPushTrait
 
     /** Dispatch the sync action to the appropriate handler. */
     private function dispatchSyncAction(string $path, string $action, string $full_path, string $plugin_dir, string $slug, array $file): array {
-        if ($action === SYNC_ACTION_REPLACE) {
+        if ($action === SyncActionType::Replace->value) {
             return $this->syncReplaceFile($path, $action, isset($file['content']) ? $file['content'] : '', $full_path);
         }
-        if ($action === SYNC_ACTION_DELETE) {
+        if ($action === SyncActionType::Delete->value) {
             return $this->syncDeleteFile($path, $action, $full_path, $plugin_dir, $slug);
         }
 
@@ -108,7 +111,7 @@ trait SyncPushTrait
         if ($resolved === false) {
             $resolved = $plugin_dir;
         }
-        return (strpos($resolved, $real_plugin_dir) !== 0 && $action !== SYNC_ACTION_DELETE);
+        return (strpos($resolved, $real_plugin_dir) !== 0 && $action !== SyncActionType::Delete->value);
     }
 
     /** Replace (create/update) a file during sync. */
@@ -138,7 +141,7 @@ trait SyncPushTrait
         }
 
         if ($this->db) {
-            $this->db->logTransaction(ActionType::SyncDelete->value, $slug, STATUS_SUCCESS, 'Deleted via sync: ' . $path, null, null, TRIGGERED_BY_API);
+            $this->db->logTransaction(ActionType::SyncDelete->value, $slug, StatusType::Success->value, 'Deleted via sync: ' . $path, null, null, TriggerSourceType::Api->value);
         }
 
         if (!unlink($full_path)) {
@@ -168,8 +171,8 @@ trait SyncPushTrait
         if ($entry['status'] !== 'success') {
             return;
         }
-        if ($entry['action'] === SYNC_ACTION_REPLACE) { $counters['files_updated']++; }
-        if ($entry['action'] === SYNC_ACTION_DELETE)  { $counters['files_deleted']++; }
+        if ($entry['action'] === SyncActionType::Replace->value) { $counters['files_updated']++; }
+        if ($entry['action'] === SyncActionType::Delete->value)  { $counters['files_deleted']++; }
     }
 
     /** Log the completion of a sync push operation. */
@@ -178,9 +181,9 @@ trait SyncPushTrait
             return;
         }
         $this->db->logTransaction(
-            ActionType::Sync->value, $slug, STATUS_SUCCESS,
+            ActionType::Sync->value, $slug, StatusType::Success->value,
             sprintf('Sync: %d updated, %d deleted, %d ignored', $counters['files_updated'], $counters['files_deleted'], $counters['files_ignored']),
-            null, null, TRIGGERED_BY_API
+            null, null, TriggerSourceType::Api->value
         );
     }
 }

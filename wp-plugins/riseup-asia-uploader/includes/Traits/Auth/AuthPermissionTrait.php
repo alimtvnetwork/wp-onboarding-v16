@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\CapabilityType;
+
 trait AuthPermissionTrait
 {
     /** Check if an endpoint is enabled via settings. */
@@ -38,19 +40,19 @@ trait AuthPermissionTrait
     /** Check plugin management permission. */
     public function checkPluginPermission($request) {
         $this->fileLogger->debug('Checking plugin permission');
-        return $this->checkAuthenticatedCapability($request, CAP_MANAGE_PLUGINS);
+        return $this->checkAuthenticatedCapability($request, CapabilityType::ActivatePlugins->value);
     }
 
     /** Check post management permission. */
     public function checkPostPermission($request) {
         $this->fileLogger->debug('Checking post permission');
-        return $this->checkAuthenticatedCapability($request, CAP_MANAGE_POSTS);
+        return $this->checkAuthenticatedCapability($request, CapabilityType::PublishPosts->value);
     }
 
     /** Check logs view permission. */
     public function checkLogsPermission($request) {
         $this->fileLogger->debug('Checking logs permission');
-        return $this->checkAuthenticatedCapability($request, CAP_VIEW_LOGS);
+        return $this->checkAuthenticatedCapability($request, CapabilityType::ManageOptions->value);
     }
 
     /** Check status/openapi permission (any authenticated user). */
