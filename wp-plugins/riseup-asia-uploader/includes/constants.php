@@ -279,16 +279,12 @@ if (!defined('ACTION_AGENT_PLUGIN_DISABLE')) { define('ACTION_AGENT_PLUGIN_DISAB
 if (!defined('ACTION_AGENT_PLUGIN_DELETE'))  { define('ACTION_AGENT_PLUGIN_DELETE',  ActionType::AgentPluginDelete->value); }
 if (!defined('ACTION_AGENT_PLUGIN_UPDATE'))  { define('ACTION_AGENT_PLUGIN_UPDATE',  ActionType::AgentPluginUpdate->value); }
 
-// Agent status values
-if (!defined('AGENT_STATUS_PENDING')) {
-    define('AGENT_STATUS_PENDING', 'pending');
-}
-if (!defined('AGENT_STATUS_CONNECTED')) {
-    define('AGENT_STATUS_CONNECTED', 'connected');
-}
-if (!defined('AGENT_STATUS_ERROR')) {
-    define('AGENT_STATUS_ERROR', 'error');
-}
+// Agent status values — backward-compat aliases (canonical source: AgentStatusType enum)
+use RiseupAsia\Enums\AgentStatusType;
+
+if (!defined('AGENT_STATUS_PENDING'))   { define('AGENT_STATUS_PENDING',   AgentStatusType::Pending->value); }
+if (!defined('AGENT_STATUS_CONNECTED')) { define('AGENT_STATUS_CONNECTED', AgentStatusType::Connected->value); }
+if (!defined('AGENT_STATUS_ERROR'))     { define('AGENT_STATUS_ERROR',     AgentStatusType::Error->value); }
 
 // Agent REST endpoints — migrated to EndpointType enum
 
@@ -296,84 +292,50 @@ if (!defined('AGENT_STATUS_ERROR')) {
 // TRIGGERED_BY VALUES (for enhanced transaction logging)
 // =============================================================================
 
-if (!defined('TRIGGERED_BY_API')) {
-    define('TRIGGERED_BY_API', 'api');
-}
-if (!defined('TRIGGERED_BY_DASHBOARD')) {
-    define('TRIGGERED_BY_DASHBOARD', 'dashboard');
-}
-if (!defined('TRIGGERED_BY_AGENT')) {
-    define('TRIGGERED_BY_AGENT', 'agent_push');
-}
-if (!defined('TRIGGERED_BY_CRON')) {
-    define('TRIGGERED_BY_CRON', 'cron');
-}
-if (!defined('TRIGGERED_BY_CLI')) {
-    define('TRIGGERED_BY_CLI', 'cli');
-}
+use RiseupAsia\Enums\TriggerSourceType;
+
+if (!defined('TRIGGERED_BY_API'))       { define('TRIGGERED_BY_API',       TriggerSourceType::Api->value); }
+if (!defined('TRIGGERED_BY_DASHBOARD')) { define('TRIGGERED_BY_DASHBOARD', TriggerSourceType::Dashboard->value); }
+if (!defined('TRIGGERED_BY_AGENT'))     { define('TRIGGERED_BY_AGENT',     TriggerSourceType::Agent->value); }
+if (!defined('TRIGGERED_BY_CRON'))      { define('TRIGGERED_BY_CRON',      TriggerSourceType::Cron->value); }
+if (!defined('TRIGGERED_BY_CLI'))       { define('TRIGGERED_BY_CLI',       TriggerSourceType::Cli->value); }
 
 // =============================================================================
 // SNAPSHOT SYSTEM CONSTANTS
 // =============================================================================
 
-// Snapshot providers
-if (!defined('SNAPSHOT_PROVIDER_WP_RESET')) {
-    define('SNAPSHOT_PROVIDER_WP_RESET', 'wp_reset');
-}
-if (!defined('SNAPSHOT_PROVIDER_UPDRAFT')) {
-    define('SNAPSHOT_PROVIDER_UPDRAFT', 'updraft');
-}
-if (!defined('SNAPSHOT_PROVIDER_NATIVE')) {
-    define('SNAPSHOT_PROVIDER_NATIVE', 'native');
-}
-if (!defined('SNAPSHOT_PROVIDER_AUTO')) {
-    define('SNAPSHOT_PROVIDER_AUTO', 'auto');
-}
+// Snapshot providers — backward-compat aliases (canonical source: SnapshotProviderType enum)
+use RiseupAsia\Enums\SnapshotProviderType;
 
-// Snapshot status values
-if (!defined('SNAPSHOT_STATUS_PENDING')) {
-    define('SNAPSHOT_STATUS_PENDING', 'pending');
-}
-if (!defined('SNAPSHOT_STATUS_SCHEDULED')) {
-    define('SNAPSHOT_STATUS_SCHEDULED', 'scheduled');
-}
-if (!defined('SNAPSHOT_STATUS_RUNNING')) {
-    define('SNAPSHOT_STATUS_RUNNING', 'running');
-}
-if (!defined('SNAPSHOT_STATUS_COMPLETE')) {
-    define('SNAPSHOT_STATUS_COMPLETE', 'complete');
-}
-if (!defined('SNAPSHOT_STATUS_FAILED')) {
-    define('SNAPSHOT_STATUS_FAILED', 'failed');
-}
+if (!defined('SNAPSHOT_PROVIDER_WP_RESET')) { define('SNAPSHOT_PROVIDER_WP_RESET', SnapshotProviderType::WpReset->value); }
+if (!defined('SNAPSHOT_PROVIDER_UPDRAFT'))  { define('SNAPSHOT_PROVIDER_UPDRAFT',  SnapshotProviderType::Updraft->value); }
+if (!defined('SNAPSHOT_PROVIDER_NATIVE'))   { define('SNAPSHOT_PROVIDER_NATIVE',   SnapshotProviderType::Native->value); }
+if (!defined('SNAPSHOT_PROVIDER_AUTO'))     { define('SNAPSHOT_PROVIDER_AUTO',     SnapshotProviderType::Auto->value); }
 
-// Snapshot scope values
-if (!defined('SNAPSHOT_SCOPE_ALL')) {
-    define('SNAPSHOT_SCOPE_ALL', 'all');
-}
-if (!defined('SNAPSHOT_SCOPE_WORDPRESS')) {
-    define('SNAPSHOT_SCOPE_WORDPRESS', 'wordpress');
-}
-if (!defined('SNAPSHOT_SCOPE_CONTENT')) {
-    define('SNAPSHOT_SCOPE_CONTENT', 'content');
-}
-if (!defined('SNAPSHOT_SCOPE_CUSTOM')) {
-    define('SNAPSHOT_SCOPE_CUSTOM', 'custom');
-}
+// Snapshot status values — backward-compat aliases (canonical source: SnapshotStatusType enum)
+use RiseupAsia\Enums\SnapshotStatusType;
 
-// Snapshot schedule frequencies
-if (!defined('SNAPSHOT_FREQ_MANUAL')) {
-    define('SNAPSHOT_FREQ_MANUAL', 'manual');
-}
-if (!defined('SNAPSHOT_FREQ_DAILY')) {
-    define('SNAPSHOT_FREQ_DAILY', 'daily');
-}
-if (!defined('SNAPSHOT_FREQ_WEEKLY')) {
-    define('SNAPSHOT_FREQ_WEEKLY', 'weekly');
-}
-if (!defined('SNAPSHOT_FREQ_MONTHLY')) {
-    define('SNAPSHOT_FREQ_MONTHLY', 'monthly');
-}
+if (!defined('SNAPSHOT_STATUS_PENDING'))   { define('SNAPSHOT_STATUS_PENDING',   SnapshotStatusType::Pending->value); }
+if (!defined('SNAPSHOT_STATUS_SCHEDULED')) { define('SNAPSHOT_STATUS_SCHEDULED', SnapshotStatusType::Scheduled->value); }
+if (!defined('SNAPSHOT_STATUS_RUNNING'))   { define('SNAPSHOT_STATUS_RUNNING',   SnapshotStatusType::Running->value); }
+if (!defined('SNAPSHOT_STATUS_COMPLETE'))  { define('SNAPSHOT_STATUS_COMPLETE',  SnapshotStatusType::Complete->value); }
+if (!defined('SNAPSHOT_STATUS_FAILED'))    { define('SNAPSHOT_STATUS_FAILED',    SnapshotStatusType::Failed->value); }
+
+// Snapshot scope values — backward-compat aliases (canonical source: SnapshotScopeType enum)
+use RiseupAsia\Enums\SnapshotScopeType;
+
+if (!defined('SNAPSHOT_SCOPE_ALL'))       { define('SNAPSHOT_SCOPE_ALL',       SnapshotScopeType::All->value); }
+if (!defined('SNAPSHOT_SCOPE_WORDPRESS')) { define('SNAPSHOT_SCOPE_WORDPRESS', SnapshotScopeType::WordPress->value); }
+if (!defined('SNAPSHOT_SCOPE_CONTENT'))   { define('SNAPSHOT_SCOPE_CONTENT',   SnapshotScopeType::Content->value); }
+if (!defined('SNAPSHOT_SCOPE_CUSTOM'))    { define('SNAPSHOT_SCOPE_CUSTOM',    SnapshotScopeType::Custom->value); }
+
+// Snapshot schedule frequencies — backward-compat aliases (canonical source: SnapshotFrequencyType enum)
+use RiseupAsia\Enums\SnapshotFrequencyType;
+
+if (!defined('SNAPSHOT_FREQ_MANUAL'))  { define('SNAPSHOT_FREQ_MANUAL',  SnapshotFrequencyType::Manual->value); }
+if (!defined('SNAPSHOT_FREQ_DAILY'))   { define('SNAPSHOT_FREQ_DAILY',   SnapshotFrequencyType::Daily->value); }
+if (!defined('SNAPSHOT_FREQ_WEEKLY'))  { define('SNAPSHOT_FREQ_WEEKLY',  SnapshotFrequencyType::Weekly->value); }
+if (!defined('SNAPSHOT_FREQ_MONTHLY')) { define('SNAPSHOT_FREQ_MONTHLY', SnapshotFrequencyType::Monthly->value); }
 
 // Snapshot actions (backward-compat aliases — canonical source: ActionType enum)
 if (!defined('ACTION_SNAPSHOT_CREATE'))  { define('ACTION_SNAPSHOT_CREATE',  ActionType::SnapshotCreate->value); }
@@ -414,19 +376,13 @@ if (!defined('CRON_SNAPSHOT_WORKER_BATCH')) {
     define('CRON_SNAPSHOT_WORKER_BATCH', 'riseup_snapshot_worker_batch');
 }
 
-// Snapshot job status values
-if (!defined('SNAPSHOT_JOB_STATUS_QUEUED')) {
-    define('SNAPSHOT_JOB_STATUS_QUEUED', 'queued');
-}
-if (!defined('SNAPSHOT_JOB_STATUS_PROCESSING')) {
-    define('SNAPSHOT_JOB_STATUS_PROCESSING', 'processing');
-}
-if (!defined('SNAPSHOT_JOB_STATUS_COMPLETE')) {
-    define('SNAPSHOT_JOB_STATUS_COMPLETE', 'complete');
-}
-if (!defined('SNAPSHOT_JOB_STATUS_FAILED')) {
-    define('SNAPSHOT_JOB_STATUS_FAILED', 'failed');
-}
+// Snapshot job status values — backward-compat aliases (canonical source: SnapshotJobStatusType enum)
+use RiseupAsia\Enums\SnapshotJobStatusType;
+
+if (!defined('SNAPSHOT_JOB_STATUS_QUEUED'))      { define('SNAPSHOT_JOB_STATUS_QUEUED',      SnapshotJobStatusType::Queued->value); }
+if (!defined('SNAPSHOT_JOB_STATUS_PROCESSING'))  { define('SNAPSHOT_JOB_STATUS_PROCESSING',  SnapshotJobStatusType::Processing->value); }
+if (!defined('SNAPSHOT_JOB_STATUS_COMPLETE'))     { define('SNAPSHOT_JOB_STATUS_COMPLETE',    SnapshotJobStatusType::Complete->value); }
+if (!defined('SNAPSHOT_JOB_STATUS_FAILED'))       { define('SNAPSHOT_JOB_STATUS_FAILED',      SnapshotJobStatusType::Failed->value); }
 
 // Snapshot progress REST endpoint — migrated to EndpointType enum
 
@@ -471,16 +427,12 @@ if (!defined('ERR_PROVIDER_NOT_AVAILABLE')) {
     define('ERR_PROVIDER_NOT_AVAILABLE', 'PROVIDER_NOT_AVAILABLE');
 }
 
-// Snapshot trigger sources
-if (!defined('SNAPSHOT_TRIGGER_MANUAL')) {
-    define('SNAPSHOT_TRIGGER_MANUAL', 'manual');
-}
-if (!defined('SNAPSHOT_TRIGGER_CRON')) {
-    define('SNAPSHOT_TRIGGER_CRON', 'cron');
-}
-if (!defined('SNAPSHOT_TRIGGER_API')) {
-    define('SNAPSHOT_TRIGGER_API', 'api');
-}
+// Snapshot trigger sources — backward-compat aliases (canonical source: SnapshotTriggerType enum)
+use RiseupAsia\Enums\SnapshotTriggerType;
+
+if (!defined('SNAPSHOT_TRIGGER_MANUAL')) { define('SNAPSHOT_TRIGGER_MANUAL', SnapshotTriggerType::Manual->value); }
+if (!defined('SNAPSHOT_TRIGGER_CRON'))   { define('SNAPSHOT_TRIGGER_CRON',   SnapshotTriggerType::Cron->value); }
+if (!defined('SNAPSHOT_TRIGGER_API'))    { define('SNAPSHOT_TRIGGER_API',    SnapshotTriggerType::Api->value); }
 
 // WordPress options key for snapshot settings
 if (!defined('OPTION_SNAPSHOT_SETTINGS')) {
@@ -495,15 +447,11 @@ if (!defined('SNAPSHOT_STUCK_HOURS')) {
     define('SNAPSHOT_STUCK_HOURS', 24);
 }
 
-if (!defined('RETENTION_TYPE_DAYS')) {
-    define('RETENTION_TYPE_DAYS', 'days');
-}
-if (!defined('RETENTION_TYPE_COUNT')) {
-    define('RETENTION_TYPE_COUNT', 'count');
-}
-if (!defined('RETENTION_TYPE_NONE')) {
-    define('RETENTION_TYPE_NONE', 'none');
-}
+use RiseupAsia\Enums\RetentionType;
+
+if (!defined('RETENTION_TYPE_DAYS'))  { define('RETENTION_TYPE_DAYS',  RetentionType::Days->value); }
+if (!defined('RETENTION_TYPE_COUNT')) { define('RETENTION_TYPE_COUNT', RetentionType::Count->value); }
+if (!defined('RETENTION_TYPE_NONE'))  { define('RETENTION_TYPE_NONE',  RetentionType::None->value); }
 
 if (!defined('ACTION_SNAPSHOT_CLEANUP')) { define('ACTION_SNAPSHOT_CLEANUP', ActionType::SnapshotCleanup->value); }
 
@@ -512,12 +460,10 @@ if (!defined('ACTION_SNAPSHOT_CLEANUP')) { define('ACTION_SNAPSHOT_CLEANUP', Act
 // =============================================================================
 
 
-if (!defined('SYNC_ACTION_REPLACE')) {
-    define('SYNC_ACTION_REPLACE', 'replace');
-}
-if (!defined('SYNC_ACTION_DELETE')) {
-    define('SYNC_ACTION_DELETE', 'delete');
-}
+use RiseupAsia\Enums\SyncActionType;
+
+if (!defined('SYNC_ACTION_REPLACE')) { define('SYNC_ACTION_REPLACE', SyncActionType::Replace->value); }
+if (!defined('SYNC_ACTION_DELETE'))  { define('SYNC_ACTION_DELETE',  SyncActionType::Delete->value); }
 
 if (!defined('ACTION_SYNC_DELETE')) { define('ACTION_SYNC_DELETE', ActionType::SyncDelete->value); }
 
@@ -529,12 +475,10 @@ if (!defined('ACTION_SNAPSHOT_FULL_BACKUP')) { define('ACTION_SNAPSHOT_FULL_BACK
 
 if (!defined('ACTION_SNAPSHOT_INCREMENTAL')) { define('ACTION_SNAPSHOT_INCREMENTAL', ActionType::SnapshotIncremental->value); }
 
-if (!defined('SNAPSHOT_TYPE_FULL')) {
-    define('SNAPSHOT_TYPE_FULL', 'full');
-}
-if (!defined('SNAPSHOT_TYPE_INCREMENTAL')) {
-    define('SNAPSHOT_TYPE_INCREMENTAL', 'incremental');
-}
+use RiseupAsia\Enums\SnapshotModeType;
+
+if (!defined('SNAPSHOT_TYPE_FULL'))        { define('SNAPSHOT_TYPE_FULL',        SnapshotModeType::Full->value); }
+if (!defined('SNAPSHOT_TYPE_INCREMENTAL')) { define('SNAPSHOT_TYPE_INCREMENTAL', SnapshotModeType::Incremental->value); }
 
 if (!defined('ERR_INCREMENTAL_NO_PARENT')) {
     define('ERR_INCREMENTAL_NO_PARENT', 'INCREMENTAL_NO_PARENT');
@@ -557,15 +501,11 @@ if (!defined('ACTION_SNAPSHOT_ZIP_BUILD'))    { define('ACTION_SNAPSHOT_ZIP_BUIL
 if (!defined('ACTION_SNAPSHOT_ZIP_EXPIRE'))   { define('ACTION_SNAPSHOT_ZIP_EXPIRE',   ActionType::SnapshotZipExpire->value); }
 if (!defined('ACTION_SNAPSHOT_ZIP_DOWNLOAD')) { define('ACTION_SNAPSHOT_ZIP_DOWNLOAD', ActionType::SnapshotZipDownload->value); }
 
-if (!defined('SNAPSHOT_EXPORT_STATUS_VALID')) {
-    define('SNAPSHOT_EXPORT_STATUS_VALID', 'valid');
-}
-if (!defined('SNAPSHOT_EXPORT_STATUS_EXPIRED')) {
-    define('SNAPSHOT_EXPORT_STATUS_EXPIRED', 'expired');
-}
-if (!defined('SNAPSHOT_EXPORT_STATUS_BUILDING')) {
-    define('SNAPSHOT_EXPORT_STATUS_BUILDING', 'building');
-}
+use RiseupAsia\Enums\SnapshotExportStatusType;
+
+if (!defined('SNAPSHOT_EXPORT_STATUS_VALID'))    { define('SNAPSHOT_EXPORT_STATUS_VALID',    SnapshotExportStatusType::Valid->value); }
+if (!defined('SNAPSHOT_EXPORT_STATUS_EXPIRED'))  { define('SNAPSHOT_EXPORT_STATUS_EXPIRED',  SnapshotExportStatusType::Expired->value); }
+if (!defined('SNAPSHOT_EXPORT_STATUS_BUILDING')) { define('SNAPSHOT_EXPORT_STATUS_BUILDING', SnapshotExportStatusType::Building->value); }
 
 // SNAPSHOT_EXPORTS_SUBDIR — migrated to PathSubdirType::Exports
 
