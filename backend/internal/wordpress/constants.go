@@ -21,70 +21,12 @@ const (
 
 // NOTE: REST API Endpoints have been migrated to endpoint_type.go (EndpointType).
 // NOTE: Action Types have been migrated to action_type.go (ActionType).
-
-// =============================================================================
-// STATUS VALUES
-// =============================================================================
-
-const (
-	// StatusSuccess indicates the operation succeeded.
-	StatusSuccess = "success"
-
-	// StatusFailed indicates the operation failed.
-	StatusFailed = "failed"
-)
-
-// =============================================================================
-// POST STATUS VALUES
-// =============================================================================
-
-const (
-	// PostStatusPublish represents a published post.
-	PostStatusPublish = "publish"
-
-	// PostStatusDraft represents a draft post.
-	PostStatusDraft = "draft"
-
-	// PostStatusPending represents a pending review post.
-	PostStatusPending = "pending"
-)
-
-// =============================================================================
-// HTTP HEADERS
-// =============================================================================
-
-const (
-	// HeaderAuthorization is the HTTP Authorization header.
-	HeaderAuthorization = "Authorization"
-
-	// HeaderContentType is the HTTP Content-Type header.
-	HeaderContentType = "Content-Type"
-
-	// HeaderUserAgent is the HTTP User-Agent header.
-	HeaderUserAgent = "User-Agent"
-
-	// HeaderSourceMachine is a custom header identifying the source machine (hostname).
-	// This enables audit trails on remote WordPress sites to track which server triggered actions.
-	HeaderSourceMachine = "X-Riseup-Source-Machine"
-
-	// UserAgentValue is the default User-Agent for WordPress API requests.
-	UserAgentValue = "WP-Plugin-Publish/1.0"
-)
-
-// =============================================================================
-// CONTENT TYPES
-// =============================================================================
-
-const (
-	// ContentTypeJSON is the JSON content type.
-	ContentTypeJSON = "application/json"
-
-	// ContentTypeMultipart is the multipart form-data content type.
-	ContentTypeMultipart = "multipart/form-data"
-
-	// ContentTypeFormURLEncoded is the URL-encoded form content type.
-	ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
-)
+// NOTE: Status Values have been migrated to status_type.go (StatusType).
+// NOTE: Post Status Values have been migrated to post_status_type.go (PostStatusType).
+// NOTE: HTTP Headers have been migrated to header_type.go (HeaderType).
+// NOTE: Content Types have been migrated to content_type.go (ContentTypeValue).
+// NOTE: Plugin Status Values have been migrated to plugin_status_type.go (PluginStatusType).
+// NOTE: Upload Source Values have been migrated to upload_source_type.go (UploadSourceType).
 
 // =============================================================================
 // ERROR MESSAGES
@@ -156,34 +98,4 @@ const (
 
 	// WPCorePostByID is the endpoint for a specific post (format: /wp/v2/posts/%d).
 	WPCorePostByID = "/wp/v2/posts/%d"
-)
-
-// =============================================================================
-// PLUGIN STATUS VALUES
-// =============================================================================
-
-const (
-	// PluginStatusActive is the active status for a plugin.
-	PluginStatusActive = "active"
-
-	// PluginStatusInactive is the inactive status for a plugin.
-	PluginStatusInactive = "inactive"
-)
-
-// =============================================================================
-// UPLOAD SOURCE ENUM
-// =============================================================================
-
-const (
-	// UploadSourceScript indicates upload via PowerShell/deployment script.
-	UploadSourceScript = "upload_script"
-
-	// UploadSourceRestAPI indicates upload via direct REST API call.
-	UploadSourceRestAPI = "rest_api"
-
-	// UploadSourceAdminUI indicates upload via WordPress admin panel.
-	UploadSourceAdminUI = "admin_ui"
-
-	// UploadSourceWPCLI indicates upload via WP-CLI command.
-	UploadSourceWPCLI = "wp_cli"
 )

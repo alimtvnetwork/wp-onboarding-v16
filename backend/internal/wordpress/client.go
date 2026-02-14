@@ -123,10 +123,10 @@ func (c *Client) progress(step, status, message string, details map[string]inter
 // authentication, content type, user agent, and source machine identification.
 func (c *Client) setStandardHeaders(req *http.Request, contentType string) {
 	auth := base64.StdEncoding.EncodeToString([]byte(c.username + ":" + c.password))
-	req.Header.Set(HeaderAuthorization, "Basic "+auth)
-	req.Header.Set(HeaderContentType, contentType)
-	req.Header.Set(HeaderUserAgent, UserAgentValue)
-	req.Header.Set(HeaderSourceMachine, sourceMachineHostname)
+	req.Header.Set(HeaderAuthorization.String(), "Basic "+auth)
+	req.Header.Set(HeaderContentType.String(), contentType)
+	req.Header.Set(HeaderUserAgent.String(), HeaderUserAgentValue.String())
+	req.Header.Set(HeaderSourceMachine.String(), sourceMachineHostname)
 }
 
 // request makes an authenticated HTTP request to the WordPress API
@@ -148,7 +148,7 @@ func (c *Client) request(method, endpoint string, body interface{}) (*http.Respo
 			WithContext("method", method)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON)
+	c.setStandardHeaders(req, ContentTypeJSON.String())
 	return c.httpClient.Do(req)
 }
 
@@ -177,7 +177,7 @@ func (c *Client) rawGet(fullURL string) (*http.Response, error) {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to create raw GET request").
 			WithContext("url", fullURL)
 	}
-	c.setStandardHeaders(req, ContentTypeJSON)
+	c.setStandardHeaders(req, ContentTypeJSON.String())
 	return c.httpClient.Do(req)
 }
 
