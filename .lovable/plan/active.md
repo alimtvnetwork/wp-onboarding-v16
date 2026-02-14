@@ -1,47 +1,51 @@
 # Active & Future Phases
 
-**Updated: 2026-02-09**
+**Updated: 2026-02-14**
 
 ---
 
-## Current Status: All Major Tracks Complete ✅
+## Current Status: Backlog Audit Complete ✅
 
-No active implementation phases. All planned work and suggestions are done.
+All completed work moved to `completed/` folders. Pending work consolidated into `plan.md`.
 
 ---
 
 ## Completed Tracks
 
+### Golang Enum Migration (Feature G) ✅ (2026-02-14)
+8 typed string enums with IsEqual(), String(), and domain helpers across all types.
+
+### File Size Remediation ✅ (2026-02-13)
+Main plugin split from 5,604 → ~270 lines. 20 traits + 2 standalone files.
+
+### Long Function Fix (Phases 1–16) ✅ (2026-02-13)
+~100 functions refactored, ~170 helpers extracted. 15-line limit enforced.
+
+### RISEUP_ Constant Migration ✅ (2026-02-13)
+3 consumer files migrated, constants-compat.php bridge removed.
+
+### camelCase Method Migration (Feature I) ✅ (2026-02-14)
+All core domains migrated including ORM layer and semantic boolean guards.
+
+### Nested-If Flattening ✅ (2026-02-14)
+8 phases, ~42 violations fixed across all subsystem files.
+
+### PHP Coding Standards (Feature H) ✅ (2026-02-13)
+200-line file limit, 15-line function limit, zero raw function negations.
+
 ### S-001 & S-004: Final Spec Documentation ✅ (2026-02-09)
-- S-001: Added concrete WP REST API error examples (401, 403, 404, 500, 409, non-JSON) to `10-wp-rest-client.md`
-- S-004: Documented 4 partial publish failure recovery strategies with UI mockups, WebSocket events, and DB schema in `08-publish-service.md`
-
 ### PHP Plugin v1.36.1 — Circular Dependency Fix ✅ (2026-02-09)
-Fixed fatal `Class "RiseupFileLogger" not found` circular dependency during bootstrap. Added `$bootstrapping` guard, native `error_log()` fallbacks, decoupled logger from path utils. Fixed Go `buildWPClient` compilation error.
-
 ### Pre-flight Plugin Guard (S-010) ✅ (2026-02-09)
-PHP `/plugins/exists` endpoint, Go proxy service method, React async frontend guard.
-
 ### 10-Phase DRY Refactoring ✅ (2026-02-09)
-Go backend dedup, frontend error store/API client/hooks consolidation, PHP snapshot factory, logger consolidation, GlobalErrorModal decomposition, cross-stack JSON Schema alignment.  
-→ See: `.lovable/plan/completed/`
-
 ### PHP Plugin Refactoring Phases 1–5 ✅ (2026-02-07)
-Boolean helpers, init helpers, path utils, dependency loader, coding guidelines.
-
 ### Go Backend Phases 6–10 ✅ (2026-02-07)
-Handler modularization, CRUD factory, service registry unification, config standardization, E2E tests.
-
 ### Feature Phases 1–14, 33–40 ✅ (2026-02-05 to 2026-02-06)
-Session logging, quick publish, remote plugins, file browser, version tracking, auto-update, multi-site orchestration, publish retry/queue/scheduler/rollback, history dashboard, site health monitor.
 
 ---
 
 ## Open Suggestions
 
 None — all 18 suggestions are completed. 🎉
-
-→ See: `.lovable/memory/suggestions/01-suggestions-tracker.md`
 
 ---
 
@@ -50,7 +54,8 @@ None — all 18 suggestions are completed. 🎉
 1. **Remote Plugin Backups**: Store on WP site or download locally?
 2. **Bulk Quick Publish**: Add "Quick Publish Selected" for multiple plugins?
 3. **True Diff Comparison**: Compare with remote files for accurate modified/deleted counts?
+4. **PathType Architecture**: Single `PathType` enum vs. split into 4 domain enums?
 
 ---
 
-*No pending work. Next tasks should come from new feature requests or the open questions above.*
+*Next tasks should come from the consolidated backlog in `plan.md`.*
