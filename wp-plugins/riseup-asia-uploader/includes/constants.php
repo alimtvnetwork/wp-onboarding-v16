@@ -219,27 +219,7 @@ if (!defined('SNAPSHOT_WORKER_POOL_DEFAULT')) {
     define('SNAPSHOT_WORKER_POOL_DEFAULT', 5);
 }
 
-// Worker pool cron hook
-if (!defined('CRON_SNAPSHOT_WORKER_BATCH')) {
-    define('CRON_SNAPSHOT_WORKER_BATCH', 'riseup_snapshot_worker_batch');
-}
-
-// Snapshot cron hooks
-if (!defined('CRON_SNAPSHOT_SCHEDULED')) {
-    define('CRON_SNAPSHOT_SCHEDULED', 'riseup_snapshot_scheduled');
-}
-if (!defined('CRON_SNAPSHOT_IMMEDIATE')) {
-    define('CRON_SNAPSHOT_IMMEDIATE', 'riseup_snapshot_immediate');
-}
-if (!defined('CRON_SNAPSHOT_CLEANUP')) {
-    define('CRON_SNAPSHOT_CLEANUP', 'riseup_snapshot_cleanup');
-}
-if (!defined('CRON_SNAPSHOT_RESTORE')) {
-    define('CRON_SNAPSHOT_RESTORE', 'riseup_snapshot_restore');
-}
-if (!defined('CRON_SNAPSHOT_INCREMENTAL')) {
-    define('CRON_SNAPSHOT_INCREMENTAL', 'riseup_snapshot_incremental');
-}
+// CRON_SNAPSHOT_* constants removed — use HookType::CronSnapshot*->value instead.
 
 // =============================================================================
 // SNAPSHOT ERROR CODES

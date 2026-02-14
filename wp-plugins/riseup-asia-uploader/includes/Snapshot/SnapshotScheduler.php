@@ -73,12 +73,12 @@ class RiseupSnapshotScheduler {
 
         add_filter(HookType::CronSchedules->value, array($this, 'registerCronSchedules'));
 
-        add_action(CRON_SNAPSHOT_SCHEDULED, array($this, 'executeScheduledSnapshot'));
-        add_action(CRON_SNAPSHOT_IMMEDIATE, array($this, 'executeImmediateSnapshot'));
-        add_action(CRON_SNAPSHOT_CLEANUP, array($this, 'executeCleanup'));
-        add_action(CRON_SNAPSHOT_WORKER_BATCH, array($this, 'executeWorkerBatch'));
-        add_action(CRON_SNAPSHOT_RESTORE, array($this, 'executeCronRestore'));
-        add_action(CRON_SNAPSHOT_INCREMENTAL, array($this, 'executeCronIncremental'));
+        add_action(HookType::CronSnapshotScheduled->value, array($this, 'executeScheduledSnapshot'));
+        add_action(HookType::CronSnapshotImmediate->value, array($this, 'executeImmediateSnapshot'));
+        add_action(HookType::CronSnapshotCleanup->value, array($this, 'executeCleanup'));
+        add_action(HookType::CronSnapshotWorkerBatch->value, array($this, 'executeWorkerBatch'));
+        add_action(HookType::CronSnapshotRestore->value, array($this, 'executeCronRestore'));
+        add_action(HookType::CronSnapshotIncremental->value, array($this, 'executeCronIncremental'));
 
         $this->ensureCleanupScheduled();
         $this->syncScheduleWithSettings();

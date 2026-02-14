@@ -43,6 +43,14 @@ enum HookType: string
     case PluginsApi                        = 'plugins_api';
     case CronSchedules                     = 'cron_schedules';
 
+    // ── Cron Hooks ──────────────────────────────────────────────
+    case CronSnapshotScheduled   = 'riseup_snapshot_scheduled';
+    case CronSnapshotImmediate   = 'riseup_snapshot_immediate';
+    case CronSnapshotCleanup     = 'riseup_snapshot_cleanup';
+    case CronSnapshotWorkerBatch = 'riseup_snapshot_worker_batch';
+    case CronSnapshotRestore     = 'riseup_snapshot_restore';
+    case CronSnapshotIncremental = 'riseup_snapshot_incremental';
+
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
     {

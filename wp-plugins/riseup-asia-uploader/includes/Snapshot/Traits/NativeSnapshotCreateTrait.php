@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\HookType;
 
 require_once dirname(__FILE__) . '/NativeSnapshotExecTrait.php';
 
@@ -75,7 +76,7 @@ trait NativeSnapshotCreateTrait {
     private function scheduleOrExecute(int $snapshot_id, array $tables, string $filename): array {
         $scheduled = wp_schedule_single_event(
             time() + 5,
-            CRON_SNAPSHOT_IMMEDIATE,
+            HookType::CronSnapshotImmediate->value,
             array(array('snapshot_id' => $snapshot_id, 'tables' => $tables))
         );
 
