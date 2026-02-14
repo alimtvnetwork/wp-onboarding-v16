@@ -10,7 +10,7 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: riseup-asia-uploader
  * Requires at least: 5.6
- * Requires PHP: 7.4
+ * Requires PHP: 8.2
  *
  * @package RiseupAsiaUploader
  */

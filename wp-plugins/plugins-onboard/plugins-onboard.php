@@ -11,7 +11,7 @@
  * Text Domain: plugins-onboard
  * Domain Path: /languages
  * Requires at least: 5.9
- * Requires PHP: 7.4
+ * Requires PHP: 8.2
  */
 
 // Exit if accessed directly.
