@@ -12,15 +12,12 @@ if (!defined('ABSPATH')) {
 
 trait DatabaseMigrationsV1V3Trait {
 
-    /**
-     * Migration v1: Initial transactions table.
-     */
-    private function migrate_v1_transactions($current) {
+    private function migrate_v1_transactions(int $current): void {
         if ($current >= 1) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v1: transactions table');
+        $this->fileLogger->info('Applying migration v1: transactions table');
         $table = self::TABLE_TRANSACTIONS;
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS {$table} (
@@ -40,10 +37,7 @@ trait DatabaseMigrationsV1V3Trait {
         $this->record_migration(1);
     }
 
-    /**
-     * Create indexes for the transactions table (idempotent).
-     */
-    private function create_transaction_indexes() {
+    private function create_transaction_indexes(): void {
         $table   = self::TABLE_TRANSACTIONS;
         $indexes = array(
             'idx_action'      => 'action',
@@ -57,18 +51,15 @@ trait DatabaseMigrationsV1V3Trait {
             $this->pdo->exec("CREATE INDEX IF NOT EXISTS {$name} ON {$table} ({$column})");
         }
 
-        $this->file_logger->info('Transaction indexes ensured');
+        $this->fileLogger->info('Transaction indexes ensured');
     }
 
-    /**
-     * Migration v2: Agent sites and actions tables.
-     */
-    private function migrate_v2_agent_tables($current) {
+    private function migrate_v2_agent_tables(int $current): void {
         if ($current >= 2) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v2: agent sites tables');
+        $this->fileLogger->info('Applying migration v2: agent sites tables');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS agent_sites (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,15 +97,12 @@ trait DatabaseMigrationsV1V3Trait {
         $this->record_migration(2);
     }
 
-    /**
-     * Migration v3: Enhanced transaction logging fields.
-     */
-    private function migrate_v3_enhanced_transactions($current) {
+    private function migrate_v3_enhanced_transactions(int $current): void {
         if ($current >= 3) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v3: enhanced transaction fields');
+        $this->fileLogger->info('Applying migration v3: enhanced transaction fields');
         $table   = self::TABLE_TRANSACTIONS;
         $columns = array(
             'plugin_file'   => 'TEXT',
@@ -127,7 +115,7 @@ trait DatabaseMigrationsV1V3Trait {
             try {
                 $this->pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
             } catch (PDOException $e) {
-                $this->file_logger->debug("Column might exist: {$column}", array('error' => $e->getMessage()));
+                $this->fileLogger->debug("Column might exist: {$column}", array('error' => $e->getMessage()));
             }
         }
 

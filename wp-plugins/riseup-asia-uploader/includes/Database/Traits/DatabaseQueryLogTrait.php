@@ -15,75 +15,60 @@ trait DatabaseQueryLogTrait {
     /**
      * Log a transaction using ORM.
      *
-     * @param string      $action      Action type.
-     * @param string|null $plugin_slug Plugin slug.
-     * @param int|null    $post_id     Post ID.
-     * @param string      $user_login  WordPress username.
-     * @param int|null    $user_id     WordPress user ID.
-     * @param string      $ip_address  Client IP.
-     * @param array       $details     Additional details.
-     * @param string      $status      Status.
-     * @param string|null $error_msg   Error message.
-     * @param array       $enhanced    Enhanced fields.
-     * @return int|false Insert ID or false.
+     * Uses 10 params due to database record mapping — justified utility exception.
      */
     public function log_transaction(
-        $action,
-        $plugin_slug = null,
-        $post_id = null,
-        $user_login = '',
-        $user_id = null,
-        $ip_address = '',
-        $details = array(),
-        $status = self::STATUS_SUCCESS,
-        $error_msg = null,
-        $enhanced = array()
-    ) {
+        string $action,
+        ?string $pluginSlug = null,
+        ?int $postId = null,
+        string $userLogin = '',
+        ?int $userId = null,
+        string $ipAddress = '',
+        array $details = array(),
+        string $status = self::STATUS_SUCCESS,
+        ?string $errorMsg = null,
+        array $enhanced = array()
+    ): int|false {
         if (!$this->is_ready()) {
-            $this->file_logger->warn('Database not ready, cannot log transaction');
+            $this->fileLogger->warn('Database not ready, cannot log transaction');
             return false;
         }
 
         try {
-            $this->file_logger->debug('Logging transaction', array(
+            $this->fileLogger->debug('Logging transaction', array(
                 'action' => $action, 'status' => $status, 'enhanced' => $enhanced,
             ));
 
-            $record = $this->buildTransactionRecord($action, $plugin_slug, $post_id, $user_login, $user_id, $ip_address, $details, $status, $error_msg);
+            $record = $this->buildTransactionRecord($action, $pluginSlug, $postId, $userLogin, $userId, $ipAddress, $details, $status, $errorMsg);
             $this->applyEnhancedFields($record, $enhanced);
 
             $result = $record->save();
-            $this->file_logger->info('Transaction logged', array('id' => $result));
+            $this->fileLogger->info('Transaction logged', array('id' => $result));
 
             return $result;
         } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Failed to log transaction');
-            return false;
+            return ErrorResponse::logAndReturnFalse($this->fileLogger, $e, 'Failed to log transaction');
         }
     }
 
-    /** Build a new ORM transaction record with base fields. */
-    private function buildTransactionRecord($action, $plugin_slug, $post_id, $user_login, $user_id, $ip_address, $details, $status, $error_msg) {
+    private function buildTransactionRecord(string $action, ?string $pluginSlug, ?int $postId, string $userLogin, ?int $userId, string $ipAddress, array $details, string $status, ?string $errorMsg) {
         return RiseupORM::for_table(self::TABLE_TRANSACTIONS)
             ->create()
             ->set('action', $action)
-            ->set('plugin_slug', $plugin_slug)
-            ->set('post_id', $post_id)
-            ->set('user_login', $user_login)
-            ->set('user_id', $user_id)
-            ->set('ip_address', $ip_address)
+            ->set('plugin_slug', $pluginSlug)
+            ->set('post_id', $postId)
+            ->set('user_login', $userLogin)
+            ->set('user_id', $userId)
+            ->set('ip_address', $ipAddress)
             ->set('details', !empty($details) ? json_encode($details) : null)
             ->set('status', $status)
-            ->set('error_msg', $error_msg)
+            ->set('error_msg', $errorMsg)
             ->set('created_at', gmdate('Y-m-d\TH:i:s\Z'));
     }
 
-    /**
-     * Apply enhanced metadata fields to a transaction record.
-     */
-    private function applyEnhancedFields($record, array $enhanced) {
-        $string_fields = array('plugin_file', 'triggered_by', 'source_machine', 'plugin_version', 'upload_source');
-        foreach ($string_fields as $field) {
+    private function applyEnhancedFields($record, array $enhanced): void {
+        $stringFields = array('plugin_file', 'triggered_by', 'source_machine', 'plugin_version', 'upload_source');
+        foreach ($stringFields as $field) {
             if (!empty($enhanced[$field])) {
                 $record->set($field, $enhanced[$field]);
             }
@@ -98,10 +83,7 @@ trait DatabaseQueryLogTrait {
         }
     }
 
-    /**
-     * Log a transaction with enhanced context (convenience wrapper).
-     */
-    public function log_enhanced_transaction($params) {
+    public function log_enhanced_transaction(array $params): int|false {
         return $this->log_transaction(
             $params['action'] ?? '',
             $params['plugin_slug'] ?? null,
@@ -123,17 +105,14 @@ trait DatabaseQueryLogTrait {
         );
     }
 
-    /**
-     * Get transaction by ID.
-     */
-    public function get_transaction($id) {
+    public function get_transaction(int $id): ?array {
         if (!$this->is_ready()) {
             return null;
         }
 
         try {
             $log = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
-                ->find_one((int) $id);
+                ->find_one($id);
 
             if ($log && !empty($log['details'])) {
                 $log['details'] = json_decode($log['details'], true);
@@ -141,8 +120,7 @@ trait DatabaseQueryLogTrait {
 
             return $log;
         } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Failed to get transaction');
-
+            $this->fileLogger->logException($e, 'Failed to get transaction');
             return null;
         }
     }

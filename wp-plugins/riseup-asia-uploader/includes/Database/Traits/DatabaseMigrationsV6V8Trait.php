@@ -12,15 +12,12 @@ if (!defined('ABSPATH')) {
 
 trait DatabaseMigrationsV6V8Trait {
 
-    /**
-     * Migration v6: Remote plugins cache table.
-     */
-    private function migrate_v6_remote_plugins_cache($current) {
+    private function migrate_v6_remote_plugins_cache(int $current): void {
         if ($current >= 6) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v6: remote plugins cache');
+        $this->fileLogger->info('Applying migration v6: remote plugins cache');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS remote_plugins_cache (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,15 +31,12 @@ trait DatabaseMigrationsV6V8Trait {
         $this->record_migration(6);
     }
 
-    /**
-     * Migration v7: File hash cache table.
-     */
-    private function migrate_v7_file_hash_cache($current) {
+    private function migrate_v7_file_hash_cache(int $current): void {
         if ($current >= 7) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v7: file hash cache table');
+        $this->fileLogger->info('Applying migration v7: file hash cache table');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_FILE_CACHE . " (
             plugin_slug TEXT NOT NULL,
@@ -58,15 +52,12 @@ trait DatabaseMigrationsV6V8Trait {
         $this->record_migration(7);
     }
 
-    /**
-     * Migration v8: Snapshot settings key-value store.
-     */
-    private function migrate_v8_snapshot_settings($current) {
+    private function migrate_v8_snapshot_settings(int $current): void {
         if ($current >= 8) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v8: snapshot settings table');
+        $this->fileLogger->info('Applying migration v8: snapshot settings table');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_settings (
             key TEXT PRIMARY KEY,

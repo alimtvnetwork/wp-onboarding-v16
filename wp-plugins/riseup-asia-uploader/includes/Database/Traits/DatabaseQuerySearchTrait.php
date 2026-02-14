@@ -12,52 +12,42 @@ if (!defined('ABSPATH')) {
 
 trait DatabaseQuerySearchTrait {
 
-    /**
-     * Query transactions with filtering and pagination using ORM.
-     *
-     * @param array $filters Filters.
-     * @param int   $limit   Number of records.
-     * @param int   $offset  Offset.
-     * @return array Array with 'total' and 'logs'.
-     */
-    public function query_transactions($filters = array(), $limit = self::DEFAULT_LIMIT, $offset = 0) {
+    public function query_transactions(array $filters = array(), int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
         if (!$this->is_ready()) {
-            $this->file_logger->warn('Database not ready for query');
+            $this->fileLogger->warn('Database not ready for query');
             return array('total' => 0, 'logs' => array());
         }
 
-        $limit = min(max(1, (int) $limit), self::MAX_LIMIT);
-        $offset = max(0, (int) $offset);
+        $limit = min(max(1, $limit), self::MAX_LIMIT);
+        $offset = max(0, $offset);
 
         try {
             return $this->executeTransactionQuery($filters, $limit, $offset);
         } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Failed to query transactions');
+            $this->fileLogger->logException($e, 'Failed to query transactions');
             return array('total' => 0, 'logs' => array());
         }
     }
 
-    /** Execute the transaction query with filters and pagination. */
     private function executeTransactionQuery(array $filters, int $limit, int $offset): array {
-        $this->file_logger->debug('Querying transactions', array('filters' => $filters));
+        $this->fileLogger->debug('Querying transactions', array('filters' => $filters));
 
-        $count_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
-        $data_query = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
+        $countQuery = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
+        $dataQuery = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
 
-        $this->apply_filters($count_query, $filters);
-        $this->apply_filters($data_query, $filters);
+        $this->apply_filters($countQuery, $filters);
+        $this->apply_filters($dataQuery, $filters);
 
-        $total = $count_query->count();
-        $logs = $data_query->order_by_desc('created_at')->limit($limit)->offset($offset)->find_many();
+        $total = $countQuery->count();
+        $logs = $dataQuery->order_by_desc('created_at')->limit($limit)->offset($offset)->find_many();
 
         $this->decodeLogDetails($logs);
-        $this->file_logger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
+        $this->fileLogger->debug('Query complete', array('total' => $total, 'returned' => count($logs)));
 
         return array('total' => $total, 'logs' => $logs);
     }
 
-    /** Decode JSON details in log records. */
-    private function decodeLogDetails(array &$logs) {
+    private function decodeLogDetails(array &$logs): void {
         foreach ($logs as &$log) {
             if (!empty($log['details'])) {
                 $log['details'] = json_decode($log['details'], true);
@@ -65,15 +55,13 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    /** Apply filters to an ORM query. */
-    private function apply_filters($query, $filters) {
+    private function apply_filters($query, array $filters): void {
         $this->applyEqualityFilters($query, $filters);
         $this->applyDateRangeFilters($query, $filters);
         $this->applyTextFilters($query, $filters);
     }
 
-    /** Apply equality-based filters. */
-    private function applyEqualityFilters($query, array $filters) {
+    private function applyEqualityFilters($query, array $filters): void {
         if (!empty($filters['plugin'])) {
             $query->where('plugin_slug', $filters['plugin']);
         }
@@ -99,8 +87,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    /** Apply date range filters. */
-    private function applyDateRangeFilters($query, array $filters) {
+    private function applyDateRangeFilters($query, array $filters): void {
         if (!empty($filters['from'])) {
             $query->where_gte('created_at', $filters['from'] . 'T00:00:00Z');
         }
@@ -109,17 +96,13 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    /** Apply text search filters. */
-    private function applyTextFilters($query, array $filters) {
+    private function applyTextFilters($query, array $filters): void {
         if (!empty($filters['source_machine'])) {
             $query->where_like('source_machine', '%' . $filters['source_machine'] . '%');
         }
     }
 
-    /**
-     * Get statistics summary.
-     */
-    public function get_stats() {
+    public function get_stats(): array {
         if (!$this->is_ready()) {
             return array();
         }
@@ -134,12 +117,11 @@ trait DatabaseQuerySearchTrait {
                     ->count(),
             );
         } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Failed to get stats');
+            $this->fileLogger->logException($e, 'Failed to get stats');
             return array();
         }
     }
 
-    /** Count rows grouped by a column. */
     private function countByColumn(string $column): array {
         $rows = RiseupORM::raw_execute(
             "SELECT {$column}, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY {$column}"
@@ -151,28 +133,22 @@ trait DatabaseQuerySearchTrait {
         return $result;
     }
 
-    /**
-     * Cleanup old transactions.
-     *
-     * @param int $days_to_keep Number of days to keep.
-     * @return int Number of deleted records.
-     */
-    public function cleanup_old_transactions($days_to_keep = 365) {
+    public function cleanup_old_transactions(int $daysToKeep = 365): int {
         if (!$this->is_ready()) {
             return 0;
         }
 
         try {
-            $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($days_to_keep * 86400));
+            $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($daysToKeep * 86400));
 
             $deleted = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
                 ->where_lt('created_at', $cutoff)
                 ->delete();
 
-            $this->file_logger->info('Cleanup complete', array('deleted' => $deleted));
+            $this->fileLogger->info('Cleanup complete', array('deleted' => $deleted));
             return $deleted;
         } catch (Exception $e) {
-            $this->file_logger->log_exception($e, 'Failed to cleanup transactions');
+            $this->fileLogger->logException($e, 'Failed to cleanup transactions');
             return 0;
         }
     }
