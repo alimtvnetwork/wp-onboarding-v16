@@ -43,6 +43,7 @@ require_once __DIR__ . '/includes/Enums/PathDatabaseType.php';
 require_once __DIR__ . '/includes/Enums/PathLogFileType.php';
 require_once __DIR__ . '/includes/Enums/PathConfigType.php';
 require_once __DIR__ . '/includes/Enums/EndpointType.php';
+require_once __DIR__ . '/includes/Enums/TableType.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
 require_once __DIR__ . '/includes/Enums/LogLevelType.php';
 require_once __DIR__ . '/includes/Enums/ActionType.php';

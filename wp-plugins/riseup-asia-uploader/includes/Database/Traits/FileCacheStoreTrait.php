@@ -10,21 +10,17 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait FileCacheStoreTrait {
 
-    /**
-     * Invalidate all cache entries for a plugin.
-     *
-     * @param string $pluginSlug Plugin slug.
-     * @return int Number of entries removed.
-     */
     public function invalidate($pluginSlug) {
         if (!$this->db->is_ready()) {
             return 0;
         }
 
         try {
-            $deleted = RiseupORM::for_table(TABLE_FILE_CACHE)
+            $deleted = RiseupORM::for_table(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->delete();
 
@@ -43,15 +39,9 @@ trait FileCacheStoreTrait {
         }
     }
 
-    /**
-     * Load all cached entries for a plugin, indexed by relative path.
-     *
-     * @param string $pluginSlug Plugin slug.
-     * @return array<string, array> Path => cache entry.
-     */
     private function loadCachedEntries($pluginSlug) {
         try {
-            $rows = RiseupORM::for_table(TABLE_FILE_CACHE)
+            $rows = RiseupORM::for_table(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->find_many();
 
@@ -69,15 +59,6 @@ trait FileCacheStoreTrait {
         }
     }
 
-    /**
-     * Insert or update a cache entry.
-     *
-     * @param string $pluginSlug Plugin slug.
-     * @param string $path       Relative file path.
-     * @param string $hash       MD5 hash.
-     * @param string $modifiedAt ISO 8601 UTC timestamp.
-     * @param int    $size       File size in bytes.
-     */
     private function upsertCacheEntry($pluginSlug, $path, $hash, $modifiedAt, $size) {
         try {
             $pdo = $this->db->get_pdo();
@@ -88,7 +69,7 @@ trait FileCacheStoreTrait {
             $now = gmdate('Y-m-d\TH:i:s\Z');
 
             $stmt = $pdo->prepare(
-                "INSERT OR REPLACE INTO " . TABLE_FILE_CACHE .
+                "INSERT OR REPLACE INTO " . TableType::FileCache->value .
                 " (plugin_slug, relative_path, md5_hash, modified_at, file_size, cached_at)" .
                 " VALUES (?, ?, ?, ?, ?, ?)"
             );
@@ -101,15 +82,9 @@ trait FileCacheStoreTrait {
         }
     }
 
-    /**
-     * Delete a cache entry for a specific file.
-     *
-     * @param string $pluginSlug Plugin slug.
-     * @param string $path       Relative file path.
-     */
     private function deleteCacheEntry($pluginSlug, $path) {
         try {
-            RiseupORM::for_table(TABLE_FILE_CACHE)
+            RiseupORM::for_table(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->where('relative_path', $path)
                 ->delete();

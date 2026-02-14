@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait DatabaseQuerySearchTrait {
 
     public function query_transactions(array $filters = array(), int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
@@ -32,8 +34,8 @@ trait DatabaseQuerySearchTrait {
     private function executeTransactionQuery(array $filters, int $limit, int $offset): array {
         $this->fileLogger->debug('Querying transactions', array('filters' => $filters));
 
-        $countQuery = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
-        $dataQuery = RiseupORM::for_table(self::TABLE_TRANSACTIONS);
+        $countQuery = RiseupORM::for_table(TableType::Transactions->value);
+        $dataQuery = RiseupORM::for_table(TableType::Transactions->value);
 
         $this->apply_filters($countQuery, $filters);
         $this->apply_filters($dataQuery, $filters);
@@ -109,10 +111,10 @@ trait DatabaseQuerySearchTrait {
 
         try {
             return array(
-                'total_transactions' => RiseupORM::for_table(self::TABLE_TRANSACTIONS)->count(),
+                'total_transactions' => RiseupORM::for_table(TableType::Transactions->value)->count(),
                 'by_action'          => $this->countByColumn('action'),
                 'by_status'          => $this->countByColumn('status'),
-                'last_24h'           => RiseupORM::for_table(self::TABLE_TRANSACTIONS)
+                'last_24h'           => RiseupORM::for_table(TableType::Transactions->value)
                     ->where_gte('created_at', gmdate('Y-m-d\TH:i:s\Z', time() - 86400))
                     ->count(),
             );
@@ -124,7 +126,7 @@ trait DatabaseQuerySearchTrait {
 
     private function countByColumn(string $column): array {
         $rows = RiseupORM::raw_execute(
-            "SELECT {$column}, COUNT(*) as count FROM " . self::TABLE_TRANSACTIONS . " GROUP BY {$column}"
+            "SELECT {$column}, COUNT(*) as count FROM " . TableType::Transactions->value . " GROUP BY {$column}"
         );
         $result = array();
         foreach ($rows as $row) {
@@ -141,7 +143,7 @@ trait DatabaseQuerySearchTrait {
         try {
             $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($daysToKeep * 86400));
 
-            $deleted = RiseupORM::for_table(self::TABLE_TRANSACTIONS)
+            $deleted = RiseupORM::for_table(TableType::Transactions->value)
                 ->where_lt('created_at', $cutoff)
                 ->delete();
 

@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait DatabaseMigrationsV6V8Trait {
 
     private function migrate_v6_remote_plugins_cache(int $current): void {
@@ -38,7 +40,7 @@ trait DatabaseMigrationsV6V8Trait {
 
         $this->fileLogger->info('Applying migration v7: file hash cache table');
 
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_FILE_CACHE . " (
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::FileCache->value . " (
             plugin_slug TEXT NOT NULL,
             relative_path TEXT NOT NULL,
             md5_hash TEXT NOT NULL,
@@ -47,7 +49,7 @@ trait DatabaseMigrationsV6V8Trait {
             cached_at TEXT NOT NULL,
             PRIMARY KEY (plugin_slug, relative_path)
         )");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_file_cache_slug ON " . self::TABLE_FILE_CACHE . "(plugin_slug)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_file_cache_slug ON " . TableType::FileCache->value . "(plugin_slug)");
 
         $this->record_migration(7);
     }
@@ -59,7 +61,7 @@ trait DatabaseMigrationsV6V8Trait {
 
         $this->fileLogger->info('Applying migration v8: snapshot settings table');
 
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_settings (
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::SnapshotSettings->value . " (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL,
             type TEXT NOT NULL DEFAULT 'string',
@@ -85,7 +87,7 @@ trait DatabaseMigrationsV6V8Trait {
         );
 
         $now  = gmdate('Y-m-d\TH:i:s\Z');
-        $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO snapshot_settings (key, value, type, updated_at) VALUES (?, ?, ?, ?)");
+        $stmt = $this->pdo->prepare("INSERT OR IGNORE INTO " . TableType::SnapshotSettings->value . " (key, value, type, updated_at) VALUES (?, ?, ?, ?)");
 
         foreach ($defaults as $row) {
             $stmt->execute(array($row[0], $row[1], $row[2], $now));

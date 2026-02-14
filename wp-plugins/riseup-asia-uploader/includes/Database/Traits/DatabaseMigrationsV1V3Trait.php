@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\TableType;
+
 trait DatabaseMigrationsV1V3Trait {
 
     private function migrate_v1_transactions(int $current): void {
@@ -18,7 +20,7 @@ trait DatabaseMigrationsV1V3Trait {
         }
 
         $this->fileLogger->info('Applying migration v1: transactions table');
-        $table = self::TABLE_TRANSACTIONS;
+        $table = TableType::Transactions->value;
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS {$table} (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +40,7 @@ trait DatabaseMigrationsV1V3Trait {
     }
 
     private function create_transaction_indexes(): void {
-        $table   = self::TABLE_TRANSACTIONS;
+        $table   = TableType::Transactions->value;
         $indexes = array(
             'idx_action'      => 'action',
             'idx_plugin_slug' => 'plugin_slug',
@@ -61,7 +63,7 @@ trait DatabaseMigrationsV1V3Trait {
 
         $this->fileLogger->info('Applying migration v2: agent sites tables');
 
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS agent_sites (
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::AgentSites->value . " (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             url TEXT NOT NULL,
@@ -77,7 +79,7 @@ trait DatabaseMigrationsV1V3Trait {
             updated_at TEXT
         )");
 
-        $this->pdo->exec("CREATE TABLE IF NOT EXISTS agent_actions (
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . TableType::AgentActions->value . " (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             agent_site_id INTEGER NOT NULL,
             action TEXT NOT NULL,
@@ -86,13 +88,13 @@ trait DatabaseMigrationsV1V3Trait {
             details TEXT,
             error_msg TEXT,
             created_at TEXT NOT NULL,
-            FOREIGN KEY (agent_site_id) REFERENCES agent_sites(id) ON DELETE CASCADE
+            FOREIGN KEY (agent_site_id) REFERENCES " . TableType::AgentSites->value . "(id) ON DELETE CASCADE
         )");
 
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_sites_status ON agent_sites(status)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_site_id ON agent_actions(agent_site_id)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_action ON agent_actions(action)");
-        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_created ON agent_actions(created_at)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_sites_status ON " . TableType::AgentSites->value . "(status)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_site_id ON " . TableType::AgentActions->value . "(agent_site_id)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_action ON " . TableType::AgentActions->value . "(action)");
+        $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_created ON " . TableType::AgentActions->value . "(created_at)");
 
         $this->record_migration(2);
     }
@@ -103,7 +105,7 @@ trait DatabaseMigrationsV1V3Trait {
         }
 
         $this->fileLogger->info('Applying migration v3: enhanced transaction fields');
-        $table   = self::TABLE_TRANSACTIONS;
+        $table   = TableType::Transactions->value;
         $columns = array(
             'plugin_file'   => 'TEXT',
             'was_active'    => 'INTEGER',
