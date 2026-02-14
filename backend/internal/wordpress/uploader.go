@@ -228,7 +228,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointUpload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), map[string]interface{}{
+	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), ProgressDetails{
 		"zipSize":   zipSize,
 		"zipPath":   absZipPath,
 		"namespace": namespace,
@@ -263,7 +263,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
 	}
 
-	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), map[string]interface{}{
+	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), ProgressDetails{
 		"slug":     slug,
 		"activate": activate,
 		"zipSize":  zipSize,
@@ -288,7 +288,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), map[string]interface{}{
+	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 2000),
 		"url":    uploadURL,
@@ -667,7 +667,7 @@ type SyncResult struct {
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
 	namespace := c.resolveNamespace()
 
-	c.progress(ActionSync.String(), "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), map[string]interface{}{
+	c.progress(ActionSync.String(), "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), ProgressDetails{
 		"slug":      slug,
 		"fileCount": len(files),
 		"namespace": namespace,
@@ -675,7 +675,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 
 	endpoint := "/" + namespace + EndpointSync
 
-	body := map[string]interface{}{
+	body := ProgressDetails{
 		"plugin": slug,
 		"files":  files,
 	}
@@ -704,7 +704,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(ActionSync.String(), "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), map[string]interface{}{
+	c.progress(ActionSync.String(), "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 500),
 	})
@@ -850,11 +850,11 @@ type RemoteLogFile struct {
 type RemoteErrorLogsResult struct {
 	Success          bool                     `json:"success"`
 	Version          string                   `json:"version"`
-	Settings         map[string]interface{}   `json:"settings"`
+	Settings         ProgressDetails          `json:"settings"`
 	ErrorLog         *RemoteLogFile           `json:"error_log,omitempty"`
 	FullLog          *RemoteLogFile           `json:"full_log,omitempty"`
 	StackTraceLog    *RemoteLogFile           `json:"stacktrace_log,omitempty"`
-	StackTraceFrames []map[string]interface{} `json:"stackTraceFrames,omitempty"`
+	StackTraceFrames []PHPStackTraceFrame     `json:"stackTraceFrames,omitempty"`
 }
 
 // FetchRemoteErrorLogs retrieves the PHP error and log files from the WordPress plugin.
@@ -896,16 +896,16 @@ func (c *Client) FetchRemoteErrorLogs() (*RemoteErrorLogsResult, error) {
 
 // RemoteErrorSessionEntry represents a single structured error from the plugin's SQLite DB.
 type RemoteErrorSessionEntry struct {
-	ID               int                      `json:"id"`
-	Level            string                   `json:"level"`
-	Message          string                   `json:"message"`
-	File             string                   `json:"file"`
-	FileBase         string                   `json:"fileBase"`
-	Line             *int                     `json:"line"`
-	StackTrace       string                   `json:"stackTrace,omitempty"`
-	StackTraceFrames []map[string]interface{} `json:"stackTraceFrames,omitempty"`
-	Context          interface{}              `json:"context,omitempty"`
-	CreatedAt        string                   `json:"created_at"`
+	ID               int                    `json:"id"`
+	Level            string                 `json:"level"`
+	Message          string                 `json:"message"`
+	File             string                 `json:"file"`
+	FileBase         string                 `json:"fileBase"`
+	Line             *int                   `json:"line"`
+	StackTrace       string                 `json:"stackTrace,omitempty"`
+	StackTraceFrames []PHPStackTraceFrame   `json:"stackTraceFrames,omitempty"`
+	Context          json.RawMessage        `json:"context,omitempty"`
+	CreatedAt        string                 `json:"created_at"`
 }
 
 // RemoteFlashState represents the flash notification state from the plugin.
@@ -925,7 +925,7 @@ type RemoteErrorSessionsResult struct {
 	Limit            int                       `json:"limit"`
 	Offset           int                       `json:"offset"`
 	Flash            RemoteFlashState          `json:"flash"`
-	StackTraceFrames []map[string]interface{}  `json:"stackTraceFrames,omitempty"`
+	StackTraceFrames []PHPStackTraceFrame      `json:"stackTraceFrames,omitempty"`
 }
 
 // FetchRemoteErrorSessions retrieves structured error entries from the WordPress plugin's

@@ -190,7 +190,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 		return nil, fmt.Errorf("get upload mutation token: %w", err)
 	}
 
-	c.progress("upload", "running", fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), map[string]interface{}{
+	c.progress("upload", "running", fmt.Sprintf("Mutation token obtained, uploading %s...", filepath.Base(zipPath)), ProgressDetails{
 		"tokenLength": len(mutationToken),
 	})
 
@@ -238,7 +238,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	endpoint := fmt.Sprintf("/%s/mutations/%s/plugins/upload", OnboardNamespace, mutationToken)
 	url := fmt.Sprintf("%s/wp-json%s", c.baseURL, endpoint)
 
-	c.progress("upload", "running", fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), map[string]interface{}{
+	c.progress("upload", "running", fmt.Sprintf("POSTing %d bytes to %s", stat.Size(), url), ProgressDetails{
 		"zipSize":  stat.Size(),
 		"zipFile":  filepath.Base(zipPath),
 		"endpoint": endpoint,
@@ -261,7 +261,7 @@ func (c *Client) UploadPluginZip(zipPath string, pluginSlug string) (*OnboardUpl
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress("upload", "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), map[string]interface{}{
+	c.progress("upload", "running", fmt.Sprintf("Upload response: %d", resp.StatusCode), ProgressDetails{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 500),
 	})

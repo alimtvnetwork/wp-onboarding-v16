@@ -91,20 +91,17 @@ func RunPowerShellUpload(scriptPath string, cfg PowerShellConfig, onOutput func(
 
 	// Parse JSON output from quiet mode
 	if result.Stdout != "" {
-		var jsonResult map[string]interface{}
+		var jsonResult struct {
+			Success   bool   `json:"success"`
+			Plugin    string `json:"plugin"`
+			Activated bool   `json:"activated"`
+			Error     string `json:"error"`
+		}
 		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
-			if success, ok := jsonResult["success"].(bool); ok {
-				result.Success = success
-			}
-			if plugin, ok := jsonResult["plugin"].(string); ok {
-				result.Plugin = plugin
-			}
-			if activated, ok := jsonResult["activated"].(bool); ok {
-				result.Activated = activated
-			}
-			if errMsg, ok := jsonResult["error"].(string); ok {
-				result.ErrorMessage = errMsg
-			}
+			result.Success = jsonResult.Success
+			result.Plugin = jsonResult.Plugin
+			result.Activated = jsonResult.Activated
+			result.ErrorMessage = jsonResult.Error
 		}
 	}
 
@@ -183,20 +180,17 @@ func RunPowerShellUploadDirect(scriptPath, pluginPath, siteUrl, username, passwo
 
 	// Parse JSON output
 	if result.Stdout != "" {
-		var jsonResult map[string]interface{}
+		var jsonResult struct {
+			Success   bool   `json:"success"`
+			Plugin    string `json:"plugin"`
+			Activated bool   `json:"activated"`
+			Error     string `json:"error"`
+		}
 		if parseErr := json.Unmarshal([]byte(strings.TrimSpace(result.Stdout)), &jsonResult); parseErr == nil {
-			if success, ok := jsonResult["success"].(bool); ok {
-				result.Success = success
-			}
-			if plugin, ok := jsonResult["plugin"].(string); ok {
-				result.Plugin = plugin
-			}
-			if activated, ok := jsonResult["activated"].(bool); ok {
-				result.Activated = activated
-			}
-			if errMsg, ok := jsonResult["error"].(string); ok {
-				result.ErrorMessage = errMsg
-			}
+			result.Success = jsonResult.Success
+			result.Plugin = jsonResult.Plugin
+			result.Activated = jsonResult.Activated
+			result.ErrorMessage = jsonResult.Error
 		}
 	}
 
