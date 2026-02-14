@@ -154,7 +154,7 @@ class RiseupAsia {
     use FileSystemTrait;
 
     /** @var RiseupFileLogger */
-    private $file_logger;
+    private $fileLogger;
 
     /** @var RiseupLogger */
     private $logger;
@@ -163,7 +163,7 @@ class RiseupAsia {
     private $db;
 
     /** @var RiseupPostManager */
-    private $post_manager;
+    private $postManager;
 
     /** @var RiseupAsia|null */
     private static $instance = null;
@@ -173,10 +173,11 @@ class RiseupAsia {
      *
      * @return RiseupAsia
      */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
@@ -184,24 +185,24 @@ class RiseupAsia {
      * Constructor — registers hooks and initializes components.
      */
     private function __construct() {
-        $this->file_logger = RiseupFileLogger::get_instance();
-        $this->file_logger->info('Plugin constructor starting', array('version' => PLUGIN_VERSION));
+        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->fileLogger->info('Plugin constructor starting', array('version' => PLUGIN_VERSION));
 
-        RiseupDependencyLoader::logSummary($this->file_logger);
+        RiseupDependencyLoader::logSummary($this->fileLogger);
 
         // Register REST routes and lifecycle hooks BEFORE component init
-        add_action(HookType::RestApiInit->value, array($this, 'register_routes'));
-        add_action(HookType::ActivatedPlugin->value, array($this, 'on_plugin_activated'), 10, 2);
-        add_action(HookType::DeactivatedPlugin->value, array($this, 'on_plugin_deactivated'), 10, 2);
-        add_action(HookType::DeletedPlugin->value, array($this, 'on_plugin_deleted'), 10, 2);
-        add_filter(HookType::RestPostDispatch->value, array($this, 'enrich_error_response'), 10, 3);
+        add_action(HookType::RestApiInit->value, array($this, 'registerRoutes'));
+        add_action(HookType::ActivatedPlugin->value, array($this, 'onPluginActivated'), 10, 2);
+        add_action(HookType::DeactivatedPlugin->value, array($this, 'onPluginDeactivated'), 10, 2);
+        add_action(HookType::DeletedPlugin->value, array($this, 'onPluginDeleted'), 10, 2);
+        add_filter(HookType::RestPostDispatch->value, array($this, 'enrichErrorResponse'), 10, 3);
 
-        $this->file_logger->info('REST routes and lifecycle hooks registered (pre-init)');
+        $this->fileLogger->info('REST routes and lifecycle hooks registered (pre-init)');
 
         $this->initComponents();
 
-        RiseupInitHelpers::logStartupSummary($this->file_logger);
-        $this->file_logger->info('Plugin constructor complete', array(
+        RiseupInitHelpers::logStartupSummary($this->fileLogger);
+        $this->fileLogger->info('Plugin constructor complete', array(
             'db_available' => $this->db !== null,
         ));
     }
@@ -211,30 +212,30 @@ class RiseupAsia {
      */
     private function initComponents() {
         $this->db = RiseupInitHelpers::initComponent('Database', function () {
-            $db = RiseupDatabase::get_instance();
+            $db = RiseupDatabase::getInstance();
             return $db->init() ? $db : null;
         });
 
         $this->logger = RiseupInitHelpers::initComponent('TransactionLogger', function () {
-            return RiseupLogger::get_instance();
+            return RiseupLogger::getInstance();
         });
 
-        $this->post_manager = RiseupInitHelpers::initComponent('PostManager', function () {
+        $this->postManager = RiseupInitHelpers::initComponent('PostManager', function () {
             return RiseupPostManager::getInstance();
         });
 
         RiseupInitHelpers::initComponent('UpdateResolver', function () {
-            return RiseupUpdateResolver::get_instance();
+            return RiseupUpdateResolver::getInstance();
         });
 
         if ($this->db !== null) {
             RiseupInitHelpers::initComponent('SnapshotScheduler', function () {
-                $scheduler = RiseupSnapshotScheduler::getInstance($this->file_logger, $this->db);
+                $scheduler = RiseupSnapshotScheduler::getInstance($this->fileLogger, $this->db);
                 $scheduler->init();
                 return $scheduler;
             });
         } else {
-            $this->file_logger->info('SnapshotScheduler skipped - database not available');
+            $this->fileLogger->info('SnapshotScheduler skipped - database not available');
         }
     }
 }
@@ -251,10 +252,10 @@ register_activation_hook(__FILE__, 'riseup_asia_activate');
  * Initialize the plugin.
  */
 function riseup_asia_init() {
-    RiseupAsia::get_instance();
+    RiseupAsia::getInstance();
 
     if (is_admin()) {
-        RiseupAdmin::get_instance();
+        RiseupAdmin::getInstance();
     }
 }
 

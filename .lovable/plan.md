@@ -446,7 +446,7 @@ Enforced project-wide PHP coding standards: 200-line file limit, 15-line functio
 
 ## Feature I: PHP camelCase & Encapsulation Remediation 🔄 IN PROGRESS
 
-### Status: Phase I1–I3 complete, I4 in progress
+### Status: Phase I1–I5 complete, I6 audit complete — implementation pending
 
 Enforce camelCase naming for all PHP properties, methods, and parameters. Add encapsulated helper methods to enums. Eliminate all remaining snake_case identifiers in internal code.
 
@@ -459,8 +459,38 @@ Enforce camelCase naming for all PHP properties, methods, and parameters. Add en
 | I3 | **Logging domain camelCase** | ✅ Done | Refactored FileLogger (shell + 7 traits) + Logger (shell + 2 traits) — all properties, methods, and params to camelCase. |
 | I4 | **Caller updates (batch 1)** | ✅ Done | Updated Database, UpdateResolver, AgentManager, SnapshotFactory, SnapshotScheduler, UploadIgnore, AdminErrorAjaxTrait, ErrorLogHandlerTrait, PathUtilsCoreTrait, DatabaseConnectionTrait — all renamed to camelCase APIs. |
 | I5 | **LOG_LEVEL_* constant cleanup** | ✅ Done | Replaced all `LOG_LEVEL_*` constant usages across 16 Snapshot/Manager trait files with `LogLevelType::*->value` enum references. Removed legacy constant definitions from `constants.php`. Fixed `ManagerCoreTrait` incorrect `LogLevel` import → `LogLevelType`. Zero violations remaining. |
-| I6 | **Remaining caller updates** | ⬚ Pending | Update `riseup-asia-uploader.php` main shell, ~28 trait files with `->log_exception()` → `->logException()`, `->log_plugin_action()` → `->logPluginAction()`, and remaining `$file_logger` property renames across consuming classes. |
-| I7 | **Full codebase audit** | ⬚ Pending | Grep for remaining snake_case methods/properties; zero violations. |
+| I6 | **Remaining caller updates** | 🔄 Batch 1 Done | Full audit identified **~2,000+ renames across ~70 files**. Batch 1 complete: ~20 files (main shell, Admin domain, UpdateResolver domain, ResponseTrait, LifecycleHooksTrait, RouteRegistrationTrait, PostManager). Remaining: ~50 files (Plugin/Snapshot/Agent/Auth/Sync/Error/Upload traits + PluginRoutesTrait, SnapshotRouteRegistrationTrait, PostHandlerTrait, remaining callers). |
+| I7 | **Full codebase audit** | ⬚ Pending | Final grep to confirm zero snake_case methods/properties remain. |
+
+### I6 Sub-phases (Audit Results)
+
+The full-codebase scan identified the following snake_case violation categories:
+
+| Sub | Category | Matches | Files | Rename Pattern |
+|-----|----------|---------|-------|----------------|
+| I6a | **`$file_logger` property** | 988 | 51 | `$file_logger` → `$fileLogger` (declaration + all `$this->file_logger` refs) |
+| I6b | **`$post_manager` property** | 25 | 2 | `$post_manager` → `$postManager` |
+| I6c | **`get_instance()` singletons** | 99 | 10 | `get_instance()` → `getInstance()` (definition + all callers: RiseupAsia, RiseupAdmin, RiseupDatabase, RiseupLogger, RiseupUpdateResolver) |
+| I6d | **`error_response()` method** | 338 | 21 | `error_response()` → `errorResponse()` |
+| I6e | **`safe_execute()` method** | 150 | 14 | `safe_execute()` → `safeExecute()` |
+| I6f | **`log_exception()` callers** | 135 | 14 | `log_exception()` → `logException()` (definition already camelCase in FileLogger; callers still use old name) |
+| I6g | **`log_plugin_action()` callers** | 125 | 11 | `log_plugin_action()` → `logPluginAction()` |
+| I6h | **`log_post_action()` callers** | 10 | 2 | `log_post_action()` → `logPostAction()` |
+| I6i | **`handle_*` REST handlers** | 265 | 24 | `handle_list_plugins()` → `handleListPlugins()`, etc. + callback strings |
+| I6j | **`on_plugin_*` lifecycle hooks** | 15 | 1 | `on_plugin_activated()` → `onPluginActivated()`, etc. + callback strings |
+| I6k | **`register_routes` + auth methods** | 15+10 | 2 | `register_routes()` → `registerRoutes()`, `check_plugin_permission()` → `checkPluginPermission()`, `build_permission_callback()` → `buildPermissionCallback()` |
+| I6l | **Remaining snake_case methods** | ~100 | ~15 | `find_plugin_file()`, `log_plugin_lifecycle()`, `load_plugin_functions()`, `validate_and_write_zip()`, `remove_duplicate_plugins()`, `pre_log_self_update()`, ORM methods (`where_operator`, `where_equal`, `generate_param_name`), Admin methods (`render_*`, `ajax_*`, `get_settings`, `get_unseen_error_count`), etc. |
+| I6m | **Remaining snake_case properties** | ~200 | ~30 | `$provider_id`, `$provider_name`, `$param_counter`, `$where_clauses`, `$per_page`, `$agent_id`, local variables like `$zip_content`, `$error_msg`, etc. |
+
+### Execution Order (I6)
+
+1. **I6a** — `$file_logger` → `$fileLogger` (highest impact, 51 files)
+2. **I6c** — `get_instance()` → `getInstance()` (10 files, affects bootstrap)
+3. **I6d + I6e** — `error_response` + `safe_execute` (35 files, trait definitions + callers)
+4. **I6f + I6g + I6h** — Logger method callers (27 files)
+5. **I6i + I6j + I6k** — REST handler names + callback strings (26 files)
+6. **I6l + I6m** — Remaining methods + properties (45 files)
+7. **I6b** — `$post_manager` (2 files, trivial)
 
 ### References
 - **Naming conventions:** `.lovable/memory/architecture/php/naming-conventions.md`

@@ -17,7 +17,7 @@ trait AdminAjaxSnapshotTrait {
     /**
      * AJAX handler: Save snapshot settings.
      */
-    public function ajax_save_snapshot_settings() {
+    public function ajaxSaveSnapshotSettings() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
@@ -123,7 +123,7 @@ trait AdminAjaxSnapshotTrait {
     /**
      * AJAX handler: Run manual snapshot cleanup.
      */
-    public function ajax_run_snapshot_cleanup() {
+    public function ajaxRunSnapshotCleanup() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
@@ -140,7 +140,7 @@ trait AdminAjaxSnapshotTrait {
                 $result['deleted_by_policy'],
                 $result['deleted_orphans'],
                 $result['deleted_failed'],
-                RiseupPathUtils::format_bytes($result['space_freed_bytes'])
+                RiseupPathUtils::formatBytes($result['space_freed_bytes'])
             ),
             'result' => $result,
         ));
@@ -149,7 +149,7 @@ trait AdminAjaxSnapshotTrait {
     /**
      * AJAX handler: Get snapshot storage stats.
      */
-    public function ajax_get_snapshot_storage_stats() {
+    public function ajaxGetSnapshotStorageStats() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (!current_user_can(CapabilityType::ManageOptions->value)) {

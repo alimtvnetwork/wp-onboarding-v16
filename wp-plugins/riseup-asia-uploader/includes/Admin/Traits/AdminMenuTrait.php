@@ -17,7 +17,7 @@ trait AdminMenuTrait {
     /**
      * Add admin menu items.
      */
-    public function add_admin_menu() {
+    public function addAdminMenu() {
         $this->registerMainMenu();
         $this->registerSubmenus();
         $this->registerErrorSubmenu();
@@ -32,7 +32,7 @@ trait AdminMenuTrait {
             __('Riseup Uploader', 'riseup-asia-uploader'),
             CapabilityType::ManageOptions->value,
             'riseup-asia-uploader',
-            array($this, 'render_logs_page'),
+            array($this, 'renderLogsPage'),
             'dashicons-upload',
             80
         );
@@ -43,10 +43,10 @@ trait AdminMenuTrait {
      */
     private function registerSubmenus() {
         $submenus = array(
-            array('riseup-asia-uploader', 'Activity Logs', 'render_logs_page'),
-            array('riseup-asia-settings', 'Settings', 'render_settings_page'),
-            array('riseup-asia-agents', 'Agent Sites', 'render_agents_page'),
-            array('riseup-asia-snapshots', 'Snapshots', 'render_snapshots_page'),
+            array('riseup-asia-uploader', 'Activity Logs', 'renderLogsPage'),
+            array('riseup-asia-settings', 'Settings', 'renderSettingsPage'),
+            array('riseup-asia-agents', 'Agent Sites', 'renderAgentsPage'),
+            array('riseup-asia-snapshots', 'Snapshots', 'renderSnapshotsPage'),
         );
 
         foreach ($submenus as $item) {
@@ -65,15 +65,15 @@ trait AdminMenuTrait {
      * Register the error log submenu with notification bubble.
      */
     private function registerErrorSubmenu() {
-        $error_bubble = $this->buildErrorBubble();
+        $errorBubble = $this->buildErrorBubble();
 
         add_submenu_page(
             'riseup-asia-uploader',
             __('Error Log', 'riseup-asia-uploader'),
-            __('Error Log', 'riseup-asia-uploader') . $error_bubble,
+            __('Error Log', 'riseup-asia-uploader') . $errorBubble,
             CapabilityType::ManageOptions->value,
             'riseup-asia-errors',
-            array($this, 'render_errors_page')
+            array($this, 'renderErrorsPage')
         );
     }
 
@@ -83,7 +83,7 @@ trait AdminMenuTrait {
      * @return string HTML string or empty.
      */
     private function buildErrorBubble(): string {
-        $unseen = $this->get_unseen_error_count();
+        $unseen = $this->getUnseenErrorCount();
         if ($unseen <= 0) {
             return '';
         }
@@ -96,7 +96,7 @@ trait AdminMenuTrait {
      *
      * @param string $hook Current admin page.
      */
-    public function enqueue_admin_assets($hook) {
+    public function enqueueAdminAssets($hook) {
         if (strpos($hook, 'riseup-asia') === false) {
             return;
         }

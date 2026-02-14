@@ -79,7 +79,7 @@ class RiseupAdmin {
      *
      * @return RiseupAdmin
      */
-    public static function get_instance() {
+    public static function getInstance() {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -91,19 +91,19 @@ class RiseupAdmin {
      * Constructor.
      */
     private function __construct() {
-        add_action(HookType::AdminMenu->value, array($this, 'add_admin_menu'));
-        add_action(HookType::AdminInit->value, array($this, 'register_settings'));
-        add_action(HookType::AdminEnqueue->value, array($this, 'enqueue_admin_assets'));
-        add_action(HookType::AdminNotices->value, array($this, 'render_global_error_notice'));
-        add_action(HookType::ajax('riseup_test_update_connection'), array($this, 'ajax_test_update_connection'));
-        add_action(HookType::ajax('riseup_clear_update_cache'), array($this, 'ajax_clear_update_cache'));
-        add_action(HookType::ajax('riseup_check_for_updates'), array($this, 'ajax_check_for_updates'));
-        add_action(HookType::ajax('riseup_save_snapshot_settings'), array($this, 'ajax_save_snapshot_settings'));
-        add_action(HookType::ajax('riseup_run_snapshot_cleanup'), array($this, 'ajax_run_snapshot_cleanup'));
-        add_action(HookType::ajax('riseup_get_snapshot_storage_stats'), array($this, 'ajax_get_snapshot_storage_stats'));
-        add_action(HookType::ajax('riseup_dismiss_error_flash'), array($this, 'ajax_dismiss_error_flash'));
-        add_action(HookType::ajax('riseup_clear_error_sessions'), array($this, 'ajax_clear_error_sessions'));
-        add_action(HookType::ajax('riseup_read_log_file'), array($this, 'ajax_read_log_file'));
-        add_action(HookType::ajax('riseup_clear_log_file'), array($this, 'ajax_clear_log_file'));
+        add_action(HookType::AdminMenu->value, array($this, 'addAdminMenu'));
+        add_action(HookType::AdminInit->value, array($this, 'registerSettings'));
+        add_action(HookType::AdminEnqueue->value, array($this, 'enqueueAdminAssets'));
+        add_action(HookType::AdminNotices->value, array($this, 'renderGlobalErrorNotice'));
+        add_action(HookType::ajax('riseup_test_update_connection'), array($this, 'ajaxTestUpdateConnection'));
+        add_action(HookType::ajax('riseup_clear_update_cache'), array($this, 'ajaxClearUpdateCache'));
+        add_action(HookType::ajax('riseup_check_for_updates'), array($this, 'ajaxCheckForUpdates'));
+        add_action(HookType::ajax('riseup_save_snapshot_settings'), array($this, 'ajaxSaveSnapshotSettings'));
+        add_action(HookType::ajax('riseup_run_snapshot_cleanup'), array($this, 'ajaxRunSnapshotCleanup'));
+        add_action(HookType::ajax('riseup_get_snapshot_storage_stats'), array($this, 'ajaxGetSnapshotStorageStats'));
+        add_action(HookType::ajax('riseup_dismiss_error_flash'), array($this, 'ajaxDismissErrorFlash'));
+        add_action(HookType::ajax('riseup_clear_error_sessions'), array($this, 'ajaxClearErrorSessions'));
+        add_action(HookType::ajax('riseup_read_log_file'), array($this, 'ajaxReadLogFile'));
+        add_action(HookType::ajax('riseup_clear_log_file'), array($this, 'ajaxClearLogFile'));
     }
 }

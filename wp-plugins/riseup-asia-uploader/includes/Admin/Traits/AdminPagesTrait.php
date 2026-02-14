@@ -17,19 +17,19 @@ trait AdminPagesTrait {
     /**
      * Render the logs page.
      */
-    public function render_logs_page() {
+    public function renderLogsPage() {
         $filters = $this->buildLogFilters();
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        $per_page = 50;
-        $offset = ($page - 1) * $per_page;
+        $perPage = 50;
+        $offset = ($page - 1) * $perPage;
 
-        $db = RiseupDatabase::get_instance();
-        $result = $db->query_transactions($filters, $per_page, $offset);
+        $db = RiseupDatabase::getInstance();
+        $result = $db->queryTransactions($filters, $perPage, $offset);
         $logs = $result['logs'];
         $total = $result['total'];
-        $total_pages = ceil($total / $per_page);
+        $totalPages = ceil($total / $perPage);
 
-        $action_labels = $this->getActionLabels();
+        $actionLabels = $this->getActionLabels();
 
         include dirname(__FILE__) . '/../../templates/admin-logs.php';
     }
@@ -83,17 +83,17 @@ trait AdminPagesTrait {
     /**
      * Render the settings page.
      */
-    public function render_settings_page() {
-        $settings = self::get_settings();
-        $update_settings = RiseupUpdateResolver::get_instance()->get_settings();
+    public function renderSettingsPage() {
+        $settings = self::getSettings();
+        $updateSettings = RiseupUpdateResolver::getInstance()->getSettings();
 
         require_once dirname(__FILE__) . '/../../Snapshot/SnapshotFactory.php';
         $detector = RiseupSnapshotFactory::detector();
-        $snapshot_settings = $detector->getSettings();
-        $snapshot_providers = $detector->detectAvailableProviders();
+        $snapshotSettings = $detector->getSettings();
+        $snapshotProviders = $detector->detectAvailableProviders();
 
-        $endpoint_groups = $this->buildEndpointGroups();
-        $endpoints_meta = $this->flattenEndpointGroups($endpoint_groups);
+        $endpointGroups = $this->buildEndpointGroups();
+        $endpointsMeta = $this->flattenEndpointGroups($endpointGroups);
 
         include dirname(__FILE__) . '/../../templates/admin-settings.php';
     }
@@ -158,27 +158,27 @@ trait AdminPagesTrait {
      * @return array Flat endpoint metadata.
      */
     private function flattenEndpointGroups(array $groups): array {
-        $endpoints_meta = array();
+        $endpointsMeta = array();
         foreach ($groups as $group) {
             foreach ($group['endpoints'] as $key => $meta) {
-                $endpoints_meta[$key] = $meta;
+                $endpointsMeta[$key] = $meta;
             }
         }
 
-        return $endpoints_meta;
+        return $endpointsMeta;
     }
 
     /**
      * Render the agent sites page.
      */
-    public function render_agents_page() {
+    public function renderAgentsPage() {
         include dirname(__FILE__) . '/../../templates/admin-agents.php';
     }
 
     /**
      * Render the snapshots page.
      */
-    public function render_snapshots_page() {
+    public function renderSnapshotsPage() {
         include dirname(__FILE__) . '/../../templates/admin-snapshots.php';
     }
 }

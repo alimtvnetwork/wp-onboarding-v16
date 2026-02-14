@@ -17,15 +17,15 @@ trait AdminAjaxUpdateTrait {
     /**
      * AJAX handler: Test update server connection.
      */
-    public function ajax_test_update_connection() {
+    public function ajaxTestUpdateConnection() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        $resolver = RiseupUpdateResolver::get_instance();
-        $result = $resolver->test_connection();
+        $resolver = RiseupUpdateResolver::getInstance();
+        $result = $resolver->testConnection();
 
         if ($result['success']) {
             wp_send_json_success($result);
@@ -37,15 +37,15 @@ trait AdminAjaxUpdateTrait {
     /**
      * AJAX handler: Clear update URL cache.
      */
-    public function ajax_clear_update_cache() {
+    public function ajaxClearUpdateCache() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        $resolver = RiseupUpdateResolver::get_instance();
-        $resolver->clear_cache();
+        $resolver = RiseupUpdateResolver::getInstance();
+        $resolver->clearCache();
 
         wp_send_json_success(array('message' => 'Cache cleared successfully'));
     }
@@ -53,15 +53,15 @@ trait AdminAjaxUpdateTrait {
     /**
      * AJAX handler: Check for updates now.
      */
-    public function ajax_check_for_updates() {
+    public function ajaxCheckForUpdates() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
         }
 
-        $resolver = RiseupUpdateResolver::get_instance();
-        $result = $resolver->fetch_update_info(true);
+        $resolver = RiseupUpdateResolver::getInstance();
+        $result = $resolver->fetchUpdateInfo(true);
 
         if (is_wp_error($result)) {
             wp_send_json_error(array('message' => $result->get_error_message()));

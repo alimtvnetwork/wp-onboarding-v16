@@ -15,7 +15,7 @@ trait AdminErrorRenderTrait {
     /**
      * Render the error log page.
      */
-    public function render_errors_page() {
+    public function renderErrorsPage() {
         $defaults = $this->getErrorPageDefaults();
         extract($defaults);
 
@@ -60,18 +60,18 @@ trait AdminErrorRenderTrait {
      * @return array Updated page variables.
      */
     private function fetchErrorsForPage(array $defaults): array {
-        $db = RiseupDatabase::get_instance();
-        $pdo = $db->get_pdo();
+        $db = RiseupDatabase::getInstance();
+        $pdo = $db->getPdo();
 
         if (!$pdo) {
             $defaults['db_error_message'] = __('Database connection unavailable. The SQLite database may not be initialized yet.', 'riseup-asia-uploader');
             return $defaults;
         }
 
-        $table_check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
-        $table_exists = $table_check && $table_check->fetchColumn();
+        $tableCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
+        $tableExists = $tableCheck && $tableCheck->fetchColumn();
 
-        if (!$table_exists) {
+        if (!$tableExists) {
             $defaults['db_error_message'] = __('The error_sessions table does not exist yet. Errors will appear here once the plugin captures its first error.', 'riseup-asia-uploader');
             return $defaults;
         }
@@ -88,15 +88,15 @@ trait AdminErrorRenderTrait {
      */
     private function queryErrorPage(PDO $pdo, array $defaults): array {
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
-        $per_page = 50;
-        $offset = ($page - 1) * $per_page;
+        $perPage = 50;
+        $offset = ($page - 1) * $perPage;
 
         $filter = $this->buildErrorFilters($defaults);
         $total = $this->countFilteredErrors($pdo, $filter);
-        $total_pages = max(1, ceil($total / $per_page));
-        $errors = $this->fetchFilteredErrors($pdo, $filter, $per_page, $offset);
+        $totalPages = max(1, ceil($total / $perPage));
+        $errors = $this->fetchFilteredErrors($pdo, $filter, $perPage, $offset);
 
-        return $this->assembleErrorPageResult($errors, $total, $total_pages, $page, $defaults);
+        return $this->assembleErrorPageResult($errors, $total, $totalPages, $page, $defaults);
     }
 
     /**
@@ -116,9 +116,9 @@ trait AdminErrorRenderTrait {
             $params[] = '%' . $defaults['filter_search'] . '%';
         }
 
-        $where_sql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        $whereSql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        return array('where_sql' => $where_sql, 'params' => $params);
+        return array('where_sql' => $whereSql, 'params' => $params);
     }
 
     /**
@@ -134,9 +134,9 @@ trait AdminErrorRenderTrait {
     /**
      * Fetch paginated filtered error sessions.
      */
-    private function fetchFilteredErrors(PDO $pdo, array $filter, int $per_page, int $offset): array {
+    private function fetchFilteredErrors(PDO $pdo, array $filter, int $perPage, int $offset): array {
         $stmt = $pdo->prepare("SELECT * FROM error_sessions {$filter['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?");
-        $stmt->execute(array_merge($filter['params'], array($per_page, $offset)));
+        $stmt->execute(array_merge($filter['params'], array($perPage, $offset)));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -144,16 +144,16 @@ trait AdminErrorRenderTrait {
     /**
      * Assemble the final error page result array.
      */
-    private function assembleErrorPageResult(array $errors, int $total, int $total_pages, int $page, array $defaults): array {
-        $last_seen_id = $this->get_flash_value('last_seen_error_id', 0);
-        $has_unseen = ($this->get_flash_value('has_unseen_errors', '0') === '1');
-        $unseen_count = $this->get_unseen_error_count();
-        $latest_error_time = $this->resolveLatestErrorTime($errors, $has_unseen);
+    private function assembleErrorPageResult(array $errors, int $total, int $totalPages, int $page, array $defaults): array {
+        $lastSeenId = $this->getFlashValue('last_seen_error_id', 0);
+        $hasUnseen = ($this->getFlashValue('has_unseen_errors', '0') === '1');
+        $unseenCount = $this->getUnseenErrorCount();
+        $latestErrorTime = $this->resolveLatestErrorTime($errors, $hasUnseen);
 
         return array(
-            'errors' => $errors, 'total' => $total, 'total_pages' => $total_pages,
-            'page' => $page, 'last_seen_id' => $last_seen_id, 'has_unseen' => $has_unseen,
-            'unseen_count' => $unseen_count, 'latest_error_time' => $latest_error_time,
+            'errors' => $errors, 'total' => $total, 'total_pages' => $totalPages,
+            'page' => $page, 'last_seen_id' => $lastSeenId, 'has_unseen' => $hasUnseen,
+            'unseen_count' => $unseenCount, 'latest_error_time' => $latestErrorTime,
             'filter_level' => $defaults['filter_level'], 'filter_search' => $defaults['filter_search'],
             'db_error_message' => '',
         );
@@ -162,8 +162,8 @@ trait AdminErrorRenderTrait {
     /**
      * Resolve the latest error time string.
      */
-    private function resolveLatestErrorTime(array $errors, bool $has_unseen): string {
-        if (empty($errors) || !$has_unseen) {
+    private function resolveLatestErrorTime(array $errors, bool $hasUnseen): string {
+        if (empty($errors) || !$hasUnseen) {
             return '';
         }
 

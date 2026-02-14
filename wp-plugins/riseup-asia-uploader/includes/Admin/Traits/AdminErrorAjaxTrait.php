@@ -19,7 +19,7 @@ trait AdminErrorAjaxTrait {
     /**
      * AJAX handler: Dismiss error flash (mark all as seen).
      */
-    public function ajax_dismiss_error_flash() {
+    public function ajaxDismissErrorFlash() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
@@ -41,7 +41,7 @@ trait AdminErrorAjaxTrait {
     /**
      * AJAX handler: Clear all error sessions.
      */
-    public function ajax_clear_error_sessions() {
+    public function ajaxClearErrorSessions() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
@@ -81,7 +81,7 @@ trait AdminErrorAjaxTrait {
     /**
      * AJAX handler: Read a log file's contents.
      */
-    public function ajax_read_log_file() {
+    public function ajaxReadLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));
@@ -134,7 +134,7 @@ trait AdminErrorAjaxTrait {
     /**
      * AJAX handler: Clear (truncate) a log file.
      */
-    public function ajax_clear_log_file() {
+    public function ajaxClearLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => MSG_UNAUTHORIZED));

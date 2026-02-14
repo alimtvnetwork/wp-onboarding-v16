@@ -31,7 +31,7 @@ class RiseupPostManager {
     private $logger;
 
     /** @var RiseupFileLogger */
-    private $file_logger;
+    private $fileLogger;
 
     /** @var RiseupPostManager|null */
     private static $instance = null;
@@ -41,14 +41,15 @@ class RiseupPostManager {
         if (self::$instance === null) {
             self::$instance = new self();
         }
+
         return self::$instance;
     }
 
     /** Constructor. */
     private function __construct() {
-        $this->file_logger = RiseupFileLogger::get_instance();
-        $this->logger = RiseupLogger::get_instance();
-        $this->file_logger->info('Post manager initialized');
+        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->logger = RiseupLogger::getInstance();
+        $this->fileLogger->info('Post manager initialized');
     }
 
     /**
