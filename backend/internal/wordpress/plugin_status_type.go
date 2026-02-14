@@ -25,3 +25,8 @@ func (p PluginStatusType) String() string {
 func (p PluginStatusType) IsActive() bool {
 	return p.IsEqual(PluginStatusActive)
 }
+
+// IsInactive returns true if the plugin status is Inactive.
+func (p PluginStatusType) IsInactive() bool {
+	return p.IsEqual(PluginStatusInactive)
+}

@@ -26,3 +26,13 @@ func (u UploadSourceType) IsEqual(other UploadSourceType) bool {
 func (u UploadSourceType) String() string {
 	return string(u)
 }
+
+// IsScript returns true if the upload source is the deployment script.
+func (u UploadSourceType) IsScript() bool {
+	return u.IsEqual(UploadSourceScript)
+}
+
+// IsRestAPI returns true if the upload source is the REST API.
+func (u UploadSourceType) IsRestAPI() bool {
+	return u.IsEqual(UploadSourceRestAPI)
+}

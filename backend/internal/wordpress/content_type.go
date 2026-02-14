@@ -23,3 +23,13 @@ func (c ContentTypeValue) IsEqual(other ContentTypeValue) bool {
 func (c ContentTypeValue) String() string {
 	return string(c)
 }
+
+// IsJSON returns true if the content type is JSON.
+func (c ContentTypeValue) IsJSON() bool {
+	return c.IsEqual(ContentTypeJSON)
+}
+
+// IsMultipart returns true if the content type is multipart form-data.
+func (c ContentTypeValue) IsMultipart() bool {
+	return c.IsEqual(ContentTypeMultipart)
+}
