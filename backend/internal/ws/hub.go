@@ -135,9 +135,10 @@ type ConnectionConfirmation struct {
 }
 
 // IncomingMessage represents a parsed incoming WebSocket message.
+// Data is kept as json.RawMessage (parse boundary) to be narrowed per msg.Type.
 type IncomingMessage struct {
-	Type string         `json:"type"`
-	Data map[string]any `json:"data"`
+	Type string          `json:"type"`
+	Data json.RawMessage `json:"data"`
 }
 
 // Event types for WebSocket messages

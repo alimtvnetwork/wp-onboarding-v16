@@ -1,6 +1,12 @@
 // Package handlers - Typed response structs replacing map[string]any literals
 package handlers
 
+import (
+	"wp-plugin-publish/internal/api/middleware"
+	"wp-plugin-publish/internal/models"
+	"wp-plugin-publish/internal/services/plugin"
+)
+
 // --- Common action responses ---
 
 // ActionResponse represents a simple boolean action result (deleted, cleared, enabled, etc.)
@@ -11,7 +17,7 @@ type ActionResponse struct {
 	Disabled bool   `json:"disabled,omitempty"`
 	Aborted  bool   `json:"aborted,omitempty"`
 	Restored bool   `json:"restored,omitempty"`
-	ID       any    `json:"id,omitempty"`
+	ID       string `json:"id,omitempty"`
 	Plugin   string `json:"plugin,omitempty"`
 	SiteID   int64  `json:"siteId,omitempty"`
 	Message  string `json:"message,omitempty"`
@@ -22,26 +28,26 @@ type ActionResponse struct {
 
 // PaginatedSessions is the response shape for session list endpoints.
 type PaginatedSessions struct {
-	Sessions any `json:"sessions"`
-	Total    int `json:"total"`
-	Limit    int `json:"limit,omitempty"`
-	Offset   int `json:"offset,omitempty"`
+	Sessions []*middleware.RequestSession `json:"sessions"`
+	Total    int                         `json:"total"`
+	Limit    int                         `json:"limit,omitempty"`
+	Offset   int                         `json:"offset,omitempty"`
 }
 
 // PaginatedErrors is the response shape for error list endpoints.
 type PaginatedErrors struct {
-	Errors any `json:"errors"`
-	Total  int `json:"total"`
-	Limit  int `json:"limit,omitempty"`
-	Offset int `json:"offset,omitempty"`
+	Errors []models.ErrorHistory `json:"errors"`
+	Total  int                   `json:"total"`
+	Limit  int                   `json:"limit,omitempty"`
+	Offset int                   `json:"offset,omitempty"`
 }
 
 // PaginatedEntries is the response shape for publish history list endpoints.
 type PaginatedEntries struct {
-	Entries any `json:"entries"`
-	Total   int `json:"total"`
-	Limit   int `json:"limit,omitempty"`
-	Offset  int `json:"offset,omitempty"`
+	Entries []models.PublishHistory `json:"entries"`
+	Total   int                    `json:"total"`
+	Limit   int                    `json:"limit,omitempty"`
+	Offset  int                    `json:"offset,omitempty"`
 }
 
 // --- Domain-specific responses ---
@@ -83,21 +89,40 @@ type SessionLogsResponse struct {
 
 // ScanResultResponse is the response for directory scan with detection.
 type ScanResultResponse struct {
-	Scan             any    `json:"scan"`
-	DetectionCreated bool   `json:"detectionCreated,omitempty"`
-	DetectionError   string `json:"detectionError,omitempty"`
+	Scan             *plugin.ScanResult `json:"scan"`
+	DetectionCreated bool               `json:"detectionCreated,omitempty"`
+	DetectionError   string             `json:"detectionError,omitempty"`
+}
+
+// DirectoryScanResult is the response for a single directory in multi-scan.
+type DirectoryScanResult struct {
+	Path             string             `json:"path"`
+	IsPlugin         bool               `json:"isPlugin"`
+	Metadata         *plugin.ScanResult `json:"metadata,omitempty"`
+	Error            string             `json:"error,omitempty"`
+	DetectionCreated bool               `json:"detectionCreated,omitempty"`
 }
 
 // MultiScanResponse is the response for multi-directory scanning.
 type MultiScanResponse struct {
-	Scanned  int `json:"scanned"`
-	Detected int `json:"detected"`
-	Results  any `json:"results"`
+	Scanned  int                   `json:"scanned"`
+	Detected int                   `json:"detected"`
+	Results  []DirectoryScanResult `json:"results"`
+}
+
+// BulkBootstrapSiteResult is the result for a single site in bulk bootstrap.
+type BulkBootstrapSiteResult struct {
+	SiteID    int64  `json:"siteId"`
+	SiteName  string `json:"siteName"`
+	Success   bool   `json:"success"`
+	Message   string `json:"message"`
+	Activated bool   `json:"activated,omitempty"`
+	Error     string `json:"error,omitempty"`
 }
 
 // BulkBootstrapResponse wraps results for bulk uploader deployment.
 type BulkBootstrapResponse struct {
-	Results any `json:"results"`
+	Results []BulkBootstrapSiteResult `json:"results"`
 }
 
 // ErrorReportResponse wraps a bulk-exported error report.

@@ -125,7 +125,7 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, ActionResponse{Deleted: true, ID: id})
+	respondSuccess(w, ActionResponse{Deleted: true, ID: strconv.FormatInt(id, 10)})
 }
 
 // ClearErrorHistory removes all error history

@@ -17,7 +17,7 @@ var RequestSessionStore middleware.SessionStore
 func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
 		respondSuccess(w, PaginatedSessions{
-			Sessions: []any{},
+			Sessions: []*middleware.RequestSession{},
 			Total:    0,
 		})
 		return
@@ -99,7 +99,7 @@ func ClearRequestSessions(w http.ResponseWriter, r *http.Request) {
 func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
 		respondSuccess(w, PaginatedSessions{
-			Sessions: []any{},
+			Sessions: []*middleware.RequestSession{},
 			Total:    0,
 		})
 		return
