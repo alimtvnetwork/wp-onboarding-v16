@@ -24,7 +24,12 @@ enum HttpStatusType: int
     case Unauthorized = 401;
     case Forbidden   = 403;
     case NotFound    = 404;
+    case RequestTimeout = 408;
+    case TooManyRequests = 429;
     case ServerError = 500;
+    case BadGateway  = 502;
+    case ServiceUnavailable = 503;
+    case GatewayTimeout = 504;
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
@@ -48,5 +53,16 @@ enum HttpStatusType: int
     public function isServerError(): bool
     {
         return $this->value >= 500;
+    }
+
+    /** Check if this status code indicates a transient/retryable failure. */
+    public function isRetryable(): bool
+    {
+        return $this->isEqual(self::RequestTimeout)
+            || $this->isEqual(self::TooManyRequests)
+            || $this->isEqual(self::ServerError)
+            || $this->isEqual(self::BadGateway)
+            || $this->isEqual(self::ServiceUnavailable)
+            || $this->isEqual(self::GatewayTimeout);
     }
 }
