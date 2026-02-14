@@ -193,8 +193,8 @@ func (c *Client) GetUploaderStatus() (*UploaderStatus, error) {
 
 // UploadPluginViaUploader uploads a plugin ZIP via the Rise Up Uploader.
 // Uses multipart/form-data for efficiency (no base64 overhead, streamed upload).
-// uploadSource should be one of the UploadSource* constants (e.g., UploadSourceRestAPI).
-func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource string) (*UploaderUploadResult, error) {
+// uploadSource identifies how the upload was triggered (e.g., UploadSourceRestAPI).
+func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate bool, uploadSource UploadSourceType) (*UploaderUploadResult, error) {
 	// CRITICAL: Always resolve to absolute path before any file operations
 	absZipPath, err := pathutil.ToAbsolute(zipPath)
 	if err != nil {
@@ -257,7 +257,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	} else {
 		_ = writer.WriteField("activate", "0")
 	}
-	_ = writer.WriteField("upload_source", uploadSource)
+	_ = writer.WriteField("upload_source", uploadSource.String())
 
 	if err := writer.Close(); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
@@ -566,7 +566,7 @@ func (c *Client) ReplaceFileViaUploader(slug, relPath string, content []byte, is
 			WithContext("url", url)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON)
+	c.setStandardHeaders(req, ContentTypeJSON.String())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -608,7 +608,7 @@ func (c *Client) DeleteFileViaUploader(slug, relPath string) error {
 			WithContext("url", url)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON)
+	c.setStandardHeaders(req, ContentTypeJSON.String())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -692,7 +692,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 			WithContext("url", url)
 	}
 
-	c.setStandardHeaders(req, ContentTypeJSON)
+	c.setStandardHeaders(req, ContentTypeJSON.String())
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
