@@ -39,4 +39,35 @@ class ErrorResponse {
             'error'   => $e->getMessage(),
         );
     }
+
+    /** Log exception and return a WP_REST_Response error envelope. */
+    public static function logAndReturnEnvelope(RiseupFileLogger $logger, Throwable $e, string $context = '', int $status = 500): \WP_REST_Response {
+        $logger->logException($e, $context);
+
+        return new \WP_REST_Response(
+            array(
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ),
+            $status
+        );
+    }
+
+    /** Log exception and return a WP_Error object. */
+    public static function logAndReturnWpError(RiseupFileLogger $logger, Throwable $e, string $context = '', string $code = 'internal_error', int $status = 500): \WP_Error {
+        $logger->logException($e, $context);
+
+        return new \WP_Error(
+            $code,
+            $e->getMessage(),
+            array('status' => $status)
+        );
+    }
+
+    /** Log exception and return false. */
+    public static function logAndReturnFalse(RiseupFileLogger $logger, Throwable $e, string $context = ''): false {
+        $logger->logException($e, $context);
+
+        return false;
+    }
 }
