@@ -9,18 +9,18 @@ import (
 
 // PluginServiceInterface defines plugin service methods needed by handlers
 type PluginServiceInterface interface {
-	List(ctx context.Context) (interface{}, error)
-	GetByID(ctx context.Context, id int64) (interface{}, error)
-	Create(ctx context.Context, input interface{}) (interface{}, error)
-	Update(ctx context.Context, id int64, input interface{}) (interface{}, error)
+	List(ctx context.Context) (any, error)
+	GetByID(ctx context.Context, id int64) (any, error)
+	Create(ctx context.Context, input any) (any, error)
+	Update(ctx context.Context, id int64, input any) (any, error)
 	Delete(ctx context.Context, id int64) error
-	GetMappings(ctx context.Context, pluginID int64) (interface{}, error)
-	GetMappingsBySite(ctx context.Context, siteID int64) (interface{}, error)
-	CreateMapping(ctx context.Context, pluginID int64, input interface{}) (interface{}, error)
+	GetMappings(ctx context.Context, pluginID int64) (any, error)
+	GetMappingsBySite(ctx context.Context, siteID int64) (any, error)
+	CreateMapping(ctx context.Context, pluginID int64, input any) (any, error)
 	DeleteMapping(ctx context.Context, id int64) error
 	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
 	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
-	ScanDirectory(ctx context.Context, path string) (interface{}, error)
+	ScanDirectory(ctx context.Context, path string) (any, error)
 	WritePluginDetected(ctx context.Context, path string) error
 	RefreshFileCount(ctx context.Context, id int64) error
 }
@@ -30,17 +30,17 @@ type PluginServiceAdapter struct {
 	*plugin.Service
 }
 
-func (a *PluginServiceAdapter) List(ctx context.Context) (interface{}, error) {
+func (a *PluginServiceAdapter) List(ctx context.Context) (any, error) {
 	return a.Service.List(ctx)
 }
 
-func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (interface{}, error) {
+func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (any, error) {
 	return a.Service.GetByID(ctx, id)
 }
 
-func (a *PluginServiceAdapter) Create(ctx context.Context, input interface{}) (interface{}, error) {
+func (a *PluginServiceAdapter) Create(ctx context.Context, input any) (any, error) {
 	createInput := plugin.CreateInput{}
-	if m, ok := input.(map[string]interface{}); ok {
+	if m, ok := input.(map[string]any); ok {
 		createInput.Name = getStringAny(m, "name")
 		createInput.Path = getStringAny(m, "path", "localPath", "local_path")
 		createInput.WatchEnabled = getBoolAny(m, true, "watchEnabled", "watch_enabled")
@@ -53,9 +53,9 @@ func (a *PluginServiceAdapter) Create(ctx context.Context, input interface{}) (i
 	return a.Service.Create(ctx, createInput)
 }
 
-func (a *PluginServiceAdapter) Update(ctx context.Context, id int64, input interface{}) (interface{}, error) {
+func (a *PluginServiceAdapter) Update(ctx context.Context, id int64, input any) (any, error) {
 	updateInput := plugin.UpdateInput{}
-	if m, ok := input.(map[string]interface{}); ok {
+	if m, ok := input.(map[string]any); ok {
 		if v, ok := m["name"].(string); ok {
 			updateInput.Name = &v
 		}
@@ -85,14 +85,14 @@ func (a *PluginServiceAdapter) Delete(ctx context.Context, id int64) error {
 	return a.Service.Delete(ctx, id)
 }
 
-func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) (interface{}, error) {
+func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) (any, error) {
 	return a.Service.GetMappings(ctx, pluginID)
 }
 
-func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginID int64, input interface{}) (interface{}, error) {
+func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginID int64, input any) (any, error) {
 	createInput := plugin.CreateMappingInput{}
 	createInput.PluginID = pluginID
-	if m, ok := input.(map[string]interface{}); ok {
+	if m, ok := input.(map[string]any); ok {
 		if v, ok := m["siteId"].(float64); ok {
 			createInput.SiteID = int64(v)
 		} else if v, ok := m["site_id"].(float64); ok {
@@ -107,7 +107,7 @@ func (a *PluginServiceAdapter) DeleteMapping(ctx context.Context, id int64) erro
 	return a.Service.DeleteMapping(ctx, id)
 }
 
-func (a *PluginServiceAdapter) GetMappingsBySite(ctx context.Context, siteID int64) (interface{}, error) {
+func (a *PluginServiceAdapter) GetMappingsBySite(ctx context.Context, siteID int64) (any, error) {
 	return a.Service.GetMappingsBySite(ctx, siteID)
 }
 
@@ -119,7 +119,7 @@ func (a *PluginServiceAdapter) UpdateMappingsForSite(ctx context.Context, siteID
 	return a.Service.UpdateMappingsForSite(ctx, siteID, pluginIDs)
 }
 
-func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (interface{}, error) {
+func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (any, error) {
 	return a.Service.ScanDirectory(ctx, path)
 }
 

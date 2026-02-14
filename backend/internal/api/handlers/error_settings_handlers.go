@@ -32,8 +32,8 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 
 	info, err := os.Stat(logPath)
 	if os.IsNotExist(err) {
-		respondSuccess(w, map[string]interface{}{
-			"content": "", "path": logPath, "exists": false, "logType": logType,
+		respondSuccess(w, LogFileResponse{
+			Content: "", Path: logPath, Exists: false, LogType: logType,
 		})
 		return
 	}
@@ -44,13 +44,13 @@ func GetErrors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"content":    string(content),
-		"path":       logPath,
-		"exists":     true,
-		"logType":    logType,
-		"size":       info.Size(),
-		"modifiedAt": info.ModTime().Format(time.RFC3339),
+	respondSuccess(w, LogFileResponse{
+		Content:    string(content),
+		Path:       logPath,
+		Exists:     true,
+		LogType:    logType,
+		Size:       info.Size(),
+		ModifiedAt: info.ModTime().Format(time.RFC3339),
 	})
 }
 
@@ -72,9 +72,9 @@ func ClearErrors(w http.ResponseWriter, r *http.Request) {
 		cleared = append(cleared, "error.log.txt")
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"cleared": cleared,
-		"message": "Log files cleared",
+	respondSuccess(w, ActionResponse{
+		Cleared: true,
+		Message: "Log files cleared",
 	})
 }
 
@@ -100,8 +100,8 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
-		respondSuccess(w, map[string]interface{}{
-			"lines": []string{}, "path": logPath, "exists": false, "logType": logType,
+		respondSuccess(w, LogLinesResponse{
+			Lines: []string{}, Path: logPath, Exists: false, LogType: logType,
 		})
 		return
 	}
@@ -122,14 +122,14 @@ func StreamErrorLogs(w http.ResponseWriter, r *http.Request) {
 
 	info, _ := os.Stat(logPath)
 
-	respondSuccess(w, map[string]interface{}{
-		"lines":      lines,
-		"totalLines": len(allLines),
-		"path":       logPath,
-		"exists":     true,
-		"logType":    logType,
-		"size":       info.Size(),
-		"modifiedAt": info.ModTime().Format(time.RFC3339),
+	respondSuccess(w, LogLinesResponse{
+		Lines:      lines,
+		TotalLines: len(allLines),
+		Path:       logPath,
+		Exists:     true,
+		LogType:    logType,
+		Size:       info.Size(),
+		ModifiedAt: info.ModTime().Format(time.RFC3339),
 	})
 }
 
@@ -161,11 +161,11 @@ func readLogFile(w http.ResponseWriter, path string, filename string) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"content":      string(content),
-		"filename":     filename,
-		"size":         info.Size(),
-		"lastModified": info.ModTime().Format(time.RFC3339),
+	respondSuccess(w, LogFileResponse{
+		Content:    string(content),
+		Filename:   filename,
+		Size:       info.Size(),
+		ModifiedAt: info.ModTime().Format(time.RFC3339),
 	})
 }
 
@@ -281,31 +281,31 @@ func addFileToZip(zipWriter *zip.Writer, srcPath, destName string) error {
 
 // GetSettings returns application settings
 func GetSettings(w http.ResponseWriter, r *http.Request) {
-	respondSuccess(w, map[string]interface{}{
-		"watcher": map[string]interface{}{
-			"pollingEnabled":         false,
-			"scanAfterGitPull":       true,
-			"debounceMs":             500,
-			"defaultExcludePatterns": []string{".git", "node_modules", ".DS_Store"},
+	respondSuccess(w, SettingsResponse{
+		Watcher: WatcherSettings{
+			PollingEnabled:         false,
+			ScanAfterGitPull:       true,
+			DebounceMs:             500,
+			DefaultExcludePatterns: []string{".git", "node_modules", ".DS_Store"},
 		},
-		"backup": map[string]interface{}{
-			"autoBackupBeforePublish": true,
-			"retentionDays":           30,
-			"maxBackupsPerPlugin":     10,
-			"location":                "backups",
+		Backup: BackupSettings{
+			AutoBackupBeforePublish: true,
+			RetentionDays:           30,
+			MaxBackupsPerPlugin:     10,
+			Location:                "backups",
 		},
-		"logging": map[string]interface{}{
-			"level":         "info",
-			"retentionDays": 7,
-			"debugMode":     false,
+		Logging: LoggingSettings{
+			Level:         "info",
+			RetentionDays: 7,
+			DebugMode:     false,
 		},
-		"appearance": map[string]interface{}{
-			"theme":       "system",
-			"compactMode": false,
+		Appearance: AppearanceSettings{
+			Theme:       "system",
+			CompactMode: false,
 		},
-		"server": map[string]interface{}{
-			"port":               8080,
-			"wsReconnectDelayMs": 3000,
+		Server: ServerSettings{
+			Port:               8080,
+			WSReconnectDelayMs: 3000,
 		},
 	})
 }

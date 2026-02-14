@@ -15,19 +15,19 @@ import (
 )
 
 // respondJSON writes a raw JSON response (used only for non-envelope responses like file downloads)
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+func respondJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
 
 // respondSuccess writes a single-item success envelope
-func respondSuccess(w http.ResponseWriter, data interface{}) {
+func respondSuccess(w http.ResponseWriter, data any) {
 	envelope.Write(w, envelope.Success(data))
 }
 
 // respondCreated writes a 201 Created envelope
-func respondCreated(w http.ResponseWriter, data interface{}) {
+func respondCreated(w http.ResponseWriter, data any) {
 	envelope.Write(w, envelope.Created(data))
 }
 
@@ -55,12 +55,12 @@ func respondDeleted(w http.ResponseWriter) {
 
 // respondList writes a paginated list envelope.
 // requestPath is the base URL path used to generate navigation URLs.
-func respondList(w http.ResponseWriter, data interface{}, pg envelope.Pagination, requestPath string) {
+func respondList(w http.ResponseWriter, data any, pg envelope.Pagination, requestPath string) {
 	envelope.Write(w, envelope.List(data, pg, requestPath))
 }
 
 // respondListUnpaginated writes an unpaginated list envelope
-func respondListUnpaginated(w http.ResponseWriter, data interface{}, count int) {
+func respondListUnpaginated(w http.ResponseWriter, data any, count int) {
 	envelope.Write(w, envelope.ListUnpaginated(data, count))
 }
 
@@ -72,7 +72,7 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 
 // requireService checks if a service is non-nil, writing 503 if unavailable.
 // Returns true if the service is available.
-func requireService(w http.ResponseWriter, service interface{}, name string) bool {
+func requireService(w http.ResponseWriter, service any, name string) bool {
 	if service == nil {
 		respondError(w, http.StatusServiceUnavailable, "E9001", name+" not available")
 		return false
@@ -82,7 +82,7 @@ func requireService(w http.ResponseWriter, service interface{}, name string) boo
 
 // decodeJSON decodes a JSON request body into target. Returns false and writes
 // a 400 error response if decoding fails.
-func decodeJSON(w http.ResponseWriter, r *http.Request, target interface{}) bool {
+func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
 		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
 		return false
@@ -102,7 +102,7 @@ func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (i
 
 // decodeJSONSilent decodes a JSON request body without writing an error response.
 // Returns nil on success, error on failure. Used by optional body decoders.
-func decodeJSONSilent(r *http.Request, target interface{}) error {
+func decodeJSONSilent(r *http.Request, target any) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 

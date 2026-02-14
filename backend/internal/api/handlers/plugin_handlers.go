@@ -9,7 +9,7 @@ import (
 
 // GetPlugins returns all registered plugins
 var GetPlugins = handleListNilSafe(pluginService, "E3001",
-	func(ctx context.Context) (interface{}, error) {
+	func(ctx context.Context) (any, error) {
 		return Services.PluginService.List(ctx)
 	},
 )
@@ -20,7 +20,7 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input map[string]interface{}
+	var input map[string]any
 	if !decodeJSON(w, r, &input) {
 		return
 	}
@@ -35,7 +35,7 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 
 // GetPlugin returns a specific plugin by ID
 var GetPlugin = handleActionByID(pluginService, "Plugin service", "id", "plugin ID", "E3003",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetByID(ctx, id)
 	},
 )
@@ -51,7 +51,7 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input map[string]interface{}
+	var input map[string]any
 	if !decodeJSON(w, r, &input) {
 		return
 	}
@@ -73,7 +73,7 @@ var DeletePlugin = handleDeleteByID(pluginService, "Plugin service", "id", "plug
 
 // GetPluginMappings returns plugin-site mappings
 var GetPluginMappings = handleActionByID(pluginService, "Plugin service", "id", "plugin ID", "E3006",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetMappings(ctx, id)
 	},
 )
@@ -89,7 +89,7 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input map[string]interface{}
+	var input map[string]any
 	if !decodeJSON(w, r, &input) {
 		return
 	}
@@ -139,7 +139,7 @@ func UpdatePluginMappings(w http.ResponseWriter, r *http.Request) {
 
 // GetSiteMappings returns all plugin mappings for a site
 var GetSiteMappings = handleActionByID(pluginService, "Plugin service", "id", "site ID", "E3010",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return Services.PluginService.GetMappingsBySite(ctx, id)
 	},
 )
@@ -156,7 +156,7 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var raw struct {
-		PluginIDs []interface{} `json:"pluginIds"`
+		PluginIDs []any `json:"pluginIds"`
 	}
 	if !decodeJSON(w, r, &raw) {
 		return
@@ -188,14 +188,14 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 
 // ScanPlugin triggers a file scan for a specific plugin
 var ScanPlugin = handleActionByID(watcherService, "Watcher service", "id", "plugin ID", "E6001",
-	func(ctx context.Context, id int64) (interface{}, error) {
+	func(ctx context.Context, id int64) (any, error) {
 		return Services.WatcherService.TriggerScan(ctx, id)
 	},
 )
 
 // ScanAllPlugins triggers a file scan for all plugins
 var ScanAllPlugins = handleNoArgs(watcherService, "Watcher service", "E6002",
-	func(ctx context.Context) (interface{}, error) {
+	func(ctx context.Context) (any, error) {
 		return Services.WatcherService.ScanAll(ctx)
 	},
 )
@@ -227,15 +227,15 @@ func ScanDirectoryPath(w http.ResponseWriter, r *http.Request) {
 
 	if input.CreateDetection {
 		if err := Services.PluginService.WritePluginDetected(r.Context(), input.Path); err != nil {
-			respondSuccess(w, map[string]interface{}{
-				"scan":           result,
-				"detectionError": err.Error(),
+			respondSuccess(w, ScanResultResponse{
+				Scan:           result,
+				DetectionError: err.Error(),
 			})
 			return
 		}
-		respondSuccess(w, map[string]interface{}{
-			"scan":             result,
-			"detectionCreated": true,
+		respondSuccess(w, ScanResultResponse{
+			Scan:             result,
+			DetectionCreated: true,
 		})
 		return
 	}
@@ -263,11 +263,11 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type scanResult struct {
-		Path             string      `json:"path"`
-		IsPlugin         bool        `json:"isPlugin"`
-		Metadata         interface{} `json:"metadata,omitempty"`
-		Error            string      `json:"error,omitempty"`
-		DetectionCreated bool        `json:"detectionCreated,omitempty"`
+		Path             string `json:"path"`
+		IsPlugin         bool   `json:"isPlugin"`
+		Metadata         any    `json:"metadata,omitempty"`
+		Error            string `json:"error,omitempty"`
+		DetectionCreated bool   `json:"detectionCreated,omitempty"`
 	}
 
 	results := make([]scanResult, 0, len(input.Paths))
@@ -281,7 +281,7 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 		}
 
 		isPlugin := false
-		if scanMap, ok := result.(map[string]interface{}); ok {
+		if scanMap, ok := result.(map[string]any); ok {
 			if valid, ok := scanMap["isValid"].(bool); ok && valid {
 				isPlugin = true
 				detected++
@@ -299,17 +299,17 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 		results = append(results, sr)
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"scanned":  len(input.Paths),
-		"detected": detected,
-		"results":  results,
+	respondSuccess(w, MultiScanResponse{
+		Scanned:  len(input.Paths),
+		Detected: detected,
+		Results:  results,
 	})
 }
 
 // GetFileChanges returns detected file changes for a plugin
 func GetFileChanges(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SyncService == nil {
-		respondSuccess(w, []interface{}{})
+		respondSuccess(w, []any{})
 		return
 	}
 

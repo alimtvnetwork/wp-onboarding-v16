@@ -11,7 +11,7 @@ import (
 // GetSessions returns a list of recent sessions
 func GetSessions(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SessionService == nil {
-		respondSuccess(w, []interface{}{})
+		respondSuccess(w, []any{})
 		return
 	}
 
@@ -82,9 +82,9 @@ func GetSessionLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"sessionId": sessionID,
-		"logs":      logs,
+	respondSuccess(w, SessionLogsResponse{
+		SessionID: sessionID,
+		Logs:      logs,
 	})
 }
 
@@ -106,7 +106,7 @@ func DeleteSession(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "E8003", err.Error())
 		return
 	}
-	respondSuccess(w, map[string]interface{}{"deleted": true})
+	respondSuccess(w, ActionResponse{Deleted: true})
 }
 
 // GetSessionDiagnostics returns structured request/response/stackTrace for a session

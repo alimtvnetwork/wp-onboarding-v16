@@ -2,7 +2,7 @@
 package handlers
 
 // getString extracts a string from a map by key
-func getString(m map[string]interface{}, key string) string {
+func getString(m map[string]any, key string) string {
 	if v, ok := m[key].(string); ok {
 		return v
 	}
@@ -10,7 +10,7 @@ func getString(m map[string]interface{}, key string) string {
 }
 
 // getBool extracts a bool from a map by key with a default value
-func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
+func getBool(m map[string]any, key string, defaultVal bool) bool {
 	if v, ok := m[key].(bool); ok {
 		return v
 	}
@@ -18,7 +18,7 @@ func getBool(m map[string]interface{}, key string, defaultVal bool) bool {
 }
 
 // getStringAny tries multiple keys and returns the first string found
-func getStringAny(m map[string]interface{}, keys ...string) string {
+func getStringAny(m map[string]any, keys ...string) string {
 	for _, k := range keys {
 		if v, ok := m[k].(string); ok {
 			return v
@@ -28,7 +28,7 @@ func getStringAny(m map[string]interface{}, keys ...string) string {
 }
 
 // getBoolAny tries multiple keys and returns the first bool found
-func getBoolAny(m map[string]interface{}, defaultVal bool, keys ...string) bool {
+func getBoolAny(m map[string]any, defaultVal bool, keys ...string) bool {
 	for _, k := range keys {
 		if v, ok := m[k].(bool); ok {
 			return v
@@ -38,13 +38,13 @@ func getBoolAny(m map[string]interface{}, defaultVal bool, keys ...string) bool 
 }
 
 // getStringSliceAny tries multiple keys and returns the first string slice found
-func getStringSliceAny(m map[string]interface{}, keys ...string) []string {
+func getStringSliceAny(m map[string]any, keys ...string) []string {
 	for _, k := range keys {
 		if raw, ok := m[k]; ok {
 			if ss, ok := raw.([]string); ok {
 				return ss
 			}
-			if arr, ok := raw.([]interface{}); ok {
+			if arr, ok := raw.([]any); ok {
 				out := make([]string, 0, len(arr))
 				for _, it := range arr {
 					if s, ok := it.(string); ok {
@@ -59,7 +59,7 @@ func getStringSliceAny(m map[string]interface{}, keys ...string) []string {
 }
 
 // firstString tries multiple keys and returns the first string found with existence flag
-func firstString(m map[string]interface{}, keys ...string) (string, bool) {
+func firstString(m map[string]any, keys ...string) (string, bool) {
 	for _, k := range keys {
 		if v, ok := m[k].(string); ok {
 			return v, true
@@ -69,7 +69,7 @@ func firstString(m map[string]interface{}, keys ...string) (string, bool) {
 }
 
 // firstBool tries multiple keys and returns the first bool found with existence flag
-func firstBool(m map[string]interface{}, keys ...string) (bool, bool) {
+func firstBool(m map[string]any, keys ...string) (bool, bool) {
 	for _, k := range keys {
 		if v, ok := m[k].(bool); ok {
 			return v, true
@@ -79,13 +79,13 @@ func firstBool(m map[string]interface{}, keys ...string) (bool, bool) {
 }
 
 // firstStringSlice tries multiple keys and returns the first string slice found
-func firstStringSlice(m map[string]interface{}, keys ...string) ([]string, bool) {
+func firstStringSlice(m map[string]any, keys ...string) ([]string, bool) {
 	for _, k := range keys {
 		if raw, ok := m[k]; ok {
 			if ss, ok := raw.([]string); ok {
 				return ss, true
 			}
-			if arr, ok := raw.([]interface{}); ok {
+			if arr, ok := raw.([]any); ok {
 				out := make([]string, 0, len(arr))
 				for _, it := range arr {
 					if s, ok := it.(string); ok {

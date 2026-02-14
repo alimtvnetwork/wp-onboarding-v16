@@ -66,11 +66,11 @@ func ListErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"errors": errors,
-		"total":  total,
-		"limit":  limit,
-		"offset": offset,
+	respondSuccess(w, PaginatedErrors{
+		Errors: errors,
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
 	})
 }
 
@@ -125,7 +125,7 @@ func DeleteErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{"deleted": true, "id": id})
+	respondSuccess(w, ActionResponse{Deleted: true, ID: id})
 }
 
 // ClearErrorHistory removes all error history
@@ -141,7 +141,7 @@ func ClearErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{"cleared": true, "deleted": deleted})
+	respondSuccess(w, ActionResponse{Cleared: true, Count: int(deleted)})
 }
 
 // BulkExportErrorHistory generates a combined markdown report
@@ -170,9 +170,9 @@ func BulkExportErrorHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondSuccess(w, map[string]interface{}{
-		"report": report,
-		"count":  len(input.IDs),
+	respondSuccess(w, ErrorReportResponse{
+		Report: report,
+		Count:  len(input.IDs),
 	})
 }
 
