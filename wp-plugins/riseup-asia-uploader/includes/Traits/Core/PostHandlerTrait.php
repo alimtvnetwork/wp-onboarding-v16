@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 
 trait PostHandlerTrait
 {
-    public function handle_list_posts(\WP_REST_Request $request): \WP_REST_Response {
+    public function handleListPosts(\WP_REST_Request $request): \WP_REST_Response {
         $this->fileLogger->debug('List posts endpoint called');
 
         $result = $this->postManager->listPosts(array(
@@ -25,7 +25,7 @@ trait PostHandlerTrait
         return new \WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
     }
 
-    public function handle_create_post(\WP_REST_Request $request): \WP_REST_Response {
+    public function handleCreatePost(\WP_REST_Request $request): \WP_REST_Response {
         $this->fileLogger->info('Create post endpoint called');
 
         $data   = $request->get_json_params();
@@ -34,7 +34,7 @@ trait PostHandlerTrait
         return new \WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
 
-    public function handle_list_categories(\WP_REST_Request $request): \WP_REST_Response {
+    public function handleListCategories(\WP_REST_Request $request): \WP_REST_Response {
         $this->fileLogger->debug('List categories endpoint called');
 
         $result = $this->postManager->listCategories(array(
@@ -46,7 +46,7 @@ trait PostHandlerTrait
         return new \WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
     }
 
-    public function handle_create_category(\WP_REST_Request $request): \WP_REST_Response {
+    public function handleCreateCategory(\WP_REST_Request $request): \WP_REST_Response {
         $this->fileLogger->info('Create category endpoint called');
 
         $data   = $request->get_json_params();
@@ -55,7 +55,7 @@ trait PostHandlerTrait
         return new \WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
 
-    public function handle_query_logs(\WP_REST_Request $request): \WP_REST_Response {
+    public function handleQueryLogs(\WP_REST_Request $request): \WP_REST_Response {
         $this->fileLogger->debug('Query logs endpoint called');
 
         try {
@@ -89,7 +89,7 @@ trait PostHandlerTrait
         );
     }
 
-    public function handle_logs_stats(\WP_REST_Request $request): \WP_REST_Response {
+    public function handleLogsStats(\WP_REST_Request $request): \WP_REST_Response {
         $this->fileLogger->debug('Logs stats endpoint called');
 
         try {
