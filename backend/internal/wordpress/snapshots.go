@@ -70,8 +70,8 @@ type AvailableTable struct {
 }
 
 // snapshotEndpoint builds the full endpoint path for snapshot operations using fixed paths.
-func snapshotEndpoint(path string) string {
-	return "/" + RiseupAsiaNamespace + path
+func snapshotEndpoint(path EndpointType) string {
+	return "/" + RiseupAsiaNamespace + path.String()
 }
 
 // GetSnapshots lists all snapshots on the remote site.

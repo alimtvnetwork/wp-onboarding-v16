@@ -122,7 +122,7 @@ var uploaderNamespaces = []string{
 // It tries namespaces in priority order (newest first) and returns the first match.
 func (c *Client) CheckRiseupAsiaAvailable() (bool, string, error) {
 	for _, ns := range uploaderNamespaces {
-		endpoint := "/" + ns + EndpointStatus
+		endpoint := "/" + ns + EndpointStatus.String()
 		resp, err := c.request("GET", endpoint, nil)
 		if err != nil {
 			return false, "", err
@@ -228,7 +228,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	uploadEndpoint := fmt.Sprintf("/%s%s", namespace, EndpointUpload)
 	uploadURL := fmt.Sprintf("%s/wp-json%s", c.baseURL, uploadEndpoint)
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), map[string]interface{}{
+	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Uploading %s (%d bytes) via multipart to %s", filepath.Base(absZipPath), zipSize, uploadURL), map[string]interface{}{
 		"zipSize":   zipSize,
 		"zipPath":   absZipPath,
 		"namespace": namespace,
@@ -263,7 +263,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "close multipart writer")
 	}
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), map[string]interface{}{
+	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Multipart body ready: slug=%s, activate=%v, zipSize=%d bytes, bodySize=%d bytes", slug, activate, zipSize, requestBody.Len()), map[string]interface{}{
 		"slug":     slug,
 		"activate": activate,
 		"zipSize":  zipSize,
@@ -288,7 +288,7 @@ func (c *Client) UploadPluginViaUploader(zipPath string, slug string, activate b
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(ActionUpload, "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), map[string]interface{}{
+	c.progress(ActionUpload.String(), "running", fmt.Sprintf("Upload response: %d from %s", resp.StatusCode, uploadURL), map[string]interface{}{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 2000),
 		"url":    uploadURL,
@@ -349,7 +349,7 @@ func normalizePluginSlug(slug string) string {
 // pluginLifecycleInput holds the parameters for a plugin lifecycle action.
 type pluginLifecycleInput struct {
 	Slug          string
-	Endpoint      string
+	Endpoint      EndpointType
 	OperationName string
 	ErrorCode     string
 }
@@ -360,8 +360,7 @@ type pluginLifecycleInput struct {
 func (c *Client) pluginLifecycleAction(input pluginLifecycleInput) error {
 	namespace := c.resolveNamespace()
 
-	normalizedSlug := normalizePluginSlug(input.Slug)
-	endpoint := "/" + namespace + input.Endpoint
+	endpoint := "/" + namespace + input.Endpoint.String()
 	reqBody := map[string]string{"plugin": normalizedSlug}
 	reqBodyJSON, _ := json.Marshal(reqBody)
 	resp, err := c.request("POST", endpoint, reqBody)
@@ -668,7 +667,7 @@ type SyncResult struct {
 func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*SyncResult, error) {
 	namespace := c.resolveNamespace()
 
-	c.progress(ActionSync, "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), map[string]interface{}{
+	c.progress(ActionSync.String(), "running", fmt.Sprintf("Syncing %d files to %s...", len(files), slug), map[string]interface{}{
 		"slug":      slug,
 		"fileCount": len(files),
 		"namespace": namespace,
@@ -705,7 +704,7 @@ func (c *Client) SyncPluginFilesViaUploader(slug string, files []SyncFile) (*Syn
 	respBytes, _ := io.ReadAll(resp.Body)
 	respBody := string(respBytes)
 
-	c.progress(ActionSync, "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), map[string]interface{}{
+	c.progress(ActionSync.String(), "running", fmt.Sprintf("Sync response: %d", resp.StatusCode), map[string]interface{}{
 		"status": resp.StatusCode,
 		"body":   truncateBody(respBody, 500),
 	})
@@ -801,7 +800,7 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.New(apperror.ErrWPConnection, "Riseup Asia Uploader not available on site")
 	}
 
-	c.progress(ActionExportSelf, "running", "Exporting Riseup Asia Uploader plugin...", nil)
+	c.progress(ActionExportSelf.String(), "running", "Exporting Riseup Asia Uploader plugin...", nil)
 
 	endpoint := fmt.Sprintf("/%s%s", namespace, EndpointExportSelf)
 
@@ -830,7 +829,7 @@ func (c *Client) ExportSelfFromSite() (*ExportSelfResult, error) {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "decode export-self result")
 	}
 
-	c.progress(ActionExportSelf, "completed", fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
+	c.progress(ActionExportSelf.String(), "completed", fmt.Sprintf("Exported %s v%s (%d files)", result.PluginName, result.Version, result.FileCount), nil)
 
 	return &result, nil
 }
