@@ -1,6 +1,6 @@
 <?php
 /**
- * Post Query Trait — post listing with pagination.
+ * PostQueryTrait — Post listing with pagination.
  *
  * @package RiseupAsiaUploader
  * @since   1.4.0
@@ -12,14 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait PostQueryTrait {
 
-    /**
-     * List posts with pagination.
-     *
-     * @param array $params Query parameters: status, limit, offset, search.
-     * @return array Posts list.
-     */
-    public function listPosts($params = array()) {
-        $this->file_logger->debug('Listing posts', $params);
+    public function listPosts(array $params = array()): array {
+        $this->fileLogger->debug('Listing posts', $params);
 
         try {
             $args = array(
@@ -40,7 +34,7 @@ trait PostQueryTrait {
                 $args['s'] = sanitize_text_field($params['search']);
             }
 
-            $query = new WP_Query($args);
+            $query = new \WP_Query($args);
             $posts = array();
 
             foreach ($query->posts as $post) {
@@ -61,7 +55,7 @@ trait PostQueryTrait {
                 'posts' => $posts,
             );
         } catch (Throwable $e) {
-            return ErrorResponse::logAndReturn($this->file_logger, $e, 'List posts exception');
+            return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List posts exception');
         }
     }
 }

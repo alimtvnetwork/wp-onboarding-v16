@@ -1,6 +1,6 @@
 <?php
 /**
- * Post CRUD Trait — post creation and update logic.
+ * PostCrudTrait — Post creation and update logic.
  *
  * @package RiseupAsiaUploader
  * @since   1.4.0
@@ -15,85 +15,71 @@ use RiseupAsia\Enums\PostStatusType;
 
 trait PostCrudTrait {
 
-    /**
-     * Create a new post.
-     *
-     * @param array $data Post data: title, slug, content, status, categories.
-     * @return array Result with success status and post data or error.
-     */
-    public function createPost($data) {
-        $this->file_logger->info('Creating post', array('title' => $data['title'] ?? ''));
+    public function createPost(array $data): array {
+        $this->fileLogger->info('Creating post', array('title' => $data['title'] ?? ''));
 
         if (empty($data['title'])) {
-            $this->file_logger->warn('Post creation failed: title required');
+            $this->fileLogger->warn('Post creation failed: title required');
             return array('success' => false, 'error' => 'Title is required');
         }
 
         if (empty($data['content'])) {
-            $this->file_logger->warn('Post creation failed: content required');
+            $this->fileLogger->warn('Post creation failed: content required');
             return array('success' => false, 'error' => 'Content is required');
         }
 
         try {
-            $post_data = $this->buildPostData($data);
-            $post_id = wp_insert_post($post_data, true);
+            $postData = $this->buildPostData($data);
+            $postId = wp_insert_post($postData, true);
 
-            if (is_wp_error($post_id)) {
-                return $this->handlePostError(ActionType::PostCreate->value, 0, $data['title'], $post_id->get_error_message());
+            if (is_wp_error($postId)) {
+                return $this->handlePostError(ActionType::PostCreate->value, 0, $data['title'], $postId->get_error_message());
             }
 
-            $this->file_logger->info('Post created', array('post_id' => $post_id));
-            $this->assignCategories($post_id, $data['categories'] ?? array());
+            $this->fileLogger->info('Post created', array('post_id' => $postId));
+            $this->assignCategories($postId, $data['categories'] ?? array());
 
-            $this->logger->log_post_create($post_id, array(
-                'title' => $data['title'], 'slug' => get_post_field('post_name', $post_id),
-                'status' => $post_data['post_status'], 'categories' => $data['categories'] ?? array(),
+            $this->logger->log_post_create($postId, array(
+                'title' => $data['title'], 'slug' => get_post_field('post_name', $postId),
+                'status' => $postData['post_status'], 'categories' => $data['categories'] ?? array(),
             ));
 
-            return array('success' => true, 'post' => $this->formatPost(get_post($post_id)));
+            return array('success' => true, 'post' => $this->formatPost(get_post($postId)));
         } catch (Throwable $e) {
-            return ErrorResponse::logAndReturn($this->file_logger, $e, 'Post creation exception');
+            return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post creation exception');
         }
     }
 
-    /**
-     * Update an existing post.
-     *
-     * @param int   $post_id Post ID.
-     * @param array $data    Post data to update.
-     * @return array Result with success status.
-     */
-    public function updatePost($post_id, $data) {
-        $this->file_logger->info('Updating post', array('post_id' => $post_id));
+    public function updatePost(int $postId, array $data): array {
+        $this->fileLogger->info('Updating post', array('post_id' => $postId));
 
         try {
-            $post = get_post($post_id);
+            $post = get_post($postId);
             if (!$post) {
-                $this->file_logger->warn('Post not found', array('post_id' => $post_id));
+                $this->fileLogger->warn('Post not found', array('post_id' => $postId));
                 return array('success' => false, 'error' => 'Post not found');
             }
 
-            $post_data = $this->buildUpdateData($post_id, $data);
-            $result = wp_update_post($post_data, true);
+            $postData = $this->buildUpdateData($postId, $data);
+            $result = wp_update_post($postData, true);
 
             if (is_wp_error($result)) {
-                return $this->handlePostError(ActionType::PostUpdate->value, $post_id, '', $result->get_error_message(), $data);
+                return $this->handlePostError(ActionType::PostUpdate->value, $postId, '', $result->get_error_message(), $data);
             }
 
-            $this->assignCategories($post_id, $data['categories'] ?? null);
-            $this->logger->log_post_update($post_id, $data);
-            $this->file_logger->info('Post updated', array('post_id' => $post_id));
+            $this->assignCategories($postId, $data['categories'] ?? null);
+            $this->logger->log_post_update($postId, $data);
+            $this->fileLogger->info('Post updated', array('post_id' => $postId));
 
-            $updated_post = get_post($post_id);
-            return array('success' => true, 'post' => $this->formatPost($updated_post, true));
+            $updatedPost = get_post($postId);
+            return array('success' => true, 'post' => $this->formatPost($updatedPost, true));
         } catch (Throwable $e) {
-            return ErrorResponse::logAndReturn($this->file_logger, $e, 'Post update exception');
+            return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post update exception');
         }
     }
 
-    /** Build post data array for insertion. */
     private function buildPostData(array $data): array {
-        $post_data = array(
+        $postData = array(
             'post_title'   => sanitize_text_field($data['title']),
             'post_content' => wp_kses_post($data['content']),
             'post_status'  => $this->validatePostStatus($data['status'] ?? PostStatusType::Draft->value),
@@ -101,44 +87,40 @@ trait PostCrudTrait {
         );
 
         if (!empty($data['slug'])) {
-            $post_data['post_name'] = sanitize_title($data['slug']);
+            $postData['post_name'] = sanitize_title($data['slug']);
         }
 
-        $current_user = wp_get_current_user();
-        if ($current_user && $current_user->ID > 0) {
-            $post_data['post_author'] = $current_user->ID;
+        $currentUser = wp_get_current_user();
+        if ($currentUser && $currentUser->ID > 0) {
+            $postData['post_author'] = $currentUser->ID;
         }
 
-        return $post_data;
+        return $postData;
     }
 
-    /** Build update data array. */
-    private function buildUpdateData(int $post_id, array $data): array {
-        $post_data = array('ID' => $post_id);
-        if (isset($data['title']))   { $post_data['post_title']   = sanitize_text_field($data['title']); }
-        if (isset($data['content'])) { $post_data['post_content'] = wp_kses_post($data['content']); }
-        if (isset($data['slug']))    { $post_data['post_name']    = sanitize_title($data['slug']); }
-        if (isset($data['status']))  { $post_data['post_status']  = $this->validatePostStatus($data['status']); }
-        return $post_data;
+    private function buildUpdateData(int $postId, array $data): array {
+        $postData = array('ID' => $postId);
+        if (isset($data['title']))   { $postData['post_title']   = sanitize_text_field($data['title']); }
+        if (isset($data['content'])) { $postData['post_content'] = wp_kses_post($data['content']); }
+        if (isset($data['slug']))    { $postData['post_name']    = sanitize_title($data['slug']); }
+        if (isset($data['status']))  { $postData['post_status']  = $this->validatePostStatus($data['status']); }
+        return $postData;
     }
 
-    /** Handle post operation error with audit logging. */
-    private function handlePostError(string $action, int $post_id, string $title, string $error_msg, array $data = array()): array {
-        $this->file_logger->error('Post operation failed', array('error' => $error_msg));
+    private function handlePostError(string $action, int $postId, string $title, string $errorMsg, array $data = array()): array {
+        $this->fileLogger->error('Post operation failed', array('error' => $errorMsg));
         $details = !empty($title) ? array('title' => $title) : $data;
-        $this->logger->log_post_action($action, $post_id, STATUS_FAILED, $details, $error_msg);
-        return array('success' => false, 'error' => $error_msg);
+        $this->logger->log_post_action($action, $postId, STATUS_FAILED, $details, $errorMsg);
+        return array('success' => false, 'error' => $errorMsg);
     }
 
-    /** Assign categories to a post if provided. */
-    private function assignCategories(int $post_id, $categories) {
+    private function assignCategories(int $postId, ?array $categories): void {
         if (!empty($categories) && is_array($categories)) {
-            wp_set_post_categories($post_id, array_map('intval', $categories));
+            wp_set_post_categories($postId, array_map('intval', $categories));
         }
     }
 
-    /** Format a post for API response. */
-    private function formatPost($post, bool $isUpdate = false): array {
+    private function formatPost(object $post, bool $isUpdate = false): array {
         $result = array(
             'id' => $post->ID, 'title' => $post->post_title,
             'slug' => $post->post_name, 'status' => $post->post_status,
