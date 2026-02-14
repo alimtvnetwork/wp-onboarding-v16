@@ -7,6 +7,10 @@
  * @package RiseupAsiaUploader
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 require_once dirname(__FILE__) . '/SnapshotSettingsHandlerTrait.php';
 require_once dirname(__FILE__) . '/SnapshotBackupHandlerTrait.php';
 

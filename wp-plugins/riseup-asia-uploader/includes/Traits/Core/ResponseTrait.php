@@ -7,6 +7,10 @@
  * @package RiseupAsiaUploader
  */
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
 use RiseupAsia\Enums\HttpStatusType;
 
 trait ResponseTrait {
