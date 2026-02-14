@@ -29,7 +29,7 @@ trait InitDirTrait {
             return self::$ensured_dirs[$normalized];
         }
 
-        if (RiseupBooleanHelpers::is_class_exists('RiseupPathUtils')) {
+        if (RiseupBooleanHelpers::isClassExists('RiseupPathUtils')) {
             $result = RiseupPathUtils::ensureDir($path, $secure);
             self::$ensured_dirs[$normalized] = $result;
             return $result;
@@ -52,7 +52,7 @@ trait InitDirTrait {
             return false;
         }
 
-        if (RiseupBooleanHelpers::is_dir_missing($path)) {
+        if (RiseupBooleanHelpers::isDirMissing($path)) {
             if (!@mkdir($path, 0755, true)) {
                 if (function_exists('wp_mkdir_p') && !wp_mkdir_p($path)) {
                     return false;
@@ -77,14 +77,14 @@ trait InitDirTrait {
         $success = true;
 
         $htaccess = $path . '/.htaccess';
-        if (RiseupBooleanHelpers::is_file_missing($htaccess)) {
+        if (RiseupBooleanHelpers::isFileMissing($htaccess)) {
             if (@file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n") === false) {
                 $success = false;
             }
         }
 
         $index = $path . '/index.php';
-        if (RiseupBooleanHelpers::is_file_missing($index)) {
+        if (RiseupBooleanHelpers::isFileMissing($index)) {
             if (@file_put_contents($index, "<?php\n// Silence is golden.\n") === false) {
                 $success = false;
             }
@@ -120,7 +120,7 @@ trait InitDirTrait {
      * @return string Base directory path.
      */
     public static function resolveBaseDir() {
-        if (RiseupBooleanHelpers::is_func_missing('wp_upload_dir')) {
+        if (RiseupBooleanHelpers::isFuncMissing('wp_upload_dir')) {
             return dirname(__DIR__) . '/data';
         }
 

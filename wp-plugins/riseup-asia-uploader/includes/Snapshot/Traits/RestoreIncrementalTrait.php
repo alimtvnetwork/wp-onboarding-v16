@@ -81,7 +81,7 @@ trait RestoreIncrementalTrait {
      */
     private function applySingleIncremental(array $inc, string $snapshotDir, array $restoreOrder): array {
         $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
-        if (RiseupBooleanHelpers::is_dir_missing($inc_dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($inc_dir)) {
             $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
             return array('rows' => 0, 'errors' => array('Incremental directory missing: ' . $inc['folder_name']));
         }
@@ -94,7 +94,7 @@ trait RestoreIncrementalTrait {
 
         foreach ($sqlite_files as $sqlite_file) {
             $table = basename($sqlite_file, '.sqlite');
-            if (RiseupBooleanHelpers::is_not_in_list($table, $restoreOrder)) {
+            if (RiseupBooleanHelpers::isNotInList($table, $restoreOrder)) {
                 continue;
             }
 
