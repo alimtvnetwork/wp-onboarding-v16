@@ -16,60 +16,48 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait LoggerLevelMethodsTrait {
 
-    /**
-     * Log a debug message.
-     *
-     * @param string $message Log message.
-     * @param array  $context Additional context.
-     * @return bool
-     */
-    public function debug($message, $context = array()) {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+    /** Resolve caller file and line from a backtrace. */
+    private function resolveCaller(array $trace): array {
         $caller = isset($trace[1]) ? $trace[1] : $trace[0];
-        $file = isset($caller['file']) ? $caller['file'] : __FILE__;
-        $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+
+        return array(
+            isset($caller['file']) ? $caller['file'] : __FILE__,
+            isset($caller['line']) ? $caller['line'] : __LINE__,
+        );
+    }
+
+    /** Log a debug message. */
+    public function debug(string $message, array $context = array()): bool {
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        [$file, $line] = $this->resolveCaller($trace);
 
         if ($this->isDuplicate(LogLevelType::Debug->value, $message, $file, $line)) {
             return true;
         }
 
         $entry = $this->formatEntry(LogLevelType::Debug->value, $message, $file, $line, $context);
+
         return $this->write($entry, false);
     }
 
-    /**
-     * Log an info message.
-     *
-     * @param string $message Log message.
-     * @param array  $context Additional context.
-     * @return bool
-     */
-    public function info($message, $context = array()) {
+    /** Log an info message. */
+    public function info(string $message, array $context = array()): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-        $caller = isset($trace[1]) ? $trace[1] : $trace[0];
-        $file = isset($caller['file']) ? $caller['file'] : __FILE__;
-        $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+        [$file, $line] = $this->resolveCaller($trace);
 
         if ($this->isDuplicate(LogLevelType::Info->value, $message, $file, $line)) {
             return true;
         }
 
         $entry = $this->formatEntry(LogLevelType::Info->value, $message, $file, $line, $context);
+
         return $this->write($entry, false);
     }
 
-    /**
-     * Log a warning message.
-     *
-     * @param string $message Log message.
-     * @param array  $context Additional context.
-     * @return bool
-     */
-    public function warn($message, $context = array()) {
+    /** Log a warning message. */
+    public function warn(string $message, array $context = array()): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 6);
-        $caller = isset($trace[1]) ? $trace[1] : $trace[0];
-        $file = isset($caller['file']) ? $caller['file'] : __FILE__;
-        $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+        [$file, $line] = $this->resolveCaller($trace);
 
         if ($this->isDuplicate(LogLevelType::Warn->value, $message, $file, $line)) {
             return true;
@@ -84,18 +72,10 @@ trait LoggerLevelMethodsTrait {
         return $this->write($entry, false);
     }
 
-    /**
-     * Log an error message.
-     *
-     * @param string $message Log message.
-     * @param array  $context Additional context.
-     * @return bool
-     */
-    public function error($message, $context = array()) {
+    /** Log an error message. */
+    public function error(string $message, array $context = array()): bool {
         $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
-        $caller = isset($trace[1]) ? $trace[1] : $trace[0];
-        $file = isset($caller['file']) ? $caller['file'] : __FILE__;
-        $line = isset($caller['line']) ? $caller['line'] : __LINE__;
+        [$file, $line] = $this->resolveCaller($trace);
 
         if ($this->isDuplicate(LogLevelType::Error->value, $message, $file, $line)) {
             return true;
@@ -111,17 +91,8 @@ trait LoggerLevelMethodsTrait {
         return $this->write($entry, true);
     }
 
-    /**
-     * Log with explicit file and line.
-     *
-     * @param string $level   Log level.
-     * @param string $message Log message.
-     * @param string $file    Source file.
-     * @param int    $line    Source line.
-     * @param array  $context Additional context.
-     * @return bool
-     */
-    public function logAt($level, $message, $file, $line, $context = array()) {
+    /** Log with explicit file and line. */
+    public function logAt(string $level, string $message, string $file, int $line, array $context = array()): bool {
         if ($this->isDuplicate($level, $message, $file, $line)) {
             return true;
         }
@@ -134,14 +105,8 @@ trait LoggerLevelMethodsTrait {
         return $this->write($entry, $isError);
     }
 
-    /**
-     * Log an exception.
-     *
-     * @param Throwable $e       Exception to log.
-     * @param string     $context Additional context message.
-     * @return bool
-     */
-    public function logException($e, $context = '') {
+    /** Log an exception. */
+    public function logException(Throwable $e, string $context = ''): bool {
         if ($this->isDuplicate(LogLevelType::Error->value, $e->getMessage(), $e->getFile(), $e->getLine())) {
             return true;
         }

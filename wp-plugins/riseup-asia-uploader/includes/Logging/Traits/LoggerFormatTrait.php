@@ -14,54 +14,36 @@ if (!defined('ABSPATH')) {
 
 trait LoggerFormatTrait {
 
-    /**
-     * Format a log entry.
-     *
-     * @param string $level   Log level.
-     * @param string $message Log message.
-     * @param string $file    Source file.
-     * @param int    $line    Source line number.
-     * @param array  $context Additional context.
-     * @return string Formatted log entry.
-     */
-    private function formatEntry($level, $message, $file, $line, $context = array()) {
-        $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
+    /** Format a log entry. */
+    private function formatEntry(string $level, string $message, string $file, int $line, array $context = array()): string {
+        $timestamp = gmdate(self::TIMESTAMP_FORMAT);
         $basename  = basename($file);
 
         $entry = sprintf("[%s] [%s] %s (%s:%d)", $timestamp, $level, $message, $basename, $line);
 
         if (!empty($context)) {
-            $jsonFlags = defined('JSON_UNESCAPED_SLASHES') ? JSON_UNESCAPED_SLASHES : 0;
-            $entry .= ' ' . json_encode($context, $jsonFlags);
+            $entry .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES);
         }
 
         return $entry . PHP_EOL;
     }
 
-    /**
-     * Format a debug_backtrace array into a readable string.
-     *
-     * @param array $trace debug_backtrace result.
-     * @return string Formatted stack trace.
-     */
-    private function formatBacktrace($trace) {
+    /** Format a debug_backtrace array into a readable string. */
+    private function formatBacktrace(array $trace): string {
         $lines = array();
         foreach ($trace as $i => $frame) {
-            $file = isset($frame['file']) ? basename($frame['file']) : '<internal>';
-            $line = isset($frame['line']) ? $frame['line'] : 0;
+            $file  = isset($frame['file']) ? basename($frame['file']) : self::TRACE_LABEL_INTERNAL;
+            $line  = isset($frame['line']) ? $frame['line'] : self::DEFAULT_LINE_NUMBER;
             $class = isset($frame['class']) ? $frame['class'] . $frame['type'] : '';
-            $func = isset($frame['function']) ? $frame['function'] : '<unknown>';
+            $func  = isset($frame['function']) ? $frame['function'] : self::TRACE_LABEL_UNKNOWN;
             $lines[] = sprintf('#%d %s(%d): %s%s()', $i, $file, $line, $class, $func);
         }
+
         return implode(PHP_EOL, $lines);
     }
 
-    /**
-     * Gather HTTP request metadata (method, endpoint, user-agent, IP).
-     *
-     * @return array Associative array with request metadata keys.
-     */
-    private function getRequestMetadata() {
+    /** Gather HTTP request metadata (method, endpoint, user-agent, IP). */
+    private function getRequestMetadata(): array {
         if ($this->requestMetadataCache !== null) {
             return $this->requestMetadataCache;
         }
@@ -80,7 +62,7 @@ trait LoggerFormatTrait {
     private function buildCliRequestMeta(): array {
         return array(
             'method' => 'CLI',
-            'script' => isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : 'unknown',
+            'script' => isset($_SERVER['SCRIPT_FILENAME']) ? basename($_SERVER['SCRIPT_FILENAME']) : self::TRACE_LABEL_UNKNOWN,
         );
     }
 
@@ -95,35 +77,23 @@ trait LoggerFormatTrait {
         return array(
             'method'    => $method,
             'endpoint'  => $uri . $query,
-            'userAgent' => strlen($useragent) > 200 ? substr($useragent, 0, 200) . '…' : $useragent,
+            'userAgent' => strlen($useragent) > self::USER_AGENT_MAX_LENGTH ? substr($useragent, 0, self::USER_AGENT_MAX_LENGTH) . '…' : $useragent,
             'ip'        => $ip,
         );
     }
 
-    /**
-     * Merge request metadata into a context array (non-destructive).
-     *
-     * @param array $context Existing context.
-     * @return array Context enriched with request metadata.
-     */
-    private function enrichContextWithRequest($context) {
+    /** Merge request metadata into a context array (non-destructive). */
+    private function enrichContextWithRequest(array $context): array {
         $meta = $this->getRequestMetadata();
         if (!isset($context['_request'])) {
             $context = array_merge($meta, $context);
         }
+
         return $context;
     }
 
-    /**
-     * Prepare context for logging by enriching with request metadata and
-     * optionally building an invocation chain from a backtrace.
-     *
-     * @param array      $context      Existing context array.
-     * @param array|null $trace        Optional debug_backtrace result.
-     * @param bool       $includeChain Whether to build _invocation_chain.
-     * @return array Enriched context.
-     */
-    private function prepareContext($context, $trace = null, $includeChain = false) {
+    /** Prepare context for logging by enriching with request metadata. */
+    private function prepareContext(array $context, ?array $trace = null, bool $includeChain = false): array {
         $context = $this->enrichContextWithRequest($context);
 
         $shouldSkipChain = !$includeChain || $trace === null || isset($context['_invocation_chain']);
@@ -169,7 +139,7 @@ trait LoggerFormatTrait {
 
         if (isset($frame['file'])) {
             $entry['file'] = basename($frame['file']);
-            $entry['line'] = isset($frame['line']) ? $frame['line'] : 0;
+            $entry['line'] = isset($frame['line']) ? $frame['line'] : self::DEFAULT_LINE_NUMBER;
         }
 
         return $entry;

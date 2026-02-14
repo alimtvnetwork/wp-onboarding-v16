@@ -17,12 +17,8 @@ use RiseupAsia\Enums\PathLogFileType;
 
 trait LoggerPathTrait {
 
-    /**
-     * Initialize log file paths (lazy initialization).
-     *
-     * @return bool True if successful.
-     */
-    private function initializePaths() {
+    /** Initialize log file paths (lazy initialization). */
+    private function initializePaths(): bool {
         if ($this->isInitialized) {
             return true;
         }
@@ -36,63 +32,62 @@ trait LoggerPathTrait {
         return $this->ensureDirectories();
     }
 
-    /**
-     * Ensure log directories exist.
-     *
-     * @return bool True if successful.
-     */
-    private function ensureDirectories() {
+    /** Ensure log directories exist. */
+    private function ensureDirectories(): bool {
         if (!RiseupInitHelpers::ensureDirNative($this->baseDir, true)) {
-            error_log('[Riseup Asia] Failed to create base directory: ' . $this->baseDir);
+            error_log(LOG_PREFIX . ' Failed to create base directory: ' . $this->baseDir);
+
             return false;
         }
 
         if (!RiseupInitHelpers::ensureDirNative($this->logsDir, false)) {
-            error_log('[Riseup Asia] Failed to create logs directory: ' . $this->logsDir);
+            error_log(LOG_PREFIX . ' Failed to create logs directory: ' . $this->logsDir);
+
             return false;
         }
 
         $this->isInitialized = true;
+
         return true;
     }
 
-    /** @return string */
-    public function getBaseDir() {
+    public function getBaseDir(): string {
         if ($this->baseDir === null) {
             $this->initializePaths();
         }
+
         return $this->baseDir;
     }
 
-    /** @return string */
-    public function getLogsDir() {
+    public function getLogsDir(): string {
         if ($this->logsDir === null) {
             $this->initializePaths();
         }
+
         return $this->logsDir;
     }
 
-    /** @return string */
-    public function getLogFile() {
+    public function getLogFile(): string {
         if ($this->logFile === null) {
             $this->initializePaths();
         }
+
         return $this->logFile;
     }
 
-    /** @return string */
-    public function getErrorFile() {
+    public function getErrorFile(): string {
         if ($this->errorFile === null) {
             $this->initializePaths();
         }
+
         return $this->errorFile;
     }
 
-    /** @return string */
-    public function getStacktraceFile() {
+    public function getStacktraceFile(): string {
         if ($this->stacktraceFile === null) {
             $this->initializePaths();
         }
+
         return $this->stacktraceFile;
     }
 }

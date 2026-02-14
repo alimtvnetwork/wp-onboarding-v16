@@ -14,19 +14,12 @@ if (!defined('ABSPATH')) {
 
 trait LoggerWriteTrait {
 
-    /**
-     * Write to log file.
-     *
-     * @param string $entry   Log entry.
-     * @param bool   $isError Whether this is an error.
-     * @return bool True on success.
-     */
-    private function write($entry, $isError = false) {
-        if (!$this->isInitialized) {
-            if (!$this->initializePaths()) {
-                error_log('[Riseup Asia] ' . trim($entry));
-                return false;
-            }
+    /** Write to log file. */
+    private function write(string $entry, bool $isError = false): bool {
+        if (!$this->isInitialized && !$this->initializePaths()) {
+            error_log(LOG_PREFIX . ' ' . trim($entry));
+
+            return false;
         }
 
         $result = @file_put_contents($this->logFile, $entry, FILE_APPEND | LOCK_EX);
@@ -38,47 +31,31 @@ trait LoggerWriteTrait {
         return $result !== false;
     }
 
-    /**
-     * Write a stack trace entry to the dedicated stacktrace.txt file.
-     *
-     * @param string $message    Error message.
-     * @param string $file       Source file.
-     * @param int    $line       Source line number.
-     * @param string $stackTrace Stack trace string.
-     */
-    private function writeStacktrace($message, $file, $line, $stackTrace) {
+    /** Write a stack trace entry to the dedicated stacktrace.txt file. */
+    private function writeStacktrace(string $message, string $file, int $line, string $stackTrace): void {
         if (empty($stackTrace)) {
             return;
         }
 
-        if (!$this->isInitialized) {
-            if (!$this->initializePaths()) {
-                return;
-            }
+        if (!$this->isInitialized && !$this->initializePaths()) {
+            return;
         }
 
-        $timestamp = gmdate('Y-m-d\TH:i:s') . 'Z';
-        $separator = str_repeat('=', 80);
+        $timestamp = gmdate(self::TIMESTAMP_FORMAT);
+        $separator = str_repeat('=', self::SEPARATOR_WIDTH);
+        $divider   = str_repeat('-', self::SEPARATOR_WIDTH);
+
         $entry  = $separator . PHP_EOL;
         $entry .= sprintf("[%s] %s (%s:%d)", $timestamp, $message, basename($file), $line) . PHP_EOL;
-        $entry .= str_repeat('-', 80) . PHP_EOL;
+        $entry .= $divider . PHP_EOL;
         $entry .= $stackTrace . PHP_EOL;
         $entry .= $separator . PHP_EOL . PHP_EOL;
 
         @file_put_contents($this->stacktraceFile, $entry, FILE_APPEND | LOCK_EX);
     }
 
-    /**
-     * Persist an error/warn entry to the error_sessions SQLite table.
-     *
-     * @param string $level      Log level.
-     * @param string $message    Error message.
-     * @param string $file       Source file path.
-     * @param int    $line       Source line number.
-     * @param array  $context    Additional context data.
-     * @param string $stackTrace Optional stack trace string.
-     */
-    private function persistToErrorSessions($level, $message, $file, $line, $context = array(), $stackTrace = '') {
+    /** Persist an error/warn entry to the error_sessions SQLite table. */
+    private function persistToErrorSessions(string $level, string $message, string $file, int $line, array $context = array(), string $stackTrace = ''): void {
         try {
             $pdo = $this->getErrorSessionsPdo();
             if (!$pdo) {
@@ -93,32 +70,32 @@ trait LoggerWriteTrait {
 
     /** Get a PDO connection with error_sessions table available. */
     private function getErrorSessionsPdo(): ?PDO {
-        if (RiseupBooleanHelpers::is_class_missing('RiseupDatabase')) {
+        if (RiseupBooleanHelpers::isClassMissing('RiseupDatabase')) {
             return null;
         }
 
-        $db = RiseupDatabase::get_instance();
-        $pdo = $db->get_pdo();
+        $db  = RiseupDatabase::getInstance();
+        $pdo = $db->getPdo();
         if (!$pdo) {
             return null;
         }
 
-        $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='error_sessions'");
-        $tableExists = $check && $check->fetchColumn();
+        $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='" . self::TABLE_ERROR_SESSIONS . "'");
+        $isTableExists = $check && $check->fetchColumn();
 
-        return $tableExists ? $pdo : null;
+        return $isTableExists ? $pdo : null;
     }
 
     /** Insert an error session record and set unseen flag. */
-    private function insertErrorSession(PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stackTrace) {
-        $now = gmdate('Y-m-d\TH:i:s\Z');
+    private function insertErrorSession(PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stackTrace): void {
+        $now = gmdate(self::TIMESTAMP_FORMAT);
         $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 
         $stmt = $pdo->prepare(
-            'INSERT INTO error_sessions (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO ' . self::TABLE_ERROR_SESSIONS . ' (level, message, file, line, context_json, stack_trace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute(array($level, $message, $file, $line, $contextJson, $stackTrace ?: null, $now));
 
-        $pdo->exec("INSERT OR REPLACE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '1', '{$now}')");
+        $pdo->exec("INSERT OR REPLACE INTO " . self::TABLE_FLASH_STATE . " (key, value, updated_at) VALUES ('" . self::KEY_HAS_UNSEEN_ERRORS . "', '1', '{$now}')");
     }
 }

@@ -14,16 +14,8 @@ if (!defined('ABSPATH')) {
 
 trait LoggerDedupTrait {
 
-    /**
-     * Check if a log entry is a duplicate using MD5 hashing.
-     *
-     * @param string $level   Log level.
-     * @param string $message Log message.
-     * @param string $file    Source file.
-     * @param int    $line    Source line number.
-     * @return bool True if this is a duplicate entry that should be skipped.
-     */
-    private function isDuplicate($level, $message, $file, $line) {
+    /** Check if a log entry is a duplicate using MD5 hashing. */
+    private function isDuplicate(string $level, string $message, string $file, int $line): bool {
         $hashInput = $level . '|' . $message . '|' . basename($file) . '|' . $line;
         $hash = md5($hashInput);
 
@@ -32,17 +24,15 @@ trait LoggerDedupTrait {
         }
 
         $this->dedupHashes[$hash] = true;
+
         return false;
     }
 
-    /**
-     * Clear the deduplication hash map.
-     *
-     * @return int Number of hashes that were cleared.
-     */
-    public function clearDedupHashes() {
+    /** Clear the deduplication hash map. */
+    public function clearDedupHashes(): int {
         $count = count($this->dedupHashes);
         $this->dedupHashes = array();
+
         return $count;
     }
 }
