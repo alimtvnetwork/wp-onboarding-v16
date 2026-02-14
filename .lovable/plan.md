@@ -529,13 +529,18 @@ includes/Constants/
 
 | # | Task | Status | Description |
 |---|------|--------|-------------|
-| J1 | **Audit constants.php** | ⬚ Pending | Categorize all ~180 constants into enum candidates vs const-class candidates. Produce migration checklist. |
-| J2 | **Create ActionType enum** | ⬚ Pending | Migrate ACTION_ENABLE, ACTION_DISABLE, ACTION_DELETE, ACTION_UPLOAD, etc. (~20 constants) to `ActionType` enum. Update all callers. |
-| J3 | **Create StatusType enum** | ⬚ Pending | Migrate STATUS_SUCCESS, STATUS_FAILED, STATUS_PENDING (~5 constants) to `StatusType` enum. Update all callers. |
-| J4 | **Create SnapshotScopeType + SnapshotStatusType enums** | ⬚ Pending | Migrate SNAPSHOT_SCOPE_*, SNAPSHOT_STATUS_*, SNAPSHOT_TYPE_*, SNAPSHOT_TRIGGER_* (~15 constants). |
-| J5 | **Create SyncActionType enum** | ⬚ Pending | Migrate SYNC_ACTION_* (~3 constants). |
-| J6 | **Create Constants/ domain classes** | ⬚ Pending | Group remaining non-enum constants (tables, error codes, HTTP codes, defaults, endpoints, cron) into focused `final class` holders. |
-| J7 | **Shrink constants.php** | ⬚ Pending | Remove migrated defines, keep only backward-compat aliases if needed. Target: <200 lines or elimination. |
+| J1 | **Audit constants.php** | ✅ Done | Full audit: 180 constants categorized into 15 enum candidates (75 constants) + 10 const-class candidates (96 constants) + 9 already-migrated aliases. See `memory/workflow/03-j1-constants-audit.md`. |
+| J2 | **Create ActionType enum** | ⬚ Pending | Migrate 42 ACTION_* constants to `ActionType` enum. Update all callers. Largest single enum. |
+| J3 | **Create StatusType + PostStatusType enums** | ⬚ Pending | Migrate STATUS_* (2) + POST_STATUS_* (3) = 5 constants. |
+| J4a | **Create SnapshotStatusType + SnapshotJobStatusType** | ⬚ Pending | 9 constants covering snapshot lifecycle states. |
+| J4b | **Create SnapshotScopeType + SnapshotFrequencyType + SnapshotTypeType** | ⬚ Pending | 10 constants covering snapshot configuration choices. |
+| J4c | **Create SnapshotProviderType + SnapshotTriggerType + SnapshotExportStatusType + RetentionType** | ⬚ Pending | 13 constants covering snapshot infrastructure. |
+| J5 | **Create AgentStatusType + TriggerSourceType + SyncActionType** | ⬚ Pending | 10 constants covering agent/sync/trigger domains. |
+| J6a | **Create EndpointConst class** | ⬚ Pending | 40 ENDPOINT_* constants into `final class EndpointConst`. |
+| J6b | **Create TableConst + ErrorCodeConst classes** | ⬚ Pending | 9 TABLE_* + 10 ERR_* = 19 constants. |
+| J6c | **Create HttpConst + MessageConst classes** | ⬚ Pending | 7 HTTP_* + 14 MSG_* = 21 constants. |
+| J6d | **Create DefaultConst + CronConst + PathConst + PluginConst + ApiConst + OptionConst** | ⬚ Pending | 30 remaining config/identity constants. |
+| J7 | **Shrink constants.php** | ⬚ Pending | Remove migrated defines + 9 backward-compat aliases. Target: <200 lines or elimination. |
 | J8 | **Update memory & specs** | ⬚ Pending | Document new enum/const architecture in memory and specs. |
 
 ### Execution Order
