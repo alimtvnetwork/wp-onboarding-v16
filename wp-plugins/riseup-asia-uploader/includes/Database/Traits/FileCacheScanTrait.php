@@ -23,7 +23,7 @@ trait FileCacheScanTrait {
     public function getManifest($pluginSlug, $pluginDir, $ignore) {
         $this->logger->debug('FileCache: Building manifest', array('slug' => $pluginSlug));
 
-        if (!$this->db->is_ready()) {
+        if (!$this->db->isReady()) {
             $this->logger->warn('FileCache: Database not ready, falling back to full scan');
             return $this->fullScan($pluginDir, $ignore);
         }

@@ -21,77 +21,74 @@ trait OrmQueryTrait {
      * @return $this
      */
     public function select($columns) {
-        $this->select_columns = is_array($columns) ? $columns : func_get_args();
+        $this->selectColumns = is_array($columns) ? $columns : func_get_args();
         return $this;
     }
 
     /** Select a single column. */
-    public function select_column($column) {
-        $this->select_columns = array($column);
+    public function selectColumn(string $column) {
+        $this->selectColumns = array($column);
         return $this;
     }
 
     /** Select with COUNT(*). */
-    public function select_count($alias = 'count') {
-        $this->select_columns = array("COUNT(*) as {$alias}");
+    public function selectCount(string $alias = 'count') {
+        $this->selectColumns = array("COUNT(*) as {$alias}");
         return $this;
     }
 
     /** Add ORDER BY ASC. */
-    public function order_by_asc($column) {
-        $this->order_by[] = "{$column} ASC";
+    public function orderByAsc(string $column) {
+        $this->orderBy[] = "{$column} ASC";
         return $this;
     }
 
     /** Add ORDER BY DESC. */
-    public function order_by_desc($column) {
-        $this->order_by[] = "{$column} DESC";
+    public function orderByDesc(string $column) {
+        $this->orderBy[] = "{$column} DESC";
         return $this;
     }
 
     /**
      * Add ORDER BY with custom direction.
      *
-     * @param string $column    Column name.
-     * @param string $direction Direction (ASC or DESC).
      * @return $this
      */
-    public function order_by($column, $direction = 'ASC') {
+    public function orderBy(string $column, string $direction = 'ASC') {
         $direction = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
-        $this->order_by[] = "{$column} {$direction}";
+        $this->orderBy[] = "{$column} {$direction}";
         return $this;
     }
 
     /** Add GROUP BY clause. */
-    public function group_by($column) {
-        $this->group_by[] = $column;
+    public function groupBy(string $column) {
+        $this->groupBy[] = $column;
         return $this;
     }
 
     /** Set LIMIT. */
-    public function limit($limit) {
-        $this->limit_value = (int) $limit;
+    public function limit(int $limit) {
+        $this->limitValue = $limit;
         return $this;
     }
 
     /** Set OFFSET. */
-    public function offset($offset) {
-        $this->offset_value = (int) $offset;
+    public function offset(int $offset) {
+        $this->offsetValue = $offset;
         return $this;
     }
 
     /**
      * Find a single record by ID.
      *
-     * @param int $id Record ID.
      * @return array|null Record data or null.
      */
-    public function find_one($id) {
+    public function findOne(int $id): ?array {
         if (!self::$pdo) {
             return null;
         }
 
-        $sql = "SELECT * FROM {$this->table_name} WHERE {$this->id_column} = :id LIMIT 1";
+        $sql = "SELECT * FROM {$this->tableName} WHERE {$this->idColumn} = :id LIMIT 1";
 
         try {
             $stmt = self::$pdo->prepare($sql);
@@ -105,19 +102,17 @@ trait OrmQueryTrait {
 
     /**
      * Find multiple records.
-     *
-     * @return array Records.
      */
-    public function find_many() {
+    public function findMany(): array {
         if (!self::$pdo) {
             return array();
         }
 
-        $sql = $this->build_select_sql();
+        $sql = $this->buildSelectSql();
 
         try {
             $stmt = self::$pdo->prepare($sql);
-            $stmt->execute($this->where_params);
+            $stmt->execute($this->whereParams);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return array();
@@ -126,23 +121,21 @@ trait OrmQueryTrait {
 
     /**
      * Count records.
-     *
-     * @return int Count.
      */
-    public function count() {
+    public function count(): int {
         if (!self::$pdo) {
             return 0;
         }
 
-        $sql = "SELECT COUNT(*) as count FROM {$this->table_name}";
+        $sql = "SELECT COUNT(*) as count FROM {$this->tableName}";
 
-        if (!empty($this->where_clauses)) {
-            $sql .= ' WHERE ' . implode(' AND ', $this->where_clauses);
+        if (!empty($this->whereClauses)) {
+            $sql .= ' WHERE ' . implode(' AND ', $this->whereClauses);
         }
 
         try {
             $stmt = self::$pdo->prepare($sql);
-            $stmt->execute($this->where_params);
+            $stmt->execute($this->whereParams);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int) ($result['count'] ?? 0);
         } catch (PDOException $e) {
@@ -152,31 +145,29 @@ trait OrmQueryTrait {
 
     /**
      * Build SELECT SQL.
-     *
-     * @return string SQL query.
      */
-    private function build_select_sql() {
-        $columns = implode(', ', $this->select_columns);
-        $sql = "SELECT {$columns} FROM {$this->table_name}";
+    private function buildSelectSql(): string {
+        $columns = implode(', ', $this->selectColumns);
+        $sql = "SELECT {$columns} FROM {$this->tableName}";
 
-        if (!empty($this->where_clauses)) {
-            $sql .= ' WHERE ' . implode(' AND ', $this->where_clauses);
+        if (!empty($this->whereClauses)) {
+            $sql .= ' WHERE ' . implode(' AND ', $this->whereClauses);
         }
 
-        if (!empty($this->group_by)) {
-            $sql .= ' GROUP BY ' . implode(', ', $this->group_by);
+        if (!empty($this->groupBy)) {
+            $sql .= ' GROUP BY ' . implode(', ', $this->groupBy);
         }
 
-        if (!empty($this->order_by)) {
-            $sql .= ' ORDER BY ' . implode(', ', $this->order_by);
+        if (!empty($this->orderBy)) {
+            $sql .= ' ORDER BY ' . implode(', ', $this->orderBy);
         }
 
-        if ($this->limit_value !== null) {
-            $sql .= ' LIMIT ' . $this->limit_value;
+        if ($this->limitValue !== null) {
+            $sql .= ' LIMIT ' . $this->limitValue;
         }
 
-        if ($this->offset_value !== null) {
-            $sql .= ' OFFSET ' . $this->offset_value;
+        if ($this->offsetValue !== null) {
+            $sql .= ' OFFSET ' . $this->offsetValue;
         }
 
         return $sql;

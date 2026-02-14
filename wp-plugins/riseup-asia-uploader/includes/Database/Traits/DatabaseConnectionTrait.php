@@ -125,18 +125,18 @@ trait DatabaseConnectionTrait {
 
     /** Run all pending migrations in sequence. */
     private function runAllMigrations(int $current) {
-        $this->migrate_v1_transactions($current);
-        $this->create_transaction_indexes();
-        $this->migrate_v2_agent_tables($current);
-        $this->migrate_v3_enhanced_transactions($current);
-        $this->migrate_v4_source_machine($current);
-        $this->migrate_v5_snapshot_tables($current);
-        $this->migrate_v6_remote_plugins_cache($current);
-        $this->migrate_v7_file_hash_cache($current);
-        $this->migrate_v8_snapshot_settings($current);
-        $this->migrate_v9_error_sessions($current);
-        $this->migrate_v10_version_tracking($current);
-        $this->migrate_v11_snapshot_exports($current);
+        $this->migrateV1Transactions($current);
+        $this->createTransactionIndexes();
+        $this->migrateV2AgentTables($current);
+        $this->migrateV3EnhancedTransactions($current);
+        $this->migrateV4SourceMachine($current);
+        $this->migrateV5SnapshotTables($current);
+        $this->migrateV6RemotePluginsCache($current);
+        $this->migrateV7FileHashCache($current);
+        $this->migrateV8SnapshotSettings($current);
+        $this->migrateV9ErrorSessions($current);
+        $this->migrateV10VersionTracking($current);
+        $this->migrateV11SnapshotExports($current);
     }
 
     /**

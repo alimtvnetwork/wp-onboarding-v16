@@ -60,7 +60,7 @@ enum HookType: string
      * @param string $action The AJAX action slug.
      * @return string Full hook name.
      */
-    public static function ajax_nopriv(string $action): string
+    public static function ajaxNopriv(string $action): string
     {
         return 'wp_ajax_nopriv_' . $action;
     }

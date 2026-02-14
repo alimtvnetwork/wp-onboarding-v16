@@ -14,7 +14,7 @@ use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV9V11Trait {
 
-    private function migrate_v9_error_sessions(int $current): void {
+    private function migrateV9ErrorSessions(int $current): void {
         if ($current >= 9) {
             return;
         }
@@ -44,10 +44,10 @@ trait DatabaseMigrationsV9V11Trait {
         $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('last_seen_error_id', '0', '{$now}')");
         $this->pdo->exec("INSERT OR IGNORE INTO flash_state (key, value, updated_at) VALUES ('has_unseen_errors', '0', '{$now}')");
 
-        $this->record_migration(9);
+        $this->recordMigration(9);
     }
 
-    private function migrate_v10_version_tracking(int $current): void {
+    private function migrateV10VersionTracking(int $current): void {
         if ($current >= 10) {
             return;
         }
@@ -70,10 +70,10 @@ trait DatabaseMigrationsV9V11Trait {
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_plugin_version ON {$table}(plugin_version)");
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_upload_source ON {$table}(upload_source)");
 
-        $this->record_migration(10);
+        $this->recordMigration(10);
     }
 
-    private function migrate_v11_snapshot_exports(int $current): void {
+    private function migrateV11SnapshotExports(int $current): void {
         if ($current >= 11) {
             return;
         }
@@ -97,6 +97,6 @@ trait DatabaseMigrationsV9V11Trait {
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_snapshot ON " . TableType::SnapshotExports->value . "(snapshot_id)");
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_exports_status ON " . TableType::SnapshotExports->value . "(status)");
 
-        $this->record_migration(11);
+        $this->recordMigration(11);
     }
 }

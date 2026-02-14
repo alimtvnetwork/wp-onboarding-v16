@@ -14,7 +14,7 @@ use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV1V3Trait {
 
-    private function migrate_v1_transactions(int $current): void {
+    private function migrateV1Transactions(int $current): void {
         if ($current >= 1) {
             return;
         }
@@ -36,10 +36,10 @@ trait DatabaseMigrationsV1V3Trait {
             created_at TEXT NOT NULL
         )");
 
-        $this->record_migration(1);
+        $this->recordMigration(1);
     }
 
-    private function create_transaction_indexes(): void {
+    private function createTransactionIndexes(): void {
         $table   = TableType::Transactions->value;
         $indexes = array(
             'idx_action'      => 'action',
@@ -56,7 +56,7 @@ trait DatabaseMigrationsV1V3Trait {
         $this->fileLogger->info('Transaction indexes ensured');
     }
 
-    private function migrate_v2_agent_tables(int $current): void {
+    private function migrateV2AgentTables(int $current): void {
         if ($current >= 2) {
             return;
         }
@@ -96,10 +96,10 @@ trait DatabaseMigrationsV1V3Trait {
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_action ON " . TableType::AgentActions->value . "(action)");
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_agent_actions_created ON " . TableType::AgentActions->value . "(created_at)");
 
-        $this->record_migration(2);
+        $this->recordMigration(2);
     }
 
-    private function migrate_v3_enhanced_transactions(int $current): void {
+    private function migrateV3EnhancedTransactions(int $current): void {
         if ($current >= 3) {
             return;
         }
@@ -123,6 +123,6 @@ trait DatabaseMigrationsV1V3Trait {
 
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_triggered_by ON {$table}(triggered_by)");
 
-        $this->record_migration(3);
+        $this->recordMigration(3);
     }
 }

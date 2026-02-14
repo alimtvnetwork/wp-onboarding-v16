@@ -33,7 +33,7 @@ trait LoggerActionsTrait {
         $user = $this->getUserInfo();
         $enhanced = $this->buildEnhancedFields($extraEnhanced);
 
-        return $this->getDb()->log_transaction(
+        return $this->getDb()->logTransaction(
             $action, $pluginSlug, null, $user['login'], $user['id'],
             $this->getClientIp(), $details, $status, $errorMsg, $enhanced
         );
@@ -57,7 +57,7 @@ trait LoggerActionsTrait {
         $user = $this->getUserInfo();
         $enhanced = $this->buildEnhancedFields();
 
-        return $this->getDb()->log_transaction(
+        return $this->getDb()->logTransaction(
             $action, null, $postId, $user['login'], $user['id'],
             $this->getClientIp(), $details, $status, $errorMsg, $enhanced
         );
@@ -69,7 +69,7 @@ trait LoggerActionsTrait {
         $providedUser = isset($details['username']) ? $details['username'] : 'unknown';
         $enhanced = $this->buildEnhancedFields();
 
-        return $this->getDb()->log_transaction(
+        return $this->getDb()->logTransaction(
             ActionType::AuthFailed->value, null, null, $providedUser, null,
             $this->getClientIp(), $details, STATUS_FAILED, $reason, $enhanced
         );

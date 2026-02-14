@@ -25,23 +25,14 @@ enum UploadSourceType: string
     case AdminUi = 'admin_ui';
     case WpCli   = 'wp_cli';
 
-    /**
-     * All valid source values as a flat array.
-     *
-     * @return string[]
-     */
-    public static function valid_values(): array
+    /** @return string[] */
+    public static function validValues(): array
     {
         return array_column(self::cases(), 'value');
     }
 
-    /**
-     * Check if a raw string is a valid upload source.
-     *
-     * @param string $source Source to validate.
-     * @return bool
-     */
-    public static function is_valid(string $source): bool
+    /** Check if a raw string is a valid upload source. */
+    public static function isValid(string $source): bool
     {
         return self::tryFrom($source) !== null;
     }

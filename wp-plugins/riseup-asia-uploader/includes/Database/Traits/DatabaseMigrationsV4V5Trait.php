@@ -14,7 +14,7 @@ use RiseupAsia\Enums\TableType;
 
 trait DatabaseMigrationsV4V5Trait {
 
-    private function migrate_v4_source_machine(int $current): void {
+    private function migrateV4SourceMachine(int $current): void {
         if ($current >= 4) {
             return;
         }
@@ -30,10 +30,10 @@ trait DatabaseMigrationsV4V5Trait {
 
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_source_machine ON {$table}(source_machine)");
 
-        $this->record_migration(4);
+        $this->recordMigration(4);
     }
 
-    private function migrate_v5_snapshot_tables(int $current): void {
+    private function migrateV5SnapshotTables(int $current): void {
         if ($current >= 5) {
             return;
         }
@@ -78,6 +78,6 @@ trait DatabaseMigrationsV4V5Trait {
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshots_provider ON " . TableType::Snapshots->value . "(provider)");
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_snapshot_progress_snapshot ON " . TableType::SnapshotProgress->value . "(snapshot_id)");
 
-        $this->record_migration(5);
+        $this->recordMigration(5);
     }
 }

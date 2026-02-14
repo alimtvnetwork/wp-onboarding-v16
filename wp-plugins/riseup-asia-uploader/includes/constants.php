@@ -618,5 +618,5 @@ if (!defined('UPLOAD_SOURCE_WP_CLI')) {
 
 // Valid upload sources for validation
 if (!defined('UPLOAD_SOURCES_VALID')) {
-    define('UPLOAD_SOURCES_VALID', json_encode(\RiseupAsia\Enums\UploadSourceType::valid_values()));
+    define('UPLOAD_SOURCES_VALID', json_encode(\RiseupAsia\Enums\UploadSourceType::validValues()));
 }

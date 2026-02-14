@@ -14,94 +14,94 @@ trait BooleanDomainTrait {
 
     // FUNCTION CHECKS
 
-    public static function is_func_exists($function_name) {
-        return function_exists($function_name);
+    public static function isFuncExists(string $functionName): bool {
+        return function_exists($functionName);
     }
 
-    public static function is_func_missing($function_name) {
-        return !function_exists($function_name);
+    public static function isFuncMissing(string $functionName): bool {
+        return !function_exists($functionName);
     }
 
     // CLASS CHECKS
 
-    public static function is_class_exists($class_name) {
-        return class_exists($class_name);
+    public static function isClassExists(string $className): bool {
+        return class_exists($className);
     }
 
-    public static function is_class_missing($class_name) {
-        return !class_exists($class_name);
+    public static function isClassMissing(string $className): bool {
+        return !class_exists($className);
     }
 
     /** Check if a class is already loaded (no autoload trigger). */
-    public static function is_class_not_loaded($class_name) {
-        return !class_exists($class_name, false);
+    public static function isClassNotLoaded(string $className): bool {
+        return !class_exists($className, false);
     }
 
     // EXTENSION CHECKS
 
-    public static function is_extension_loaded($extension_name) {
-        return extension_loaded($extension_name);
+    public static function isExtensionLoaded(string $extensionName): bool {
+        return extension_loaded($extensionName);
     }
 
-    public static function is_extension_missing($extension_name) {
-        return !extension_loaded($extension_name);
+    public static function isExtensionMissing(string $extensionName): bool {
+        return !extension_loaded($extensionName);
     }
 
     // DIRECTORY CHECKS
 
-    public static function is_dir_exists($dir_path) {
-        return !empty($dir_path) && is_dir($dir_path);
+    public static function isDirExists(string $dirPath): bool {
+        return !empty($dirPath) && is_dir($dirPath);
     }
 
-    public static function is_dir_missing($dir_path) {
-        return empty($dir_path) || !is_dir($dir_path);
+    public static function isDirMissing(string $dirPath): bool {
+        return empty($dirPath) || !is_dir($dirPath);
     }
 
-    public static function is_dir_writable($dir_path) {
-        return !empty($dir_path) && is_dir($dir_path) && is_writable($dir_path);
+    public static function isDirWritable(string $dirPath): bool {
+        return !empty($dirPath) && is_dir($dirPath) && is_writable($dirPath);
     }
 
-    public static function is_dir_readonly($dir_path) {
-        return empty($dir_path) || !is_dir($dir_path) || !is_writable($dir_path);
+    public static function isDirReadonly(string $dirPath): bool {
+        return empty($dirPath) || !is_dir($dirPath) || !is_writable($dirPath);
     }
 
     // FILE CHECKS
 
-    public static function is_file_exists($file_path) {
-        return !empty($file_path) && file_exists($file_path);
+    public static function isFileExists(string $filePath): bool {
+        return !empty($filePath) && file_exists($filePath);
     }
 
-    public static function is_file_missing($file_path) {
-        return empty($file_path) || !file_exists($file_path);
+    public static function isFileMissing(string $filePath): bool {
+        return empty($filePath) || !file_exists($filePath);
     }
 
-    public static function is_file_unreadable($file_path) {
-        return empty($file_path) || !file_exists($file_path) || !is_readable($file_path);
+    public static function isFileUnreadable(string $filePath): bool {
+        return empty($filePath) || !file_exists($filePath) || !is_readable($filePath);
     }
 
-    public static function is_not_regular_file($path) {
+    public static function isNotRegularFile(string $path): bool {
         return !is_file($path);
     }
 
-    public static function is_not_directory($path) {
+    public static function isNotDirectory(string $path): bool {
         return !is_dir($path);
     }
 
-    public static function is_copy_failed(string $source, string $dest): bool {
+    public static function isCopyFailed(string $source, string $dest): bool {
         return !copy($source, $dest);
     }
 
-    public static function is_not_in_list($needle, array $haystack): bool {
+    public static function isNotInList($needle, array $haystack): bool {
         return !in_array($needle, $haystack);
     }
 
     // DATABASE CHECKS
 
-    public static function is_db_connected($db) {
-        return $db !== null && method_exists($db, 'is_connected') && $db->is_connected();
+    public static function isDbConnected($db): bool {
+        return $db !== null && method_exists($db, 'isReady') && $db->isReady();
     }
 
-    public static function is_db_disconnected($db) {
-        return $db === null || !method_exists($db, 'is_connected') || !$db->is_connected();
+    public static function isDbDisconnected($db): bool {
+        return $db === null || !method_exists($db, 'isReady') || !$db->isReady();
     }
 }
