@@ -53,8 +53,7 @@ trait CategoryTrait {
             $this->file_logger->info('Category created', array('term_id' => $result['term_id']));
             return array('success' => true, 'category' => $this->formatCategory(get_term($result['term_id'], 'category')));
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, 'Category creation exception');
-            return array('success' => false, 'error' => $e->getMessage());
+            return ErrorResponse::logAndReturn($this->file_logger, $e, 'Category creation exception');
         }
     }
 
@@ -95,8 +94,7 @@ trait CategoryTrait {
                 'categories' => $categories,
             );
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, 'List categories exception');
-            return array('success' => false, 'error' => $e->getMessage());
+            return ErrorResponse::logAndReturn($this->file_logger, $e, 'List categories exception');
         }
     }
 
