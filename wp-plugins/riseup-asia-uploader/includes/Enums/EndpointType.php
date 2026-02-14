@@ -75,6 +75,15 @@ enum EndpointType: string
     case SnapshotDownload     = 'snapshots/download';
     case SnapshotDownloadFile = 'snapshots/download-file';
 
+    /**
+     * Return the route path ready for register_rest_route().
+     * Encapsulates the '/' prefix so callers never touch ->value for routing.
+     */
+    public function route(): string
+    {
+        return '/' . $this->value;
+    }
+
     /** Check if this endpoint belongs to the snapshot domain. */
     public function isSnapshot(): bool
     {
