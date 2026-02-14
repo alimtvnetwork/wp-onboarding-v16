@@ -108,7 +108,7 @@ class OnboardDatabase {
 
         // STEP 1: Check if SQLite extension is available.
         OnboardLogger::debug('[DB] Checking for pdo_sqlite extension...');
-        if (OnboardBooleanHelpers::is_extension_missing('pdo_sqlite')) {
+        if (OnboardBooleanHelpers::isExtensionMissing('pdo_sqlite')) {
             $this->last_error = 'PDO SQLite extension is not loaded.';
             OnboardLogger::error('[DB] ' . $this->last_error);
             error_log('Onboard DB: ' . $this->last_error);
@@ -130,7 +130,7 @@ class OnboardDatabase {
 
             // STEP 3: Verify directory exists (should already exist from helpers).
             OnboardLogger::debug('[DB] Verifying database directory exists...');
-            if (OnboardBooleanHelpers::is_dir_missing($db_dir)) {
+            if (OnboardBooleanHelpers::isDirMissing($db_dir)) {
                 $this->last_error = "Database directory does not exist: {$db_dir}. CRITICAL: Directories must be created first via OnboardInitHelpers::ensure_directories_exist()";
                 OnboardLogger::error('[DB] ' . $this->last_error);
                 error_log('Onboard DB: ' . $this->last_error);
@@ -140,7 +140,7 @@ class OnboardDatabase {
 
             // STEP 4: Verify directory is writable.
             OnboardLogger::debug('[DB] Verifying database directory is writable...');
-            if (OnboardBooleanHelpers::is_dir_readonly($db_dir)) {
+            if (OnboardBooleanHelpers::isDirReadonly($db_dir)) {
                 $this->last_error = "Database directory is read-only: {$db_dir}";
                 OnboardLogger::error('[DB] ' . $this->last_error);
                 error_log('Onboard DB: ' . $this->last_error);

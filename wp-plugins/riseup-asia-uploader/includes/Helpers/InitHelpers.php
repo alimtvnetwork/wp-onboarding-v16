@@ -52,13 +52,13 @@ class RiseupInitHelpers {
 
     /** Check that PDO and pdo_sqlite extensions are available. */
     private static function checkSqlitePrerequisites($logger): bool {
-        if (RiseupBooleanHelpers::is_class_missing('PDO')) {
+        if (RiseupBooleanHelpers::isClassMissing('PDO')) {
             self::warnPdoUnavailable($logger, 'PDO class not found - PHP PDO extension not installed.');
 
             return true;
         }
 
-        if (RiseupBooleanHelpers::is_extension_missing('pdo_sqlite')) {
+        if (RiseupBooleanHelpers::isExtensionMissing('pdo_sqlite')) {
             self::warnPdoUnavailable($logger, 'PDO SQLite extension not loaded.');
 
             return true;

@@ -73,7 +73,7 @@ class RiseupIncrementalBackup {
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
 
         $root_path = $master_dir . '/a-root.db';
-        if (RiseupBooleanHelpers::is_file_missing($root_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($root_path)) {
             return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $root_path);
         }
 

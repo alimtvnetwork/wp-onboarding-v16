@@ -27,7 +27,7 @@ trait ManagerRestoreValidationTrait {
         }
 
         $master_dir = dirname(dirname($snapshot['filepath']));
-        $isMasterMissing = RiseupBooleanHelpers::is_dir_missing($master_dir) || RiseupBooleanHelpers::is_file_missing($master_dir . '/a-root.db');
+        $isMasterMissing = RiseupBooleanHelpers::isDirMissing($master_dir) || RiseupBooleanHelpers::isFileMissing($master_dir . '/a-root.db');
         if (!$isMasterMissing) {
             return null;
         }

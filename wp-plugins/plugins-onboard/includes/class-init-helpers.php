@@ -42,7 +42,7 @@ class OnboardInitHelpers {
 
         try {
             // STEP 1: Check if OnboardPaths class exists.
-            if (OnboardBooleanHelpers::is_class_missing('OnboardPaths')) {
+            if (OnboardBooleanHelpers::isClassMissing('OnboardPaths')) {
                 OnboardLogger::error('[Directories] OnboardPaths class not found');
                 return false;
             }
@@ -75,14 +75,14 @@ class OnboardInitHelpers {
                 }
 
                 // Check if directory is missing.
-                if (OnboardBooleanHelpers::is_dir_missing($dir_path)) {
+                if (OnboardBooleanHelpers::isDirMissing($dir_path)) {
                     OnboardLogger::error("[Directories]   ✗ Does not exist: {$dir_path}");
                     $failed++;
                     continue;
                 }
 
                 // Check if directory is read-only.
-                if (OnboardBooleanHelpers::is_dir_readonly($dir_path)) {
+                if (OnboardBooleanHelpers::isDirReadonly($dir_path)) {
                     OnboardLogger::error("[Directories]   ✗ Read-only: {$dir_path}");
                     $failed++;
                     continue;
@@ -132,7 +132,7 @@ class OnboardInitHelpers {
 
             // STEP 2: Check if OnboardDatabase class exists.
             OnboardLogger::debug('[Database] Step 2: Checking OnboardDatabase class...');
-            if (OnboardBooleanHelpers::is_class_missing('OnboardDatabase')) {
+            if (OnboardBooleanHelpers::isClassMissing('OnboardDatabase')) {
                 OnboardLogger::error('[Database] OnboardDatabase class not found');
                 return null;
             }
@@ -145,7 +145,7 @@ class OnboardInitHelpers {
 
             // STEP 4: Verify connection.
             OnboardLogger::debug('[Database] Step 4: Verifying connection...');
-            if (OnboardBooleanHelpers::is_db_disconnected($db)) {
+            if (OnboardBooleanHelpers::isDbDisconnected($db)) {
                 $error = $db->get_last_error();
                 OnboardLogger::error('[Database] Connection failed: ' . $error);
                 return null;
@@ -178,7 +178,7 @@ class OnboardInitHelpers {
      */
     private static function protect_directory($dir_path) {
         // Return early if directory is missing.
-        if (OnboardBooleanHelpers::is_dir_missing($dir_path)) {
+        if (OnboardBooleanHelpers::isDirMissing($dir_path)) {
             return;
         }
 
@@ -186,14 +186,14 @@ class OnboardInitHelpers {
         $index_file = trailingslashit($dir_path) . 'index.php';
 
         // Create .htaccess if it is missing.
-        if (OnboardBooleanHelpers::is_file_missing($htaccess_file)) {
+        if (OnboardBooleanHelpers::isFileMissing($htaccess_file)) {
             $content = "Order deny,allow\nDeny from all";
             @file_put_contents($htaccess_file, $content);
             OnboardLogger::debug("[Directories]     → Created .htaccess");
         }
 
         // Create index.php if it is missing.
-        if (OnboardBooleanHelpers::is_file_missing($index_file)) {
+        if (OnboardBooleanHelpers::isFileMissing($index_file)) {
             $content = '<?php // Silence is golden.';
             @file_put_contents($index_file, $content);
             OnboardLogger::debug("[Directories]     → Created index.php");

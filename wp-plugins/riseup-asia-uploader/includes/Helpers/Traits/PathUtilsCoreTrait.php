@@ -36,7 +36,7 @@ trait PathUtilsCoreTrait {
             return self::$logger;
         }
 
-        if (RiseupBooleanHelpers::is_class_not_loaded('RiseupFileLogger')) {
+        if (RiseupBooleanHelpers::isClassNotLoaded('RiseupFileLogger')) {
             return null;
         }
 

@@ -91,7 +91,7 @@ trait WorkerBatchProcessTrait {
      */
     private function openRootDbForBatch(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
-        if (RiseupBooleanHelpers::is_file_missing($root_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($root_path)) {
             return null;
         }
 

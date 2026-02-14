@@ -49,7 +49,7 @@ trait IncrementalRegistrationTrait {
 
     /** Calculate total size of a directory. */
     private function calculateDirectorySize(string $dir): int {
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($dir)) {
             return 0;
         }
 

@@ -113,7 +113,7 @@ trait IncrementalDeltaTrait {
      * Read MAX(pk) from a SQLite file.
      */
     private function readMaxIdFromSqlite(string $sqlitePath, string $tableName, string $pk): ?int {
-        if (RiseupBooleanHelpers::is_file_missing($sqlitePath)) {
+        if (RiseupBooleanHelpers::isFileMissing($sqlitePath)) {
             return null;
         }
 

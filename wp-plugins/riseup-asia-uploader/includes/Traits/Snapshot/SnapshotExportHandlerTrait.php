@@ -46,7 +46,7 @@ trait SnapshotExportHandlerTrait {
             }
 
             $filepath = $result['filepath'];
-            if (RiseupBooleanHelpers::is_file_missing($filepath)) {
+            if (RiseupBooleanHelpers::isFileMissing($filepath)) {
                 $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, 'snapshot', StatusType::Failed->value,
                     array('snapshot_id' => $id),

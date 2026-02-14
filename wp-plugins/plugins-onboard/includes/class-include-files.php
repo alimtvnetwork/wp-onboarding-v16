@@ -88,7 +88,7 @@ class OnboardIncludeFiles {
         $mode     = $isInclude ? 'include' : 'require';
 
         // Check file existence first
-        if (OnboardBooleanHelpers::is_file_missing($filepath)) {
+        if (OnboardBooleanHelpers::isFileMissing($filepath)) {
             $trace = self::captureStackTrace();
             $errorMsg = "File not found: {$fileConstant} (resolved: {$filepath})";
 
@@ -160,7 +160,7 @@ class OnboardIncludeFiles {
     public static function loadMany($constants, $isInclude = false) {
         $failures = 0;
         foreach ($constants as $constant) {
-            if (OnboardBooleanHelpers::is_falsy(self::load($constant, $isInclude))) {
+            if (OnboardBooleanHelpers::isFalsy(self::load($constant, $isInclude))) {
                 $failures++;
             }
         }
@@ -185,7 +185,7 @@ class OnboardIncludeFiles {
      */
     public static function getFailures() {
         return array_filter(self::$results, function ($r) {
-            return OnboardBooleanHelpers::is_falsy($r['success']);
+            return OnboardBooleanHelpers::isFalsy($r['success']);
         });
     }
 

@@ -42,7 +42,7 @@ trait AgentHandlerActionTrait {
             $slug = sanitize_text_field($request->get_param('slug'));
             $this->fileLogger->info('Executing agent action', array('id' => $id, 'action' => $action, 'slug' => $slug));
             $allowed_actions = array('enable', 'disable', 'delete');
-            if (RiseupBooleanHelpers::is_not_in_list($action, $allowed_actions)) {
+            if (RiseupBooleanHelpers::isNotInList($action, $allowed_actions)) {
                 return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowed_actions), 400);
             }
             if (empty($slug)) {

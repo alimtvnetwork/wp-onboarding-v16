@@ -41,7 +41,7 @@ trait FileSystemDirTrait {
      * Delete a directory recursively.
      */
     private function deleteDirectory($dir) {
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($dir)) {
             return false;
         }
 
@@ -62,11 +62,11 @@ trait FileSystemDirTrait {
      * Copy a directory recursively.
      */
     private function copyDirectory($src, $dst) {
-        if (RiseupBooleanHelpers::is_dir_missing($src)) {
+        if (RiseupBooleanHelpers::isDirMissing($src)) {
             return false;
         }
 
-        if (RiseupBooleanHelpers::is_dir_missing($dst)) {
+        if (RiseupBooleanHelpers::isDirMissing($dst)) {
             wp_mkdir_p($dst);
         }
 

@@ -36,7 +36,7 @@ trait StatusOpsTrait {
     private function loadOpenApiSpec() {
         $spec_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/data/openapi.json';
 
-        if (RiseupBooleanHelpers::is_file_missing($spec_file)) {
+        if (RiseupBooleanHelpers::isFileMissing($spec_file)) {
             return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
         }
 
@@ -105,7 +105,7 @@ trait StatusOpsTrait {
      * Invalidate OPcache for critical plugin files.
      */
     private function invalidatePluginFiles(): int {
-        if (RiseupBooleanHelpers::is_func_missing('opcache_invalidate')) {
+        if (RiseupBooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return 0;
         }
 

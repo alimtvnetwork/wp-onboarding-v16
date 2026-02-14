@@ -144,7 +144,7 @@ trait PathUtilsDirTrait {
         $success = true;
 
         $htaccessPath = self::join($path, '.htaccess');
-        if (RiseupBooleanHelpers::is_file_missing($htaccessPath)) {
+        if (RiseupBooleanHelpers::isFileMissing($htaccessPath)) {
             $content = "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n";
             if (@file_put_contents($htaccessPath, $content) === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create .htaccess', array('path' => $htaccessPath));
@@ -153,7 +153,7 @@ trait PathUtilsDirTrait {
         }
 
         $indexPath = self::join($path, 'index.php');
-        if (RiseupBooleanHelpers::is_file_missing($indexPath)) {
+        if (RiseupBooleanHelpers::isFileMissing($indexPath)) {
             if (@file_put_contents($indexPath, "<?php\n// Silence is golden.\n") === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create index.php', array('path' => $indexPath));
                 $success = false;

@@ -59,7 +59,7 @@ trait ErrorLogHandlerTrait {
             'content' => '', 'lines' => 0, 'total_size' => 0, 'truncated' => false,
         );
 
-        $isFileUnreadable = RiseupBooleanHelpers::is_file_unreadable($filePath);
+        $isFileUnreadable = RiseupBooleanHelpers::isFileUnreadable($filePath);
         if ($isFileUnreadable) {
             return $result;
         }

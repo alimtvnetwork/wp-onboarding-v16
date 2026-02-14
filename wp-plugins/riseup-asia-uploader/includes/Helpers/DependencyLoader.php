@@ -44,7 +44,7 @@ class RiseupDependencyLoader {
      * @return bool True if loaded successfully, false on failure.
      */
     public static function load($label, $path) {
-        if (RiseupBooleanHelpers::is_file_missing($path)) {
+        if (RiseupBooleanHelpers::isFileMissing($path)) {
             self::recordResult($label, $path, false, 'File not found: ' . $path);
 
             return false;

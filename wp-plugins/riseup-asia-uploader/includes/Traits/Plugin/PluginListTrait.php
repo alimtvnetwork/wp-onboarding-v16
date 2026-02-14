@@ -22,7 +22,7 @@ trait PluginListTrait
         $this->fileLogger->info('List plugins endpoint called');
 
         try {
-            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+            if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
@@ -96,12 +96,12 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     private function scanPluginFilesWithCache(string $slug) {
-        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+        if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
         }
 
@@ -162,7 +162,7 @@ trait PluginListTrait
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
         }
 
@@ -173,7 +173,7 @@ trait PluginListTrait
             return $this->errorResponse('File not found or invalid path', HTTP_NOT_FOUND);
         }
 
-        if (RiseupBooleanHelpers::is_not_regular_file($real_file_path)) {
+        if (RiseupBooleanHelpers::isNotRegularFile($real_file_path)) {
             return $this->errorResponse('File not found', HTTP_NOT_FOUND);
         }
 

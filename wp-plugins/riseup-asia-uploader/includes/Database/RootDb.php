@@ -61,7 +61,7 @@ class RiseupRootDb {
         $this->log(LogLevelType::Info->value, 'Creating a-root.db', array('path' => $filepath));
 
         $dir = dirname($filepath);
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($dir)) {
             RiseupPathUtils::ensureDir($dir);
         }
 

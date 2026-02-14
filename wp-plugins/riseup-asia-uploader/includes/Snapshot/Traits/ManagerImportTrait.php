@@ -22,7 +22,7 @@ trait ManagerImportTrait {
      * Import a snapshot from an uploaded ZIP file.
      */
     public function importSnapshot($uploaded_path) {
-        if (RiseupBooleanHelpers::is_file_missing($uploaded_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($uploaded_path)) {
             return array('success' => false, 'error' => 'Uploaded file not found');
         }
 
@@ -79,7 +79,7 @@ trait ManagerImportTrait {
     /** Load and validate the manifest.json from the extracted directory. */
     private function loadAndValidateManifest(string $temp_dir): array {
         $manifest_path = RiseupPathUtils::join($temp_dir, 'manifest.json');
-        if (RiseupBooleanHelpers::is_file_missing($manifest_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($manifest_path)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }
 
@@ -101,7 +101,7 @@ trait ManagerImportTrait {
         $sqlite_filename = $manifest['snapshot']['filename'];
         $sqlite_path = RiseupPathUtils::join($temp_dir, $sqlite_filename);
 
-        if (RiseupBooleanHelpers::is_file_missing($sqlite_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($sqlite_path)) {
             throw new Exception('SQLite file not found in archive: ' . $sqlite_filename);
         }
 
@@ -125,7 +125,7 @@ trait ManagerImportTrait {
         $new_filename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
         $dest_path = RiseupPathUtils::join($snapshots_dir, $new_filename);
 
-        if (RiseupBooleanHelpers::is_copy_failed($sqlite_path, $dest_path)) {
+        if (RiseupBooleanHelpers::isCopyFailed($sqlite_path, $dest_path)) {
             throw new Exception('Failed to copy snapshot file to destination');
         }
 

@@ -73,7 +73,7 @@ trait UploadZipTrait
 
     /** Remove duplicate plugin folders that share the same slug or TextDomain. */
     private function removeDuplicatePlugins($slug, $plugins_dir) {
-        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+        if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
