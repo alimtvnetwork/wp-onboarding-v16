@@ -159,7 +159,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Site, error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, apperror.New(apperror.ErrNotFound, "site not found").
-				WithContext("siteId", id)
+				WithSiteID(id)
 		}
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site")
 	}
@@ -215,7 +215,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*models.Site, 
 	}
 	if existing != nil {
 		return nil, apperror.New(apperror.ErrValidation, "site with this URL already exists").
-			WithContext("url", normalizedURL)
+			WithURL(normalizedURL)
 	}
 
 	// Encrypt password
@@ -806,18 +806,18 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
 	absUploaderPath, err := pathutil.ToAbsolute(uploaderPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSRead, "failed to resolve uploader path").
-			WithContext("path", uploaderPath)
+			WithPath(uploaderPath)
 	}
 
 	// Ensure path exists
 	info, err := os.Stat(absUploaderPath)
 	if err != nil {
 		return "", apperror.Wrap(err, apperror.ErrFSNotFound, "uploader path not found").
-			WithContext("path", pathutil.ForDisplay(absUploaderPath))
+			WithPath(pathutil.ForDisplay(absUploaderPath))
 	}
 	if !info.IsDir() {
 		return "", apperror.New(apperror.ErrFSInvalid, "uploader path is not a directory").
-			WithContext("path", pathutil.ForDisplay(absUploaderPath))
+			WithPath(pathutil.ForDisplay(absUploaderPath))
 	}
 
 	// Create temp file for ZIP
@@ -881,7 +881,7 @@ func (s *Service) createUploaderZip(uploaderPath string) (string, error) {
 	if err != nil {
 		os.Remove(tempPath)
 		return "", apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP").
-			WithContext("path", pathutil.ForDisplay(absUploaderPath))
+			WithPath(pathutil.ForDisplay(absUploaderPath))
 	}
 
 	return tempPath, nil
@@ -1344,9 +1344,9 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			errCode = apperror.ErrWPPluginDelete
 		}
 		return apperror.Wrap(err, errCode, fmt.Sprintf("failed to %s plugin", action)).
-			WithContext("siteId", siteID).
-			WithContext("plugin", pluginSlug).
-			WithContext("sessionId", sessionID)
+			WithSiteID(siteID).
+			WithPlugin(pluginSlug).
+			WithSessionID(sessionID)
 	}
 
 	// Success — save response.json

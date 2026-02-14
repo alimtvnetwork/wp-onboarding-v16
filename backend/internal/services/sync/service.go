@@ -735,7 +735,7 @@ func (s *serviceImpl) getMapping(ctx context.Context, pluginID, siteID int64) (*
 	var syncStatus string
 	if err := row.Scan(&m.ID, &m.PluginID, &m.SiteID, &m.RemoteSlug, &syncStatus, &m.SiteName, &m.SiteURL); err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get plugin-site mapping").
-			WithContext("pluginId", pluginID).WithContext("siteId", siteID)
+			WithPluginID(pluginID).WithSiteID(siteID)
 	}
 	m.SyncStatus = syncStatus
 	return &m, nil

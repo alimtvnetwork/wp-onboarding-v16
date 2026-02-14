@@ -91,62 +91,17 @@ func (e *AppError) WithDetails(details string) *AppError {
 	return e
 }
 
-// WithContext adds a diagnostic field by key name.
-// Deprecated: Use typed setters (WithPath, WithSiteID, etc.) instead.
-// This compatibility shim will be removed in Phase 3 of the GE remediation.
-func (e *AppError) WithContext(key string, value any) *AppError {
-	switch key {
-	case "path":
-		e.Diagnostic.Path = fmt.Sprintf("%v", value)
-	case "file":
-		e.Diagnostic.File = fmt.Sprintf("%v", value)
-	case "destPath":
-		e.Diagnostic.DestPath = fmt.Sprintf("%v", value)
-	case "backupDir":
-		e.Diagnostic.BackupDir = fmt.Sprintf("%v", value)
-	case "url":
-		e.Diagnostic.URL = fmt.Sprintf("%v", value)
-	case "slug":
-		e.Diagnostic.Slug = fmt.Sprintf("%v", value)
-	case "filePath":
-		e.Diagnostic.FilePath = fmt.Sprintf("%v", value)
-	case "pluginSlug":
-		e.Diagnostic.PluginSlug = fmt.Sprintf("%v", value)
-	case "plugin":
-		e.Diagnostic.Plugin = fmt.Sprintf("%v", value)
-	case "siteId":
-		if id, ok := value.(int64); ok {
-			e.Diagnostic.SiteID = id
-		}
-	case "pluginId":
-		if id, ok := value.(int64); ok {
-			e.Diagnostic.PluginID = id
-		}
-	case "snapshotId":
-		if id, ok := value.(int64); ok {
-			e.Diagnostic.SnapshotID = id
-		}
-	case "mappingId":
-		if id, ok := value.(int64); ok {
-			e.Diagnostic.MappingID = id
-		}
-	case "versionId":
-		if id, ok := value.(int64); ok {
-			e.Diagnostic.VersionID = id
-		}
-	case "sessionId":
-		e.Diagnostic.SessionID = fmt.Sprintf("%v", value)
-	case "runId":
-		e.Diagnostic.RunID = fmt.Sprintf("%v", value)
-	}
-	return e
-}
-
-// --- Typed diagnostic setters (preferred over WithContext) ---
+// --- Typed diagnostic setters ---
 
 // WithPath sets the path diagnostic field.
 func (e *AppError) WithPath(p string) *AppError {
 	e.Diagnostic.Path = p
+	return e
+}
+
+// WithFile sets the file diagnostic field.
+func (e *AppError) WithFile(f string) *AppError {
+	e.Diagnostic.File = f
 	return e
 }
 

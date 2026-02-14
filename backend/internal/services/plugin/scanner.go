@@ -186,7 +186,7 @@ func (s *Service) ValidatePath(ctx context.Context, path string) error {
 		return err
 	}
 	if !scan.IsValid {
-		return apperror.New(apperror.ErrPathInvalid, scan.Error).WithContext("path", path)
+		return apperror.New(apperror.ErrPathInvalid, scan.Error).WithPath(path)
 	}
 	return nil
 }
