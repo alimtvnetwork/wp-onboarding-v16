@@ -25,8 +25,23 @@ const (
 	// HttpStatusNotFound represents 404 Not Found.
 	HttpStatusNotFound HttpStatusType = 404
 
+	// HttpStatusRequestTimeout represents 408 Request Timeout.
+	HttpStatusRequestTimeout HttpStatusType = 408
+
+	// HttpStatusTooManyRequests represents 429 Too Many Requests.
+	HttpStatusTooManyRequests HttpStatusType = 429
+
 	// HttpStatusServerError represents 500 Internal Server Error.
 	HttpStatusServerError HttpStatusType = 500
+
+	// HttpStatusBadGateway represents 502 Bad Gateway.
+	HttpStatusBadGateway HttpStatusType = 502
+
+	// HttpStatusServiceUnavailable represents 503 Service Unavailable.
+	HttpStatusServiceUnavailable HttpStatusType = 503
+
+	// HttpStatusGatewayTimeout represents 504 Gateway Timeout.
+	HttpStatusGatewayTimeout HttpStatusType = 504
 )
 
 // IsEqual checks type-safe equality against another HttpStatusType.
@@ -52,4 +67,14 @@ func (h HttpStatusType) IsClientError() bool {
 // IsServerError returns true if the status represents a server error (5xx).
 func (h HttpStatusType) IsServerError() bool {
 	return h >= 500
+}
+
+// IsRetryable returns true if the status code indicates a transient/retryable failure.
+func (h HttpStatusType) IsRetryable() bool {
+	return h.IsEqual(HttpStatusRequestTimeout) ||
+		h.IsEqual(HttpStatusTooManyRequests) ||
+		h.IsEqual(HttpStatusServerError) ||
+		h.IsEqual(HttpStatusBadGateway) ||
+		h.IsEqual(HttpStatusServiceUnavailable) ||
+		h.IsEqual(HttpStatusGatewayTimeout)
 }

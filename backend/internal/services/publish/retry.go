@@ -116,11 +116,7 @@ func isTransientError(err error) bool {
 
 	// WordPress API errors with retryable status codes
 	if apiErr, ok := err.(*wordpress.APIError); ok {
-		switch apiErr.StatusCode {
-		case 408, 429, 500, 502, 503, 504:
-			return true
-		}
-		return false
+		return wordpress.HttpStatusType(apiErr.StatusCode).IsRetryable()
 	}
 
 	// Common transient error patterns
