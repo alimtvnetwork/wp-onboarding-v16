@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
@@ -65,7 +66,7 @@ trait PluginLifecycleDeleteTrait {
 
         $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Success->value);
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_DELETE)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . EndpointType::PluginDelete->route())
             ->setSingleResult(array('plugin_slug' => $slug, 'deleted' => true))
             ->toResponse();
     }
