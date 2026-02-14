@@ -3,7 +3,7 @@
 > **Version:** 1.1.0  
 > **Created:** 2026-02-14  
 > **Updated:** 2026-02-14  
-> **Status:** In Progress  
+> **Status:** ✅ Completed  
 > **Depends on:** PHP enum `isEqual()` pattern (completed)
 
 ---
