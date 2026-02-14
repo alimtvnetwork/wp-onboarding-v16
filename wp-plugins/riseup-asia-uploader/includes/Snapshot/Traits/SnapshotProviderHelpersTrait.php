@@ -53,7 +53,7 @@ trait SnapshotProviderHelpersTrait {
 
     /** Ensure snapshots directory exists with proper security. */
     protected function ensureSnapshotsDir() {
-        $dir = RiseupPathUtils::ensure_path(true, RiseupPathUtils::getSnapshotsDir());
+        $dir = RiseupPathUtils::ensurePath(true, RiseupPathUtils::getSnapshotsDir());
 
         if ($dir === false) {
             $this->log(LogLevelType::Error->value, 'Failed to ensure snapshots directory');

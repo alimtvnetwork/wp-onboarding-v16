@@ -62,7 +62,7 @@ class RiseupRootDb {
 
         $dir = dirname($filepath);
         if (RiseupBooleanHelpers::is_dir_missing($dir)) {
-            RiseupPathUtils::ensure_dir($dir);
+            RiseupPathUtils::ensureDir($dir);
         }
 
         $pdo = new PDO('sqlite:' . $filepath);

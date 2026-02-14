@@ -19,7 +19,7 @@ trait OrchestratorPluginTrait {
      */
     private function snapshotPlugins($snapshot_dir, $selection = 'all') {
         $plugins_dir = $snapshot_dir . '/plugins';
-        if (!RiseupPathUtils::ensure_dir($plugins_dir, true)) {
+        if (!RiseupPathUtils::ensureDir($plugins_dir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }

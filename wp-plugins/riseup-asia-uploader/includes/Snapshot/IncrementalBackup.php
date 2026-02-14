@@ -113,7 +113,7 @@ class RiseupIncrementalBackup {
 
     /** Get the base snapshots directory. */
     private function getSnapshotsBaseDir() {
-        return RiseupPathUtils::get_snapshots_dir();
+        return RiseupPathUtils::getSnapshotsDir();
     }
 
     /** Format bytes. */

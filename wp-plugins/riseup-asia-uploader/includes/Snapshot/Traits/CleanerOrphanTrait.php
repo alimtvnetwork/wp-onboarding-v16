@@ -26,8 +26,8 @@ trait CleanerOrphanTrait {
     private function cleanupOrphanFiles($dry_run = false) {
         $result = array('removed' => 0, 'files' => array(), 'bytes_freed' => 0);
 
-        $snapshots_dir = RiseupPathUtils::get_snapshots_dir();
-        if (!RiseupPathUtils::dir_exists($snapshots_dir)) {
+        $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
+        if (!RiseupPathUtils::dirExists($snapshots_dir)) {
             return $result;
         }
 
@@ -73,15 +73,14 @@ trait CleanerOrphanTrait {
             $bytes = filesize($file);
 
             if (!$dry_run) {
-                if (RiseupPathUtils::delete_file($file)) {
+                if (RiseupPathUtils::deleteFile($file)) {
                     $result['removed']++;
                     $result['bytes_freed'] += $bytes;
-                    $this->log(LogLevelType::Debug->value, 'Deleted orphan file', array('file' => basename($file)));
-
+...
                     $zip_path = $this->getZipPath($file);
-                    if (RiseupPathUtils::file_exists($zip_path)) {
+                    if (RiseupPathUtils::fileExists($zip_path)) {
                         $result['bytes_freed'] += filesize($zip_path);
-                        RiseupPathUtils::delete_file($zip_path);
+                        RiseupPathUtils::deleteFile($zip_path);
                     }
                 }
             } else {

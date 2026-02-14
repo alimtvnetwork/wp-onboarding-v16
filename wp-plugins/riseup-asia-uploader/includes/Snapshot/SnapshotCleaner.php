@@ -88,7 +88,7 @@ class RiseupSnapshotCleaner {
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
             'deleted_total' => $total_deleted,
-            'space_freed'   => RiseupPathUtils::format_bytes($results['space_freed_bytes']),
+            'space_freed'   => RiseupPathUtils::formatBytes($results['space_freed_bytes']),
             'duration'      => $results['duration'],
             'dry_run'       => $dry_run,
         ));

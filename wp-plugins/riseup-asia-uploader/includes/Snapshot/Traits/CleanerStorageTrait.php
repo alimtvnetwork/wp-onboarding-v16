@@ -48,7 +48,7 @@ trait CleanerStorageTrait {
             if ($db_stats) {
                 $stats['total_snapshots']      = intval($db_stats['count']);
                 $stats['total_size_bytes']     = intval($db_stats['total_size']);
-                $stats['total_size_formatted'] = RiseupPathUtils::format_bytes($stats['total_size_bytes']);
+                $stats['total_size_formatted'] = RiseupPathUtils::formatBytes($stats['total_size_bytes']);
 
                 if ($db_stats['oldest']) {
                     $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);
@@ -58,12 +58,12 @@ trait CleanerStorageTrait {
                 }
             }
 
-            $snapshots_dir = RiseupPathUtils::get_snapshots_dir();
-            if (RiseupPathUtils::dir_exists($snapshots_dir)) {
-                $free = RiseupPathUtils::get_free_space($snapshots_dir);
+            $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
+            if (RiseupPathUtils::dirExists($snapshots_dir)) {
+                $free = RiseupPathUtils::getFreeSpace($snapshots_dir);
                 if ($free !== false) {
                     $stats['disk_free_bytes']     = $free;
-                    $stats['disk_free_formatted'] = RiseupPathUtils::format_bytes($free);
+                    $stats['disk_free_formatted'] = RiseupPathUtils::formatBytes($free);
                 }
             }
 
