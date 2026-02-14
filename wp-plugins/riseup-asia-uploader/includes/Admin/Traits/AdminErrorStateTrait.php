@@ -17,17 +17,17 @@ trait AdminErrorStateTrait {
      *
      * @return int
      */
-    private function get_unseen_error_count() {
+    private function getUnseenErrorCount() {
         try {
-            $db = RiseupDatabase::get_instance();
-            $pdo = $db->get_pdo();
+            $db = RiseupDatabase::getInstance();
+            $pdo = $db->getPdo();
             if (!$pdo) {
                 return 0;
             }
 
-            $last_seen = $this->get_flash_value('last_seen_error_id', 0);
+            $lastSeen = $this->getFlashValue('last_seen_error_id', 0);
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
-            $stmt->execute(array($last_seen));
+            $stmt->execute(array($lastSeen));
 
             return (int) $stmt->fetchColumn();
         } catch (Throwable $e) {
@@ -42,10 +42,10 @@ trait AdminErrorStateTrait {
      * @param mixed  $default Default value.
      * @return string
      */
-    private function get_flash_value($key, $default = '') {
+    private function getFlashValue($key, $default = '') {
         try {
-            $db = RiseupDatabase::get_instance();
-            $pdo = $db->get_pdo();
+            $db = RiseupDatabase::getInstance();
+            $pdo = $db->getPdo();
             if (!$pdo) {
                 return $default;
             }
@@ -63,14 +63,14 @@ trait AdminErrorStateTrait {
     /**
      * Render global admin notice when there are unseen errors.
      */
-    public function render_global_error_notice() {
-        $unseen = $this->get_unseen_error_count();
+    public function renderGlobalErrorNotice() {
+        $unseen = $this->getUnseenErrorCount();
         if ($unseen <= 0) {
             return;
         }
 
-        $current_page = isset($_GET['page']) ? $_GET['page'] : '';
-        if ($current_page === 'riseup-asia-errors') {
+        $currentPage = isset($_GET['page']) ? $_GET['page'] : '';
+        if ($currentPage === 'riseup-asia-errors') {
             return;
         }
 

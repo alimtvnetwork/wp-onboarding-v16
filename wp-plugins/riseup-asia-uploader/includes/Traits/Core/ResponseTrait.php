@@ -13,19 +13,19 @@ trait ResponseTrait {
      * Safely execute a callable with comprehensive error handling.
      * Catches both Exception and Error (Throwable) for complete coverage.
      *
-     * @param callable $callback    The function to execute.
-     * @param string   $context     Description of the operation for error messages.
-     * @param array    $log_context Additional context for logging.
+     * @param callable $callback   The function to execute.
+     * @param string   $context    Description of the operation for error messages.
+     * @param array    $logContext Additional context for logging.
      *
      * @return WP_REST_Response|mixed The result of the callback or an error response.
      */
-    private function safe_execute($callback, $context = 'operation', $log_context = array()) {
+    private function safeExecute($callback, $context = 'operation', $logContext = array()) {
         try {
             return call_user_func($callback);
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, "Throwable in {$context}");
+            $this->fileLogger->logException($e, "Throwable in {$context}");
 
-            $this->file_logger->error("safe_execute caught Throwable", array_merge($log_context, array(
+            $this->fileLogger->error("safeExecute caught Throwable", array_merge($logContext, array(
                 'context'   => $context,
                 'exception' => get_class($e),
                 'message'   => $e->getMessage(),
@@ -33,7 +33,7 @@ trait ResponseTrait {
                 'line'      => $e->getLine(),
             )));
 
-            return $this->error_response(
+            return $this->errorResponse(
                 "Error in {$context}: " . $e->getMessage(),
                 HTTP_SERVER_ERROR,
                 $e
@@ -49,13 +49,13 @@ trait ResponseTrait {
      * @param Throwable|null $exception Optional exception for stack trace.
      * @return WP_REST_Response
      */
-    private function error_response($message, $status, $exception = null) {
+    private function errorResponse($message, $status, $exception = null) {
         $this->logErrorWithBacktrace($message, $status, $exception);
 
-        $requested_at = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
         return RiseupEnvelopeBuilder::error($message, $status, $exception)
-            ->setRequestedAt($requested_at)
+            ->setRequestedAt($requestedAt)
             ->setDelegatedAt(home_url())
             ->toResponse();
     }
@@ -69,13 +69,13 @@ trait ResponseTrait {
      */
     private function logErrorWithBacktrace(string $message, int $status, $exception) {
         if ($exception instanceof Throwable) {
-            $this->file_logger->log_exception($exception, $message);
+            $this->fileLogger->logException($exception, $message);
 
             return;
         }
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
-        $this->file_logger->error('Error response', array(
+        $this->fileLogger->error('Error response', array(
             'message'    => $message,
             'status'     => $status,
             'stackTrace' => implode("\n", array_map(function($i, $f) {
@@ -96,7 +96,7 @@ trait ResponseTrait {
      *
      * @return string
      */
-    private function get_exception_code($exception) {
+    private function getExceptionCode($exception) {
         $code = $exception->getCode();
         if (is_int($code) && $code > 0) {
             return 'E' . $code;

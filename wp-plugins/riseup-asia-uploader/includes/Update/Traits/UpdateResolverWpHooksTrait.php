@@ -18,29 +18,29 @@ trait UpdateResolverWpHooksTrait {
      * @param object $transient Update transient data.
      * @return object Modified transient.
      */
-    public function check_for_plugin_update($transient) {
+    public function checkForPluginUpdate($transient) {
         if (empty($transient->checked)) {
             return $transient;
         }
 
-        $settings = $this->get_settings();
+        $settings = $this->getSettings();
         if (!$settings['enabled'] || empty($settings['master_url'])) {
             return $transient;
         }
 
-        $this->file_logger->debug('Checking for plugin update');
-        $update_info = $this->fetch_update_info();
-        if (is_wp_error($update_info) || empty($update_info['version'])) {
+        $this->fileLogger->debug('Checking for plugin update');
+        $updateInfo = $this->fetchUpdateInfo();
+        if (is_wp_error($updateInfo) || empty($updateInfo['version'])) {
             return $transient;
         }
 
-        $plugin_file = PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
+        $pluginFile = PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
 
-        if (version_compare($update_info['version'], PLUGIN_VERSION, '>')) {
-            $transient->response[$plugin_file] = $this->buildUpdateTransientEntry($update_info, $plugin_file);
+        if (version_compare($updateInfo['version'], PLUGIN_VERSION, '>')) {
+            $transient->response[$pluginFile] = $this->buildUpdateTransientEntry($updateInfo, $pluginFile);
         } else {
-            unset($transient->response[$plugin_file]);
-            $transient->no_update[$plugin_file] = $this->buildNoUpdateTransientEntry($plugin_file);
+            unset($transient->response[$pluginFile]);
+            $transient->no_update[$pluginFile] = $this->buildNoUpdateTransientEntry($pluginFile);
         }
 
         return $transient;
@@ -49,32 +49,32 @@ trait UpdateResolverWpHooksTrait {
     /**
      * Build a transient entry for an available update.
      *
-     * @param array  $update_info Update info.
-     * @param string $plugin_file Plugin file path.
+     * @param array  $updateInfo Update info.
+     * @param string $pluginFile Plugin file path.
      * @return object Transient entry.
      */
-    private function buildUpdateTransientEntry(array $update_info, string $plugin_file): object {
-        $this->file_logger->info('Update available', array('current' => PLUGIN_VERSION, 'new' => $update_info['version']));
+    private function buildUpdateTransientEntry(array $updateInfo, string $pluginFile): object {
+        $this->fileLogger->info('Update available', array('current' => PLUGIN_VERSION, 'new' => $updateInfo['version']));
 
         return (object) array(
-            'id' => PLUGIN_SLUG, 'slug' => PLUGIN_SLUG, 'plugin' => $plugin_file,
-            'new_version' => $update_info['version'], 'url' => $update_info['url'] ?? '',
-            'package' => $update_info['package'], 'icons' => array(), 'banners' => array(),
-            'tested' => $update_info['tested'] ?? '', 'requires' => $update_info['requires'] ?? '',
-            'requires_php' => $update_info['requires_php'] ?? '',
+            'id' => PLUGIN_SLUG, 'slug' => PLUGIN_SLUG, 'plugin' => $pluginFile,
+            'new_version' => $updateInfo['version'], 'url' => $updateInfo['url'] ?? '',
+            'package' => $updateInfo['package'], 'icons' => array(), 'banners' => array(),
+            'tested' => $updateInfo['tested'] ?? '', 'requires' => $updateInfo['requires'] ?? '',
+            'requires_php' => $updateInfo['requires_php'] ?? '',
         );
     }
 
     /**
      * Build a transient entry indicating no update available.
      *
-     * @param string $plugin_file Plugin file path.
+     * @param string $pluginFile Plugin file path.
      * @return object Transient entry.
      */
-    private function buildNoUpdateTransientEntry(string $plugin_file): object {
+    private function buildNoUpdateTransientEntry(string $pluginFile): object {
         return (object) array(
             'id' => PLUGIN_SLUG, 'slug' => PLUGIN_SLUG,
-            'plugin' => $plugin_file, 'new_version' => PLUGIN_VERSION, 'url' => '', 'package' => '',
+            'plugin' => $pluginFile, 'new_version' => PLUGIN_VERSION, 'url' => '', 'package' => '',
         );
     }
 
@@ -86,7 +86,7 @@ trait UpdateResolverWpHooksTrait {
      * @param object             $args   Plugin API arguments.
      * @return false|object Plugin information or false.
      */
-    public function plugin_info($result, $action, $args) {
+    public function pluginInfo($result, $action, $args) {
         if ($action !== 'plugin_information') {
             return $result;
         }
@@ -95,34 +95,34 @@ trait UpdateResolverWpHooksTrait {
             return $result;
         }
 
-        $settings = $this->get_settings();
-        $update_info = $settings['update_info'];
+        $settings = $this->getSettings();
+        $updateInfo = $settings['update_info'];
 
-        if (empty($update_info)) {
+        if (empty($updateInfo)) {
             return $result;
         }
 
-        return $this->buildPluginInfoObject($update_info);
+        return $this->buildPluginInfoObject($updateInfo);
     }
 
     /**
      * Build the plugin info object for the details modal.
      *
-     * @param array $update_info Update metadata.
+     * @param array $updateInfo Update metadata.
      * @return object Plugin info.
      */
-    private function buildPluginInfoObject(array $update_info): object {
+    private function buildPluginInfoObject(array $updateInfo): object {
         return (object) array(
             'name' => PLUGIN_NAME, 'slug' => PLUGIN_SLUG,
-            'version' => $update_info['version'] ?? PLUGIN_VERSION,
+            'version' => $updateInfo['version'] ?? PLUGIN_VERSION,
             'author' => 'MD ALIM UL KARIM', 'homepage' => 'https://rasia.pro/alim-r-profile-v1',
-            'requires' => $update_info['requires'] ?? MIN_WP_VERSION,
-            'requires_php' => $update_info['requires_php'] ?? MIN_PHP_VERSION,
-            'tested' => $update_info['tested'] ?? get_bloginfo('version'),
-            'download_link' => $update_info['package'] ?? '',
+            'requires' => $updateInfo['requires'] ?? MIN_WP_VERSION,
+            'requires_php' => $updateInfo['requires_php'] ?? MIN_PHP_VERSION,
+            'tested' => $updateInfo['tested'] ?? get_bloginfo('version'),
+            'download_link' => $updateInfo['package'] ?? '',
             'sections' => array(
                 'description' => 'Remote plugin management, blog post publishing, and audit logging via REST API.',
-                'changelog' => $update_info['changelog'] ?? 'See plugin repository for changelog.',
+                'changelog' => $updateInfo['changelog'] ?? 'See plugin repository for changelog.',
             ),
         );
     }
@@ -132,21 +132,21 @@ trait UpdateResolverWpHooksTrait {
      *
      * @return array Test result with status and message.
      */
-    public function test_connection() {
-        $settings = $this->get_settings();
+    public function testConnection() {
+        $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {
             return array('success' => false, 'message' => 'No master URL configured');
         }
 
-        $this->file_logger->info('Testing update server connection');
-        $resolved = $this->resolve_url($settings['master_url']);
+        $this->fileLogger->info('Testing update server connection');
+        $resolved = $this->resolveUrl($settings['master_url']);
 
         if (is_wp_error($resolved)) {
             return array('success' => false, 'message' => $resolved->get_error_message());
         }
 
-        $this->save_settings(array(
+        $this->saveSettings(array(
             'resolved_url' => $resolved, 'resolved_at' => current_time('mysql', true),
             'last_check' => current_time('mysql', true), 'last_error' => '',
         ));

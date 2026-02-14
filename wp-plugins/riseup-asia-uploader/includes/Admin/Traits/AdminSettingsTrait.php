@@ -15,17 +15,17 @@ trait AdminSettingsTrait {
     /**
      * Register settings.
      */
-    public function register_settings() {
+    public function registerSettings() {
         register_setting(
             'riseup_asia_settings_group',
             self::OPTION_NAME,
-            array($this, 'sanitize_settings')
+            array($this, 'sanitizeSettings')
         );
 
         register_setting(
             'riseup_asia_settings_group',
             RiseupUpdateResolver::OPTION_NAME,
-            array($this, 'sanitize_update_settings')
+            array($this, 'sanitizeUpdateSettings')
         );
     }
 
@@ -35,7 +35,7 @@ trait AdminSettingsTrait {
      * @param array $input Raw input.
      * @return array Sanitized settings.
      */
-    public function sanitize_settings($input) {
+    public function sanitizeSettings($input) {
         $sanitized = self::$defaults;
 
         if (!empty($input['endpoints']) && is_array($input['endpoints'])) {
@@ -65,7 +65,7 @@ trait AdminSettingsTrait {
      * @param array $input Raw input.
      * @return array Sanitized settings.
      */
-    public function sanitize_update_settings($input) {
+    public function sanitizeUpdateSettings($input) {
         $current = get_option(RiseupUpdateResolver::OPTION_NAME, array());
         $sanitized = $this->buildSanitizedUpdateFields($input, $current);
 
@@ -104,7 +104,7 @@ trait AdminSettingsTrait {
      *
      * @return array Settings array.
      */
-    public static function get_settings() {
+    public static function getSettings() {
         $settings = get_option(self::OPTION_NAME, array());
 
         return wp_parse_args($settings, self::$defaults);
@@ -116,8 +116,8 @@ trait AdminSettingsTrait {
      * @param string $endpoint Endpoint name.
      * @return bool True if enabled.
      */
-    public static function is_endpoint_enabled($endpoint) {
-        $settings = self::get_settings();
+    public static function isEndpointEnabled($endpoint) {
+        $settings = self::getSettings();
 
         return !empty($settings['endpoints'][$endpoint]['enabled']);
     }
@@ -128,8 +128,8 @@ trait AdminSettingsTrait {
      * @param string $endpoint Endpoint name.
      * @return bool True if auth required.
      */
-    public static function is_auth_required($endpoint) {
-        $settings = self::get_settings();
+    public static function isAuthRequired($endpoint) {
+        $settings = self::getSettings();
 
         return !empty($settings['endpoints'][$endpoint]['auth_required']);
     }
