@@ -44,7 +44,7 @@ type GoEndpointRoute struct {
 // WPEndpointRoute describes the WordPress REST API endpoint that receives the delegated request.
 type WPEndpointRoute struct {
 	Method   string
-	Endpoint string // relative to namespace, e.g. "/plugins/enable"
+	Endpoint EndpointType // typed endpoint path
 }
 
 // GoEndpointMap maps each operation enum to the Go backend API route.
@@ -98,7 +98,7 @@ func ResolveWPEndpoint(name WPEndpointName) string {
 	if !ok {
 		return "UNKNOWN"
 	}
-	return "/" + RiseupAsiaNamespace + route.Endpoint
+	return "/" + RiseupAsiaNamespace + route.Endpoint.String()
 }
 
 func replaceID(pattern string, id int64) string {
