@@ -9,6 +9,7 @@
  * @since   1.9.0
  */
 
+use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 
@@ -58,8 +59,8 @@ trait SchedulerTriggerTrait {
     public function getStatus() {
         $settings = $this->detector->getSettings();
 
-        $scheduled_next = wp_next_scheduled(CRON_SNAPSHOT_SCHEDULED);
-        $cleanup_next = wp_next_scheduled(CRON_SNAPSHOT_CLEANUP);
+        $scheduled_next = wp_next_scheduled(HookType::CronSnapshotScheduled->value);
+        $cleanup_next = wp_next_scheduled(HookType::CronSnapshotCleanup->value);
 
         return array(
             'schedule_enabled' => $settings['schedule_enabled'],
@@ -100,7 +101,7 @@ trait SchedulerTriggerTrait {
 
             $scheduled = wp_schedule_single_event(
                 time() + 5,
-                CRON_SNAPSHOT_IMMEDIATE,
+                HookType::CronSnapshotImmediate->value,
                 array($cron_args)
             );
 
@@ -141,7 +142,7 @@ trait SchedulerTriggerTrait {
 
         $cron_args = array('snapshot_id' => $snapshot_id, 'options' => $options);
 
-        $scheduled = wp_schedule_single_event(time() + 5, CRON_SNAPSHOT_RESTORE, array($cron_args));
+        $scheduled = wp_schedule_single_event(time() + 5, HookType::CronSnapshotRestore->value, array($cron_args));
 
         if ($scheduled === false) {
             return array('success' => false, 'error' => 'Failed to schedule background restore');
@@ -161,15 +162,15 @@ trait SchedulerTriggerTrait {
     public function clearAllSchedules() {
         $this->clearScheduledSnapshot();
 
-        $cleanup = wp_next_scheduled(CRON_SNAPSHOT_CLEANUP);
+        $cleanup = wp_next_scheduled(HookType::CronSnapshotCleanup->value);
         if ($cleanup) {
-            wp_unschedule_event($cleanup, CRON_SNAPSHOT_CLEANUP);
+            wp_unschedule_event($cleanup, HookType::CronSnapshotCleanup->value);
         }
 
-        wp_unschedule_hook(CRON_SNAPSHOT_IMMEDIATE);
-        wp_unschedule_hook(CRON_SNAPSHOT_WORKER_BATCH);
-        wp_unschedule_hook(CRON_SNAPSHOT_RESTORE);
-        wp_unschedule_hook(CRON_SNAPSHOT_INCREMENTAL);
+        wp_unschedule_hook(HookType::CronSnapshotImmediate->value);
+        wp_unschedule_hook(HookType::CronSnapshotWorkerBatch->value);
+        wp_unschedule_hook(HookType::CronSnapshotRestore->value);
+        wp_unschedule_hook(HookType::CronSnapshotIncremental->value);
 
         $this->logger->info('[SCHEDULER] All schedules cleared');
     }

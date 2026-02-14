@@ -6,6 +6,7 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Enums\TableType;
@@ -157,6 +158,6 @@ trait WorkerJobLifecycleTrait {
      * @param int $job_id Job ID.
      */
     private function scheduleNextBatch($job_id) {
-        wp_schedule_single_event(time() + 5, CRON_SNAPSHOT_WORKER_BATCH, array(array('job_id' => $job_id)));
+        wp_schedule_single_event(time() + 5, HookType::CronSnapshotWorkerBatch->value, array(array('job_id' => $job_id)));
     }
 }

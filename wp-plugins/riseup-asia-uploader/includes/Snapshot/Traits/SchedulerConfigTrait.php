@@ -6,6 +6,8 @@
  * @since   1.9.0
  */
 
+use RiseupAsia\Enums\HookType;
+
 trait SchedulerConfigTrait {
 
     /**
@@ -36,9 +38,9 @@ trait SchedulerConfigTrait {
      * Ensure cleanup cron is scheduled.
      */
     private function ensureCleanupScheduled() {
-        if (!wp_next_scheduled(CRON_SNAPSHOT_CLEANUP)) {
+        if (!wp_next_scheduled(HookType::CronSnapshotCleanup->value)) {
             $timestamp = strtotime('tomorrow 04:00:00');
-            wp_schedule_event($timestamp, 'daily', CRON_SNAPSHOT_CLEANUP);
+            wp_schedule_event($timestamp, 'daily', HookType::CronSnapshotCleanup->value);
             $this->logger->info('[SCHEDULER] Cleanup cron scheduled', array('next_run' => date('c', $timestamp)));
         }
     }
@@ -62,7 +64,7 @@ trait SchedulerConfigTrait {
 
         $next_run = $this->calculateNextRunTime($settings['schedule_frequency'], $settings['schedule_time'], $settings['schedule_day']);
         $recurrence = $this->mapFrequencyToRecurrence($settings['schedule_frequency']);
-        $result = wp_schedule_event($next_run, $recurrence, CRON_SNAPSHOT_SCHEDULED);
+        $result = wp_schedule_event($next_run, $recurrence, HookType::CronSnapshotScheduled->value);
 
         if ($result) {
             $this->logger->info('[SCHEDULER] Scheduled snapshot cron', array(
@@ -77,9 +79,9 @@ trait SchedulerConfigTrait {
      * Clear scheduled snapshot cron.
      */
     public function clearScheduledSnapshot() {
-        $timestamp = wp_next_scheduled(CRON_SNAPSHOT_SCHEDULED);
+        $timestamp = wp_next_scheduled(HookType::CronSnapshotScheduled->value);
         if ($timestamp) {
-            wp_unschedule_event($timestamp, CRON_SNAPSHOT_SCHEDULED);
+            wp_unschedule_event($timestamp, HookType::CronSnapshotScheduled->value);
             $this->logger->debug('[SCHEDULER] Cleared scheduled snapshot cron');
         }
     }
