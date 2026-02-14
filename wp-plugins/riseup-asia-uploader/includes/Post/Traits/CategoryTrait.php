@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
 
 trait CategoryTrait {
 
@@ -36,7 +37,7 @@ trait CategoryTrait {
             if (is_wp_error($result)) {
                 $errorMsg = $result->get_error_message();
                 $this->fileLogger->error('Category creation failed', array('error' => $errorMsg));
-                $this->logger->log_post_action(ActionType::CategoryCreate->value, 0, STATUS_FAILED, $data, $errorMsg);
+                $this->logger->log_post_action(ActionType::CategoryCreate->value, 0, StatusType::Failed->value, $data, $errorMsg);
                 return array('success' => false, 'error' => $errorMsg);
             }
 

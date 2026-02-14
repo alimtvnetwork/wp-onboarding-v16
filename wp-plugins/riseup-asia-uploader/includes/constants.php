@@ -78,15 +78,6 @@ if (!defined('DB_WAL_MODE')) {
 }
 
 // =============================================================================
-// STATUS VALUES — backward-compat aliases (canonical source: StatusType enum)
-// Retained until all ~13 remaining callers are migrated.
-// =============================================================================
-use RiseupAsia\Enums\StatusType;
-
-if (!defined('STATUS_SUCCESS')) { define('STATUS_SUCCESS', StatusType::Success->value); }
-if (!defined('STATUS_FAILED'))  { define('STATUS_FAILED',  StatusType::Failed->value); }
-
-// =============================================================================
 // RESPONSE MESSAGES
 // =============================================================================
 

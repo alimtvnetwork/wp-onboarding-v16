@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TableType;
 
 trait DatabaseQueryLogTrait {
@@ -27,7 +28,7 @@ trait DatabaseQueryLogTrait {
         ?int $userId = null,
         string $ipAddress = '',
         array $details = array(),
-        string $status = self::STATUS_SUCCESS,
+        string $status = 'success',
         ?string $errorMsg = null,
         array $enhanced = array()
     ): int|false {
@@ -94,7 +95,7 @@ trait DatabaseQueryLogTrait {
             $params['user_id'] ?? null,
             $params['ip_address'] ?? '',
             $params['details'] ?? array(),
-            $params['status'] ?? self::STATUS_SUCCESS,
+            $params['status'] ?? StatusType::Success->value,
             $params['error_msg'] ?? null,
             array(
                 'plugin_file'    => $params['plugin_file'] ?? null,

@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotJobStatusType;
 
 trait WorkerBatchProcessTrait {
 
@@ -35,13 +36,13 @@ trait WorkerBatchProcessTrait {
                 return;
             }
 
-            $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_PROCESSING);
+            $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Processing->value);
             $this->processJobBatch($pdo, $job_id, $job);
         } catch (Exception $e) {
             $this->log(LogLevelType::Error->value, 'Worker batch failed', array(
                 'job_id' => $job_id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
-            $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_FAILED, $e->getMessage());
+            $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Failed->value, $e->getMessage());
         }
     }
 
