@@ -29,3 +29,13 @@ func (h HeaderType) IsEqual(other HeaderType) bool {
 func (h HeaderType) String() string {
 	return string(h)
 }
+
+// IsAuth returns true if the header is Authorization.
+func (h HeaderType) IsAuth() bool {
+	return h.IsEqual(HeaderAuthorization)
+}
+
+// IsContentType returns true if the header is Content-Type.
+func (h HeaderType) IsContentType() bool {
+	return h.IsEqual(HeaderContentType)
+}

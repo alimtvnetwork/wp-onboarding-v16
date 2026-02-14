@@ -23,3 +23,18 @@ func (p PostStatusType) IsEqual(other PostStatusType) bool {
 func (p PostStatusType) String() string {
 	return string(p)
 }
+
+// IsPublish returns true if the post status is Publish.
+func (p PostStatusType) IsPublish() bool {
+	return p.IsEqual(PostStatusPublish)
+}
+
+// IsDraft returns true if the post status is Draft.
+func (p PostStatusType) IsDraft() bool {
+	return p.IsEqual(PostStatusDraft)
+}
+
+// IsPending returns true if the post status is Pending.
+func (p PostStatusType) IsPending() bool {
+	return p.IsEqual(PostStatusPending)
+}
