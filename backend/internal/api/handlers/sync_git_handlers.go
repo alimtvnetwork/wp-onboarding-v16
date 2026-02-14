@@ -4,6 +4,8 @@ package handlers
 import (
 	"context"
 	"net/http"
+
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // --- Sync Handlers ---
@@ -73,13 +75,13 @@ func GitCommit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if input.Message == "" {
-		respondError(w, http.StatusBadRequest, "E1003", "Commit message is required")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1003", "Commit message is required")
 		return
 	}
 
 	result, err := Services.GitService.Commit(r.Context(), pluginID, input.Message)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E5004", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E5004", err.Error())
 		return
 	}
 	respondSuccess(w, result)

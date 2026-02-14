@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"sync"
+
+	"wp-plugin-publish/internal/wordpress"
 )
 
 var (
@@ -32,7 +34,7 @@ func ServeOpenAPISpec(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if openAPISpec == nil {
-		respondError(w, http.StatusNotFound, "E9001", "OpenAPI spec file not found")
+		respondError(w, wordpress.HttpStatusNotFound, "E9001", "OpenAPI spec file not found")
 		return
 	}
 

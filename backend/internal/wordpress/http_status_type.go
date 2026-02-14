@@ -25,6 +25,9 @@ const (
 	// HttpStatusNotFound represents 404 Not Found.
 	HttpStatusNotFound HttpStatusType = 404
 
+	// HttpStatusConflict represents 409 Conflict.
+	HttpStatusConflict HttpStatusType = 409
+
 	// HttpStatusRequestTimeout represents 408 Request Timeout.
 	HttpStatusRequestTimeout HttpStatusType = 408
 
@@ -33,6 +36,9 @@ const (
 
 	// HttpStatusServerError represents 500 Internal Server Error.
 	HttpStatusServerError HttpStatusType = 500
+
+	// HttpStatusNotImplemented represents 501 Not Implemented.
+	HttpStatusNotImplemented HttpStatusType = 501
 
 	// HttpStatusBadGateway represents 502 Bad Gateway.
 	HttpStatusBadGateway HttpStatusType = 502

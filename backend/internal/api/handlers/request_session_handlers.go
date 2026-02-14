@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"wp-plugin-publish/internal/api/middleware"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // RequestSessionStore is the global request session store (set during server initialization)
@@ -31,7 +32,7 @@ func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 
 	sessions, total, err := RequestSessionStore.ListRequestSessions(limit, offset)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E9004", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E9004", err.Error())
 		return
 	}
 
@@ -46,7 +47,7 @@ func GetRequestSessions(w http.ResponseWriter, r *http.Request) {
 // GetRequestSession returns a single request session by ID
 func GetRequestSession(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Request session store not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Request session store not available")
 		return
 	}
 
@@ -55,7 +56,7 @@ func GetRequestSession(w http.ResponseWriter, r *http.Request) {
 
 	session, err := RequestSessionStore.GetRequestSession(id)
 	if err != nil {
-		respondError(w, http.StatusNotFound, "E9001", err.Error())
+		respondError(w, wordpress.HttpStatusNotFound, "E9001", err.Error())
 		return
 	}
 
@@ -65,7 +66,7 @@ func GetRequestSession(w http.ResponseWriter, r *http.Request) {
 // DeleteRequestSession removes a request session
 func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Request session store not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Request session store not available")
 		return
 	}
 
@@ -73,7 +74,7 @@ func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if err := RequestSessionStore.DeleteRequestSession(id); err != nil {
-		respondError(w, http.StatusNotFound, "E9001", err.Error())
+		respondError(w, wordpress.HttpStatusNotFound, "E9001", err.Error())
 		return
 	}
 
@@ -83,12 +84,12 @@ func DeleteRequestSession(w http.ResponseWriter, r *http.Request) {
 // ClearRequestSessions removes all request sessions
 func ClearRequestSessions(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Request session store not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Request session store not available")
 		return
 	}
 
 	if err := RequestSessionStore.ClearRequestSessions(); err != nil {
-		respondError(w, http.StatusInternalServerError, "E9004", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E9004", err.Error())
 		return
 	}
 
@@ -113,7 +114,7 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 	// Get all sessions and filter by error
 	sessions, _, err := RequestSessionStore.ListRequestSessions(1000, 0)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E9004", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E9004", err.Error())
 		return
 	}
 
@@ -137,7 +138,7 @@ func GetRequestSessionsByError(w http.ResponseWriter, r *http.Request) {
 // ExportRequestSession exports a session as JSON for debugging
 func ExportRequestSession(w http.ResponseWriter, r *http.Request) {
 	if RequestSessionStore == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Request session store not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Request session store not available")
 		return
 	}
 
@@ -146,7 +147,7 @@ func ExportRequestSession(w http.ResponseWriter, r *http.Request) {
 
 	session, err := RequestSessionStore.GetRequestSession(id)
 	if err != nil {
-		respondError(w, http.StatusNotFound, "E9001", err.Error())
+		respondError(w, wordpress.HttpStatusNotFound, "E9001", err.Error())
 		return
 	}
 

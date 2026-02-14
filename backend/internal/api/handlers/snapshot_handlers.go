@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // --- Remote Snapshot Management Handlers (Phase 28) ---
@@ -25,25 +26,25 @@ var GetRemoteSnapshots = handleSiteActionByID("E3020",
 // GetRemoteSnapshot returns a specific snapshot from a remote WordPress site
 func GetRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
 	snapshotID, err := getSnapshotIDParam(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid snapshot ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid snapshot ID")
 		return
 	}
 
 	snapshot, err := Services.SiteService.GetRemoteSnapshot(r.Context(), siteID, snapshotID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3021", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3021", err.Error())
 		return
 	}
 	respondSuccess(w, snapshot)
@@ -59,24 +60,24 @@ var CreateRemoteSnapshot = handleSiteActionByIDWithOpts("E3022",
 // DeleteRemoteSnapshot removes a snapshot from a remote WordPress site
 func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
 	snapshotID, err := getSnapshotIDParam(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid snapshot ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid snapshot ID")
 		return
 	}
 
 	if err := Services.SiteService.DeleteRemoteSnapshot(r.Context(), siteID, snapshotID); err != nil {
-		respondError(w, http.StatusInternalServerError, "E3023", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3023", err.Error())
 		return
 	}
 	respondSuccess(w, SnapshotDeleteResponse{Deleted: true, SnapshotID: snapshotID})
@@ -85,19 +86,19 @@ func DeleteRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote WordPress site
 func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
 	snapshotID, err := getSnapshotIDParam(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid snapshot ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid snapshot ID")
 		return
 	}
 
@@ -106,7 +107,7 @@ func RestoreRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.RestoreRemoteSnapshot(r.Context(), siteID, snapshotID, opts)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3024", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3024", err.Error())
 		return
 	}
 	respondSuccess(w, result)
@@ -122,25 +123,25 @@ var GetRemoteSnapshotSettings = handleSiteActionByID("E3025",
 // UpdateRemoteSnapshotSettings updates snapshot settings on a remote WordPress site
 func UpdateRemoteSnapshotSettings(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
 	var settings map[string]any
 	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
-		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "Invalid request body")
 		return
 	}
 
 	result, err := Services.SiteService.UpdateRemoteSnapshotSettings(r.Context(), siteID, settings)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3026", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3026", err.Error())
 		return
 	}
 	respondSuccess(w, result)
@@ -156,25 +157,25 @@ var GetRemoteSnapshotProviders = handleSiteActionByID("E3027",
 // ExportRemoteSnapshot streams a snapshot ZIP file from a remote WordPress site
 func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
 	snapshotID, err := getSnapshotIDParam(r)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid snapshot ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid snapshot ID")
 		return
 	}
 
 	resp, err := Services.SiteService.ExportRemoteSnapshot(r.Context(), siteID, snapshotID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3028", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3028", err.Error())
 		return
 	}
 	defer resp.Body.Close()
@@ -201,13 +202,13 @@ func ExportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 // DownloadSnapshotZip proxies a cached ZIP download: requests build from WordPress, then streams the ZIP binary to the client.
 func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
@@ -216,13 +217,13 @@ func DownloadSnapshotZip(w http.ResponseWriter, r *http.Request) {
 		SnapshotID int64 `json:"snapshot_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.SnapshotID <= 0 {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid or missing snapshot_id")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid or missing snapshot_id")
 		return
 	}
 
 	zipResp, meta, err := Services.SiteService.DownloadSnapshotZip(r.Context(), siteID, body.SnapshotID)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3040", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3040", err.Error())
 		return
 	}
 	defer zipResp.Body.Close()
@@ -287,25 +288,25 @@ var IncrementalBackupRemoteSnapshot = handleSiteActionByIDWithOpts("E3031",
 // ImportRemoteSnapshot handles uploading a ZIP file to import as a snapshot on a remote site.
 func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
 	// Parse multipart form (max 500MB)
 	if err := r.ParseMultipartForm(500 << 20); err != nil {
-		respondError(w, http.StatusBadRequest, "E1001", "Failed to parse multipart form: "+err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "Failed to parse multipart form: "+err.Error())
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1001", "No file provided: "+err.Error())
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "No file provided: "+err.Error())
 		return
 	}
 	defer file.Close()
@@ -313,14 +314,14 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 	// Write to temp file
 	tempFile, err := os.CreateTemp("", "snapshot-import-*.zip")
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E9002", "Failed to create temp file")
+		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to create temp file")
 		return
 	}
 	defer os.Remove(tempFile.Name())
 	defer tempFile.Close()
 
 	if _, err := io.Copy(tempFile, file); err != nil {
-		respondError(w, http.StatusInternalServerError, "E9002", "Failed to write temp file")
+		respondError(w, wordpress.HttpStatusServerError, "E9002", "Failed to write temp file")
 		return
 	}
 	tempFile.Close()
@@ -329,7 +330,7 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 
 	result, err := Services.SiteService.ImportRemoteSnapshot(r.Context(), siteID, tempFile.Name())
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3032", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3032", err.Error())
 		return
 	}
 	respondCreated(w, result)
@@ -338,20 +339,20 @@ func ImportRemoteSnapshot(w http.ResponseWriter, r *http.Request) {
 // CleanupRemoteSnapshots triggers cleanup of old/orphan/stuck snapshots on a remote WordPress site
 func CleanupRemoteSnapshots(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.SiteService == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", "Site service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Site service not available")
 		return
 	}
 
 	siteID, err := getIDParam(r, "id")
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid site ID")
 		return
 	}
 
 	opts := decodeOptionalOpts(r)
 	result, err := Services.SiteService.CleanupRemoteSnapshots(r.Context(), siteID, opts)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, "E3033", err.Error())
+		respondError(w, wordpress.HttpStatusServerError, "E3033", err.Error())
 		return
 	}
 	respondSuccess(w, result)

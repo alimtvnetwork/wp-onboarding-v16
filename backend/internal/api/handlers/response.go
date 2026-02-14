@@ -34,14 +34,14 @@ func respondCreated[T any](w http.ResponseWriter, data T) {
 }
 
 // respondError writes an error envelope with auto-captured Go stack traces
-func respondError(w http.ResponseWriter, status int, code, message string) {
-	envelope.Write(w, envelope.ErrorWithStack(status, code, message))
+func respondError(w http.ResponseWriter, status wordpress.HttpStatusType, code, message string) {
+	envelope.Write(w, envelope.ErrorWithStack(status.Int(), code, message))
 }
 
 // respondErrorWithSession writes an error envelope with session ID and stack traces.
 // Extracts sessionId from apperror diagnostic if available.
-func respondErrorWithSession(w http.ResponseWriter, status int, code, message string, err error) {
-	resp := envelope.ErrorWithStack(status, code, message)
+func respondErrorWithSession(w http.ResponseWriter, status wordpress.HttpStatusType, code, message string, err error) {
+	resp := envelope.ErrorWithStack(status.Int(), code, message)
 	if appErr, ok := err.(*apperror.AppError); ok {
 		if appErr.Diagnostic.SessionID != "" {
 			resp = resp.WithSessionId(appErr.Diagnostic.SessionID)
@@ -78,7 +78,7 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 // Returns true if the service is available.
 func requireService(w http.ResponseWriter, service any, name string) bool {
 	if service == nil {
-		respondError(w, http.StatusServiceUnavailable, "E9001", name+" not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", name+" not available")
 		return false
 	}
 	return true
@@ -88,7 +88,7 @@ func requireService(w http.ResponseWriter, service any, name string) bool {
 // a 400 error response if decoding fails.
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		respondError(w, http.StatusBadRequest, "E1001", "Invalid request body")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "Invalid request body")
 		return false
 	}
 	return true
@@ -98,7 +98,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (int64, bool) {
 	id, err := getIDParam(r, paramName)
 	if err != nil {
-		respondError(w, http.StatusBadRequest, "E1002", "Invalid "+label)
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid "+label)
 		return 0, false
 	}
 	return id, true
@@ -114,18 +114,18 @@ func decodeJSONSilent(r *http.Request, target any) error {
 // wrapped inside an apperror chain. Returns fallback if no APIError is found.
 // This ensures that PHP-side 404s are forwarded to the frontend instead of
 // being masked as 500 Internal Server Error.
-func resolveHTTPStatus(err error, fallback int) int {
+func resolveHTTPStatus(err error, fallback wordpress.HttpStatusType) wordpress.HttpStatusType {
 	// Check direct APIError
 	var apiErr *wordpress.APIError
 	if errors.As(err, &apiErr) && apiErr.StatusCode > 0 {
-		return apiErr.StatusCode
+		return wordpress.HttpStatusType(apiErr.StatusCode)
 	}
 	// Check apperror wrapping an APIError
 	var appErr *apperror.AppError
 	if errors.As(err, &appErr) && appErr.Unwrap() != nil {
 		var inner *wordpress.APIError
 		if errors.As(appErr.Unwrap(), &inner) && inner.StatusCode > 0 {
-			return inner.StatusCode
+			return wordpress.HttpStatusType(inner.StatusCode)
 		}
 	}
 	return fallback
