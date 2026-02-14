@@ -11,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"wp-plugin-publish/internal/wordpress"
 	"wp-plugin-publish/pkg/pathutil"
 )
 
@@ -49,7 +50,7 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	// Get plugin to find its path
 	pluginData, err := Services.PluginService.GetByID(r.Context(), pluginID)
 	if err != nil {
-		respondError(w, http.StatusNotFound, "E2001", "Plugin not found")
+		respondError(w, http.StatusNotFound, "E2001", wordpress.ResponseMessagePluginNotFound.String())
 		return
 	}
 
