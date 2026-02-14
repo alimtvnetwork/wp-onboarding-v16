@@ -20,7 +20,7 @@ type PluginServiceInterface interface {
 	DeleteMapping(ctx context.Context, id int64) error
 	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
 	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
-	ScanDirectory(ctx context.Context, path string) (any, error)
+	ScanDirectory(ctx context.Context, path string) (*plugin.ScanResult, error)
 	WritePluginDetected(ctx context.Context, path string) error
 	RefreshFileCount(ctx context.Context, id int64) error
 }
@@ -119,7 +119,7 @@ func (a *PluginServiceAdapter) UpdateMappingsForSite(ctx context.Context, siteID
 	return a.Service.UpdateMappingsForSite(ctx, siteID, pluginIDs)
 }
 
-func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (any, error) {
+func (a *PluginServiceAdapter) ScanDirectory(ctx context.Context, path string) (*plugin.ScanResult, error) {
 	return a.Service.ScanDirectory(ctx, path)
 }
 

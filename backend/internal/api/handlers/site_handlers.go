@@ -201,16 +201,7 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type siteResult struct {
-		SiteId    int64  `json:"siteId"`
-		SiteName  string `json:"siteName"`
-		Success   bool   `json:"success"`
-		Message   string `json:"message"`
-		Activated bool   `json:"activated,omitempty"`
-		Error     string `json:"error,omitempty"`
-	}
-
-	results := make([]siteResult, 0, len(input.SiteIds))
+	results := make([]BulkBootstrapSiteResult, 0, len(input.SiteIds))
 
 	for _, siteId := range input.SiteIds {
 		result, err := Services.SiteService.BootstrapUploader(r.Context(), siteId, input.UploaderPath)
@@ -222,8 +213,8 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 					siteName = s.GetName()
 				}
 			}
-			results = append(results, siteResult{
-				SiteId:   siteId,
+			results = append(results, BulkBootstrapSiteResult{
+				SiteID:   siteId,
 				SiteName: siteName,
 				Success:  false,
 				Message:  "Deployment failed",
@@ -237,16 +228,16 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 				Message   string `json:"message"`
 				Activated bool   `json:"activated"`
 			}); ok {
-				results = append(results, siteResult{
-					SiteId:    r.SiteId,
+				results = append(results, BulkBootstrapSiteResult{
+					SiteID:    r.SiteId,
 					SiteName:  r.SiteName,
 					Success:   r.Success,
 					Message:   r.Message,
 					Activated: r.Activated,
 				})
 			} else {
-				results = append(results, siteResult{
-					SiteId:  siteId,
+				results = append(results, BulkBootstrapSiteResult{
+					SiteID:  siteId,
 					Success: true,
 					Message: "Deployment completed",
 				})

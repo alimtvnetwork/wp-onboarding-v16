@@ -14,17 +14,13 @@ import (
 )
 
 // ParseDateTime parses SQLite datetime strings into time.Time.
-// modernc.org/sqlite returns datetime('now') columns as strings in "YYYY-MM-DD HH:MM:SS".
-// We also support RFC3339 for flexibility.
 func ParseDateTime(s string) time.Time {
 	if strings.TrimSpace(s) == "" {
 		return time.Time{}
 	}
-	// Try SQLite datetime format first
 	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
 		return t
 	}
-	// Fallback to RFC3339
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t
 	}
@@ -47,19 +43,115 @@ func ParseNullTime(ns sql.NullString) *time.Time {
 type Result struct {
 	AffectedRows int64
 	LastInsertID int64
-	Created      bool // True if a new row was inserted (for upsert operations)
-	Exists       bool // True if row already existed (for INSERT OR IGNORE)
+	Created      bool
+	Exists       bool
 }
 
-// ContextFields holds structured metadata fields for database operation logging.
-type ContextFields = map[string]any
+// OperationFields holds typed metadata for database operation logging (GE pattern).
+type OperationFields struct {
+	// Domain context (set by callers)
+	SiteID     int64  `json:"siteId,omitempty"`
+	PluginID   int64  `json:"pluginId,omitempty"`
+	MappingID  int64  `json:"mappingId,omitempty"`
+	URL        string `json:"url,omitempty"`
+	Path       string `json:"path,omitempty"`
+	RemoteSlug string `json:"remoteSlug,omitempty"`
+	PluginName string `json:"pluginName,omitempty"`
+	SiteName   string `json:"siteName,omitempty"`
+	Version    string `json:"version,omitempty"`
+	Category   string `json:"category,omitempty"`
+
+	// Operation context (set internally by dbops)
+	Table        string `json:"table,omitempty"`
+	Operation    string `json:"operation,omitempty"`
+	AffectedRows int64  `json:"affectedRows,omitempty"`
+	Caller       string `json:"caller,omitempty"`
+	Error        string `json:"error,omitempty"`
+	StackTrace   string `json:"stackTrace,omitempty"`
+	ID           int64  `json:"id,omitempty"`
+	Created      bool   `json:"created,omitempty"`
+	Exists       bool   `json:"exists,omitempty"`
+	LastInsertID int64  `json:"lastInsertId,omitempty"`
+	Note         string `json:"note,omitempty"`
+}
+
+// toKeyvals converts the struct to a flat key-value slice for the logger.
+func (f OperationFields) toKeyvals() []any {
+	var kv []any
+	// Domain fields
+	if f.SiteID != 0 {
+		kv = append(kv, "siteId", f.SiteID)
+	}
+	if f.PluginID != 0 {
+		kv = append(kv, "pluginId", f.PluginID)
+	}
+	if f.MappingID != 0 {
+		kv = append(kv, "mappingId", f.MappingID)
+	}
+	if f.URL != "" {
+		kv = append(kv, "url", f.URL)
+	}
+	if f.Path != "" {
+		kv = append(kv, "path", f.Path)
+	}
+	if f.RemoteSlug != "" {
+		kv = append(kv, "remoteSlug", f.RemoteSlug)
+	}
+	if f.PluginName != "" {
+		kv = append(kv, "pluginName", f.PluginName)
+	}
+	if f.SiteName != "" {
+		kv = append(kv, "siteName", f.SiteName)
+	}
+	if f.Version != "" {
+		kv = append(kv, "version", f.Version)
+	}
+	if f.Category != "" {
+		kv = append(kv, "category", f.Category)
+	}
+	// Operation fields
+	if f.Table != "" {
+		kv = append(kv, "table", f.Table)
+	}
+	if f.Operation != "" {
+		kv = append(kv, "operation", f.Operation)
+	}
+	if f.AffectedRows != 0 {
+		kv = append(kv, "affectedRows", f.AffectedRows)
+	}
+	if f.Caller != "" {
+		kv = append(kv, "caller", f.Caller)
+	}
+	if f.Error != "" {
+		kv = append(kv, "error", f.Error)
+	}
+	if f.StackTrace != "" {
+		kv = append(kv, "stackTrace", f.StackTrace)
+	}
+	if f.ID != 0 {
+		kv = append(kv, "id", f.ID)
+	}
+	if f.Created {
+		kv = append(kv, "created", f.Created)
+	}
+	if f.Exists {
+		kv = append(kv, "exists", f.Exists)
+	}
+	if f.LastInsertID != 0 {
+		kv = append(kv, "lastInsertId", f.LastInsertID)
+	}
+	if f.Note != "" {
+		kv = append(kv, "note", f.Note)
+	}
+	return kv
+}
 
 // Context provides metadata for logging database operations
 type Context struct {
-	Table     string         // Table name for logging
-	Operation string         // Operation type: INSERT, UPDATE, DELETE, SELECT
-	Logger    *logger.Logger // Logger instance for output
-	Fields    ContextFields  // Additional fields to log
+	Table     string          // Table name for logging
+	Operation string          // Operation type: INSERT, UPDATE, DELETE, SELECT
+	Logger    *logger.Logger  // Logger instance for output
+	Fields    OperationFields // Additional fields to log
 }
 
 // captureStackTrace returns a formatted stack trace string from the call site
@@ -74,12 +166,10 @@ func captureStackTrace(skip int) string {
 		fnName := "unknown"
 		if fn != nil {
 			fnName = fn.Name()
-			// Shorten function name for readability
 			if idx := strings.LastIndex(fnName, "/"); idx != -1 {
 				fnName = fnName[idx+1:]
 			}
 		}
-		// Shorten file path
 		if idx := strings.LastIndex(file, "/"); idx != -1 {
 			file = file[idx+1:]
 		}
@@ -94,17 +184,85 @@ func getCallerInfo(skip int) (file string, line int) {
 	if !ok {
 		return "unknown", 0
 	}
-	// Shorten file path
 	if idx := strings.LastIndex(file, "/"); idx != -1 {
 		file = file[idx+1:]
 	}
 	return file, line
 }
 
+// mergeFields overlays non-zero extra fields onto base.
+func mergeFields(base, extra OperationFields) OperationFields {
+	result := base
+	if extra.SiteID != 0 {
+		result.SiteID = extra.SiteID
+	}
+	if extra.PluginID != 0 {
+		result.PluginID = extra.PluginID
+	}
+	if extra.MappingID != 0 {
+		result.MappingID = extra.MappingID
+	}
+	if extra.URL != "" {
+		result.URL = extra.URL
+	}
+	if extra.Path != "" {
+		result.Path = extra.Path
+	}
+	if extra.RemoteSlug != "" {
+		result.RemoteSlug = extra.RemoteSlug
+	}
+	if extra.PluginName != "" {
+		result.PluginName = extra.PluginName
+	}
+	if extra.SiteName != "" {
+		result.SiteName = extra.SiteName
+	}
+	if extra.Version != "" {
+		result.Version = extra.Version
+	}
+	if extra.Category != "" {
+		result.Category = extra.Category
+	}
+	if extra.Table != "" {
+		result.Table = extra.Table
+	}
+	if extra.Operation != "" {
+		result.Operation = extra.Operation
+	}
+	if extra.AffectedRows != 0 {
+		result.AffectedRows = extra.AffectedRows
+	}
+	if extra.Caller != "" {
+		result.Caller = extra.Caller
+	}
+	if extra.Error != "" {
+		result.Error = extra.Error
+	}
+	if extra.StackTrace != "" {
+		result.StackTrace = extra.StackTrace
+	}
+	if extra.ID != 0 {
+		result.ID = extra.ID
+	}
+	if extra.Created {
+		result.Created = extra.Created
+	}
+	if extra.Exists {
+		result.Exists = extra.Exists
+	}
+	if extra.LastInsertID != 0 {
+		result.LastInsertID = extra.LastInsertID
+	}
+	if extra.Note != "" {
+		result.Note = extra.Note
+	}
+	return result
+}
+
 // ExecInsert executes an INSERT operation and returns detailed result with logging
 func ExecInsert(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Context, query string, args ...any) (*Result, error) {
 	ctx.Operation = "INSERT"
-	
+
 	result, err := db.Exec(query, args...)
 	if err != nil {
 		logError(ctx, err, query, args)
@@ -166,7 +324,6 @@ func ExecDelete(db interface{ Exec(string, ...any) (sql.Result, error) }, ctx Co
 }
 
 // FindOrCreate attempts to find an existing record by key, or creates it if not found
-// Returns (id, created, error) where created is true if a new record was inserted
 func FindOrCreate(
 	db interface {
 		QueryRow(string, ...any) *sql.Row
@@ -178,30 +335,26 @@ func FindOrCreate(
 	insertQuery string,
 	insertArgs []any,
 ) (int64, bool, error) {
-	// First, try to find existing
 	var id int64
 	err := db.QueryRow(selectQuery, selectArgs...).Scan(&id)
 	if err == nil {
-		// Record exists
 		if ctx.Logger != nil {
-			fields := mergeFields(ctx.Fields, ContextFields{
-				"table":     ctx.Table,
-				"operation": "FIND",
-				"id":        id,
-				"exists":    true,
+			fields := mergeFields(ctx.Fields, OperationFields{
+				Table:     ctx.Table,
+				Operation: "FIND",
+				ID:        id,
+				Exists:    true,
 			})
-			ctx.Logger.Debug("Record found (exists)", toSlice(fields)...)
+			ctx.Logger.Debug("Record found (exists)", fields.toKeyvals()...)
 		}
 		return id, false, nil
 	}
 
 	if err != sql.ErrNoRows {
-		// Actual error
 		logError(ctx, err, selectQuery, selectArgs)
 		return 0, false, err
 	}
 
-	// Not found, create new
 	ctx.Operation = "INSERT"
 	result, err := db.Exec(insertQuery, insertArgs...)
 	if err != nil {
@@ -212,22 +365,20 @@ func FindOrCreate(
 	rows, _ := result.RowsAffected()
 	id, _ = result.LastInsertId()
 
-	// Check if insert actually created (handles INSERT OR IGNORE race conditions)
 	if rows == 0 {
-		// Another process may have inserted - try to find again
 		err := db.QueryRow(selectQuery, selectArgs...).Scan(&id)
 		if err != nil {
 			logError(ctx, err, selectQuery, selectArgs)
 			return 0, false, err
 		}
 		if ctx.Logger != nil {
-			fields := mergeFields(ctx.Fields, ContextFields{
-				"table":     ctx.Table,
-				"operation": "FIND_AFTER_RACE",
-				"id":        id,
-				"exists":    true,
+			fields := mergeFields(ctx.Fields, OperationFields{
+				Table:     ctx.Table,
+				Operation: "FIND_AFTER_RACE",
+				ID:        id,
+				Exists:    true,
 			})
-			ctx.Logger.Debug("Record found after race condition", toSlice(fields)...)
+			ctx.Logger.Debug("Record found after race condition", fields.toKeyvals()...)
 		}
 		return id, false, nil
 	}
@@ -242,7 +393,6 @@ func FindOrCreate(
 }
 
 // CreateMapping creates a many-to-many relationship record with proper logging
-// Returns (created bool, error) - created is true only if a new row was inserted
 func CreateMapping(
 	db interface{ Exec(string, ...any) (sql.Result, error) },
 	ctx Context,
@@ -253,26 +403,24 @@ func CreateMapping(
 
 	result, err := db.Exec(query, args...)
 	if err != nil {
-		// Check for constraint violations
 		errStr := err.Error()
-		isConstraintViolation := strings.Contains(errStr, "UNIQUE") || 
+		isConstraintViolation := strings.Contains(errStr, "UNIQUE") ||
 			strings.Contains(errStr, "constraint") ||
 			strings.Contains(errStr, "duplicate")
-		
+
 		if isConstraintViolation {
-			// Not a real error for mappings - just means it exists
 			if ctx.Logger != nil {
-				fields := mergeFields(ctx.Fields, ContextFields{
-					"table":     ctx.Table,
-					"operation": "INSERT_MAPPING",
-					"exists":    true,
-					"note":      "Mapping already exists (constraint)",
+				fields := mergeFields(ctx.Fields, OperationFields{
+					Table:     ctx.Table,
+					Operation: "INSERT_MAPPING",
+					Exists:    true,
+					Note:      "Mapping already exists (constraint)",
 				})
-				ctx.Logger.Debug("Mapping exists", toSlice(fields)...)
+				ctx.Logger.Debug("Mapping exists", fields.toKeyvals()...)
 			}
 			return false, nil
 		}
-		
+
 		logError(ctx, err, query, args)
 		return false, err
 	}
@@ -283,24 +431,24 @@ func CreateMapping(
 	if created {
 		if ctx.Logger != nil {
 			id, _ := result.LastInsertId()
-			fields := mergeFields(ctx.Fields, ContextFields{
-				"table":        ctx.Table,
-				"operation":    "INSERT_MAPPING",
-				"affectedRows": rows,
-				"id":           id,
-				"created":      true,
+			fields := mergeFields(ctx.Fields, OperationFields{
+				Table:        ctx.Table,
+				Operation:    "INSERT_MAPPING",
+				AffectedRows: rows,
+				ID:           id,
+				Created:      true,
 			})
-			ctx.Logger.Info("Mapping CREATED", toSlice(fields)...)
+			ctx.Logger.Info("Mapping CREATED", fields.toKeyvals()...)
 		}
 	} else {
 		if ctx.Logger != nil {
-			fields := mergeFields(ctx.Fields, ContextFields{
-				"table":     ctx.Table,
-				"operation": "INSERT_MAPPING",
-				"exists":    true,
-				"note":      "Mapping already exists (INSERT OR IGNORE)",
+			fields := mergeFields(ctx.Fields, OperationFields{
+				Table:     ctx.Table,
+				Operation: "INSERT_MAPPING",
+				Exists:    true,
+				Note:      "Mapping already exists (INSERT OR IGNORE)",
 			})
-			ctx.Logger.Debug("Mapping EXISTS", toSlice(fields)...)
+			ctx.Logger.Debug("Mapping EXISTS", fields.toKeyvals()...)
 		}
 	}
 
@@ -314,25 +462,25 @@ func logSuccess(ctx Context, res *Result, query string, args []any) {
 	}
 
 	file, line := getCallerInfo(3)
-	
-	fields := mergeFields(ctx.Fields, ContextFields{
-		"table":        ctx.Table,
-		"operation":    ctx.Operation,
-		"affectedRows": res.AffectedRows,
-		"caller":       fmt.Sprintf("%s:%d", file, line),
+
+	fields := mergeFields(ctx.Fields, OperationFields{
+		Table:        ctx.Table,
+		Operation:    ctx.Operation,
+		AffectedRows: res.AffectedRows,
+		Caller:       fmt.Sprintf("%s:%d", file, line),
 	})
 
 	if res.LastInsertID > 0 {
-		fields["lastInsertId"] = res.LastInsertID
+		fields.LastInsertID = res.LastInsertID
 	}
 	if res.Created {
-		fields["created"] = true
+		fields.Created = true
 	}
 	if res.Exists {
-		fields["exists"] = true
+		fields.Exists = true
 	}
 
-	ctx.Logger.Debug(fmt.Sprintf("DB %s on %s", ctx.Operation, ctx.Table), toSlice(fields)...)
+	ctx.Logger.Debug(fmt.Sprintf("DB %s on %s", ctx.Operation, ctx.Table), fields.toKeyvals()...)
 }
 
 // logError logs a failed database operation with stack trace
@@ -344,34 +492,13 @@ func logError(ctx Context, err error, query string, args []any) {
 	file, line := getCallerInfo(3)
 	stack := captureStackTrace(3)
 
-	fields := mergeFields(ctx.Fields, ContextFields{
-		"table":      ctx.Table,
-		"operation":  ctx.Operation,
-		"error":      err.Error(),
-		"caller":     fmt.Sprintf("%s:%d", file, line),
-		"stackTrace": stack,
+	fields := mergeFields(ctx.Fields, OperationFields{
+		Table:      ctx.Table,
+		Operation:  ctx.Operation,
+		Error:      err.Error(),
+		Caller:     fmt.Sprintf("%s:%d", file, line),
+		StackTrace: stack,
 	})
 
-	ctx.Logger.Error(fmt.Sprintf("DB %s FAILED on %s", ctx.Operation, ctx.Table), toSlice(fields)...)
-}
-
-// mergeFields merges two field maps
-func mergeFields(base, extra ContextFields) ContextFields {
-	result := make(ContextFields)
-	for k, v := range base {
-		result[k] = v
-	}
-	for k, v := range extra {
-		result[k] = v
-	}
-	return result
-}
-
-// toSlice converts a map to a slice of key-value pairs for logger
-func toSlice(m ContextFields) []any {
-	slice := make([]any, 0, len(m)*2)
-	for k, v := range m {
-		slice = append(slice, k, v)
-	}
-	return slice
+	ctx.Logger.Error(fmt.Sprintf("DB %s FAILED on %s", ctx.Operation, ctx.Table), fields.toKeyvals()...)
 }

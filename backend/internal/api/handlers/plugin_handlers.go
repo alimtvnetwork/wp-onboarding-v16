@@ -262,33 +262,22 @@ func ScanDirectoriesPath(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type scanResult struct {
-		Path             string `json:"path"`
-		IsPlugin         bool   `json:"isPlugin"`
-		Metadata         any    `json:"metadata,omitempty"`
-		Error            string `json:"error,omitempty"`
-		DetectionCreated bool   `json:"detectionCreated,omitempty"`
-	}
-
-	results := make([]scanResult, 0, len(input.Paths))
+	results := make([]DirectoryScanResult, 0, len(input.Paths))
 	detected := 0
 
 	for _, path := range input.Paths {
 		result, err := Services.PluginService.ScanDirectory(r.Context(), path)
 		if err != nil {
-			results = append(results, scanResult{Path: path, IsPlugin: false, Error: err.Error()})
+			results = append(results, DirectoryScanResult{Path: path, IsPlugin: false, Error: err.Error()})
 			continue
 		}
 
-		isPlugin := false
-		if scanMap, ok := result.(map[string]any); ok {
-			if valid, ok := scanMap["isValid"].(bool); ok && valid {
-				isPlugin = true
-				detected++
-			}
+		isPlugin := result != nil && result.IsValid
+		if isPlugin {
+			detected++
 		}
 
-		sr := scanResult{Path: path, IsPlugin: isPlugin, Metadata: result}
+		sr := DirectoryScanResult{Path: path, IsPlugin: isPlugin, Metadata: result}
 
 		if input.CreateDetection && isPlugin {
 			if err := Services.PluginService.WritePluginDetected(r.Context(), path); err == nil {

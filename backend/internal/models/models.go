@@ -1,7 +1,10 @@
 // Package models defines data structures for the application
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Site represents a WordPress site connection
 type Site struct {
@@ -38,17 +41,17 @@ type Plugin struct {
 
 // PluginMapping represents the relationship between a plugin and a site
 type PluginMapping struct {
-	ID           int64     `json:"id"`
-	PluginID     int64     `json:"pluginId"`
-	SiteID       int64     `json:"siteId"`
-	SiteName     string    `json:"siteName,omitempty"`
-	SiteURL      string    `json:"siteUrl,omitempty"`
-	RemoteSlug   string    `json:"remoteSlug"`
-	SyncStatus   string    `json:"syncStatus"`
+	ID           int64      `json:"id"`
+	PluginID     int64      `json:"pluginId"`
+	SiteID       int64      `json:"siteId"`
+	SiteName     string     `json:"siteName,omitempty"`
+	SiteURL      string     `json:"siteUrl,omitempty"`
+	RemoteSlug   string     `json:"remoteSlug"`
+	SyncStatus   string     `json:"syncStatus"`
 	LastSyncAt   *time.Time `json:"lastSyncAt,omitempty"`
 	LastBackupAt *time.Time `json:"lastBackupAt,omitempty"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
 // FileChange represents a detected file modification
@@ -56,14 +59,14 @@ type FileChange struct {
 	ID               int64      `json:"id"`
 	PluginID         int64      `json:"pluginId"`
 	FilePath         string     `json:"path"`
-	ChangeType       string     `json:"status"`    // added, modified, deleted, renamed
+	ChangeType       string     `json:"status"`
 	LocalHash        string     `json:"localHash,omitempty"`
 	RemoteHash       string     `json:"remoteHash,omitempty"`
 	LocalModifiedAt  *time.Time `json:"localModifiedAt,omitempty"`
 	RemoteModifiedAt *time.Time `json:"remoteModifiedAt,omitempty"`
 	LocalSize        int64      `json:"localSize,omitempty"`
 	RemoteSize       int64      `json:"remoteSize,omitempty"`
-	Direction        string     `json:"direction,omitempty"` // local_newer, remote_newer, local_only, remote_only
+	Direction        string     `json:"direction,omitempty"`
 	DetectedAt       time.Time  `json:"detectedAt"`
 	SyncedAt         *time.Time `json:"syncedAt,omitempty"`
 	Stats            *FileStats `json:"stats,omitempty"`
@@ -77,26 +80,26 @@ type FileStats struct {
 
 // SyncRecord represents a sync operation history entry
 type SyncRecord struct {
-	ID              int64     `json:"id"`
-	PluginMappingID int64     `json:"pluginMappingId"`
-	SyncType        string    `json:"syncType"` // check, publish
-	Status          string    `json:"status"`   // pending, running, completed, failed
-	FilesChecked    int       `json:"filesChecked"`
-	FilesChanged    int       `json:"filesChanged"`
-	FilesUploaded   int       `json:"filesUploaded"`
-	ErrorMessage    string    `json:"errorMessage,omitempty"`
-	StartedAt       time.Time `json:"startedAt"`
+	ID              int64      `json:"id"`
+	PluginMappingID int64      `json:"pluginMappingId"`
+	SyncType        string     `json:"syncType"`
+	Status          string     `json:"status"`
+	FilesChecked    int        `json:"filesChecked"`
+	FilesChanged    int        `json:"filesChanged"`
+	FilesUploaded   int        `json:"filesUploaded"`
+	ErrorMessage    string     `json:"errorMessage,omitempty"`
+	StartedAt       time.Time  `json:"startedAt"`
 	CompletedAt     *time.Time `json:"completedAt,omitempty"`
 }
 
 // Backup represents a plugin backup record
 type Backup struct {
-	ID              int64     `json:"id"`
-	PluginMappingID int64     `json:"pluginMappingId"`
-	FilePath        string    `json:"filePath"`
-	FileSize        int64     `json:"fileSize"`
-	PluginVersion   string    `json:"pluginVersion,omitempty"`
-	CreatedAt       time.Time `json:"createdAt"`
+	ID              int64      `json:"id"`
+	PluginMappingID int64      `json:"pluginMappingId"`
+	FilePath        string     `json:"filePath"`
+	FileSize        int64      `json:"fileSize"`
+	PluginVersion   string     `json:"pluginVersion,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
 	ExpiresAt       *time.Time `json:"expiresAt,omitempty"`
 }
 
@@ -116,9 +119,6 @@ type PluginVersion struct {
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
-// ErrorLogContext holds structured context for error log entries.
-type ErrorLogContext = map[string]any
-
 // ErrorLog represents an application error entry
 type ErrorLog struct {
 	ID         int64           `json:"id"`
@@ -126,7 +126,7 @@ type ErrorLog struct {
 	Level      string          `json:"level"`
 	Message    string          `json:"message"`
 	Details    string          `json:"details,omitempty"`
-	Context    ErrorLogContext `json:"context,omitempty"`
+	Context    json.RawMessage `json:"context,omitempty"`
 	File       string          `json:"file,omitempty"`
 	Line       int             `json:"line,omitempty"`
 	Function   string          `json:"function,omitempty"`
