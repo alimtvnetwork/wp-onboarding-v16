@@ -88,15 +88,16 @@ func (s *Service) CheckSite(ctx context.Context, siteID int64) (*models.SiteHeal
 
 	check.StatusCode = resp.StatusCode
 
+	httpStatus := wordpress.HttpStatusType(resp.StatusCode)
 	switch {
-	case resp.StatusCode >= 200 && resp.StatusCode < 300:
+	case httpStatus.IsSuccess():
 		check.Status = "healthy"
 		check.UploaderOk = true
-	case resp.StatusCode == 401 || resp.StatusCode == 403:
+	case resp.StatusCode == wordpress.HttpStatusUnauthorized.Int() || resp.StatusCode == wordpress.HttpStatusForbidden.Int():
 		// Auth required but site is up
 		check.Status = "healthy"
 		check.UploaderOk = false
-	case resp.StatusCode >= 500:
+	case httpStatus.IsServerError():
 		check.Status = "down"
 		check.ErrorMessage = fmt.Sprintf("HTTP %d", resp.StatusCode)
 	default:

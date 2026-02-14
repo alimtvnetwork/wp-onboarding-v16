@@ -83,7 +83,7 @@ func (c *Client) GetSnapshots() ([]SnapshotRecord, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get snapshots",
@@ -129,7 +129,7 @@ func (c *Client) GetSnapshot(snapshotID int64) (*SnapshotRecord, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get snapshot",
@@ -174,7 +174,7 @@ func (c *Client) CreateSnapshot(opts SnapshotCreateOptions) (*SnapshotCreateResu
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
 		return nil, &APIError{
 			Operation:    "create snapshot",
 			Method:       "POST",
@@ -203,7 +203,7 @@ func (c *Client) DeleteSnapshot(snapshotID int64) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 && resp.StatusCode != 204 {
+	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusNoContent.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return &APIError{
 			Operation:    "delete snapshot",
@@ -245,7 +245,7 @@ func (c *Client) RestoreSnapshot(snapshotID int64) (*SnapshotRestoreResult, erro
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		return nil, &APIError{
 			Operation:    "restore snapshot",
 			Method:       "POST",
@@ -273,7 +273,7 @@ func (c *Client) GetSnapshotSettings() (*SnapshotSettings, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get snapshot settings",
@@ -302,7 +302,7 @@ func (c *Client) UpdateSnapshotSettings(settings SnapshotSettings) (*SnapshotSet
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "update snapshot settings",
@@ -332,7 +332,7 @@ func (c *Client) ExportSnapshot(snapshotID int64) (*http.Response, error) {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to export snapshot")
 	}
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		return nil, &APIError{
@@ -369,7 +369,7 @@ func (c *Client) DownloadSnapshotZip(snapshotID int64) (*SnapshotDownloadResult,
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "download snapshot zip",
@@ -395,7 +395,7 @@ func (c *Client) StreamSnapshotZip(downloadURL string) (*http.Response, error) {
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to stream snapshot ZIP")
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		return nil, &APIError{
@@ -419,7 +419,7 @@ func (c *Client) GetSnapshotProviders() ([]SnapshotProvider, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get snapshot providers",
@@ -448,7 +448,7 @@ func (c *Client) GetAvailableTables() ([]AvailableTable, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, &APIError{
 			Operation:    "get available tables",
@@ -502,7 +502,7 @@ func (c *Client) FullBackup(opts SnapshotBackupOptions) (*SnapshotBackupResult, 
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
 		return nil, &APIError{
 			Operation:    "full backup",
 			Method:       "POST",
@@ -531,7 +531,7 @@ func (c *Client) IncrementalBackup(opts SnapshotBackupOptions) (*SnapshotBackupR
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
 		return nil, &APIError{
 			Operation:    "incremental backup",
 			Method:       "POST",
@@ -591,7 +591,7 @@ func (c *Client) ImportSnapshot(zipPath string) (*SnapshotImportResult, error) {
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 && resp.StatusCode != 201 {
+	if resp.StatusCode != HttpStatusOk.Int() && resp.StatusCode != HttpStatusCreated.Int() {
 		return nil, &APIError{
 			Operation:    "import snapshot",
 			Method:       "POST",
@@ -633,7 +633,7 @@ func (c *Client) CleanupSnapshots(opts SnapshotCleanupOptions) (*SnapshotCleanup
 	defer resp.Body.Close()
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != HttpStatusOk.Int() {
 		return nil, &APIError{
 			Operation:    "snapshot cleanup",
 			Method:       "POST",

@@ -10,6 +10,9 @@ const (
 	// HttpStatusCreated represents 201 Created.
 	HttpStatusCreated HttpStatusType = 201
 
+	// HttpStatusNoContent represents 204 No Content.
+	HttpStatusNoContent HttpStatusType = 204
+
 	// HttpStatusBadRequest represents 400 Bad Request.
 	HttpStatusBadRequest HttpStatusType = 400
 
