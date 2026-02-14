@@ -12,6 +12,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\PathLogFileType;
+
 trait LoggerPathTrait {
 
     /**
@@ -25,10 +28,10 @@ trait LoggerPathTrait {
         }
 
         $this->baseDir = RiseupInitHelpers::resolveBaseDir();
-        $this->logsDir        = rtrim($this->baseDir, '/') . '/' . LOGS_SUBDIR;
-        $this->logFile        = $this->logsDir . '/' . LOG_FILENAME;
-        $this->errorFile      = $this->logsDir . '/' . ERROR_LOG_FILENAME;
-        $this->stacktraceFile = $this->logsDir . '/' . STACKTRACE_FILENAME;
+        $this->logsDir        = rtrim($this->baseDir, '/') . PathSubdirType::Logs->value;
+        $this->logFile        = $this->logsDir . PathLogFileType::Log->value;
+        $this->errorFile      = $this->logsDir . PathLogFileType::Error->value;
+        $this->stacktraceFile = $this->logsDir . PathLogFileType::Stacktrace->value;
 
         return $this->ensureDirectories();
     }
