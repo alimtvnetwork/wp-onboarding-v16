@@ -24,7 +24,7 @@ trait PathUtilsDirTrait {
     public static function is_safe_path($path, $base_path) {
         $real_base = realpath($base_path);
         if ($real_base === false) {
-            self::safe_log(LogLevelType::Warn->value, '[PATH] Base path does not exist', array('base' => $base_path));
+            self::safeLog(LogLevelType::Warn->value, '[PATH] Base path does not exist', array('base' => $base_path));
 
             return false;
         }
@@ -50,7 +50,7 @@ trait PathUtilsDirTrait {
         $parent = dirname($path);
         $real_parent = realpath($parent);
         if ($real_parent === false) {
-            self::safe_log(LogLevelType::Warn->value, '[PATH] Neither path nor parent exists', array('path' => $path, 'parent' => $parent));
+            self::safeLog(LogLevelType::Warn->value, '[PATH] Neither path nor parent exists', array('path' => $path, 'parent' => $parent));
 
             return null;
         }
@@ -62,7 +62,7 @@ trait PathUtilsDirTrait {
     private static function checkTraversal(string $path, string $real_path, string $real_base): bool {
         $is_safe = strpos($real_path, $real_base) === 0;
         if (!$is_safe) {
-            self::safe_log(LogLevelType::Error->value, '[PATH] Path traversal attempt detected', array('path' => $path, 'resolved' => $real_path, 'base' => $real_base));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Path traversal attempt detected', array('path' => $path, 'resolved' => $real_path, 'base' => $real_base));
         }
 
         return $is_safe;
@@ -89,7 +89,7 @@ trait PathUtilsDirTrait {
     public static function ensure_dir($path, $secure = false) {
         $path = self::join($path);
         if (empty($path)) {
-            self::safe_log(LogLevelType::Error->value, '[PATH] Empty path provided to ensure_dir');
+            self::safeLog(LogLevelType::Error->value, '[PATH] Empty path provided to ensure_dir');
 
             return false;
         }
@@ -103,7 +103,7 @@ trait PathUtilsDirTrait {
 
     /** Handle an already-existing directory (optionally secure it). */
     private static function handleExistingDir(string $path, bool $secure): bool {
-        self::safe_log(LogLevelType::Debug->value, '[PATH] Directory already exists', array('path' => $path));
+        self::safeLog(LogLevelType::Debug->value, '[PATH] Directory already exists', array('path' => $path));
         if ($secure) {
             self::add_security_files($path);
         }
@@ -113,7 +113,7 @@ trait PathUtilsDirTrait {
 
     /** Create a new directory and optionally add security files. */
     private static function createNewDir(string $path, bool $secure): bool {
-        self::safe_log(LogLevelType::Info->value, '[PATH] Creating directory', array('path' => $path, 'secure' => $secure));
+        self::safeLog(LogLevelType::Info->value, '[PATH] Creating directory', array('path' => $path, 'secure' => $secure));
 
         if (!wp_mkdir_p($path)) {
             self::logDirCreationFailure($path);
@@ -121,7 +121,7 @@ trait PathUtilsDirTrait {
             return false;
         }
 
-        self::safe_log(LogLevelType::Info->value, '[PATH] Directory created successfully', array('path' => $path));
+        self::safeLog(LogLevelType::Info->value, '[PATH] Directory created successfully', array('path' => $path));
         if ($secure) {
             self::add_security_files($path);
         }
@@ -132,7 +132,7 @@ trait PathUtilsDirTrait {
     /** Log detailed directory creation failure diagnostics. */
     private static function logDirCreationFailure(string $path) {
         $error = error_get_last();
-        self::safe_log(LogLevelType::Error->value, '[PATH] Directory creation failed', array(
+        self::safeLog(LogLevelType::Error->value, '[PATH] Directory creation failed', array(
             'path' => $path, 'error' => $error ? $error['message'] : 'Unknown error',
             'parent_exists' => is_dir(dirname($path)), 'parent_writable' => is_writable(dirname($path)),
         ));
@@ -151,7 +151,7 @@ trait PathUtilsDirTrait {
         if (RiseupBooleanHelpers::is_file_missing($htaccess_path)) {
             $content = "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n";
             if (@file_put_contents($htaccess_path, $content) === false) {
-                self::safe_log(LogLevelType::Warn->value, '[PATH] Failed to create .htaccess', array('path' => $htaccess_path));
+                self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create .htaccess', array('path' => $htaccess_path));
                 $success = false;
             }
         }
@@ -159,7 +159,7 @@ trait PathUtilsDirTrait {
         $index_path = self::join($path, 'index.php');
         if (RiseupBooleanHelpers::is_file_missing($index_path)) {
             if (@file_put_contents($index_path, "<?php\n// Silence is golden.\n") === false) {
-                self::safe_log(LogLevelType::Warn->value, '[PATH] Failed to create index.php', array('path' => $index_path));
+                self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create index.php', array('path' => $index_path));
                 $success = false;
             }
         }
@@ -177,7 +177,7 @@ trait PathUtilsDirTrait {
     public static function ensure_path($secure, ...$segments) {
         $path = self::join(...$segments);
         if (empty($path)) {
-            self::safe_log(LogLevelType::Error->value, '[PATH] Empty path from segments', array('segments' => $segments));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Empty path from segments', array('segments' => $segments));
             return false;
         }
         if (self::is_dir_missing($path, $secure)) {

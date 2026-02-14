@@ -58,27 +58,27 @@ trait PathUtilsFileTrait {
     public static function delete_file($path) {
         $path = self::join($path);
         if (empty($path)) {
-            self::safe_log(LogLevelType::Warn->value, '[PATH] Empty path provided to delete_file');
+            self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to delete_file');
             return false;
         }
 
         if (RiseupBooleanHelpers::is_file_missing($path)) {
-            self::safe_log(LogLevelType::Debug->value, '[PATH] File does not exist, nothing to delete', array('path' => $path));
+            self::safeLog(LogLevelType::Debug->value, '[PATH] File does not exist, nothing to delete', array('path' => $path));
             return true;
         }
 
         if (RiseupBooleanHelpers::is_not_regular_file($path)) {
-            self::safe_log(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $path));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $path));
             return false;
         }
 
         if (!@unlink($path)) {
             $error = error_get_last();
-            self::safe_log(LogLevelType::Error->value, '[PATH] Failed to delete file', array('path' => $path, 'error' => $error ? $error['message'] : 'Unknown error'));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to delete file', array('path' => $path, 'error' => $error ? $error['message'] : 'Unknown error'));
             return false;
         }
 
-        self::safe_log(LogLevelType::Debug->value, '[PATH] File deleted', array('path' => $path));
+        self::safeLog(LogLevelType::Debug->value, '[PATH] File deleted', array('path' => $path));
         return true;
     }
 
@@ -91,17 +91,17 @@ trait PathUtilsFileTrait {
     public static function delete_dir($path) {
         $path = self::join($path);
         if (empty($path)) {
-            self::safe_log(LogLevelType::Warn->value, '[PATH] Empty path provided to delete_dir');
+            self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to delete_dir');
             return false;
         }
 
         if (RiseupBooleanHelpers::is_file_missing($path)) {
-            self::safe_log(LogLevelType::Debug->value, '[PATH] Directory does not exist, nothing to delete', array('path' => $path));
+            self::safeLog(LogLevelType::Debug->value, '[PATH] Directory does not exist, nothing to delete', array('path' => $path));
             return true;
         }
 
         if (RiseupBooleanHelpers::is_not_directory($path)) {
-            self::safe_log(LogLevelType::Error->value, '[PATH] Path is not a directory', array('path' => $path));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a directory', array('path' => $path));
             return false;
         }
 
@@ -121,11 +121,11 @@ trait PathUtilsFileTrait {
 
         if (!@rmdir($path)) {
             $error = error_get_last();
-            self::safe_log(LogLevelType::Error->value, '[PATH] Failed to delete directory', array('path' => $path, 'error' => $error ? $error['message'] : 'Unknown error'));
+            self::safeLog(LogLevelType::Error->value, '[PATH] Failed to delete directory', array('path' => $path, 'error' => $error ? $error['message'] : 'Unknown error'));
             return false;
         }
 
-        self::safe_log(LogLevelType::Debug->value, '[PATH] Directory deleted', array('path' => $path));
+        self::safeLog(LogLevelType::Debug->value, '[PATH] Directory deleted', array('path' => $path));
         return true;
     }
 
