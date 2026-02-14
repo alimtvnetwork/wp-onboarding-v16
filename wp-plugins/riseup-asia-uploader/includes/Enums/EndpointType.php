@@ -75,6 +75,12 @@ enum EndpointType: string
     case SnapshotDownload     = 'snapshots/download';
     case SnapshotDownloadFile = 'snapshots/download-file';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /**
      * Return the route path ready for register_rest_route().
      * Encapsulates the '/' prefix so callers never touch ->value for routing.

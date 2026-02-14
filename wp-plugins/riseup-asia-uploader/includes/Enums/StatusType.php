@@ -22,15 +22,21 @@ enum StatusType: string
     case Success = 'success';
     case Failed  = 'failed';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /** Check if this status indicates success. */
     public function isSuccess(): bool
     {
-        return $this === self::Success;
+        return $this->isEqual(self::Success);
     }
 
     /** Check if this status indicates failure. */
     public function isFailed(): bool
     {
-        return $this === self::Failed;
+        return $this->isEqual(self::Failed);
     }
 }

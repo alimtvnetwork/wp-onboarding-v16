@@ -30,4 +30,10 @@ enum CapabilityType: string
     case SwitchThemes    = 'switch_themes';
     case ManageUsers     = 'manage_users';
     case ManageNetwork   = 'manage_network';
+
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
 }

@@ -21,4 +21,10 @@ enum PathLogFileType: string
     case FatalError = '/fatal-errors.log';
     case Stacktrace = '/stacktrace.txt';
     case Error      = '/error.txt';
+
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
 }

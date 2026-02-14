@@ -26,6 +26,12 @@ enum HttpMethodType: string
     case Patch  = 'PATCH';
     case Delete = 'DELETE';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /**
      * Editable methods string for WordPress route registration.
      * WordPress accepts comma-separated methods.

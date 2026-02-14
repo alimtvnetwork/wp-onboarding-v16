@@ -43,6 +43,12 @@ enum HookType: string
     case PluginsApi                        = 'plugins_api';
     case CronSchedules                     = 'cron_schedules';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /**
      * Build an authenticated AJAX hook name.
      *

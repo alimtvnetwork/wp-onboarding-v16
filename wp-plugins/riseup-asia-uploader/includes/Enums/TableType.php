@@ -36,6 +36,12 @@ enum TableType: string
     // ── Sync ─────────────────────────────────────────────────────────
     case FileCache        = 'file_cache';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /** Check if this table belongs to the snapshot domain. */
     public function isSnapshot(): bool
     {

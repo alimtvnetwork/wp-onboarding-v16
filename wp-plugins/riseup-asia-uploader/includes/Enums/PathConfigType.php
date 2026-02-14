@@ -18,4 +18,10 @@ if (!defined('ABSPATH')) {
 enum PathConfigType: string
 {
     case Detection = '/wp-plugin-detected.json';
+
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
 }

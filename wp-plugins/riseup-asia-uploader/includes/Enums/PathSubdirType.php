@@ -21,4 +21,10 @@ enum PathSubdirType: string
     case Temp      = '/temp';
     case Snapshots = '/snapshots';
     case Exports   = '/exports';
+
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
 }

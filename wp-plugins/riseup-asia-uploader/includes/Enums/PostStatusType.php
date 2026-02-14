@@ -23,10 +23,16 @@ enum PostStatusType: string
     case Draft   = 'draft';
     case Pending = 'pending';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /** Check if this status is publicly visible. */
     public function isPublic(): bool
     {
-        return $this === self::Publish;
+        return $this->isEqual(self::Publish);
     }
 
     /**
