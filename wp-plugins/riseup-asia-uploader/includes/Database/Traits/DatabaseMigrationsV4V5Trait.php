@@ -12,21 +12,18 @@ if (!defined('ABSPATH')) {
 
 trait DatabaseMigrationsV4V5Trait {
 
-    /**
-     * Migration v4: Source machine tracking.
-     */
-    private function migrate_v4_source_machine($current) {
+    private function migrate_v4_source_machine(int $current): void {
         if ($current >= 4) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v4: source machine tracking');
+        $this->fileLogger->info('Applying migration v4: source machine tracking');
         $table = self::TABLE_TRANSACTIONS;
 
         try {
             $this->pdo->exec("ALTER TABLE {$table} ADD COLUMN source_machine TEXT");
         } catch (PDOException $e) {
-            $this->file_logger->debug("Column might exist: source_machine", array('error' => $e->getMessage()));
+            $this->fileLogger->debug("Column might exist: source_machine", array('error' => $e->getMessage()));
         }
 
         $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_source_machine ON {$table}(source_machine)");
@@ -34,15 +31,12 @@ trait DatabaseMigrationsV4V5Trait {
         $this->record_migration(4);
     }
 
-    /**
-     * Migration v5: Snapshot system tables.
-     */
-    private function migrate_v5_snapshot_tables($current) {
+    private function migrate_v5_snapshot_tables(int $current): void {
         if ($current >= 5) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v5: snapshot system tables');
+        $this->fileLogger->info('Applying migration v5: snapshot system tables');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOTS . " (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

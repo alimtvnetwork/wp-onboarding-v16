@@ -12,81 +12,51 @@ if (!defined('ABSPATH')) {
 
 trait PostHandlerTrait
 {
-    /**
-     * Handle list posts.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handle_list_posts($request) {
-        $this->file_logger->debug('List posts endpoint called');
+    public function handle_list_posts(\WP_REST_Request $request): \WP_REST_Response {
+        $this->fileLogger->debug('List posts endpoint called');
 
-        $result = $this->post_manager->listPosts(array(
+        $result = $this->postManager->listPosts(array(
             'status' => $request->get_param('status'),
             'limit'  => $request->get_param('limit'),
             'offset' => $request->get_param('offset'),
             'search' => $request->get_param('search'),
         ));
 
-        return new WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
+        return new \WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
     }
 
-    /**
-     * Handle create post.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handle_create_post($request) {
-        $this->file_logger->info('Create post endpoint called');
+    public function handle_create_post(\WP_REST_Request $request): \WP_REST_Response {
+        $this->fileLogger->info('Create post endpoint called');
 
         $data   = $request->get_json_params();
-        $result = $this->post_manager->createPost($data);
+        $result = $this->postManager->createPost($data);
 
-        return new WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
+        return new \WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
 
-    /**
-     * Handle list categories.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handle_list_categories($request) {
-        $this->file_logger->debug('List categories endpoint called');
+    public function handle_list_categories(\WP_REST_Request $request): \WP_REST_Response {
+        $this->fileLogger->debug('List categories endpoint called');
 
-        $result = $this->post_manager->listCategories(array(
+        $result = $this->postManager->listCategories(array(
             'limit'  => $request->get_param('limit'),
             'offset' => $request->get_param('offset'),
             'search' => $request->get_param('search'),
         ));
 
-        return new WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
+        return new \WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
     }
 
-    /**
-     * Handle create category.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handle_create_category($request) {
-        $this->file_logger->info('Create category endpoint called');
+    public function handle_create_category(\WP_REST_Request $request): \WP_REST_Response {
+        $this->fileLogger->info('Create category endpoint called');
 
         $data   = $request->get_json_params();
-        $result = $this->post_manager->createCategory($data);
+        $result = $this->postManager->createCategory($data);
 
-        return new WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
+        return new \WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
     }
 
-    /**
-     * Handle query logs.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handle_query_logs($request) {
-        $this->file_logger->debug('Query logs endpoint called');
+    public function handle_query_logs(\WP_REST_Request $request): \WP_REST_Response {
+        $this->fileLogger->debug('Query logs endpoint called');
 
         try {
             $this->db->init();
@@ -96,25 +66,19 @@ trait PostHandlerTrait
 
             $result = $this->db->query_transactions($filters, $limit, $offset);
             $total = $result['total'];
-            $per_page = (int) $limit;
+            $perPage = (int) $limit;
 
             return RiseupEnvelopeBuilder::success()
                 ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_LOGS)
                 ->setResults($result['logs'])
-                ->setPagination($total, $per_page, $per_page > 0 ? (int) floor($offset / $per_page) + 1 : 1)
+                ->setPagination($total, $perPage, $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1)
                 ->toResponse();
         } catch (Throwable $e) {
-            return $this->error_response('Failed to query logs: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return ErrorResponse::logAndReturnEnvelope($this->fileLogger, $e, 'Failed to query logs');
         }
     }
 
-    /**
-     * Build log query filters from the request.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return array Filter parameters.
-     */
-    private function buildLogQueryFilters($request): array {
+    private function buildLogQueryFilters(\WP_REST_Request $request): array {
         return array(
             'plugin' => $request->get_param('plugin'),
             'action' => $request->get_param('action'),
@@ -125,14 +89,8 @@ trait PostHandlerTrait
         );
     }
 
-    /**
-     * Handle logs stats.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handle_logs_stats($request) {
-        $this->file_logger->debug('Logs stats endpoint called');
+    public function handle_logs_stats(\WP_REST_Request $request): \WP_REST_Response {
+        $this->fileLogger->debug('Logs stats endpoint called');
 
         try {
             $this->db->init();
@@ -143,7 +101,7 @@ trait PostHandlerTrait
                 ->setSingleResult($stats)
                 ->toResponse();
         } catch (Throwable $e) {
-            return $this->error_response('Failed to get stats: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return ErrorResponse::logAndReturnEnvelope($this->fileLogger, $e, 'Failed to get stats');
         }
     }
 }

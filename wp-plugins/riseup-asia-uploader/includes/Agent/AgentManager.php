@@ -12,40 +12,22 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load trait files
 require_once __DIR__ . '/Traits/AgentCrudTrait.php';
 require_once __DIR__ . '/Traits/AgentRemoteTrait.php';
 require_once __DIR__ . '/Traits/AgentLoggingTrait.php';
 
-/**
- * Class RiseupAgentManager
- *
- * Handles CRUD operations for agent sites and remote plugin control.
- */
 class RiseupAgentManager {
 
     use AgentCrudTrait;
     use AgentRemoteTrait;
     use AgentLoggingTrait;
 
-    /** @var string Encryption key for app passwords. */
-    private $encryptionKey;
+    private string $encryptionKey;
+    private RiseupFileLogger $fileLogger;
+    private RiseupDatabase $db;
+    private static ?RiseupAgentManager $instance = null;
 
-    /** @var RiseupFileLogger */
-    private $fileLogger;
-
-    /** @var RiseupDatabase */
-    private $db;
-
-    /** @var RiseupAgentManager|null */
-    private static $instance = null;
-
-    /**
-     * Get singleton instance.
-     *
-     * @return RiseupAgentManager
-     */
-    public static function getInstance() {
+    public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -53,22 +35,13 @@ class RiseupAgentManager {
         return self::$instance;
     }
 
-    /**
-     * Constructor.
-     */
     private function __construct() {
         $this->fileLogger = RiseupFileLogger::getInstance();
         $this->db = RiseupDatabase::getInstance();
         $this->encryptionKey = substr(hash('sha256', AUTH_KEY . SECURE_AUTH_KEY), 0, 32);
     }
 
-    /**
-     * Encrypt a string using AES-256-GCM.
-     *
-     * @param string $plaintext The plaintext to encrypt.
-     * @return string Base64-encoded ciphertext with IV and tag.
-     */
-    private function encrypt($plaintext) {
+    private function encrypt(string $plaintext): string {
         $iv = random_bytes(12);
         $tag = '';
 
@@ -86,13 +59,7 @@ class RiseupAgentManager {
         return base64_encode($iv . $tag . $ciphertext);
     }
 
-    /**
-     * Decrypt a string encrypted with AES-256-GCM.
-     *
-     * @param string $encrypted Base64-encoded ciphertext.
-     * @return string|false Decrypted plaintext or false on failure.
-     */
-    private function decrypt($encrypted) {
+    private function decrypt(string $encrypted): string|false {
         $data = base64_decode($encrypted);
 
         if (strlen($data) < 28) {

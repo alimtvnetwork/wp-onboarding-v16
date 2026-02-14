@@ -12,15 +12,12 @@ if (!defined('ABSPATH')) {
 
 trait DatabaseMigrationsV9V11Trait {
 
-    /**
-     * Migration v9: Error sessions table + flash state.
-     */
-    private function migrate_v9_error_sessions($current) {
+    private function migrate_v9_error_sessions(int $current): void {
         if ($current >= 9) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v9: error sessions and flash state');
+        $this->fileLogger->info('Applying migration v9: error sessions and flash state');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS error_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,15 +45,12 @@ trait DatabaseMigrationsV9V11Trait {
         $this->record_migration(9);
     }
 
-    /**
-     * Migration v10: Plugin version and upload source tracking.
-     */
-    private function migrate_v10_version_tracking($current) {
+    private function migrate_v10_version_tracking(int $current): void {
         if ($current >= 10) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v10: plugin version and upload source columns');
+        $this->fileLogger->info('Applying migration v10: plugin version and upload source columns');
         $table   = self::TABLE_TRANSACTIONS;
         $columns = array(
             'plugin_version' => 'TEXT',
@@ -67,7 +61,7 @@ trait DatabaseMigrationsV9V11Trait {
             try {
                 $this->pdo->exec("ALTER TABLE {$table} ADD COLUMN {$column} {$type}");
             } catch (PDOException $e) {
-                $this->file_logger->debug("Column might exist: {$column}", array('error' => $e->getMessage()));
+                $this->fileLogger->debug("Column might exist: {$column}", array('error' => $e->getMessage()));
             }
         }
 
@@ -77,15 +71,12 @@ trait DatabaseMigrationsV9V11Trait {
         $this->record_migration(10);
     }
 
-    /**
-     * Migration v11: Snapshot ZIP export cache table.
-     */
-    private function migrate_v11_snapshot_exports($current) {
+    private function migrate_v11_snapshot_exports(int $current): void {
         if ($current >= 11) {
             return;
         }
 
-        $this->file_logger->info('Applying migration v11: snapshot exports table');
+        $this->fileLogger->info('Applying migration v11: snapshot exports table');
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS " . self::TABLE_SNAPSHOT_EXPORTS . " (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
