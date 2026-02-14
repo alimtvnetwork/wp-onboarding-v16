@@ -120,6 +120,6 @@ class ErrorChecker {
      * @return bool True when PDO/SQLite is NOT available (invalid state).
      */
     public static function is_invalid_pdo_extension() {
-        return RiseupBooleanHelpers::is_class_missing('PDO') || RiseupBooleanHelpers::is_extension_missing('pdo_sqlite');
+        return RiseupBooleanHelpers::isClassMissing('PDO') || RiseupBooleanHelpers::isExtensionMissing('pdo_sqlite');
     }
 }

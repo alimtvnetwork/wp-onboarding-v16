@@ -78,10 +78,10 @@ function riseup_activate_resolve_dirs() {
  * @param string $logs_dir Logs directory path.
  */
 function riseup_activate_ensure_dirs($base_dir, $logs_dir) {
-    if (RiseupBooleanHelpers::is_dir_missing($base_dir)) {
+    if (RiseupBooleanHelpers::isDirMissing($base_dir)) {
         wp_mkdir_p($base_dir);
     }
-    if (RiseupBooleanHelpers::is_dir_missing($logs_dir)) {
+    if (RiseupBooleanHelpers::isDirMissing($logs_dir)) {
         wp_mkdir_p($logs_dir);
     }
 }
@@ -108,7 +108,7 @@ function riseup_activate_write_log_files($logs_dir) {
     ), FILE_APPEND | LOCK_EX);
 
     $stacktrace_file = $logs_dir . PathLogFileType::Stacktrace->value;
-    if (RiseupBooleanHelpers::is_file_missing($stacktrace_file)) {
+    if (RiseupBooleanHelpers::isFileMissing($stacktrace_file)) {
         @file_put_contents($stacktrace_file, sprintf(
             "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
             $timestamp
@@ -128,12 +128,12 @@ function riseup_activate_ensure_security($base_dir) {
     }
 
     $htaccess = $base_dir . '/.htaccess';
-    if (RiseupBooleanHelpers::is_file_missing($htaccess)) {
+    if (RiseupBooleanHelpers::isFileMissing($htaccess)) {
         @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
     }
 
     $index = $base_dir . '/index.php';
-    if (RiseupBooleanHelpers::is_file_missing($index)) {
+    if (RiseupBooleanHelpers::isFileMissing($index)) {
         @file_put_contents($index, "<?php\n// Silence is golden.\n");
     }
 }

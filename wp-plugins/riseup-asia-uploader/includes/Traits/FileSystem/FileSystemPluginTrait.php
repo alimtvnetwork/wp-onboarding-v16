@@ -33,7 +33,7 @@ trait FileSystemPluginTrait {
 
     private function ensurePluginFunctionsLoaded(): void {
         try {
-            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+            if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
         } catch (Throwable $e) {
@@ -104,7 +104,7 @@ trait FileSystemPluginTrait {
     private function findDirPlugin(string $slug): ?string {
         $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (RiseupBooleanHelpers::is_dir_missing($pluginDir)) {
+        if (RiseupBooleanHelpers::isDirMissing($pluginDir)) {
             return null;
         }
 

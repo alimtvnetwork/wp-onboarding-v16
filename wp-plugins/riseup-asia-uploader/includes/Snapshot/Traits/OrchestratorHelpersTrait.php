@@ -26,7 +26,7 @@ trait OrchestratorHelpersTrait {
     /** Get directory size in bytes. */
     private function getDirectorySize(string $dir): int {
         $size = 0;
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) return 0;
+        if (RiseupBooleanHelpers::isDirMissing($dir)) return 0;
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
             if ($file->isFile()) $size += $file->getSize();

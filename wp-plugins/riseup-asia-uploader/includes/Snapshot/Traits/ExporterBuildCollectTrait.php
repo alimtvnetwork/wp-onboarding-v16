@@ -23,7 +23,7 @@ trait ExporterBuildCollectTrait {
      */
     private function collectSnapshotFiles($dir) {
         $files = array();
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($dir)) {
             return $files;
         }
 
@@ -48,7 +48,7 @@ trait ExporterBuildCollectTrait {
      */
     private function collectIncrementalFiles($incrementalDir) {
         $files = array();
-        if (RiseupBooleanHelpers::is_dir_missing($incrementalDir)) {
+        if (RiseupBooleanHelpers::isDirMissing($incrementalDir)) {
             return $files;
         }
 

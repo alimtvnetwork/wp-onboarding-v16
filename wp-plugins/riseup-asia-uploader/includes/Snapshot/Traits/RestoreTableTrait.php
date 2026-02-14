@@ -75,7 +75,7 @@ trait RestoreTableTrait {
         }
 
         $sqlite_path = $snapshotDir . '/' . $table_info['sqlite_file'];
-        if (RiseupBooleanHelpers::is_file_missing($sqlite_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($sqlite_path)) {
             $this->log(LogLevelType::Error->value, 'SQLite file missing for table', array('table' => $table, 'file' => $table_info['sqlite_file']));
             return array('success' => false, 'error' => 'SQLite file missing (' . $table_info['sqlite_file'] . ')', 'rows' => 0);
         }

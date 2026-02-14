@@ -28,7 +28,7 @@ trait AuthCredentialTrait
     }
 
     private function resolveFromGetallheaders(): ?string {
-        if (RiseupBooleanHelpers::is_func_missing('getallheaders')) {
+        if (RiseupBooleanHelpers::isFuncMissing('getallheaders')) {
             return null;
         }
 

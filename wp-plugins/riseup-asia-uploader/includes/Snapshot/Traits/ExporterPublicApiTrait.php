@@ -145,7 +145,7 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        if (RiseupBooleanHelpers::is_file_missing($export['zip_path'])) {
+        if (RiseupBooleanHelpers::isFileMissing($export['zip_path'])) {
             $this->log(LogLevelType::Warn->value, 'Export ZIP file missing', array('path' => $export['zip_path']));
             return null;
         }

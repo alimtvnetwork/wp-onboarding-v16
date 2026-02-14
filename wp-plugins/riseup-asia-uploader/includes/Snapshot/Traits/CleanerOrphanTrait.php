@@ -164,7 +164,7 @@ trait CleanerOrphanTrait {
             }
 
             // Only delete empty directories
-            if (RiseupBooleanHelpers::is_dir_empty($dir)) {
+            if (RiseupBooleanHelpers::isDirEmpty($dir)) {
                 if (!$dry_run) {
                     try {
                         if (@rmdir($dir)) { // Suppress warnings

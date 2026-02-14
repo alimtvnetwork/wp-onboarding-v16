@@ -209,12 +209,12 @@ class PluginsOnboard {
             OnboardLogger::debug('Version set: ' . $this->version);
 
             // Initialize config first.
-            if (OnboardBooleanHelpers::is_class_exists('OnboardConfig')) {
+            if (OnboardBooleanHelpers::isClassExists('OnboardConfig')) {
                 OnboardLogger::debug('Initializing OnboardConfig...');
                 $this->config = OnboardConfig::get_instance();
                 OnboardLogger::debug('OnboardConfig initialized successfully');
             }
-            if (OnboardBooleanHelpers::is_class_missing('OnboardConfig')) {
+            if (OnboardBooleanHelpers::isClassMissing('OnboardConfig')) {
                 OnboardLogger::error('OnboardConfig class not found');
             }
 
@@ -413,7 +413,7 @@ class PluginsOnboard {
      * Seed default settings to database.
      */
     private function seed_default_settings() {
-        if (OnboardBooleanHelpers::is_db_disconnected($this->db)) {
+        if (OnboardBooleanHelpers::isDbDisconnected($this->db)) {
             return;
         }
 

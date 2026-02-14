@@ -58,12 +58,12 @@ trait PathUtilsFileTrait {
             return false;
         }
 
-        if (RiseupBooleanHelpers::is_file_missing($path)) {
+        if (RiseupBooleanHelpers::isFileMissing($path)) {
             self::safeLog(LogLevelType::Debug->value, '[PATH] File does not exist, nothing to delete', array('path' => $path));
             return true;
         }
 
-        if (RiseupBooleanHelpers::is_not_regular_file($path)) {
+        if (RiseupBooleanHelpers::isNotRegularFile($path)) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $path));
             return false;
         }
@@ -90,12 +90,12 @@ trait PathUtilsFileTrait {
             return false;
         }
 
-        if (RiseupBooleanHelpers::is_file_missing($path)) {
+        if (RiseupBooleanHelpers::isFileMissing($path)) {
             self::safeLog(LogLevelType::Debug->value, '[PATH] Directory does not exist, nothing to delete', array('path' => $path));
             return true;
         }
 
-        if (RiseupBooleanHelpers::is_not_directory($path)) {
+        if (RiseupBooleanHelpers::isNotDirectory($path)) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a directory', array('path' => $path));
             return false;
         }
@@ -131,10 +131,10 @@ trait PathUtilsFileTrait {
      */
     public static function getFreeSpace(string $path) {
         $path = self::join($path);
-        while (RiseupBooleanHelpers::is_not_directory($path) && $path !== dirname($path)) {
+        while (RiseupBooleanHelpers::isNotDirectory($path) && $path !== dirname($path)) {
             $path = dirname($path);
         }
-        if (RiseupBooleanHelpers::is_not_directory($path)) {
+        if (RiseupBooleanHelpers::isNotDirectory($path)) {
             return false;
         }
         return @disk_free_space($path);

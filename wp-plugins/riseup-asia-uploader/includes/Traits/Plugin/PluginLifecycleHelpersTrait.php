@@ -58,11 +58,11 @@ trait PluginLifecycleHelpersTrait {
      */
     private function loadPluginFunctions($includeFileFunctions = false) {
         try {
-            if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+            if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
-            if ($includeFileFunctions && RiseupBooleanHelpers::is_func_missing('delete_plugins')) {
+            if ($includeFileFunctions && RiseupBooleanHelpers::isFuncMissing('delete_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/file.php';
             }
 

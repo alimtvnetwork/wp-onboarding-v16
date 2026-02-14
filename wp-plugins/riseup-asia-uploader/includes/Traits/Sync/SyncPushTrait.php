@@ -32,7 +32,7 @@ trait SyncPushTrait
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-            if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
+            if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
                 return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
             }
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
@@ -122,7 +122,7 @@ trait SyncPushTrait
         }
 
         $dir = dirname($full_path);
-        if (RiseupBooleanHelpers::is_dir_missing($dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($dir)) {
             RiseupPathUtils::ensureDir($dir);
         }
 
@@ -136,7 +136,7 @@ trait SyncPushTrait
 
     /** Delete a file during sync with audit trail. */
     private function syncDeleteFile(string $path, string $action, string $full_path, string $plugin_dir, string $slug): array {
-        if (RiseupBooleanHelpers::is_file_missing($full_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($full_path)) {
             return array('path' => $path, 'action' => $action, 'status' => 'success', 'reason' => 'Already absent');
         }
 

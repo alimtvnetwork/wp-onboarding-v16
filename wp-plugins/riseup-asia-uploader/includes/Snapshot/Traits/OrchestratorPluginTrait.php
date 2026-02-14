@@ -47,7 +47,7 @@ trait OrchestratorPluginTrait {
 
     /** Collect plugins eligible for snapshotting. */
     private function collectPluginsToSnapshot($selection) {
-        if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
+        if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
@@ -79,7 +79,7 @@ trait OrchestratorPluginTrait {
         $slug = $info['slug'];
         $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (RiseupBooleanHelpers::is_dir_missing($plugin_path)) {
+        if (RiseupBooleanHelpers::isDirMissing($plugin_path)) {
             $this->log(LogLevelType::Info->value, 'Skipping single-file plugin: ' . $slug);
             return null;
         }
@@ -147,7 +147,7 @@ trait OrchestratorPluginTrait {
     /** Open a-root.db for plugin registration. */
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
-        if (RiseupBooleanHelpers::is_file_missing($root_path)) {
+        if (RiseupBooleanHelpers::isFileMissing($root_path)) {
             return null;
         }
 

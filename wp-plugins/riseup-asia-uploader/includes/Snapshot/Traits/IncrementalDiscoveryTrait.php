@@ -52,7 +52,7 @@ trait IncrementalDiscoveryTrait {
     /** Find the latest master snapshot from the filesystem (fallback). */
     private function findMasterFromFilesystem(): ?string {
         $base_dir = $this->getSnapshotsBaseDir();
-        if (RiseupBooleanHelpers::is_dir_missing($base_dir)) {
+        if (RiseupBooleanHelpers::isDirMissing($base_dir)) {
             return null;
         }
 
