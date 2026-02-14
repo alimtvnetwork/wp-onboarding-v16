@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait ExporterBuildCollectTrait {
@@ -89,7 +90,7 @@ trait ExporterBuildCollectTrait {
             ' WHERE scope = \'incremental\' AND filepath LIKE ? AND status = ? ORDER BY created_at ASC'
         );
         $parentDir = '%/' . $parentName . '/incremental/%';
-        $stmt->execute(array($parentDir, SNAPSHOT_STATUS_COMPLETE));
+        $stmt->execute(array($parentDir, SnapshotStatusType::Complete->value));
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

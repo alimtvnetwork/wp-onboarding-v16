@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait ExporterPublicApiTrait {
@@ -69,7 +70,7 @@ trait ExporterPublicApiTrait {
         }
 
         $stmt = $pdo->prepare('UPDATE ' . TableType::SnapshotExports->value . ' SET status = ?, expires_at = datetime(\'now\') WHERE id = ?');
-        $stmt->execute(array(SNAPSHOT_EXPORT_STATUS_EXPIRED, $export['id']));
+        $stmt->execute(array(SnapshotExportStatusType::Expired->value, $export['id']));
 
         $this->log(LogLevelType::Info->value, 'Export marked as expired', array('export_id' => $export['id']));
         return true;
@@ -111,7 +112,7 @@ trait ExporterPublicApiTrait {
      */
     public function getDownloadUrl($exportId) {
         $export = $this->getExportById($exportId);
-        if (!$export || $export['status'] !== SNAPSHOT_EXPORT_STATUS_VALID) {
+        if (!$export || $export['status'] !== SnapshotExportStatusType::Valid->value) {
             return null;
         }
 
@@ -139,7 +140,7 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        if ($export['status'] !== SNAPSHOT_EXPORT_STATUS_VALID) {
+        if ($export['status'] !== SnapshotExportStatusType::Valid->value) {
             $this->log(LogLevelType::Warn->value, 'Export is not valid', array('export_id' => $exportId, 'status' => $export['status']));
             return null;
         }

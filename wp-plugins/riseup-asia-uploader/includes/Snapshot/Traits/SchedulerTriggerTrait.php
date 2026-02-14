@@ -9,6 +9,9 @@
  * @since   1.9.0
  */
 
+use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotScopeType;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -83,15 +86,15 @@ trait SchedulerTriggerTrait {
         try {
             $settings = $this->detector->getSettings();
 
-            $snapshot_type = $options['snapshot_type'] ?? SNAPSHOT_TYPE_FULL;
-            $title = $options['title'] ?? ($snapshot_type === SNAPSHOT_TYPE_INCREMENTAL
+            $snapshot_type = $options['snapshot_type'] ?? SnapshotModeType::Full->value;
+            $title = $options['title'] ?? ($snapshot_type === SnapshotModeType::Incremental->value
                 ? 'Incremental Backup ' . date('Y-m-d H:i')
                 : 'Manual Backup ' . date('Y-m-d H:i'));
 
             $cron_args = array(
                 'snapshot_type'      => $snapshot_type,
                 'title'              => $title,
-                'scope'              => $options['scope'] ?? $settings['default_scope'] ?? SNAPSHOT_SCOPE_WORDPRESS,
+                'scope'              => $options['scope'] ?? $settings['default_scope'] ?? SnapshotScopeType::WordPress->value,
                 'master_snapshot_id' => $options['master_snapshot_id'] ?? null,
             );
 

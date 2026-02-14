@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait CleanerStorageTrait {
@@ -42,7 +43,7 @@ trait CleanerStorageTrait {
                     MAX(created_at) as newest
                 FROM ' . TableType::Snapshots->value .
                 ' WHERE status = ?',
-                array(SNAPSHOT_STATUS_COMPLETE)
+                array(SnapshotStatusType::Complete->value)
             );
 
             if ($db_stats) {

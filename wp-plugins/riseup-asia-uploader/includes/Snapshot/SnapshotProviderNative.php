@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotProviderType;
+
 require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 require_once dirname(__FILE__) . '/Traits/NativeSnapshotCreateTrait.php';
 require_once dirname(__FILE__) . '/Traits/NativeTableExportTrait.php';
@@ -28,7 +30,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
     use NativeSnapshotRecordTrait;
 
     /** @var string */
-    protected $provider_id = SNAPSHOT_PROVIDER_NATIVE;
+    protected string $provider_id = SnapshotProviderType::Native->value;
 
     /** @var string */
     protected $provider_name = 'Native SQLite';

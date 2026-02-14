@@ -31,10 +31,7 @@ class RiseupDatabase {
     use DatabaseMigrationsLateTrait;
     use DatabaseQueryTrait;
 
-    /** Snapshot export status constants */
-    public const SNAPSHOT_EXPORT_STATUS_VALID = 'valid';
-
-    /** Transaction status constants */
+    /** Transaction status constant — delegates to StatusType enum */
     public const STATUS_SUCCESS = 'success';
 
     /** Default and max limits for queries */

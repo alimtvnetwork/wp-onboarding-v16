@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\TableType;
 
 /**
@@ -34,7 +35,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      *
      * @var string
      */
-    protected $provider_id = SNAPSHOT_PROVIDER_WP_RESET;
+    protected string $provider_id = SnapshotProviderType::WpReset->value;
 
     /**
      * Provider name.

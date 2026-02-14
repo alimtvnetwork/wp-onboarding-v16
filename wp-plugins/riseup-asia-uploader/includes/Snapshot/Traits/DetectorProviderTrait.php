@@ -6,6 +6,8 @@
  * @since   1.57.0
  */
 
+use RiseupAsia\Enums\SnapshotProviderType;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -34,7 +36,7 @@ trait DetectorProviderTrait {
      */
     private function detectWPReset() {
         $result = array(
-            'id' => SNAPSHOT_PROVIDER_WP_RESET, 'name' => 'WP Reset', 'available' => false,
+            'id' => SnapshotProviderType::WpReset->value, 'name' => 'WP Reset', 'available' => false,
             'capabilities' => array(), 'version' => null, 'detection_method' => null,
         );
 
@@ -77,7 +79,7 @@ trait DetectorProviderTrait {
      */
     private function detectUpdraft() {
         $result = array(
-            'id' => SNAPSHOT_PROVIDER_UPDRAFT, 'name' => 'UpdraftPlus', 'available' => false,
+            'id' => SnapshotProviderType::Updraft->value, 'name' => 'UpdraftPlus', 'available' => false,
             'capabilities' => array(), 'version' => null, 'detection_method' => null,
         );
 
@@ -127,7 +129,7 @@ trait DetectorProviderTrait {
     private function detectNative() {
         $has_sqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
         return array(
-            'id' => SNAPSHOT_PROVIDER_NATIVE, 'name' => 'Native SQLite', 'available' => $has_sqlite,
+            'id' => SnapshotProviderType::Native->value, 'name' => 'Native SQLite', 'available' => $has_sqlite,
             'capabilities' => array(
                 'full_site' => false, 'database_only' => true, 'selective' => true,
                 'scheduled' => true, 'restore' => true, 'export' => true, 'import' => true,

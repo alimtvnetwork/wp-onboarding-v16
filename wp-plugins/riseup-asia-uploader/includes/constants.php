@@ -78,45 +78,13 @@ if (!defined('DB_WAL_MODE')) {
 }
 
 // =============================================================================
-// ACTIONS — backward-compat aliases (canonical source: ActionType enum)
-// =============================================================================
-use RiseupAsia\Enums\ActionType;
-
-if (!defined('ACTION_UPLOAD'))           { define('ACTION_UPLOAD',           ActionType::Upload->value); }
-if (!defined('ACTION_UPLOAD_ACTIVE'))    { define('ACTION_UPLOAD_ACTIVE',    ActionType::UploadActive->value); }
-if (!defined('ACTION_UPLOAD_INITIATED')) { define('ACTION_UPLOAD_INITIATED', ActionType::UploadInitiated->value); }
-if (!defined('ACTION_ENABLE'))           { define('ACTION_ENABLE',           ActionType::Enable->value); }
-if (!defined('ACTION_DISABLE'))          { define('ACTION_DISABLE',          ActionType::Disable->value); }
-if (!defined('ACTION_DELETE'))           { define('ACTION_DELETE',           ActionType::Delete->value); }
-if (!defined('ACTION_FILE_REPLACE'))     { define('ACTION_FILE_REPLACE',     ActionType::FileReplace->value); }
-if (!defined('ACTION_FILE_DELETE'))      { define('ACTION_FILE_DELETE',      ActionType::FileDelete->value); }
-if (!defined('ACTION_SYNC'))             { define('ACTION_SYNC',             ActionType::Sync->value); }
-if (!defined('ACTION_POST_CREATE'))      { define('ACTION_POST_CREATE',      ActionType::PostCreate->value); }
-if (!defined('ACTION_POST_UPDATE'))      { define('ACTION_POST_UPDATE',      ActionType::PostUpdate->value); }
-if (!defined('ACTION_CATEGORY_CREATE'))  { define('ACTION_CATEGORY_CREATE',  ActionType::CategoryCreate->value); }
-if (!defined('ACTION_MEDIA_UPLOAD'))     { define('ACTION_MEDIA_UPLOAD',     ActionType::MediaUpload->value); }
-if (!defined('ACTION_AUTH_FAILED'))      { define('ACTION_AUTH_FAILED',      ActionType::AuthFailed->value); }
-if (!defined('ACTION_EXPORT_SELF'))      { define('ACTION_EXPORT_SELF',      ActionType::ExportSelf->value); }
-if (!defined('ACTION_EXPORT_PLUGIN'))    { define('ACTION_EXPORT_PLUGIN',    ActionType::ExportPlugin->value); }
-
-// =============================================================================
-// STATUS VALUES
-// =============================================================================
 // STATUS VALUES — backward-compat aliases (canonical source: StatusType enum)
+// Retained until all ~13 remaining callers are migrated.
 // =============================================================================
 use RiseupAsia\Enums\StatusType;
 
 if (!defined('STATUS_SUCCESS')) { define('STATUS_SUCCESS', StatusType::Success->value); }
 if (!defined('STATUS_FAILED'))  { define('STATUS_FAILED',  StatusType::Failed->value); }
-
-// =============================================================================
-// POST STATUS VALUES — backward-compat aliases (canonical source: PostStatusType enum)
-// =============================================================================
-use RiseupAsia\Enums\PostStatusType;
-
-if (!defined('POST_STATUS_PUBLISH')) { define('POST_STATUS_PUBLISH', PostStatusType::Publish->value); }
-if (!defined('POST_STATUS_DRAFT'))   { define('POST_STATUS_DRAFT',   PostStatusType::Draft->value); }
-if (!defined('POST_STATUS_PENDING')) { define('POST_STATUS_PENDING', PostStatusType::Pending->value); }
 
 // =============================================================================
 // RESPONSE MESSAGES
@@ -169,23 +137,6 @@ if (!defined('MSG_FILE_IGNORED')) {
 }
 
 // =============================================================================
-// CAPABILITIES — Now in RiseupAsia\Enums\CapabilityType, kept as aliases for backward compat
-// =============================================================================
-
-if (!defined('CAP_MANAGE_PLUGINS')) {
-    define('CAP_MANAGE_PLUGINS', \RiseupAsia\Enums\CapabilityType::ActivatePlugins->value);
-}
-if (!defined('CAP_MANAGE_POSTS')) {
-    define('CAP_MANAGE_POSTS', \RiseupAsia\Enums\CapabilityType::PublishPosts->value);
-}
-if (!defined('CAP_UPLOAD_MEDIA')) {
-    define('CAP_UPLOAD_MEDIA', \RiseupAsia\Enums\CapabilityType::UploadFiles->value);
-}
-if (!defined('CAP_VIEW_LOGS')) {
-    define('CAP_VIEW_LOGS', \RiseupAsia\Enums\CapabilityType::ManageOptions->value);
-}
-
-// =============================================================================
 // PAGINATION DEFAULTS
 // =============================================================================
 
@@ -231,11 +182,6 @@ if (!defined('HTTP_SERVER_ERROR')) {
 }
 
 // =============================================================================
-// LOG LEVELS — Use LogLevelType enum (RiseupAsia\Enums\LogLevelType)
-// Legacy constants removed: use LogLevelType::Info->value, etc.
-// =============================================================================
-
-// =============================================================================
 // LOGGING PREFIX
 // =============================================================================
 
@@ -255,98 +201,9 @@ if (!defined('UPDATE_MAX_REDIRECTS')) {
 }
 
 // =============================================================================
-// AUTO-UPDATE ACTIONS (for transaction logging)
+// SNAPSHOT DEFAULTS (numeric/config — not migrated to enums)
 // =============================================================================
 
-if (!defined('ACTION_UPDATE_CHECK'))    { define('ACTION_UPDATE_CHECK',    ActionType::UpdateCheck->value); }
-if (!defined('ACTION_UPDATE_RESOLVE'))  { define('ACTION_UPDATE_RESOLVE',  ActionType::UpdateResolve->value); }
-if (!defined('ACTION_UPDATE_DOWNLOAD')) { define('ACTION_UPDATE_DOWNLOAD', ActionType::UpdateDownload->value); }
-if (!defined('ACTION_UPDATE_INSTALL'))  { define('ACTION_UPDATE_INSTALL',  ActionType::UpdateInstall->value); }
-
-// =============================================================================
-// AGENT MANAGEMENT CONSTANTS
-// =============================================================================
-
-// Agent action types
-
-// Agent action types
-if (!defined('ACTION_AGENT_ADD'))            { define('ACTION_AGENT_ADD',            ActionType::AgentAdd->value); }
-if (!defined('ACTION_AGENT_REMOVE'))         { define('ACTION_AGENT_REMOVE',         ActionType::AgentRemove->value); }
-if (!defined('ACTION_AGENT_TEST'))           { define('ACTION_AGENT_TEST',           ActionType::AgentTest->value); }
-if (!defined('ACTION_AGENT_SYNC'))           { define('ACTION_AGENT_SYNC',           ActionType::AgentSync->value); }
-if (!defined('ACTION_AGENT_PLUGIN_ENABLE'))  { define('ACTION_AGENT_PLUGIN_ENABLE',  ActionType::AgentPluginEnable->value); }
-if (!defined('ACTION_AGENT_PLUGIN_DISABLE')) { define('ACTION_AGENT_PLUGIN_DISABLE', ActionType::AgentPluginDisable->value); }
-if (!defined('ACTION_AGENT_PLUGIN_DELETE'))  { define('ACTION_AGENT_PLUGIN_DELETE',  ActionType::AgentPluginDelete->value); }
-if (!defined('ACTION_AGENT_PLUGIN_UPDATE'))  { define('ACTION_AGENT_PLUGIN_UPDATE',  ActionType::AgentPluginUpdate->value); }
-
-// Agent status values — backward-compat aliases (canonical source: AgentStatusType enum)
-use RiseupAsia\Enums\AgentStatusType;
-
-if (!defined('AGENT_STATUS_PENDING'))   { define('AGENT_STATUS_PENDING',   AgentStatusType::Pending->value); }
-if (!defined('AGENT_STATUS_CONNECTED')) { define('AGENT_STATUS_CONNECTED', AgentStatusType::Connected->value); }
-if (!defined('AGENT_STATUS_ERROR'))     { define('AGENT_STATUS_ERROR',     AgentStatusType::Error->value); }
-
-// Agent REST endpoints — migrated to EndpointType enum
-
-// =============================================================================
-// TRIGGERED_BY VALUES (for enhanced transaction logging)
-// =============================================================================
-
-use RiseupAsia\Enums\TriggerSourceType;
-
-if (!defined('TRIGGERED_BY_API'))       { define('TRIGGERED_BY_API',       TriggerSourceType::Api->value); }
-if (!defined('TRIGGERED_BY_DASHBOARD')) { define('TRIGGERED_BY_DASHBOARD', TriggerSourceType::Dashboard->value); }
-if (!defined('TRIGGERED_BY_AGENT'))     { define('TRIGGERED_BY_AGENT',     TriggerSourceType::Agent->value); }
-if (!defined('TRIGGERED_BY_CRON'))      { define('TRIGGERED_BY_CRON',      TriggerSourceType::Cron->value); }
-if (!defined('TRIGGERED_BY_CLI'))       { define('TRIGGERED_BY_CLI',       TriggerSourceType::Cli->value); }
-
-// =============================================================================
-// SNAPSHOT SYSTEM CONSTANTS
-// =============================================================================
-
-// Snapshot providers — backward-compat aliases (canonical source: SnapshotProviderType enum)
-use RiseupAsia\Enums\SnapshotProviderType;
-
-if (!defined('SNAPSHOT_PROVIDER_WP_RESET')) { define('SNAPSHOT_PROVIDER_WP_RESET', SnapshotProviderType::WpReset->value); }
-if (!defined('SNAPSHOT_PROVIDER_UPDRAFT'))  { define('SNAPSHOT_PROVIDER_UPDRAFT',  SnapshotProviderType::Updraft->value); }
-if (!defined('SNAPSHOT_PROVIDER_NATIVE'))   { define('SNAPSHOT_PROVIDER_NATIVE',   SnapshotProviderType::Native->value); }
-if (!defined('SNAPSHOT_PROVIDER_AUTO'))     { define('SNAPSHOT_PROVIDER_AUTO',     SnapshotProviderType::Auto->value); }
-
-// Snapshot status values — backward-compat aliases (canonical source: SnapshotStatusType enum)
-use RiseupAsia\Enums\SnapshotStatusType;
-
-if (!defined('SNAPSHOT_STATUS_PENDING'))   { define('SNAPSHOT_STATUS_PENDING',   SnapshotStatusType::Pending->value); }
-if (!defined('SNAPSHOT_STATUS_SCHEDULED')) { define('SNAPSHOT_STATUS_SCHEDULED', SnapshotStatusType::Scheduled->value); }
-if (!defined('SNAPSHOT_STATUS_RUNNING'))   { define('SNAPSHOT_STATUS_RUNNING',   SnapshotStatusType::Running->value); }
-if (!defined('SNAPSHOT_STATUS_COMPLETE'))  { define('SNAPSHOT_STATUS_COMPLETE',  SnapshotStatusType::Complete->value); }
-if (!defined('SNAPSHOT_STATUS_FAILED'))    { define('SNAPSHOT_STATUS_FAILED',    SnapshotStatusType::Failed->value); }
-
-// Snapshot scope values — backward-compat aliases (canonical source: SnapshotScopeType enum)
-use RiseupAsia\Enums\SnapshotScopeType;
-
-if (!defined('SNAPSHOT_SCOPE_ALL'))       { define('SNAPSHOT_SCOPE_ALL',       SnapshotScopeType::All->value); }
-if (!defined('SNAPSHOT_SCOPE_WORDPRESS')) { define('SNAPSHOT_SCOPE_WORDPRESS', SnapshotScopeType::WordPress->value); }
-if (!defined('SNAPSHOT_SCOPE_CONTENT'))   { define('SNAPSHOT_SCOPE_CONTENT',   SnapshotScopeType::Content->value); }
-if (!defined('SNAPSHOT_SCOPE_CUSTOM'))    { define('SNAPSHOT_SCOPE_CUSTOM',    SnapshotScopeType::Custom->value); }
-
-// Snapshot schedule frequencies — backward-compat aliases (canonical source: SnapshotFrequencyType enum)
-use RiseupAsia\Enums\SnapshotFrequencyType;
-
-if (!defined('SNAPSHOT_FREQ_MANUAL'))  { define('SNAPSHOT_FREQ_MANUAL',  SnapshotFrequencyType::Manual->value); }
-if (!defined('SNAPSHOT_FREQ_DAILY'))   { define('SNAPSHOT_FREQ_DAILY',   SnapshotFrequencyType::Daily->value); }
-if (!defined('SNAPSHOT_FREQ_WEEKLY'))  { define('SNAPSHOT_FREQ_WEEKLY',  SnapshotFrequencyType::Weekly->value); }
-if (!defined('SNAPSHOT_FREQ_MONTHLY')) { define('SNAPSHOT_FREQ_MONTHLY', SnapshotFrequencyType::Monthly->value); }
-
-// Snapshot actions (backward-compat aliases — canonical source: ActionType enum)
-if (!defined('ACTION_SNAPSHOT_CREATE'))  { define('ACTION_SNAPSHOT_CREATE',  ActionType::SnapshotCreate->value); }
-if (!defined('ACTION_SNAPSHOT_RESTORE')) { define('ACTION_SNAPSHOT_RESTORE', ActionType::SnapshotRestore->value); }
-if (!defined('ACTION_SNAPSHOT_DELETE'))  { define('ACTION_SNAPSHOT_DELETE',  ActionType::SnapshotDelete->value); }
-if (!defined('ACTION_SNAPSHOT_EXPORT'))  { define('ACTION_SNAPSHOT_EXPORT',  ActionType::SnapshotExport->value); }
-if (!defined('ACTION_SNAPSHOT_IMPORT'))  { define('ACTION_SNAPSHOT_IMPORT',  ActionType::SnapshotImport->value); }
-
-// Snapshot folders — migrated to PathSubdirType::Snapshots
-
-// Snapshot defaults
 if (!defined('SNAPSHOT_BATCH_SIZE')) {
     define('SNAPSHOT_BATCH_SIZE', 1000);
 }
@@ -376,17 +233,6 @@ if (!defined('CRON_SNAPSHOT_WORKER_BATCH')) {
     define('CRON_SNAPSHOT_WORKER_BATCH', 'riseup_snapshot_worker_batch');
 }
 
-// Snapshot job status values — backward-compat aliases (canonical source: SnapshotJobStatusType enum)
-use RiseupAsia\Enums\SnapshotJobStatusType;
-
-if (!defined('SNAPSHOT_JOB_STATUS_QUEUED'))      { define('SNAPSHOT_JOB_STATUS_QUEUED',      SnapshotJobStatusType::Queued->value); }
-if (!defined('SNAPSHOT_JOB_STATUS_PROCESSING'))  { define('SNAPSHOT_JOB_STATUS_PROCESSING',  SnapshotJobStatusType::Processing->value); }
-if (!defined('SNAPSHOT_JOB_STATUS_COMPLETE'))     { define('SNAPSHOT_JOB_STATUS_COMPLETE',    SnapshotJobStatusType::Complete->value); }
-if (!defined('SNAPSHOT_JOB_STATUS_FAILED'))       { define('SNAPSHOT_JOB_STATUS_FAILED',      SnapshotJobStatusType::Failed->value); }
-
-// Snapshot progress REST endpoint — migrated to EndpointType enum
-
-
 // Snapshot cron hooks
 if (!defined('CRON_SNAPSHOT_SCHEDULED')) {
     define('CRON_SNAPSHOT_SCHEDULED', 'riseup_snapshot_scheduled');
@@ -404,7 +250,10 @@ if (!defined('CRON_SNAPSHOT_INCREMENTAL')) {
     define('CRON_SNAPSHOT_INCREMENTAL', 'riseup_snapshot_incremental');
 }
 
-// Snapshot error codes
+// =============================================================================
+// SNAPSHOT ERROR CODES
+// =============================================================================
+
 if (!defined('ERR_SNAPSHOT_LOCK_EXISTS')) {
     define('ERR_SNAPSHOT_LOCK_EXISTS', 'SNAPSHOT_LOCK_EXISTS');
 }
@@ -427,13 +276,6 @@ if (!defined('ERR_PROVIDER_NOT_AVAILABLE')) {
     define('ERR_PROVIDER_NOT_AVAILABLE', 'PROVIDER_NOT_AVAILABLE');
 }
 
-// Snapshot trigger sources — backward-compat aliases (canonical source: SnapshotTriggerType enum)
-use RiseupAsia\Enums\SnapshotTriggerType;
-
-if (!defined('SNAPSHOT_TRIGGER_MANUAL')) { define('SNAPSHOT_TRIGGER_MANUAL', SnapshotTriggerType::Manual->value); }
-if (!defined('SNAPSHOT_TRIGGER_CRON'))   { define('SNAPSHOT_TRIGGER_CRON',   SnapshotTriggerType::Cron->value); }
-if (!defined('SNAPSHOT_TRIGGER_API'))    { define('SNAPSHOT_TRIGGER_API',    SnapshotTriggerType::Api->value); }
-
 // WordPress options key for snapshot settings
 if (!defined('OPTION_SNAPSHOT_SETTINGS')) {
     define('OPTION_SNAPSHOT_SETTINGS', 'riseup_snapshot_settings');
@@ -447,67 +289,13 @@ if (!defined('SNAPSHOT_STUCK_HOURS')) {
     define('SNAPSHOT_STUCK_HOURS', 24);
 }
 
-use RiseupAsia\Enums\RetentionType;
-
-if (!defined('RETENTION_TYPE_DAYS'))  { define('RETENTION_TYPE_DAYS',  RetentionType::Days->value); }
-if (!defined('RETENTION_TYPE_COUNT')) { define('RETENTION_TYPE_COUNT', RetentionType::Count->value); }
-if (!defined('RETENTION_TYPE_NONE'))  { define('RETENTION_TYPE_NONE',  RetentionType::None->value); }
-
-if (!defined('ACTION_SNAPSHOT_CLEANUP')) { define('ACTION_SNAPSHOT_CLEANUP', ActionType::SnapshotCleanup->value); }
-
-// =============================================================================
-// FILE CACHE CONSTANTS (Phase 41 - Sync System)
-// =============================================================================
-
-
-use RiseupAsia\Enums\SyncActionType;
-
-if (!defined('SYNC_ACTION_REPLACE')) { define('SYNC_ACTION_REPLACE', SyncActionType::Replace->value); }
-if (!defined('SYNC_ACTION_DELETE'))  { define('SYNC_ACTION_DELETE',  SyncActionType::Delete->value); }
-
-if (!defined('ACTION_SYNC_DELETE')) { define('ACTION_SYNC_DELETE', ActionType::SyncDelete->value); }
-
-// ENDPOINT_SNAPSHOT_FULL_BACKUP — migrated to EndpointType enum
-
-if (!defined('ACTION_SNAPSHOT_FULL_BACKUP')) { define('ACTION_SNAPSHOT_FULL_BACKUP', ActionType::SnapshotFullBackup->value); }
-
-// ENDPOINT_SNAPSHOT_INCREMENTAL — migrated to EndpointType enum
-
-if (!defined('ACTION_SNAPSHOT_INCREMENTAL')) { define('ACTION_SNAPSHOT_INCREMENTAL', ActionType::SnapshotIncremental->value); }
-
-use RiseupAsia\Enums\SnapshotModeType;
-
-if (!defined('SNAPSHOT_TYPE_FULL'))        { define('SNAPSHOT_TYPE_FULL',        SnapshotModeType::Full->value); }
-if (!defined('SNAPSHOT_TYPE_INCREMENTAL')) { define('SNAPSHOT_TYPE_INCREMENTAL', SnapshotModeType::Incremental->value); }
-
 if (!defined('ERR_INCREMENTAL_NO_PARENT')) {
     define('ERR_INCREMENTAL_NO_PARENT', 'INCREMENTAL_NO_PARENT');
 }
 
-if (!defined('ACTION_SNAPSHOT_RESTORE_PERTABLE')) { define('ACTION_SNAPSHOT_RESTORE_PERTABLE', ActionType::SnapshotRestorePerTable->value); }
-if (!defined('ACTION_SNAPSHOT_IMPORT_PERTABLE'))  { define('ACTION_SNAPSHOT_IMPORT_PERTABLE',  ActionType::SnapshotImportPerTable->value); }
-
-// ENDPOINT_SNAPSHOT_CLEANUP — migrated to EndpointType enum
-
 // =============================================================================
-// SNAPSHOT ZIP EXPORT SYSTEM (Feature D)
+// SNAPSHOT ZIP EXPORT ERROR CODES
 // =============================================================================
-
-// ENDPOINT_SNAPSHOT_DOWNLOAD / DOWNLOAD_FILE — migrated to EndpointType enum
-
-// ENDPOINT_SNAPSHOT_DOWNLOAD / DOWNLOAD_FILE — migrated to EndpointType enum
-
-if (!defined('ACTION_SNAPSHOT_ZIP_BUILD'))    { define('ACTION_SNAPSHOT_ZIP_BUILD',    ActionType::SnapshotZipBuild->value); }
-if (!defined('ACTION_SNAPSHOT_ZIP_EXPIRE'))   { define('ACTION_SNAPSHOT_ZIP_EXPIRE',   ActionType::SnapshotZipExpire->value); }
-if (!defined('ACTION_SNAPSHOT_ZIP_DOWNLOAD')) { define('ACTION_SNAPSHOT_ZIP_DOWNLOAD', ActionType::SnapshotZipDownload->value); }
-
-use RiseupAsia\Enums\SnapshotExportStatusType;
-
-if (!defined('SNAPSHOT_EXPORT_STATUS_VALID'))    { define('SNAPSHOT_EXPORT_STATUS_VALID',    SnapshotExportStatusType::Valid->value); }
-if (!defined('SNAPSHOT_EXPORT_STATUS_EXPIRED'))  { define('SNAPSHOT_EXPORT_STATUS_EXPIRED',  SnapshotExportStatusType::Expired->value); }
-if (!defined('SNAPSHOT_EXPORT_STATUS_BUILDING')) { define('SNAPSHOT_EXPORT_STATUS_BUILDING', SnapshotExportStatusType::Building->value); }
-
-// SNAPSHOT_EXPORTS_SUBDIR — migrated to PathSubdirType::Exports
 
 if (!defined('ERR_EXPORT_NOT_FOUND')) {
     define('ERR_EXPORT_NOT_FOUND', 'EXPORT_NOT_FOUND');
@@ -537,26 +325,4 @@ if (!defined('LOG_RETRIEVAL_MAX_LINES')) {
 
 if (!defined('ENDPOINT_ERROR_SESSIONS')) {
     define('ENDPOINT_ERROR_SESSIONS', 'error-sessions');
-}
-
-// =============================================================================
-// UPLOAD SOURCE — Now in RiseupAsia\Enums\UploadSourceType, kept as aliases for backward compat
-// =============================================================================
-
-if (!defined('UPLOAD_SOURCE_SCRIPT')) {
-    define('UPLOAD_SOURCE_SCRIPT', \RiseupAsia\Enums\UploadSourceType::Script->value);
-}
-if (!defined('UPLOAD_SOURCE_REST_API')) {
-    define('UPLOAD_SOURCE_REST_API', \RiseupAsia\Enums\UploadSourceType::RestApi->value);
-}
-if (!defined('UPLOAD_SOURCE_ADMIN_UI')) {
-    define('UPLOAD_SOURCE_ADMIN_UI', \RiseupAsia\Enums\UploadSourceType::AdminUi->value);
-}
-if (!defined('UPLOAD_SOURCE_WP_CLI')) {
-    define('UPLOAD_SOURCE_WP_CLI', \RiseupAsia\Enums\UploadSourceType::WpCli->value);
-}
-
-// Valid upload sources for validation
-if (!defined('UPLOAD_SOURCES_VALID')) {
-    define('UPLOAD_SOURCES_VALID', json_encode(\RiseupAsia\Enums\UploadSourceType::validValues()));
 }

@@ -7,6 +7,9 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TableType;
 
 trait OrchestratorRegistrationTrait {
@@ -56,9 +59,9 @@ trait OrchestratorRegistrationTrait {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         $stmt->execute(array(
-            $sequence, basename($snapshotDir), $snapshotDir, SNAPSHOT_PROVIDER_NATIVE, $scope,
+            $sequence, basename($snapshotDir), $snapshotDir, SnapshotProviderType::Native->value, $scope,
             $tablesJson, $workerResult['total_rows'] ?? 0, $dirSize,
-            SNAPSHOT_TRIGGER_API, SNAPSHOT_STATUS_COMPLETE, $now, $now,
+            SnapshotTriggerType::Api->value, SnapshotStatusType::Complete->value, $now, $now,
         ));
 
         return (int)$pdo->lastInsertId();
