@@ -252,12 +252,33 @@ func (h *Hub) Run() {
 	}
 }
 
-// Broadcast sends a message to all connected clients
+// Broadcast sends a typed message to all connected clients.
+// Generic: callers get compile-time type checking on the data parameter.
+// Note: Go methods cannot have type parameters, so this is a package-level function.
+func Broadcast[T any](h *Hub, eventType string, data T) {
+	BroadcastWithSession(h, eventType, data, "")
+}
+
+// BroadcastWithSession sends a typed message to all connected clients with a session ID.
+func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionID string) {
+	h.broadcast <- &Message{
+		Type:      eventType,
+		Data:      data,
+		Timestamp: utcTimestamp(),
+		SessionID: sessionID,
+	}
+}
+
+// BroadcastUntyped sends a message without compile-time type checking.
+// Deprecated: Use the generic Broadcast[T] function instead.
+// Kept for backward compatibility with callers passing map[string]any literals
+// that will be migrated to typed structs in Phase 3.
 func (h *Hub) Broadcast(eventType string, data any) {
 	h.BroadcastWithSession(eventType, data, "")
 }
 
-// BroadcastWithSession sends a message to all connected clients with a session ID
+// BroadcastWithSession sends a message with session ID (untyped, deprecated).
+// Deprecated: Use the generic BroadcastWithSession[T] function instead.
 func (h *Hub) BroadcastWithSession(eventType string, data any, sessionID string) {
 	h.broadcast <- &Message{
 		Type:      eventType,
@@ -269,7 +290,7 @@ func (h *Hub) BroadcastWithSession(eventType string, data any, sessionID string)
 
 // BroadcastSyncProgress sends a sync progress update
 func (h *Hub) BroadcastSyncProgress(pluginID, siteID int64, progress int, total int, message string) {
-	h.Broadcast(EventSyncProgress, SyncProgressData{
+	Broadcast(h, EventSyncProgress, SyncProgressData{
 		PluginID: pluginID,
 		SiteID:   siteID,
 		Progress: progress,
@@ -280,7 +301,7 @@ func (h *Hub) BroadcastSyncProgress(pluginID, siteID int64, progress int, total 
 
 // BroadcastScanProgress sends a scan progress update
 func (h *Hub) BroadcastScanProgress(pluginID int64, filesScanned int, totalFiles int, currentFile string) {
-	h.Broadcast(EventScanProgress, ScanProgressData{
+	Broadcast(h, EventScanProgress, ScanProgressData{
 		PluginID:     pluginID,
 		FilesScanned: filesScanned,
 		TotalFiles:   totalFiles,
@@ -290,7 +311,7 @@ func (h *Hub) BroadcastScanProgress(pluginID int64, filesScanned int, totalFiles
 
 // BroadcastPublishProgress sends a publish progress update
 func (h *Hub) BroadcastPublishProgress(pluginID, siteID int64, stage string, progress int, message string) {
-	h.Broadcast(EventPublishProgress, PublishProgressData{
+	Broadcast(h, EventPublishProgress, PublishProgressData{
 		PluginID: pluginID,
 		SiteID:   siteID,
 		Stage:    stage,
@@ -301,7 +322,7 @@ func (h *Hub) BroadcastPublishProgress(pluginID, siteID int64, stage string, pro
 
 // BroadcastFileChange notifies clients of a file change
 func (h *Hub) BroadcastFileChange(pluginID int64, filePath, changeType string) {
-	h.Broadcast(EventFileChange, FileChangeData{
+	Broadcast(h, EventFileChange, FileChangeData{
 		PluginID:   pluginID,
 		FilePath:   filePath,
 		ChangeType: changeType,
@@ -310,7 +331,7 @@ func (h *Hub) BroadcastFileChange(pluginID int64, filePath, changeType string) {
 
 // BroadcastError sends an error notification
 func (h *Hub) BroadcastError(code, message string, context map[string]any) {
-	h.Broadcast(EventError, ErrorData{
+	Broadcast(h, EventError, ErrorData{
 		Code:    code,
 		Message: message,
 		Context: context,
@@ -319,7 +340,7 @@ func (h *Hub) BroadcastError(code, message string, context map[string]any) {
 
 // BroadcastConnectionTestProgress sends a connection test progress update
 func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]any) {
-	h.Broadcast(EventConnectionTestProgress, ConnectionTestProgressData{
+	Broadcast(h, EventConnectionTestProgress, ConnectionTestProgressData{
 		SiteID:  siteID,
 		Step:    step,
 		Status:  status,
@@ -330,7 +351,7 @@ func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status 
 
 // BroadcastLog sends a log message to all clients
 func (h *Hub) BroadcastLog(level string, message string, context map[string]any) {
-	h.Broadcast(EventLog, LogData{
+	Broadcast(h, EventLog, LogData{
 		Level:   level,
 		Message: message,
 		Context: context,
@@ -358,7 +379,7 @@ func (h *Hub) BroadcastOperationLogWithSession(operationType string, pluginID, s
 	if entry.Timestamp == "" {
 		entry.Timestamp = formatLogTimestamp()
 	}
-	h.BroadcastWithSession(EventLog, OperationLogData{
+	BroadcastWithSession(h, EventLog, OperationLogData{
 		OperationType: operationType,
 		PluginID:      pluginID,
 		SiteID:        siteID,
@@ -453,7 +474,7 @@ func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	h.register <- client
 
 	// Send connection confirmation
-	h.Broadcast(EventConnection, ConnectionConfirmation{
+	Broadcast(h, EventConnection, ConnectionConfirmation{
 		Status:   "connected",
 		ClientID: conn.RemoteAddr().String(),
 	})

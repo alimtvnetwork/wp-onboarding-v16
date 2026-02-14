@@ -119,7 +119,8 @@ func GetDebugConfig() DebugConfig {
 // --- Builder Functions ---
 
 // Success creates a single-item success response (slim envelope).
-func Success(data any) Response {
+// Generic: callers get compile-time type checking on the data parameter.
+func Success[T any](data T) Response {
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -132,12 +133,13 @@ func Success(data any) Response {
 			IsSingle:   true,
 			IsMultiple: false,
 		},
-		Results: []any{data},
+		Results: []T{data},
 	}
 }
 
 // Created creates a single-item 201 response.
-func Created(data any) Response {
+// Generic: callers get compile-time type checking on the data parameter.
+func Created[T any](data T) Response {
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -150,7 +152,7 @@ func Created(data any) Response {
 			IsSingle:   true,
 			IsMultiple: false,
 		},
-		Results: []any{data},
+		Results: []T{data},
 	}
 }
 
@@ -168,13 +170,14 @@ func Deleted() Response {
 			IsSingle:   false,
 			IsMultiple: false,
 		},
-		Results: []any{},
+		Results: []struct{}{},
 	}
 }
 
 // List creates a paginated list response with navigation URL links.
+// Generic: callers get compile-time type checking on the data parameter.
 // requestPath is the base URL path (e.g., "/api/v1/plugins") used to generate navigation URLs.
-func List(data any, pg Pagination, requestPath string) Response {
+func List[T any](data T, pg Pagination, requestPath string) Response {
 	nav := pg.NavigationURLs(requestPath)
 	return Response{
 		Status: Status{
@@ -198,7 +201,8 @@ func List(data any, pg Pagination, requestPath string) Response {
 }
 
 // ListUnpaginated creates a list response without pagination metadata.
-func ListUnpaginated(data any, count int) Response {
+// Generic: callers get compile-time type checking on the data parameter.
+func ListUnpaginated[T any](data T, count int) Response {
 	return Response{
 		Status: Status{
 			IsSuccess: true,
@@ -230,7 +234,7 @@ func Error(statusCode int, code, message string) Response {
 		Attributes: Attributes{
 			HasAnyErrors: true,
 		},
-		Results: []any{},
+		Results: []struct{}{},
 	}
 	if globalDebug.IncludeErrors {
 		resp.Errors = &Errors{
