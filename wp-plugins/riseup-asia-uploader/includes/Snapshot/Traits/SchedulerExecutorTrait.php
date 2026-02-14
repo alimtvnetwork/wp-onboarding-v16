@@ -117,7 +117,7 @@ trait SchedulerExecutorTrait {
         $cronResult = $this->buildCronResult(array('success' => true), ActionType::SnapshotCleanup->value, TRIGGERED_BY_CRON, $auditData);
         $cronResult['skip_audit'] = ($totalDeleted === 0);
         $cronResult['log_data'] = $auditData + array(
-            'space_freed'  => RiseupPathUtils::format_bytes($result['space_freed_bytes']),
+            'space_freed'  => RiseupPathUtils::formatBytes($result['space_freed_bytes']),
             'errors_count' => count($result['errors']),
         );
         return $cronResult;

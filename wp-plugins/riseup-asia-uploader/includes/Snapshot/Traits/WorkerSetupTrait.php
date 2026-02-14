@@ -34,7 +34,7 @@ trait WorkerSetupTrait {
         $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
         $snapshot_dir = $base_dir . '/' . $dir_name;
 
-        if (!RiseupPathUtils::ensure_dir($snapshot_dir, true)) {
+        if (!RiseupPathUtils::ensureDir($snapshot_dir, true)) {
             return array('success' => false, 'error' => 'Failed to create snapshot directory');
         }
 
@@ -59,8 +59,8 @@ trait WorkerSetupTrait {
 
     /** Get the base snapshots directory. */
     private function getSnapshotsBaseDir() {
-        $base = RiseupPathUtils::get_snapshots_dir();
-        RiseupPathUtils::ensure_dir($base, true);
+        $base = RiseupPathUtils::getSnapshotsDir();
+        RiseupPathUtils::ensureDir($base, true);
         return $base;
     }
 

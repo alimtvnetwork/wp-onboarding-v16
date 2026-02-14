@@ -15,50 +15,46 @@ use RiseupAsia\Enums\LogLevelType;
 trait PathUtilsFileTrait {
 
     /** @return bool True if file exists. */
-    public static function file_exists($path) {
+    public static function fileExists(string $path): bool {
         $path = self::join($path);
         return !empty($path) && is_file($path);
     }
 
     /** @return bool True if directory exists. */
-    public static function dir_exists($path) {
+    public static function dirExists(string $path): bool {
         $path = self::join($path);
         return !empty($path) && is_dir($path);
     }
 
     /** @return bool True if writable. */
-    public static function is_writable($path) {
+    public static function isWritable(string $path): bool {
         $path = self::join($path);
         return !empty($path) && is_writable($path);
     }
 
     /**
      * Get path relative to the plugin base directory.
-     *
-     * @param string $full_path Full path.
-     * @return string Relative path.
      */
-    public static function get_relative_path($full_path) {
-        $base = self::get_base_dir();
-        $full_path = str_replace('\\', '/', $full_path);
+    public static function getRelativePath(string $fullPath): string {
+        $base = self::getBaseDir();
+        $fullPath = str_replace('\\', '/', $fullPath);
         $base = str_replace('\\', '/', $base);
 
-        if (strpos($full_path, $base) === 0) {
-            return ltrim(substr($full_path, strlen($base)), '/');
+        if (strpos($fullPath, $base) === 0) {
+            return ltrim(substr($fullPath, strlen($base)), '/');
         }
-        return $full_path;
+        return $fullPath;
     }
 
     /**
      * Delete a file safely.
      *
-     * @param string $path File path.
      * @return bool True if deleted or didn't exist.
      */
-    public static function delete_file($path) {
+    public static function deleteFile(string $path): bool {
         $path = self::join($path);
         if (empty($path)) {
-            self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to delete_file');
+            self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to deleteFile');
             return false;
         }
 
@@ -85,13 +81,12 @@ trait PathUtilsFileTrait {
     /**
      * Delete a directory and its contents recursively.
      *
-     * @param string $path Directory path.
      * @return bool True if deleted or didn't exist.
      */
-    public static function delete_dir($path) {
+    public static function deleteDir(string $path): bool {
         $path = self::join($path);
         if (empty($path)) {
-            self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to delete_dir');
+            self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to deleteDir');
             return false;
         }
 
@@ -107,13 +102,13 @@ trait PathUtilsFileTrait {
 
         $files = array_diff(scandir($path), array('.', '..'));
         foreach ($files as $file) {
-            $file_path = self::join($path, $file);
-            if (is_dir($file_path)) {
-                if (!self::delete_dir($file_path)) {
+            $filePath = self::join($path, $file);
+            if (is_dir($filePath)) {
+                if (!self::deleteDir($filePath)) {
                     return false;
                 }
             } else {
-                if (!self::delete_file($file_path)) {
+                if (!self::deleteFile($filePath)) {
                     return false;
                 }
             }
@@ -132,10 +127,9 @@ trait PathUtilsFileTrait {
     /**
      * Get disk free space for the path's partition.
      *
-     * @param string $path Path to check.
      * @return int|false Free space in bytes, or false on error.
      */
-    public static function get_free_space($path) {
+    public static function getFreeSpace(string $path) {
         $path = self::join($path);
         while (RiseupBooleanHelpers::is_not_directory($path) && $path !== dirname($path)) {
             $path = dirname($path);
@@ -148,12 +142,8 @@ trait PathUtilsFileTrait {
 
     /**
      * Format bytes to human-readable string.
-     *
-     * @param int $bytes    Bytes value.
-     * @param int $decimals Decimal places.
-     * @return string Formatted string (e.g., "15.7 MB").
      */
-    public static function format_bytes($bytes, $decimals = 1) {
+    public static function formatBytes(int $bytes, int $decimals = 1): string {
         if ($bytes === 0) {
             return '0 B';
         }

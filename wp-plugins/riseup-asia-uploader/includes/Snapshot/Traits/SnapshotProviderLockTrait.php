@@ -18,7 +18,7 @@ trait SnapshotProviderLockTrait {
     protected function isLocked() {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
 
-        if (!RiseupPathUtils::file_exists($lock_file)) {
+        if (!RiseupPathUtils::fileExists($lock_file)) {
             return false;
         }
 
@@ -31,7 +31,7 @@ trait SnapshotProviderLockTrait {
         $age = time() - $lock_time;
 
         if ($age > 1800) {
-            RiseupPathUtils::delete_file($lock_file);
+            RiseupPathUtils::deleteFile($lock_file);
             $this->log(LogLevelType::Warn->value, 'Removed stale lock file', array('age_minutes' => round($age / 60)));
             return false;
         }
@@ -77,8 +77,8 @@ trait SnapshotProviderLockTrait {
     protected function releaseLock() {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
 
-        if (RiseupPathUtils::file_exists($lock_file)) {
-            RiseupPathUtils::delete_file($lock_file);
+        if (RiseupPathUtils::fileExists($lock_file)) {
+            RiseupPathUtils::deleteFile($lock_file);
             $this->log(LogLevelType::Debug->value, 'Lock released');
         }
     }

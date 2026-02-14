@@ -30,7 +30,7 @@ trait InitDirTrait {
         }
 
         if (RiseupBooleanHelpers::is_class_exists('RiseupPathUtils')) {
-            $result = RiseupPathUtils::ensure_dir($path, $secure);
+            $result = RiseupPathUtils::ensureDir($path, $secure);
             self::$ensured_dirs[$normalized] = $result;
             return $result;
         }

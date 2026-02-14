@@ -45,13 +45,13 @@ trait DatabaseConnectionTrait {
         $baseDir = $this->fileLogger->getBaseDir();
         $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
-        if (RiseupPathUtils::is_dir_missing($baseDir, true)) {
+        if (RiseupPathUtils::isDirMissing($baseDir, true)) {
             $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
 
             throw new Exception('Failed to create data directory: ' . $baseDir);
         }
 
-        $dbPath = RiseupPathUtils::get_db_path();
+        $dbPath = RiseupPathUtils::getDbPath();
         $this->fileLogger->info('Database path set', array('path' => $dbPath));
 
         return $dbPath;

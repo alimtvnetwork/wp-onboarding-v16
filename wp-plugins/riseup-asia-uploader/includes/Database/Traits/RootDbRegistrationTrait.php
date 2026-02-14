@@ -62,7 +62,7 @@ trait RootDbRegistrationTrait {
      * @return array|null Metadata or null if invalid.
      */
     public function readMetadata($filepath) {
-        if (!RiseupPathUtils::file_exists($filepath)) {
+        if (!RiseupPathUtils::fileExists($filepath)) {
             return null;
         }
 
