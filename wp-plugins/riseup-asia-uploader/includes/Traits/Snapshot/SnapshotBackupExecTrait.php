@@ -95,7 +95,7 @@ trait SnapshotBackupExecTrait {
             $master_dir = $incremental->findLatestMasterSnapshot();
         }
 
-        if (!$master_dir || RiseupBooleanHelpers::is_dir_missing($master_dir)) {
+        if (!$master_dir || RiseupBooleanHelpers::isDirMissing($master_dir)) {
             return new WP_REST_Response(array(
                 'success' => false, 'error' => 'No master (full) snapshot found. Create a full backup first.',
             ), 400);

@@ -36,7 +36,7 @@ trait StatusPayloadTrait {
         $main_plugin_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
         clearstatcache(true, $main_plugin_file);
 
-        if (RiseupBooleanHelpers::is_file_missing($main_plugin_file)) {
+        if (RiseupBooleanHelpers::isFileMissing($main_plugin_file)) {
             return PLUGIN_VERSION;
         }
 
@@ -47,7 +47,7 @@ trait StatusPayloadTrait {
 
     /** Invalidate OPcache for plugin file and constants. */
     private function invalidateVersionCaches(string $main_plugin_file) {
-        if (RiseupBooleanHelpers::is_func_missing('opcache_invalidate')) {
+        if (RiseupBooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return;
         }
 
@@ -106,9 +106,9 @@ trait StatusPayloadTrait {
      */
     private function loadEndpointsReference(): ?array {
         $path = plugin_dir_path(__FILE__) . '../data/endpoints.json';
-        if (RiseupBooleanHelpers::is_file_missing($path)) {
+        if (RiseupBooleanHelpers::isFileMissing($path)) {
             $path = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/data/endpoints.json';
-            if (RiseupBooleanHelpers::is_file_missing($path)) {
+            if (RiseupBooleanHelpers::isFileMissing($path)) {
                 return null;
             }
         }
