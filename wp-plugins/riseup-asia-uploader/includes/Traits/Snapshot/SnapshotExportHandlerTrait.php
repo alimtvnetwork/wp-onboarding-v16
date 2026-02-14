@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait SnapshotExportHandlerTrait {
 
     /**
@@ -25,7 +27,7 @@ trait SnapshotExportHandlerTrait {
             $this->file_logger->info('Exporting snapshot', array('id' => $id));
 
             $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_EXPORT, 'snapshot', STATUS_SUCCESS,
+                ActionType::SnapshotExport->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
@@ -34,7 +36,7 @@ trait SnapshotExportHandlerTrait {
 
             if (!$result['success']) {
                 $this->logger->log_plugin_action(
-                    ACTION_SNAPSHOT_EXPORT, 'snapshot', STATUS_FAILED,
+                    ActionType::SnapshotExport->value, 'snapshot', STATUS_FAILED,
                     array('snapshot_id' => $id),
                     $result['error'] ?? 'Export failed'
                 );
@@ -44,7 +46,7 @@ trait SnapshotExportHandlerTrait {
             $filepath = $result['filepath'];
             if (RiseupBooleanHelpers::is_file_missing($filepath)) {
                 $this->logger->log_plugin_action(
-                    ACTION_SNAPSHOT_EXPORT, 'snapshot', STATUS_FAILED,
+                    ActionType::SnapshotExport->value, 'snapshot', STATUS_FAILED,
                     array('snapshot_id' => $id),
                     'Export file not found'
                 );
@@ -52,7 +54,7 @@ trait SnapshotExportHandlerTrait {
             }
 
             $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_EXPORT, 'snapshot', STATUS_SUCCESS,
+                ActionType::SnapshotExport->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'filename' => $result['filename'], 'size' => $result['size'])
             );
 
@@ -94,7 +96,7 @@ trait SnapshotExportHandlerTrait {
         $this->file_logger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
 
         $this->logger->log_plugin_action(
-            ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_SUCCESS,
+            ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_SUCCESS,
             array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
         );
 
@@ -104,7 +106,7 @@ trait SnapshotExportHandlerTrait {
 
         if (!$result['success']) {
             $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_FAILED,
+                ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_FAILED,
                 array('snapshot_id' => $snapshotId),
                 $result['error'] ?? 'Download failed'
             );
@@ -116,7 +118,7 @@ trait SnapshotExportHandlerTrait {
         $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
 
         $this->logger->log_plugin_action(
-            ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_SUCCESS,
+            ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_SUCCESS,
             array(
                 'snapshot_id' => $snapshotId,
                 'cached'      => $result['cached'] ?? false,

@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait SnapshotCrudRestoreTrait {
 
     /**
@@ -22,7 +24,7 @@ trait SnapshotCrudRestoreTrait {
             $this->file_logger->info('Deleting snapshot', array('id' => $id));
 
             $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_DELETE, 'snapshot', STATUS_SUCCESS,
+                ActionType::SnapshotDelete->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
@@ -30,7 +32,7 @@ trait SnapshotCrudRestoreTrait {
             $result = $manager->deleteSnapshot($id);
 
             $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_DELETE, 'snapshot',
+                ActionType::SnapshotDelete->value, 'snapshot',
                 $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Delete failed')
@@ -50,7 +52,7 @@ trait SnapshotCrudRestoreTrait {
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $options = $this->parseRestoreOptions($body);
 
-            $this->logger->log_plugin_action(ACTION_SNAPSHOT_RESTORE, 'snapshot', STATUS_SUCCESS,
+            $this->logger->log_plugin_action(ActionType::SnapshotRestore->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated'));
             $this->file_logger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
@@ -59,7 +61,7 @@ trait SnapshotCrudRestoreTrait {
 
             $mode = $result['_mode'] ?? 'legacy';
             unset($result['_mode']);
-            $this->logSnapshotResult(ACTION_SNAPSHOT_RESTORE, '', $mode, $result);
+            $this->logSnapshotResult(ActionType::SnapshotRestore->value, '', $mode, $result);
 
             return new WP_REST_Response($result, $result['success'] ? 200 : 400);
         }, 'restore_snapshot');

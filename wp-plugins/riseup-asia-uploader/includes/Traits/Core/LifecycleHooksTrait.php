@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait LifecycleHooksTrait
 {
     /**
@@ -22,7 +24,7 @@ trait LifecycleHooksTrait
      * @param bool   $networkWide  Whether activated for the entire network.
      */
     public function onPluginActivated($plugin, $networkWide = false) {
-        $this->logLifecycleEvent(ACTION_ENABLE, $plugin, 'activated_plugin', array(
+        $this->logLifecycleEvent(ActionType::Enable->value, $plugin, 'activated_plugin', array(
             'network_wide' => $networkWide,
         ));
     }
@@ -34,7 +36,7 @@ trait LifecycleHooksTrait
      * @param bool   $networkDeactivating   Whether deactivating across the network.
      */
     public function onPluginDeactivated($plugin, $networkDeactivating = false) {
-        $this->logLifecycleEvent(ACTION_DISABLE, $plugin, 'deactivated_plugin', array(
+        $this->logLifecycleEvent(ActionType::Disable->value, $plugin, 'deactivated_plugin', array(
             'network_deactivating' => $networkDeactivating,
         ));
     }
@@ -50,7 +52,7 @@ trait LifecycleHooksTrait
             return;
         }
 
-        $this->logLifecycleEvent(ACTION_DELETE, $plugin, 'deleted_plugin', array());
+        $this->logLifecycleEvent(ActionType::Delete->value, $plugin, 'deleted_plugin', array());
     }
 
     /**

@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait SnapshotImportStreamTrait {
 
     /**
@@ -80,7 +82,7 @@ trait SnapshotImportStreamTrait {
         $filename = $export['zip_filename'];
         $filesize = filesize($filepath);
 
-        $this->logger->log_plugin_action(ACTION_SNAPSHOT_ZIP_DOWNLOAD, 'snapshot', STATUS_SUCCESS,
+        $this->logger->log_plugin_action(ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_SUCCESS,
             array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming'));
 
         $this->sendZipHeaders($filename, $filesize);
@@ -125,7 +127,7 @@ trait SnapshotImportStreamTrait {
             ));
 
             $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_IMPORT, 'snapshot', STATUS_SUCCESS,
+                ActionType::SnapshotImport->value, 'snapshot', STATUS_SUCCESS,
                 array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
             );
 
@@ -134,7 +136,7 @@ trait SnapshotImportStreamTrait {
             $result = $importer->import($tmp_file);
 
             $this->logger->log_plugin_action(
-                ACTION_SNAPSHOT_IMPORT, 'snapshot',
+                ActionType::SnapshotImport->value, 'snapshot',
                 $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('filename' => $original_name, 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Import failed')

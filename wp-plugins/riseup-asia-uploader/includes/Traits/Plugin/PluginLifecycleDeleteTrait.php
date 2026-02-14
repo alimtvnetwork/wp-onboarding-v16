@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait PluginLifecycleDeleteTrait {
 
     /** Handle delete plugin request. */
@@ -50,15 +52,15 @@ trait PluginLifecycleDeleteTrait {
             $result = delete_plugins(array($plugin_file));
             $error = $this->checkDeleteResult($result);
             if ($error) {
-                $this->log_plugin_lifecycle(ACTION_DELETE, $slug, STATUS_FAILED, array('error' => $error));
+                $this->log_plugin_lifecycle(ActionType::Delete->value, $slug, STATUS_FAILED, array('error' => $error));
                 return $this->error_response(MSG_DELETE_FAILED . ': ' . $error, HTTP_SERVER_ERROR);
             }
         } catch (Throwable $e) {
-            $this->log_plugin_lifecycle(ACTION_DELETE, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
+            $this->log_plugin_lifecycle(ActionType::Delete->value, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
             return $this->error_response('Exception during deletion: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
 
-        $this->log_plugin_lifecycle(ACTION_DELETE, $slug, STATUS_SUCCESS);
+        $this->log_plugin_lifecycle(ActionType::Delete->value, $slug, STATUS_SUCCESS);
         return RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_DELETE)
             ->setSingleResult(array('plugin_slug' => $slug, 'deleted' => true))

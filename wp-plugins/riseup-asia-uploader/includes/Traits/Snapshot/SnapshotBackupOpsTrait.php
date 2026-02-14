@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\ActionType;
+
 trait SnapshotBackupOpsTrait {
 
     /** Handle per-table snapshot export. */
@@ -80,7 +82,7 @@ trait SnapshotBackupOpsTrait {
             return;
         }
 
-        $this->logger->log_plugin_action(ACTION_SNAPSHOT_CLEANUP, 'snapshot',
+        $this->logger->log_plugin_action(ActionType::SnapshotCleanup->value, 'snapshot',
             $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
             array('retention_removed' => $result['retention']['deleted'] ?? 0, 'orphans_removed' => $result['orphans']['removed'] ?? 0,
                 'stuck_marked' => $result['stuck']['cleaned'] ?? 0, 'duration' => $result['duration'] ?? 0),

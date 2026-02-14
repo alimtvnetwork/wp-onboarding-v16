@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait LoggerActionsTrait {
 
     /**
@@ -68,66 +70,66 @@ trait LoggerActionsTrait {
         $enhanced = $this->buildEnhancedFields();
 
         return $this->getDb()->log_transaction(
-            ACTION_AUTH_FAILED, null, null, $providedUser, null,
+            ActionType::AuthFailed->value, null, null, $providedUser, null,
             $this->getClientIp(), $details, STATUS_FAILED, $reason, $enhanced
         );
     }
 
     /** Log upload initiated. */
     public function logUploadInitiated($pluginSlug, $details = array(), $extraEnhanced = array()) {
-        return $this->logPluginAction(ACTION_UPLOAD_INITIATED, $pluginSlug, STATUS_SUCCESS, $details, null, $extraEnhanced);
+        return $this->logPluginAction(ActionType::UploadInitiated->value, $pluginSlug, STATUS_SUCCESS, $details, null, $extraEnhanced);
     }
 
     /** Log upload success. */
     public function logUpload($pluginSlug, $details = array(), $extraEnhanced = array()) {
-        return $this->logPluginAction(ACTION_UPLOAD, $pluginSlug, STATUS_SUCCESS, $details, null, $extraEnhanced);
+        return $this->logPluginAction(ActionType::Upload->value, $pluginSlug, STATUS_SUCCESS, $details, null, $extraEnhanced);
     }
 
     /** Log upload failure. */
     public function logUploadFailed($pluginSlug, $error, $details = array()) {
         $this->fileLogger->error('Upload failed', array('plugin' => $pluginSlug, 'error' => $error));
-        return $this->logPluginAction(ACTION_UPLOAD, $pluginSlug, STATUS_FAILED, $details, $error);
+        return $this->logPluginAction(ActionType::Upload->value, $pluginSlug, STATUS_FAILED, $details, $error);
     }
 
     /** Log plugin enable. */
     public function logEnable($pluginSlug, $details = array()) {
-        return $this->logPluginAction(ACTION_ENABLE, $pluginSlug, STATUS_SUCCESS, $details);
+        return $this->logPluginAction(ActionType::Enable->value, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log plugin disable. */
     public function logDisable($pluginSlug, $details = array()) {
-        return $this->logPluginAction(ACTION_DISABLE, $pluginSlug, STATUS_SUCCESS, $details);
+        return $this->logPluginAction(ActionType::Disable->value, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log plugin delete. */
     public function logDelete($pluginSlug, $details = array()) {
-        return $this->logPluginAction(ACTION_DELETE, $pluginSlug, STATUS_SUCCESS, $details);
+        return $this->logPluginAction(ActionType::Delete->value, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log file replace. */
     public function logFileReplace($pluginSlug, $filePath, $details = array()) {
         $details['file_path'] = $filePath;
-        return $this->logPluginAction(ACTION_FILE_REPLACE, $pluginSlug, STATUS_SUCCESS, $details);
+        return $this->logPluginAction(ActionType::FileReplace->value, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log file delete. */
     public function logFileDelete($pluginSlug, $filePath, $details = array()) {
         $details['file_path'] = $filePath;
-        return $this->logPluginAction(ACTION_FILE_DELETE, $pluginSlug, STATUS_SUCCESS, $details);
+        return $this->logPluginAction(ActionType::FileDelete->value, $pluginSlug, STATUS_SUCCESS, $details);
     }
 
     /** Log post creation. */
     public function logPostCreate($postId, $details = array()) {
-        return $this->logPostAction(ACTION_POST_CREATE, $postId, STATUS_SUCCESS, $details);
+        return $this->logPostAction(ActionType::PostCreate->value, $postId, STATUS_SUCCESS, $details);
     }
 
     /** Log post update. */
     public function logPostUpdate($postId, $details = array()) {
-        return $this->logPostAction(ACTION_POST_UPDATE, $postId, STATUS_SUCCESS, $details);
+        return $this->logPostAction(ActionType::PostUpdate->value, $postId, STATUS_SUCCESS, $details);
     }
 
     /** Log category creation. */
     public function logCategoryCreate($termId, $details = array()) {
-        return $this->logPostAction(ACTION_CATEGORY_CREATE, $termId, STATUS_SUCCESS, $details);
+        return $this->logPostAction(ActionType::CategoryCreate->value, $termId, STATUS_SUCCESS, $details);
     }
 }

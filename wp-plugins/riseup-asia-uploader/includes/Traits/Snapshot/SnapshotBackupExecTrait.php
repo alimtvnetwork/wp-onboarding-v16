@@ -6,18 +6,20 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\ActionType;
+
 trait SnapshotBackupExecTrait {
 
     /** Handle full end-to-end backup. */
     public function handle_full_backup($request) {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
-            $this->logBackupInitiated(ACTION_SNAPSHOT_FULL_BACKUP, $body);
+            $this->logBackupInitiated(ActionType::SnapshotFullBackup->value, $body);
 
             $orchestrator = $this->createFullBackupOrchestrator();
             $result = $orchestrator->executeFullBackup($this->extractFullBackupOptions($body));
 
-            $this->logBackupComplete(ACTION_SNAPSHOT_FULL_BACKUP, $result);
+            $this->logBackupComplete(ActionType::SnapshotFullBackup->value, $result);
             return $this->buildFullBackupResponse($result);
         }, 'full_backup');
     }
@@ -26,7 +28,7 @@ trait SnapshotBackupExecTrait {
     public function handle_incremental_backup($request) {
         return $this->safe_execute(function() use ($request) {
             $body = $request->get_json_params();
-            $this->logBackupInitiated(ACTION_SNAPSHOT_INCREMENTAL, $body);
+            $this->logBackupInitiated(ActionType::SnapshotIncremental->value, $body);
 
             $master_dir = $this->resolveIncrementalMasterDir($body);
             if ($master_dir instanceof WP_REST_Response) {
@@ -109,7 +111,7 @@ trait SnapshotBackupExecTrait {
 
     /** Log incremental backup completion. */
     private function logIncrementalComplete(array $result) {
-        $this->logger->log_plugin_action(ACTION_SNAPSHOT_INCREMENTAL, 'snapshot',
+        $this->logger->log_plugin_action(ActionType::SnapshotIncremental->value, 'snapshot',
             $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
             array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables_changed' => $result['tables_changed'] ?? 0,
                 'total_new_rows' => $result['total_new_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),

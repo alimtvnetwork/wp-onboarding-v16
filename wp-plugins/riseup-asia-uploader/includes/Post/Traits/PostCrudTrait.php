@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait PostCrudTrait {
 
     /**
@@ -36,7 +38,7 @@ trait PostCrudTrait {
             $post_id = wp_insert_post($post_data, true);
 
             if (is_wp_error($post_id)) {
-                return $this->handlePostError(ACTION_POST_CREATE, 0, $data['title'], $post_id->get_error_message());
+                return $this->handlePostError(ActionType::PostCreate->value, 0, $data['title'], $post_id->get_error_message());
             }
 
             $this->file_logger->info('Post created', array('post_id' => $post_id));
@@ -75,7 +77,7 @@ trait PostCrudTrait {
             $result = wp_update_post($post_data, true);
 
             if (is_wp_error($result)) {
-                return $this->handlePostError(ACTION_POST_UPDATE, $post_id, '', $result->get_error_message(), $data);
+                return $this->handlePostError(ActionType::PostUpdate->value, $post_id, '', $result->get_error_message(), $data);
             }
 
             $this->assignCategories($post_id, $data['categories'] ?? null);

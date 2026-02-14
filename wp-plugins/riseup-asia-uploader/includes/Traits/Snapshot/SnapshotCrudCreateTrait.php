@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait SnapshotCrudCreateTrait {
 
     /**
@@ -27,7 +29,7 @@ trait SnapshotCrudCreateTrait {
             $body = $request->get_json_params();
             $scope = isset($body['scope']) ? sanitize_key($body['scope']) : 'all';
 
-            $this->logger->log_plugin_action(ACTION_SNAPSHOT_CREATE, 'snapshot', STATUS_SUCCESS,
+            $this->logger->log_plugin_action(ActionType::SnapshotCreate->value, 'snapshot', STATUS_SUCCESS,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
             $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
@@ -37,7 +39,7 @@ trait SnapshotCrudCreateTrait {
                 ? $this->executePerTableSnapshot($body, $scope, $manager)
                 : $this->executeLegacySnapshot($body, $scope, $manager);
 
-            $this->logSnapshotResult(ACTION_SNAPSHOT_CREATE, $scope, $isPerTable ? 'per_table' : 'legacy', $result);
+            $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? 'per_table' : 'legacy', $result);
             return new WP_REST_Response($result, $result['success'] ? 201 : 500);
         }, 'create_snapshot');
     }
