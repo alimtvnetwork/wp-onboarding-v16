@@ -281,9 +281,11 @@ if IsMissingSubstring(s, substr) { ... }
 
 - [No Raw Negations](../01-coding-guidelines/no-negatives.md) — Positive guard functions (all languages)
 - [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
+- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
+- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
 - [TypeScript Standards](../02-typescript-standards/README.md)
 
 ---
 
-*Golang standards specification v2.0.0 — 2026-02-13*
+*Golang standards specification v2.1.0 — 2026-02-14*

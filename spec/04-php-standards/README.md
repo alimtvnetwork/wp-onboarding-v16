@@ -640,6 +640,10 @@ public function handle_upload($request) {
 | `!file_exists()` / `!is_dir()` | Raw negation | `is_file_missing()` / `is_dir_missing()` |
 | `current_user_can('manage_options')` | Magic string | `CapabilityType::ManageOptions->value` |
 | `'POST'` in routes | Inconsistent | `HttpMethodType::Post->value` |
+| Untyped function parameters | No runtime safety | Add type declarations (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
+| Untyped return values | No contract enforcement | Add return type declarations |
+| Redundant `@param` on typed signatures | Noisy duplication | Remove; keep summary only (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
+| Boolean flag changing operation meaning | Unreadable call sites | Split into named methods (see [Function Naming](../01-coding-guidelines/function-naming.md)) |
 
 ---
 
@@ -650,7 +654,9 @@ public function handle_upload($request) {
 - [Generic Enforce Spec](../12-generic-enforce/) — Type safety rules
 - [DRY Principles](../01-coding-guidelines/dry-principles.md) — Cross-language DRY rules
 - [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Braces, nesting & spacing rules (canonical)
+- [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
+- [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
 
 ---
 
-*PHP standards specification v3.0.0 — 2026-02-12*
+*PHP standards specification v4.0.0 — 2026-02-14*
