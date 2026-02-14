@@ -12,24 +12,17 @@ if (!defined('ABSPATH')) {
 
 trait LoggerContextTrait {
 
-    /**
-     * Get database instance (lazy loading).
-     *
-     * @return RiseupDatabase
-     */
-    private function getDb() {
+    /** Get database instance (lazy loading). */
+    private function getDb(): RiseupDatabase {
         if ($this->db === null) {
-            $this->db = RiseupDatabase::get_instance();
+            $this->db = RiseupDatabase::getInstance();
         }
+
         return $this->db;
     }
 
-    /**
-     * Get client IP address.
-     *
-     * @return string IP address.
-     */
-    private function getClientIp() {
+    /** Get client IP address. */
+    private function getClientIp(): string {
         $ipKeys = array('HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'REMOTE_ADDR');
         foreach ($ipKeys as $key) {
             if (empty($_SERVER[$key])) {
@@ -44,46 +37,36 @@ trait LoggerContextTrait {
                 return $ip;
             }
         }
-        return '0.0.0.0';
+
+        return self::FALLBACK_IP;
     }
 
-    /**
-     * Get source machine hostname from request header.
-     *
-     * @return string|null Source machine hostname or null.
-     */
-    private function getSourceMachine() {
-        $headerKey = 'HTTP_X_RISEUP_SOURCE_MACHINE';
-        if (!empty($_SERVER[$headerKey])) {
-            $machine = preg_replace('/[^a-zA-Z0-9.\\\\-_]/', '', $_SERVER[$headerKey]);
+    /** Get source machine hostname from request header. */
+    private function getSourceMachine(): ?string {
+        if (!empty($_SERVER[self::SOURCE_MACHINE_HEADER])) {
+            $machine = preg_replace('/[^a-zA-Z0-9.\\\\-_]/', '', $_SERVER[self::SOURCE_MACHINE_HEADER]);
+
             return !empty($machine) ? $machine : null;
         }
+
         return null;
     }
 
-    /**
-     * Get current user info.
-     *
-     * @return array User info with 'login' and 'id'.
-     */
-    private function getUserInfo() {
-        if (RiseupBooleanHelpers::is_func_missing('wp_get_current_user')) {
-            return array('login' => 'anonymous', 'id' => 0);
+    /** Get current user info. */
+    private function getUserInfo(): array {
+        if (RiseupBooleanHelpers::isFuncMissing('wp_get_current_user')) {
+            return array('login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID);
         }
 
         $currentUser = wp_get_current_user();
         if ($currentUser && $currentUser->ID > 0) {
             return array('login' => $currentUser->user_login, 'id' => $currentUser->ID);
         }
-        return array('login' => 'anonymous', 'id' => 0);
+
+        return array('login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID);
     }
 
-    /**
-     * Build enhanced fields with source machine and plugin version.
-     *
-     * @param array $extraEnhanced Extra enhanced fields to merge.
-     * @return array Enhanced fields.
-     */
+    /** Build enhanced fields with source machine and plugin version. */
     private function buildEnhancedFields(array $extraEnhanced = array()): array {
         $enhanced = array();
         $sourceMachine = $this->getSourceMachine();
@@ -96,6 +79,7 @@ trait LoggerContextTrait {
         if (!empty($extraEnhanced)) {
             $enhanced = array_merge($enhanced, $extraEnhanced);
         }
+
         return $enhanced;
     }
 }

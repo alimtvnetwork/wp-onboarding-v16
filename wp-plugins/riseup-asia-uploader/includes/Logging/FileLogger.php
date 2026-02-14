@@ -36,6 +36,15 @@ class RiseupFileLogger {
     use LoggerDedupTrait;
     use LoggerLevelMethodsTrait;
 
+    private const TIMESTAMP_FORMAT = 'Y-m-d\TH:i:s\Z';
+    private const SEPARATOR_WIDTH = 80;
+    private const TRACE_LABEL_INTERNAL = '<internal>';
+    private const TRACE_LABEL_UNKNOWN = '<unknown>';
+    private const DEFAULT_LINE_NUMBER = 0;
+    private const TABLE_ERROR_SESSIONS = 'error_sessions';
+    private const TABLE_FLASH_STATE = 'flash_state';
+    private const KEY_HAS_UNSEEN_ERRORS = 'has_unseen_errors';
+
     /** @var RiseupFileLogger|null */
     private static $instance = null;
 
