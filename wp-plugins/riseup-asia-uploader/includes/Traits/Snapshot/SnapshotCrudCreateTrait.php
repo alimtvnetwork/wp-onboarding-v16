@@ -17,22 +17,22 @@ trait SnapshotCrudCreateTrait {
     /**
      * Handle scheduling a snapshot (alias).
      */
-    public function handle_schedule_snapshot($request) {
-        return $this->handle_create_snapshot($request);
+    public function handleScheduleSnapshot($request) {
+        return $this->handleCreateSnapshot($request);
     }
 
     /**
      * Handle creating/scheduling a snapshot.
      */
-    public function handle_create_snapshot($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleCreateSnapshot($request) {
+        return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $scope = isset($body['scope']) ? sanitize_key($body['scope']) : 'all';
 
-            $this->logger->log_plugin_action(ActionType::SnapshotCreate->value, 'snapshot', STATUS_SUCCESS,
+            $this->logger->logPluginAction(ActionType::SnapshotCreate->value, 'snapshot', STATUS_SUCCESS,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
-            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $isPerTable = (($manager->getSettings()['mode'] ?? 'per_table') === 'per_table');
 
             $result = $isPerTable
@@ -48,7 +48,7 @@ trait SnapshotCrudCreateTrait {
      * Execute a per-table snapshot via the orchestrator.
      */
     private function executePerTableSnapshot(array $body, string $scope, $manager): array {
-        $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
+        $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
         return $orchestrator->executeFullBackup(array(
             'title'            => $body['title'] ?? null,
             'scope'            => $scope,
@@ -62,7 +62,7 @@ trait SnapshotCrudCreateTrait {
      * Execute a legacy single-db snapshot via the manager.
      */
     private function executeLegacySnapshot(array $body, string $scope, $manager): array {
-        $this->file_logger->info('Creating snapshot via API (legacy mode)', array('scope' => $scope));
+        $this->fileLogger->info('Creating snapshot via API (legacy mode)', array('scope' => $scope));
         return $manager->createSnapshot(array(
             'scope'   => $scope,
             'trigger' => SNAPSHOT_TRIGGER_API,
@@ -74,7 +74,7 @@ trait SnapshotCrudCreateTrait {
      * Log a snapshot operation result to the audit trail.
      */
     private function logSnapshotResult(string $action, string $scope, string $mode, array $result) {
-        $this->logger->log_plugin_action(
+        $this->logger->logPluginAction(
             $action, 'snapshot',
             $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
             array('scope' => $scope, 'mode' => $mode, 'phase' => 'complete'),

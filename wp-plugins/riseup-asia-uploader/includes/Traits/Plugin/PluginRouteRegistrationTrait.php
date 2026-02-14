@@ -17,89 +17,89 @@ trait PluginRouteRegistrationTrait {
     /**
      * Register plugin management routes.
      *
-     * @param callable $safe_register Route registration closure.
+     * @param callable $safeRegister Route registration closure.
      */
-    private function register_plugin_routes($safe_register) {
-        $perm = array($this, 'check_plugin_permission');
+    private function registerPluginRoutes($safeRegister) {
+        $perm = array($this, 'checkPluginPermission');
 
-        $safe_register(ENDPOINT_UPLOAD, array(
+        $safeRegister(ENDPOINT_UPLOAD, array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handle_upload'),
-            'permission_callback' => $this->build_permission_callback('upload', $perm),
+            'permission_callback' => $this->buildPermissionCallback('upload', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGINS, array(
+        $safeRegister(ENDPOINT_PLUGINS, array(
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handle_list_plugins'),
-            'permission_callback' => $this->build_permission_callback('plugins', $perm),
+            'callback'            => array($this, 'handleListPlugins'),
+            'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safe_register(ENDPOINT_EXPORT_SELF, array(
+        $safeRegister(ENDPOINT_EXPORT_SELF, array(
             'methods'             => HttpMethodType::Get->value,
-            'callback'            => array($this, 'handle_export_self'),
-            'permission_callback' => $this->build_permission_callback('export_self', $perm),
+            'callback'            => array($this, 'handleExportSelf'),
+            'permission_callback' => $this->buildPermissionCallback('export_self', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGIN_FILES, array(
+        $safeRegister(ENDPOINT_PLUGIN_FILES, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_plugin_files'),
-            'permission_callback' => $this->build_permission_callback('plugin_files', $perm),
+            'callback'            => array($this, 'handlePluginFiles'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_files', $perm),
         ));
 
-        $safe_register(ENDPOINT_SYNC_MANIFEST, array(
+        $safeRegister(ENDPOINT_SYNC_MANIFEST, array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handle_sync_manifest'),
-            'permission_callback' => $this->build_permission_callback('sync_manifest', $perm),
+            'permission_callback' => $this->buildPermissionCallback('sync_manifest', $perm),
         ));
 
-        $safe_register(ENDPOINT_SYNC, array(
+        $safeRegister(ENDPOINT_SYNC, array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handle_sync_push'),
-            'permission_callback' => $this->build_permission_callback('sync_push', $perm),
+            'permission_callback' => $this->buildPermissionCallback('sync_push', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGIN_FILE, array(
+        $safeRegister(ENDPOINT_PLUGIN_FILE, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_plugin_file_content'),
-            'permission_callback' => $this->build_permission_callback('plugin_file', $perm),
+            'callback'            => array($this, 'handlePluginFileContent'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_file', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGIN_EXISTS, array(
+        $safeRegister(ENDPOINT_PLUGIN_EXISTS, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_plugin_exists'),
-            'permission_callback' => $this->build_permission_callback('plugins', $perm),
+            'callback'            => array($this, 'handlePluginExists'),
+            'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGIN_ENABLE, array(
+        $safeRegister(ENDPOINT_PLUGIN_ENABLE, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_enable_plugin'),
-            'permission_callback' => $this->build_permission_callback('plugins', $perm),
+            'callback'            => array($this, 'handleEnablePlugin'),
+            'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGIN_DISABLE, array(
+        $safeRegister(ENDPOINT_PLUGIN_DISABLE, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_disable_plugin'),
-            'permission_callback' => $this->build_permission_callback('plugins', $perm),
+            'callback'            => array($this, 'handleDisablePlugin'),
+            'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGIN_DELETE, array(
+        $safeRegister(ENDPOINT_PLUGIN_DELETE, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_delete_plugin'),
-            'permission_callback' => $this->build_permission_callback('plugins', $perm),
+            'callback'            => array($this, 'handleDeletePlugin'),
+            'permission_callback' => $this->buildPermissionCallback('plugins', $perm),
         ));
 
-        $safe_register(ENDPOINT_PLUGIN_EXPORT, array(
+        $safeRegister(ENDPOINT_PLUGIN_EXPORT, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_export_plugin'),
-            'permission_callback' => $this->build_permission_callback('plugin_export', $perm),
+            'callback'            => array($this, 'handleExportPlugin'),
+            'permission_callback' => $this->buildPermissionCallback('plugin_export', $perm),
         ));
 
         try {
             if (defined('ENDPOINT_MEDIA')) {
-                $safe_register(ENDPOINT_MEDIA, array(
+                $safeRegister(ENDPOINT_MEDIA, array(
                     'methods'             => HttpMethodType::Post->value,
                     'callback'            => array($this, 'handle_media_upload'),
-                    'permission_callback' => $this->build_permission_callback('media', $perm),
+                    'permission_callback' => $this->buildPermissionCallback('media', $perm),
                 ));
             }
         } catch (Throwable $e) {
@@ -110,15 +110,15 @@ trait PluginRouteRegistrationTrait {
     /**
      * Register agent management routes.
      *
-     * @param callable $safe_register Route registration closure.
+     * @param callable $safeRegister Route registration closure.
      * @param int      &$failed      Failed registration counter.
      */
-    private function register_agent_routes($safe_register, &$failed) {
+    private function registerAgentRoutes($safeRegister, &$failed) {
         $agent_routes = array(
-            array('const' => 'ENDPOINT_AGENTS_LIST',    'method' => HttpMethodType::Get,  'handler' => 'handle_list_agents'),
-            array('const' => 'ENDPOINT_AGENTS_ADD',     'method' => HttpMethodType::Post, 'handler' => 'handle_add_agent'),
-            array('const' => 'ENDPOINT_AGENTS_REMOVE',  'method' => HttpMethodType::Post, 'handler' => 'handle_remove_agent'),
-            array('const' => 'ENDPOINT_AGENTS_TEST',    'method' => HttpMethodType::Post, 'handler' => 'handle_test_agent'),
+            array('const' => 'ENDPOINT_AGENTS_LIST',    'method' => HttpMethodType::Get,  'handler' => 'handleListAgents'),
+            array('const' => 'ENDPOINT_AGENTS_ADD',     'method' => HttpMethodType::Post, 'handler' => 'handleAddAgent'),
+            array('const' => 'ENDPOINT_AGENTS_REMOVE',  'method' => HttpMethodType::Post, 'handler' => 'handleRemoveAgent'),
+            array('const' => 'ENDPOINT_AGENTS_TEST',    'method' => HttpMethodType::Post, 'handler' => 'handleTestAgent'),
             array('const' => 'ENDPOINT_AGENTS_SYNC',    'method' => HttpMethodType::Post, 'handler' => 'handle_sync_to_agent'),
             array('const' => 'ENDPOINT_AGENTS_PLUGINS', 'method' => HttpMethodType::Post, 'handler' => 'handle_agent_plugin_action'),
         );
@@ -126,14 +126,14 @@ trait PluginRouteRegistrationTrait {
         foreach ($agent_routes as $route) {
             try {
                 $endpoint = constant($route['const']);
-                $safe_register($endpoint, array(
+                $safeRegister($endpoint, array(
                     'methods'             => $route['method']->value,
                     'callback'            => array($this, $route['handler']),
-                    'permission_callback' => $this->build_permission_callback('agents', array($this, 'check_plugin_permission')),
+                    'permission_callback' => $this->buildPermissionCallback('agents', array($this, 'checkPluginPermission')),
                 ));
             } catch (Throwable $e) {
                 $failed++;
-                $this->file_logger->error('Agent route ' . $route['const'] . ' failed: ' . $e->getMessage());
+                $this->fileLogger->error('Agent route ' . $route['const'] . ' failed: ' . $e->getMessage());
             }
         }
     }

@@ -15,13 +15,13 @@ use RiseupAsia\Enums\ActionType;
 trait PluginLifecycleDeleteTrait {
 
     /** Handle delete plugin request. */
-    public function handle_delete_plugin($request) {
-        $load_error = $this->load_plugin_functions(true);
-        if ($load_error) {
-            return $load_error;
+    public function handleDeletePlugin($request) {
+        $loadError = $this->loadPluginFunctions(true);
+        if ($loadError) {
+            return $loadError;
         }
 
-        $resolved = $this->resolve_plugin_from_request($request);
+        $resolved = $this->resolvePluginFromRequest($request);
         if ($resolved instanceof WP_REST_Response) {
             return $resolved;
         }
@@ -42,7 +42,7 @@ trait PluginLifecycleDeleteTrait {
             }
             return true;
         } catch (Throwable $e) {
-            return $this->error_response('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -52,15 +52,15 @@ trait PluginLifecycleDeleteTrait {
             $result = delete_plugins(array($plugin_file));
             $error = $this->checkDeleteResult($result);
             if ($error) {
-                $this->log_plugin_lifecycle(ActionType::Delete->value, $slug, STATUS_FAILED, array('error' => $error));
-                return $this->error_response(MSG_DELETE_FAILED . ': ' . $error, HTTP_SERVER_ERROR);
+                $this->logPluginLifecycle(ActionType::Delete->value, $slug, STATUS_FAILED, array('error' => $error));
+                return $this->errorResponse(MSG_DELETE_FAILED . ': ' . $error, HTTP_SERVER_ERROR);
             }
         } catch (Throwable $e) {
-            $this->log_plugin_lifecycle(ActionType::Delete->value, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
-            return $this->error_response('Exception during deletion: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            $this->logPluginLifecycle(ActionType::Delete->value, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
+            return $this->errorResponse('Exception during deletion: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
 
-        $this->log_plugin_lifecycle(ActionType::Delete->value, $slug, STATUS_SUCCESS);
+        $this->logPluginLifecycle(ActionType::Delete->value, $slug, STATUS_SUCCESS);
         return RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_DELETE)
             ->setSingleResult(array('plugin_slug' => $slug, 'deleted' => true))

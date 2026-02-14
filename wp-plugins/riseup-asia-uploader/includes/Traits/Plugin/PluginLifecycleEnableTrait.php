@@ -15,13 +15,13 @@ use RiseupAsia\Enums\ActionType;
 trait PluginLifecycleEnableTrait {
 
     /** Handle enable (activate) plugin request. */
-    public function handle_enable_plugin($request) {
-        $load_error = $this->load_plugin_functions();
-        if ($load_error) {
-            return $load_error;
+    public function handleEnablePlugin($request) {
+        $loadError = $this->loadPluginFunctions();
+        if ($loadError) {
+            return $loadError;
         }
 
-        $resolved = $this->resolve_plugin_from_request($request);
+        $resolved = $this->resolvePluginFromRequest($request);
         if ($resolved instanceof WP_REST_Response) {
             return $resolved;
         }
@@ -34,13 +34,13 @@ trait PluginLifecycleEnableTrait {
     }
 
     /** Handle disable (deactivate) plugin request. */
-    public function handle_disable_plugin($request) {
-        $load_error = $this->load_plugin_functions();
-        if ($load_error) {
-            return $load_error;
+    public function handleDisablePlugin($request) {
+        $loadError = $this->loadPluginFunctions();
+        if ($loadError) {
+            return $loadError;
         }
 
-        $resolved = $this->resolve_plugin_from_request($request);
+        $resolved = $this->resolvePluginFromRequest($request);
         if ($resolved instanceof WP_REST_Response) {
             return $resolved;
         }
@@ -73,15 +73,15 @@ trait PluginLifecycleEnableTrait {
         try {
             $result = activate_plugin($plugin_file);
             if (is_wp_error($result)) {
-                $this->log_plugin_lifecycle(ActionType::Enable->value, $slug, STATUS_FAILED, array('error' => $result->get_error_message()));
-                return $this->error_response(MSG_ACTIVATION_FAILED . ': ' . $result->get_error_message(), HTTP_SERVER_ERROR);
+                $this->logPluginLifecycle(ActionType::Enable->value, $slug, STATUS_FAILED, array('error' => $result->get_error_message()));
+                return $this->errorResponse(MSG_ACTIVATION_FAILED . ': ' . $result->get_error_message(), HTTP_SERVER_ERROR);
             }
         } catch (Throwable $e) {
-            $this->log_plugin_lifecycle(ActionType::Enable->value, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
-            return $this->error_response('Exception during activation: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            $this->logPluginLifecycle(ActionType::Enable->value, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
+            return $this->errorResponse('Exception during activation: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
 
-        $this->log_plugin_lifecycle(ActionType::Enable->value, $slug, STATUS_SUCCESS);
+        $this->logPluginLifecycle(ActionType::Enable->value, $slug, STATUS_SUCCESS);
         return RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_ENABLE)
             ->setSingleResult(array('plugin_slug' => $slug, 'activated' => true))
@@ -93,16 +93,16 @@ trait PluginLifecycleEnableTrait {
         try {
             deactivate_plugins($plugin_file);
         } catch (Throwable $e) {
-            $this->log_plugin_lifecycle(ActionType::Disable->value, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
-            return $this->error_response('Exception during deactivation: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            $this->logPluginLifecycle(ActionType::Disable->value, $slug, STATUS_FAILED, array('exception' => $e->getMessage()));
+            return $this->errorResponse('Exception during deactivation: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
 
         if (is_plugin_active($plugin_file)) {
-            $this->log_plugin_lifecycle(ActionType::Disable->value, $slug, STATUS_FAILED, array('error' => 'Plugin remained active'));
-            return $this->error_response(MSG_DEACTIVATION_FAILED . ': Plugin remained active', HTTP_SERVER_ERROR);
+            $this->logPluginLifecycle(ActionType::Disable->value, $slug, STATUS_FAILED, array('error' => 'Plugin remained active'));
+            return $this->errorResponse(MSG_DEACTIVATION_FAILED . ': Plugin remained active', HTTP_SERVER_ERROR);
         }
 
-        $this->log_plugin_lifecycle(ActionType::Disable->value, $slug, STATUS_SUCCESS);
+        $this->logPluginLifecycle(ActionType::Disable->value, $slug, STATUS_SUCCESS);
         return RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_PLUGIN_DISABLE)
             ->setSingleResult(array('plugin_slug' => $slug, 'deactivated' => true))

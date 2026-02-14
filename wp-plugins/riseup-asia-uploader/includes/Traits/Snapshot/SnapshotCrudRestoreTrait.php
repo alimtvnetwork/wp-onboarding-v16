@@ -17,21 +17,21 @@ trait SnapshotCrudRestoreTrait {
     /**
      * Handle deleting a snapshot.
      */
-    public function handle_delete_snapshot($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleDeleteSnapshot($request) {
+        return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
-            $this->file_logger->info('Deleting snapshot', array('id' => $id));
+            $this->fileLogger->info('Deleting snapshot', array('id' => $id));
 
-            $this->logger->log_plugin_action(
+            $this->logger->logPluginAction(
                 ActionType::SnapshotDelete->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
-            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $manager->deleteSnapshot($id);
 
-            $this->logger->log_plugin_action(
+            $this->logger->logPluginAction(
                 ActionType::SnapshotDelete->value, 'snapshot',
                 $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'complete'),
@@ -46,17 +46,17 @@ trait SnapshotCrudRestoreTrait {
     /**
      * Handle restoring a snapshot.
      */
-    public function handle_restore_snapshot($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleRestoreSnapshot($request) {
+        return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $options = $this->parseRestoreOptions($body);
 
-            $this->logger->log_plugin_action(ActionType::SnapshotRestore->value, 'snapshot', STATUS_SUCCESS,
+            $this->logger->logPluginAction(ActionType::SnapshotRestore->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated'));
-            $this->file_logger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
+            $this->fileLogger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
-            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $this->routeRestoreToEngine($id, $options, $manager);
 
             $mode = $result['_mode'] ?? 'legacy';
@@ -91,8 +91,8 @@ trait SnapshotCrudRestoreTrait {
         if ($snapshot && $this->isPerTableSnapshot($snapshot)) {
             $dir = $this->resolveSnapshotDir($snapshot);
             if ($dir && file_exists($dir . '/a-root.db')) {
-                $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
-                $engine = RiseupRestoreEngine::getInstance($this->file_logger, $this->db, $orchestrator);
+                $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
+                $engine = RiseupRestoreEngine::getInstance($this->fileLogger, $this->db, $orchestrator);
                 $result = $engine->execute($dir, $options);
                 $result['_mode'] = 'per_table';
                 return $result;

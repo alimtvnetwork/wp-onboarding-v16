@@ -18,8 +18,8 @@ trait PluginListTrait
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function handle_list_plugins($request) {
-        $this->file_logger->info('List plugins endpoint called');
+    public function handleListPlugins($request) {
+        $this->fileLogger->info('List plugins endpoint called');
 
         try {
             if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
@@ -33,9 +33,9 @@ trait PluginListTrait
                 ->setResults($plugins)
                 ->toResponse();
         } catch (\Throwable $e) {
-            $this->file_logger->log_exception($e, 'List plugins error');
+            $this->fileLogger->logException($e, 'List plugins error');
 
-            return $this->error_response('Failed to list plugins: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to list plugins: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -75,17 +75,17 @@ trait PluginListTrait
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function handle_plugin_files($request) {
+    public function handlePluginFiles($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
 
         try {
             return $this->scanPluginFilesWithCache($slug);
         } catch (Throwable $e) {
-            return $this->error_response('Failed to list plugin files: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to list plugin files: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -102,11 +102,11 @@ trait PluginListTrait
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
         if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-            return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
         }
 
         $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-        $fileCache = RiseupFileCache::getInstance($this->file_logger, $this->db);
+        $fileCache = RiseupFileCache::getInstance($this->fileLogger, $this->db);
         $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
 
         return new WP_REST_Response(array(
@@ -123,11 +123,11 @@ trait PluginListTrait
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function handle_plugin_file_content($request) {
+    public function handlePluginFileContent($request) {
         $json = $request->get_json_params();
         $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
 
         try {
@@ -140,7 +140,7 @@ trait PluginListTrait
 
             return $this->readAndReturnFile($validation['real_path'], $validation['file_path']);
         } catch (\Throwable $e) {
-            return $this->error_response('Failed to read file: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -153,28 +153,28 @@ trait PluginListTrait
      */
     private function validateFilePath($file_path, string $slug) {
         if (empty($file_path)) {
-            return $this->error_response('File path is required', HTTP_BAD_REQUEST);
+            return $this->errorResponse('File path is required', HTTP_BAD_REQUEST);
         }
 
         $file_path = ltrim($file_path, '/\\');
         if (strpos($file_path, '..') !== false) {
-            return $this->error_response('Invalid file path', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Invalid file path', HTTP_BAD_REQUEST);
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
         if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
-            return $this->error_response(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
         }
 
         $real_plugin_dir = realpath($plugin_dir);
         $real_file_path = realpath($plugin_dir . '/' . $file_path);
 
         if ($real_file_path === false || strpos($real_file_path, $real_plugin_dir) !== 0) {
-            return $this->error_response('File not found or invalid path', HTTP_NOT_FOUND);
+            return $this->errorResponse('File not found or invalid path', HTTP_NOT_FOUND);
         }
 
         if (RiseupBooleanHelpers::is_not_regular_file($real_file_path)) {
-            return $this->error_response('File not found', HTTP_NOT_FOUND);
+            return $this->errorResponse('File not found', HTTP_NOT_FOUND);
         }
 
         return array('real_path' => $real_file_path, 'file_path' => $file_path);
@@ -190,7 +190,7 @@ trait PluginListTrait
     private function readAndReturnFile(string $real_path, string $rel_path) {
         $content = @file_get_contents($real_path);
         if ($content === false) {
-            return $this->error_response('Failed to read file', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Failed to read file', HTTP_SERVER_ERROR);
         }
 
         return new WP_REST_Response(array(
