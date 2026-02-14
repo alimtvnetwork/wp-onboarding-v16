@@ -1,6 +1,6 @@
 # PHP Enums — Complete Reference
 
-> **Version:** 6.0.0  
+> **Version:** 7.0.0  
 > **Updated:** 2026-02-14  
 > **Applies to:** WordPress companion plugins (PHP 8.1+)
 
@@ -38,6 +38,7 @@ All enums MUST use the **`Type` suffix** in their name. This clearly distinguish
 9. **Access pattern:** `UploadSourceType::Script` (the enum case) or `UploadSourceType::Script->value` (the raw string).
 10. **Validation helpers** go as `static` methods on the enum itself (camelCase: `validValues()`, `isValid()`).
 11. **Non-enum constants classes** (ErrorType) use the same namespace and folder but remain `final class` with `public const`.
+12. **`isEqual()` method required** — every backed enum MUST include the `isEqual(self $other): bool` instance method (see below).
 
 ### File Loading
 
@@ -66,24 +67,123 @@ use RiseupAsia\\Enums\\CapabilityType;
 
 ---
 
-## UploadSourceType — Upload Origin
+## isEqual() — Universal Enum Comparison
+
+### Rule: Every backed enum MUST have `isEqual(self $other): bool`
+
+This method provides a clean, fluent API for comparing enum cases. It replaces raw `===` comparisons at call sites and inside helper methods, making conditionals more readable and eliminating bare operator usage.
+
+### Implementation (identical in every enum)
+
+```php
+/** Check if this enum case equals the given case. */
+public function isEqual(self $other): bool
+{
+    return $this === $other;
+}
+```
+
+### Why isEqual() Instead of Raw `===`
+
+| Aspect | `===` (forbidden) | `isEqual()` (required) |
+|--------|-------------------|----------------------|
+| Readability | `$status === StatusType::Success` | `$status->isEqual(StatusType::Success)` |
+| Fluency | Operator-based, breaks chain | Method-based, reads like English |
+| Internal helpers | `$this === self::X` | `$this->isEqual(self::X)` |
+| Consistency | Mixed styles across codebase | Single pattern everywhere |
+
+### Usage — Call Sites
+
+```php
+use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\LogLevelType;
+
+// ❌ FORBIDDEN: Raw === comparison
+if ($status === StatusType::Success) { ... }
+if ($level === LogLevelType::Error || $level === LogLevelType::Warn) { ... }
+
+// ✅ REQUIRED: isEqual() method
+if ($status->isEqual(StatusType::Success)) { ... }
+if ($level->isEqual(LogLevelType::Error) || $level->isEqual(LogLevelType::Warn)) { ... }
+```
+
+### Usage — Internal Helper Methods
+
+Existing domain-specific helpers (e.g., `isSuccess()`, `isError()`) MUST delegate to `isEqual()` internally:
+
+```php
+enum StatusType: string
+{
+    case Success = 'success';
+    case Failed  = 'failed';
+
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
+    // ❌ FORBIDDEN: Direct === in helpers
+    public function isSuccess(): bool
+    {
+        return $this === self::Success;
+    }
+
+    // ✅ REQUIRED: Delegate to isEqual()
+    public function isSuccess(): bool
+    {
+        return $this->isEqual(self::Success);
+    }
+}
+```
+
+### Usage — Compound Checks
+
+For helpers that check multiple cases, each comparison uses `isEqual()`:
+
+```php
+// ✅ Compound check with isEqual()
+public function isLifecycle(): bool
+{
+    return $this->isEqual(self::Enable)
+        || $this->isEqual(self::Disable)
+        || $this->isEqual(self::Delete);
+}
+
+public function isErrorOrWarn(): bool
+{
+    return $this->isEqual(self::Error) || $this->isEqual(self::Warn);
+}
+```
+
+### When NOT to Use isEqual()
+
+- **Domain checks using `str_starts_with()`** — These are prefix-based, not case-based. Keep as-is:
+  ```php
+  // ✅ Correct: prefix check, not enum comparison
+  public function isSnapshot(): bool
+  {
+      return str_starts_with($this->value, 'snapshot_');
+  }
+  ```
+- **Static validation** — `tryFrom()` and `validValues()` are not comparisons.
+
+---
+
+## Complete Enum Inventory
+
+### UploadSourceType — Upload Origin
 
 Identifies how a plugin upload was initiated.
 
 ```php
-<?php
-
-namespace RiseupAsia\\Enums;
-
-/**
- * Upload source identifiers for transaction logging.
- */
 enum UploadSourceType: string
 {
     case Script  = 'upload_script';
     case RestApi = 'rest_api';
     case AdminUi = 'admin_ui';
     case WpCli   = 'wp_cli';
+
+    public function isEqual(self $other): bool { return $this === $other; }
 
     public static function validValues(): array
     {
@@ -97,33 +197,28 @@ enum UploadSourceType: string
 }
 ```
 
-### Usage
+#### Usage
 
 ```php
 use RiseupAsia\\Enums\\UploadSourceType;
 
 // ❌ FORBIDDEN
 define('UPLOAD_SOURCE_SCRIPT', 'upload_script');
+if ($source === UploadSourceType::Script) { ... }
 
 // ✅ REQUIRED
 $source  = UploadSourceType::Script;
 $value   = UploadSourceType::Script->value;
 $parsed  = UploadSourceType::tryFrom('rest_api');
 $isValid = UploadSourceType::isValid($input);
+if ($source->isEqual(UploadSourceType::RestApi)) { ... }
 ```
 
 ---
 
-## CapabilityType — WordPress Capabilities
+### CapabilityType — WordPress Capabilities
 
 ```php
-<?php
-
-namespace RiseupAsia\\Enums;
-
-/**
- * WordPress capability strings for permission checks.
- */
 enum CapabilityType: string
 {
     case ManageOptions   = 'manage_options';
@@ -137,10 +232,12 @@ enum CapabilityType: string
     case SwitchThemes    = 'switch_themes';
     case ManageUsers     = 'manage_users';
     case ManageNetwork   = 'manage_network';
+
+    public function isEqual(self $other): bool { return $this === $other; }
 }
 ```
 
-### Usage
+#### Usage
 
 ```php
 use RiseupAsia\\Enums\\CapabilityType;
@@ -154,16 +251,9 @@ if (current_user_can(CapabilityType::ManageOptions->value)) { ... }
 
 ---
 
-## HttpMethodType — REST API Methods
+### HttpMethodType — REST API Methods
 
 ```php
-<?php
-
-namespace RiseupAsia\\Enums;
-
-/**
- * HTTP method constants for REST route registration.
- */
 enum HttpMethodType: string
 {
     case Get    = 'GET';
@@ -172,6 +262,8 @@ enum HttpMethodType: string
     case Patch  = 'PATCH';
     case Delete = 'DELETE';
 
+    public function isEqual(self $other): bool { return $this === $other; }
+
     public static function editable(): string
     {
         return 'PUT, PATCH';
@@ -179,7 +271,7 @@ enum HttpMethodType: string
 }
 ```
 
-### Usage
+#### Usage
 
 ```php
 use RiseupAsia\\Enums\\HttpMethodType;
@@ -193,16 +285,9 @@ register_rest_route($ns, '/upload', ['methods' => HttpMethodType::Post->value, .
 
 ---
 
-## HookType — WordPress Hook Names
+### HookType — WordPress Hook Names
 
 ```php
-<?php
-
-namespace RiseupAsia\\Enums;
-
-/**
- * WordPress action and filter hook names.
- */
 enum HookType: string
 {
     // ── Core Lifecycle ──────────────────────────────────────────
@@ -229,6 +314,8 @@ enum HookType: string
     case PluginsApi                        = 'plugins_api';
     case CronSchedules                     = 'cron_schedules';
 
+    public function isEqual(self $other): bool { return $this === $other; }
+
     public static function ajax(string $action): string
     {
         return 'wp_ajax_' . $action;
@@ -241,7 +328,7 @@ enum HookType: string
 }
 ```
 
-### Usage
+#### Usage
 
 ```php
 use RiseupAsia\\Enums\\HookType;
@@ -256,209 +343,162 @@ add_action(HookType::ajax('riseup_test'), [$this, 'ajaxTest']);
 
 ---
 
-## Path Enums — 4 Domain-Specific Enums (replaces PathConst)
-
-The former `PathConst` final class has been decomposed into 4 backed enums. Each answers "which one?" for its domain, qualifying as a proper enum with the `Type` suffix.
-
-### PathSubdirType — Plugin Subdirectories
+### LogLevelType — Log Severity Levels
 
 ```php
-<?php
-
-namespace RiseupAsia\Enums;
-
-/**
- * Plugin subdirectory path fragments.
- */
-enum PathSubdirType: string
+enum LogLevelType: string
 {
-    case Logs      = '/logs';
-    case Temp      = '/temp';
-    case Snapshots = '/snapshots';
-    case Exports   = '/exports';
+    case Debug = 'DEBUG';
+    case Info  = 'INFO';
+    case Warn  = 'WARN';
+    case Error = 'ERROR';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+
+    public function isError(): bool { return $this->isEqual(self::Error); }
+    public function isWarn(): bool  { return $this->isEqual(self::Warn); }
+    public function isInfo(): bool  { return $this->isEqual(self::Info); }
+    public function isDebug(): bool { return $this->isEqual(self::Debug); }
+
+    public function isErrorOrWarn(): bool
+    {
+        return $this->isEqual(self::Error) || $this->isEqual(self::Warn);
+    }
 }
 ```
 
-### PathDatabaseType — SQLite Database Files
+#### Usage
 
 ```php
-<?php
+use RiseupAsia\Enums\LogLevelType;
 
-namespace RiseupAsia\Enums;
+// ❌ FORBIDDEN
+if ($level === LogLevelType::Error) { ... }
 
-/**
- * SQLite database file path fragments.
- */
-enum PathDatabaseType: string
-{
-    case Root     = '/a-root.db';
-    case Activity = '/activity.db';
-    case Snapshot = '/snapshots.db';
-    case Plugin   = '/riseup-asia-uploader.db';
-}
-```
-
-### PathLogFileType — Log File Names
-
-```php
-<?php
-
-namespace RiseupAsia\Enums;
-
-/**
- * Log file path fragments.
- */
-enum PathLogFileType: string
-{
-    case Log        = '/log.txt';
-    case FatalError = '/fatal-errors.log';
-    case Stacktrace = '/stacktrace.txt';
-    case Error      = '/error.txt';
-}
-```
-
-### PathConfigType — Config File Names
-
-```php
-<?php
-
-namespace RiseupAsia\Enums;
-
-/**
- * Configuration file path fragments.
- */
-enum PathConfigType: string
-{
-    case Detection = '/wp-plugin-detected.json';
-}
-```
-
-### Usage in RiseupPathUtils
-
-```php
-use RiseupAsia\Enums\PathSubdirType;
-use RiseupAsia\Enums\PathDatabaseType;
-use RiseupAsia\Enums\PathLogFileType;
-
-// ❌ FORBIDDEN: Legacy define() constants
-$logsDir = self::join(self::getBaseDir(), LOGS_SUBDIR);
-$dbPath  = self::join(self::getBaseDir(), DB_FILENAME);
-
-// ✅ REQUIRED: Enum values
-$logsDir = self::join(self::getBaseDir(), PathSubdirType::Logs->value);
-$dbPath  = self::join(self::getBaseDir(), PathDatabaseType::Plugin->value);
+// ✅ REQUIRED — use domain helper or isEqual()
+if ($level->isError()) { ... }
+if ($level->isEqual(LogLevelType::Error)) { ... }
 ```
 
 ---
 
-## ErrorType — PHP Error Type Constants (Non-Enum Class)
-
-`ErrorType` holds arrays/maps — not a backed enum.
+### StatusType — Transaction Result Status
 
 ```php
-<?php
-
-namespace RiseupAsia\Enums;
-
-final class ErrorType
+enum StatusType: string
 {
-    public const FATAL_TYPES = [
-        E_ERROR, E_PARSE, E_CORE_ERROR,
-        E_COMPILE_ERROR, E_USER_ERROR,
-    ];
+    case Success = 'success';
+    case Failed  = 'failed';
 
-    public const WARNING_TYPES = [
-        E_WARNING, E_CORE_WARNING, E_USER_WARNING,
-        E_NOTICE, E_USER_NOTICE,
-        E_DEPRECATED, E_USER_DEPRECATED,
-    ];
+    public function isEqual(self $other): bool { return $this === $other; }
 
-    public const RECOVERABLE_TYPES = [
-        E_RECOVERABLE_ERROR, E_STRICT,
-    ];
-
-    public const TYPE_LABELS = [
-        E_ERROR             => 'E_ERROR',
-        E_PARSE             => 'E_PARSE',
-        E_CORE_ERROR        => 'E_CORE_ERROR',
-        E_COMPILE_ERROR     => 'E_COMPILE_ERROR',
-        E_USER_ERROR        => 'E_USER_ERROR',
-        E_WARNING           => 'E_WARNING',
-        E_CORE_WARNING      => 'E_CORE_WARNING',
-        E_USER_WARNING      => 'E_USER_WARNING',
-        E_NOTICE            => 'E_NOTICE',
-        E_USER_NOTICE       => 'E_USER_NOTICE',
-        E_DEPRECATED        => 'E_DEPRECATED',
-        E_USER_DEPRECATED   => 'E_USER_DEPRECATED',
-        E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
-        E_STRICT            => 'E_STRICT',
-    ];
+    public function isSuccess(): bool { return $this->isEqual(self::Success); }
+    public function isFailed(): bool  { return $this->isEqual(self::Failed); }
 }
 ```
 
 ---
 
-## Classification: Enum vs Const Class
+### PostStatusType — WordPress Post Statuses
 
-| Name               | Type         | Suffix | Why                                              |
-|--------------------|--------------|--------|--------------------------------------------------|
-| `UploadSourceType` | `enum`       | `Type` | Discrete set — "which source?"                   |
-| `CapabilityType`   | `enum`       | `Type` | Discrete capabilities — "which permission?"      |
-| `HttpMethodType`   | `enum`       | `Type` | Discrete HTTP verbs — "which method?"            |
-| `HookType`         | `enum`       | `Type` | Discrete hook names — "which hook?"              |
-| `EndpointType`     | `enum`       | `Type` | Discrete REST paths — "which endpoint?"          |
-| `PathSubdirType`   | `enum`       | `Type` | Discrete subdirectories — "which directory?"     |
-| `PathDatabaseType` | `enum`       | `Type` | Discrete DB files — "which database?"            |
-| `PathLogFileType`  | `enum`       | `Type` | Discrete log files — "which log?"                |
-| `PathConfigType`   | `enum`       | `Type` | Discrete config files — "which config?"          |
-| `ErrorType`        | `final class`| —      | Arrays of E_* constants and label maps           |
+```php
+enum PostStatusType: string
+{
+    case Publish = 'publish';
+    case Draft   = 'draft';
+    case Pending = 'pending';
 
-### Decision Rule
+    public function isEqual(self $other): bool { return $this === $other; }
 
-> If the type answers **"which one of these?"** with a single value → `enum` with `Type` suffix.  
-> If it holds **arrays, maps, or composable fragments** → `final class` with `public const`.
+    public function isPublic(): bool { return $this->isEqual(self::Publish); }
+
+    public static function validValues(): array
+    {
+        return array_map(fn(self $case) => $case->value, self::cases());
+    }
+}
+```
 
 ---
 
-## EndpointType — REST API Endpoint Paths
+### ActionType — Transaction Logging Actions
+
+42 cases across Core, Post, Auth, Export, Update, Agent, Snapshot domains.
+
+```php
+enum ActionType: string
+{
+    // Core: Upload, UploadActive, UploadInitiated, Enable, Disable, Delete, ...
+    // Post: PostCreate, PostUpdate, CategoryCreate, MediaUpload
+    // Auth: AuthFailed
+    // Export: ExportSelf, ExportPlugin
+    // Update: UpdateCheck, UpdateResolve, UpdateDownload, UpdateInstall
+    // Agent: AgentAdd, AgentRemove, AgentTest, AgentSync, ...
+    // Snapshot: SnapshotCreate, SnapshotRestore, SnapshotDelete, ...
+
+    public function isEqual(self $other): bool { return $this === $other; }
+
+    // Domain prefix checks (str_starts_with, NOT isEqual)
+    public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshot_'); }
+    public function isAgent(): bool    { return str_starts_with($this->value, 'agent_'); }
+    public function isUpdate(): bool   { return str_starts_with($this->value, 'update_'); }
+
+    // Compound case check (uses isEqual)
+    public function isLifecycle(): bool
+    {
+        return $this->isEqual(self::Enable)
+            || $this->isEqual(self::Disable)
+            || $this->isEqual(self::Delete);
+    }
+}
+```
+
+---
+
+### TableType — SQLite Table Names
+
+```php
+enum TableType: string
+{
+    // Core: Transactions
+    // Agent: AgentSites, AgentActions
+    // Snapshot: Snapshots, SnapshotProgress, SnapshotJobs, SnapshotSettings, SnapshotExports
+    // Sync: FileCache
+
+    public function isEqual(self $other): bool { return $this === $other; }
+
+    public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshot'); }
+    public function isAgent(): bool    { return str_starts_with($this->value, 'agent'); }
+}
+```
+
+---
+
+### EndpointType — REST API Endpoint Paths
 
 Stores only the path fragment for each REST endpoint. The full WordPress route
 is constructed via the `route()` helper, which prepends `/`.
 
 ```php
-<?php
-
-namespace RiseupAsia\Enums;
-
 enum EndpointType: string
 {
-    // ── Core ─────────────────────────────────────────────────────
-    case Status   = 'status';
-    case Upload   = 'upload';
-    case Plugins  = 'plugins';
-    // ... (see EndpointType.php for all cases)
+    // Core: Status, Upload, Plugins, ExportSelf, Posts, ...
+    // Plugin: PluginFiles, PluginFile, PluginEnable, ...
+    // Sync: SyncManifest, Sync
+    // Agent: Agents, AgentsAdd, AgentsRemove, ...
+    // Snapshot: SnapshotList, SnapshotSchedule, ...
 
-    // ── Snapshot ─────────────────────────────────────────────────
-    case SnapshotList = 'snapshots/list';
-    // ...
+    public function isEqual(self $other): bool { return $this === $other; }
 
-    /**
-     * Return the route path ready for register_rest_route().
-     * Encapsulates the '/' prefix so callers never touch ->value for routing.
-     */
-    public function route(): string
-    {
-        return '/' . $this->value;
-    }
+    public function route(): string { return '/' . $this->value; }
 
-    /** Domain-check helpers */
     public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshots/'); }
     public function isAgent(): bool    { return str_starts_with($this->value, 'agents'); }
     public function isPlugin(): bool   { return str_starts_with($this->value, 'plugins/'); }
 }
 ```
 
-### Usage in Route Registration
+#### Usage in Route Registration
 
 ```php
 use RiseupAsia\Enums\EndpointType;
@@ -467,27 +507,15 @@ use RiseupAsia\Enums\HttpMethodType;
 // ❌ FORBIDDEN: Accessing ->value directly for route construction
 $safeRegister(EndpointType::Upload->value, [...]);
 
-// ✅ REQUIRED: Use route() helper — single call, no multi-step chaining
+// ✅ REQUIRED: Use route() helper
 $safeRegister(EndpointType::Upload->route(), array(
     'methods'  => HttpMethodType::Post->value,
     'callback' => array($this, 'handleUpload'),
     ...
 ));
-
-// ✅ Array-driven pattern
-$agent_routes = array(
-    array('endpoint' => EndpointType::Agents, 'method' => HttpMethodType::Get, 'handler' => 'handleListAgents'),
-);
-foreach ($agent_routes as $route) {
-    $safeRegister($route['endpoint']->route(), array(
-        'methods'  => $route['method']->value,
-        'callback' => array($this, $route['handler']),
-        ...
-    ));
-}
 ```
 
-### When to Use ->value vs ->route()
+#### When to Use ->value vs ->route()
 
 | Context | Use | Example |
 |---------|-----|---------|
@@ -498,41 +526,136 @@ foreach ($agent_routes as $route) {
 
 ---
 
-## ErrorChecker — Uses ErrorType
+## Path Enums — 4 Domain-Specific Enums (replaces PathConst)
+
+The former `PathConst` final class has been decomposed into 4 backed enums. Each answers "which one?" for its domain, qualifying as a proper enum with the `Type` suffix. All include `isEqual()`.
+
+### PathSubdirType — Plugin Subdirectories
 
 ```php
-use RiseupAsia\Enums\ErrorType;
+enum PathSubdirType: string
+{
+    case Logs      = '/logs';
+    case Temp      = '/temp';
+    case Snapshots = '/snapshots';
+    case Exports   = '/exports';
 
-class ErrorChecker {
-
-    public static function isFatalError(?array $error): bool {
-        if ($error === null) {
-            return false;
-        }
-
-        return in_array($error['type'], ErrorType::FATAL_TYPES, true);
-    }
-
-    public static function getTypeLabel(int $type): string {
-        return ErrorType::TYPE_LABELS[$type] ?? 'UNKNOWN_ERROR_TYPE';
-    }
+    public function isEqual(self $other): bool { return $this === $other; }
 }
 ```
+
+### PathDatabaseType — SQLite Database Files
+
+```php
+enum PathDatabaseType: string
+{
+    case Root     = '/a-root.db';
+    case Activity = '/activity.db';
+    case Snapshot = '/snapshots.db';
+    case Plugin   = '/riseup-asia-uploader.db';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+}
+```
+
+### PathLogFileType — Log File Names
+
+```php
+enum PathLogFileType: string
+{
+    case Log        = '/log.txt';
+    case FatalError = '/fatal-errors.log';
+    case Stacktrace = '/stacktrace.txt';
+    case Error      = '/error.txt';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+}
+```
+
+### PathConfigType — Config File Names
+
+```php
+enum PathConfigType: string
+{
+    case Detection = '/wp-plugin-detected.json';
+
+    public function isEqual(self $other): bool { return $this === $other; }
+}
+```
+
+### Usage in RiseupPathUtils
+
+```php
+use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\PathDatabaseType;
+
+// ❌ FORBIDDEN
+$logsDir = self::join(self::getBaseDir(), LOGS_SUBDIR);
+
+// ✅ REQUIRED
+$logsDir = self::join(self::getBaseDir(), PathSubdirType::Logs->value);
+$dbPath  = self::join(self::getBaseDir(), PathDatabaseType::Plugin->value);
+```
+
+---
+
+## ErrorType — PHP Error Type Constants (Non-Enum Class)
+
+`ErrorType` holds arrays/maps — not a backed enum. Does NOT get `isEqual()`.
+
+```php
+final class ErrorType
+{
+    public const FATAL_TYPES = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    public const WARNING_TYPES = [E_WARNING, E_CORE_WARNING, E_USER_WARNING, E_NOTICE, ...];
+    public const RECOVERABLE_TYPES = [E_RECOVERABLE_ERROR, E_STRICT];
+    public const TYPE_LABELS = [E_ERROR => 'E_ERROR', ...];
+}
+```
+
+---
+
+## Classification: Enum vs Const Class
+
+| Name               | Type         | Suffix | Has isEqual() | Why                                              |
+|--------------------|--------------|--------|---------------|--------------------------------------------------|
+| `UploadSourceType` | `enum`       | `Type` | ✅            | Discrete set — "which source?"                   |
+| `CapabilityType`   | `enum`       | `Type` | ✅            | Discrete capabilities — "which permission?"      |
+| `HttpMethodType`   | `enum`       | `Type` | ✅            | Discrete HTTP verbs — "which method?"            |
+| `HookType`         | `enum`       | `Type` | ✅            | Discrete hook names — "which hook?"              |
+| `EndpointType`     | `enum`       | `Type` | ✅            | Discrete REST paths — "which endpoint?"          |
+| `LogLevelType`     | `enum`       | `Type` | ✅            | Discrete log levels — "which severity?"          |
+| `StatusType`       | `enum`       | `Type` | ✅            | Discrete results — "success or failed?"          |
+| `PostStatusType`   | `enum`       | `Type` | ✅            | Discrete post states — "which status?"           |
+| `ActionType`       | `enum`       | `Type` | ✅            | Discrete actions — "which action?"               |
+| `TableType`        | `enum`       | `Type` | ✅            | Discrete tables — "which table?"                 |
+| `PathSubdirType`   | `enum`       | `Type` | ✅            | Discrete subdirectories — "which directory?"     |
+| `PathDatabaseType` | `enum`       | `Type` | ✅            | Discrete DB files — "which database?"            |
+| `PathLogFileType`  | `enum`       | `Type` | ✅            | Discrete log files — "which log?"                |
+| `PathConfigType`   | `enum`       | `Type` | ✅            | Discrete config files — "which config?"          |
+| `ErrorType`        | `final class`| —      | ❌            | Arrays of E_* constants and label maps           |
+
+### Decision Rule
+
+> If the type answers **"which one of these?"** with a single value → `enum` with `Type` suffix + `isEqual()`.  
+> If it holds **arrays, maps, or composable fragments** → `final class` with `public const`.
 
 ---
 
 ## Adding New Enum Cases — Checklist
 
 1. **Add the case** to the appropriate enum in `includes/Enums/`.
-2. **Add a PHPDoc comment** if the case is non-obvious.
-3. **If PathSubdirType:** Add a corresponding typed accessor to `RiseupPathUtils`.
-4. **If PathDatabaseType/PathLogFileType/PathConfigType:** Add a typed accessor to `RiseupPathUtils`.
-5. **If HookType:** Update all `add_action`/`add_filter` calls.
-6. **If CapabilityType:** Update all `current_user_can()` calls.
-7. **If HttpMethodType:** Update all `register_rest_route()` calls.
-8. **If EndpointType:** Add the case, then use `->route()` in route registration. Update all callers.
-9. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
-10. **Never skip the enum** — even for "one-time" usage.
+2. **Ensure `isEqual()` exists** — it should already be there; verify.
+3. **Add a PHPDoc comment** if the case is non-obvious.
+4. **If PathSubdirType:** Add a corresponding typed accessor to `RiseupPathUtils`.
+5. **If PathDatabaseType/PathLogFileType/PathConfigType:** Add a typed accessor to `RiseupPathUtils`.
+6. **If HookType:** Update all `add_action`/`add_filter` calls.
+7. **If CapabilityType:** Update all `current_user_can()` calls.
+8. **If HttpMethodType:** Update all `register_rest_route()` calls.
+9. **If EndpointType:** Add the case, then use `->route()` in route registration. Update all callers.
+10. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
+11. **Never skip the enum** — even for "one-time" usage.
+12. **Use `isEqual()` for all comparisons** — never raw `===` at call sites.
 
 ---
 
@@ -540,7 +663,8 @@ class ErrorChecker {
 
 - [PHP Coding Standards](./README.md) — Parent spec with forbidden patterns
 - [Naming Conventions](./naming-conventions.md) — PascalCase for enums, camelCase for methods
+- [Golang Standards](../03-golang-standards/README.md) — Go equivalent patterns
 
 ---
 
-*PHP Enum specification v6.0.0 — 2026-02-14*
+*PHP Enum specification v7.0.0 — 2026-02-14*

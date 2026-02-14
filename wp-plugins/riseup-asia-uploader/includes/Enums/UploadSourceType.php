@@ -25,6 +25,12 @@ enum UploadSourceType: string
     case AdminUi = 'admin_ui';
     case WpCli   = 'wp_cli';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /** @return string[] */
     public static function validValues(): array
     {

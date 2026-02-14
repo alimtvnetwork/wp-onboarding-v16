@@ -75,6 +75,12 @@ enum ActionType: string
     case SnapshotZipExpire       = 'snapshot_zip_expire';
     case SnapshotZipDownload     = 'snapshot_zip_download';
 
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
+
     /** Check if this is a snapshot-related action. */
     public function isSnapshot(): bool
     {
@@ -96,6 +102,6 @@ enum ActionType: string
     /** Check if this is a plugin lifecycle action (enable/disable/delete). */
     public function isLifecycle(): bool
     {
-        return $this === self::Enable || $this === self::Disable || $this === self::Delete;
+        return $this->isEqual(self::Enable) || $this->isEqual(self::Disable) || $this->isEqual(self::Delete);
     }
 }

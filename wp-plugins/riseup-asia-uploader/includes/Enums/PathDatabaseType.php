@@ -21,4 +21,10 @@ enum PathDatabaseType: string
     case Activity = '/activity.db';
     case Snapshot = '/snapshots.db';
     case Plugin   = '/riseup-asia-uploader.db';
+
+    /** Check if this enum case equals the given case. */
+    public function isEqual(self $other): bool
+    {
+        return $this === $other;
+    }
 }
