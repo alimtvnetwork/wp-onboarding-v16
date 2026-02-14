@@ -128,6 +128,10 @@ All four answer "which one?" → they qualify as backed enums with the `Type` su
 2. `HookType`: `ajax_nopriv()` → `ajaxNopriv()`
 3. Update all callers
 
+### ✅ Golang Enum Migration (Feature G)
+
+All 8 typed string enums (`EndpointType`, `ActionType`, `StatusType`, `PostStatusType`, `UploadSourceType`, `HeaderType`, `ContentTypeValue`, `PluginStatusType`) migrated with `IsEqual()`, `String()`, and domain helpers. All callers updated. Plan archived to `completed/02-golang-enum-migration-plan.md`.
+
 ---
 
 ## Remaining Items from Previous Discussions
