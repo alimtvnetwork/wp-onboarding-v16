@@ -7,6 +7,9 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotScopeType;
 
 trait ManagerSettingsTrait {
 
@@ -25,9 +28,9 @@ trait ManagerSettingsTrait {
             'retention_count'    => SNAPSHOT_RETENTION_COUNT_DEFAULT,
             'compression'        => true,
             'batch_size'         => SNAPSHOT_BATCH_SIZE,
-            'provider'           => SNAPSHOT_PROVIDER_AUTO,
-            'scope'              => SNAPSHOT_SCOPE_WORDPRESS,
-            'frequency'          => SNAPSHOT_FREQ_MANUAL,
+            'provider'           => SnapshotProviderType::Auto->value,
+            'scope'              => SnapshotScopeType::WordPress->value,
+            'frequency'          => SnapshotFrequencyType::Manual->value,
             'schedule_time'      => '03:00',
             'pre_restore_backup' => true,
             'custom_tables'      => array(),

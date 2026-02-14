@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotStatusType;
 
 require_once dirname(__FILE__) . '/NativeSnapshotExecTrait.php';
 
@@ -58,7 +60,7 @@ trait NativeSnapshotCreateTrait {
 
     /** Resolve tables from options scope. */
     private function resolveSnapshotTables(array $options): array {
-        $scope = $options['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
+        $scope = $options['scope'] ?? SnapshotScopeType::WordPress->value;
         return $this->getTablesForScope($scope, $options['tables'] ?? array());
     }
 
@@ -68,7 +70,7 @@ trait NativeSnapshotCreateTrait {
         $filename = $this->generateSnapshotFilename($sequence);
         $filepath = RiseupPathUtils::join($this->getSnapshotsDir(), $filename . '.sqlite');
         $trigger = $options['trigger'] ?? 'api';
-        $scope = $options['scope'] ?? SNAPSHOT_SCOPE_WORDPRESS;
+        $scope = $options['scope'] ?? SnapshotScopeType::WordPress->value;
         return $this->createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger);
     }
 
@@ -91,7 +93,7 @@ trait NativeSnapshotCreateTrait {
 
         return array(
             'success' => true, 'snapshot_id' => $snapshot_id,
-            'filename' => $filename . '.sqlite', 'status' => SNAPSHOT_STATUS_SCHEDULED,
+            'filename' => $filename . '.sqlite', 'status' => SnapshotStatusType::Scheduled->value,
             'tables' => count($tables), 'scheduled_at' => date('c', time() + 5),
         );
     }

@@ -12,6 +12,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotScopeType;
+
 require_once __DIR__ . '/DetectorValidationTrait.php';
 
 trait DetectorSettingsTrait {
@@ -25,9 +29,9 @@ trait DetectorSettingsTrait {
      */
     public function getPreferredProvider() {
         $settings = get_option(OPTION_SNAPSHOT_SETTINGS, array());
-        $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : SNAPSHOT_PROVIDER_AUTO;
+        $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : SnapshotProviderType::Auto->value;
 
-        if ($preferred === SNAPSHOT_PROVIDER_AUTO) {
+        if ($preferred === SnapshotProviderType::Auto->value) {
             return $this->getBestAvailableProvider();
         }
 
@@ -49,7 +53,7 @@ trait DetectorSettingsTrait {
      */
     public function getBestAvailableProvider() {
         $providers = $this->detectAvailableProviders();
-        $priority = array(SNAPSHOT_PROVIDER_WP_RESET, SNAPSHOT_PROVIDER_UPDRAFT, SNAPSHOT_PROVIDER_NATIVE);
+        $priority = array(SnapshotProviderType::WpReset->value, SnapshotProviderType::Updraft->value, SnapshotProviderType::Native->value);
 
         foreach ($priority as $provider_id) {
             foreach ($providers as $provider) {
@@ -58,7 +62,7 @@ trait DetectorSettingsTrait {
                 }
             }
         }
-        return SNAPSHOT_PROVIDER_NATIVE;
+        return SnapshotProviderType::Native->value;
     }
 
     /**
@@ -106,13 +110,13 @@ trait DetectorSettingsTrait {
      */
     private function instantiateProvider(string $provider_id) {
         switch ($provider_id) {
-            case SNAPSHOT_PROVIDER_WP_RESET:
+            case SnapshotProviderType::WpReset->value:
                 require_once dirname(__FILE__) . '/../SnapshotProviderWpReset.php';
                 return new RiseupSnapshotProviderWPReset($this->logger, $this->db);
-            case SNAPSHOT_PROVIDER_UPDRAFT:
+            case SnapshotProviderType::Updraft->value:
                 require_once dirname(__FILE__) . '/../SnapshotProviderUpdraft.php';
                 return new RiseupSnapshotProviderUpdraft($this->logger, $this->db);
-            case SNAPSHOT_PROVIDER_NATIVE:
+            case SnapshotProviderType::Native->value:
             default:
                 require_once dirname(__FILE__) . '/../SnapshotProviderNative.php';
                 return new RiseupSnapshotProviderNative($this->logger, $this->db);
@@ -126,10 +130,10 @@ trait DetectorSettingsTrait {
      */
     public function getSettings() {
         $defaults = array(
-            'preferred_provider' => SNAPSHOT_PROVIDER_AUTO,
-            'schedule_enabled' => false, 'schedule_frequency' => SNAPSHOT_FREQ_DAILY,
+            'preferred_provider' => SnapshotProviderType::Auto->value,
+            'schedule_enabled' => false, 'schedule_frequency' => SnapshotFrequencyType::Daily->value,
             'schedule_time' => '03:00', 'schedule_day' => 1,
-            'default_scope' => SNAPSHOT_SCOPE_WORDPRESS, 'custom_tables' => array(),
+            'default_scope' => SnapshotScopeType::WordPress->value, 'custom_tables' => array(),
             'retention_type' => 'days', 'retention_days' => SNAPSHOT_RETENTION_DAYS_DEFAULT,
             'retention_count' => SNAPSHOT_RETENTION_COUNT_DEFAULT,
             'pre_restore_backup' => true, 'require_restore_confirm' => true,

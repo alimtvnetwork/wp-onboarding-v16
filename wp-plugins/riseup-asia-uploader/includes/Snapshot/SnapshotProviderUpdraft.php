@@ -16,6 +16,8 @@ if (!defined('ABSPATH')) {
 require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 require_once dirname(__FILE__) . '/Traits/UpdraftCrudTrait.php';
 
+use RiseupAsia\Enums\SnapshotProviderType;
+
 /**
  * UpdraftPlus Snapshot Provider.
  */
@@ -23,8 +25,8 @@ class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
 
     use UpdraftCrudTrait;
 
-    /** @var string */
-    protected $provider_id = SNAPSHOT_PROVIDER_UPDRAFT;
+    /** @var string Provider ID — literal used because ->value is not a constant expression. */
+    protected string $provider_id = 'updraft';
 
     /** @var string */
     protected $provider_name = 'UpdraftPlus';

@@ -13,6 +13,9 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 require_once __DIR__ . '/ImportExecutionFileTrait.php';
@@ -118,10 +121,10 @@ trait ImportExecutionTrait {
     private function buildSnapshotRecord(array $metadata, array $tables, array $incrementals, array $plugins, string $destDir, array $tableNames): array {
         return array(
             'sequence' => $this->manager->getNextSequence(), 'filename' => basename($destDir),
-            'filepath' => $destDir, 'provider' => SNAPSHOT_PROVIDER_NATIVE,
-            'scope' => SNAPSHOT_SCOPE_ALL, 'tables_json' => json_encode($tableNames),
+            'filepath' => $destDir, 'provider' => SnapshotProviderType::Native->value,
+            'scope' => SnapshotScopeType::All->value, 'tables_json' => json_encode($tableNames),
             'total_rows' => $metadata['total_rows'] ?? 0, 'file_size' => $this->getDirectorySize($destDir),
-            'trigger_source' => 'import', 'status' => SNAPSHOT_STATUS_COMPLETE,
+            'trigger_source' => 'import', 'status' => SnapshotStatusType::Complete->value,
             'created_at' => date('c'), 'completed_at' => date('c'),
             'import_source' => json_encode($this->buildImportSourceMeta($metadata, $tables, $incrementals, $plugins)),
         );

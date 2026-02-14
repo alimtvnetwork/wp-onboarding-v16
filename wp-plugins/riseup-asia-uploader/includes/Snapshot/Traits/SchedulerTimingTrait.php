@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\SnapshotFrequencyType;
+
 trait SchedulerTimingTrait {
 
     /**
@@ -28,9 +30,9 @@ trait SchedulerTimingTrait {
         $minute = intval($minute);
 
         switch ($frequency) {
-            case SNAPSHOT_FREQ_DAILY:   return $this->nextDailyRun($hour, $minute);
-            case SNAPSHOT_FREQ_WEEKLY:  return $this->nextWeeklyRun($hour, $minute, $day);
-            case SNAPSHOT_FREQ_MONTHLY: return $this->nextMonthlyRun($hour, $minute, $day);
+            case SnapshotFrequencyType::Daily->value:   return $this->nextDailyRun($hour, $minute);
+            case SnapshotFrequencyType::Weekly->value:  return $this->nextWeeklyRun($hour, $minute, $day);
+            case SnapshotFrequencyType::Monthly->value: return $this->nextMonthlyRun($hour, $minute, $day);
             default:                    return strtotime("tomorrow {$hour}:{$minute}:00");
         }
     }
@@ -115,9 +117,9 @@ trait SchedulerTimingTrait {
      */
     private function mapFrequencyToRecurrence($frequency) {
         switch ($frequency) {
-            case SNAPSHOT_FREQ_DAILY:   return 'daily';
-            case SNAPSHOT_FREQ_WEEKLY:  return SNAPSHOT_FREQ_WEEKLY;
-            case SNAPSHOT_FREQ_MONTHLY: return SNAPSHOT_FREQ_MONTHLY;
+            case SnapshotFrequencyType::Daily->value:   return 'daily';
+            case SnapshotFrequencyType::Weekly->value:  return SnapshotFrequencyType::Weekly->value;
+            case SnapshotFrequencyType::Monthly->value: return SnapshotFrequencyType::Monthly->value;
             default:                    return 'daily';
         }
     }
