@@ -174,27 +174,21 @@ if (!defined('ACTION_EXPORT_PLUGIN'))    { define('ACTION_EXPORT_PLUGIN',    Act
 // =============================================================================
 // STATUS VALUES
 // =============================================================================
+// STATUS VALUES — backward-compat aliases (canonical source: StatusType enum)
+// =============================================================================
+use RiseupAsia\Enums\StatusType;
 
-if (!defined('STATUS_SUCCESS')) {
-    define('STATUS_SUCCESS', 'success');
-}
-if (!defined('STATUS_FAILED')) {
-    define('STATUS_FAILED', 'failed');
-}
+if (!defined('STATUS_SUCCESS')) { define('STATUS_SUCCESS', StatusType::Success->value); }
+if (!defined('STATUS_FAILED'))  { define('STATUS_FAILED',  StatusType::Failed->value); }
 
 // =============================================================================
-// POST STATUS VALUES
+// POST STATUS VALUES — backward-compat aliases (canonical source: PostStatusType enum)
 // =============================================================================
+use RiseupAsia\Enums\PostStatusType;
 
-if (!defined('POST_STATUS_PUBLISH')) {
-    define('POST_STATUS_PUBLISH', 'publish');
-}
-if (!defined('POST_STATUS_DRAFT')) {
-    define('POST_STATUS_DRAFT', 'draft');
-}
-if (!defined('POST_STATUS_PENDING')) {
-    define('POST_STATUS_PENDING', 'pending');
-}
+if (!defined('POST_STATUS_PUBLISH')) { define('POST_STATUS_PUBLISH', PostStatusType::Publish->value); }
+if (!defined('POST_STATUS_DRAFT'))   { define('POST_STATUS_DRAFT',   PostStatusType::Draft->value); }
+if (!defined('POST_STATUS_PENDING')) { define('POST_STATUS_PENDING', PostStatusType::Pending->value); }
 
 // =============================================================================
 // RESPONSE MESSAGES

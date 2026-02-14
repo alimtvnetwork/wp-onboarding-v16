@@ -12,6 +12,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PostStatusType;
+
 require_once dirname(__FILE__) . '/Traits/PostCrudTrait.php';
 require_once dirname(__FILE__) . '/Traits/PostQueryTrait.php';
 require_once dirname(__FILE__) . '/Traits/CategoryTrait.php';
@@ -59,7 +61,7 @@ class RiseupPostManager {
      * @return string Valid status.
      */
     private function validatePostStatus($status) {
-        $valid_statuses = array(POST_STATUS_PUBLISH, POST_STATUS_DRAFT, POST_STATUS_PENDING);
-        return in_array($status, $valid_statuses, true) ? $status : POST_STATUS_DRAFT;
+        $validStatuses = PostStatusType::validValues();
+        return in_array($status, $validStatuses, true) ? $status : PostStatusType::Draft->value;
     }
 }
