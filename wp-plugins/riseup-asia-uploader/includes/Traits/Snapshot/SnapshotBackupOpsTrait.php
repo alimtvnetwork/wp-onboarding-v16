@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
 
 trait SnapshotBackupOpsTrait {
 
@@ -83,7 +84,7 @@ trait SnapshotBackupOpsTrait {
         }
 
         $this->logger->logPluginAction(ActionType::SnapshotCleanup->value, 'snapshot',
-            $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
+            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
             array('retention_removed' => $result['retention']['deleted'] ?? 0, 'orphans_removed' => $result['orphans']['removed'] ?? 0,
                 'stuck_marked' => $result['stuck']['cleaned'] ?? 0, 'duration' => $result['duration'] ?? 0),
             $result['success'] ? null : 'Cleanup encountered errors');

@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotJobStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait WorkerJobLifecycleTrait {
@@ -33,7 +34,7 @@ trait WorkerJobLifecycleTrait {
                 tables_exported INTEGER NOT NULL DEFAULT 0,
                 total_rows INTEGER NOT NULL DEFAULT 0,
                 errors_json TEXT DEFAULT '[]',
-                status TEXT NOT NULL DEFAULT '" . SNAPSHOT_JOB_STATUS_QUEUED . "',
+                status TEXT NOT NULL DEFAULT '" . SnapshotJobStatusType::Queued->value . "',
                 config_json TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
@@ -47,7 +48,7 @@ trait WorkerJobLifecycleTrait {
 
             $stmt->execute(array(
                 $snapshot_dir, json_encode($tables), $this->poolSize,
-                SNAPSHOT_JOB_STATUS_QUEUED, json_encode($config), $now, $now,
+                SnapshotJobStatusType::Queued->value, json_encode($config), $now, $now,
             ));
 
             return (int) $pdo->lastInsertId();
@@ -81,7 +82,7 @@ trait WorkerJobLifecycleTrait {
      */
     private function updateJobStatus($pdo, $job_id, $status, $error = null) {
         $now = gmdate('c');
-        $completed = ($status === SNAPSHOT_JOB_STATUS_COMPLETE || $status === SNAPSHOT_JOB_STATUS_FAILED) ? $now : null;
+        $completed = ($status === SnapshotJobStatusType::Complete->value || $status === SnapshotJobStatusType::Failed->value) ? $now : null;
 
         $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET status = ?, updated_at = ?, completed_at = COALESCE(?, completed_at) WHERE id = ?");
@@ -141,7 +142,7 @@ trait WorkerJobLifecycleTrait {
             }
         }
 
-        $this->updateJobStatus($pdo, $job_id, SNAPSHOT_JOB_STATUS_COMPLETE);
+        $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Complete->value);
 
         $errors = json_decode($job['errors_json'] ?? '[]', true);
         $this->log(LogLevelType::Info->value, 'Snapshot job complete', array(

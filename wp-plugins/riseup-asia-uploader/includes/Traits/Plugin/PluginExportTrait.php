@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
 
 trait PluginExportTrait
 {
@@ -32,7 +33,7 @@ trait PluginExportTrait
                 return $this->errorResponse('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
             }
 
-            $this->logger->logPluginAction(ActionType::ExportSelf->value, PLUGIN_SLUG, STATUS_SUCCESS, array(
+            $this->logger->logPluginAction(ActionType::ExportSelf->value, PLUGIN_SLUG, StatusType::Success->value, array(
                 'size' => strlen($zip_content),
             ));
 
@@ -117,7 +118,7 @@ trait PluginExportTrait
             return $this->errorResponse('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
         }
 
-        $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, STATUS_SUCCESS, array(
+        $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, StatusType::Success->value, array(
             'size' => strlen($zip_content),
         ));
 

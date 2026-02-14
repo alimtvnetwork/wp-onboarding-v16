@@ -31,8 +31,7 @@ class RiseupDatabase {
     use DatabaseMigrationsLateTrait;
     use DatabaseQueryTrait;
 
-    /** Transaction status constant — delegates to StatusType enum */
-    public const STATUS_SUCCESS = 'success';
+    /** Default and max limits for queries */
 
     /** Default and max limits for queries */
     public const DEFAULT_LIMIT = 50;

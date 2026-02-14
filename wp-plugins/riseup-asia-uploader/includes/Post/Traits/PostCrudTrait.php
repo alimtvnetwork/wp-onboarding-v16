@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PostStatusType;
+use RiseupAsia\Enums\StatusType;
 
 trait PostCrudTrait {
 
@@ -110,7 +111,7 @@ trait PostCrudTrait {
     private function handlePostError(string $action, int $postId, string $title, string $errorMsg, array $data = array()): array {
         $this->fileLogger->error('Post operation failed', array('error' => $errorMsg));
         $details = !empty($title) ? array('title' => $title) : $data;
-        $this->logger->log_post_action($action, $postId, STATUS_FAILED, $details, $errorMsg);
+        $this->logger->log_post_action($action, $postId, StatusType::Failed->value, $details, $errorMsg);
         return array('success' => false, 'error' => $errorMsg);
     }
 

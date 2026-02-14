@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
 
 trait SnapshotCrudRestoreTrait {
 
@@ -24,7 +25,7 @@ trait SnapshotCrudRestoreTrait {
             $this->fileLogger->info('Deleting snapshot', array('id' => $id));
 
             $this->logger->logPluginAction(
-                ActionType::SnapshotDelete->value, 'snapshot', STATUS_SUCCESS,
+                ActionType::SnapshotDelete->value, 'snapshot', StatusType::Success->value,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
@@ -33,7 +34,7 @@ trait SnapshotCrudRestoreTrait {
 
             $this->logger->logPluginAction(
                 ActionType::SnapshotDelete->value, 'snapshot',
-                $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
+                $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'complete'),
                 $result['success'] ? null : ($result['error'] ?? 'Delete failed')
             );
@@ -52,7 +53,7 @@ trait SnapshotCrudRestoreTrait {
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $options = $this->parseRestoreOptions($body);
 
-            $this->logger->logPluginAction(ActionType::SnapshotRestore->value, 'snapshot', STATUS_SUCCESS,
+            $this->logger->logPluginAction(ActionType::SnapshotRestore->value, 'snapshot', StatusType::Success->value,
                 array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated'));
             $this->fileLogger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 

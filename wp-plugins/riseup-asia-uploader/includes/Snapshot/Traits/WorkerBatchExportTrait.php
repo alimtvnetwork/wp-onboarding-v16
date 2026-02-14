@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotJobStatusType;
 
 trait WorkerBatchExportTrait {
 
@@ -96,7 +97,7 @@ trait WorkerBatchExportTrait {
             'success' => true, 'directory' => $prepared['dir_name'], 'path' => $prepared['snapshot_dir'],
             'job_id' => $jobId, 'total_tables' => count($seedOrder), 'pool_size' => $this->poolSize,
             'tables' => 0, 'total_rows' => 0, 'errors' => array(),
-            'duration' => $duration, 'status' => SNAPSHOT_JOB_STATUS_QUEUED,
+            'duration' => $duration, 'status' => SnapshotJobStatusType::Queued->value,
         );
     }
 
