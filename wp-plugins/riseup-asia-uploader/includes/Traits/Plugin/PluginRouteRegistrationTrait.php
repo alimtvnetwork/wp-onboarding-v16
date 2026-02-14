@@ -24,7 +24,7 @@ trait PluginRouteRegistrationTrait {
 
         $safeRegister(ENDPOINT_UPLOAD, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_upload'),
+            'callback'            => array($this, 'handleUpload'),
             'permission_callback' => $this->buildPermissionCallback('upload', $perm),
         ));
 
@@ -48,13 +48,13 @@ trait PluginRouteRegistrationTrait {
 
         $safeRegister(ENDPOINT_SYNC_MANIFEST, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_sync_manifest'),
+            'callback'            => array($this, 'handleSyncManifest'),
             'permission_callback' => $this->buildPermissionCallback('sync_manifest', $perm),
         ));
 
         $safeRegister(ENDPOINT_SYNC, array(
             'methods'             => HttpMethodType::Post->value,
-            'callback'            => array($this, 'handle_sync_push'),
+            'callback'            => array($this, 'handleSyncPush'),
             'permission_callback' => $this->buildPermissionCallback('sync_push', $perm),
         ));
 
@@ -98,7 +98,7 @@ trait PluginRouteRegistrationTrait {
             if (defined('ENDPOINT_MEDIA')) {
                 $safeRegister(ENDPOINT_MEDIA, array(
                     'methods'             => HttpMethodType::Post->value,
-                    'callback'            => array($this, 'handle_media_upload'),
+                    'callback'            => array($this, 'handleMediaUpload'),
                     'permission_callback' => $this->buildPermissionCallback('media', $perm),
                 ));
             }
@@ -119,8 +119,8 @@ trait PluginRouteRegistrationTrait {
             array('const' => 'ENDPOINT_AGENTS_ADD',     'method' => HttpMethodType::Post, 'handler' => 'handleAddAgent'),
             array('const' => 'ENDPOINT_AGENTS_REMOVE',  'method' => HttpMethodType::Post, 'handler' => 'handleRemoveAgent'),
             array('const' => 'ENDPOINT_AGENTS_TEST',    'method' => HttpMethodType::Post, 'handler' => 'handleTestAgent'),
-            array('const' => 'ENDPOINT_AGENTS_SYNC',    'method' => HttpMethodType::Post, 'handler' => 'handle_sync_to_agent'),
-            array('const' => 'ENDPOINT_AGENTS_PLUGINS', 'method' => HttpMethodType::Post, 'handler' => 'handle_agent_plugin_action'),
+            array('const' => 'ENDPOINT_AGENTS_SYNC',    'method' => HttpMethodType::Post, 'handler' => 'handleSyncAgent'),
+            array('const' => 'ENDPOINT_AGENTS_PLUGINS', 'method' => HttpMethodType::Post, 'handler' => 'handleAgentAction'),
         );
 
         foreach ($agent_routes as $route) {

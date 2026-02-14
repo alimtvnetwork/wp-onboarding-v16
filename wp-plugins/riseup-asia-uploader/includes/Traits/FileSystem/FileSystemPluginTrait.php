@@ -18,7 +18,7 @@ trait FileSystemPluginTrait {
      * @param string $slug Plugin slug.
      * @return string|null Plugin file or null.
      */
-    private function find_plugin_file($slug) {
+    private function findPluginFile($slug) {
         $this->ensurePluginFunctionsLoaded();
         $this->clearPluginCache();
 
@@ -28,10 +28,10 @@ trait FileSystemPluginTrait {
         }
 
         if (empty($all_plugins)) {
-            $this->file_logger->warn('find_plugin_file: get_plugins() returned empty — trying filesystem fallback', array(
+            $this->fileLogger->warn('findPluginFile: get_plugins() returned empty — trying filesystem fallback', array(
                 'requested_slug' => $slug,
             ));
-            return $this->find_plugin_file_from_filesystem($slug);
+            return $this->findPluginFileFromFilesystem($slug);
         }
 
         return $this->matchPluginBySlug($slug, $all_plugins);
@@ -44,7 +44,7 @@ trait FileSystemPluginTrait {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
         } catch (\Throwable $e) {
-            $this->file_logger->log_exception($e, 'find_plugin_file: Failed to load plugin.php');
+            $this->fileLogger->log_exception($e, 'findPluginFile: Failed to load plugin.php');
         }
     }
 
@@ -57,7 +57,7 @@ trait FileSystemPluginTrait {
                 wp_cache_delete('plugins', 'plugins');
             }
         } catch (\Throwable $e) {
-            $this->file_logger->warn('find_plugin_file: Failed to clear plugin cache', array(
+            $this->fileLogger->warn('findPluginFile: Failed to clear plugin cache', array(
                 'error' => $e->getMessage(),
             ));
         }
@@ -68,7 +68,7 @@ trait FileSystemPluginTrait {
         try {
             return get_plugins();
         } catch (\Throwable $e) {
-            $this->file_logger->log_exception($e, 'find_plugin_file: get_plugins() threw an exception');
+            $this->fileLogger->log_exception($e, 'findPluginFile: get_plugins() threw an exception');
             return null;
         }
     }
@@ -87,19 +87,19 @@ trait FileSystemPluginTrait {
             $available_slugs[] = $plugin_slug;
         }
 
-        $this->file_logger->warn('Plugin slug not found via get_plugins(), trying filesystem fallback', array(
+        $this->fileLogger->warn('Plugin slug not found via get_plugins(), trying filesystem fallback', array(
             'requested_slug'  => $slug,
             'available_slugs' => $available_slugs,
             'total_plugins'   => count($all_plugins),
         ));
 
-        return $this->find_plugin_file_from_filesystem($slug);
+        return $this->findPluginFileFromFilesystem($slug);
     }
 
     /**
      * Filesystem fallback to locate a plugin file.
      */
-    private function find_plugin_file_from_filesystem($slug) {
+    private function findPluginFileFromFilesystem($slug) {
         try {
             $dir_result = $this->findDirPlugin($slug);
             if ($dir_result !== null) {
@@ -108,7 +108,7 @@ trait FileSystemPluginTrait {
 
             return $this->findSingleFilePlugin($slug);
         } catch (\Throwable $e) {
-            $this->file_logger->log_exception($e, 'find_plugin_file_from_filesystem: Filesystem scan failed');
+            $this->fileLogger->log_exception($e, 'findPluginFileFromFilesystem: Filesystem scan failed');
         }
 
         return null;
@@ -124,7 +124,7 @@ trait FileSystemPluginTrait {
 
         $main_file = $plugin_dir . '/' . $slug . '.php';
         if (file_exists($main_file)) {
-            $this->file_logger->info('findDirPlugin: Found directory plugin', array(
+            $this->fileLogger->info('findDirPlugin: Found directory plugin', array(
                 'plugin_file' => $slug . '/' . $slug . '.php',
             ));
             return $slug . '/' . $slug . '.php';
@@ -144,7 +144,7 @@ trait FileSystemPluginTrait {
             $header = @file_get_contents($file, false, null, 0, 8192);
             if ($header !== false && stripos($header, 'Plugin Name:') !== false) {
                 $relative = $slug . '/' . basename($file);
-                $this->file_logger->info('scanDirForPluginHeader: Found plugin via header scan', array(
+                $this->fileLogger->info('scanDirForPluginHeader: Found plugin via header scan', array(
                     'plugin_file' => $relative,
                 ));
                 return $relative;
@@ -158,13 +158,13 @@ trait FileSystemPluginTrait {
     private function findSingleFilePlugin(string $slug) {
         $single_file = WP_PLUGIN_DIR . '/' . $slug . '.php';
         if (file_exists($single_file)) {
-            $this->file_logger->info('findSingleFilePlugin: Found single-file plugin', array(
+            $this->fileLogger->info('findSingleFilePlugin: Found single-file plugin', array(
                 'plugin_file' => $slug . '.php',
             ));
             return $slug . '.php';
         }
 
-        $this->file_logger->warn('findSingleFilePlugin: Plugin not found on filesystem', array(
+        $this->fileLogger->warn('findSingleFilePlugin: Plugin not found on filesystem', array(
             'requested_slug' => $slug,
         ));
 

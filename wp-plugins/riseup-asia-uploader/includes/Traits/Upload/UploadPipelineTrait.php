@@ -19,27 +19,27 @@ trait UploadPipelineTrait
     use UploadParserTrait;
 
     /** Handle plugin upload (multipart or base64 ZIP). */
-    public function handle_upload($request) {
-        $this->file_logger->info('Upload endpoint called');
+    public function handleUpload($request) {
+        $this->fileLogger->info('Upload endpoint called');
 
         try {
             return $this->executeUploadPipeline($request);
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, 'Upload error');
-            return $this->error_response('Upload failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            $this->fileLogger->log_exception($e, 'Upload error');
+            return $this->errorResponse('Upload failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
     /** Execute the full upload pipeline: parse, validate, extract, activate, respond. */
     private function executeUploadPipeline($request) {
-        $input = $this->parse_upload_input($request);
+        $input = $this->parseUploadInput($request);
         if ($input instanceof WP_REST_Response) {
             return $input;
         }
 
         $this->logUploadInitiated($input);
 
-        $zip_result = $this->validate_and_write_zip($input['zip_content'], $input['slug']);
+        $zip_result = $this->validateAndWriteZip($input['zip_content'], $input['slug']);
         if ($zip_result instanceof WP_REST_Response) {
             return $zip_result;
         }
@@ -58,7 +58,7 @@ trait UploadPipelineTrait
             return;
         }
 
-        $this->logger->log_upload_initiated($input['slug'], array(
+        $this->logger->logUploadInitiated($input['slug'], array(
             'activate'       => $input['activate'],
             'upload_source'  => $input['upload_source'],
             'client_version' => $input['client_plugin_version'],
@@ -78,7 +78,7 @@ trait UploadPipelineTrait
     /** Log the upload result to the activity logger. */
     private function logUploadResult(array $result, array $input) {
         if (!$result['is_self_update']) {
-            $this->logger->log_upload($result['slug'], array(
+            $this->logger->logUpload($result['slug'], array(
                 'is_update' => $result['is_update'], 'activated' => $result['activated'],
                 'file_size' => strlen($input['zip_content']), 'plugin_version' => $result['plugin_version'],
             ), array(
@@ -86,7 +86,7 @@ trait UploadPipelineTrait
             ));
         }
 
-        $this->file_logger->info('Upload complete', array(
+        $this->fileLogger->info('Upload complete', array(
             'slug' => $result['slug'], 'is_update' => $result['is_update'],
             'activated' => $result['activated'], 'plugin_version' => $result['plugin_version'],
             'upload_source' => $input['upload_source'],

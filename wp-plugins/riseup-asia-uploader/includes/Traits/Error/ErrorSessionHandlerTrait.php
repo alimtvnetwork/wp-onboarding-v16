@@ -8,13 +8,13 @@
 trait ErrorSessionHandlerTrait {
 
     /** Handle error-sessions endpoint. */
-    public function handle_error_sessions($request) {
-        return $this->safe_execute(function() use ($request) {
-            $this->file_logger->info('Error sessions endpoint called');
+    public function handleErrorSessions($request) {
+        return $this->safeExecute(function() use ($request) {
+            $this->fileLogger->info('Error sessions endpoint called');
 
             $pdo = RiseupDatabase::get_instance()->get_pdo();
             if (!$pdo) {
-                return $this->error_response('Database not available (PDO/pdo_sqlite extension may not be installed)', HTTP_SERVER_ERROR);
+                return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HTTP_SERVER_ERROR);
             }
             if (!$this->isTableExists($pdo, 'error_sessions')) {
                 return RiseupEnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
@@ -85,7 +85,7 @@ trait ErrorSessionHandlerTrait {
                 'context' => $this->parseContextJson($row['context_json'] ?? ''), 'created_at' => $row['created_at'],
             );
             if (!empty($row['stack_trace'])) {
-                $entry['stackTraceFrames'] = $this->parse_stack_trace_string($row['stack_trace']);
+                $entry['stackTraceFrames'] = $this->parseStackTraceString($row['stack_trace']);
             }
             $entries[] = $entry;
         }
@@ -100,7 +100,7 @@ trait ErrorSessionHandlerTrait {
     }
 
     /** Count errors with id > last_seen_id. */
-    private function count_unseen_errors($pdo, $last_seen_id) {
+    private function countUnseenErrors($pdo, $last_seen_id) {
         try {
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
             $stmt->execute(array($last_seen_id));
@@ -111,7 +111,7 @@ trait ErrorSessionHandlerTrait {
     }
 
     /** Parse a PHP stack trace string into structured frames. */
-    private function parse_stack_trace_string($trace_string) {
+    private function parseStackTraceString($trace_string) {
         $frames = array();
         foreach (explode("\n", $trace_string) as $line) {
             $frame = $this->parseTraceFrame(trim($line));

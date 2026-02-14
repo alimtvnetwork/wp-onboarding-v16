@@ -15,8 +15,8 @@ trait StatusOpsTrait {
     /**
      * Handle OpenAPI specification request.
      */
-    public function handle_openapi($request) {
-        $this->file_logger->info('OpenAPI endpoint called');
+    public function handleOpenapi($request) {
+        $this->fileLogger->info('OpenAPI endpoint called');
 
         $spec = $this->loadOpenApiSpec();
         if ($spec instanceof WP_REST_Response) {
@@ -43,7 +43,7 @@ trait StatusOpsTrait {
 
     /** Build an error response for missing spec file. */
     private function buildSpecError(string $message, string $path): WP_REST_Response {
-        $this->file_logger->error($message, array('path' => $path));
+        $this->fileLogger->error($message, array('path' => $path));
 
         return new WP_REST_Response(array('success' => false, 'error' => $message), HTTP_NOT_FOUND);
     }
@@ -52,13 +52,13 @@ trait StatusOpsTrait {
     private function parseSpecFile(string $spec_file) {
         $spec_content = file_get_contents($spec_file);
         if ($spec_content === false) {
-            $this->file_logger->error('Failed to read OpenAPI spec file');
+            $this->fileLogger->error('Failed to read OpenAPI spec file');
             return new WP_REST_Response(array('success' => false, 'error' => 'Failed to read OpenAPI specification'), HTTP_SERVER_ERROR);
         }
 
         $spec = json_decode($spec_content, true);
         if ($spec === null) {
-            $this->file_logger->error('Invalid JSON in OpenAPI spec file');
+            $this->fileLogger->error('Invalid JSON in OpenAPI spec file');
             return new WP_REST_Response(array('success' => false, 'error' => 'Invalid OpenAPI specification format'), HTTP_SERVER_ERROR);
         }
 
@@ -68,8 +68,8 @@ trait StatusOpsTrait {
     /**
      * Handle OPcache reset request.
      */
-    public function handle_opcache_reset($request) {
-        $this->file_logger->info('OPcache reset endpoint called');
+    public function handleOpcacheReset($request) {
+        $this->fileLogger->info('OPcache reset endpoint called');
 
         $result = $this->buildOpcacheResult();
         $result['files_invalidated'] = $this->invalidatePluginFiles();
@@ -93,7 +93,7 @@ trait StatusOpsTrait {
 
         if (function_exists('opcache_reset')) {
             $result['opcache_reset'] = opcache_reset();
-            $this->file_logger->info('OPcache reset executed', array('result' => $result['opcache_reset']));
+            $this->fileLogger->info('OPcache reset executed', array('result' => $result['opcache_reset']));
         }
 
         return $result;

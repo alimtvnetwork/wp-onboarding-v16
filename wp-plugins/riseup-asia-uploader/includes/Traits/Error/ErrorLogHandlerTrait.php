@@ -8,20 +8,20 @@
 trait ErrorLogHandlerTrait {
 
     /** Handle error-logs endpoint. */
-    public function handle_error_logs($request) {
-        return $this->safe_execute(function() use ($request) {
-            $this->file_logger->info('Error logs endpoint called');
+    public function handleErrorLogs($request) {
+        return $this->safeExecute(function() use ($request) {
+            $this->fileLogger->info('Error logs endpoint called');
             $settings = $this->resolveLogSettings($request);
             $result = array('version' => PLUGIN_VERSION, 'settings' => $settings);
 
             if ($settings['include_error_log']) {
-                $result['error_log'] = $this->readLogTail($this->file_logger->getErrorFile(), $settings['max_lines']);
+                $result['error_log'] = $this->readLogTail($this->fileLogger->getErrorFile(), $settings['max_lines']);
             }
             if ($settings['include_full_log']) {
-                $result['full_log'] = $this->readLogTail($this->file_logger->getLogFile(), $settings['max_lines']);
+                $result['full_log'] = $this->readLogTail($this->fileLogger->getLogFile(), $settings['max_lines']);
             }
             if ($settings['include_stacktrace']) {
-                $result['stacktrace_log'] = $this->readLogTail($this->file_logger->getStacktraceFile(), $settings['max_lines']);
+                $result['stacktrace_log'] = $this->readLogTail($this->fileLogger->getStacktraceFile(), $settings['max_lines']);
             }
 
             return RiseupEnvelopeBuilder::success()->autoDetectRequestedAt()->setSingleResult($result)->toResponse();
