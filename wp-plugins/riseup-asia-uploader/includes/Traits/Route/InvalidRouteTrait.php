@@ -12,35 +12,21 @@ if (!defined('ABSPATH')) {
 
 trait InvalidRouteTrait
 {
-    /**
-     * Handle requests to invalid/unrecognized routes within our namespace.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Structured 404 error response.
-     */
-    public function handle_invalid_route($request) {
-        $invalid_path = $request->get_param('invalid_path');
+    public function handleInvalidRoute(WP_REST_Request $request): WP_REST_Response {
+        $invalidPath = $request->get_param('invalid_path');
         $method = $request->get_method();
 
-        $this->file_logger->warn('Invalid route requested', array('path' => $invalid_path, 'method' => $method));
+        $this->fileLogger->warn('Invalid route requested', array('path' => $invalidPath, 'method' => $method));
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
-        $trace = $this->buildInvalidRouteTrace($method, $invalid_path, $backtrace);
+        $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
 
-        return RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalid_path}", HTTP_NOT_FOUND)
+        return RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HTTP_NOT_FOUND)
             ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
             ->setErrors($trace)
             ->toResponse();
     }
 
-    /**
-     * Build structured trace data for invalid route diagnostics.
-     *
-     * @param string $method    HTTP method.
-     * @param string $path      Requested path.
-     * @param array  $backtrace Debug backtrace.
-     * @return array Structured error trace.
-     */
     private function buildInvalidRouteTrace(string $method, string $path, array $backtrace): array {
         $frames = function_exists('riseup_backtrace_to_frames') ? riseup_backtrace_to_frames($backtrace) : array();
 
@@ -52,12 +38,6 @@ trait InvalidRouteTrait
         );
     }
 
-    /**
-     * Format backtrace into human-readable trace lines.
-     *
-     * @param array $backtrace Debug backtrace.
-     * @return array Formatted trace lines.
-     */
     private function formatBacktraceLines(array $backtrace): array {
         $lines = array();
         foreach ($backtrace as $i => $frame) {
@@ -70,12 +50,6 @@ trait InvalidRouteTrait
         return $lines;
     }
 
-    /**
-     * Format structured frames into summary strings.
-     *
-     * @param array $frames Structured frame objects.
-     * @return array Summary strings.
-     */
     private function formatFramesSummary(array $frames): array {
         return array_map(function($f) {
             $file = isset($f['fileBase']) ? $f['fileBase'] : '';
@@ -86,15 +60,7 @@ trait InvalidRouteTrait
         }, $frames);
     }
 
-    /**
-     * Enrich error responses from our namespace with plugin metadata.
-     *
-     * @param WP_REST_Response $response Response object.
-     * @param WP_REST_Server   $server   REST server.
-     * @param WP_REST_Request  $request  Request object.
-     * @return WP_REST_Response Modified response.
-     */
-    public function enrich_error_response($response, $server, $request) {
+    public function enrichErrorResponse(WP_REST_Response $response, WP_REST_Server $server, WP_REST_Request $request): WP_REST_Response {
         $route = $request->get_route();
         if (strpos($route, '/' . API_FULL_NAMESPACE) === false) {
             return $response;
@@ -117,12 +83,6 @@ trait InvalidRouteTrait
         return $response;
     }
 
-    /**
-     * Inject plugin metadata into error response data.
-     *
-     * @param array $data Response data.
-     * @return array Modified data with metadata.
-     */
     private function injectErrorMetadata(array $data): array {
         if (!isset($data['plugin_version'])) {
             $data['plugin_version'] = PLUGIN_VERSION;
@@ -137,15 +97,8 @@ trait InvalidRouteTrait
         return $data;
     }
 
-    /**
-     * Log a REST API error for audit trail.
-     *
-     * @param string $route  Request route.
-     * @param int    $status HTTP status code.
-     * @param array  $data   Response data.
-     */
-    private function logRestApiError(string $route, int $status, array $data) {
-        $this->file_logger->error('REST API error response', array(
+    private function logRestApiError(string $route, int $status, array $data): void {
+        $this->fileLogger->error('REST API error response', array(
             'route'          => $route,
             'status'         => $status,
             'message'        => isset($data['message']) ? $data['message'] : (isset($data['Status']['Message']) ? $data['Status']['Message'] : 'Unknown'),

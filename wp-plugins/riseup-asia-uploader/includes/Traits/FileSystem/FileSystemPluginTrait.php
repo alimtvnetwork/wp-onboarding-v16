@@ -12,44 +12,36 @@ if (!defined('ABSPATH')) {
 
 trait FileSystemPluginTrait {
 
-    /**
-     * Find plugin file by slug.
-     *
-     * @param string $slug Plugin slug.
-     * @return string|null Plugin file or null.
-     */
-    private function findPluginFile($slug) {
+    private function findPluginFile(string $slug): ?string {
         $this->ensurePluginFunctionsLoaded();
         $this->clearPluginCache();
 
-        $all_plugins = $this->safeGetPlugins();
-        if ($all_plugins === null) {
+        $allPlugins = $this->safeGetPlugins();
+        if ($allPlugins === null) {
             return null;
         }
 
-        if (empty($all_plugins)) {
+        if (empty($allPlugins)) {
             $this->fileLogger->warn('findPluginFile: get_plugins() returned empty — trying filesystem fallback', array(
                 'requested_slug' => $slug,
             ));
             return $this->findPluginFileFromFilesystem($slug);
         }
 
-        return $this->matchPluginBySlug($slug, $all_plugins);
+        return $this->matchPluginBySlug($slug, $allPlugins);
     }
 
-    /** Ensure wp-admin/includes/plugin.php is loaded. */
-    private function ensurePluginFunctionsLoaded() {
+    private function ensurePluginFunctionsLoaded(): void {
         try {
             if (RiseupBooleanHelpers::is_func_missing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
         } catch (Throwable $e) {
-            $this->fileLogger->log_exception($e, 'findPluginFile: Failed to load plugin.php');
+            $this->fileLogger->logException($e, 'findPluginFile: Failed to load plugin.php');
         }
     }
 
-    /** Clear the WordPress plugin cache. */
-    private function clearPluginCache() {
+    private function clearPluginCache(): void {
         try {
             if (function_exists('wp_clean_plugins_cache')) {
                 wp_clean_plugins_cache(true);
@@ -63,84 +55,77 @@ trait FileSystemPluginTrait {
         }
     }
 
-    /** Safely call get_plugins(), returning null on failure. */
-    private function safeGetPlugins() {
+    private function safeGetPlugins(): ?array {
         try {
             return get_plugins();
         } catch (Throwable $e) {
-            $this->fileLogger->log_exception($e, 'findPluginFile: get_plugins() threw an exception');
+            $this->fileLogger->logException($e, 'findPluginFile: get_plugins() threw an exception');
             return null;
         }
     }
 
-    /** Match a slug against the plugins array, falling back to filesystem. */
-    private function matchPluginBySlug(string $slug, array $all_plugins) {
-        $available_slugs = array();
-        foreach ($all_plugins as $plugin_file => $plugin_data) {
-            $plugin_slug = dirname($plugin_file);
-            if ($plugin_slug === '.') {
-                $plugin_slug = basename($plugin_file, '.php');
+    private function matchPluginBySlug(string $slug, array $allPlugins): ?string {
+        $availableSlugs = array();
+        foreach ($allPlugins as $pluginFile => $pluginData) {
+            $pluginSlug = dirname($pluginFile);
+            if ($pluginSlug === '.') {
+                $pluginSlug = basename($pluginFile, '.php');
             }
-            if ($plugin_slug === $slug) {
-                return $plugin_file;
+            if ($pluginSlug === $slug) {
+                return $pluginFile;
             }
-            $available_slugs[] = $plugin_slug;
+            $availableSlugs[] = $pluginSlug;
         }
 
         $this->fileLogger->warn('Plugin slug not found via get_plugins(), trying filesystem fallback', array(
             'requested_slug'  => $slug,
-            'available_slugs' => $available_slugs,
-            'total_plugins'   => count($all_plugins),
+            'available_slugs' => $availableSlugs,
+            'total_plugins'   => count($allPlugins),
         ));
 
         return $this->findPluginFileFromFilesystem($slug);
     }
 
-    /**
-     * Filesystem fallback to locate a plugin file.
-     */
-    private function findPluginFileFromFilesystem($slug) {
+    private function findPluginFileFromFilesystem(string $slug): ?string {
         try {
-            $dir_result = $this->findDirPlugin($slug);
-            if ($dir_result !== null) {
-                return $dir_result;
+            $dirResult = $this->findDirPlugin($slug);
+            if ($dirResult !== null) {
+                return $dirResult;
             }
 
             return $this->findSingleFilePlugin($slug);
         } catch (Throwable $e) {
-            $this->fileLogger->log_exception($e, 'findPluginFileFromFilesystem: Filesystem scan failed');
+            $this->fileLogger->logException($e, 'findPluginFileFromFilesystem: Filesystem scan failed');
         }
 
         return null;
     }
 
-    /** Look for a plugin inside a directory. */
-    private function findDirPlugin(string $slug) {
-        $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
+    private function findDirPlugin(string $slug): ?string {
+        $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (RiseupBooleanHelpers::is_dir_missing($plugin_dir)) {
+        if (RiseupBooleanHelpers::is_dir_missing($pluginDir)) {
             return null;
         }
 
-        $main_file = $plugin_dir . '/' . $slug . '.php';
-        if (file_exists($main_file)) {
+        $mainFile = $pluginDir . '/' . $slug . '.php';
+        if (file_exists($mainFile)) {
             $this->fileLogger->info('findDirPlugin: Found directory plugin', array(
                 'plugin_file' => $slug . '/' . $slug . '.php',
             ));
             return $slug . '/' . $slug . '.php';
         }
 
-        return $this->scanDirForPluginHeader($slug, $plugin_dir);
+        return $this->scanDirForPluginHeader($slug, $pluginDir);
     }
 
-    /** Scan PHP files in a directory for a Plugin Name header. */
-    private function scanDirForPluginHeader(string $slug, string $plugin_dir) {
-        $php_files = glob($plugin_dir . '/*.php');
-        if (!$php_files) {
+    private function scanDirForPluginHeader(string $slug, string $pluginDir): ?string {
+        $phpFiles = glob($pluginDir . '/*.php');
+        if (!$phpFiles) {
             return null;
         }
 
-        foreach ($php_files as $file) {
+        foreach ($phpFiles as $file) {
             $header = @file_get_contents($file, false, null, 0, 8192);
             if ($header !== false && stripos($header, 'Plugin Name:') !== false) {
                 $relative = $slug . '/' . basename($file);
@@ -154,10 +139,9 @@ trait FileSystemPluginTrait {
         return null;
     }
 
-    /** Check for a single-file plugin (slug.php in plugins root). */
-    private function findSingleFilePlugin(string $slug) {
-        $single_file = WP_PLUGIN_DIR . '/' . $slug . '.php';
-        if (file_exists($single_file)) {
+    private function findSingleFilePlugin(string $slug): ?string {
+        $singleFile = WP_PLUGIN_DIR . '/' . $slug . '.php';
+        if (file_exists($singleFile)) {
             $this->fileLogger->info('findSingleFilePlugin: Found single-file plugin', array(
                 'plugin_file' => $slug . '.php',
             ));

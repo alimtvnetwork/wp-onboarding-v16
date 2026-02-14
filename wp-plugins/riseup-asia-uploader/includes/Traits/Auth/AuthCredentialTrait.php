@@ -12,11 +12,10 @@ if (!defined('ABSPATH')) {
 
 trait AuthCredentialTrait
 {
-    /** Resolve the Authorization header from the request. */
-    private function resolve_auth_header($request) {
-        $auth_header = $request->get_header('Authorization');
-        if (!empty($auth_header)) {
-            return $auth_header;
+    private function resolveAuthHeader(WP_REST_Request $request): ?string {
+        $authHeader = $request->get_header('Authorization');
+        if (!empty($authHeader)) {
+            return $authHeader;
         }
         if (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
             return $_SERVER['HTTP_AUTHORIZATION'];
@@ -28,8 +27,7 @@ trait AuthCredentialTrait
         return $this->resolveFromGetallheaders();
     }
 
-    /** Attempt to resolve Authorization from getallheaders(). */
-    private function resolveFromGetallheaders() {
+    private function resolveFromGetallheaders(): ?string {
         if (RiseupBooleanHelpers::is_func_missing('getallheaders')) {
             return null;
         }
@@ -41,14 +39,13 @@ trait AuthCredentialTrait
         return null;
     }
 
-    /** Parse Basic auth header and authenticate the user. */
-    private function authenticate_user($auth_header) {
-        $formatError = $this->validateAuthFormat($auth_header);
+    private function authenticateUser(string $authHeader): WP_User|\WP_Error {
+        $formatError = $this->validateAuthFormat($authHeader);
         if ($formatError) {
             return $formatError;
         }
 
-        $credentials = base64_decode(substr($auth_header, 6));
+        $credentials = base64_decode(substr($authHeader, 6));
         $isInvalidFormat = (!$credentials || strpos($credentials, ':') === false);
         if ($isInvalidFormat) {
             return $this->buildAuthError('Invalid credentials format');
@@ -65,29 +62,26 @@ trait AuthCredentialTrait
         return $user;
     }
 
-    /** Validate the Basic auth header format prefix. */
-    private function validateAuthFormat(string $auth_header) {
-        if (strpos($auth_header, 'Basic ') === 0) {
+    private function validateAuthFormat(string $authHeader): ?\WP_Error {
+        if (strpos($authHeader, 'Basic ') === 0) {
             return null;
         }
 
         return $this->buildAuthError('Invalid Authorization header format');
     }
 
-    /** Build a WP_Error for auth failure with logging. */
-    private function buildAuthError(string $reason, array $context = array()) {
-        $this->file_logger->warn($reason, $context);
-        $this->logger->log_auth_failure($reason, $context);
+    private function buildAuthError(string $reason, array $context = array()): \WP_Error {
+        $this->fileLogger->warn($reason, $context);
+        $this->logger->logAuthFailure($reason, $context);
 
         return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
     }
 
-    /** Build a WP_Error for missing Authorization header. */
-    private function build_missing_auth_error($request) {
-        $this->file_logger->warn('Missing Authorization header', array(
+    private function buildMissingAuthError(WP_REST_Request $request): \WP_Error {
+        $this->fileLogger->warn('Missing Authorization header', array(
             'reason' => 'Missing Authorization header', 'method' => $request->get_method(), 'endpoint' => $request->get_route(),
         ));
-        $this->logger->log_auth_failure('Missing Authorization header');
+        $this->logger->logAuthFailure('Missing Authorization header');
 
         return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array(
             'status' => HTTP_UNAUTHORIZED,
@@ -95,18 +89,15 @@ trait AuthCredentialTrait
         ));
     }
 
-    /** Verify authentication only (no capability check). */
-    private function checkAuthenticatedOnly($request) {
+    private function checkAuthenticatedOnly(WP_REST_Request $request): true|\WP_Error {
         try {
             return $this->resolveAndAuthenticate($request);
         } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Authentication error');
-            return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
+            return ErrorResponse::logAndReturnWpError($this->fileLogger, $e, 'Authentication error');
         }
     }
 
-    /** Verify authentication and capability. */
-    private function checkAuthenticatedCapability($request, $capability) {
+    private function checkAuthenticatedCapability(WP_REST_Request $request, string $capability): true|\WP_Error {
         try {
             $authResult = $this->resolveAndAuthenticate($request);
             if (is_wp_error($authResult) || $authResult === true) {
@@ -115,36 +106,28 @@ trait AuthCredentialTrait
 
             return $this->verifyCapability($authResult, $capability);
         } catch (Throwable $e) {
-            $this->fileLogger->logException($e, 'Authentication error');
-            return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
+            return ErrorResponse::logAndReturnWpError($this->fileLogger, $e, 'Authentication error');
         }
     }
 
-    /** Resolve auth header and authenticate, returning user or error. */
-    private function resolveAndAuthenticate($request) {
-        $auth_header = $this->resolve_auth_header($request);
-        if (empty($auth_header)) {
-            return $this->build_missing_auth_error($request);
+    private function resolveAndAuthenticate(WP_REST_Request $request): WP_User|\WP_Error {
+        $authHeader = $this->resolveAuthHeader($request);
+        if (empty($authHeader)) {
+            return $this->buildMissingAuthError($request);
         }
 
-        $user = $this->authenticate_user($auth_header);
-        if (is_wp_error($user)) {
-            return $user;
-        }
-
-        return $user;
+        return $this->authenticateUser($authHeader);
     }
 
-    /** Verify the current user has the required capability. */
-    private function verifyCapability($user, string $capability) {
+    private function verifyCapability(WP_User $user, string $capability): true|\WP_Error {
         if (current_user_can($capability)) {
             return true;
         }
 
-        $this->file_logger->warn('Insufficient permissions', array(
+        $this->fileLogger->warn('Insufficient permissions', array(
             'username' => $user->user_login, 'required_cap' => $capability,
         ));
-        $this->logger->log_auth_failure('Insufficient permissions', array(
+        $this->logger->logAuthFailure('Insufficient permissions', array(
             'username' => $user->user_login, 'required_cap' => $capability,
         ));
 
