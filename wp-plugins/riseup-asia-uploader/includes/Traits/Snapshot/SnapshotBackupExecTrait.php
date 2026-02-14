@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
 
 trait SnapshotBackupExecTrait {
 
@@ -45,7 +46,7 @@ trait SnapshotBackupExecTrait {
 
     /** Log a backup initiation event. */
     private function logBackupInitiated(string $action, array $body) {
-        $this->logger->logPluginAction($action, 'snapshot', STATUS_SUCCESS,
+        $this->logger->logPluginAction($action, 'snapshot', StatusType::Success->value,
             array('title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? null, 'phase' => 'initiated'));
     }
 
@@ -68,7 +69,7 @@ trait SnapshotBackupExecTrait {
     /** Log full backup completion. */
     private function logBackupComplete(string $action, array $result) {
         $this->logger->logPluginAction($action, 'snapshot',
-            $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
+            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
             array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables' => $result['tables'] ?? 0,
                 'total_rows' => $result['total_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),
             $result['success'] ? null : ($result['error'] ?? 'Backup failed'));
@@ -112,7 +113,7 @@ trait SnapshotBackupExecTrait {
     /** Log incremental backup completion. */
     private function logIncrementalComplete(array $result) {
         $this->logger->logPluginAction(ActionType::SnapshotIncremental->value, 'snapshot',
-            $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
+            $result['success'] ? StatusType::Success->value : StatusType::Failed->value,
             array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables_changed' => $result['tables_changed'] ?? 0,
                 'total_new_rows' => $result['total_new_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),
             $result['success'] ? null : ($result['error'] ?? 'Incremental backup failed'));

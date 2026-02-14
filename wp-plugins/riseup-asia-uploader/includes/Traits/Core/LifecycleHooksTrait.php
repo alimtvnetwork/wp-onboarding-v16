@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\TriggerSourceType;
 
 trait LifecycleHooksTrait
 {
@@ -85,7 +87,7 @@ trait LifecycleHooksTrait
                 'hook_source'  => $hookSource,
             ));
 
-            $this->logger->logPluginAction($action, $slug, STATUS_SUCCESS, $details);
+            $this->logger->logPluginAction($action, $slug, StatusType::Success->value, $details);
         } catch (Throwable $e) {
             $this->fileLogger->error('Failed to log plugin lifecycle: ' . $e->getMessage());
         }
@@ -96,20 +98,20 @@ trait LifecycleHooksTrait
      *
      * @return string One of the TRIGGERED_BY_* constants.
      */
-    private function detectTriggerSource() {
+    private function detectTriggerSource(): string {
         if (defined('WP_CLI') && WP_CLI) {
-            return TRIGGERED_BY_CLI;
+            return TriggerSourceType::Cli->value;
         }
 
         if (defined('DOING_CRON') && DOING_CRON) {
-            return TRIGGERED_BY_CRON;
+            return TriggerSourceType::Cron->value;
         }
 
         if ($this->isRestRequest()) {
-            return TRIGGERED_BY_API;
+            return TriggerSourceType::Api->value;
         }
 
-        return TRIGGERED_BY_DASHBOARD;
+        return TriggerSourceType::Dashboard->value;
     }
 
     /**

@@ -14,6 +14,9 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\TriggerSourceType;
 
 trait CleanerUtilsTrait {
 
@@ -25,7 +28,7 @@ trait CleanerUtilsTrait {
      */
     private function loadSettings($overrides) {
         $defaults = array(
-            'retention_type'  => defined('RETENTION_TYPE_DAYS') ? RETENTION_TYPE_DAYS : 'days',
+            'retention_type'  => RetentionType::Days->value,
             'retention_days'  => defined('SNAPSHOT_RETENTION_DAYS_DEFAULT') ? SNAPSHOT_RETENTION_DAYS_DEFAULT : 30,
             'retention_count' => defined('SNAPSHOT_RETENTION_COUNT_DEFAULT') ? SNAPSHOT_RETENTION_COUNT_DEFAULT : 10,
         );
@@ -110,8 +113,8 @@ trait CleanerUtilsTrait {
                     'errors'            => count($results['errors']),
                     'duration'          => $results['duration'],
                 )),
-                empty($results['errors']) ? STATUS_SUCCESS : STATUS_FAILED,
-                TRIGGERED_BY_API
+                empty($results['errors']) ? StatusType::Success->value : StatusType::Failed->value,
+                TriggerSourceType::Api->value
             );
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to log cleanup action', array('error' => $e->getMessage()));

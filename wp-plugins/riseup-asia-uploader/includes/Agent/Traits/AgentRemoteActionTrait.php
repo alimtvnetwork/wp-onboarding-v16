@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
 
 trait AgentRemoteActionTrait {
 
@@ -85,7 +86,7 @@ trait AgentRemoteActionTrait {
             'status'     => 'error',
             'last_error' => $error->get_error_message(),
         ));
-        $this->logAction($agentId, ActionType::AgentTest->value, null, STATUS_FAILED, null, $error->get_error_message());
+        $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Failed->value, null, $error->get_error_message());
 
         return array('success' => false, 'message' => $error->get_error_message());
     }
@@ -96,7 +97,7 @@ trait AgentRemoteActionTrait {
             'last_sync'  => gmdate('Y-m-d\TH:i:s\Z'),
             'last_error' => null,
         ));
-        $this->logAction($agentId, ActionType::AgentTest->value, null, STATUS_SUCCESS);
+        $this->logAction($agentId, ActionType::AgentTest->value, null, StatusType::Success->value);
 
         return array('success' => true, 'message' => 'Connection successful', 'data' => $result);
     }
@@ -107,7 +108,7 @@ trait AgentRemoteActionTrait {
         $result = $this->apiRequest($agentId, HttpMethodType::Get->value, API_FULL_NAMESPACE . '/plugins');
 
         if (is_wp_error($result)) {
-            $this->logAction($agentId, ActionType::AgentSync->value, null, STATUS_FAILED, null, $result->get_error_message());
+            $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Failed->value, null, $result->get_error_message());
             return $result;
         }
 
@@ -117,7 +118,7 @@ trait AgentRemoteActionTrait {
         ));
 
         $plugins = isset($result['plugins']) ? $result['plugins'] : $result;
-        $this->logAction($agentId, ActionType::AgentSync->value, null, STATUS_SUCCESS, array('count' => count($plugins)));
+        $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Success->value, array('count' => count($plugins)));
 
         return $plugins;
     }
@@ -131,11 +132,11 @@ trait AgentRemoteActionTrait {
         $result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
 
         if (is_wp_error($result)) {
-            $this->logAction($agentId, 'plugin_' . $action, $slug, STATUS_FAILED, null, $result->get_error_message());
+            $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Failed->value, null, $result->get_error_message());
             return $result;
         }
 
-        $this->logAction($agentId, 'plugin_' . $action, $slug, STATUS_SUCCESS);
+        $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Success->value);
 
         return array('success' => true, 'message' => ucfirst($action) . ' executed successfully', 'data' => $result);
     }

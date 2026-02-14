@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
 
 trait UploadZipTrait
 {
@@ -130,7 +131,7 @@ trait UploadZipTrait
         $this->fileLogger->info('Self-update detected, pre-logging activity', array('old_version' => $old_version));
 
         $this->logger->logPluginAction(
-            ActionType::Upload->value, $slug, STATUS_SUCCESS,
+            ActionType::Upload->value, $slug, StatusType::Success->value,
             array(
                 'is_update' => true, 'is_self_update' => true,
                 'old_version' => $old_version, 'new_version' => $client_version,

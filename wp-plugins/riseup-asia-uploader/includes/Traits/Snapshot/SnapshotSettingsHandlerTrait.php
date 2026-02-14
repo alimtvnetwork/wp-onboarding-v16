@@ -5,6 +5,8 @@
  * @package RiseupAsiaUploader
  */
 
+use RiseupAsia\Enums\StatusType;
+
 trait SnapshotSettingsHandlerTrait {
 
     /** Handle getting snapshot settings. */
@@ -22,7 +24,7 @@ trait SnapshotSettingsHandlerTrait {
             $this->fileLogger->info('Updating snapshot settings', array('keys' => array_keys($body)));
             $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $updated = $manager->updateSettings($body);
-            $this->logger->logPluginAction('snapshot_settings_update', 'snapshot', STATUS_SUCCESS, array('keys' => array_keys($body)));
+            $this->logger->logPluginAction('snapshot_settings_update', 'snapshot', StatusType::Success->value, array('keys' => array_keys($body)));
             return new WP_REST_Response(array('success' => true, 'settings' => $updated), 200);
         }, 'update_snapshot_settings');
     }
