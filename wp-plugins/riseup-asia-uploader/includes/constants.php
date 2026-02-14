@@ -67,60 +67,8 @@ if (!defined('LEGACY_NAMESPACE')) {
 }
 
 // =============================================================================
-// REST API ENDPOINTS (plain strings, no regex)
+// REST API ENDPOINTS — migrated to EndpointType enum
 // =============================================================================
-
-if (!defined('ENDPOINT_STATUS')) {
-    define('ENDPOINT_STATUS', 'status');
-}
-if (!defined('ENDPOINT_UPLOAD')) {
-    define('ENDPOINT_UPLOAD', 'upload');
-}
-if (!defined('ENDPOINT_PLUGINS')) {
-    define('ENDPOINT_PLUGINS', 'plugins');
-}
-if (!defined('ENDPOINT_EXPORT_SELF')) {
-    define('ENDPOINT_EXPORT_SELF', 'export-self');
-}
-if (!defined('ENDPOINT_POSTS')) {
-    define('ENDPOINT_POSTS', 'posts');
-}
-if (!defined('ENDPOINT_CATEGORIES')) {
-    define('ENDPOINT_CATEGORIES', 'categories');
-}
-if (!defined('ENDPOINT_LOGS')) {
-    define('ENDPOINT_LOGS', 'logs');
-}
-if (!defined('ENDPOINT_LOGS_STATS')) {
-    define('ENDPOINT_LOGS_STATS', 'logs/stats');
-}
-if (!defined('ENDPOINT_PLUGIN_FILES')) {
-    define('ENDPOINT_PLUGIN_FILES', 'plugins/files');
-}
-if (!defined('ENDPOINT_PLUGIN_FILE')) {
-    define('ENDPOINT_PLUGIN_FILE', 'plugins/file');
-}
-if (!defined('ENDPOINT_PLUGIN_ENABLE')) {
-    define('ENDPOINT_PLUGIN_ENABLE', 'plugins/enable');
-}
-if (!defined('ENDPOINT_PLUGIN_DISABLE')) {
-    define('ENDPOINT_PLUGIN_DISABLE', 'plugins/disable');
-}
-if (!defined('ENDPOINT_PLUGIN_DELETE')) {
-    define('ENDPOINT_PLUGIN_DELETE', 'plugins/delete');
-}
-if (!defined('ENDPOINT_PLUGIN_EXISTS')) {
-    define('ENDPOINT_PLUGIN_EXISTS', 'plugins/exists');
-}
-if (!defined('ENDPOINT_PLUGIN_EXPORT')) {
-    define('ENDPOINT_PLUGIN_EXPORT', 'plugins/export');
-}
-if (!defined('ENDPOINT_OPENAPI')) {
-    define('ENDPOINT_OPENAPI', 'openapi');
-}
-if (!defined('ENDPOINT_OPCACHE_RESET')) {
-    define('ENDPOINT_OPCACHE_RESET', 'opcache-reset');
-}
 
 // =============================================================================
 // DATABASE CONFIGURATION
@@ -351,40 +299,7 @@ if (!defined('AGENT_STATUS_ERROR')) {
     define('AGENT_STATUS_ERROR', 'error');
 }
 
-// Agent REST endpoints - ALL fixed paths, IDs passed in JSON body
-if (!defined('ENDPOINT_AGENTS')) {
-    define('ENDPOINT_AGENTS', 'agents');
-}
-if (!defined('ENDPOINT_AGENT_TEST')) {
-    define('ENDPOINT_AGENT_TEST', 'agents/test');
-}
-if (!defined('ENDPOINT_AGENT_SYNC')) {
-    define('ENDPOINT_AGENT_SYNC', 'agents/sync');
-}
-if (!defined('ENDPOINT_AGENT_ACTION')) {
-    define('ENDPOINT_AGENT_ACTION', 'agents/action');
-}
-if (!defined('ENDPOINT_AGENT_HISTORY')) {
-    define('ENDPOINT_AGENT_HISTORY', 'agents/history');
-}
-if (!defined('ENDPOINT_AGENTS_LIST')) {
-    define('ENDPOINT_AGENTS_LIST', 'agents');
-}
-if (!defined('ENDPOINT_AGENTS_ADD')) {
-    define('ENDPOINT_AGENTS_ADD', 'agents/add');
-}
-if (!defined('ENDPOINT_AGENTS_REMOVE')) {
-    define('ENDPOINT_AGENTS_REMOVE', 'agents/remove');
-}
-if (!defined('ENDPOINT_AGENTS_TEST')) {
-    define('ENDPOINT_AGENTS_TEST', 'agents/test');
-}
-if (!defined('ENDPOINT_AGENTS_SYNC')) {
-    define('ENDPOINT_AGENTS_SYNC', 'agents/sync');
-}
-if (!defined('ENDPOINT_AGENTS_PLUGINS')) {
-    define('ENDPOINT_AGENTS_PLUGINS', 'agents/plugins');
-}
+// Agent REST endpoints — migrated to EndpointType enum
 
 // =============================================================================
 // TRIGGERED_BY VALUES (for enhanced transaction logging)
@@ -476,46 +391,7 @@ if (!defined('ACTION_SNAPSHOT_DELETE'))  { define('ACTION_SNAPSHOT_DELETE',  Act
 if (!defined('ACTION_SNAPSHOT_EXPORT'))  { define('ACTION_SNAPSHOT_EXPORT',  ActionType::SnapshotExport->value); }
 if (!defined('ACTION_SNAPSHOT_IMPORT'))  { define('ACTION_SNAPSHOT_IMPORT',  ActionType::SnapshotImport->value); }
 
-// Snapshot REST endpoints
-if (!defined('ENDPOINT_SNAPSHOTS')) {
-    define('ENDPOINT_SNAPSHOTS', 'snapshots/list');
-}
-if (!defined('ENDPOINT_SNAPSHOT_LIST')) {
-    define('ENDPOINT_SNAPSHOT_LIST', 'snapshots/list');
-}
-if (!defined('ENDPOINT_SNAPSHOT_SCHEDULE')) {
-    define('ENDPOINT_SNAPSHOT_SCHEDULE', 'snapshots/schedule');
-}
-if (!defined('ENDPOINT_SNAPSHOT_INFO')) {
-    define('ENDPOINT_SNAPSHOT_INFO', 'snapshots/info');
-}
-if (!defined('ENDPOINT_SNAPSHOT_DELETE')) {
-    define('ENDPOINT_SNAPSHOT_DELETE', 'snapshots/delete');
-}
-if (!defined('ENDPOINT_SNAPSHOT_RESTORE')) {
-    define('ENDPOINT_SNAPSHOT_RESTORE', 'snapshots/restore');
-}
-if (!defined('ENDPOINT_SNAPSHOT_EXPORT')) {
-    define('ENDPOINT_SNAPSHOT_EXPORT', 'snapshots/export');
-}
-if (!defined('ENDPOINT_SNAPSHOT_IMPORT')) {
-    define('ENDPOINT_SNAPSHOT_IMPORT', 'snapshots/import');
-}
-if (!defined('ENDPOINT_SNAPSHOT_SETTINGS')) {
-    define('ENDPOINT_SNAPSHOT_SETTINGS', 'snapshots/settings');
-}
-if (!defined('ENDPOINT_SNAPSHOT_PROVIDERS')) {
-    define('ENDPOINT_SNAPSHOT_PROVIDERS', 'snapshots/providers');
-}
-if (!defined('ENDPOINT_SNAPSHOT_TABLES')) {
-    define('ENDPOINT_SNAPSHOT_TABLES', 'snapshots/tables');
-}
-if (!defined('ENDPOINT_SNAPSHOT_DEPENDENCIES')) {
-    define('ENDPOINT_SNAPSHOT_DEPENDENCIES', 'snapshots/dependencies');
-}
-if (!defined('ENDPOINT_SNAPSHOT_EXPORT_PERTABLE')) {
-    define('ENDPOINT_SNAPSHOT_EXPORT_PERTABLE', 'snapshots/export-pertable');
-}
+// Snapshot REST endpoints — migrated to EndpointType enum
 
 // Snapshot table names
 if (!defined('TABLE_SNAPSHOTS')) {
@@ -571,10 +447,7 @@ if (!defined('SNAPSHOT_JOB_STATUS_FAILED')) {
     define('SNAPSHOT_JOB_STATUS_FAILED', 'failed');
 }
 
-// Snapshot progress REST endpoint
-if (!defined('ENDPOINT_SNAPSHOT_PROGRESS')) {
-    define('ENDPOINT_SNAPSHOT_PROGRESS', 'snapshots/progress');
-}
+// Snapshot progress REST endpoint — migrated to EndpointType enum
 
 // Snapshot job table
 if (!defined('TABLE_SNAPSHOT_JOBS')) {
@@ -665,13 +538,7 @@ if (!defined('TABLE_FILE_CACHE')) {
     define('TABLE_FILE_CACHE', 'file_cache');
 }
 
-if (!defined('ENDPOINT_SYNC_MANIFEST')) {
-    define('ENDPOINT_SYNC_MANIFEST', 'plugins/sync-manifest');
-}
-
-if (!defined('ENDPOINT_SYNC')) {
-    define('ENDPOINT_SYNC', 'plugins/sync');
-}
+// Sync endpoints — migrated to EndpointType enum
 
 if (!defined('SYNC_ACTION_REPLACE')) {
     define('SYNC_ACTION_REPLACE', 'replace');
@@ -690,15 +557,11 @@ if (!defined('TABLE_SNAPSHOT_SETTINGS')) {
     define('TABLE_SNAPSHOT_SETTINGS', 'snapshot_settings');
 }
 
-if (!defined('ENDPOINT_SNAPSHOT_FULL_BACKUP')) {
-    define('ENDPOINT_SNAPSHOT_FULL_BACKUP', 'snapshots/full-backup');
-}
+// ENDPOINT_SNAPSHOT_FULL_BACKUP — migrated to EndpointType enum
 
 if (!defined('ACTION_SNAPSHOT_FULL_BACKUP')) { define('ACTION_SNAPSHOT_FULL_BACKUP', ActionType::SnapshotFullBackup->value); }
 
-if (!defined('ENDPOINT_SNAPSHOT_INCREMENTAL')) {
-    define('ENDPOINT_SNAPSHOT_INCREMENTAL', 'snapshots/incremental');
-}
+// ENDPOINT_SNAPSHOT_INCREMENTAL — migrated to EndpointType enum
 
 if (!defined('ACTION_SNAPSHOT_INCREMENTAL')) { define('ACTION_SNAPSHOT_INCREMENTAL', ActionType::SnapshotIncremental->value); }
 
@@ -716,9 +579,7 @@ if (!defined('ERR_INCREMENTAL_NO_PARENT')) {
 if (!defined('ACTION_SNAPSHOT_RESTORE_PERTABLE')) { define('ACTION_SNAPSHOT_RESTORE_PERTABLE', ActionType::SnapshotRestorePerTable->value); }
 if (!defined('ACTION_SNAPSHOT_IMPORT_PERTABLE'))  { define('ACTION_SNAPSHOT_IMPORT_PERTABLE',  ActionType::SnapshotImportPerTable->value); }
 
-if (!defined('ENDPOINT_SNAPSHOT_CLEANUP')) {
-    define('ENDPOINT_SNAPSHOT_CLEANUP', 'snapshots/cleanup');
-}
+// ENDPOINT_SNAPSHOT_CLEANUP — migrated to EndpointType enum
 
 // =============================================================================
 // SNAPSHOT ZIP EXPORT SYSTEM (Feature D)
@@ -728,12 +589,7 @@ if (!defined('TABLE_SNAPSHOT_EXPORTS')) {
     define('TABLE_SNAPSHOT_EXPORTS', 'snapshot_exports');
 }
 
-if (!defined('ENDPOINT_SNAPSHOT_DOWNLOAD')) {
-    define('ENDPOINT_SNAPSHOT_DOWNLOAD', 'snapshots/download');
-}
-if (!defined('ENDPOINT_SNAPSHOT_DOWNLOAD_FILE')) {
-    define('ENDPOINT_SNAPSHOT_DOWNLOAD_FILE', 'snapshots/download-file');
-}
+// ENDPOINT_SNAPSHOT_DOWNLOAD / DOWNLOAD_FILE — migrated to EndpointType enum
 
 if (!defined('ACTION_SNAPSHOT_ZIP_BUILD'))    { define('ACTION_SNAPSHOT_ZIP_BUILD',    ActionType::SnapshotZipBuild->value); }
 if (!defined('ACTION_SNAPSHOT_ZIP_EXPIRE'))   { define('ACTION_SNAPSHOT_ZIP_EXPIRE',   ActionType::SnapshotZipExpire->value); }

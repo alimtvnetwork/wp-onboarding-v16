@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\EndpointType;
+
 trait StatusOpsTrait {
 
     /**
@@ -76,7 +78,7 @@ trait StatusOpsTrait {
         wp_cache_delete('plugins', 'plugins');
 
         return RiseupEnvelopeBuilder::success('OPcache reset complete')
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_OPCACHE_RESET)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::OpcacheReset->value)
             ->setSingleResult($result)
             ->toResponse();
     }

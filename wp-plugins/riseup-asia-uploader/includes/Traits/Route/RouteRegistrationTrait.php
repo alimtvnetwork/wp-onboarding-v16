@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\HttpMethodType;
+use RiseupAsia\Enums\EndpointType;
 
 trait RouteRegistrationTrait
 {
@@ -53,19 +54,19 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerUtilityRoutes($safeRegister) {
-        $safeRegister(ENDPOINT_STATUS, array(
+        $safeRegister(EndpointType::Status->value, array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleStatus'),
             'permission_callback' => $this->buildPermissionCallback('status', array($this, 'checkStatusPermission')),
         ));
 
-        $safeRegister(ENDPOINT_OPENAPI, array(
+        $safeRegister(EndpointType::Openapi->value, array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleOpenapi'),
             'permission_callback' => $this->buildPermissionCallback('openapi', array($this, 'checkStatusPermission')),
         ));
 
-        $safeRegister(ENDPOINT_OPCACHE_RESET, array(
+        $safeRegister(EndpointType::OpcacheReset->value, array(
             'methods'             => HttpMethodType::Post->value,
             'callback'            => array($this, 'handleOpcacheReset'),
             'permission_callback' => $this->buildPermissionCallback('opcache_reset', array($this, 'checkPluginPermission')),
@@ -78,7 +79,7 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerPostRoutes($safeRegister) {
-        $safeRegister(ENDPOINT_POSTS, array(
+        $safeRegister(EndpointType::Posts->value, array(
             array(
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListPosts'),
@@ -91,7 +92,7 @@ trait RouteRegistrationTrait
             ),
         ));
 
-        $safeRegister(ENDPOINT_CATEGORIES, array(
+        $safeRegister(EndpointType::Categories->value, array(
             array(
                 'methods'             => HttpMethodType::Get->value,
                 'callback'            => array($this, 'handleListCategories'),
@@ -111,13 +112,13 @@ trait RouteRegistrationTrait
      * @param callable $safeRegister Route registration closure.
      */
     private function registerLogRoutes($safeRegister) {
-        $safeRegister(ENDPOINT_LOGS, array(
+        $safeRegister(EndpointType::Logs->value, array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleQueryLogs'),
             'permission_callback' => $this->buildPermissionCallback('logs', array($this, 'checkLogsPermission')),
         ));
 
-        $safeRegister(ENDPOINT_LOGS_STATS, array(
+        $safeRegister(EndpointType::LogsStats->value, array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleLogsStats'),
             'permission_callback' => $this->buildPermissionCallback('logs', array($this, 'checkLogsPermission')),

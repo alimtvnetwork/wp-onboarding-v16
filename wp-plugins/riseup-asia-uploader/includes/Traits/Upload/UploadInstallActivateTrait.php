@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\EndpointType;
+
 trait UploadInstallActivateTrait
 {
     /** Reset OPcache and locate the plugin's main file. */
@@ -65,7 +67,7 @@ trait UploadInstallActivateTrait
     private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
         $this->logger->logUploadFailed($slug, MSG_ACTIVATION_FAILED . ': ' . $error_msg);
         return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HTTP_OK)
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . ENDPOINT_UPLOAD)
+            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::Upload->value)
             ->setSingleResult(array(
                 'plugin_slug' => $slug, 'is_update' => $is_update,
                 'activated' => false, 'activation_error' => $error_msg,
