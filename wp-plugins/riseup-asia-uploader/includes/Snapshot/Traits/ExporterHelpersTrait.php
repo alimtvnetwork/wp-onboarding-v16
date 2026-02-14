@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait ExporterHelpersTrait {
 
@@ -26,7 +27,7 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ?');
         $stmt->execute(array($snapshotId));
         $snapshot = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -59,7 +60,7 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ? AND status = ?');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ? AND status = ?');
         $stmt->execute(array($snapshotId, SNAPSHOT_EXPORT_STATUS_VALID));
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
@@ -76,7 +77,7 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT * FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE id = ?');
+        $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE id = ?');
         $stmt->execute(array($exportId));
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
@@ -92,7 +93,7 @@ trait ExporterHelpersTrait {
             return;
         }
 
-        $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE id = ?');
+        $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE id = ?');
         $stmt->execute(array($exportId));
     }
 

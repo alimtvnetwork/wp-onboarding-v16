@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait IncrementalRegistrationTrait {
 
@@ -31,7 +32,7 @@ trait IncrementalRegistrationTrait {
 
     /** Get the next tracking sequence. */
     private function getNextTrackingSequence(PDO $pdo): int {
-        $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TABLE_SNAPSHOTS)->fetch(PDO::FETCH_ASSOC);
+        $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
         return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
     }
 
@@ -62,7 +63,7 @@ trait IncrementalRegistrationTrait {
     /** Insert an incremental snapshot record. */
     private function insertIncrementalRecord(PDO $pdo, int $sequence, string $filename, string $filepath, string $tablesJson, int $totalRows, int $dirSize): int {
         $now = gmdate('c');
-        $stmt = $pdo->prepare("INSERT INTO " . TABLE_SNAPSHOTS . "
+        $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "
             (sequence, filename, filepath, provider, scope, tables_json, total_rows,
              file_size, trigger_source, status, created_at, completed_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -96,7 +97,7 @@ trait IncrementalRegistrationTrait {
             return null;
         }
 
-        $stmt = $pdo->prepare('SELECT id FROM ' . TABLE_SNAPSHOTS . ' WHERE filepath = ? AND status = ? LIMIT 1');
+        $stmt = $pdo->prepare('SELECT id FROM ' . TableType::Snapshots->value . ' WHERE filepath = ? AND status = ? LIMIT 1');
         $stmt->execute(array($master_dir, SNAPSHOT_STATUS_COMPLETE));
         $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 

@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\TableType;
 
 require_once __DIR__ . '/ExporterBuildCollectTrait.php';
 
@@ -92,14 +93,14 @@ trait ExporterBuildTrait {
             @unlink($zipPath);
         }
 
-        $stmt = $pdo->prepare('DELETE FROM ' . TABLE_SNAPSHOT_EXPORTS . ' WHERE snapshot_id = ?');
+        $stmt = $pdo->prepare('DELETE FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ?');
         $stmt->execute(array($snapshotId));
     }
 
     /** Insert a "building" export record. */
     private function insertBuildingRecord(PDO $pdo, int $snapshotId, string $zipFilename, string $zipPath) {
         $stmt = $pdo->prepare(
-            'INSERT OR REPLACE INTO ' . TABLE_SNAPSHOT_EXPORTS .
+            'INSERT OR REPLACE INTO ' . TableType::SnapshotExports->value .
             ' (snapshot_id, zip_filename, zip_path, zip_size, included_ids, incremental_count, status, created_at)' .
             ' VALUES (?, ?, ?, 0, ?, 0, ?, datetime(\'now\'))'
         );
@@ -190,7 +191,7 @@ trait ExporterBuildTrait {
     private function finalizeExportRecord(PDO $pdo, int $snapshotId, array $includedIds, array $incrementals, string $zipPath, string $zipFilename) {
         $zipSize = filesize($zipPath);
         $stmt = $pdo->prepare(
-            'UPDATE ' . TABLE_SNAPSHOT_EXPORTS . ' SET status = ?, zip_size = ?, included_ids = ?, incremental_count = ? WHERE snapshot_id = ?'
+            'UPDATE ' . TableType::SnapshotExports->value . ' SET status = ?, zip_size = ?, included_ids = ?, incremental_count = ? WHERE snapshot_id = ?'
         );
         $stmt->execute(array(SNAPSHOT_EXPORT_STATUS_VALID, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
 

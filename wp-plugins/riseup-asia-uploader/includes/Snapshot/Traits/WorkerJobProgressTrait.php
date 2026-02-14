@@ -6,6 +6,8 @@
  * @since   2.0.0
  */
 
+use RiseupAsia\Enums\TableType;
+
 trait WorkerJobProgressTrait {
 
     /**
@@ -49,7 +51,7 @@ trait WorkerJobProgressTrait {
     private function loadTableProgress(PDO $pdo): array {
         try {
             $stmt = $pdo->prepare("SELECT table_name, status, rows_total, rows_exported, error_message
-                FROM " . TABLE_SNAPSHOT_PROGRESS . " WHERE snapshot_id = 0");
+                FROM " . TableType::SnapshotProgress->value . " WHERE snapshot_id = 0");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {

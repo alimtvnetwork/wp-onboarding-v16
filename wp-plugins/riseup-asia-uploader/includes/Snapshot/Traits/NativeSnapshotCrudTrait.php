@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait NativeSnapshotCrudTrait {
 
@@ -36,7 +37,7 @@ trait NativeSnapshotCrudTrait {
             RiseupPathUtils::deleteFile($zip_path);
         }
 
-        $this->db->delete(TABLE_SNAPSHOTS, array('id' => $snapshot_id));
+        $this->db->delete(TableType::Snapshots->value, array('id' => $snapshot_id));
         $this->log(LogLevelType::Info->value, 'Snapshot deleted', array('snapshot_id' => $snapshot_id, 'filename' => $snapshot['filename']));
         return array('success' => true);
     }
@@ -117,7 +118,7 @@ trait NativeSnapshotCrudTrait {
      * @return array|null Snapshot or null.
      */
     public function getSnapshot($snapshot_id) {
-        return $this->db->query_single('SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE id = ?', array($snapshot_id));
+        return $this->db->query_single('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ?', array($snapshot_id));
     }
 
     /**
@@ -129,10 +130,10 @@ trait NativeSnapshotCrudTrait {
      */
     public function listSnapshots($limit = 50, $offset = 0) {
         $snapshots = $this->db->query_all(
-            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
         );
-        $total = $this->db->query_single('SELECT COUNT(*) as count FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ?', array($this->provider_id));
+        $total = $this->db->query_single('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
         return array('snapshots' => $snapshots ?: array(), 'total' => $total ? (int)$total['count'] : 0);
     }
 

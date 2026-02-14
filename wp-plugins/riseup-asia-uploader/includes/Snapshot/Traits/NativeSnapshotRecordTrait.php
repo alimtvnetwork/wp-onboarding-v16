@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 require_once __DIR__ . '/NativeSnapshotCrudTrait.php';
 
@@ -79,7 +80,7 @@ trait NativeSnapshotRecordTrait {
      * @return int|false Snapshot ID or false.
      */
     private function createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger) {
-        $result = $this->db->insert(TABLE_SNAPSHOTS, array(
+        $result = $this->db->insert(TableType::Snapshots->value, array(
             'sequence' => $sequence, 'filename' => $filename . '.sqlite', 'filepath' => $filepath,
             'provider' => $this->provider_id, 'scope' => $scope, 'tables_json' => json_encode($tables),
             'trigger_source' => $trigger, 'status' => SNAPSHOT_STATUS_PENDING, 'created_at' => date('c'),
@@ -102,7 +103,7 @@ trait NativeSnapshotRecordTrait {
         if ($status === SNAPSHOT_STATUS_RUNNING) {
             $data['started_at'] = date('c');
         }
-        $this->db->update(TABLE_SNAPSHOTS, $data, array('id' => $snapshot_id));
+        $this->db->update(TableType::Snapshots->value, $data, array('id' => $snapshot_id));
     }
 
     /**
@@ -112,7 +113,7 @@ trait NativeSnapshotRecordTrait {
      * @param array $details     Completion details.
      */
     private function finalizeSnapshot($snapshot_id, $details) {
-        $this->db->update(TABLE_SNAPSHOTS, array(
+        $this->db->update(TableType::Snapshots->value, array(
             'status' => $details['status'], 'file_size' => $details['file_size'],
             'total_rows' => $details['total_rows'], 'table_counts_json' => json_encode($details['table_counts']),
             'duration_ms' => $details['duration_ms'], 'completed_at' => date('c'), 'updated_at' => date('c'),

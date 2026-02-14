@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 /**
  * WP Reset Snapshot Provider.
@@ -197,7 +198,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      */
     public function getSnapshot($snapshot_id) {
         return $this->db->query_single(
-            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE id = ? AND provider = ?',
+            'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ? AND provider = ?',
             array($snapshot_id, $this->provider_id)
         );
     }
@@ -211,12 +212,12 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      */
     public function listSnapshots($limit = 50, $offset = 0) {
         $snapshots = $this->db->query_all(
-            'SELECT * FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+            'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
         );
 
         $total = $this->db->query_single(
-            'SELECT COUNT(*) as count FROM ' . TABLE_SNAPSHOTS . ' WHERE provider = ?',
+            'SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?',
             array($this->provider_id)
         );
 

@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 
 trait WorkerProgressTrait {
 
@@ -20,7 +21,7 @@ trait WorkerProgressTrait {
         if (!$pdo) return;
 
         try {
-            $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TABLE_SNAPSHOT_PROGRESS . "
+            $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TableType::SnapshotProgress->value . "
                 (snapshot_id, table_name, status, rows_total, rows_exported, started_at)
                 VALUES (0, ?, 'pending', 0, 0, ?)");
 
@@ -29,7 +30,7 @@ trait WorkerProgressTrait {
                 $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
                 $stmt->execute(array($table, $now));
 
-                $pdo->exec("UPDATE " . TABLE_SNAPSHOT_PROGRESS .
+                $pdo->exec("UPDATE " . TableType::SnapshotProgress->value .
                     " SET rows_total = {$count} WHERE snapshot_id = 0 AND table_name = '{$table}'");
             }
         } catch (Exception $e) {
@@ -51,7 +52,7 @@ trait WorkerProgressTrait {
 
         try {
             $now = gmdate('c');
-            $stmt = $pdo->prepare("UPDATE " . TABLE_SNAPSHOT_PROGRESS . "
+            $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotProgress->value . "
                 SET status = ?, rows_exported = ?, completed_at = ?, error_message = ?
                 WHERE snapshot_id = 0 AND table_name = ?");
             $stmt->execute(array(
