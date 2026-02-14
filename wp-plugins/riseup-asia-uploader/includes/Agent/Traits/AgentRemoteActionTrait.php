@@ -15,10 +15,7 @@ use RiseupAsia\Enums\ActionType;
 
 trait AgentRemoteActionTrait {
 
-    /**
-     * Resolve a redirect URL for an agent.
-     */
-    private function resolveRedirectUrl($agent) {
+    private function resolveRedirectUrl(array $agent): string|\WP_Error {
         if ($this->isRedirectCacheValid($agent)) {
             return $agent['redirect_resolved'];
         }
@@ -36,24 +33,18 @@ trait AgentRemoteActionTrait {
         return $resolved;
     }
 
-    /**
-     * Check if the cached redirect URL is still valid.
-     */
     private function isRedirectCacheValid(array $agent): bool {
         if (empty($agent['redirect_resolved']) || empty($agent['redirect_resolved_at'])) {
             return false;
         }
 
-        $resolved_at = strtotime($agent['redirect_resolved_at']);
-        $cache_days = UPDATE_CACHE_DAYS_DEFAULT;
+        $resolvedAt = strtotime($agent['redirect_resolved_at']);
+        $cacheDays = UPDATE_CACHE_DAYS_DEFAULT;
 
-        return (time() < $resolved_at + ($cache_days * DAY_IN_SECONDS));
+        return (time() < $resolvedAt + ($cacheDays * DAY_IN_SECONDS));
     }
 
-    /**
-     * Follow a redirect chain to find the final URL.
-     */
-    private function followRedirectChain(string $url, int $maxRedirects = 5) {
+    private function followRedirectChain(string $url, int $maxRedirects = 5): string|\WP_Error {
         for ($i = 0; $i < $maxRedirects; $i++) {
             $response = wp_remote_head($url, array(
                 'timeout' => 15, 'redirection' => 0, 'sslverify' => true,
@@ -77,85 +68,74 @@ trait AgentRemoteActionTrait {
         return $url;
     }
 
-    /**
-     * Test connection to an agent site.
-     */
-    public function testConnection($agent_id) {
-        $this->file_logger->info('Testing agent connection', array('id' => $agent_id));
+    public function testConnection(int $agentId): array {
+        $this->fileLogger->info('Testing agent connection', array('id' => $agentId));
 
-        $result = $this->apiRequest($agent_id, HttpMethodType::Get->value, API_FULL_NAMESPACE . '/status');
+        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, API_FULL_NAMESPACE . '/status');
 
         if (is_wp_error($result)) {
-            return $this->handleTestConnectionFailure($agent_id, $result);
+            return $this->handleTestConnectionFailure($agentId, $result);
         }
 
-        return $this->handleTestConnectionSuccess($agent_id, $result);
+        return $this->handleTestConnectionSuccess($agentId, $result);
     }
 
-    /** Handle a failed connection test. */
-    private function handleTestConnectionFailure(int $agent_id, $error): array {
-        $this->updateAgent($agent_id, array(
+    private function handleTestConnectionFailure(int $agentId, \WP_Error $error): array {
+        $this->updateAgent($agentId, array(
             'status'     => 'error',
             'last_error' => $error->get_error_message(),
         ));
-        $this->logAction($agent_id, ActionType::AgentTest->value, null, STATUS_FAILED, null, $error->get_error_message());
+        $this->logAction($agentId, ActionType::AgentTest->value, null, STATUS_FAILED, null, $error->get_error_message());
 
         return array('success' => false, 'message' => $error->get_error_message());
     }
 
-    /** Handle a successful connection test. */
-    private function handleTestConnectionSuccess(int $agent_id, $result): array {
-        $this->updateAgent($agent_id, array(
+    private function handleTestConnectionSuccess(int $agentId, array $result): array {
+        $this->updateAgent($agentId, array(
             'status'     => 'connected',
             'last_sync'  => gmdate('Y-m-d\TH:i:s\Z'),
             'last_error' => null,
         ));
-        $this->logAction($agent_id, ActionType::AgentTest->value, null, STATUS_SUCCESS);
+        $this->logAction($agentId, ActionType::AgentTest->value, null, STATUS_SUCCESS);
 
         return array('success' => true, 'message' => 'Connection successful', 'data' => $result);
     }
 
-    /**
-     * Sync plugins from an agent site.
-     */
-    public function syncPlugins($agent_id) {
-        $this->file_logger->info('Syncing plugins from agent', array('id' => $agent_id));
+    public function syncPlugins(int $agentId): array|\WP_Error {
+        $this->fileLogger->info('Syncing plugins from agent', array('id' => $agentId));
 
-        $result = $this->apiRequest($agent_id, HttpMethodType::Get->value, API_FULL_NAMESPACE . '/plugins');
+        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, API_FULL_NAMESPACE . '/plugins');
 
         if (is_wp_error($result)) {
-            $this->logAction($agent_id, ActionType::AgentSync->value, null, STATUS_FAILED, null, $result->get_error_message());
+            $this->logAction($agentId, ActionType::AgentSync->value, null, STATUS_FAILED, null, $result->get_error_message());
             return $result;
         }
 
-        $this->updateAgent($agent_id, array(
+        $this->updateAgent($agentId, array(
             'status'    => 'connected',
             'last_sync' => gmdate('Y-m-d\TH:i:s\Z'),
         ));
 
         $plugins = isset($result['plugins']) ? $result['plugins'] : $result;
-        $this->logAction($agent_id, ActionType::AgentSync->value, null, STATUS_SUCCESS, array('count' => count($plugins)));
+        $this->logAction($agentId, ActionType::AgentSync->value, null, STATUS_SUCCESS, array('count' => count($plugins)));
 
         return $plugins;
     }
 
-    /**
-     * Execute an action on a plugin at an agent site.
-     */
-    public function executePluginAction($agent_id, $action, $slug) {
-        $this->file_logger->info('Executing plugin action on agent', array(
-            'agent_id' => $agent_id, 'action' => $action, 'slug' => $slug,
+    public function executePluginAction(int $agentId, string $action, string $slug): array|\WP_Error {
+        $this->fileLogger->info('Executing plugin action on agent', array(
+            'agent_id' => $agentId, 'action' => $action, 'slug' => $slug,
         ));
 
         $endpoint = API_FULL_NAMESPACE . '/plugins/' . urlencode($slug) . '/' . $action;
-        $result = $this->apiRequest($agent_id, HttpMethodType::Post->value, $endpoint);
+        $result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
 
         if (is_wp_error($result)) {
-            $this->logAction($agent_id, 'plugin_' . $action, $slug, STATUS_FAILED, null, $result->get_error_message());
+            $this->logAction($agentId, 'plugin_' . $action, $slug, STATUS_FAILED, null, $result->get_error_message());
             return $result;
         }
 
-        $this->logAction($agent_id, 'plugin_' . $action, $slug, STATUS_SUCCESS);
+        $this->logAction($agentId, 'plugin_' . $action, $slug, STATUS_SUCCESS);
 
         return array('success' => true, 'message' => ucfirst($action) . ' executed successfully', 'data' => $result);
     }
