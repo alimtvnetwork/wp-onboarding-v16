@@ -31,13 +31,6 @@ class RiseupDatabase {
     use DatabaseMigrationsLateTrait;
     use DatabaseQueryTrait;
 
-    /** @deprecated Use TableType enum instead. Kept for backward compatibility. */
-    public const TABLE_TRANSACTIONS      = 'transactions';
-    public const TABLE_SNAPSHOTS         = 'snapshots';
-    public const TABLE_SNAPSHOT_PROGRESS = 'snapshot_progress';
-    public const TABLE_FILE_CACHE        = 'file_cache';
-    public const TABLE_SNAPSHOT_EXPORTS  = 'snapshot_exports';
-
     /** Snapshot export status constants */
     public const SNAPSHOT_EXPORT_STATUS_VALID = 'valid';
 
