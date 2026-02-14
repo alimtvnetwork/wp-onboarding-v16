@@ -17,7 +17,7 @@ import (
 // Config holds configuration for the E2E test service
 type Config struct {
 	DB               *sql.DB
-	Broadcast        func(event string, data interface{})
+	Broadcast        func(event string, data any)
 	BaseURL          string // Backend API base URL (e.g. "http://localhost:8080")
 	TestPluginPath   string // Local path to a test plugin directory
 	TestSiteURL      string // WordPress test site URL
@@ -30,7 +30,7 @@ type serviceImpl struct {
 	db               *sql.DB
 	mu               sync.RWMutex
 	activeRun        *TestRun
-	broadcast        func(event string, data interface{})
+	broadcast        func(event string, data any)
 	api              *apiClient
 	testPluginPath   string
 	testSiteURL      string
@@ -295,7 +295,7 @@ func (s *serviceImpl) StartRun(ctx context.Context, opts RunOptions) (*TestRun, 
 	s.mu.Unlock()
 
 	if s.broadcast != nil {
-		s.broadcast("e2e:run:started", map[string]interface{}{
+		s.broadcast("e2e:run:started", map[string]any{
 			"runId":      run.ID,
 			"totalTests": run.TotalTests,
 		})
@@ -349,7 +349,7 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 			}
 
 			if s.broadcast != nil {
-				s.broadcast("e2e:test:completed", map[string]interface{}{
+				s.broadcast("e2e:test:completed", map[string]any{
 					"runId":      run.ID,
 					"caseId":     tc.ID,
 					"status":     result.Status,
@@ -379,7 +379,7 @@ func (s *serviceImpl) executeRun(run *TestRun, suites []TestSuite, opts RunOptio
 	`, run.CompletedAt, run.Status, run.PassedTests, run.FailedTests, run.SkippedTests, run.DurationMs, run.ID)
 
 	if s.broadcast != nil {
-		s.broadcast("e2e:run:completed", map[string]interface{}{
+		s.broadcast("e2e:run:completed", map[string]any{
 			"runId":  run.ID,
 			"status": run.Status,
 			"passed": run.PassedTests,
@@ -403,7 +403,7 @@ func (s *serviceImpl) executeTest(ctx context.Context, run *TestRun, suite TestS
 	}
 
 	if s.broadcast != nil {
-		s.broadcast("e2e:test:started", map[string]interface{}{
+		s.broadcast("e2e:test:started", map[string]any{
 			"runId":    run.ID,
 			"caseId":   tc.ID,
 			"caseName": tc.Name,
@@ -484,7 +484,7 @@ func (s *serviceImpl) AbortRun(ctx context.Context, runID string) error {
 			now, runID)
 
 		if s.broadcast != nil {
-			s.broadcast("e2e:run:completed", map[string]interface{}{
+			s.broadcast("e2e:run:completed", map[string]any{
 				"runId":  runID,
 				"status": "aborted",
 			})

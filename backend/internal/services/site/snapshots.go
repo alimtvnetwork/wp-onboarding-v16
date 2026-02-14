@@ -48,7 +48,7 @@ func (s *Service) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int6
 }
 
 // CreateRemoteSnapshot triggers a new snapshot on a remote site.
-func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (s *Service) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 }
 
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote site.
-func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]any) (map[string]any, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (s *Service) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (
 }
 
 // UpdateRemoteSnapshotSettings updates snapshot settings on a remote site.
-func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]interface{}) (*wordpress.SnapshotSettings, error) {
+func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]any) (*wordpress.SnapshotSettings, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 
 // DownloadSnapshotZip requests a cached ZIP build for a snapshot, then streams the ZIP file back.
 // The Go proxy fetches the download URL from WordPress and pipes the binary response to the caller.
-func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, map[string]interface{}, error) {
+func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, map[string]any, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, nil, err
@@ -236,7 +236,7 @@ func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.
 }
 
 // FullBackupRemoteSnapshot triggers an end-to-end full backup on a remote site.
-func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -253,7 +253,7 @@ func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, op
 }
 
 // IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote site.
-func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -270,7 +270,7 @@ func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID in
 }
 
 // ImportRemoteSnapshot uploads a ZIP file to import as a snapshot on a remote site.
-func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (map[string]interface{}, error) {
+func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (map[string]any, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPat
 }
 
 // CleanupRemoteSnapshots triggers cleanup on a remote site.
-func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]interface{}) (map[string]interface{}, error) {
+func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err

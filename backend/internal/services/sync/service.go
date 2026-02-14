@@ -763,7 +763,7 @@ func (s *serviceImpl) broadcastProgress(pluginID, siteID int64, step string, pro
 		return
 	}
 
-	s.wsHub.Broadcast(ws.EventSyncProgress, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventSyncProgress, map[string]any{
 		"pluginId": pluginID,
 		"siteId":   siteID,
 		"step":     step,

@@ -42,7 +42,7 @@ type Session struct {
 	StartedAt  time.Time              `json:"startedAt"`
 	EndedAt    *time.Time             `json:"endedAt,omitempty"`
 	ErrorMsg   string                 `json:"errorMessage,omitempty"`
-	Metadata   map[string]interface{} `json:"metadata,omitempty"`
+	Metadata   map[string]any         `json:"metadata,omitempty"`
 	logFile    *os.File
 	mu         sync.Mutex
 }
@@ -53,7 +53,7 @@ type LogEntry struct {
 	Level     string                 `json:"level"`  // debug, info, warn, error
 	Step      string                 `json:"step"`   // backup, package, upload, activate, etc.
 	Message   string                 `json:"message"`
-	Details   map[string]interface{} `json:"details,omitempty"`
+	Details   map[string]any         `json:"details,omitempty"`
 }
 
 // SessionDiagnostics is the structured payload returned for error modal / session detail view
@@ -69,7 +69,7 @@ type SessionRequest struct {
 	URL     string                 `json:"url"`
 	Method  string                 `json:"method"`
 	Headers map[string]string      `json:"headers,omitempty"`
-	Body    map[string]interface{} `json:"body,omitempty"`
+	Body    map[string]any         `json:"body,omitempty"`
 }
 
 // SessionResponse captures the delegated response from WordPress
@@ -78,7 +78,7 @@ type SessionResponse struct {
 	ResponseURL string                 `json:"responseUrl"`
 	StatusCode  int                    `json:"statusCode"`
 	Headers     map[string]string      `json:"headers,omitempty"`
-	Body        interface{}            `json:"body,omitempty"`
+	Body        any                    `json:"body,omitempty"`
 }
 
 // SessionStackTrace holds dual Go + PHP stack traces
@@ -178,7 +178,7 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 		SiteName:   siteName,
 		Status:     "running",
 		StartedAt:  time.Now().UTC(),
-		Metadata:   make(map[string]interface{}),
+		Metadata:   make(map[string]any),
 	}
 
 	// Create session directory
@@ -221,7 +221,7 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 }
 
 // Log writes a log entry to the session
-func (s *Service) Log(sessionID, level, step, message string, details map[string]interface{}) {
+func (s *Service) Log(sessionID, level, step, message string, details map[string]any) {
 	s.mu.RLock()
 	session, exists := s.sessions[sessionID]
 	s.mu.RUnlock()
@@ -389,8 +389,8 @@ func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
 }
 
 // SaveError persists error details (including stack traces) as error.log in the session folder
-func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details map[string]interface{}) {
-	errorData := map[string]interface{}{
+func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details map[string]any) {
+	errorData := map[string]any{
 		"timestamp": time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
 		"error":     errorMsg,
 	}
@@ -471,7 +471,7 @@ func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, 
 
 	// Read error.log for stack traces
 	if data, err := os.ReadFile(s.getErrorLogPath(sessionID)); err == nil {
-		var errorData map[string]interface{}
+		var errorData map[string]any
 		if json.Unmarshal(data, &errorData) == nil {
 			if stData, ok := errorData["stackTrace"]; ok {
 				stJSON, _ := json.Marshal(stData)
@@ -505,7 +505,7 @@ func extractPHPStackTraceFromLogs(logs string) string {
 		if braceIdx < 0 {
 			continue
 		}
-		var ctx map[string]interface{}
+		var ctx map[string]any
 		if json.Unmarshal([]byte(line[braceIdx:]), &ctx) == nil {
 			if content, ok := ctx["content"].(string); ok && content != "" {
 				return content
@@ -757,7 +757,7 @@ func (s *Service) ClearAllSessions() error {
 }
 
 // SetMetadata sets metadata on a session
-func (s *Service) SetMetadata(sessionID, key string, value interface{}) {
+func (s *Service) SetMetadata(sessionID, key string, value any) {
 	s.mu.RLock()
 	session, exists := s.sessions[sessionID]
 	s.mu.RUnlock()
@@ -768,7 +768,7 @@ func (s *Service) SetMetadata(sessionID, key string, value interface{}) {
 
 	session.mu.Lock()
 	if session.Metadata == nil {
-		session.Metadata = make(map[string]interface{})
+		session.Metadata = make(map[string]any)
 	}
 	session.Metadata[key] = value
 	session.mu.Unlock()

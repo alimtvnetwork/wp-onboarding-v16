@@ -28,9 +28,9 @@ func newAPIClient(baseURL string) *apiClient {
 // apiResponse holds a parsed JSON API response
 type apiResponse struct {
 	StatusCode int
-	Success    bool                   `json:"success"`
-	Data       interface{}            `json:"data"`
-	Error      map[string]interface{} `json:"error"`
+	Success    bool              `json:"success"`
+	Data       any               `json:"data"`
+	Error      map[string]any    `json:"error"`
 	RawBody    string
 }
 
@@ -40,12 +40,12 @@ func (c *apiClient) get(path string) (*apiResponse, error) {
 }
 
 // post performs a POST request with JSON body
-func (c *apiClient) post(path string, body interface{}) (*apiResponse, error) {
+func (c *apiClient) post(path string, body any) (*apiResponse, error) {
 	return c.do("POST", path, body)
 }
 
 // put performs a PUT request with JSON body
-func (c *apiClient) put(path string, body interface{}) (*apiResponse, error) {
+func (c *apiClient) put(path string, body any) (*apiResponse, error) {
 	return c.do("PUT", path, body)
 }
 
@@ -54,7 +54,7 @@ func (c *apiClient) del(path string) (*apiResponse, error) {
 	return c.do("DELETE", path, nil)
 }
 
-func (c *apiClient) do(method, path string, body interface{}) (*apiResponse, error) {
+func (c *apiClient) do(method, path string, body any) (*apiResponse, error) {
 	url := fmt.Sprintf("%s/api/v1%s", c.baseURL, path)
 
 	var reqBody io.Reader
@@ -93,7 +93,7 @@ func (c *apiClient) do(method, path string, body interface{}) (*apiResponse, err
 	}
 
 	// Parse JSON response
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	if err := json.Unmarshal(rawBytes, &parsed); err == nil {
 		if s, ok := parsed["success"].(bool); ok {
 			result.Success = s
@@ -101,7 +101,7 @@ func (c *apiClient) do(method, path string, body interface{}) (*apiResponse, err
 		if d, ok := parsed["data"]; ok {
 			result.Data = d
 		}
-		if e, ok := parsed["error"].(map[string]interface{}); ok {
+		if e, ok := parsed["error"].(map[string]any); ok {
 			result.Error = e
 		}
 	}
@@ -110,16 +110,16 @@ func (c *apiClient) do(method, path string, body interface{}) (*apiResponse, err
 }
 
 // dataMap returns the response data as a map, or nil
-func (r *apiResponse) dataMap() map[string]interface{} {
-	if m, ok := r.Data.(map[string]interface{}); ok {
+func (r *apiResponse) dataMap() map[string]any {
+	if m, ok := r.Data.(map[string]any); ok {
 		return m
 	}
 	return nil
 }
 
 // dataSlice returns the response data as a slice, or nil
-func (r *apiResponse) dataSlice() []interface{} {
-	if s, ok := r.Data.([]interface{}); ok {
+func (r *apiResponse) dataSlice() []any {
+	if s, ok := r.Data.([]any); ok {
 		return s
 	}
 	return nil

@@ -7,7 +7,7 @@ type ServiceInterface interface {
 	StartSession(sessionType SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
 	
 	// Log writes a log entry to the session
-	Log(sessionID, level, step, message string, details map[string]interface{})
+	Log(sessionID, level, step, message string, details map[string]any)
 	
 	// LogStageStart writes a stage header to the session log
 	LogStageStart(sessionID, stageName string)
@@ -34,7 +34,7 @@ type ServiceInterface interface {
 	DeleteSession(sessionID string) error
 	
 	// SetMetadata sets metadata on a session
-	SetMetadata(sessionID, key string, value interface{})
+	SetMetadata(sessionID, key string, value any)
 	
 	// SaveRequest persists the inbound request as request.json
 	SaveRequest(sessionID string, req *SessionRequest)
@@ -43,5 +43,5 @@ type ServiceInterface interface {
 	SaveResponse(sessionID string, resp *SessionResponse)
 	
 	// SaveError persists error details and stack traces as error.log
-	SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details map[string]interface{})
+	SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details map[string]any)
 }

@@ -58,7 +58,7 @@ func New(cfg Config) *Service {
 }
 
 // broadcastLog sends a log entry via WebSocket if hub is available
-func (s *Service) broadcastLog(pluginID int64, level, step, message string, details map[string]interface{}) {
+func (s *Service) broadcastLog(pluginID int64, level, step, message string, details map[string]any) {
 	if s.wsHub != nil {
 		s.wsHub.BroadcastBackupLog(pluginID, level, step, message, details)
 	}
@@ -67,7 +67,7 @@ func (s *Service) broadcastLog(pluginID int64, level, step, message string, deta
 // Create downloads the current remote plugin and saves as a backup
 func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, error) {
 	s.log.Info("Creating backup", "mappingId", mappingID)
-	s.broadcastLog(mappingID, "info", "init", "Starting backup creation", map[string]interface{}{
+	s.broadcastLog(mappingID, "info", "init", "Starting backup creation", map[string]any{
 		"mappingId": mappingID,
 	})
 
@@ -88,7 +88,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	}
 	file.Close()
 
-	s.broadcastLog(mappingID, "info", "write", "Backup file created successfully", map[string]interface{}{
+	s.broadcastLog(mappingID, "info", "write", "Backup file created successfully", map[string]any{
 		"path": backupPath,
 	})
 
@@ -109,7 +109,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	// TODO: Record in database
 
 	// Enforce retention
-	s.broadcastLog(mappingID, "info", "retention", "Enforcing retention policy", map[string]interface{}{
+	s.broadcastLog(mappingID, "info", "retention", "Enforcing retention policy", map[string]any{
 		"maxPerPlugin":  s.maxPerPlugin,
 		"retentionDays": s.retentionDays,
 	})
@@ -119,7 +119,7 @@ func (s *Service) Create(ctx context.Context, mappingID int64) (*models.Backup, 
 	}
 
 	s.log.Info("Backup created", "mappingId", mappingID, "path", backupPath)
-	s.broadcastLog(mappingID, "info", "complete", "Backup created successfully", map[string]interface{}{
+	s.broadcastLog(mappingID, "info", "complete", "Backup created successfully", map[string]any{
 		"path":     backupPath,
 		"fileSize": size,
 	})
@@ -142,7 +142,7 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*models.Backup, error)
 // Restore uploads a backup to WordPress
 func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, error) {
 	s.log.Info("Restoring backup", "backupId", backupID)
-	s.broadcastLog(backupID, "info", "init", "Starting backup restore", map[string]interface{}{
+	s.broadcastLog(backupID, "info", "init", "Starting backup restore", map[string]any{
 		"backupId": backupID,
 	})
 
@@ -164,7 +164,7 @@ func (s *Service) Restore(ctx context.Context, backupID int64) (*RestoreResult, 
 // Delete removes a backup file and database record
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	s.log.Info("Deleting backup", "id", id)
-	s.broadcastLog(id, "info", "delete", "Deleting backup", map[string]interface{}{
+	s.broadcastLog(id, "info", "delete", "Deleting backup", map[string]any{
 		"backupId": id,
 	})
 
@@ -179,7 +179,7 @@ func (s *Service) Delete(ctx context.Context, id int64) error {
 // Cleanup removes expired backups
 func (s *Service) Cleanup(ctx context.Context) error {
 	s.log.Info("Running backup cleanup")
-	s.broadcastLog(0, "info", "init", "Starting backup cleanup", map[string]interface{}{
+	s.broadcastLog(0, "info", "init", "Starting backup cleanup", map[string]any{
 		"retentionDays": s.retentionDays,
 	})
 
@@ -194,7 +194,7 @@ func (s *Service) Cleanup(ctx context.Context) error {
 
 		if info.ModTime().Before(cutoff) {
 			s.log.Debug("Removing expired backup", "path", path, "modified", info.ModTime())
-			s.broadcastLog(0, "debug", "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), map[string]interface{}{
+			s.broadcastLog(0, "debug", "remove", fmt.Sprintf("Removing expired backup: %s", filepath.Base(path)), map[string]any{
 				"modifiedAt": info.ModTime().Format(time.RFC3339),
 			})
 			if err := os.Remove(path); err == nil {
@@ -213,7 +213,7 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	}
 
 	s.log.Info("Backup cleanup complete")
-	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), map[string]interface{}{
+	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Cleanup complete, removed %d expired backups", removedCount), map[string]any{
 		"removedCount": removedCount,
 	})
 
@@ -231,7 +231,7 @@ func (s *Service) enforceRetention(ctx context.Context, mappingID int64) error {
 func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputPath string) (*ExportResult, error) {
 	startTime := time.Now()
 	s.log.Info("Starting export", "sources", len(sourcePaths), "output", outputPath)
-	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), map[string]interface{}{
+	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting export to %s", filepath.Base(outputPath)), map[string]any{
 		"sourceCount": len(sourcePaths),
 	})
 
@@ -262,7 +262,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		info, err := os.Stat(sourcePath)
 		if err != nil {
 			s.log.Warn("Skipping source", "path", sourcePath, "error", err)
-			s.broadcastLog(0, "warn", "skip", fmt.Sprintf("Skipping source: %s", sourcePath), map[string]interface{}{
+			s.broadcastLog(0, "warn", "skip", fmt.Sprintf("Skipping source: %s", sourcePath), map[string]any{
 				"error": err.Error(),
 			})
 			continue
@@ -313,7 +313,7 @@ func (s *Service) ExportToZip(ctx context.Context, sourcePaths []string, outputP
 		"total_bytes", totalBytes,
 		"duration_ms", duration.Milliseconds(),
 	)
-	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Export complete: %d files, %d bytes", filesCount, totalBytes), map[string]interface{}{
+	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Export complete: %d files, %d bytes", filesCount, totalBytes), map[string]any{
 		"filesCount": filesCount,
 		"totalBytes": totalBytes,
 		"durationMs": duration.Milliseconds(),
@@ -358,7 +358,7 @@ func (s *Service) addFileToZip(zw *zip.Writer, sourcePath, zipPath string) (int6
 func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, overwrite bool) (*ImportResult, error) {
 	startTime := time.Now()
 	s.log.Info("Starting import", "zip", zipPath, "dest", destDir, "overwrite", overwrite)
-	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), map[string]interface{}{
+	s.broadcastLog(0, "info", "init", fmt.Sprintf("Starting import from %s", filepath.Base(zipPath)), map[string]any{
 		"destination": destDir,
 		"overwrite":   overwrite,
 	})
@@ -434,7 +434,7 @@ func (s *Service) ImportFromZip(ctx context.Context, zipPath, destDir string, ov
 		"total_bytes", totalBytes,
 		"duration_ms", duration.Milliseconds(),
 	)
-	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Import complete: %d files, %d bytes", filesCount, totalBytes), map[string]interface{}{
+	s.broadcastLog(0, "info", "complete", fmt.Sprintf("Import complete: %d files, %d bytes", filesCount, totalBytes), map[string]any{
 		"filesCount": filesCount,
 		"totalBytes": totalBytes,
 		"durationMs": duration.Milliseconds(),

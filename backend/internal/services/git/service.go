@@ -130,7 +130,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	}
 
 	// Broadcast pull started
-	s.wsHub.Broadcast(ws.EventGitPullStarted, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventGitPullStarted, map[string]any{
 		"pluginId":   pluginID,
 		"pluginName": p.Name,
 	})
@@ -163,7 +163,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 		result.Success = false
 		result.Error = err.Error()
 
-		s.wsHub.Broadcast(ws.EventGitPullFailed, map[string]interface{}{
+		s.wsHub.Broadcast(ws.EventGitPullFailed, map[string]any{
 			"pluginId": pluginID,
 			"error":    result.Error,
 		})
@@ -182,7 +182,7 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	result.CommitMsg = strings.TrimSpace(commitMsg)
 
 	// Broadcast pull complete
-	s.wsHub.Broadcast(ws.EventGitPullComplete, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventGitPullComplete, map[string]any{
 		"pluginId":     pluginID,
 		"success":      true,
 		"filesChanged": result.FilesChanged,
@@ -234,7 +234,7 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 
 	batch.Duration = time.Since(startTime).Milliseconds()
 
-	s.wsHub.Broadcast(ws.EventGitPullAllComplete, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventGitPullAllComplete, map[string]any{
 		"succeeded": batch.Succeeded,
 		"failed":    batch.Failed,
 		"duration":  batch.Duration,
@@ -269,7 +269,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 	}
 
 	// Broadcast build started
-	s.wsHub.Broadcast(ws.EventBuildStarted, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventBuildStarted, map[string]any{
 		"pluginId":   pluginID,
 		"pluginName": p.Name,
 		"command":    config.BuildCommand,
@@ -300,7 +300,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 			result.ExitCode = exitErr.ExitCode()
 		}
 
-		s.wsHub.Broadcast(ws.EventBuildFailed, map[string]interface{}{
+		s.wsHub.Broadcast(ws.EventBuildFailed, map[string]any{
 			"pluginId": pluginID,
 			"error":    result.Error,
 			"exitCode": result.ExitCode,
@@ -312,7 +312,7 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 	result.Success = true
 	result.ExitCode = 0
 
-	s.wsHub.Broadcast(ws.EventBuildComplete, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventBuildComplete, map[string]any{
 		"pluginId": pluginID,
 		"success":  true,
 		"duration": result.Duration,
@@ -484,7 +484,7 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*
 	result.CommitHash = strings.TrimSpace(hash)
 	result.Success = true
 
-	s.wsHub.Broadcast(ws.EventGitCommitComplete, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventGitCommitComplete, map[string]any{
 		"pluginId":   pluginID,
 		"success":    true,
 		"commitHash": result.CommitHash,
@@ -535,7 +535,7 @@ func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error)
 
 	result.Success = true
 
-	s.wsHub.Broadcast(ws.EventGitPushComplete, map[string]interface{}{
+	s.wsHub.Broadcast(ws.EventGitPushComplete, map[string]any{
 		"pluginId": pluginID,
 		"success":  true,
 		"pushed":   result.Pushed,

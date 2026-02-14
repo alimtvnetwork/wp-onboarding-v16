@@ -247,7 +247,7 @@ func (q *PublishQueue) broadcastStatus() {
 			status.Failed++
 		}
 	}
-	q.wsHub.Broadcast(ws.EventPublishProgress, map[string]interface{}{
+	q.wsHub.Broadcast(ws.EventPublishProgress, map[string]any{
 		"type":      "queue_status",
 		"active":    status.Active,
 		"queued":    status.Queued,

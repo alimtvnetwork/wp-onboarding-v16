@@ -94,7 +94,7 @@ func (s *Service) List(limit, offset int, filters models.ErrorHistoryFilters) ([
 
 	// Build WHERE clause
 	var conditions []string
-	var args []interface{}
+	var args []any
 
 	if filters.Code != "" {
 		conditions = append(conditions, "Code = ?")
@@ -336,8 +336,8 @@ func (s *Service) BulkExport(ids []int64) (string, error) {
 }
 
 // GetStats returns error history statistics
-func (s *Service) GetStats() (map[string]interface{}, error) {
-	stats := make(map[string]interface{})
+func (s *Service) GetStats() (map[string]any, error) {
+	stats := make(map[string]any)
 
 	// Total count
 	var total int
