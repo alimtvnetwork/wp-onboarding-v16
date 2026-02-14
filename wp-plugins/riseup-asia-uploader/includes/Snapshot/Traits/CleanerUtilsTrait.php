@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ActionType;
 
 trait CleanerUtilsTrait {
 
@@ -99,7 +100,7 @@ trait CleanerUtilsTrait {
     private function logCleanupAudit($results) {
         try {
             $this->db->logTransaction(
-                ACTION_SNAPSHOT_CLEANUP,
+                ActionType::SnapshotCleanup->value,
                 json_encode(array(
                     'retention_deleted' => $results['retention']['deleted'],
                     'retention_skipped' => $results['retention']['skipped_master'],

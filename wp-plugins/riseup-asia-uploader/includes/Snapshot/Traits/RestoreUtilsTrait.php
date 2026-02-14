@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\ActionType;
 
 trait RestoreUtilsTrait {
 
@@ -100,7 +101,7 @@ trait RestoreUtilsTrait {
             " (plugin, action, status, details, source, created_at) VALUES (?, ?, ?, ?, ?, ?)"
         );
         $stmt->execute(array(
-            PLUGIN_SLUG, ACTION_SNAPSHOT_RESTORE, STATUS_SUCCESS,
+            PLUGIN_SLUG, ActionType::SnapshotRestore->value, STATUS_SUCCESS,
             $details, gethostname() ?: php_uname('n'), gmdate('Y-m-d H:i:s'),
         ));
     }

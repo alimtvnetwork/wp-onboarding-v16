@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait SyncPushTrait
 {
     /** Handle sync push endpoint. */
@@ -136,7 +138,7 @@ trait SyncPushTrait
         }
 
         if ($this->db) {
-            $this->db->log_transaction(ACTION_SYNC_DELETE, $slug, STATUS_SUCCESS, 'Deleted via sync: ' . $path, null, null, TRIGGERED_BY_API);
+            $this->db->log_transaction(ActionType::SyncDelete->value, $slug, STATUS_SUCCESS, 'Deleted via sync: ' . $path, null, null, TRIGGERED_BY_API);
         }
 
         if (!unlink($full_path)) {
@@ -176,7 +178,7 @@ trait SyncPushTrait
             return;
         }
         $this->db->log_transaction(
-            ACTION_SYNC, $slug, STATUS_SUCCESS,
+            ActionType::Sync->value, $slug, STATUS_SUCCESS,
             sprintf('Sync: %d updated, %d deleted, %d ignored', $counters['files_updated'], $counters['files_deleted'], $counters['files_ignored']),
             null, null, TRIGGERED_BY_API
         );

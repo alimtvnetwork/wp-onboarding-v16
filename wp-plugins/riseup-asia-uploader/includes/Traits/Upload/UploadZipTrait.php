@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\ActionType;
+
 trait UploadZipTrait
 {
     /** Write ZIP content to temp file and validate its structure. */
@@ -128,7 +130,7 @@ trait UploadZipTrait
         $this->file_logger->info('Self-update detected, pre-logging activity', array('old_version' => $old_version));
 
         $this->logger->log_plugin_action(
-            ACTION_UPLOAD, $slug, STATUS_SUCCESS,
+            ActionType::Upload->value, $slug, STATUS_SUCCESS,
             array(
                 'is_update' => true, 'is_self_update' => true,
                 'old_version' => $old_version, 'new_version' => $client_version,
