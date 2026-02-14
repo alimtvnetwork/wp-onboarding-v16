@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SyncActionType;
 use RiseupAsia\Enums\TriggerSourceType;
@@ -24,21 +26,21 @@ trait SyncPushTrait
         $files = isset($body['files']) ? $body['files'] : array();
 
         if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
         if (empty($files) || !is_array($files)) {
-            return $this->errorResponse('Files array is required', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Files array is required', HttpStatusType::BadRequest->value);
         }
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
             if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
-                return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+                return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
-            return new WP_REST_Response($result, HTTP_OK);
+            return new WP_REST_Response($result, HttpStatusType::Ok->value);
         } catch (Throwable $e) {
-            return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Sync push failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -81,7 +83,7 @@ trait SyncPushTrait
             return array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
         }
         if ($ignore && $ignore->is_ignored($path)) {
-            return array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => MSG_FILE_IGNORED);
+            return array('path' => $path, 'action' => $action, 'status' => 'ignored', 'reason' => ResponseMessageType::FileIgnored->value);
         }
 
         $full_path = $plugin_dir . '/' . $path;

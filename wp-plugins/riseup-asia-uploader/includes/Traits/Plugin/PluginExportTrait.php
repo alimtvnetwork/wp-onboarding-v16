@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
 
 trait PluginExportTrait
@@ -30,7 +31,7 @@ trait PluginExportTrait
             $zip_content = $this->createPluginZip($plugin_dir, PLUGIN_SLUG, $ignore);
 
             if ($zip_content === null) {
-                return $this->errorResponse('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
+                return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
             }
 
             $this->logger->logPluginAction(ActionType::ExportSelf->value, PLUGIN_SLUG, StatusType::Success->value, array(
@@ -42,10 +43,10 @@ trait PluginExportTrait
                 'plugin_zip' => base64_encode($zip_content),
                 'slug'       => PLUGIN_SLUG,
                 'version'    => PLUGIN_VERSION,
-            ), HTTP_OK);
+            ), HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');
-            return $this->errorResponse('Export failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Export failed: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -59,7 +60,7 @@ trait PluginExportTrait
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
 
         return $this->safeExecute(function () use ($slug) {
@@ -104,18 +105,18 @@ trait PluginExportTrait
         $plugin_dir  = RiseupPathUtils::join($plugins_dir, $slug);
 
         if (!RiseupPathUtils::dirExists($plugin_dir)) {
-            return $this->errorResponse('Plugin not found: ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse('Plugin not found: ' . $slug, HttpStatusType::NotFound->value);
         }
 
         if (!RiseupPathUtils::isSafePath($plugin_dir, $plugins_dir)) {
-            return $this->errorResponse('Invalid plugin slug', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Invalid plugin slug', HttpStatusType::BadRequest->value);
         }
 
         $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
         $zip_content = $this->createPluginZip($plugin_dir, $slug . '-backup', $ignore);
 
         if ($zip_content === null) {
-            return $this->errorResponse('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
         }
 
         $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, StatusType::Success->value, array(
@@ -127,6 +128,6 @@ trait PluginExportTrait
             'plugin_zip' => base64_encode($zip_content),
             'slug'       => $slug,
             'size'       => strlen($zip_content),
-        ), HTTP_OK);
+        ), HttpStatusType::Ok->value);
     }
 }

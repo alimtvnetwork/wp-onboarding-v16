@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 
 trait UploadZipTrait
@@ -41,7 +43,7 @@ trait UploadZipTrait
         if (file_put_contents($temp_file, $zip_content) === false) {
             $this->fileLogger->error('Failed to write temp file');
             $this->logger->logUploadFailed($slug, 'Failed to write temp file');
-            return $this->errorResponse(MSG_UPLOAD_FAILED, HTTP_SERVER_ERROR);
+            return $this->errorResponse(ResponseMessageType::UploadFailed->value, HttpStatusType::ServerError->value);
         }
 
         return $temp_file;
@@ -55,7 +57,7 @@ trait UploadZipTrait
             @unlink($temp_file);
             $this->fileLogger->error('Invalid ZIP archive');
             $this->logger->logUploadFailed($slug, 'Invalid ZIP archive');
-            return $this->errorResponse('Invalid ZIP archive', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Invalid ZIP archive', HttpStatusType::BadRequest->value);
         }
 
         $detected_slug = $this->detectPluginSlugFromZip($zip);
@@ -65,7 +67,7 @@ trait UploadZipTrait
             @unlink($temp_file);
             $this->fileLogger->error('Could not detect plugin in ZIP');
             $this->logger->logUploadFailed($slug, 'Could not detect plugin in ZIP');
-            return $this->errorResponse('Could not detect plugin in ZIP', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Could not detect plugin in ZIP', HttpStatusType::BadRequest->value);
         }
 
         return $detected_slug;

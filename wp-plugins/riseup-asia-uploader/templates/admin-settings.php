@@ -573,7 +573,7 @@ if (!defined('ABSPATH')) {
                 <tr>
                     <th scope="row"><?php esc_html_e('Endpoint', 'riseup-asia-uploader'); ?></th>
                     <td>
-                        <code><?php echo esc_html(rest_url(API_FULL_NAMESPACE . '/' . ENDPOINT_ERROR_LOGS)); ?></code>
+                        <code><?php echo esc_html(rest_url(API_FULL_NAMESPACE . '/' . \RiseupAsia\Enums\EndpointType::ErrorLogs->value)); ?></code>
                         <p class="description"><?php esc_html_e('GET request with Basic Auth. Returns JSON with error_log, full_log, and/or stacktrace_log fields.', 'riseup-asia-uploader'); ?></p>
                     </td>
                 </tr>

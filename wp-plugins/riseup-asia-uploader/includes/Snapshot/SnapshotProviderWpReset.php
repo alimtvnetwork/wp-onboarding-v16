@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\TableType;
 
@@ -106,7 +107,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
             return array(
                 'success' => false,
                 'error' => 'WP Reset is not available',
-                'code' => ERR_PROVIDER_NOT_AVAILABLE,
+                'code' => SnapshotErrorType::ProviderNotAvail->value,
             );
         }
 

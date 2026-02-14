@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotErrorType;
 
 trait ManagerRestoreValidationTrait {
 
@@ -39,7 +40,7 @@ trait ManagerRestoreValidationTrait {
         return array(
             'success' => false,
             'error'   => 'Cannot restore incremental snapshot: the parent full snapshot is missing. Please restore from a full backup instead.',
-            'code'    => ERR_INCREMENTAL_NO_PARENT,
+            'code'    => SnapshotErrorType::IncrementalNoParent->value,
         );
     }
 

@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\HttpStatusType;
+
 trait UploadInstallExtractTrait
 {
     /**
@@ -123,7 +125,7 @@ trait UploadInstallExtractTrait
             $this->deleteDirectory($temp_extract_dir);
             $this->logger->logUploadFailed($slug, 'No folder found in extracted ZIP');
 
-            return $this->errorResponse('No folder found in extracted ZIP', HTTP_SERVER_ERROR);
+            return $this->errorResponse('No folder found in extracted ZIP', HttpStatusType::ServerError->value);
         }
 
         $this->moveExtractedPlugin($extracted_folders[0], $target_dir);
@@ -139,7 +141,7 @@ trait UploadInstallExtractTrait
             @unlink($temp_file);
             $this->deleteDirectory($temp_extract_dir);
 
-            return $this->errorResponse('Failed to open ZIP for extraction', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Failed to open ZIP for extraction', HttpStatusType::ServerError->value);
         }
 
         $zip->extractTo($temp_extract_dir);

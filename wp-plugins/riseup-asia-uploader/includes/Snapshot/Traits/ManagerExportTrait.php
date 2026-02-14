@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotErrorType;
 
 trait ManagerExportTrait {
 
@@ -19,7 +20,7 @@ trait ManagerExportTrait {
 
         $snapshot = $provider->getSnapshot($snapshot_id);
         if (!$snapshot) {
-            return array('success' => false, 'error' => 'Snapshot not found', 'code' => ERR_SNAPSHOT_NOT_FOUND);
+            return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
 
         $filepath = $snapshot['filepath'];

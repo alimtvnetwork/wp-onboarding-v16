@@ -10,6 +10,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
+
 trait SyncManifestTrait
 {
     /**
@@ -19,13 +22,13 @@ trait SyncManifestTrait
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
 
         try {
             return $this->generateSyncManifest($slug);
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to generate sync manifest: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to generate sync manifest: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -39,7 +42,7 @@ trait SyncManifestTrait
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
         if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
-            return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
         $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
@@ -54,7 +57,7 @@ trait SyncManifestTrait
                 'cacheStats' => array('fromCache' => $result['cached'], 'computed' => $result['computed'], 'removed' => $result['removed']),
                 'files' => $result['files'],
             ),
-        ), HTTP_OK);
+        ), HttpStatusType::Ok->value);
     }
 
     /**

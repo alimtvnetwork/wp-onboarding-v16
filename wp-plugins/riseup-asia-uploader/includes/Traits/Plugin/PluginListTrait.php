@@ -10,6 +10,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
+
 trait PluginListTrait
 {
     /**
@@ -35,7 +38,7 @@ trait PluginListTrait
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'List plugins error');
 
-            return $this->errorResponse('Failed to list plugins: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to list plugins: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -79,13 +82,13 @@ trait PluginListTrait
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
 
         try {
             return $this->scanPluginFilesWithCache($slug);
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to list plugin files: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to list plugin files: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -102,7 +105,7 @@ trait PluginListTrait
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
         if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
-            return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
         $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
@@ -114,7 +117,7 @@ trait PluginListTrait
             'plugin'     => $slug,
             'totalFiles' => count($result['files']),
             'files'      => $result['files'],
-        ), HTTP_OK);
+        ), HttpStatusType::Ok->value);
     }
 
     /**
@@ -127,7 +130,7 @@ trait PluginListTrait
         $json = $request->get_json_params();
         $slug = isset($json['plugin']) ? sanitize_text_field($json['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
         }
 
         try {
@@ -140,7 +143,7 @@ trait PluginListTrait
 
             return $this->readAndReturnFile($validation['real_path'], $validation['file_path']);
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to read file: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -153,28 +156,28 @@ trait PluginListTrait
      */
     private function validateFilePath($file_path, string $slug) {
         if (empty($file_path)) {
-            return $this->errorResponse('File path is required', HTTP_BAD_REQUEST);
+            return $this->errorResponse('File path is required', HttpStatusType::BadRequest->value);
         }
 
         $file_path = ltrim($file_path, '/\\');
         if (strpos($file_path, '..') !== false) {
-            return $this->errorResponse('Invalid file path', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Invalid file path', HttpStatusType::BadRequest->value);
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
         if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
-            return $this->errorResponse(MSG_PLUGIN_NOT_FOUND . ': ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
         $real_plugin_dir = realpath($plugin_dir);
         $real_file_path = realpath($plugin_dir . '/' . $file_path);
 
         if ($real_file_path === false || strpos($real_file_path, $real_plugin_dir) !== 0) {
-            return $this->errorResponse('File not found or invalid path', HTTP_NOT_FOUND);
+            return $this->errorResponse('File not found or invalid path', HttpStatusType::NotFound->value);
         }
 
         if (RiseupBooleanHelpers::isNotRegularFile($real_file_path)) {
-            return $this->errorResponse('File not found', HTTP_NOT_FOUND);
+            return $this->errorResponse('File not found', HttpStatusType::NotFound->value);
         }
 
         return array('real_path' => $real_file_path, 'file_path' => $file_path);
@@ -190,13 +193,13 @@ trait PluginListTrait
     private function readAndReturnFile(string $real_path, string $rel_path) {
         $content = @file_get_contents($real_path);
         if ($content === false) {
-            return $this->errorResponse('Failed to read file', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Failed to read file', HttpStatusType::ServerError->value);
         }
 
         return new WP_REST_Response(array(
             'success' => true,
             'path'    => $rel_path,
             'content' => $content,
-        ), HTTP_OK);
+        ), HttpStatusType::Ok->value);
     }
 }

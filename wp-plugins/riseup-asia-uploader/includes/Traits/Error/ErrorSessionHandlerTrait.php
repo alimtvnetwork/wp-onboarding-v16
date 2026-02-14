@@ -5,6 +5,8 @@
  * @package RiseupAsiaUploader
  */
 
+use RiseupAsia\Enums\HttpStatusType;
+
 trait ErrorSessionHandlerTrait {
 
     /** Handle error-sessions endpoint. */
@@ -14,7 +16,7 @@ trait ErrorSessionHandlerTrait {
 
             $pdo = RiseupDatabase::getInstance()->getPdo();
             if (!$pdo) {
-                return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HTTP_SERVER_ERROR);
+                return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::ServerError->value);
             }
             if (!$this->isTableExists($pdo, 'error_sessions')) {
                 return RiseupEnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')

@@ -75,6 +75,10 @@ enum EndpointType: string
     case SnapshotDownload     = 'snapshots/download';
     case SnapshotDownloadFile = 'snapshots/download-file';
 
+    // ── Error Log ───────────────────────────────────────────────────
+    case ErrorLogs     = 'error-logs';
+    case ErrorSessions = 'error-sessions';
+
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
     {

@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;
 
 trait UpdraftCrudTrait {
@@ -18,7 +19,7 @@ trait UpdraftCrudTrait {
     /** Create a snapshot using UpdraftPlus. */
     public function createSnapshot($options) {
         if (!$this->isAvailable()) {
-            return array('success' => false, 'error' => 'UpdraftPlus is not available', 'code' => ERR_PROVIDER_NOT_AVAILABLE);
+            return array('success' => false, 'error' => 'UpdraftPlus is not available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot via UpdraftPlus', $options);

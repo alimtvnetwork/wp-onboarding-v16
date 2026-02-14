@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
 
 trait SnapshotBackupOpsTrait {
@@ -47,12 +48,12 @@ trait SnapshotBackupOpsTrait {
             $job_id = $body['job_id'] ?? null;
 
             if (empty($job_id)) {
-                return $this->buildProgressError('Missing required field: job_id', HTTP_BAD_REQUEST);
+                return $this->buildProgressError('Missing required field: job_id', HttpStatusType::BadRequest->value);
             }
 
             $progress = $this->fetchJobProgress((int) $job_id);
             if (!$progress) {
-                return $this->buildProgressError('Job not found', HTTP_NOT_FOUND, 'JOB_NOT_FOUND');
+                return $this->buildProgressError('Job not found', HttpStatusType::NotFound->value, 'JOB_NOT_FOUND');
             }
 
             return $this->buildProgressResponse($progress);
@@ -126,6 +127,6 @@ trait SnapshotBackupOpsTrait {
             'percent' => $p['percent'], 'errors' => $p['errors'],
             'table_progress' => $p['table_progress'], 'created_at' => $p['created_at'],
             'updated_at' => $p['updated_at'], 'completed_at' => $p['completed_at'],
-        ), HTTP_OK);
+        ), HttpStatusType::Ok->value);
     }
 }

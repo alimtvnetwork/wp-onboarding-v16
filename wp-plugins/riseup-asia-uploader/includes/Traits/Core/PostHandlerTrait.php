@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpStatusType;
 
 trait PostHandlerTrait
 {
@@ -24,7 +25,7 @@ trait PostHandlerTrait
             'search' => $request->get_param('search'),
         ));
 
-        return new \WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
+        return new \WP_REST_Response($result, $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
 
     public function handleCreatePost(\WP_REST_Request $request): \WP_REST_Response {
@@ -33,7 +34,7 @@ trait PostHandlerTrait
         $data   = $request->get_json_params();
         $result = $this->postManager->createPost($data);
 
-        return new \WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
+        return new \WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
     }
 
     public function handleListCategories(\WP_REST_Request $request): \WP_REST_Response {
@@ -45,7 +46,7 @@ trait PostHandlerTrait
             'search' => $request->get_param('search'),
         ));
 
-        return new \WP_REST_Response($result, $result['success'] ? HTTP_OK : HTTP_SERVER_ERROR);
+        return new \WP_REST_Response($result, $result['success'] ? HttpStatusType::Ok->value : HttpStatusType::ServerError->value);
     }
 
     public function handleCreateCategory(\WP_REST_Request $request): \WP_REST_Response {
@@ -54,7 +55,7 @@ trait PostHandlerTrait
         $data   = $request->get_json_params();
         $result = $this->postManager->createCategory($data);
 
-        return new \WP_REST_Response($result, $result['success'] ? HTTP_CREATED : HTTP_BAD_REQUEST);
+        return new \WP_REST_Response($result, $result['success'] ? HttpStatusType::Created->value : HttpStatusType::BadRequest->value);
     }
 
     public function handleQueryLogs(\WP_REST_Request $request): \WP_REST_Response {

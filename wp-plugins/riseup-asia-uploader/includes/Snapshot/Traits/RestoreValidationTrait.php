@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotErrorType;
 
 trait RestoreValidationTrait {
 
@@ -28,7 +29,7 @@ trait RestoreValidationTrait {
             return array(
                 'success' => false,
                 'error'   => 'Restore requires explicit confirmation (confirm=true)',
-                'code'    => ERR_RESTORE_NO_CONFIRM,
+                'code'    => SnapshotErrorType::RestoreNoConfirm->value,
             );
         }
 

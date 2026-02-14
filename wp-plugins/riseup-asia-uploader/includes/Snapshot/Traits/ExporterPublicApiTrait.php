@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
 
@@ -28,7 +29,7 @@ trait ExporterPublicApiTrait {
 
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
         if (!$snapshot) {
-            return array('success' => false, 'error' => 'Full snapshot not found', 'code' => ERR_SNAPSHOT_NOT_FOUND);
+            return array('success' => false, 'error' => 'Full snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
 
         $existing = $this->getValidExport($fullSnapshotId);

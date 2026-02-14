@@ -11,6 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 
 trait PluginLifecycleDeleteTrait {
@@ -43,7 +45,7 @@ trait PluginLifecycleDeleteTrait {
             }
             return true;
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Failed to deactivate plugin before deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
@@ -54,11 +56,11 @@ trait PluginLifecycleDeleteTrait {
             $error = $this->checkDeleteResult($result);
             if ($error) {
                 $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, array('error' => $error));
-                return $this->errorResponse(MSG_DELETE_FAILED . ': ' . $error, HTTP_SERVER_ERROR);
+                return $this->errorResponse(ResponseMessageType::DeleteFailed->value . ': ' . $error, HttpStatusType::ServerError->value);
             }
         } catch (Throwable $e) {
             $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage()));
-            return $this->errorResponse('Exception during deletion: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            return $this->errorResponse('Exception during deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
 
         $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Success->value);
