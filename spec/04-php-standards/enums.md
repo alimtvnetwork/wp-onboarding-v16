@@ -1,7 +1,7 @@
 # PHP Enums — Complete Reference
 
-> **Version:** 5.0.0  
-> **Updated:** 2026-02-13  
+> **Version:** 6.0.0  
+> **Updated:** 2026-02-14  
 > **Applies to:** WordPress companion plugins (PHP 8.1+)
 
 ---
@@ -23,7 +23,7 @@ All enums MUST use the **`Type` suffix** in their name. This clearly distinguish
 | `HttpMethod` | `HttpMethodType` |
 | `Hook` | `HookType` |
 
-> **Non-enum constant classes** (`PathConst`, `ErrorType`) keep their existing names — they are `final class`, not `enum`.
+> **Non-enum constant classes** (`ErrorType`) keep their existing names — they are `final class`, not `enum`. The former `PathConst` class has been decomposed into 4 domain-specific enums (see below).
 
 ### Architectural Rules
 
@@ -36,8 +36,8 @@ All enums MUST use the **`Type` suffix** in their name. This clearly distinguish
 7. **No `RISEUP_` prefix** on anything — namespace provides scoping.
 8. **`define()` constants are prohibited** for values that belong in an enum.
 9. **Access pattern:** `UploadSourceType::Script` (the enum case) or `UploadSourceType::Script->value` (the raw string).
-10. **Validation helpers** go as `static` methods on the enum itself.
-11. **Non-enum constants classes** (PathConst, ErrorType) use the same namespace and folder but remain `final class` with `public const`.
+10. **Validation helpers** go as `static` methods on the enum itself (camelCase: `validValues()`, `isValid()`).
+11. **Non-enum constants classes** (ErrorType) use the same namespace and folder but remain `final class` with `public const`.
 
 ### File Loading
 
@@ -49,7 +49,10 @@ require_once __DIR__ . '/includes/Enums/UploadSourceType.php';
 require_once __DIR__ . '/includes/Enums/CapabilityType.php';
 require_once __DIR__ . '/includes/Enums/HttpMethodType.php';
 require_once __DIR__ . '/includes/Enums/HookType.php';
-require_once __DIR__ . '/includes/Enums/PathConst.php';
+require_once __DIR__ . '/includes/Enums/PathSubdirType.php';
+require_once __DIR__ . '/includes/Enums/PathDatabaseType.php';
+require_once __DIR__ . '/includes/Enums/PathLogFileType.php';
+require_once __DIR__ . '/includes/Enums/PathConfigType.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
 ```
 
@@ -81,12 +84,12 @@ enum UploadSourceType: string
     case AdminUi = 'admin_ui';
     case WpCli   = 'wp_cli';
 
-    public static function valid_values(): array
+    public static function validValues(): array
     {
         return array_column(self::cases(), 'value');
     }
 
-    public static function is_valid(string $source): bool
+    public static function isValid(string $source): bool
     {
         return self::tryFrom($source) !== null;
     }
@@ -105,7 +108,7 @@ define('UPLOAD_SOURCE_SCRIPT', 'upload_script');
 $source  = UploadSourceType::Script;
 $value   = UploadSourceType::Script->value;
 $parsed  = UploadSourceType::tryFrom('rest_api');
-$isValid = UploadSourceType::is_valid($input);
+$isValid = UploadSourceType::isValid($input);
 ```
 
 ---
@@ -230,7 +233,7 @@ enum HookType: string
         return 'wp_ajax_' . $action;
     }
 
-    public static function ajax_nopriv(string $action): string
+    public static function ajaxNopriv(string $action): string
     {
         return 'wp_ajax_nopriv_' . $action;
     }
@@ -243,47 +246,106 @@ enum HookType: string
 use RiseupAsia\\Enums\\HookType;
 
 // ❌ FORBIDDEN
-add_action('rest_api_init', [$this, 'register_routes']);
+add_action('rest_api_init', [$this, 'registerRoutes']);
 
 // ✅ REQUIRED
-add_action(HookType::RestApiInit->value, [$this, 'register_routes']);
-add_action(HookType::ajax('riseup_test'), [$this, 'ajax_test']);
+add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
+add_action(HookType::ajax('riseup_test'), [$this, 'ajaxTest']);
 ```
 
 ---
 
-## PathConst — File Name Constants (Non-Enum Class)
+## Path Enums — 4 Domain-Specific Enums (replaces PathConst)
 
-`PathConst` is NOT a backed enum — it holds path fragments. Remains `final class`.
+The former `PathConst` final class has been decomposed into 4 backed enums. Each answers "which one?" for its domain, qualifying as a proper enum with the `Type` suffix.
+
+### PathSubdirType — Plugin Subdirectories
 
 ```php
 <?php
 
-namespace RiseupAsia\\Enums;
+namespace RiseupAsia\Enums;
 
-final class PathConst
+/**
+ * Plugin subdirectory path fragments.
+ */
+enum PathSubdirType: string
 {
-    // ── Subdirectories ─────────────────────────────────────────
-    public const LOGS_SUBDIR      = '/logs';
-    public const TEMP_SUBDIR      = '/temp';
-    public const SNAPSHOTS_SUBDIR = '/snapshots';
-    public const EXPORTS_SUBDIR   = '/exports';
-
-    // ── Databases ───────────────────────────────────────────────
-    public const ROOT_DB     = '/a-root.db';
-    public const ACTIVITY_DB = '/activity.db';
-    public const SNAPSHOT_DB = '/snapshots.db';
-    public const PLUGIN_DB   = '/riseup-asia-uploader.db';
-
-    // ── Log Files ───────────────────────────────────────────────
-    public const LOG_FILE        = '/log.txt';
-    public const FATAL_ERROR_LOG = '/fatal-errors.log';
-    public const STACKTRACE_FILE = '/stacktrace.txt';
-    public const ERROR_FILE      = '/error.txt';
-
-    // ── Config Files ────────────────────────────────────────────
-    public const DETECTION_FILE = '/wp-plugin-detected.json';
+    case Logs      = '/logs';
+    case Temp      = '/temp';
+    case Snapshots = '/snapshots';
+    case Exports   = '/exports';
 }
+```
+
+### PathDatabaseType — SQLite Database Files
+
+```php
+<?php
+
+namespace RiseupAsia\Enums;
+
+/**
+ * SQLite database file path fragments.
+ */
+enum PathDatabaseType: string
+{
+    case Root     = '/a-root.db';
+    case Activity = '/activity.db';
+    case Snapshot = '/snapshots.db';
+    case Plugin   = '/riseup-asia-uploader.db';
+}
+```
+
+### PathLogFileType — Log File Names
+
+```php
+<?php
+
+namespace RiseupAsia\Enums;
+
+/**
+ * Log file path fragments.
+ */
+enum PathLogFileType: string
+{
+    case Log        = '/log.txt';
+    case FatalError = '/fatal-errors.log';
+    case Stacktrace = '/stacktrace.txt';
+    case Error      = '/error.txt';
+}
+```
+
+### PathConfigType — Config File Names
+
+```php
+<?php
+
+namespace RiseupAsia\Enums;
+
+/**
+ * Configuration file path fragments.
+ */
+enum PathConfigType: string
+{
+    case Detection = '/wp-plugin-detected.json';
+}
+```
+
+### Usage in RiseupPathUtils
+
+```php
+use RiseupAsia\Enums\PathSubdirType;
+use RiseupAsia\Enums\PathDatabaseType;
+use RiseupAsia\Enums\PathLogFileType;
+
+// ❌ FORBIDDEN: Legacy define() constants
+$logsDir = self::join(self::getBaseDir(), LOGS_SUBDIR);
+$dbPath  = self::join(self::getBaseDir(), DB_FILENAME);
+
+// ✅ REQUIRED: Enum values
+$logsDir = self::join(self::getBaseDir(), PathSubdirType::Logs->value);
+$dbPath  = self::join(self::getBaseDir(), PathDatabaseType::Plugin->value);
 ```
 
 ---
@@ -295,7 +357,7 @@ final class PathConst
 ```php
 <?php
 
-namespace RiseupAsia\\Enums;
+namespace RiseupAsia\Enums;
 
 final class ErrorType
 {
@@ -343,7 +405,10 @@ final class ErrorType
 | `CapabilityType`   | `enum`       | `Type` | Discrete capabilities — "which permission?"      |
 | `HttpMethodType`   | `enum`       | `Type` | Discrete HTTP verbs — "which method?"            |
 | `HookType`         | `enum`       | `Type` | Discrete hook names — "which hook?"              |
-| `PathConst`        | `final class`| —      | Path fragments, not a "which one" set            |
+| `PathSubdirType`   | `enum`       | `Type` | Discrete subdirectories — "which directory?"     |
+| `PathDatabaseType` | `enum`       | `Type` | Discrete DB files — "which database?"            |
+| `PathLogFileType`  | `enum`       | `Type` | Discrete log files — "which log?"                |
+| `PathConfigType`   | `enum`       | `Type` | Discrete config files — "which config?"          |
 | `ErrorType`        | `final class`| —      | Arrays of E_* constants and label maps           |
 
 ### Decision Rule
@@ -356,11 +421,11 @@ final class ErrorType
 ## ErrorChecker — Uses ErrorType
 
 ```php
-use RiseupAsia\\Enums\\ErrorType;
+use RiseupAsia\Enums\ErrorType;
 
 class ErrorChecker {
 
-    public static function is_fatal_error(?array $error): bool {
+    public static function isFatalError(?array $error): bool {
         if ($error === null) {
             return false;
         }
@@ -368,7 +433,7 @@ class ErrorChecker {
         return in_array($error['type'], ErrorType::FATAL_TYPES, true);
     }
 
-    public static function get_type_label(int $type): string {
+    public static function getTypeLabel(int $type): string {
         return ErrorType::TYPE_LABELS[$type] ?? 'UNKNOWN_ERROR_TYPE';
     }
 }
@@ -380,20 +445,21 @@ class ErrorChecker {
 
 1. **Add the case** to the appropriate enum in `includes/Enums/`.
 2. **Add a PHPDoc comment** if the case is non-obvious.
-3. **If PathConst:** Add a corresponding typed accessor to `RiseupPathUtils`.
-4. **If HookType:** Update all `add_action`/`add_filter` calls.
-5. **If CapabilityType:** Update all `current_user_can()` calls.
-6. **If HttpMethodType:** Update all `register_rest_route()` calls.
-7. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
-8. **Never skip the enum** — even for "one-time" usage.
+3. **If PathSubdirType:** Add a corresponding typed accessor to `RiseupPathUtils`.
+4. **If PathDatabaseType/PathLogFileType/PathConfigType:** Add a typed accessor to `RiseupPathUtils`.
+5. **If HookType:** Update all `add_action`/`add_filter` calls.
+6. **If CapabilityType:** Update all `current_user_can()` calls.
+7. **If HttpMethodType:** Update all `register_rest_route()` calls.
+8. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
+9. **Never skip the enum** — even for "one-time" usage.
 
 ---
 
 ## Cross-References
 
 - [PHP Coding Standards](./README.md) — Parent spec with forbidden patterns
-- [Naming Conventions](./naming-conventions.md) — PascalCase for enums, snake_case for methods
+- [Naming Conventions](./naming-conventions.md) — PascalCase for enums, camelCase for methods
 
 ---
 
-*PHP Enum specification v5.0.0 — 2026-02-13*
+*PHP Enum specification v6.0.0 — 2026-02-14*

@@ -1,7 +1,7 @@
 # PHP Coding Standards
 
-> **Version:** 4.0.0  
-> **Updated:** 2026-02-13  
+> **Version:** 5.0.0  
+> **Updated:** 2026-02-14  
 > **Applies to:** WordPress companion plugins (PHP 7.4+)
 
 ---
@@ -14,16 +14,16 @@
 | Element | Convention | Example | Override reason |
 |---------|-----------|---------|-----------------|
 | Class names | PascalCase | `RiseupEnvelopeBuilder`, `RiseupSnapshotFactory` | _(matches PSR-12)_ |
-| Method names | snake_case | `build_response()`, `get_plugin_info()` | WordPress convention |
+| Method names | camelCase | `buildResponse()`, `getPluginInfo()` | Internal consistency (overrides WordPress snake_case) |
 | Constants | UPPER_SNAKE_CASE (no `RISEUP_` prefix) | `REST_NAMESPACE`, `ACTION_UPLOAD` | _(matches PSR-12)_ |
 | File names (classes) | `class-{kebab-case}.php` | `class-envelope-builder.php` | WordPress convention |
-| File names (enums) | `{DefinitionName}.php` (PascalCase, PSR-4) | `UploadSource.php`, `Capability.php` | PSR-4 in `includes/Enums/` |
+| File names (enums) | `{DefinitionName}Type.php` (PascalCase, PSR-4) | `UploadSourceType.php`, `CapabilityType.php` | PSR-4 in `includes/Enums/` |
 | Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` | _(matches PSR-12)_ |
-| Enum types | PascalCase, **no `Enum` suffix** | `UploadSource`, `Capability`, `HttpMethod` | PHP 8.1+ native backed enums |
+| Enum types | PascalCase, **`Type` suffix required** | `UploadSourceType`, `CapabilityType`, `HttpMethodType` | PHP 8.1+ native backed enums |
 
 > **Dual file naming convention:**
 > - **`includes/`** (non-namespaced WordPress classes): `class-kebab-case.php` (e.g., `class-envelope-builder.php`)
-> - **`includes/Enums/`** (namespaced types under `RiseupAsia\Enums`): `{DefinitionName}.php` — file name = definition name, PascalCase, no prefix, no hyphens, no underscores (e.g., `UploadSource.php` contains `enum UploadSource: string`)
+> - **`includes/Enums/`** (namespaced types under `RiseupAsia\Enums`): `{DefinitionName}Type.php` — file name = definition name, PascalCase with `Type` suffix, no prefix, no hyphens, no underscores (e.g., `UploadSourceType.php` contains `enum UploadSourceType: string`)
 
 ---
 
@@ -44,8 +44,9 @@ try {
 // ✅ REQUIRED: Catches all throwables
 try {
     $result = $manager->process();
+
 } catch (\Throwable $e) {
-    $this->logger->log_exception($e, 'process_failed');
+    $this->logger->logException($e, 'process_failed');
     wp_send_json_error([
         'message'          => $e->getMessage(),
         'stackTrace'       => $e->getTraceAsString(),
@@ -56,22 +57,22 @@ try {
 
 ### Safe Execute Wrapper
 
-All REST endpoint handlers must be wrapped in `safe_execute`:
+All REST endpoint handlers must be wrapped in `safeExecute`:
 
 ```php
-// ✅ Pattern: safe_execute wrapper
-public function handle_upload($request) {
-    return $this->safe_execute(function() use ($request) {
+// ✅ Pattern: safeExecute wrapper
+public function handleUpload($request) {
+    return $this->safeExecute(function() use ($request) {
         // Business logic here
         return $this->envelope->success($result);
     });
 }
 
-private function safe_execute(callable $callback) {
+private function safeExecute(callable $callback) {
     try {
         return $callback();
     } catch (\Throwable $e) {
-        $this->logger->log_exception($e, 'endpoint_error');
+        $this->logger->logException($e, 'endpoint_error');
 
         return $this->envelope->error($e->getMessage(), 500);
     }
@@ -94,15 +95,15 @@ register_shutdown_function(function() {
 // ✅ REQUIRED: Use ErrorChecker for readable, centralized fatal-error detection
 register_shutdown_function(function() {
     $error = error_get_last();
-    if (ErrorChecker::is_fatal_error($error)) {
-        // Log to fatal-errors.log via RiseupPathUtils::get_fatal_error_log()
+    if (ErrorChecker::isFatalError($error)) {
+        // Log to fatal-errors.log via RiseupPathUtils::getFatalErrorLog()
         // Include memory_get_peak_usage() for diagnostics
         // Send JSON response before process dies (if REST_REQUEST)
     }
 });
 ```
 
-> **Implementation:** `ErrorChecker` delegates to `ErrorType::FATAL_TYPES` for the constant list. Use `ErrorChecker::get_type_label($error['type'])` to convert any `E_*` integer to a human-readable string (e.g., `'E_ERROR'`) — this replaces all inline type-mapping arrays. See [enums.md](./enums.md) for the full `ErrorChecker`, `ErrorType`, and `TYPE_LABELS` implementations.
+> **Implementation:** `ErrorChecker` delegates to `ErrorType::FATAL_TYPES` for the constant list. Use `ErrorChecker::getTypeLabel($error['type'])` to convert any `E_*` integer to a human-readable string (e.g., `'E_ERROR'`) — this replaces all inline type-mapping arrays. See [enums.md](./enums.md) for the full `ErrorChecker`, `ErrorType`, and `TYPE_LABELS` implementations.
 
 ---
 
@@ -136,7 +137,7 @@ The logger captures two outputs for every error:
 
 ```php
 // ✅ Dual logging: structured + raw
-public function log_exception(\Throwable $e, string $context = '') {
+public function logException(\Throwable $e, string $context = '') {
     // Structured frames for JSON responses
     $frames = $this->formatStackFrames($e);
     
@@ -161,15 +162,15 @@ Every endpoint path, action name, capability string, option key, **hook name**, 
 ```php
 // ❌ FORBIDDEN: Magic hook strings
 add_action('init', [$this, 'setup']);
-add_action('rest_api_init', [$this, 'register_routes']);
-add_action('plugins_loaded', [$this, 'on_plugins_loaded']);
+add_action('rest_api_init', [$this, 'registerRoutes']);
+add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
 
 // ✅ REQUIRED: Hook names from HookType enum
 use RiseupAsia\Enums\HookType;
 
 add_action(HookType::Init->value, [$this, 'setup']);
-add_action(HookType::RestApiInit->value, [$this, 'register_routes']);
-add_action(HookType::PluginsLoaded->value, [$this, 'on_plugins_loaded']);
+add_action(HookType::RestApiInit->value, [$this, 'registerRoutes']);
+add_action(HookType::PluginsLoaded->value, [$this, 'onPluginsLoaded']);
 ```
 
 ### Action Names — Named Composed Constants
@@ -219,7 +220,7 @@ if (!class_exists('PDO') || !extension_loaded('pdo_sqlite')) {
 }
 
 // ✅ REQUIRED: Centralized check via ErrorChecker
-if (ErrorChecker::is_invalid_pdo_extension()) {
+if (ErrorChecker::isInvalidPdoExtension()) {
     $this->logger->error('PDO/SQLite not available');
 
     return $this->envelope->error('SQLite support not available', 500);
@@ -355,41 +356,41 @@ The following `RiseupBooleanHelpers` methods **are allowed** because they encaps
 
 | Method | Semantics | Internal logic |
 |--------|-----------|----------------|
-| `is_func_exists($name)` | Function is available | `function_exists($name)` |
-| `is_func_missing($name)` | Function is not available | `!function_exists($name)` |
-| `is_class_exists($name)` | Class is available | `class_exists($name)` |
-| `is_class_missing($name)` | Class is not available | `!class_exists($name)` |
-| `is_extension_loaded($name)` | PHP extension is loaded | `extension_loaded($name)` |
-| `is_extension_missing($name)` | PHP extension is not loaded | `!extension_loaded($name)` |
-| `is_dir_exists($path)` | Directory exists | `!empty($path) && is_dir($path)` |
-| `is_dir_missing($path)` | Directory does not exist | `empty($path) \|\| !is_dir($path)` |
-| `is_dir_writable($path)` | Directory exists and is writable | `!empty($path) && is_dir($path) && is_writable($path)` |
-| `is_dir_readonly($path)` | Directory missing or not writable | `empty($path) \|\| !is_dir($path) \|\| !is_writable($path)` |
-| `is_file_exists($path)` | File exists | `!empty($path) && file_exists($path)` |
-| `is_file_missing($path)` | File does not exist | `empty($path) \|\| !file_exists($path)` |
-| `is_db_connected($db)` | DB object is connected | `$db !== null && $db->is_connected()` |
-| `is_db_disconnected($db)` | DB object is not connected | `$db === null \|\| !$db->is_connected()` |
+| `isFuncExists($name)` | Function is available | `function_exists($name)` |
+| `isFuncMissing($name)` | Function is not available | `!function_exists($name)` |
+| `isClassExists($name)` | Class is available | `class_exists($name)` |
+| `isClassMissing($name)` | Class is not available | `!class_exists($name)` |
+| `isExtensionLoaded($name)` | PHP extension is loaded | `extension_loaded($name)` |
+| `isExtensionMissing($name)` | PHP extension is not loaded | `!extension_loaded($name)` |
+| `isDirExists($path)` | Directory exists | `!empty($path) && is_dir($path)` |
+| `isDirMissing($path)` | Directory does not exist | `empty($path) \|\| !is_dir($path)` |
+| `isDirWritable($path)` | Directory exists and is writable | `!empty($path) && is_dir($path) && is_writable($path)` |
+| `isDirReadonly($path)` | Directory missing or not writable | `empty($path) \|\| !is_dir($path) \|\| !is_writable($path)` |
+| `isFileExists($path)` | File exists | `!empty($path) && file_exists($path)` |
+| `isFileMissing($path)` | File does not exist | `empty($path) \|\| !file_exists($path)` |
+| `isDbConnected($db)` | DB object is connected | `$db !== null && $db->isConnected()` |
+| `isDbDisconnected($db)` | DB object is not connected | `$db === null \|\| !$db->isConnected()` |
 
-> **Why these are allowed:** Each combines a null/empty guard with a native function call — a pattern that is easy to get wrong inline. The semantic method name (`is_dir_missing`) reads as a single intent.
+> **Why these are allowed:** Each combines a null/empty guard with a native function call — a pattern that is easy to get wrong inline. The semantic method name (`isDirMissing`) reads as a single intent.
 
 ### Semantic Object Methods
 
 ```php
 // ❌ FORBIDDEN: Raw negation — easy to miss the "!"
-if (!$plugin->is_active()) { ... }
+if (!$plugin->isActive()) { ... }
 
 // ✅ REQUIRED: Semantic inverse methods on the object
-if ($plugin->is_disabled()) { ... }
+if ($plugin->isDisabled()) { ... }
 
 // ✅ REQUIRED: Descriptive boolean variable names (Is/Has prefix)
-if ($is_value) { ... }
-if ($has_permission) { ... }
+if ($isValue) { ... }
+if ($hasPermission) { ... }
 ```
 
 ### Guidelines
 
-1. **Every `is_*()` method should have a semantic inverse** (e.g., `is_active()` ↔ `is_disabled()`) rather than relying on `!is_active()`.
-2. **Boolean variables must use `$is_*` or `$has_*` prefix** — never store a boolean in `$value` or `$result`.
+1. **Every `isX()` method should have a semantic inverse** (e.g., `isActive()` ↔ `isDisabled()`) rather than relying on `!isActive()`.
+2. **Boolean variables must use `$is*` or `$has*` prefix** — never store a boolean in `$value` or `$result`.
 3. **Never create new trivial wrapper helpers** — if the check is a single native operator (`!`, `empty()`, `=== null`), use PHP directly. Only create helpers for multi-step checks with safety guards.
 
 ---
@@ -464,7 +465,7 @@ if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR], true)) 
 }
 
 // ✅ REQUIRED: Extracted into a dedicated method
-if (ErrorChecker::is_fatal_error($error)) {
+if (ErrorChecker::isFatalError($error)) {
     $this->logger->fatal($error);
 }
 
@@ -474,21 +475,21 @@ if (!class_exists('PDO') || !extension_loaded('pdo_sqlite')) {
 }
 
 // ✅ REQUIRED: Extracted into ErrorChecker
-if (ErrorChecker::is_invalid_pdo_extension()) {
+if (ErrorChecker::isInvalidPdoExtension()) {
     return $this->envelope->error('SQLite not available', 500);
 }
 
 // ❌ FORBIDDEN: Combinable nested conditions left inline
-if ($request !== null && $request->has_param('file') && $request->get_param('file') !== '') {
+if ($request !== null && $request->hasParam('file') && $request->getParam('file') !== '') {
     $this->process($request);
 }
 
 // ✅ REQUIRED: Named boolean for clarity
-$has_file_param = $request !== null
-    && $request->has_param('file')
-    && $request->get_param('file') !== '';
+$hasFileParam = $request !== null
+    && $request->hasParam('file')
+    && $request->getParam('file') !== '';
 
-if ($has_file_param) {
+if ($hasFileParam) {
     $this->process($request);
 }
 ```
@@ -540,8 +541,8 @@ if isUpstreamError {
 
 | Complexity | Extraction | Example |
 |------------|-----------|---------|
-| 2 conditions, used once | Named `$is_*` / `$has_*` variable | `$has_file_param = $req !== null && $req->has_param('file');` |
-| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::is_fatal_error($error)` |
+| 2 conditions, used once | Named `$is*` / `$has*` variable | `$hasFileParam = $req !== null && $req->hasParam('file');` |
+| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::isFatalError($error)` |
 | Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
 
 ### Rule 4: Blank line before `return` when preceded by other statements
@@ -599,16 +600,16 @@ Every function/method body must be **15 lines or fewer** (excluding blank lines,
 
 ```php
 // ❌ FORBIDDEN: 25+ line function
-public function handle_upload($request) {
+public function handleUpload($request) {
     // validation, processing, logging, response... all inline
 }
 
 // ✅ REQUIRED: Short top-level, helpers do the work
-public function handle_upload($request) {
-    $params = $this->extract_upload_params($request);
-    $this->validate_upload($params);
-    $result = $this->process_upload($params);
-    $this->log_upload($result);
+public function handleUpload($request) {
+    $params = $this->extractUploadParams($request);
+    $this->validateUpload($params);
+    $result = $this->processUpload($params);
+    $this->logUpload($result);
 
     return $this->envelope->success($result);
 }
@@ -629,15 +630,15 @@ public function handle_upload($request) {
 | `getDataDir() . '/file.db'` | Partial accessor, still magic | Add a typed accessor to `RiseupPathUtils` |
 | Constructor WordPress calls | Load order issues | Lazy initialization |
 | `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
-| Inline `!class_exists('PDO')` checks | Duplicated logic | `ErrorChecker::is_invalid_pdo_extension()` |
+| Inline `!class_exists('PDO')` checks | Duplicated logic | `ErrorChecker::isInvalidPdoExtension()` |
 | Nested `if` | **Zero tolerance** — absolute ban | Flatten with early returns or combined conditions |
 | Functions > 15 lines | Hard to read, test, review | Extract helpers |
 | `return` without blank line after statements | Poor readability | Blank line before `return` |
 | Single-line `if (...) return;` | Easy to miss, inconsistent | Always use braces `{ }` |
 | Inline multi-part `if` condition (2+ operators) | Hard to read, not reusable | Extract to named `$is_*` variable or method |
 | `RiseupBooleanHelpers::is_falsy/is_truthy/...` | Trivial wrappers (deprecated) | Native PHP operators |
-| `!$obj->is_active()` | Easy to miss negation | `$obj->is_disabled()` |
-| `!file_exists()` / `!is_dir()` | Raw negation | `is_file_missing()` / `is_dir_missing()` |
+| `!$obj->isActive()` | Easy to miss negation | `$obj->isDisabled()` |
+| `!file_exists()` / `!is_dir()` | Raw negation | `isFileMissing()` / `isDirMissing()` |
 | `current_user_can('manage_options')` | Magic string | `CapabilityType::ManageOptions->value` |
 | `'POST'` in routes | Inconsistent | `HttpMethodType::Post->value` |
 | Untyped function parameters | No runtime safety | Add type declarations (see [Strict Typing](../01-coding-guidelines/strict-typing.md)) |
@@ -659,4 +660,4 @@ public function handle_upload($request) {
 
 ---
 
-*PHP standards specification v4.0.0 — 2026-02-14*
+*PHP standards specification v5.0.0 — 2026-02-14*

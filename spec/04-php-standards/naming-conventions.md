@@ -209,7 +209,10 @@ includes/
     HookType.php
     HttpMethodType.php
     UploadSourceType.php
-    PathConst.php
+    PathSubdirType.php
+    PathDatabaseType.php
+    PathLogFileType.php
+    PathConfigType.php
 ```
 
 Autoloaders depend on this mapping.

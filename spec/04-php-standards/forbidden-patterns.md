@@ -1,7 +1,7 @@
 # PHP Forbidden Patterns — Quick Reference Checklist
 
-> **Version:** 2.0.0  
-> **Updated:** 2026-02-13  
+> **Version:** 3.0.0  
+> **Updated:** 2026-02-14  
 > **Consolidates:** [README.md](./README.md), [enums.md](./enums.md), [WP Error Handling](../07-wordpress-plugin-development/07-error-handling.md)
 
 ---
@@ -17,13 +17,13 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
 | 1.1 | `catch (Exception $e)` | `catch (\Throwable $e)` | Misses PHP 7+ `Error`, `TypeError`, `ParseError` |
-| 1.2 | `$error && in_array($error['type'], [E_ERROR, ...])` | `ErrorChecker::is_fatal_error($error)` | Duplicated logic; central list in `ErrorType::FATAL_TYPES` |
-| 1.3 | Inline `E_*` → string mapping arrays | `ErrorChecker::get_type_label($type)` | Uses `ErrorType::TYPE_LABELS`; one place to update |
+| 1.2 | `$error && in_array($error['type'], [E_ERROR, ...])` | `ErrorChecker::isFatalError($error)` | Duplicated logic; central list in `ErrorType::FATAL_TYPES` |
+| 1.3 | Inline `E_*` → string mapping arrays | `ErrorChecker::getTypeLabel($type)` | Uses `ErrorType::TYPE_LABELS`; one place to update |
 | 1.4 | `wp_die()` in REST handlers | `wp_send_json_error()` or `$this->envelope->error()` | `wp_die()` breaks JSON response format |
-| 1.5 | `error_log()` for diagnostics | `RiseupLogger` / `$this->file_logger` | No structure, no stack trace, no audit trail |
-| 1.6 | `!class_exists('PDO') \|\| !extension_loaded(...)` inline | `ErrorChecker::is_invalid_pdo_extension()` | Centralized; self-documenting |
-| 1.7 | Unchecked `new PDO()` without any guard | `ErrorChecker::is_invalid_pdo_extension()` check first | Fatal error if extension missing |
-| 1.7 | REST handler without `safe_execute` wrapper | Wrap in `$this->safe_execute(fn() => ...)` | Unhandled exceptions crash the endpoint |
+| 1.5 | `error_log()` for diagnostics | `RiseupLogger` / `$this->fileLogger` | No structure, no stack trace, no audit trail |
+| 1.6 | `!class_exists('PDO') \|\| !extension_loaded(...)` inline | `ErrorChecker::isInvalidPdoExtension()` | Centralized; self-documenting |
+| 1.7 | Unchecked `new PDO()` without any guard | `ErrorChecker::isInvalidPdoExtension()` check first | Fatal error if extension missing |
+| 1.7 | REST handler without `safeExecute` wrapper | Wrap in `$this->safeExecute(fn() => ...)` | Unhandled exceptions crash the endpoint |
 
 ---
 
@@ -57,7 +57,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 |---|-------------|------------|-----|
 | 3.1 | `WP_CONTENT_DIR . '/uploads/.../file.db'` | `RiseupPathUtils::getRootDb()` | Manual concatenation; magic string |
 | 3.2 | `RiseupPathUtils::getDataDir() . '/file.db'` | `RiseupPathUtils::getRootDb()` | Partial accessor; magic filename at call site |
-| 3.3 | `RiseupPathUtils::getDataDir() . PathConst::ROOT_DB` | `RiseupPathUtils::getRootDb()` | Leaks internal composition to caller |
+| 3.3 | `RiseupPathUtils::getDataDir() . PathDatabaseType::Root->value` | `RiseupPathUtils::getRootDb()` | Leaks internal composition to caller |
 | 3.4 | Any path without a typed accessor | Create accessor in `RiseupPathUtils` first | Every path must have a single-call accessor |
 
 ---
@@ -68,15 +68,15 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
-| 4.1 | `RiseupBooleanHelpers::isFalsy(...)` | `$plugin->is_disabled()` | Generic helper obscures intent |
-| 4.2 | `RiseupBooleanHelpers::isTruthy(...)` | `$is_value` | Unnecessary indirection |
-| 4.3 | `!$plugin->is_active()` | `$plugin->is_disabled()` | Negation is easy to miss; use semantic inverse |
-| 4.4 | `$value` for boolean variables | `$is_value`, `$has_permission` | Ambiguous naming; must use `$is_*` / `$has_*` prefix |
-| 4.5 | `!file_exists($path)` | `RiseupBooleanHelpers::is_file_missing($path)` | Raw negation; use positive guard |
-| 4.6 | `!is_dir($path)` | `RiseupBooleanHelpers::is_dir_missing($path)` | Raw negation; use positive guard |
-| 4.7 | `!class_exists('X')` | `RiseupBooleanHelpers::is_class_missing('X')` | Raw negation; use positive guard |
-| 4.8 | `!function_exists('f')` | `RiseupBooleanHelpers::is_func_missing('f')` | Raw negation; use positive guard |
-| 4.9 | `!extension_loaded('e')` | `RiseupBooleanHelpers::is_extension_missing('e')` | Raw negation; use positive guard |
+| 4.1 | `RiseupBooleanHelpers::isFalsy(...)` | `$plugin->isDisabled()` | Generic helper obscures intent |
+| 4.2 | `RiseupBooleanHelpers::isTruthy(...)` | `$isValue` | Unnecessary indirection |
+| 4.3 | `!$plugin->isActive()` | `$plugin->isDisabled()` | Negation is easy to miss; use semantic inverse |
+| 4.4 | `$value` for boolean variables | `$isValue`, `$hasPermission` | Ambiguous naming; must use `$is*` / `$has*` prefix |
+| 4.5 | `!file_exists($path)` | `RiseupBooleanHelpers::isFileMissing($path)` | Raw negation; use positive guard |
+| 4.6 | `!is_dir($path)` | `RiseupBooleanHelpers::isDirMissing($path)` | Raw negation; use positive guard |
+| 4.7 | `!class_exists('X')` | `RiseupBooleanHelpers::isClassMissing('X')` | Raw negation; use positive guard |
+| 4.8 | `!function_exists('f')` | `RiseupBooleanHelpers::isFuncMissing('f')` | Raw negation; use positive guard |
+| 4.9 | `!extension_loaded('e')` | `RiseupBooleanHelpers::isExtensionMissing('e')` | Raw negation; use positive guard |
 
 ---
 
@@ -96,9 +96,9 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
-| 6.1 | Inline `if` with 2+ operators (`&&`, `\|\|`, `!`) | Extract to named `$is_*`/`$has_*` variable or method | Reads as intent, not implementation |
-| 6.2 | `$error && in_array($error['type'], [...])` | `ErrorChecker::is_fatal_error($error)` | Reusable, self-documenting |
-| 6.3 | `!class_exists('PDO') \|\| !extension_loaded(...)` | `ErrorChecker::is_invalid_pdo_extension()` | Centralized check |
+| 6.1 | Inline `if` with 2+ operators (`&&`, `\|\|`, `!`) | Extract to named `$is*`/`$has*` variable or method | Reads as intent, not implementation |
+| 6.2 | `$error && in_array($error['type'], [...])` | `ErrorChecker::isFatalError($error)` | Reusable, self-documenting |
+| 6.3 | `!class_exists('PDO') \|\| !extension_loaded(...)` | `ErrorChecker::isInvalidPdoExtension()` | Centralized check |
 | 6.4 | Nested `if` (any depth) | **Zero tolerance** — flatten with early returns or combined conditions | Absolute ban |
 | 6.5 | Functions > 15 lines | Extract helpers; each function does one thing | Max 15 lines per function body |
 
@@ -110,7 +110,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 |---|-------------|------------|-----|
 | 7.1 | `[E_ERROR, E_PARSE, E_CORE_ERROR, ...]` inline | `ErrorType::FATAL_TYPES` | Centralized; update one place for new PHP versions |
 | 7.2 | `[E_WARNING, E_NOTICE, ...]` inline | `ErrorType::WARNING_TYPES` | Same principle |
-| 7.3 | Custom `error_type_to_string()` functions | `ErrorChecker::get_type_label($type)` | Uses `ErrorType::TYPE_LABELS` map |
+| 7.3 | Custom `errorTypeToString()` functions | `ErrorChecker::getTypeLabel($type)` | Uses `ErrorType::TYPE_LABELS` map |
 
 ---
 
@@ -119,28 +119,28 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 ```
 [ ] No `catch (Exception $e)` — all use `catch (\Throwable $e)`
 [ ] No inline `in_array($error['type'], [...])` — use `ErrorChecker`
-[ ] No inline E_* → string maps — use `ErrorChecker::get_type_label()`
+[ ] No inline E_* → string maps — use `ErrorChecker::getTypeLabel()`
 [ ] No `wp_die()` in REST handlers
 [ ] No `error_log()` — use structured logger
 [ ] No string literals in add_action/add_filter — use `HookType::*->value`
 [ ] No inline concatenation at call sites — compose named constants first
 [ ] No manual path concatenation — use `RiseupPathUtils` accessors
 [ ] No `RiseupBooleanHelpers` trivial wrappers — use semantic methods
-[ ] No `!$obj->is_active()` — use `$obj->is_disabled()`
-[ ] No `!file_exists()` — use `is_file_missing()`
-[ ] No `!is_dir()` — use `is_dir_missing()`
-[ ] No `!class_exists()` — use `is_class_missing()`
-[ ] No `!function_exists()` — use `is_func_missing()`
-[ ] No `!extension_loaded()` — use `is_extension_missing()`
+[ ] No `!$obj->isActive()` — use `$obj->isDisabled()`
+[ ] No `!file_exists()` — use `isFileMissing()`
+[ ] No `!is_dir()` — use `isDirMissing()`
+[ ] No `!class_exists()` — use `isClassMissing()`
+[ ] No `!function_exists()` — use `isFuncMissing()`
+[ ] No `!extension_loaded()` — use `isExtensionMissing()`
 [ ] No raw `!` on any function call — use positive guard function
-[ ] No boolean vars without `$is_*` / `$has_*` prefix
+[ ] No boolean vars without `$is*` / `$has*` prefix
 [ ] No WordPress calls in constructors
-[ ] No inline `!class_exists('PDO')` — use `ErrorChecker::is_invalid_pdo_extension()`
+[ ] No inline `!class_exists('PDO')` — use `ErrorChecker::isInvalidPdoExtension()`
 [ ] Blank line before `return` when preceded by other statements
 [ ] No single-line `if (...) return;` — always use braces
 [ ] Blank line after closing `}` when followed by more code
 [ ] No nested `if` — ZERO TOLERANCE — absolute ban
-[ ] No inline multi-part `if` (2+ operators) — extract to `$is_*` variable or method
+[ ] No inline multi-part `if` (2+ operators) — extract to `$is*` variable or method
 [ ] Functions max 15 lines — extract helpers for longer logic
 ```
 
@@ -149,7 +149,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 ## Cross-References
 
 - [PHP Coding Standards](./README.md) — Full spec with examples
-- [PHP Enum Classes](./enums.md) — `HookType`, `CapabilityType`, `HttpMethodType`, `PathConst`, `ErrorType`, `ErrorChecker`
+- [PHP Enum Classes](./enums.md) — `HookType`, `CapabilityType`, `HttpMethodType`, Path enums, `ErrorType`, `ErrorChecker`
 - [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rules 1-7 (braces, nesting, spacing, function size)
 - [WordPress Error Handling](../07-wordpress-plugin-development/07-error-handling.md) — Complete error handling patterns
 - [WordPress Initialization](../07-wordpress-plugin-development/01-initialization-patterns.md) — Bootstrap patterns
@@ -157,4 +157,4 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 ---
 
-*Forbidden patterns checklist v2.0.0 — 2026-02-13*
+*Forbidden patterns checklist v3.0.0 — 2026-02-14*
