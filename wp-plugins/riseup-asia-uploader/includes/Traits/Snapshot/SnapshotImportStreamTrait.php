@@ -20,7 +20,7 @@ trait SnapshotImportStreamTrait {
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response|void Response or direct file stream.
      */
-    public function handle_snapshot_download_file($request) {
+    public function handleSnapshotDownloadFile($request) {
         $validated = $this->validateAndResolveExport($request);
         if ($validated instanceof WP_REST_Response) {
             return $validated;
@@ -46,7 +46,7 @@ trait SnapshotImportStreamTrait {
         }
 
         require_once dirname(__FILE__) . '/../../Snapshot/SnapshotExporter.php';
-        $export = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db)->validateDownloadToken($exportId, $token);
+        $export = RiseupSnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
 
         if (!$export) {
             return new WP_REST_Response(array(
@@ -82,7 +82,7 @@ trait SnapshotImportStreamTrait {
         $filename = $export['zip_filename'];
         $filesize = filesize($filepath);
 
-        $this->logger->log_plugin_action(ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_SUCCESS,
+        $this->logger->logPluginAction(ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_SUCCESS,
             array('export_id' => $exportId, 'filename' => $filename, 'size' => $filesize, 'phase' => 'streaming'));
 
         $this->sendZipHeaders($filename, $filesize);
@@ -111,31 +111,31 @@ trait SnapshotImportStreamTrait {
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response Response.
      */
-    public function handle_import_snapshot($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleImportSnapshot($request) {
+        return $this->safeExecute(function() use ($request) {
             $files = $request->get_file_params();
 
             if (empty($files['file']['tmp_name'])) {
-                return $this->error_response('No file uploaded', 400);
+                return $this->errorResponse('No file uploaded', 400);
             }
 
             $tmp_file = $files['file']['tmp_name'];
             $original_name = $files['file']['name'] ?? 'unknown';
-            $this->file_logger->info('Importing snapshot from uploaded ZIP', array(
+            $this->fileLogger->info('Importing snapshot from uploaded ZIP', array(
                 'originalName' => $original_name,
                 'size'         => $files['file']['size'],
             ));
 
-            $this->logger->log_plugin_action(
+            $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, 'snapshot', STATUS_SUCCESS,
                 array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
             );
 
-            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
-            $importer = new RiseupSnapshotImport($this->file_logger, $this->db, $manager);
+            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $importer = new RiseupSnapshotImport($this->fileLogger, $this->db, $manager);
             $result = $importer->import($tmp_file);
 
-            $this->logger->log_plugin_action(
+            $this->logger->logPluginAction(
                 ActionType::SnapshotImport->value, 'snapshot',
                 $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
                 array('filename' => $original_name, 'phase' => 'complete'),

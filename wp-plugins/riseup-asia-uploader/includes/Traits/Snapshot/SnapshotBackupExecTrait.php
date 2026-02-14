@@ -11,8 +11,8 @@ use RiseupAsia\Enums\ActionType;
 trait SnapshotBackupExecTrait {
 
     /** Handle full end-to-end backup. */
-    public function handle_full_backup($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleFullBackup($request) {
+        return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $this->logBackupInitiated(ActionType::SnapshotFullBackup->value, $body);
 
@@ -25,8 +25,8 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Handle incremental backup. */
-    public function handle_incremental_backup($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleIncrementalBackup($request) {
+        return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $this->logBackupInitiated(ActionType::SnapshotIncremental->value, $body);
 
@@ -45,14 +45,14 @@ trait SnapshotBackupExecTrait {
 
     /** Log a backup initiation event. */
     private function logBackupInitiated(string $action, array $body) {
-        $this->logger->log_plugin_action($action, 'snapshot', STATUS_SUCCESS,
+        $this->logger->logPluginAction($action, 'snapshot', STATUS_SUCCESS,
             array('title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? null, 'phase' => 'initiated'));
     }
 
     /** Create the orchestrator for full backup. */
     private function createFullBackupOrchestrator() {
-        $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
-        return RiseupSnapshotOrchestrator::getInstance($this->file_logger, $this->db, $manager);
+        $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+        return RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
     }
 
     /** Extract full backup options from request body. */
@@ -67,7 +67,7 @@ trait SnapshotBackupExecTrait {
 
     /** Log full backup completion. */
     private function logBackupComplete(string $action, array $result) {
-        $this->logger->log_plugin_action($action, 'snapshot',
+        $this->logger->logPluginAction($action, 'snapshot',
             $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
             array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables' => $result['tables'] ?? 0,
                 'total_rows' => $result['total_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),
@@ -105,13 +105,13 @@ trait SnapshotBackupExecTrait {
 
     /** Create an IncrementalBackup instance. */
     private function createIncrementalBackup() {
-        $rootDb = RiseupRootDb::getInstance($this->file_logger, RiseupDependencyAnalyzer::getInstance($this->file_logger));
-        return RiseupIncrementalBackup::getInstance($this->file_logger, $this->db, $rootDb);
+        $rootDb = RiseupRootDb::getInstance($this->fileLogger, RiseupDependencyAnalyzer::getInstance($this->fileLogger));
+        return RiseupIncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
     }
 
     /** Log incremental backup completion. */
     private function logIncrementalComplete(array $result) {
-        $this->logger->log_plugin_action(ActionType::SnapshotIncremental->value, 'snapshot',
+        $this->logger->logPluginAction(ActionType::SnapshotIncremental->value, 'snapshot',
             $result['success'] ? STATUS_SUCCESS : STATUS_FAILED,
             array('snapshot_id' => $result['snapshot_id'] ?? null, 'tables_changed' => $result['tables_changed'] ?? 0,
                 'total_new_rows' => $result['total_new_rows'] ?? 0, 'duration' => $result['duration'] ?? 0, 'phase' => 'complete'),

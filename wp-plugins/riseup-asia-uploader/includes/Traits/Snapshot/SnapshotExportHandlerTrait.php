@@ -20,40 +20,40 @@ trait SnapshotExportHandlerTrait {
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response Response.
      */
-    public function handle_export_snapshot($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleExportSnapshot($request) {
+        return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
-            $this->file_logger->info('Exporting snapshot', array('id' => $id));
+            $this->fileLogger->info('Exporting snapshot', array('id' => $id));
 
-            $this->logger->log_plugin_action(
+            $this->logger->logPluginAction(
                 ActionType::SnapshotExport->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
-            $manager = RiseupSnapshotManager::getInstance($this->file_logger, $this->db);
+            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $manager->exportSnapshot($id);
 
             if (!$result['success']) {
-                $this->logger->log_plugin_action(
+                $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, 'snapshot', STATUS_FAILED,
                     array('snapshot_id' => $id),
                     $result['error'] ?? 'Export failed'
                 );
-                return $this->error_response($result['error'], 400);
+                return $this->errorResponse($result['error'], 400);
             }
 
             $filepath = $result['filepath'];
             if (RiseupBooleanHelpers::is_file_missing($filepath)) {
-                $this->logger->log_plugin_action(
+                $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, 'snapshot', STATUS_FAILED,
                     array('snapshot_id' => $id),
                     'Export file not found'
                 );
-                return $this->error_response('Export file not found', 500);
+                return $this->errorResponse('Export file not found', 500);
             }
 
-            $this->logger->log_plugin_action(
+            $this->logger->logPluginAction(
                 ActionType::SnapshotExport->value, 'snapshot', STATUS_SUCCESS,
                 array('snapshot_id' => $id, 'filename' => $result['filename'], 'size' => $result['size'])
             );
@@ -73,13 +73,13 @@ trait SnapshotExportHandlerTrait {
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response Response.
      */
-    public function handle_snapshot_download($request) {
-        return $this->safe_execute(function() use ($request) {
+    public function handleSnapshotDownload($request) {
+        return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $snapshotId = isset($body['snapshot_id']) ? (int) $body['snapshot_id'] : 0;
 
             if ($snapshotId <= 0) {
-                return $this->error_response('Missing or invalid snapshot_id', 400);
+                return $this->errorResponse('Missing or invalid snapshot_id', 400);
             }
 
             return $this->buildDownloadResponse($snapshotId);
@@ -93,31 +93,31 @@ trait SnapshotExportHandlerTrait {
      * @return WP_REST_Response
      */
     private function buildDownloadResponse(int $snapshotId) {
-        $this->file_logger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
+        $this->fileLogger->info('Snapshot download requested', array('snapshot_id' => $snapshotId));
 
-        $this->logger->log_plugin_action(
+        $this->logger->logPluginAction(
             ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_SUCCESS,
             array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
         );
 
         require_once dirname(__FILE__) . '/../../Snapshot/SnapshotExporter.php';
-        $exporter = RiseupSnapshotExporter::getInstance($this->file_logger, $this->db);
+        $exporter = RiseupSnapshotExporter::getInstance($this->fileLogger, $this->db);
         $result = $exporter->getOrBuildZip($snapshotId);
 
         if (!$result['success']) {
-            $this->logger->log_plugin_action(
+            $this->logger->logPluginAction(
                 ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_FAILED,
                 array('snapshot_id' => $snapshotId),
                 $result['error'] ?? 'Download failed'
             );
 
-            return $this->error_response($result['error'] ?? 'Export failed', 400);
+            return $this->errorResponse($result['error'] ?? 'Export failed', 400);
         }
 
         $export = $result['export'];
         $downloadUrl = $exporter->getDownloadUrl((int) $export['id']);
 
-        $this->logger->log_plugin_action(
+        $this->logger->logPluginAction(
             ActionType::SnapshotZipDownload->value, 'snapshot', STATUS_SUCCESS,
             array(
                 'snapshot_id' => $snapshotId,

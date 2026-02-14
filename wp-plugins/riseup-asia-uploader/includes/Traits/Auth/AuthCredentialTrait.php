@@ -96,17 +96,17 @@ trait AuthCredentialTrait
     }
 
     /** Verify authentication only (no capability check). */
-    private function check_authenticated_only($request) {
+    private function checkAuthenticatedOnly($request) {
         try {
             return $this->resolveAndAuthenticate($request);
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, 'Authentication error');
+            $this->fileLogger->logException($e, 'Authentication error');
             return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
         }
     }
 
     /** Verify authentication and capability. */
-    private function check_authenticated_capability($request, $capability) {
+    private function checkAuthenticatedCapability($request, $capability) {
         try {
             $authResult = $this->resolveAndAuthenticate($request);
             if (is_wp_error($authResult) || $authResult === true) {
@@ -115,7 +115,7 @@ trait AuthCredentialTrait
 
             return $this->verifyCapability($authResult, $capability);
         } catch (Throwable $e) {
-            $this->file_logger->log_exception($e, 'Authentication error');
+            $this->fileLogger->logException($e, 'Authentication error');
             return new WP_Error('rest_forbidden', MSG_UNAUTHORIZED, array('status' => HTTP_UNAUTHORIZED));
         }
     }

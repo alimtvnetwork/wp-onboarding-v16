@@ -20,8 +20,8 @@ trait PluginExportTrait
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function handle_export_self($request) {
-        $this->file_logger->info('Export-self endpoint called');
+    public function handleExportSelf($request) {
+        $this->fileLogger->info('Export-self endpoint called');
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG;
@@ -29,10 +29,10 @@ trait PluginExportTrait
             $zip_content = $this->createPluginZip($plugin_dir, PLUGIN_SLUG, $ignore);
 
             if ($zip_content === null) {
-                return $this->error_response('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
+                return $this->errorResponse('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
             }
 
-            $this->logger->log_plugin_action(ActionType::ExportSelf->value, PLUGIN_SLUG, STATUS_SUCCESS, array(
+            $this->logger->logPluginAction(ActionType::ExportSelf->value, PLUGIN_SLUG, STATUS_SUCCESS, array(
                 'size' => strlen($zip_content),
             ));
 
@@ -43,8 +43,8 @@ trait PluginExportTrait
                 'version'    => PLUGIN_VERSION,
             ), HTTP_OK);
         } catch (\Throwable $e) {
-            $this->file_logger->log_exception($e, 'Export-self error');
-            return $this->error_response('Export failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
+            $this->fileLogger->logException($e, 'Export-self error');
+            return $this->errorResponse('Export failed: ' . $e->getMessage(), HTTP_SERVER_ERROR, $e);
         }
     }
 
@@ -54,14 +54,14 @@ trait PluginExportTrait
      * @param WP_REST_Request $request Request object.
      * @return WP_REST_Response
      */
-    public function handle_export_plugin($request) {
+    public function handleExportPlugin($request) {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
-            return $this->error_response('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Plugin slug is required in JSON body', HTTP_BAD_REQUEST);
         }
 
-        return $this->safe_execute(function () use ($slug) {
+        return $this->safeExecute(function () use ($slug) {
             return $this->exportPluginBySlug($slug);
         });
     }
@@ -103,21 +103,21 @@ trait PluginExportTrait
         $plugin_dir  = RiseupPathUtils::join($plugins_dir, $slug);
 
         if (!RiseupPathUtils::dirExists($plugin_dir)) {
-            return $this->error_response('Plugin not found: ' . $slug, HTTP_NOT_FOUND);
+            return $this->errorResponse('Plugin not found: ' . $slug, HTTP_NOT_FOUND);
         }
 
         if (!RiseupPathUtils::isSafePath($plugin_dir, $plugins_dir)) {
-            return $this->error_response('Invalid plugin slug', HTTP_BAD_REQUEST);
+            return $this->errorResponse('Invalid plugin slug', HTTP_BAD_REQUEST);
         }
 
         $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
         $zip_content = $this->createPluginZip($plugin_dir, $slug . '-backup', $ignore);
 
         if ($zip_content === null) {
-            return $this->error_response('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
+            return $this->errorResponse('Failed to create or read ZIP file', HTTP_SERVER_ERROR);
         }
 
-        $this->logger->log_plugin_action(ActionType::ExportPlugin->value, $slug, STATUS_SUCCESS, array(
+        $this->logger->logPluginAction(ActionType::ExportPlugin->value, $slug, STATUS_SUCCESS, array(
             'size' => strlen($zip_content),
         ));
 

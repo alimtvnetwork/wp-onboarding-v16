@@ -13,49 +13,49 @@ if (!defined('ABSPATH')) {
 trait AuthPermissionTrait
 {
     /** Check if an endpoint is enabled via settings. */
-    private function is_endpoint_enabled($endpoint) {
+    private function isEndpointEnabled($endpoint) {
         return RiseupAdmin::is_endpoint_enabled($endpoint);
     }
 
     /** Check if an endpoint requires authentication via settings. */
-    private function is_auth_required($endpoint) {
+    private function isAuthRequired($endpoint) {
         return RiseupAdmin::is_auth_required($endpoint);
     }
 
     /** Build permission callback with optional auth bypass. */
-    private function build_permission_callback($endpoint, $auth_check) {
-        return function($request) use ($endpoint, $auth_check) {
-            if (!$this->is_endpoint_enabled($endpoint)) {
+    private function buildPermissionCallback($endpoint, $authCheck) {
+        return function($request) use ($endpoint, $authCheck) {
+            if (!$this->isEndpointEnabled($endpoint)) {
                 return new WP_Error('rest_disabled', 'This endpoint is disabled', array('status' => 403));
             }
-            if (!$this->is_auth_required($endpoint)) {
+            if (!$this->isAuthRequired($endpoint)) {
                 return true;
             }
-            return call_user_func($auth_check, $request);
+            return call_user_func($authCheck, $request);
         };
     }
 
     /** Check plugin management permission. */
-    public function check_plugin_permission($request) {
-        $this->file_logger->debug('Checking plugin permission');
-        return $this->check_authenticated_capability($request, CAP_MANAGE_PLUGINS);
+    public function checkPluginPermission($request) {
+        $this->fileLogger->debug('Checking plugin permission');
+        return $this->checkAuthenticatedCapability($request, CAP_MANAGE_PLUGINS);
     }
 
     /** Check post management permission. */
-    public function check_post_permission($request) {
-        $this->file_logger->debug('Checking post permission');
-        return $this->check_authenticated_capability($request, CAP_MANAGE_POSTS);
+    public function checkPostPermission($request) {
+        $this->fileLogger->debug('Checking post permission');
+        return $this->checkAuthenticatedCapability($request, CAP_MANAGE_POSTS);
     }
 
     /** Check logs view permission. */
-    public function check_logs_permission($request) {
-        $this->file_logger->debug('Checking logs permission');
-        return $this->check_authenticated_capability($request, CAP_VIEW_LOGS);
+    public function checkLogsPermission($request) {
+        $this->fileLogger->debug('Checking logs permission');
+        return $this->checkAuthenticatedCapability($request, CAP_VIEW_LOGS);
     }
 
     /** Check status/openapi permission (any authenticated user). */
-    public function check_status_permission($request) {
-        $this->file_logger->debug('Checking status permission');
-        return $this->check_authenticated_only($request);
+    public function checkStatusPermission($request) {
+        $this->fileLogger->debug('Checking status permission');
+        return $this->checkAuthenticatedOnly($request);
     }
 }
