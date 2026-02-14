@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\ActionType;
 
 trait RestoreUtilsTrait {
@@ -97,7 +98,7 @@ trait RestoreUtilsTrait {
      */
     private function insertAuditRecord(PDO $pdo, string $details): void {
         $stmt = $pdo->prepare(
-            "INSERT INTO " . TABLE_TRANSACTIONS .
+            "INSERT INTO " . TableType::Transactions->value .
             " (plugin, action, status, details, source, created_at) VALUES (?, ?, ?, ?, ?, ?)"
         );
         $stmt->execute(array(
