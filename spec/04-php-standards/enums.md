@@ -49,6 +49,7 @@ require_once __DIR__ . '/includes/Enums/UploadSourceType.php';
 require_once __DIR__ . '/includes/Enums/CapabilityType.php';
 require_once __DIR__ . '/includes/Enums/HttpMethodType.php';
 require_once __DIR__ . '/includes/Enums/HookType.php';
+require_once __DIR__ . '/includes/Enums/EndpointType.php';
 require_once __DIR__ . '/includes/Enums/PathSubdirType.php';
 require_once __DIR__ . '/includes/Enums/PathDatabaseType.php';
 require_once __DIR__ . '/includes/Enums/PathLogFileType.php';
@@ -405,6 +406,7 @@ final class ErrorType
 | `CapabilityType`   | `enum`       | `Type` | Discrete capabilities — "which permission?"      |
 | `HttpMethodType`   | `enum`       | `Type` | Discrete HTTP verbs — "which method?"            |
 | `HookType`         | `enum`       | `Type` | Discrete hook names — "which hook?"              |
+| `EndpointType`     | `enum`       | `Type` | Discrete REST paths — "which endpoint?"          |
 | `PathSubdirType`   | `enum`       | `Type` | Discrete subdirectories — "which directory?"     |
 | `PathDatabaseType` | `enum`       | `Type` | Discrete DB files — "which database?"            |
 | `PathLogFileType`  | `enum`       | `Type` | Discrete log files — "which log?"                |
@@ -415,6 +417,84 @@ final class ErrorType
 
 > If the type answers **"which one of these?"** with a single value → `enum` with `Type` suffix.  
 > If it holds **arrays, maps, or composable fragments** → `final class` with `public const`.
+
+---
+
+## EndpointType — REST API Endpoint Paths
+
+Stores only the path fragment for each REST endpoint. The full WordPress route
+is constructed via the `route()` helper, which prepends `/`.
+
+```php
+<?php
+
+namespace RiseupAsia\Enums;
+
+enum EndpointType: string
+{
+    // ── Core ─────────────────────────────────────────────────────
+    case Status   = 'status';
+    case Upload   = 'upload';
+    case Plugins  = 'plugins';
+    // ... (see EndpointType.php for all cases)
+
+    // ── Snapshot ─────────────────────────────────────────────────
+    case SnapshotList = 'snapshots/list';
+    // ...
+
+    /**
+     * Return the route path ready for register_rest_route().
+     * Encapsulates the '/' prefix so callers never touch ->value for routing.
+     */
+    public function route(): string
+    {
+        return '/' . $this->value;
+    }
+
+    /** Domain-check helpers */
+    public function isSnapshot(): bool { return str_starts_with($this->value, 'snapshots/'); }
+    public function isAgent(): bool    { return str_starts_with($this->value, 'agents'); }
+    public function isPlugin(): bool   { return str_starts_with($this->value, 'plugins/'); }
+}
+```
+
+### Usage in Route Registration
+
+```php
+use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpMethodType;
+
+// ❌ FORBIDDEN: Accessing ->value directly for route construction
+$safeRegister(EndpointType::Upload->value, [...]);
+
+// ✅ REQUIRED: Use route() helper — single call, no multi-step chaining
+$safeRegister(EndpointType::Upload->route(), array(
+    'methods'  => HttpMethodType::Post->value,
+    'callback' => array($this, 'handleUpload'),
+    ...
+));
+
+// ✅ Array-driven pattern
+$agent_routes = array(
+    array('endpoint' => EndpointType::Agents, 'method' => HttpMethodType::Get, 'handler' => 'handleListAgents'),
+);
+foreach ($agent_routes as $route) {
+    $safeRegister($route['endpoint']->route(), array(
+        'methods'  => $route['method']->value,
+        'callback' => array($this, $route['handler']),
+        ...
+    ));
+}
+```
+
+### When to Use ->value vs ->route()
+
+| Context | Use | Example |
+|---------|-----|---------|
+| Route registration (`register_rest_route`) | `->route()` | `EndpointType::Upload->route()` → `'/upload'` |
+| Building remote API URLs | `->value` | `$baseUrl . '/' . EndpointType::Upload->value` |
+| Logging / display | `->value` or `->name` | `'Endpoint: ' . EndpointType::Upload->value` |
+| Domain checks | helpers | `$endpoint->isSnapshot()` |
 
 ---
 
@@ -450,8 +530,9 @@ class ErrorChecker {
 5. **If HookType:** Update all `add_action`/`add_filter` calls.
 6. **If CapabilityType:** Update all `current_user_can()` calls.
 7. **If HttpMethodType:** Update all `register_rest_route()` calls.
-8. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
-9. **Never skip the enum** — even for "one-time" usage.
+8. **If EndpointType:** Add the case, then use `->route()` in route registration. Update all callers.
+9. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
+10. **Never skip the enum** — even for "one-time" usage.
 
 ---
 

@@ -105,7 +105,24 @@ All four answer "which one?" → they qualify as backed enums with the `Type` su
 3. Rename `PathUtilsDirTrait` methods to camelCase
 4. Update all callers across the codebase
 
-### Phase K4: Fix Enum Internal Methods → camelCase
+### Phase K4: EndpointType route() Helper & Caller Migration
+
+1. Add `route(): string` method to `EndpointType` enum — returns `'/' . $this->value`
+2. Update `RouteRegistrationTrait` — replace all `EndpointType::X->value` with `EndpointType::X->route()` in `$safeRegister()` calls
+3. Update `PluginRouteRegistrationTrait` — same replacement in `registerPluginRoutes()` and `registerAgentRoutes()`
+4. Update `SnapshotRouteRegistrationTrait` — same replacement
+5. Update `$safeRegister` closure in `registerRoutes()` — remove the `'/' .` prefix since `route()` now handles it
+6. Verify: no remaining `EndpointType::X->value` in route registration contexts (grep for `->value` near `$safeRegister`)
+
+**Files affected:**
+- `includes/Enums/EndpointType.php` — add `route()` method
+- `includes/Traits/Route/RouteRegistrationTrait.php` — update `$safeRegister` closure + all calls
+- `includes/Traits/Plugin/PluginRouteRegistrationTrait.php` — update all calls
+- `includes/Traits/Snapshot/SnapshotRouteRegistrationTrait.php` — update all calls
+
+**Note:** `->value` remains valid for non-routing contexts (logging, building remote URLs, domain checks).
+
+### Phase K5: Fix Enum Internal Methods → camelCase
 
 1. `UploadSourceType`: `valid_values()` → `validValues()`, `is_valid()` → `isValid()`
 2. `HookType`: `ajax_nopriv()` → `ajaxNopriv()`
