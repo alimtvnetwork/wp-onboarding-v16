@@ -23,7 +23,7 @@ type FileContentRequest struct {
 // GetLocalFileContent returns the content of a local file in a plugin
 func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PluginService == nil {
-		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Plugin service not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
 		return
 	}
 
@@ -31,14 +31,14 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 	idStr := vars["id"]
 	pluginID, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "Invalid plugin ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", wordpress.ResponseMessageInvalidId.String())
 		return
 	}
 
 	// Parse request body
 	var req FileContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request body")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidRequestBody.String())
 		return
 	}
 
@@ -96,7 +96,7 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 // GetFileDiff returns both local and remote content for a file
 func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 	if Services == nil || Services.PluginService == nil || Services.PublishService == nil {
-		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", "Required services not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
 		return
 	}
 
@@ -106,20 +106,20 @@ func GetFileDiff(w http.ResponseWriter, r *http.Request) {
 	
 	pluginID, err := strconv.ParseInt(pluginIDStr, 10, 64)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "Invalid plugin ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", wordpress.ResponseMessageInvalidId.String())
 		return
 	}
 	
 	siteID, err := strconv.ParseInt(siteIDStr, 10, 64)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "Invalid site ID")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", wordpress.ResponseMessageInvalidId.String())
 		return
 	}
 
 	// Parse request body
 	var req FileContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid request body")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidRequestBody.String())
 		return
 	}
 

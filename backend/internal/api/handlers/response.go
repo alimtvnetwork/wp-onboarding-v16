@@ -78,7 +78,7 @@ func getIDParam(r *http.Request, name string) (int64, error) {
 // Returns true if the service is available.
 func requireService(w http.ResponseWriter, service any, name string) bool {
 	if service == nil {
-		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", name+" not available")
+		respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
 		return false
 	}
 	return true
@@ -88,7 +88,7 @@ func requireService(w http.ResponseWriter, service any, name string) bool {
 // a 400 error response if decoding fails.
 func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1001", "Invalid request body")
+		respondError(w, wordpress.HttpStatusBadRequest, "E1001", wordpress.ResponseMessageInvalidRequestBody.String())
 		return false
 	}
 	return true
@@ -98,7 +98,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 func parseID(w http.ResponseWriter, r *http.Request, paramName, label string) (int64, bool) {
 	id, err := getIDParam(r, paramName)
 	if err != nil {
-		respondError(w, wordpress.HttpStatusBadRequest, "E1002", "Invalid "+label)
+		respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidId.String())
 		return 0, false
 	}
 	return id, true

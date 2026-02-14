@@ -32,6 +32,9 @@ enum ResponseMessageType: string
     case MediaUploadFailed  = 'Media upload failed';
     case DbError            = 'Database error';
     case FileIgnored        = 'File ignored by .uploadignore';
+    case InvalidRequestBody = 'Invalid request body';
+    case ServiceNotAvailable = 'Service not available';
+    case InvalidId          = 'Invalid ID';
 
     /** Check if this enum case equals the given case. */
     public function isEqual(self $other): bool
