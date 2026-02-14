@@ -75,13 +75,13 @@ func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, fil
 
 	// Broadcast version created event
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventVersionCreated, map[string]any{
-			"versionId":    versionID,
-			"version":      version,
-			"pluginId":     pluginID,
-			"siteId":       siteID,
-			"filesUpdated": filesUpdated,
-			"publishType":  publishType,
+		ws.Broadcast(s.wsHub, ws.EventVersionCreated, ws.VersionCreatedData{
+			VersionID:    versionID,
+			Version:      version,
+			PluginID:     pluginID,
+			SiteID:       siteID,
+			FilesUpdated: filesUpdated,
+			PublishType:  publishType,
 		})
 	}
 
@@ -89,18 +89,18 @@ func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, fil
 }
 
 // Rollback restores a plugin to a previous version
-func (s *Service) Rollback(ctx context.Context, versionID int64) (any, error) {
+func (s *Service) Rollback(ctx context.Context, versionID int64) (*ws.RollbackCompleteData, error) {
 	// Get version info
 	version, err := s.db.GetPluginVersionByID(versionID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
-			WithContext("versionId", versionID)
+			WithVersionID(versionID)
 	}
 
 	backupPath, _ := version["backupPath"].(string)
 	if backupPath == "" {
 		return nil, apperror.New(apperror.ErrVersionNoBackup, "no backup available for this version").
-			WithContext("versionId", versionID)
+			WithVersionID(versionID)
 	}
 
 	pluginID, _ := version["pluginId"].(int64)
@@ -116,11 +116,11 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (any, error) {
 
 	// Broadcast rollback started
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventRollbackStarted, map[string]any{
-			"versionId": versionID,
-			"version":   versionStr,
-			"pluginId":  pluginID,
-			"siteId":    siteID,
+		ws.Broadcast(s.wsHub, ws.EventRollbackStarted, ws.RollbackStartedData{
+			VersionID: versionID,
+			Version:   versionStr,
+			PluginID:  pluginID,
+			SiteID:    siteID,
 		})
 	}
 
@@ -130,18 +130,18 @@ func (s *Service) Rollback(ctx context.Context, versionID int64) (any, error) {
 	// 3. Activate plugin
 	// For now, return success with TODO note
 
-	result := map[string]any{
-		"success":       true,
-		"versionId":     versionID,
-		"version":       versionStr,
-		"rolledBackAt":  time.Now().Format(time.RFC3339),
-		"implementation": "pending",
-		"message":       "Rollback initiated - backup restoration requires WordPress API integration",
+	result := &ws.RollbackCompleteData{
+		IsSuccess:      true,
+		VersionID:      versionID,
+		Version:        versionStr,
+		RolledBackAt:   time.Now().Format(time.RFC3339),
+		Implementation: "pending",
+		Message:        "Rollback initiated - backup restoration requires WordPress API integration",
 	}
 
 	// Broadcast rollback complete
 	if s.wsHub != nil {
-		s.wsHub.Broadcast(ws.EventRollbackComplete, result)
+		ws.Broadcast(s.wsHub, ws.EventRollbackComplete, *result)
 	}
 
 	return result, nil

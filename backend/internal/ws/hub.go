@@ -269,25 +269,6 @@ func BroadcastWithSession[T any](h *Hub, eventType string, data T, sessionID str
 	}
 }
 
-// BroadcastUntyped sends a message without compile-time type checking.
-// Deprecated: Use the generic Broadcast[T] function instead.
-// Kept for backward compatibility with callers passing map[string]any literals
-// that will be migrated to typed structs in Phase 3.
-func (h *Hub) Broadcast(eventType string, data any) {
-	h.BroadcastWithSession(eventType, data, "")
-}
-
-// BroadcastWithSession sends a message with session ID (untyped, deprecated).
-// Deprecated: Use the generic BroadcastWithSession[T] function instead.
-func (h *Hub) BroadcastWithSession(eventType string, data any, sessionID string) {
-	h.broadcast <- &Message{
-		Type:      eventType,
-		Data:      data,
-		Timestamp: utcTimestamp(),
-		SessionID: sessionID,
-	}
-}
-
 // BroadcastSyncProgress sends a sync progress update
 func (h *Hub) BroadcastSyncProgress(pluginID, siteID int64, progress int, total int, message string) {
 	Broadcast(h, EventSyncProgress, SyncProgressData{

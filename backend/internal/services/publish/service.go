@@ -37,7 +37,7 @@ type SitePasswordDecryptor interface {
 // SessionLogger interface for session-based logging
 type SessionLogger interface {
 	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
-	Log(sessionID, level, step, message string, details map[string]interface{})
+	Log(sessionID, level, step, message string, details map[string]any)
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
 	EndSession(sessionID, status, errorMsg string)
@@ -780,15 +780,15 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 	}
 
 	// Broadcast progress event
-	s.wsHub.Broadcast(eventType, map[string]interface{}{
-		"pluginId": pluginID,
-		"siteId":   siteID,
-		"stage":    stage,
-		"step":     step, // Keep for backward compatibility
-		"status":   status,
-		"progress": progress,
-		"total":    100,
-		"message":  message,
+	ws.Broadcast(s.wsHub, eventType, ws.PublishStageProgressData{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Stage:    stage,
+		Step:     step, // Keep for backward compatibility
+		Status:   status,
+		Progress: progress,
+		Total:    100,
+		Message:  message,
 	})
 	
 	// Also broadcast detailed log entry for frontend live log display
@@ -804,26 +804,22 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 // broadcastStageStatus explicitly marks a publish stage as success/error.
 // This is used for late-stage failures (e.g. activation) where a subsequent stage (cleanup)
 // would otherwise cause the UI to incorrectly treat the prior stage as successful.
-func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, status string, progress int, message string, details map[string]interface{}) {
+func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, status string, progress int, message string, details map[string]any) {
 	if s.wsHub == nil {
 		return
 	}
 
-	payload := map[string]interface{}{
-		"pluginId": pluginID,
-		"siteId":   siteID,
-		"stage":    stage,
-		"step":     stage,
-		"status":   status,
-		"progress": progress,
-		"total":    100,
-		"message":  message,
-	}
-	if details != nil {
-		payload["details"] = details
-	}
-
-	s.wsHub.Broadcast(ws.EventPublishProgress, payload)
+	ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.PublishStageStatusData{
+		PluginID: pluginID,
+		SiteID:   siteID,
+		Stage:    stage,
+		Step:     stage,
+		Status:   status,
+		Progress: progress,
+		Total:    100,
+		Message:  message,
+		Details:  details,
+	})
 
 	level := "info"
 	if status == "error" {
@@ -838,12 +834,12 @@ type StageContext struct {
 	Why        string                 // Why it's being done
 	Where      string                 // Target URL/path
 	Result     string                 // Outcome description
-	InnerData  map[string]interface{} // HTTP status, response snippets, etc.
+	InnerData  map[string]any // HTTP status, response snippets, etc.
 }
 
 // broadcastStageLog sends a detailed log entry with structured what/why/where/result context
 func (s *Service) broadcastStageLog(pluginID, siteID int64, sessionID, level, stage string, ctx StageContext) {
-	details := map[string]interface{}{
+	details := map[string]any{
 		"what": ctx.What,
 	}
 	if ctx.Why != "" {
@@ -876,7 +872,7 @@ func (s *Service) broadcastStageLog(pluginID, siteID int64, sessionID, level, st
 
 // broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility.
 // It resolves plugin/site names by looking up from the database if not provided in the details map.
-func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, message string, details map[string]interface{}) {
+func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, message string, details map[string]any) {
 	if s.wsHub == nil {
 		return
 	}
@@ -924,7 +920,7 @@ func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, mess
 	}
 
 	// Log with names first, IDs second, technical details last
-	logFields := []interface{}{
+	logFields := []any{
 		"plugin", pluginName,
 		"site", siteName,
 	}
@@ -980,25 +976,21 @@ func (s *Service) runStageWithSession(sessionID, name string, fn func() error) S
 }
 
 // broadcastStageComplete sends a stage_complete event for frontend tracking
-func (s *Service) broadcastStageComplete(pluginID, siteID int64, sessionID, stageName, status string, durationMs int64, details map[string]interface{}) {
+func (s *Service) broadcastStageComplete(pluginID, siteID int64, sessionID, stageName, status string, durationMs int64, details map[string]any) {
 	if s.wsHub == nil {
 		return
 	}
 
-	payload := map[string]interface{}{
-		"type":      "stage_complete",
-		"sessionId": sessionID,
-		"stage":     stageName,
-		"status":    status,
-		"duration":  durationMs,
-		"pluginId":  pluginID,
-		"siteId":    siteID,
-	}
-	if details != nil {
-		payload["details"] = details
-	}
-
-	s.wsHub.Broadcast(ws.EventPublishProgress, payload)
+	ws.Broadcast(s.wsHub, ws.EventPublishProgress, ws.PublishStageCompleteData{
+		Type:      "stage_complete",
+		SessionID: sessionID,
+		Stage:     stageName,
+		Status:    status,
+		Duration:  durationMs,
+		PluginID:  pluginID,
+		SiteID:    siteID,
+		Details:   details,
+	})
 }
 
 // formatBytes formats byte count as human-readable string

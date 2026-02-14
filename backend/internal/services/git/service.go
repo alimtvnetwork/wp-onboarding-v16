@@ -130,9 +130,9 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	}
 
 	// Broadcast pull started
-	s.wsHub.Broadcast(ws.EventGitPullStarted, map[string]any{
-		"pluginId":   pluginID,
-		"pluginName": p.Name,
+	ws.Broadcast(s.wsHub, ws.EventGitPullStarted, ws.GitPullStartedData{
+		PluginID:   pluginID,
+		PluginName: p.Name,
 	})
 
 	// Check if directory is a git repo
@@ -163,9 +163,9 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 		result.Success = false
 		result.Error = err.Error()
 
-		s.wsHub.Broadcast(ws.EventGitPullFailed, map[string]any{
-			"pluginId": pluginID,
-			"error":    result.Error,
+		ws.Broadcast(s.wsHub, ws.EventGitPullFailed, ws.GitPullFailedData{
+			PluginID: pluginID,
+			Error:    result.Error,
 		})
 		return result, err
 	}
@@ -182,11 +182,11 @@ func (s *Service) Pull(ctx context.Context, pluginID int64) (*PullResult, error)
 	result.CommitMsg = strings.TrimSpace(commitMsg)
 
 	// Broadcast pull complete
-	s.wsHub.Broadcast(ws.EventGitPullComplete, map[string]any{
-		"pluginId":     pluginID,
-		"success":      true,
-		"filesChanged": result.FilesChanged,
-		"commitHash":   result.CommitHash,
+	ws.Broadcast(s.wsHub, ws.EventGitPullComplete, ws.GitPullCompleteData{
+		PluginID:     pluginID,
+		IsSuccess:    true,
+		FilesChanged: result.FilesChanged,
+		CommitHash:   result.CommitHash,
 	})
 
 	s.log.Info("Git pull complete",
@@ -234,10 +234,10 @@ func (s *Service) PullAll(ctx context.Context) (*BatchPullResult, error) {
 
 	batch.Duration = time.Since(startTime).Milliseconds()
 
-	s.wsHub.Broadcast(ws.EventGitPullAllComplete, map[string]any{
-		"succeeded": batch.Succeeded,
-		"failed":    batch.Failed,
-		"duration":  batch.Duration,
+	ws.Broadcast(s.wsHub, ws.EventGitPullAllComplete, ws.GitPullAllCompleteData{
+		Succeeded: batch.Succeeded,
+		Failed:    batch.Failed,
+		Duration:  batch.Duration,
 	})
 
 	return batch, nil
@@ -269,10 +269,10 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 	}
 
 	// Broadcast build started
-	s.wsHub.Broadcast(ws.EventBuildStarted, map[string]any{
-		"pluginId":   pluginID,
-		"pluginName": p.Name,
-		"command":    config.BuildCommand,
+	ws.Broadcast(s.wsHub, ws.EventBuildStarted, ws.BuildStartedData{
+		PluginID:   pluginID,
+		PluginName: p.Name,
+		Command:    config.BuildCommand,
 	})
 
 	// Execute build command
@@ -300,10 +300,10 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 			result.ExitCode = exitErr.ExitCode()
 		}
 
-		s.wsHub.Broadcast(ws.EventBuildFailed, map[string]any{
-			"pluginId": pluginID,
-			"error":    result.Error,
-			"exitCode": result.ExitCode,
+		ws.Broadcast(s.wsHub, ws.EventBuildFailed, ws.BuildFailedData{
+			PluginID: pluginID,
+			Error:    result.Error,
+			ExitCode: result.ExitCode,
 		})
 
 		return result, apperror.Wrap(err, apperror.ErrBuildFailed, result.Error)
@@ -312,10 +312,10 @@ func (s *Service) Build(ctx context.Context, pluginID int64) (*BuildResult, erro
 	result.Success = true
 	result.ExitCode = 0
 
-	s.wsHub.Broadcast(ws.EventBuildComplete, map[string]any{
-		"pluginId": pluginID,
-		"success":  true,
-		"duration": result.Duration,
+	ws.Broadcast(s.wsHub, ws.EventBuildComplete, ws.BuildCompleteData{
+		PluginID:  pluginID,
+		IsSuccess: true,
+		Duration:  result.Duration,
 	})
 
 	s.log.Info("Build complete", "plugin", p.Name, "pluginId", pluginID, "duration", result.Duration)
@@ -484,10 +484,10 @@ func (s *Service) Commit(ctx context.Context, pluginID int64, message string) (*
 	result.CommitHash = strings.TrimSpace(hash)
 	result.Success = true
 
-	s.wsHub.Broadcast(ws.EventGitCommitComplete, map[string]any{
-		"pluginId":   pluginID,
-		"success":    true,
-		"commitHash": result.CommitHash,
+	ws.Broadcast(s.wsHub, ws.EventGitCommitComplete, ws.GitCommitCompleteData{
+		PluginID:   pluginID,
+		IsSuccess:  true,
+		CommitHash: result.CommitHash,
 	})
 
 	s.log.Info("Git commit complete", "plugin", p.Name, "pluginId", pluginID, "hash", result.CommitHash)
@@ -535,10 +535,10 @@ func (s *Service) Push(ctx context.Context, pluginID int64) (*PushResult, error)
 
 	result.Success = true
 
-	s.wsHub.Broadcast(ws.EventGitPushComplete, map[string]any{
-		"pluginId": pluginID,
-		"success":  true,
-		"pushed":   result.Pushed,
+	ws.Broadcast(s.wsHub, ws.EventGitPushComplete, ws.GitPushCompleteData{
+		PluginID:  pluginID,
+		IsSuccess: true,
+		Pushed:    result.Pushed,
 	})
 
 	s.log.Info("Git push complete", "plugin", p.Name, "pluginId", pluginID, "pushed", result.Pushed)

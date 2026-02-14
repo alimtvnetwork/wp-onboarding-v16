@@ -249,11 +249,11 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 	)
 
 	// Notify clients that auto-publish is starting
-	s.wsHub.Broadcast(ws.EventAutoPublishTriggered, map[string]any{
-		"pluginId":   pluginID,
-		"pluginName": p.Name,
-		"changes":    len(changes),
-		"sites":      len(p.Mappings),
+	ws.Broadcast(s.wsHub, ws.EventAutoPublishTriggered, ws.AutoPublishTriggeredData{
+		PluginID:   pluginID,
+		PluginName: p.Name,
+		Changes:    len(changes),
+		Sites:      len(p.Mappings),
 	})
 
 	if s.publishService == nil {
@@ -273,20 +273,20 @@ func (s *Service) triggerAutoPublish(ctx context.Context, pluginID int64, change
 				"siteId", mapping.SiteID,
 				"error", err,
 			)
-			s.wsHub.Broadcast(ws.EventAutoPublishFailed, map[string]any{
-				"pluginId": pluginID,
-				"siteId":   mapping.SiteID,
-				"siteName": mapping.SiteName,
-				"error":    err.Error(),
+			ws.Broadcast(s.wsHub, ws.EventAutoPublishFailed, ws.AutoPublishFailedData{
+				PluginID: pluginID,
+				SiteID:   mapping.SiteID,
+				SiteName: mapping.SiteName,
+				Error:    err.Error(),
 			})
 			continue
 		}
 		successCount++
-		s.wsHub.Broadcast(ws.EventAutoPublishComplete, map[string]any{
-			"pluginId":     pluginID,
-			"siteId":       mapping.SiteID,
-			"siteName":     mapping.SiteName,
-			"filesUpdated": filesUpdated,
+		ws.Broadcast(s.wsHub, ws.EventAutoPublishComplete, ws.AutoPublishCompleteData{
+			PluginID:     pluginID,
+			SiteID:       mapping.SiteID,
+			SiteName:     mapping.SiteName,
+			FilesUpdated: filesUpdated,
 		})
 	}
 
@@ -412,14 +412,25 @@ func (s *Service) broadcastChanges(pluginID int64, changes []FileChange, trigger
 		}
 	}
 
-	s.wsHub.Broadcast(ws.EventFileChange, map[string]any{
-		"pluginId":    pluginID,
-		"triggerType": triggerType,
-		"changes":     changes,
-		"summary": map[string]int{
-			"created":  created,
-			"modified": modified,
-			"deleted":  deleted,
+	// Convert watcher FileChange to ws FileChangeItem
+	wsChanges := make([]ws.FileChangeItem, len(changes))
+	for i, c := range changes {
+		wsChanges[i] = ws.FileChangeItem{
+			Path:       c.Path,
+			ChangeType: c.ChangeType,
+			Hash:       c.Hash,
+			Size:       c.Size,
+			ModTime:    c.ModTime,
+		}
+	}
+	ws.Broadcast(s.wsHub, ws.EventFileChange, ws.FileChangeBatchData{
+		PluginID:    pluginID,
+		TriggerType: triggerType,
+		Changes:     wsChanges,
+		Summary: ws.FileChangeSummary{
+			Created:  created,
+			Modified: modified,
+			Deleted:  deleted,
 		},
 	})
 }
