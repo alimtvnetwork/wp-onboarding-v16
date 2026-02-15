@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 trait AgentHandlerActionTrait {
 
     /** Handle testing agent connection. */
-    public function handleTestAgent($request) {
+    public function handleTestAgent(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Testing agent connection', array('id' => $id));
@@ -25,7 +25,7 @@ trait AgentHandlerActionTrait {
     }
 
     /** Handle syncing plugins from agent. */
-    public function handleSyncAgent($request) {
+    public function handleSyncAgent(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Syncing plugins from agent', array('id' => $id));
@@ -39,7 +39,7 @@ trait AgentHandlerActionTrait {
     }
 
     /** Handle executing action on agent plugin. */
-    public function handleAgentAction($request) {
+    public function handleAgentAction(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $action = sanitize_key($request->get_param('action'));
@@ -62,7 +62,7 @@ trait AgentHandlerActionTrait {
     }
 
     /** Handle getting agent action history. */
-    public function handleAgentHistory($request) {
+    public function handleAgentHistory(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $limit = $request->get_param('limit') ?: 50;

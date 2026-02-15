@@ -25,29 +25,13 @@ class RiseupSnapshotImport {
     use ImportValidationTrait;
     use ImportExecutionTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private RiseupSnapshotManager $manager;
+    private string $baseDir;
+    private array $validationErrors = array();
 
-    /** @var RiseupDatabase */
-    private $db;
-
-    /** @var RiseupSnapshotManager */
-    private $manager;
-
-    /** @var string */
-    private $baseDir;
-
-    /** @var array */
-    private $validationErrors = array();
-
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger      $logger  Logger instance.
-     * @param RiseupDatabase        $db      Database instance.
-     * @param RiseupSnapshotManager $manager Snapshot manager.
-     */
-    public function __construct($logger, $db, $manager) {
+    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db, RiseupSnapshotManager $manager) {
         $this->logger  = $logger;
         $this->db      = $db;
         $this->manager = $manager;
@@ -60,7 +44,7 @@ class RiseupSnapshotImport {
      * @param string $uploadedPath Path to uploaded ZIP file.
      * @return array Result with success status and snapshot details.
      */
-    public function import($uploadedPath) {
+    public function import(string $uploadedPath): array {
         $guardError = $this->guardImportFile($uploadedPath);
         if ($guardError) {
             return $guardError;
@@ -114,7 +98,7 @@ class RiseupSnapshotImport {
 
             $this->deleteDirectory($tempDir);
             return $result;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->cleanupOnFailure($tempDir, $e);
             return $this->fail($e->getMessage());
         }
@@ -142,7 +126,7 @@ class RiseupSnapshotImport {
      * @param string    $tempDir Temp directory.
      * @param Exception $e       The exception.
      */
-    private function cleanupOnFailure(string $tempDir, Exception $e): void {
+    private function cleanupOnFailure(string $tempDir, Throwable $e): void {
         if (RiseupPathUtils::dirExists($tempDir)) {
             $this->deleteDirectory($tempDir);
         }
@@ -156,7 +140,7 @@ class RiseupSnapshotImport {
      * @param string $message Message.
      * @param array  $context Context data.
      */
-    private function log($level, $message, $context = array()) {
+    private function log(string $level, string $message, array $context = array()): void {
         $method = strtolower($level);
         if (method_exists($this->logger, $method)) {
             $this->logger->$method('[SnapshotImport] ' . $message, $context);
@@ -169,7 +153,7 @@ class RiseupSnapshotImport {
      * @param string $message Error message.
      * @return array
      */
-    private function fail($message) {
+    private function fail(string $message): array {
         return array('success' => false, 'error' => $message);
     }
 }

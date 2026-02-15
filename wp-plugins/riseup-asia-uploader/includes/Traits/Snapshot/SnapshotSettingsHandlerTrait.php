@@ -14,7 +14,7 @@ use RiseupAsia\Enums\StatusType;
 trait SnapshotSettingsHandlerTrait {
 
     /** Handle getting snapshot settings. */
-    public function handleGetSnapshotSettings($request) {
+    public function handleGetSnapshotSettings(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
             $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             return new WP_REST_Response(array('success' => true, 'settings' => $manager->getSettings()), 200);
@@ -22,7 +22,7 @@ trait SnapshotSettingsHandlerTrait {
     }
 
     /** Handle updating snapshot settings. */
-    public function handleUpdateSnapshotSettings($request) {
+    public function handleUpdateSnapshotSettings(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $this->fileLogger->info('Updating snapshot settings', array('keys' => array_keys($body)));
@@ -34,7 +34,7 @@ trait SnapshotSettingsHandlerTrait {
     }
 
     /** Handle listing snapshot providers. */
-    public function handleListSnapshotProviders($request) {
+    public function handleListSnapshotProviders(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
             $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             return new WP_REST_Response(array('success' => true, 'providers' => $manager->getProviders()), 200);
@@ -42,7 +42,7 @@ trait SnapshotSettingsHandlerTrait {
     }
 
     /** Handle listing available database tables. */
-    public function handleListSnapshotTables($request) {
+    public function handleListSnapshotTables(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
             $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             return new WP_REST_Response(array('success' => true, 'tables' => $manager->getAvailableTables()), 200);
@@ -50,7 +50,7 @@ trait SnapshotSettingsHandlerTrait {
     }
 
     /** Handle dependency analysis request. */
-    public function handleAnalyzeDependencies($request) {
+    public function handleAnalyzeDependencies(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $scope = isset($body['scope']) ? $body['scope'] : 'all';

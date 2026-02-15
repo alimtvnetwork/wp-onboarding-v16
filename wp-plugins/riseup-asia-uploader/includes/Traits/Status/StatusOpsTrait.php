@@ -18,7 +18,7 @@ trait StatusOpsTrait {
     /**
      * Handle OpenAPI specification request.
      */
-    public function handleOpenapi($request) {
+    public function handleOpenapi(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('OpenAPI endpoint called');
 
         $spec = $this->loadOpenApiSpec();
@@ -34,7 +34,7 @@ trait StatusOpsTrait {
     /**
      * Load and validate the OpenAPI spec from disk.
      */
-    private function loadOpenApiSpec() {
+    private function loadOpenApiSpec(): array|WP_REST_Response {
         $spec_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/data/openapi.json';
 
         if (RiseupBooleanHelpers::isFileMissing($spec_file)) {
@@ -52,7 +52,7 @@ trait StatusOpsTrait {
     }
 
     /** Read and parse the spec JSON file. */
-    private function parseSpecFile(string $spec_file) {
+    private function parseSpecFile(string $spec_file): array|WP_REST_Response {
         $spec_content = file_get_contents($spec_file);
         if ($spec_content === false) {
             $this->fileLogger->error('Failed to read OpenAPI spec file');
@@ -71,7 +71,7 @@ trait StatusOpsTrait {
     /**
      * Handle OPcache reset request.
      */
-    public function handleOpcacheReset($request) {
+    public function handleOpcacheReset(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('OPcache reset endpoint called');
 
         $result = $this->buildOpcacheResult();
