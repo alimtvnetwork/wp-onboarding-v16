@@ -9,10 +9,10 @@ import (
 
 // SessionServiceInterface defines session service methods needed by handlers
 type SessionServiceInterface interface {
-	ListSessions(limit int) (any, error)
-	GetSession(sessionID string) (any, error)
+	ListSessions(limit int) ([]*session.SessionSummary, error)
+	GetSession(sessionID string) (*session.Session, error)
 	GetSessionLogs(sessionID string) (string, error)
-	GetSessionDiagnostics(sessionID string) (any, error)
+	GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, error)
 	DeleteSession(sessionID string) error
 }
 
@@ -33,11 +33,11 @@ type SessionServiceAdapter struct {
 	*session.Service
 }
 
-func (a *SessionServiceAdapter) ListSessions(limit int) (any, error) {
+func (a *SessionServiceAdapter) ListSessions(limit int) ([]*session.SessionSummary, error) {
 	return a.Service.ListSessions(limit)
 }
 
-func (a *SessionServiceAdapter) GetSession(sessionID string) (any, error) {
+func (a *SessionServiceAdapter) GetSession(sessionID string) (*session.Session, error) {
 	return a.Service.GetSession(sessionID)
 }
 
@@ -45,7 +45,7 @@ func (a *SessionServiceAdapter) GetSessionLogs(sessionID string) (string, error)
 	return a.Service.GetSessionLogs(sessionID)
 }
 
-func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (any, error) {
+func (a *SessionServiceAdapter) GetSessionDiagnostics(sessionID string) (*session.SessionDiagnostics, error) {
 	return a.Service.GetSessionDiagnostics(sessionID)
 }
 

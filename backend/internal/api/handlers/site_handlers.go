@@ -208,12 +208,10 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 	for _, siteId := range input.SiteIds {
 		result, err := Services.SiteService.BootstrapUploader(r.Context(), siteId, input.UploaderPath)
 		if err != nil {
-			site, _ := Services.SiteService.GetByID(r.Context(), siteId)
+			siteInfo, _ := Services.SiteService.GetByID(r.Context(), siteId)
 			siteName := ""
-			if site != nil {
-				if s, ok := site.(interface{ GetName() string }); ok {
-					siteName = s.GetName()
-				}
+			if siteInfo != nil {
+				siteName = siteInfo.Name
 			}
 			results = append(results, BulkBootstrapSiteResult{
 				SiteID:   siteId,
@@ -223,27 +221,13 @@ func BulkBootstrapUploader(w http.ResponseWriter, r *http.Request) {
 				Error:    err.Error(),
 			})
 		} else {
-			if r, ok := result.(*struct {
-				Success   bool   `json:"success"`
-				SiteId    int64  `json:"siteId"`
-				SiteName  string `json:"siteName"`
-				Message   string `json:"message"`
-				Activated bool   `json:"activated"`
-			}); ok {
-				results = append(results, BulkBootstrapSiteResult{
-					SiteID:    r.SiteId,
-					SiteName:  r.SiteName,
-					Success:   r.Success,
-					Message:   r.Message,
-					Activated: r.Activated,
-				})
-			} else {
-				results = append(results, BulkBootstrapSiteResult{
-					SiteID:  siteId,
-					Success: true,
-					Message: "Deployment completed",
-				})
-			}
+			results = append(results, BulkBootstrapSiteResult{
+				SiteID:    result.SiteId,
+				SiteName:  result.SiteName,
+				Success:   result.Success,
+				Message:   result.Message,
+				Activated: result.Activated,
+			})
 		}
 	}
 

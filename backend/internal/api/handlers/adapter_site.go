@@ -5,19 +5,24 @@ import (
 	"context"
 	"net/http"
 
+	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/site"
 )
 
 // SiteServiceInterface defines site service methods
 type SiteServiceInterface interface {
-	List(ctx context.Context) (any, error)
-	GetByID(ctx context.Context, id int64) (any, error)
-	Create(ctx context.Context, input any) (any, error)
-	Update(ctx context.Context, id int64, input any) (any, error)
+	// Core CRUD — typed returns
+	List(ctx context.Context) ([]models.Site, error)
+	GetByID(ctx context.Context, id int64) (*models.Site, error)
+	Create(ctx context.Context, input any) (*models.Site, error)
+	Update(ctx context.Context, id int64, input any) (*models.Site, error)
 	Delete(ctx context.Context, id int64) error
-	TestConnection(ctx context.Context, id int64) (any, error)
-	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (any, error)
-	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (any, error)
+	TestConnection(ctx context.Context, id int64) (*site.ConnectionResult, error)
+	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (*site.ConnectionResult, error)
+	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, error)
+	GetCredentials(ctx context.Context, siteID int64) (*site.SiteCredentials, error)
+
+	// WordPress proxy — dynamic PHP JSON, kept as any
 	GetRemotePlugins(ctx context.Context, siteID int64) (any, error)
 	ForceSyncRemotePlugins(ctx context.Context, siteID int64) (any, error)
 	InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error
@@ -27,7 +32,6 @@ type SiteServiceInterface interface {
 	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (any, error)
 	GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error)
-	GetCredentials(ctx context.Context, siteID int64) (any, error)
 	GetRemoteSnapshots(ctx context.Context, siteID int64) (any, error)
 	GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (any, error)
 	CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (any, error)
@@ -51,15 +55,15 @@ type SiteServiceAdapter struct {
 	*site.Service
 }
 
-func (a *SiteServiceAdapter) List(ctx context.Context) (any, error) {
+func (a *SiteServiceAdapter) List(ctx context.Context) ([]models.Site, error) {
 	return a.Service.List(ctx)
 }
 
-func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (any, error) {
+func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Site, error) {
 	return a.Service.GetByID(ctx, id)
 }
 
-func (a *SiteServiceAdapter) Create(ctx context.Context, input any) (any, error) {
+func (a *SiteServiceAdapter) Create(ctx context.Context, input any) (*models.Site, error) {
 	in, ok := input.(SiteCreateInput)
 	if !ok {
 		if m, ok := input.(map[string]any); ok {
@@ -80,7 +84,7 @@ func (a *SiteServiceAdapter) Create(ctx context.Context, input any) (any, error)
 	return a.Service.Create(ctx, siteInput)
 }
 
-func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input any) (any, error) {
+func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input any) (*models.Site, error) {
 	updateInput := site.UpdateInput{}
 	if in, ok := input.(SiteUpdateInput); ok {
 		updateInput.Name = in.Name
@@ -108,15 +112,15 @@ func (a *SiteServiceAdapter) Delete(ctx context.Context, id int64) error {
 	return a.Service.Delete(ctx, id)
 }
 
-func (a *SiteServiceAdapter) TestConnection(ctx context.Context, id int64) (any, error) {
+func (a *SiteServiceAdapter) TestConnection(ctx context.Context, id int64) (*site.ConnectionResult, error) {
 	return a.Service.TestConnection(ctx, id)
 }
 
-func (a *SiteServiceAdapter) TestConnectionWithCredentials(ctx context.Context, url, username, password string) (any, error) {
+func (a *SiteServiceAdapter) TestConnectionWithCredentials(ctx context.Context, url, username, password string) (*site.ConnectionResult, error) {
 	return a.Service.TestConnectionWithCredentials(ctx, url, username, password)
 }
 
-func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (any, error) {
+func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, error) {
 	return a.Service.BootstrapUploader(ctx, id, uploaderPath)
 }
 
@@ -156,7 +160,7 @@ func (a *SiteServiceAdapter) GetRemotePluginFileContent(ctx context.Context, sit
 	return a.Service.GetRemotePluginFileContent(ctx, siteID, pluginSlug, filePath)
 }
 
-func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteID int64) (any, error) {
+func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteID int64) (*site.SiteCredentials, error) {
 	return a.Service.GetCredentials(ctx, siteID)
 }
 
