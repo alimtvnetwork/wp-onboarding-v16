@@ -113,32 +113,6 @@ func handleSiteActionByID(
 	}
 }
 
-// handleSiteActionByIDWithOpts creates a handler for site-scoped actions with optional JSON body:
-// nil-safe site service check → getIDParam("id") → decode optional opts → fn(ctx, siteID, opts) → respondCreated
-func handleSiteActionByIDWithOpts(
-	errCode string,
-	fn func(ctx context.Context, siteID int64, opts map[string]any) (any, error),
-) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if Services == nil || Services.SiteService == nil {
-			respondError(w, wordpress.HttpStatusServiceUnavailable, "E9001", wordpress.ResponseMessageServiceNotAvailable.String())
-			return
-		}
-		siteID, err := getIDParam(r, "id")
-		if err != nil {
-			respondError(w, wordpress.HttpStatusBadRequest, "E1002", wordpress.ResponseMessageInvalidId.String())
-			return
-		}
-		opts := decodeOptionalOpts(r)
-		result, err := fn(r.Context(), siteID, opts)
-		if err != nil {
-			respondError(w, wordpress.HttpStatusServerError, errCode, err.Error())
-			return
-		}
-		respondCreated(w, result)
-	}
-}
-
 // handleNoArgs creates a handler: requireService → fn(ctx) → respondSuccess
 // Use for endpoints with no parameters (e.g., check-all, pull-all).
 func handleNoArgs(
@@ -189,18 +163,6 @@ func handleTwoIDs(
 		}
 		respondSuccess(w, result)
 	}
-}
-
-// decodeOptionalOpts reads an optional JSON body into a map. Returns empty map on failure.
-func decodeOptionalOpts(r *http.Request) map[string]any {
-	var opts map[string]any
-	if r.Body != nil {
-		_ = decodeJSONSilent(r, &opts)
-	}
-	if opts == nil {
-		opts = map[string]any{}
-	}
-	return opts
 }
 
 // --- Service getters for lazy resolution ---

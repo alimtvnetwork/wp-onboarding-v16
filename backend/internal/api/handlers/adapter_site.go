@@ -7,6 +7,7 @@ import (
 
 	"wp-plugin-publish/internal/models"
 	"wp-plugin-publish/internal/services/site"
+	"wp-plugin-publish/internal/wordpress"
 )
 
 // SiteServiceInterface defines site service methods
@@ -22,31 +23,33 @@ type SiteServiceInterface interface {
 	BootstrapUploader(ctx context.Context, id int64, uploaderPath string) (*site.BootstrapResult, error)
 	GetCredentials(ctx context.Context, siteID int64) (*site.SiteCredentials, error)
 
-	// WordPress proxy — dynamic PHP JSON, kept as any
-	GetRemotePlugins(ctx context.Context, siteID int64) (any, error)
-	ForceSyncRemotePlugins(ctx context.Context, siteID int64) (any, error)
+	// Remote plugin proxy — typed returns
+	GetRemotePlugins(ctx context.Context, siteID int64) ([]site.RemotePlugin, error)
+	ForceSyncRemotePlugins(ctx context.Context, siteID int64) ([]site.RemotePlugin, error)
 	InvalidateRemotePluginsCache(ctx context.Context, siteID int64) error
 	EnableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	DisableRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
 	CheckRemotePluginExists(ctx context.Context, siteID int64, pluginSlug string) (bool, string, string, error)
 	DeleteRemotePlugin(ctx context.Context, siteID int64, pluginSlug string) error
-	GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (any, error)
+	GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (*site.RemotePluginFilesResult, error)
 	GetRemotePluginFileContent(ctx context.Context, siteID int64, pluginSlug, filePath string) (string, error)
-	GetRemoteSnapshots(ctx context.Context, siteID int64) (any, error)
-	GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (any, error)
-	CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (any, error)
+
+	// Snapshot proxy — typed returns
+	GetRemoteSnapshots(ctx context.Context, siteID int64) ([]wordpress.SnapshotRecord, error)
+	GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRecord, error)
+	CreateRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotCreateOptions) (*wordpress.SnapshotCreateResult, error)
 	DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) error
-	RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]any) (any, error)
+	RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRestoreResult, error)
 	ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, error)
-	DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, map[string]any, error)
-	GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (any, error)
-	UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]any) (any, error)
-	GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (any, error)
-	GetRemoteAvailableTables(ctx context.Context, siteID int64) (any, error)
-	FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (any, error)
-	IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (any, error)
-	ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (any, error)
-	CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]any) (any, error)
+	DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, *wordpress.SnapshotDownloadResult, error)
+	GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (*wordpress.SnapshotSettings, error)
+	UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings wordpress.SnapshotSettings) (*wordpress.SnapshotSettings, error)
+	GetRemoteSnapshotProviders(ctx context.Context, siteID int64) ([]wordpress.SnapshotProvider, error)
+	GetRemoteAvailableTables(ctx context.Context, siteID int64) ([]wordpress.AvailableTable, error)
+	FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error)
+	IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error)
+	ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (*wordpress.SnapshotImportResult, error)
+	CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, error)
 	ClearErrorLogHashes() int
 }
 
@@ -124,11 +127,11 @@ func (a *SiteServiceAdapter) BootstrapUploader(ctx context.Context, id int64, up
 	return a.Service.BootstrapUploader(ctx, id, uploaderPath)
 }
 
-func (a *SiteServiceAdapter) GetRemotePlugins(ctx context.Context, siteID int64) (any, error) {
+func (a *SiteServiceAdapter) GetRemotePlugins(ctx context.Context, siteID int64) ([]site.RemotePlugin, error) {
 	return a.Service.GetRemotePlugins(ctx, siteID)
 }
 
-func (a *SiteServiceAdapter) ForceSyncRemotePlugins(ctx context.Context, siteID int64) (any, error) {
+func (a *SiteServiceAdapter) ForceSyncRemotePlugins(ctx context.Context, siteID int64) ([]site.RemotePlugin, error) {
 	return a.Service.ForceSyncRemotePlugins(ctx, siteID)
 }
 
@@ -152,7 +155,7 @@ func (a *SiteServiceAdapter) DeleteRemotePlugin(ctx context.Context, siteID int6
 	return a.Service.DeleteRemotePlugin(ctx, siteID, pluginSlug)
 }
 
-func (a *SiteServiceAdapter) GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (any, error) {
+func (a *SiteServiceAdapter) GetRemotePluginFiles(ctx context.Context, siteID int64, pluginSlug string) (*site.RemotePluginFilesResult, error) {
 	return a.Service.GetRemotePluginFiles(ctx, siteID, pluginSlug)
 }
 
@@ -164,15 +167,15 @@ func (a *SiteServiceAdapter) GetCredentials(ctx context.Context, siteID int64) (
 	return a.Service.GetCredentials(ctx, siteID)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSnapshots(ctx context.Context, siteID int64) (any, error) {
+func (a *SiteServiceAdapter) GetRemoteSnapshots(ctx context.Context, siteID int64) ([]wordpress.SnapshotRecord, error) {
 	return a.Service.GetRemoteSnapshots(ctx, siteID)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (any, error) {
+func (a *SiteServiceAdapter) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRecord, error) {
 	return a.Service.GetRemoteSnapshot(ctx, siteID, snapshotID)
 }
 
-func (a *SiteServiceAdapter) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (any, error) {
+func (a *SiteServiceAdapter) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotCreateOptions) (*wordpress.SnapshotCreateResult, error) {
 	return a.Service.CreateRemoteSnapshot(ctx, siteID, opts)
 }
 
@@ -180,47 +183,47 @@ func (a *SiteServiceAdapter) DeleteRemoteSnapshot(ctx context.Context, siteID, s
 	return a.Service.DeleteRemoteSnapshot(ctx, siteID, snapshotID)
 }
 
-func (a *SiteServiceAdapter) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]any) (any, error) {
-	return a.Service.RestoreRemoteSnapshot(ctx, siteID, snapshotID, opts)
+func (a *SiteServiceAdapter) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRestoreResult, error) {
+	return a.Service.RestoreRemoteSnapshot(ctx, siteID, snapshotID)
 }
 
 func (a *SiteServiceAdapter) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*http.Response, error) {
 	return a.Service.ExportRemoteSnapshot(ctx, siteID, snapshotID)
 }
 
-func (a *SiteServiceAdapter) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, map[string]any, error) {
+func (a *SiteServiceAdapter) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, *wordpress.SnapshotDownloadResult, error) {
 	return a.Service.DownloadSnapshotZip(ctx, siteID, snapshotID)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (any, error) {
+func (a *SiteServiceAdapter) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (*wordpress.SnapshotSettings, error) {
 	return a.Service.GetRemoteSnapshotSettings(ctx, siteID)
 }
 
-func (a *SiteServiceAdapter) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]any) (any, error) {
+func (a *SiteServiceAdapter) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings wordpress.SnapshotSettings) (*wordpress.SnapshotSettings, error) {
 	return a.Service.UpdateRemoteSnapshotSettings(ctx, siteID, settings)
 }
 
-func (a *SiteServiceAdapter) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) (any, error) {
+func (a *SiteServiceAdapter) GetRemoteSnapshotProviders(ctx context.Context, siteID int64) ([]wordpress.SnapshotProvider, error) {
 	return a.Service.GetRemoteSnapshotProviders(ctx, siteID)
 }
 
-func (a *SiteServiceAdapter) GetRemoteAvailableTables(ctx context.Context, siteID int64) (any, error) {
+func (a *SiteServiceAdapter) GetRemoteAvailableTables(ctx context.Context, siteID int64) ([]wordpress.AvailableTable, error) {
 	return a.Service.GetRemoteAvailableTables(ctx, siteID)
 }
 
-func (a *SiteServiceAdapter) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (any, error) {
+func (a *SiteServiceAdapter) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error) {
 	return a.Service.FullBackupRemoteSnapshot(ctx, siteID, opts)
 }
 
-func (a *SiteServiceAdapter) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (any, error) {
+func (a *SiteServiceAdapter) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error) {
 	return a.Service.IncrementalBackupRemoteSnapshot(ctx, siteID, opts)
 }
 
-func (a *SiteServiceAdapter) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (any, error) {
+func (a *SiteServiceAdapter) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (*wordpress.SnapshotImportResult, error) {
 	return a.Service.ImportRemoteSnapshot(ctx, siteID, zipPath)
 }
 
-func (a *SiteServiceAdapter) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]any) (any, error) {
+func (a *SiteServiceAdapter) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, error) {
 	return a.Service.CleanupRemoteSnapshots(ctx, siteID, opts)
 }
 
