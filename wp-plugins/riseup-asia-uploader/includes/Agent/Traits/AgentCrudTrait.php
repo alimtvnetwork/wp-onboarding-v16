@@ -2,16 +2,15 @@
 /**
  * Agent CRUD Trait — Shell delegating to AgentCrudWriteTrait and AgentCrudReadTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Agent\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Agent\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/AgentCrudWriteTrait.php';
-require_once __DIR__ . '/AgentCrudReadTrait.php';
 
 trait AgentCrudTrait {
     use AgentCrudWriteTrait;

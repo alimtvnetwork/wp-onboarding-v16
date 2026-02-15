@@ -6,6 +6,8 @@
  * @since   1.57.0
  */
 
+namespace RiseupAsia\Helpers\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -14,7 +16,6 @@ use RiseupAsia\ErrorHandling\FrameBuilder;
 
 trait EnvelopeFactoryTrait {
 
-    /** Create a success envelope. */
     public static function success(string $message = 'OK', int $code = 200): static {
         $builder = new self();
         $builder->is_success = true;
@@ -23,8 +24,7 @@ trait EnvelopeFactoryTrait {
         return $builder;
     }
 
-    /** Create an error envelope. */
-    public static function error(string $message, int $code = 500, ?Throwable $exception = null): static {
+    public static function error(string $message, int $code = 500, ?\Throwable $exception = null): static {
         $builder = new self();
         $builder->is_success = false;
         $builder->code = $code;
@@ -32,13 +32,13 @@ trait EnvelopeFactoryTrait {
         $builder->has_errors = true;
 
         $errors = array(
-            'BackendMessage'              => $message,
-            'DelegatedServiceErrorStack'  => array(),
-            'Backend'                     => array(),
-            'Frontend'                    => array(),
+            'BackendMessage' => $message,
+            'DelegatedServiceErrorStack' => array(),
+            'Backend' => array(),
+            'Frontend' => array(),
         );
 
-        if ($exception instanceof Throwable) {
+        if ($exception instanceof \Throwable) {
             $errors = self::buildExceptionErrors($errors, $exception);
         } else {
             $errors = self::buildBacktraceErrors($errors);
@@ -48,10 +48,7 @@ trait EnvelopeFactoryTrait {
         return $builder;
     }
 
-    /**
-     * Build error details from an exception.
-     */
-    private static function buildExceptionErrors(array $errors, Throwable $exception): array {
+    private static function buildExceptionErrors(array $errors, \Throwable $exception): array {
         $trace_lines = explode("\n", $exception->getTraceAsString());
         $errors['DelegatedServiceErrorStack'] = $trace_lines;
 
@@ -63,9 +60,6 @@ trait EnvelopeFactoryTrait {
         return $errors;
     }
 
-    /**
-     * Build error details from a debug backtrace.
-     */
     private static function buildBacktraceErrors(array $errors): array {
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
         if (class_exists(FrameBuilder::class)) {
@@ -76,9 +70,6 @@ trait EnvelopeFactoryTrait {
         return $errors;
     }
 
-    /**
-     * Convert structured frames to readable lines.
-     */
     private static function framesToLines(array $frames): array {
         $lines = array();
         foreach ($frames as $frame) {

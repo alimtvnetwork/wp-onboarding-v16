@@ -2,9 +2,11 @@
 /**
  * UpdateResolverFetchTrait — update info fetching and retry logic.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Update\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Update\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -12,17 +14,16 @@ if (!defined('ABSPATH')) {
 
 trait UpdateResolverFetchTrait {
 
-    /** Fetch update information from the update server. */
-    public function fetchUpdateInfo(bool $forceCheck = false): array|WP_Error {
+    public function fetchUpdateInfo(bool $forceCheck = false): array|\WP_Error {
         $settings = $this->getSettings();
         if (!$settings['enabled']) {
-            return new WP_Error('disabled', 'Auto-update is disabled');
+            return new \WP_Error('disabled', 'Auto-update is disabled');
         }
 
         $updateUrl = $this->resolveUpdateUrl($settings, $forceCheck);
         $response = $this->fetchUpdateResponse($updateUrl);
 
-        if ($response instanceof WP_Error) {
+        if ($response instanceof \WP_Error) {
             return $this->handleFetchFailure($settings, $forceCheck, $response);
         }
 
@@ -42,13 +43,6 @@ trait UpdateResolverFetchTrait {
         return $updateInfo;
     }
 
-    /**
-     * Resolve the update URL, falling back to master URL on error.
-     *
-     * @param array $settings   Current settings.
-     * @param bool  $forceCheck Whether to force fresh resolution.
-     * @return string Resolved URL.
-     */
     private function resolveUpdateUrl(array $settings, bool $forceCheck): string {
         $updateUrl = $this->getUpdateUrl($forceCheck);
         if (is_wp_error($updateUrl)) {
@@ -58,12 +52,6 @@ trait UpdateResolverFetchTrait {
         return $updateUrl;
     }
 
-    /**
-     * Fetch the update response from the server.
-     *
-     * @param string $url Update URL.
-     * @return array|WP_Error HTTP response or error.
-     */
     private function fetchUpdateResponse(string $url) {
         $response = wp_remote_get($url, array('timeout' => 30, 'sslverify' => true));
         if (is_wp_error($response)) {
@@ -72,15 +60,7 @@ trait UpdateResolverFetchTrait {
         return $response;
     }
 
-    /**
-     * Handle a fetch failure with retry logic.
-     *
-     * @param array    $settings   Current settings.
-     * @param bool     $forceCheck Whether this was a forced check.
-     * @param WP_Error $error      The fetch error.
-     * @return array|WP_Error Retry result or error.
-     */
-    private function handleFetchFailure(array $settings, bool $forceCheck, WP_Error $error) {
+    private function handleFetchFailure(array $settings, bool $forceCheck, \WP_Error $error) {
         if (!$forceCheck && !empty($settings['resolved_url'])) {
             $this->fileLogger->info('Cached URL failed, resolving fresh');
             $this->clearCache();
@@ -91,14 +71,6 @@ trait UpdateResolverFetchTrait {
         return $error;
     }
 
-    /**
-     * Handle a non-200 HTTP response with retry logic.
-     *
-     * @param array $settings   Current settings.
-     * @param bool  $forceCheck Whether this was a forced check.
-     * @param int   $statusCode HTTP status code.
-     * @return array|WP_Error Retry result or error.
-     */
     private function handleNon200Response(array $settings, bool $forceCheck, int $statusCode) {
         $errorMsg = "HTTP $statusCode from update server";
         $this->fileLogger->error('Update server error', array('status' => $statusCode));
@@ -110,11 +82,10 @@ trait UpdateResolverFetchTrait {
         }
 
         $this->saveSettings(array('last_error' => $errorMsg, 'last_check' => current_time('mysql', true)));
-        return new WP_Error('http_error', $errorMsg);
+        return new \WP_Error('http_error', $errorMsg);
     }
 
-    /** Parse the update response body into structured update info. */
-    private function parseUpdateResponseBody(array|WP_Error $response, string $updateUrl): array {
+    private function parseUpdateResponseBody(array|\WP_Error $response, string $updateUrl): array {
         $body = wp_remote_retrieve_body($response);
         $contentType = wp_remote_retrieve_header($response, 'content-type');
 

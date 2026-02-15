@@ -2,9 +2,11 @@
 /**
  * PostCrudTrait — Post creation and update logic.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Post\Traits
  * @since   1.4.0
  */
+
+namespace RiseupAsia\Post\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait PostCrudTrait {
 
@@ -46,7 +49,7 @@ trait PostCrudTrait {
             ));
 
             return array('success' => true, 'post' => $this->formatPost(get_post($postId)));
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post creation exception');
         }
     }
@@ -74,7 +77,7 @@ trait PostCrudTrait {
 
             $updatedPost = get_post($postId);
             return array('success' => true, 'post' => $this->formatPost($updatedPost, true));
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post update exception');
         }
     }

@@ -2,9 +2,11 @@
 /**
  * AdminAjaxSnapshotTrait — AJAX handlers for snapshot settings, cleanup, and storage.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -12,12 +14,12 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait AdminAjaxSnapshotTrait {
 
-    /**
-     * AJAX handler: Save snapshot settings.
-     */
+    /** AJAX handler: Save snapshot settings. */
     public function ajaxSaveSnapshotSettings() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
@@ -29,11 +31,7 @@ trait AdminAjaxSnapshotTrait {
         $this->applySnapshotSettings($settings);
     }
 
-    /**
-     * Parse snapshot settings from $_POST data.
-     *
-     * @return array Parsed settings.
-     */
+    /** Parse snapshot settings from $_POST data. */
     private function parseSnapshotSettingsFromPost(): array {
         $settings = array();
         $this->parsePostTextFields($settings);
@@ -99,18 +97,13 @@ trait AdminAjaxSnapshotTrait {
         }
     }
 
-    /**
-     * Apply parsed snapshot settings and sync cron.
-     *
-     * @param array $settings Parsed settings.
-     */
+    /** Apply parsed snapshot settings and sync cron. */
     private function applySnapshotSettings(array $settings) {
-        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotFactory.php';
-        $detector = RiseupSnapshotFactory::detector();
+        $detector = SnapshotFactory::detector();
         $result = $detector->updateSettings($settings);
 
         if (isset($settings['schedule_enabled']) || isset($settings['schedule_frequency'])) {
-            $scheduler = RiseupSnapshotFactory::scheduler();
+            $scheduler = SnapshotFactory::scheduler();
             $scheduler->syncScheduleWithSettings();
         }
 
@@ -121,9 +114,7 @@ trait AdminAjaxSnapshotTrait {
         }
     }
 
-    /**
-     * AJAX handler: Run manual snapshot cleanup.
-     */
+    /** AJAX handler: Run manual snapshot cleanup. */
     public function ajaxRunSnapshotCleanup() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
@@ -131,8 +122,7 @@ trait AdminAjaxSnapshotTrait {
             wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
-        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotFactory.php';
-        $scheduler = RiseupSnapshotFactory::scheduler();
+        $scheduler = SnapshotFactory::scheduler();
         $result = $scheduler->runManualCleanup();
 
         wp_send_json_success(array(
@@ -141,15 +131,13 @@ trait AdminAjaxSnapshotTrait {
                 $result['deleted_by_policy'],
                 $result['deleted_orphans'],
                 $result['deleted_failed'],
-                RiseupPathUtils::formatBytes($result['space_freed_bytes'])
+                PathUtils::formatBytes($result['space_freed_bytes'])
             ),
             'result' => $result,
         ));
     }
 
-    /**
-     * AJAX handler: Get snapshot storage stats.
-     */
+    /** AJAX handler: Get snapshot storage stats. */
     public function ajaxGetSnapshotStorageStats() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
 
@@ -157,8 +145,7 @@ trait AdminAjaxSnapshotTrait {
             wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
-        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotFactory.php';
-        $scheduler = RiseupSnapshotFactory::scheduler();
+        $scheduler = SnapshotFactory::scheduler();
         $stats = $scheduler->getStorageStats();
 
         wp_send_json_success($stats);

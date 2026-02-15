@@ -2,18 +2,21 @@
 /**
  * UpdateResolverUrlTrait — URL resolution with redirect following and caching.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Update\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Update\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Helpers\BooleanHelpers;
+
 trait UpdateResolverUrlTrait {
 
-    /** Resolve a URL through 301 redirects to get the final destination. */
-    public function resolveUrl(string $url, int $maxRedirects = 5): string|WP_Error {
+    public function resolveUrl(string $url, int $maxRedirects = 5): string|\WP_Error {
         $this->fileLogger->info('Resolving URL through redirects', array('url' => $url));
 
         $currentUrl = $url;
@@ -30,11 +33,10 @@ trait UpdateResolverUrlTrait {
         }
 
         $this->fileLogger->error('Max redirects exceeded', array('url' => $url, 'redirects' => $maxRedirects));
-        return new WP_Error('max_redirects', 'Maximum redirect limit exceeded');
+        return new \WP_Error('max_redirects', 'Maximum redirect limit exceeded');
     }
 
-    /** Follow a single HTTP redirect and return the target URL. */
-    private function followSingleRedirect(string $url): string|WP_Error|null {
+    private function followSingleRedirect(string $url): string|\WP_Error|null {
         $response = wp_remote_head($url, array('timeout' => 15, 'redirection' => 0, 'sslverify' => true));
 
         if (is_wp_error($response)) {
@@ -45,14 +47,14 @@ trait UpdateResolverUrlTrait {
         $status = wp_remote_retrieve_response_code($response);
         $this->fileLogger->debug('Redirect check', array('url' => $url, 'status' => $status));
 
-        if (RiseupBooleanHelpers::isNotInList($status, array(301, 302, 303, 307, 308))) {
+        if (BooleanHelpers::isNotInList($status, array(301, 302, 303, 307, 308))) {
             return null;
         }
 
         $location = wp_remote_retrieve_header($response, 'location');
         if (empty($location)) {
             $this->fileLogger->error('Redirect without Location header', array('url' => $url));
-            return new WP_Error('no_location', 'Redirect response missing Location header');
+            return new \WP_Error('no_location', 'Redirect response missing Location header');
         }
 
         if (strpos($location, 'http') !== 0) {
@@ -64,18 +66,16 @@ trait UpdateResolverUrlTrait {
         return $location;
     }
 
-    /** Log a successful URL resolution. */
     private function logResolvedUrl(string $original, string $final, int $hops): string {
         $this->fileLogger->info('URL resolved', array('original' => $original, 'final' => $final, 'hops' => $hops));
         return $final;
     }
 
-    /** Get the update URL, using cache if valid or resolving fresh. */
-    public function getUpdateUrl(bool $forceResolve = false): string|WP_Error {
+    public function getUpdateUrl(bool $forceResolve = false): string|\WP_Error {
         $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {
-            return new WP_Error('no_master_url', 'No master update URL configured');
+            return new \WP_Error('no_master_url', 'No master update URL configured');
         }
 
         if (!$forceResolve && $this->isCacheValid($settings)) {
@@ -93,7 +93,6 @@ trait UpdateResolverUrlTrait {
         return $resolved;
     }
 
-    /** Check if the cached URL is still valid. */
     private function isCacheValid(array $settings): bool {
         if (empty($settings['resolved_url']) || empty($settings['resolved_at'])) {
             return false;
@@ -103,7 +102,6 @@ trait UpdateResolverUrlTrait {
         return time() < ($resolvedAt + ($cacheDays * DAY_IN_SECONDS));
     }
 
-    /** Clear the cached resolved URL. */
     public function clearCache(): bool {
         $this->fileLogger->info('Clearing update URL cache');
         return $this->saveSettings(array('resolved_url' => '', 'resolved_at' => ''));

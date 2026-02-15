@@ -2,16 +2,15 @@
 /**
  * Admin Error Page Trait — Shell delegating to AdminErrorRenderTrait and AdminErrorStateTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/AdminErrorRenderTrait.php';
-require_once __DIR__ . '/AdminErrorStateTrait.php';
 
 trait AdminErrorPageTrait {
     use AdminErrorRenderTrait;

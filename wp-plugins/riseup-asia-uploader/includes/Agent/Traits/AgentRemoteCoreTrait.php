@@ -2,9 +2,11 @@
 /**
  * AgentRemoteCoreTrait — URL normalization, auth, and API request mechanics.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Agent\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Agent\Traits;
 
 if (!defined('ABSPATH')) {
     exit;

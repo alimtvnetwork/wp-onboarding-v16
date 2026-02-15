@@ -2,13 +2,17 @@
 /**
  * AgentLoggingTrait — Action logging and history retrieval for agent operations.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Agent\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Agent\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait AgentLoggingTrait {
 

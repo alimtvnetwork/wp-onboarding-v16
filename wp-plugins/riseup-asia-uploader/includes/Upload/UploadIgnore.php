@@ -2,49 +2,39 @@
 /**
  * Upload Ignore Parser
  *
- * Parses .uploadignore files using gitignore-style pattern matching.
- * Shell class — pattern logic delegated to trait.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Upload
  * @since   1.4.0
  */
+
+namespace RiseupAsia\Upload;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Upload\Traits\UploadIgnorePatternTrait;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Logging\FileLogger;
 
-// Load trait files
-require_once __DIR__ . '/Traits/UploadIgnorePatternTrait.php';
-
-/**
- * Upload Ignore Parser class.
- */
-class RiseupUploadIgnore {
+class UploadIgnore {
 
     use UploadIgnorePatternTrait;
 
     private array $patterns = array();
     private array $negations = array();
     private bool $isLoaded = false;
-    private RiseupFileLogger $fileLogger;
+    private FileLogger $fileLogger;
 
     public function __construct() {
-        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->fileLogger = FileLogger::getInstance();
     }
 
-    /**
-     * Load patterns from .uploadignore file.
-     *
-     * @param string $pluginDir The plugin directory path.
-     * @return bool True if file was loaded.
-     */
     public function load(string $pluginDir): bool {
         $ignoreFile = rtrim($pluginDir, '/\\') . '/' . PluginConfigType::IgnoreFilename->value;
         $this->fileLogger->debug('Loading uploadignore', array('path' => $ignoreFile));
 
-        if (RiseupBooleanHelpers::isFileMissing($ignoreFile)) {
+        if (BooleanHelpers::isFileMissing($ignoreFile)) {
             $this->fileLogger->debug('No uploadignore file found');
             $this->isLoaded = false;
             return false;
@@ -80,16 +70,13 @@ class RiseupUploadIgnore {
                 'negations' => count($this->negations),
             ));
             return true;
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to load uploadignore');
             $this->isLoaded = false;
             return false;
         }
     }
 
-    /**
-     * Check if a relative path should be ignored.
-     */
     public function shouldIgnore(string $relativePath): bool {
         $path = str_replace('\\', '/', $relativePath);
         $path = ltrim($path, '/');
@@ -113,24 +100,15 @@ class RiseupUploadIgnore {
         return $isIgnored;
     }
 
-    public function getPatterns(): array {
-        return $this->patterns;
-    }
+    public function getPatterns(): array { return $this->patterns; }
+    public function getNegations(): array { return $this->negations; }
+    public function isLoaded(): bool { return $this->isLoaded; }
 
-    public function getNegations(): array {
-        return $this->negations;
-    }
-
-    public function isLoaded(): bool {
-        return $this->isLoaded;
-    }
-
-    /**
-     * Create an instance and load from a directory.
-     */
     public static function fromDirectory(string $pluginDir): self {
         $instance = new self();
         $instance->load($pluginDir);
         return $instance;
     }
 }
+
+class_alias(UploadIgnore::class, 'RiseupUploadIgnore');

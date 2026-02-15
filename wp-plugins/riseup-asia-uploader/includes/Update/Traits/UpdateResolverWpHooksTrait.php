@@ -2,9 +2,11 @@
 /**
  * UpdateResolverWpHooksTrait — WordPress filter hooks and test connection.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Update\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Update\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -14,7 +16,6 @@ use RiseupAsia\Enums\PluginConfigType;
 
 trait UpdateResolverWpHooksTrait {
 
-    /** WordPress filter: Check for plugin updates. */
     public function checkForPluginUpdate(object $transient): object {
         if (empty($transient->checked)) {
             return $transient;
@@ -43,7 +44,6 @@ trait UpdateResolverWpHooksTrait {
         return $transient;
     }
 
-    /** Build a transient entry for an available update. */
     private function buildUpdateTransientEntry(array $updateInfo, string $pluginFile): object {
         $this->fileLogger->info('Update available', array('current' => PluginConfigType::Version->value, 'new' => $updateInfo['version']));
 
@@ -56,7 +56,6 @@ trait UpdateResolverWpHooksTrait {
         );
     }
 
-    /** Build a transient entry indicating no update available. */
     private function buildNoUpdateTransientEntry(string $pluginFile): object {
         return (object) array(
             'id' => PluginConfigType::Slug->value, 'slug' => PluginConfigType::Slug->value,
@@ -64,7 +63,6 @@ trait UpdateResolverWpHooksTrait {
         );
     }
 
-    /** WordPress filter: Plugin information for "View Details" modal. */
     public function pluginInfo(false|object|array $result, string $action, object $args): false|object {
         if ($action !== 'plugin_information') {
             return $result;
@@ -84,7 +82,6 @@ trait UpdateResolverWpHooksTrait {
         return $this->buildPluginInfoObject($updateInfo);
     }
 
-    /** Build the plugin info object for the details modal. */
     private function buildPluginInfoObject(array $updateInfo): object {
         return (object) array(
             'name' => PluginConfigType::Name->value, 'slug' => PluginConfigType::Slug->value,
@@ -101,7 +98,6 @@ trait UpdateResolverWpHooksTrait {
         );
     }
 
-    /** Test connection to update server. */
     public function testConnection(): array {
         $settings = $this->getSettings();
 
