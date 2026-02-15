@@ -22,7 +22,7 @@ trait InitDirTrait {
      * @param bool   $secure Whether to add .htaccess and index.php security files.
      * @return bool True if directory exists (or was created), false on failure.
      */
-    public static function ensureDir($path, $secure = false) {
+    public static function ensureDir(string $path, bool $secure = false): bool {
         $normalized = str_replace('\\', '/', $path);
 
         if (isset(self::$ensured_dirs[$normalized])) {
@@ -47,7 +47,7 @@ trait InitDirTrait {
      * @param bool   $secure Add security files.
      * @return bool True on success.
      */
-    public static function ensureDirNative($path, $secure = false) {
+    public static function ensureDirNative(string $path, bool $secure = false): bool {
         if (empty($path)) {
             return false;
         }
@@ -73,7 +73,7 @@ trait InitDirTrait {
      * @param string $path Directory path.
      * @return bool True if all files exist or were created.
      */
-    public static function addSecurityFiles($path) {
+    public static function addSecurityFiles(string $path): bool {
         $success = true;
 
         $htaccess = $path . '/.htaccess';
@@ -101,17 +101,17 @@ trait InitDirTrait {
      * @param bool   $secure   Add security files to base directory.
      * @return string|false Full path to subdirectory on success, false on failure.
      */
-    public static function ensureSubDir($base_dir, $sub_dir, $secure = false) {
-        if (!self::ensureDir($base_dir, $secure)) {
+    public static function ensureSubDir(string $baseDir, string $subDir, bool $secure = false): string|false {
+        if (!self::ensureDir($baseDir, $secure)) {
             return false;
         }
 
-        $full_path = rtrim($base_dir, '/') . '/' . ltrim($sub_dir, '/');
-        if (!self::ensureDir($full_path, false)) {
+        $fullPath = rtrim($baseDir, '/') . '/' . ltrim($subDir, '/');
+        if (!self::ensureDir($fullPath, false)) {
             return false;
         }
 
-        return $full_path;
+        return $fullPath;
     }
 
     /**
@@ -119,7 +119,7 @@ trait InitDirTrait {
      *
      * @return string Base directory path.
      */
-    public static function resolveBaseDir() {
+    public static function resolveBaseDir(): string {
         if (RiseupBooleanHelpers::isFuncMissing('wp_upload_dir')) {
             return dirname(__DIR__) . '/data';
         }

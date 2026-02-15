@@ -12,68 +12,59 @@ if (!defined('ABSPATH')) {
 
 trait EnvelopeSettersTrait {
 
-    /** @return static */
-    public function setResults(array $results) {
+    public function setResults(array $results): static {
         $this->results = $results;
         return $this;
     }
 
-    /** @return static */
-    public function setSingleResult(array $item) {
+    public function setSingleResult(array $item): static {
         $this->results = array($item);
         return $this;
     }
 
-    /** @return static */
-    public function setRequestedAt($path) {
+    public function setRequestedAt(string $path): static {
         $this->requested_at = $path;
         return $this;
     }
 
-    /** @return static */
-    public function autoDetectRequestedAt() {
+    public function autoDetectRequestedAt(): static {
         if (isset($_SERVER['REQUEST_URI'])) {
             $this->requested_at = $_SERVER['REQUEST_URI'];
         }
         return $this;
     }
 
-    /** @return static */
-    public function setDelegatedAt($url) {
+    public function setDelegatedAt(string $url): static {
         $this->delegated_at = $url;
         return $this;
     }
 
-    /** @return static */
-    public function setPagination($total_records, $per_page, $current_page) {
-        $this->total_records = $total_records;
-        $this->per_page = $per_page;
-        $this->current_page = $current_page;
-        $this->total_pages = ($per_page > 0) ? (int) ceil($total_records / $per_page) : 0;
+    public function setPagination(int $totalRecords, int $perPage, int $currentPage): static {
+        $this->total_records = $totalRecords;
+        $this->per_page = $perPage;
+        $this->current_page = $currentPage;
+        $this->total_pages = ($perPage > 0) ? (int) ceil($totalRecords / $perPage) : 0;
         return $this;
     }
 
-    /** @return static */
-    public function setNavigation($next_page = null, $prev_page = null, $closer_links = array()) {
+    public function setNavigation(?string $nextPage = null, ?string $prevPage = null, array $closerLinks = array()): static {
         $this->navigation = array(
-            'NextPage'     => $next_page,
-            'PrevPage'     => $prev_page,
-            'CloserLinks'  => $closer_links,
+            'NextPage'     => $nextPage,
+            'PrevPage'     => $prevPage,
+            'CloserLinks'  => $closerLinks,
         );
         return $this;
     }
 
-    /** @return static */
-    public function setMethodsStack(array $backend_stack, array $frontend_stack = array()) {
+    public function setMethodsStack(array $backendStack, array $frontendStack = array()): static {
         $this->methods_stack = array(
-            'Backend'  => $backend_stack,
-            'Frontend' => $frontend_stack,
+            'Backend'  => $backendStack,
+            'Frontend' => $frontendStack,
         );
         return $this;
     }
 
-    /** @return static */
-    public function setErrors(array $errors) {
+    public function setErrors(array $errors): static {
         $this->errors = $errors;
         $this->has_errors = true;
         return $this;
