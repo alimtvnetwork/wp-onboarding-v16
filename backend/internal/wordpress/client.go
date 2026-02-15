@@ -75,7 +75,7 @@ func (e *APIError) FullError() string {
 }
 
 // ProgressDetails holds structured metadata for progress callback reporting.
-type ProgressDetails map[string]any
+type ProgressDetails = json.RawMessage
 
 // ClientConfig holds WordPress client configuration
 type ClientConfig struct {

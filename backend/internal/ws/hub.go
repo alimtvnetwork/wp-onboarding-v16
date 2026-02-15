@@ -98,25 +98,25 @@ type FileChangeData struct {
 
 // ErrorData holds error broadcast payload.
 type ErrorData struct {
-	Code    string         `json:"code"`
-	Message string         `json:"message"`
-	Context map[string]any `json:"context,omitempty"`
+	Code    string          `json:"code"`
+	Message string          `json:"message"`
+	Context json.RawMessage `json:"context,omitempty"`
 }
 
 // ConnectionTestProgressData holds connection test progress broadcast payload.
 type ConnectionTestProgressData struct {
-	SiteID  int64          `json:"siteId"`
-	Step    string         `json:"step"`
-	Status  string         `json:"status"`
-	Message string         `json:"message"`
-	Details map[string]any `json:"details,omitempty"`
+	SiteID  int64           `json:"siteId"`
+	Step    string          `json:"step"`
+	Status  string          `json:"status"`
+	Message string          `json:"message"`
+	Details json.RawMessage `json:"details,omitempty"`
 }
 
 // LogData holds log broadcast payload.
 type LogData struct {
-	Level   string         `json:"level"`
-	Message string         `json:"message"`
-	Context map[string]any `json:"context,omitempty"`
+	Level   string          `json:"level"`
+	Message string          `json:"message"`
+	Context json.RawMessage `json:"context,omitempty"`
 }
 
 // OperationLogData holds operation log broadcast payload.
@@ -311,7 +311,7 @@ func (h *Hub) BroadcastFileChange(pluginID int64, filePath, changeType string) {
 }
 
 // BroadcastError sends an error notification
-func (h *Hub) BroadcastError(code, message string, context map[string]any) {
+func (h *Hub) BroadcastError(code, message string, context json.RawMessage) {
 	Broadcast(h, EventError, ErrorData{
 		Code:    code,
 		Message: message,
@@ -320,7 +320,7 @@ func (h *Hub) BroadcastError(code, message string, context map[string]any) {
 }
 
 // BroadcastConnectionTestProgress sends a connection test progress update
-func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]any) {
+func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details json.RawMessage) {
 	Broadcast(h, EventConnectionTestProgress, ConnectionTestProgressData{
 		SiteID:  siteID,
 		Step:    step,
@@ -331,7 +331,7 @@ func (h *Hub) BroadcastConnectionTestProgress(siteID int64, step string, status 
 }
 
 // BroadcastLog sends a log message to all clients
-func (h *Hub) BroadcastLog(level string, message string, context map[string]any) {
+func (h *Hub) BroadcastLog(level string, message string, context json.RawMessage) {
 	Broadcast(h, EventLog, LogData{
 		Level:   level,
 		Message: message,
@@ -341,13 +341,13 @@ func (h *Hub) BroadcastLog(level string, message string, context map[string]any)
 
 // OperationLogEntry represents a single log entry for an operation
 type OperationLogEntry struct {
-	Timestamp string         `json:"timestamp"` // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
-	Level     string         `json:"level"`  // debug, info, warn, error
-	Step      string         `json:"step"`   // backup, package, upload, activate, etc.
-	Message   string         `json:"message"`
-	Details   map[string]any `json:"details,omitempty"`
-	File      string         `json:"file,omitempty"`  // Source file path
-	Line      int            `json:"line,omitempty"`  // Source line number
+	Timestamp string          `json:"timestamp"` // Format: [vX.X.X YYYY-MM-DD HH:MM:SS]
+	Level     string          `json:"level"`  // debug, info, warn, error
+	Step      string          `json:"step"`   // backup, package, upload, activate, etc.
+	Message   string          `json:"message"`
+	Details   json.RawMessage `json:"details,omitempty"`
+	File      string          `json:"file,omitempty"`  // Source file path
+	Line      int             `json:"line,omitempty"`  // Source line number
 }
 
 // BroadcastOperationLog sends a detailed operation log entry for publish/sync/backup
@@ -370,12 +370,12 @@ func (h *Hub) BroadcastOperationLogWithSession(operationType string, pluginID, s
 }
 
 // BroadcastPublishLog is a convenience method for publish operation logs
-func (h *Hub) BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastPublishLog(pluginID, siteID int64, level, step, message string, details json.RawMessage) {
 	h.BroadcastPublishLogWithSession(pluginID, siteID, "", level, step, message, details)
 }
 
 // BroadcastPublishLogWithSession is a convenience method for publish operation logs with session
-func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details json.RawMessage) {
 	h.BroadcastOperationLogWithSession("publish", pluginID, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -385,7 +385,7 @@ func (h *Hub) BroadcastPublishLogWithSession(pluginID, siteID int64, sessionID, 
 }
 
 // BroadcastSyncLog is a convenience method for sync operation logs
-func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message string, details json.RawMessage) {
 	h.BroadcastOperationLog("sync", pluginID, siteID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -395,7 +395,7 @@ func (h *Hub) BroadcastSyncLog(pluginID, siteID int64, level, step, message stri
 }
 
 // BroadcastSyncLogWithSession is a convenience method for sync operation logs with session
-func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, level, step, message string, details json.RawMessage) {
 	h.BroadcastOperationLogWithSession("sync", pluginID, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -405,7 +405,7 @@ func (h *Hub) BroadcastSyncLogWithSession(pluginID, siteID int64, sessionID, lev
 }
 
 // BroadcastBackupLog is a convenience method for backup operation logs
-func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, details json.RawMessage) {
 	h.BroadcastOperationLog("backup", pluginID, 0, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -415,7 +415,7 @@ func (h *Hub) BroadcastBackupLog(pluginID int64, level, step, message string, de
 }
 
 // BroadcastBackupLogWithSession is a convenience method for backup operation logs with session
-func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, step, message string, details json.RawMessage) {
 	h.BroadcastOperationLogWithSession("backup", pluginID, 0, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,
@@ -425,12 +425,12 @@ func (h *Hub) BroadcastBackupLogWithSession(pluginID int64, sessionID, level, st
 }
 
 // BroadcastRemotePluginLog is a convenience method for remote plugin action logs
-func (h *Hub) BroadcastRemotePluginLog(siteID int64, action, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastRemotePluginLog(siteID int64, action, level, step, message string, details json.RawMessage) {
 	h.BroadcastRemotePluginLogWithSession(siteID, action, "", level, step, message, details)
 }
 
 // BroadcastRemotePluginLogWithSession is a convenience method for remote plugin action logs with session
-func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details map[string]any) {
+func (h *Hub) BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details json.RawMessage) {
 	h.BroadcastOperationLogWithSession("remote_plugin_"+action, 0, siteID, sessionID, OperationLogEntry{
 		Level:   level,
 		Step:    step,

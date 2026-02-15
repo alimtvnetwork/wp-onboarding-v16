@@ -41,13 +41,13 @@ type Config struct {
 }
 
 // WPClientFactory creates WordPress clients with optional progress callback
-type WPClientFactory func(url, user, pass string, onProgress func(step, status, message string, details map[string]any)) *wordpress.Client
+type WPClientFactory func(url, user, pass string, onProgress func(step, status, message string, details json.RawMessage)) *wordpress.Client
 
 // WSHub interface for broadcasting messages
 type WSHub interface {
-	BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details map[string]any)
-	BroadcastLog(level string, message string, context map[string]any)
-	BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details map[string]any)
+	BroadcastConnectionTestProgress(siteID int64, step string, status string, message string, details json.RawMessage)
+	BroadcastLog(level string, message string, context json.RawMessage)
+	BroadcastRemotePluginLogWithSession(siteID int64, action, sessionID, level, step, message string, details json.RawMessage)
 	BroadcastWithSession(eventType string, data any, sessionID string)
 }
 
@@ -356,7 +356,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 
 	site, err := s.GetByID(ctx, id)
 	if err != nil {
-		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", toDetailsMap(ErrorDetail{Error: err.Error()}))
+		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", toJSON(ErrorDetail{Error: err.Error()}))
 		return nil, err
 	}
 	s.broadcastProgress(id, "fetch_site", "success", fmt.Sprintf("Retrieved site: %s", site.Name), nil)
@@ -365,14 +365,14 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	s.broadcastProgress(id, "decrypt", "running", "Decrypting credentials...", nil)
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", toDetailsMap(ErrorDetail{Error: err.Error()}))
+		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", toJSON(ErrorDetail{Error: err.Error()}))
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 	s.broadcastProgress(id, "decrypt", "success", "Credentials decrypted", nil)
 
 	// Create WordPress client with progress callback
 	s.broadcastProgress(id, "connect", "running", fmt.Sprintf("Connecting to %s...", site.URL), nil)
-	progressCallback := func(step, status, message string, details map[string]any) {
+	progressCallback := func(step, status, message string, details json.RawMessage) {
 		s.broadcastProgress(id, step, status, message, details) // pass-through from WP client
 	}
 	client := s.wpClientFactory(site.URL, site.Username, string(password), progressCallback)
@@ -383,7 +383,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toDetailsMap(ConnectionFailureDetails{
+		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
 			URL:      site.URL,
 			Username: site.Username,
 		}))
@@ -400,7 +400,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), toDetailsMap(ConnectionSuccessDetails{
+	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
 		WPVersion: connInfo.WPVersion,
 	}))
 
@@ -419,13 +419,13 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	
 	// Broadcast progress (use 0 as siteId for pre-create tests)
 	s.broadcastProgress(0, "start", "running", "Testing connection with provided credentials...", nil)
-	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), toDetailsMap(URLNormalizeDetails{
+	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), toJSON(URLNormalizeDetails{
 		OriginalURL:   siteURL,
 		NormalizedURL: normalizedURL,
 	}))
 	
 	// Create WordPress client with progress callback
-	progressCallback := func(step, status, message string, details map[string]any) {
+	progressCallback := func(step, status, message string, details json.RawMessage) {
 		s.broadcastProgress(0, step, status, message, details) // pass-through from WP client
 	}
 	client := s.wpClientFactory(normalizedURL, username, password, progressCallback)
@@ -435,7 +435,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toDetailsMap(ConnectionFailureDetails{
+		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toJSON(ConnectionFailureDetails{
 			URL:      normalizedURL,
 			Username: username,
 		}))
@@ -448,7 +448,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toDetailsMap(ConnectionSuccessDetails{
+	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toJSON(ConnectionSuccessDetails{
 		WPVersion: connInfo.WPVersion,
 	}))
 	s.broadcastProgress(0, "complete", "success", "Connection test completed successfully", nil)
@@ -457,7 +457,7 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 }
 
 // broadcastProgress sends connection test progress via WebSocket
-func (s *Service) broadcastProgress(siteID int64, step, status, message string, details map[string]any) {
+func (s *Service) broadcastProgress(siteID int64, step, status, message string, details json.RawMessage) {
 	if s.wsHub != nil {
 		s.wsHub.BroadcastConnectionTestProgress(siteID, step, status, message, details)
 	}
@@ -671,7 +671,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	// Broadcast start
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", toDetailsMap(SiteContextDetails{
+		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", toJSON(SiteContextDetails{
 			SiteID:   id,
 			SiteName: site.Name,
 			SiteURL:  site.URL,
@@ -685,9 +685,9 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	// Create WordPress client with progress callback
-	progressCallback := func(step, status, message string, details map[string]any) {
+	progressCallback := func(step, status, message string, details json.RawMessage) {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), toDetailsMap(BootstrapLogDetails{
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), toJSON(BootstrapLogDetails{
 				SiteID:   id,
 				SiteName: site.Name,
 				Step:     step,
@@ -705,7 +705,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", toDetailsMap(ZipCreationDetails{
+		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", toJSON(ZipCreationDetails{
 			SiteID: id,
 			Path:   uploaderPath,
 		}))
@@ -715,7 +715,7 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), toDetailsMap(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), toJSON(SiteIDDetail{SiteID: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
@@ -729,26 +729,26 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	if available && namespace != "" {
 		// Uploader is already on the site - use it to update itself
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toDetailsMap(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toJSON(SiteIDDetail{SiteID: id}))
 		}
 		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, wordpress.UploadSourceRestAPI)
 	} else {
 		// First-time installation - use Onboard plugin or standard upload
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", toDetailsMap(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", toJSON(SiteIDDetail{SiteID: id}))
 		}
 		
 		// Try Onboard plugin first
 		onboardAvailable := s.checkOnboardAvailable(client)
 		if onboardAvailable {
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", toDetailsMap(SiteIDDetail{SiteID: id}))
+				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", toJSON(SiteIDDetail{SiteID: id}))
 			}
 			uploadResult, err = client.UploadPluginViaOnboard(zipPath, true)
 		} else {
 		// No helper plugin available - this is a limitation
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", toDetailsMap(SiteIDDetail{SiteID: id}))
+				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", toJSON(SiteIDDetail{SiteID: id}))
 			}
 			return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
 		}
@@ -756,13 +756,13 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), toDetailsMap(SiteIDDetail{SiteID: id}))
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), toJSON(SiteIDDetail{SiteID: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", toDetailsMap(UploaderDeployDetails{
+		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", toJSON(UploaderDeployDetails{
 			SiteID:    id,
 			SiteName:  site.Name,
 			Activated: uploadResult.Activated,
@@ -1223,7 +1223,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		s.sessionService.SaveRequest(sessionID, &session.SessionRequest{
 			URL:    fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", siteID, pluginSlug, action),
 			Method: "POST",
-		Body: toDetailsMap(RemoteActionRequestBody{
+		Body: toJSON(RemoteActionRequestBody{
 				SiteID:     siteID,
 				PluginSlug: pluginSlug,
 				Action:     action,
@@ -1274,16 +1274,20 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		// Save response.json with error data
 		if s.sessionService != nil && sessionID != "" {
 			// Parse response body for structured storage
-			var parsedBody any = errDetails.ResponseBody
-			var bodyMap map[string]any
-			if json.Unmarshal([]byte(errDetails.ResponseBody), &bodyMap) == nil {
-				parsedBody = bodyMap
+			var bodyJSON json.RawMessage
+			if errDetails.ResponseBody != "" {
+				// Try to store as parsed JSON; fall back to raw string
+				if json.Valid([]byte(errDetails.ResponseBody)) {
+					bodyJSON = json.RawMessage(errDetails.ResponseBody)
+				} else {
+					bodyJSON, _ = json.Marshal(errDetails.ResponseBody)
+				}
 			}
 			s.sessionService.SaveResponse(sessionID, &session.SessionResponse{
 				RequestURL:  errDetails.URL,
 				ResponseURL: errDetails.URL,
 				StatusCode:  errDetails.StatusCode,
-				Body:        parsedBody,
+				Body:        bodyJSON,
 			})
 
 			// Build PHP stack frames for error.log
@@ -1339,7 +1343,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.URL, action),
 			ResponseURL: site.URL,
 			StatusCode:  200,
-		Body:        RemoteActionSuccessBody{Success: true, Action: action, Plugin: pluginSlug},
+		Body:        toJSON(RemoteActionSuccessBody{Success: true, Action: action, Plugin: pluginSlug}),
 		})
 		s.sessionService.LogStageEnd(sessionID, action, "success", durationMs)
 	}
@@ -1481,15 +1485,15 @@ func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level,
 		s.sessionService.Log(sessionID, level, step, message, details)
 	}
 
-	// Convert to map for WSHub boundary (still map[string]any)
+	// Broadcast via WebSocket (now accepts json.RawMessage directly)
+	if s.wsHub != nil {
+		s.wsHub.BroadcastRemotePluginLogWithSession(siteID, action, sessionID, level, step, message, details)
+	}
+
+	// Parse details for name resolution in structured logging
 	var detailsMap map[string]any
 	if len(details) > 0 {
 		_ = json.Unmarshal(details, &detailsMap)
-	}
-
-	// Broadcast via WebSocket
-	if s.wsHub != nil {
-		s.wsHub.BroadcastRemotePluginLogWithSession(siteID, action, sessionID, level, step, message, detailsMap)
 	}
 
 	// Resolve names from details or DB for structured logging
