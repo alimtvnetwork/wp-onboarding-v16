@@ -23,22 +23,11 @@ class RiseupSnapshotDetector {
     use DetectorProviderTrait;
     use DetectorSettingsTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private array $provider_instances = array();
 
-    /** @var RiseupDatabase */
-    private $db;
-
-    /** @var array */
-    private $provider_instances = array();
-
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger $logger Logger instance.
-     * @param RiseupDatabase   $db     Database instance.
-     */
-    public function __construct($logger, $db) {
+    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         $this->logger = $logger;
         $this->db = $db;
     }

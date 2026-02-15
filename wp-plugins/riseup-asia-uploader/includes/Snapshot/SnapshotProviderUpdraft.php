@@ -28,19 +28,11 @@ class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
     /** @var string Provider ID — literal used because ->value is not a constant expression. */
     protected string $provider_id = 'updraft';
 
-    /** @var string */
-    protected $provider_name = 'UpdraftPlus';
+    protected string $provider_name = 'UpdraftPlus';
 
-    /** @var UpdraftPlus|null */
-    private $updraft = null;
+    private mixed $updraft = null;
 
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger $logger Logger instance.
-     * @param RiseupDatabase   $db     Database instance.
-     */
-    public function __construct($logger, $db) {
+    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         parent::__construct($logger, $db);
 
         if (class_exists('UpdraftPlus')) {
@@ -54,7 +46,7 @@ class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
      *
      * @return bool True if UpdraftPlus is installed and active.
      */
-    public function isAvailable() {
+    public function isAvailable(): bool {
         return class_exists('UpdraftPlus') || isset($GLOBALS['updraftplus']);
     }
 
@@ -63,7 +55,7 @@ class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
      *
      * @return array Capabilities array.
      */
-    public function getCapabilities() {
+    public function getCapabilities(): array {
         $is_premium = defined('UPDRAFTPLUS_VERSION') &&
                       strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
 

@@ -33,22 +33,15 @@ class RiseupSnapshotScheduler {
     use SchedulerTriggerTrait;
     use SchedulerConfigTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
-
-    /** @var RiseupDatabase */
-    private $db;
-
-    /** @var RiseupSnapshotDetector */
-    private $detector;
-
-    /** @var RiseupSnapshotScheduler|null */
-    private static $instance = null;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private RiseupSnapshotDetector $detector;
+    private static ?RiseupSnapshotScheduler $instance = null;
 
     /**
      * Get singleton instance.
      */
-    public static function getInstance($logger = null, $db = null) {
+    public static function getInstance(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): static {
         if (self::$instance === null) {
             self::$instance = new self($logger, $db);
         }
@@ -56,8 +49,7 @@ class RiseupSnapshotScheduler {
         return self::$instance;
     }
 
-    /** Constructor. */
-    private function __construct($logger = null, $db = null) {
+    private function __construct(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null) {
         $this->logger = $logger ?: RiseupFileLogger::getInstance();
         $this->db = $db ?: RiseupDatabase::getInstance();
 

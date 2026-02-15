@@ -27,33 +27,22 @@ class RiseupFileCache {
     use FileCacheScanTrait;
     use FileCacheStoreTrait;
 
-    /** @var RiseupFileCache|null */
-    private static $instance = null;
-
-    /** @var RiseupFileLogger */
-    private $logger;
-
-    /** @var RiseupDatabase */
-    private $db;
+    private static ?RiseupFileCache $instance = null;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
 
     /**
      * Get singleton instance.
-     *
-     * @param RiseupFileLogger $logger File logger.
-     * @param RiseupDatabase    $db     Database instance.
-     * @return RiseupFileCache
      */
-    public static function getInstance($logger, $db) {
+    public static function getInstance(RiseupFileLogger $logger, RiseupDatabase $db): static {
         if (self::$instance === null) {
             self::$instance = new self($logger, $db);
         }
+
         return self::$instance;
     }
 
-    /**
-     * Constructor.
-     */
-    private function __construct($logger, $db) {
+    private function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         $this->logger = $logger;
         $this->db = $db;
     }
