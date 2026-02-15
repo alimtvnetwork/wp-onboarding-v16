@@ -25,7 +25,7 @@ type ErrorHistoryServiceInterface interface {
 	Delete(id int64) error
 	Clear() (int64, error)
 	BulkExport(ids []int64) (string, error)
-	GetStats() (map[string]any, error)
+	GetStats() (*models.ErrorHistoryStats, error)
 }
 
 // SessionServiceAdapter wraps *session.Service to implement SessionServiceInterface
@@ -86,6 +86,6 @@ func (a *ErrorHistoryServiceAdapter) BulkExport(ids []int64) (string, error) {
 	return a.Service.BulkExport(ids)
 }
 
-func (a *ErrorHistoryServiceAdapter) GetStats() (map[string]any, error) {
+func (a *ErrorHistoryServiceAdapter) GetStats() (*models.ErrorHistoryStats, error) {
 	return a.Service.GetStats()
 }
