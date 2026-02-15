@@ -29,17 +29,11 @@ class RiseupPostManager {
     use PostQueryTrait;
     use CategoryTrait;
 
-    /** @var RiseupLogger */
-    private $logger;
+    private RiseupLogger $logger;
+    private RiseupFileLogger $fileLogger;
+    private static ?RiseupPostManager $instance = null;
 
-    /** @var RiseupFileLogger */
-    private $fileLogger;
-
-    /** @var RiseupPostManager|null */
-    private static $instance = null;
-
-    /** @return RiseupPostManager */
-    public static function getInstance() {
+    public static function getInstance(): RiseupPostManager {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -60,7 +54,7 @@ class RiseupPostManager {
      * @param string $status Input status.
      * @return string Valid status.
      */
-    private function validatePostStatus($status) {
+    private function validatePostStatus(string $status): string {
         $validStatuses = PostStatusType::validValues();
         return in_array($status, $validStatuses, true) ? $status : PostStatusType::Draft->value;
     }

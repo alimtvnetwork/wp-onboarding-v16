@@ -31,7 +31,7 @@ class RiseupDependencyLoader {
      *
      * @var array
      */
-    private static $results = array();
+    private static array $results = array();
 
     /**
      * Load a single PHP file with error tracking.
@@ -43,7 +43,7 @@ class RiseupDependencyLoader {
      * @param string $path   Absolute path to the PHP file.
      * @return bool True if loaded successfully, false on failure.
      */
-    public static function load($label, $path) {
+    public static function load(string $label, string $path): bool {
         if (RiseupBooleanHelpers::isFileMissing($path)) {
             self::recordResult($label, $path, false, 'File not found: ' . $path);
 
@@ -82,7 +82,7 @@ class RiseupDependencyLoader {
      * @param array $manifest Array of [label, absolute_path] pairs.
      * @return int Number of files that failed to load.
      */
-    public static function loadManifest($manifest) {
+    public static function loadManifest(array $manifest): int {
         $failures = 0;
         foreach ($manifest as $entry) {
             $label = $entry[0];
@@ -99,7 +99,7 @@ class RiseupDependencyLoader {
      *
      * @return array List of result records.
      */
-    public static function getResults() {
+    public static function getResults(): array {
         return self::$results;
     }
 
@@ -108,8 +108,8 @@ class RiseupDependencyLoader {
      *
      * @return array List of failed result records.
      */
-    public static function getFailures() {
-        return array_filter(self::$results, function ($r) {
+    public static function getFailures(): array {
+        return array_filter(self::$results, function (array $r): bool {
             return !$r['success'];
         });
     }
@@ -119,7 +119,7 @@ class RiseupDependencyLoader {
      *
      * @return bool True if no failures.
      */
-    public static function allLoaded() {
+    public static function allLoaded(): bool {
         return empty(self::getFailures());
     }
 
@@ -129,7 +129,7 @@ class RiseupDependencyLoader {
      * @param RiseupFileLogger $logger Logger instance.
      * @return void
      */
-    public static function logSummary($logger) {
+    public static function logSummary(RiseupFileLogger $logger): void {
         $total  = count(self::$results);
         $failed = count(self::getFailures());
 
@@ -137,7 +137,7 @@ class RiseupDependencyLoader {
             $logger->warn('[DEPS] Dependency loading complete with failures', array(
                 'total'    => $total,
                 'failed'   => $failed,
-                'failures' => array_map(function ($r) {
+                'failures' => array_map(function (array $r): string {
                     return $r['label'] . ' (' . $r['file'] . '): ' . $r['error'];
                 }, self::getFailures()),
             ));
@@ -153,7 +153,7 @@ class RiseupDependencyLoader {
      *
      * @return void
      */
-    public static function reset() {
+    public static function reset(): void {
         self::$results = array();
     }
 }

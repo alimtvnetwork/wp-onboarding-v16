@@ -19,13 +19,13 @@ trait InitStartupTrait {
      * @param callable $init_fn Initialization callable.
      * @return mixed The return value of $init_fn, or null on failure.
      */
-    public static function initComponent($name, $init_fn) {
+    public static function initComponent(string $name, callable $initFn): mixed {
         $start = microtime(true);
         $result = null;
         $error = null;
 
         try {
-            $result = $init_fn();
+            $result = $initFn();
         } catch (Throwable $e) {
             $error = $e->getMessage();
         }
@@ -47,7 +47,7 @@ trait InitStartupTrait {
      *
      * @return array List of startup result records.
      */
-    public static function getStartupResults() {
+    public static function getStartupResults(): array {
         return self::$startup_results;
     }
 
@@ -56,8 +56,8 @@ trait InitStartupTrait {
      *
      * @return array List of startup records where success === false.
      */
-    public static function getFailedStartups() {
-        return array_filter(self::$startup_results, function ($r) {
+    public static function getFailedStartups(): array {
+        return array_filter(self::$startup_results, function (array $r): bool {
             return !$r['success'];
         });
     }
@@ -67,7 +67,7 @@ trait InitStartupTrait {
      *
      * @return bool True if no failures.
      */
-    public static function allStartupsSucceeded() {
+    public static function allStartupsSucceeded(): bool {
         return empty(self::getFailedStartups());
     }
 
@@ -76,7 +76,7 @@ trait InitStartupTrait {
      *
      * @return float Total milliseconds.
      */
-    public static function getTotalStartupTime() {
+    public static function getTotalStartupTime(): float {
         $total = 0;
         foreach (self::$startup_results as $r) {
             $total += $r['time_ms'];
@@ -90,7 +90,7 @@ trait InitStartupTrait {
      * @param RiseupFileLogger $logger Logger instance.
      * @return void
      */
-    public static function logStartupSummary($logger) {
+    public static function logStartupSummary(RiseupFileLogger $logger): void {
         $total = count(self::$startup_results);
         $failed = count(self::getFailedStartups());
         $time = self::getTotalStartupTime();
@@ -100,7 +100,7 @@ trait InitStartupTrait {
                 'total'      => $total,
                 'failed'     => $failed,
                 'time_ms'    => $time,
-                'failures'   => array_map(function ($r) {
+                'failures'   => array_map(function (array $r): string {
                     return $r['name'] . ': ' . $r['error'];
                 }, self::getFailedStartups()),
             ));
