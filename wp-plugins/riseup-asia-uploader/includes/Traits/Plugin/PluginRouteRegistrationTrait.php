@@ -17,10 +17,8 @@ trait PluginRouteRegistrationTrait {
 
     /**
      * Register plugin management routes.
-     *
-     * @param callable $safeRegister Route registration closure.
      */
-    private function registerPluginRoutes($safeRegister) {
+    private function registerPluginRoutes(callable $safeRegister): void {
         $perm = array($this, 'checkPluginPermission');
 
         $safeRegister(EndpointType::Upload->route(), array(
@@ -108,11 +106,8 @@ trait PluginRouteRegistrationTrait {
 
     /**
      * Register agent management routes.
-     *
-     * @param callable $safeRegister Route registration closure.
-     * @param int      &$failed      Failed registration counter.
      */
-    private function registerAgentRoutes($safeRegister, &$failed) {
+    private function registerAgentRoutes(callable $safeRegister, int &$failed): void {
         $agent_routes = array(
             array('endpoint' => EndpointType::Agents,        'method' => HttpMethodType::Get,  'handler' => 'handleListAgents'),
             array('endpoint' => EndpointType::AgentsAdd,     'method' => HttpMethodType::Post, 'handler' => 'handleAddAgent'),

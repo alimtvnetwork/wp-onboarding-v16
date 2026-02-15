@@ -14,10 +14,8 @@ use RiseupAsia\Enums\EndpointType;
 
 trait StatusPayloadTrait {
 
-    /**
-     * Handle status check.
-     */
-    public function handleStatus($request) {
+    /** Handle status check. */
+    public function handleStatus(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Status endpoint called');
 
         $live_version = $this->detectLiveVersion();

@@ -18,11 +18,8 @@ trait SnapshotImportStreamTrait {
 
     /**
      * Handle ZIP file download.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response|void Response or direct file stream.
      */
-    public function handleSnapshotDownloadFile($request) {
+    public function handleSnapshotDownloadFile(WP_REST_Request $request): ?WP_REST_Response {
         $validated = $this->validateAndResolveExport($request);
         if ($validated instanceof WP_REST_Response) {
             return $validated;
@@ -33,11 +30,8 @@ trait SnapshotImportStreamTrait {
 
     /**
      * Validate download token and resolve the export record.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return array|WP_REST_Response Export data or error response.
      */
-    private function validateAndResolveExport($request) {
+    private function validateAndResolveExport(WP_REST_Request $request): array|WP_REST_Response {
         $exportId = (int) $request->get_param('id');
         $token    = sanitize_text_field($request->get_param('token'));
 
@@ -109,11 +103,8 @@ trait SnapshotImportStreamTrait {
 
     /**
      * Handle importing a snapshot from ZIP upload.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Response.
      */
-    public function handleImportSnapshot($request) {
+    public function handleImportSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $files = $request->get_file_params();
 
