@@ -356,7 +356,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 
 	site, err := s.GetByID(ctx, id)
 	if err != nil {
-		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", map[string]any{"error": err.Error()})
+		s.broadcastProgress(id, "fetch_site", "error", "Failed to retrieve site info", toDetailsMap(ErrorDetail{Error: err.Error()}))
 		return nil, err
 	}
 	s.broadcastProgress(id, "fetch_site", "success", fmt.Sprintf("Retrieved site: %s", site.Name), nil)
@@ -365,7 +365,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	s.broadcastProgress(id, "decrypt", "running", "Decrypting credentials...", nil)
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
-		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", map[string]any{"error": err.Error()})
+		s.broadcastProgress(id, "decrypt", "error", "Failed to decrypt credentials", toDetailsMap(ErrorDetail{Error: err.Error()}))
 		return nil, apperror.Wrap(err, apperror.ErrInternal, "failed to decrypt password")
 	}
 	s.broadcastProgress(id, "decrypt", "success", "Credentials decrypted", nil)
@@ -373,7 +373,7 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	// Create WordPress client with progress callback
 	s.broadcastProgress(id, "connect", "running", fmt.Sprintf("Connecting to %s...", site.URL), nil)
 	progressCallback := func(step, status, message string, details map[string]any) {
-		s.broadcastProgress(id, step, status, message, details)
+		s.broadcastProgress(id, step, status, message, details) // pass-through from WP client
 	}
 	client := s.wpClientFactory(site.URL, site.Username, string(password), progressCallback)
 
@@ -383,10 +383,10 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]any{
-			"url":      site.URL,
-			"username": site.Username,
-		})
+		s.broadcastProgress(id, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toDetailsMap(ConnectionFailureDetails{
+			URL:      site.URL,
+			Username: site.Username,
+		}))
 		
 		// Update connection status
 		s.updateConnectionStatus(ctx, id, "disconnected")
@@ -400,9 +400,9 @@ func (s *Service) TestConnection(ctx context.Context, id int64) (*ConnectionResu
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), map[string]any{
-		"wpVersion": connInfo.WPVersion,
-	})
+	s.broadcastProgress(id, "api_test", "success", fmt.Sprintf("WordPress %s detected, REST API accessible", connInfo.WPVersion), toDetailsMap(ConnectionSuccessDetails{
+		WPVersion: connInfo.WPVersion,
+	}))
 
 	// Update connection status and last tested time
 	s.updateConnectionStatus(ctx, id, "connected")
@@ -419,14 +419,14 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	
 	// Broadcast progress (use 0 as siteId for pre-create tests)
 	s.broadcastProgress(0, "start", "running", "Testing connection with provided credentials...", nil)
-	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), map[string]any{
-		"originalUrl":   siteURL,
-		"normalizedUrl": normalizedURL,
-	})
+	s.broadcastProgress(0, "normalize", "success", fmt.Sprintf("Normalized URL: %s", normalizedURL), toDetailsMap(URLNormalizeDetails{
+		OriginalURL:   siteURL,
+		NormalizedURL: normalizedURL,
+	}))
 	
 	// Create WordPress client with progress callback
 	progressCallback := func(step, status, message string, details map[string]any) {
-		s.broadcastProgress(0, step, status, message, details)
+		s.broadcastProgress(0, step, status, message, details) // pass-through from WP client
 	}
 	client := s.wpClientFactory(normalizedURL, username, password, progressCallback)
 
@@ -435,10 +435,10 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	if err != nil {
 		result.Success = false
 		result.Message = err.Error()
-		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), map[string]any{
-			"url":      normalizedURL,
-			"username": username,
-		})
+		s.broadcastProgress(0, "api_test", "error", fmt.Sprintf("Connection failed: %s", err.Error()), toDetailsMap(ConnectionFailureDetails{
+			URL:      normalizedURL,
+			Username: username,
+		}))
 		s.broadcastProgress(0, "complete", "error", "Connection test failed", nil)
 		return result, nil
 	}
@@ -448,9 +448,9 @@ func (s *Service) TestConnectionWithCredentials(ctx context.Context, siteURL, us
 	result.PluginsEndpoint = true
 	result.Message = "Connection successful"
 
-	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), map[string]any{
-		"wpVersion": connInfo.WPVersion,
-	})
+	s.broadcastProgress(0, "api_test", "success", fmt.Sprintf("WordPress %s detected", connInfo.WPVersion), toDetailsMap(ConnectionSuccessDetails{
+		WPVersion: connInfo.WPVersion,
+	}))
 	s.broadcastProgress(0, "complete", "success", "Connection test completed successfully", nil)
 
 	return result, nil
@@ -671,11 +671,11 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	// Broadcast start
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", map[string]any{
-			"siteId":   id,
-			"siteName": site.Name,
-			"siteUrl":  site.URL,
-		})
+		s.wsHub.BroadcastLog("info", "Starting Riseup Asia Uploader deployment", toDetailsMap(SiteContextDetails{
+			SiteID:   id,
+			SiteName: site.Name,
+			SiteURL:  site.URL,
+		}))
 	}
 
 	// Decrypt password
@@ -687,13 +687,13 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	// Create WordPress client with progress callback
 	progressCallback := func(step, status, message string, details map[string]any) {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), map[string]any{
-				"siteId":   id,
-				"siteName": site.Name,
-				"step":     step,
-				"status":   status,
-				"details":  details,
-			})
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("[%s] %s", step, message), toDetailsMap(BootstrapLogDetails{
+				SiteID:   id,
+				SiteName: site.Name,
+				Step:     step,
+				Status:   status,
+				Details:  details,
+			}))
 		}
 	}
 	client := s.wpClientFactory(site.URL, site.Username, string(decrypted), progressCallback)
@@ -705,17 +705,17 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", map[string]any{
-			"siteId": id,
-			"path":   uploaderPath,
-		})
+		s.wsHub.BroadcastLog("info", "Creating plugin ZIP archive", toDetailsMap(ZipCreationDetails{
+			SiteID: id,
+			Path:   uploaderPath,
+		}))
 	}
 
 	// Create ZIP of the uploader plugin
 	zipPath, err := s.createUploaderZip(uploaderPath)
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), map[string]any{"siteId": id})
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Failed to create ZIP: %v", err), toDetailsMap(SiteIDDetail{SiteID: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrFSZip, "failed to create uploader ZIP")
 	}
@@ -729,26 +729,26 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 	if available && namespace != "" {
 		// Uploader is already on the site - use it to update itself
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), map[string]any{"siteId": id})
+			s.wsHub.BroadcastLog("info", fmt.Sprintf("Riseup Asia Uploader found (%s), updating...", namespace), toDetailsMap(SiteIDDetail{SiteID: id}))
 		}
 		uploadResult, err = client.UploadPluginViaUploader(zipPath, "riseup-asia-uploader", true, wordpress.UploadSourceRestAPI)
 	} else {
 		// First-time installation - use Onboard plugin or standard upload
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", map[string]any{"siteId": id})
+			s.wsHub.BroadcastLog("info", "First-time installation - checking for Onboard plugin", toDetailsMap(SiteIDDetail{SiteID: id}))
 		}
 		
 		// Try Onboard plugin first
 		onboardAvailable := s.checkOnboardAvailable(client)
 		if onboardAvailable {
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", map[string]any{"siteId": id})
+				s.wsHub.BroadcastLog("info", "Using Onboard plugin for installation", toDetailsMap(SiteIDDetail{SiteID: id}))
 			}
 			uploadResult, err = client.UploadPluginViaOnboard(zipPath, true)
 		} else {
 		// No helper plugin available - this is a limitation
 			if s.wsHub != nil {
-				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", map[string]any{"siteId": id})
+				s.wsHub.BroadcastLog("error", "No upload helper plugin found. Please install Riseup Asia Uploader or Plugins Onboard manually first.", toDetailsMap(SiteIDDetail{SiteID: id}))
 			}
 			return nil, apperror.New(apperror.ErrWPUploadFailed, "No upload helper plugin available on site. Install Riseup Asia Uploader or Plugins Onboard plugin manually first, then retry.")
 		}
@@ -756,25 +756,21 @@ func (s *Service) BootstrapUploader(ctx context.Context, id int64, uploaderPath 
 
 	if err != nil {
 		if s.wsHub != nil {
-			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), map[string]any{"siteId": id})
+			s.wsHub.BroadcastLog("error", fmt.Sprintf("Upload failed: %v", err), toDetailsMap(SiteIDDetail{SiteID: id}))
 		}
 		return nil, apperror.Wrap(err, apperror.ErrWPUploadFailed, "failed to upload uploader plugin")
 	}
 
 	if s.wsHub != nil {
-		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", map[string]any{
-			"siteId":    id,
-			"siteName":  site.Name,
-			"activated": uploadResult.Activated,
-		})
+		s.wsHub.BroadcastLog("info", "Riseup Asia Uploader deployed successfully", toDetailsMap(UploaderDeployDetails{
+			SiteID:    id,
+			SiteName:  site.Name,
+			Activated: uploadResult.Activated,
+		}))
 	}
 
-	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site", map[string]any{
-		"siteId":   id,
-		"siteName": site.Name,
-		"siteUrl":  site.URL,
-		"result":   uploadResult,
-	})
+	s.log.Info("Successfully bootstrapped Riseup Asia Uploader to site",
+		"siteId", id, "siteName", site.Name, "siteUrl", site.URL, "activated", uploadResult.Activated)
 
 	return &BootstrapResult{
 		Success:   true,
@@ -1583,17 +1579,17 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
 			fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
-			map[string]any{"phpErrorCount": len(result.Entries)})
+			toDetailsMap(PHPErrorCountDetail{PHPErrorCount: len(result.Entries)}))
 
 		// Log each PHP error to session for full traceability
 		if s.sessionService != nil && sessionID != "" {
 			for _, entry := range result.Entries {
-				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, map[string]any{
-					"phpFile":    entry.File,
-					"phpLine":    entry.Line,
-					"phpLevel":   entry.Level,
-					"phpCreated": entry.CreatedAt,
-				})
+				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, toDetailsMap(PHPErrorDetail{
+					PHPFile:    entry.File,
+					PHPLine:    entry.Line,
+					PHPLevel:   entry.Level,
+					PHPCreated: entry.CreatedAt,
+				}))
 			}
 		}
 	} else if fetchErr == nil {
@@ -1616,19 +1612,19 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace",
 			fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", logsResult.StackTraceLog.Lines, logsResult.StackTraceLog.TotalSize),
-			map[string]any{
-				"lines":     logsResult.StackTraceLog.Lines,
-				"totalSize": logsResult.StackTraceLog.TotalSize,
-				"truncated": logsResult.StackTraceLog.Truncated,
-			})
+			toDetailsMap(StackTraceLogDetails{
+				Lines:     logsResult.StackTraceLog.Lines,
+				TotalSize: logsResult.StackTraceLog.TotalSize,
+				Truncated: logsResult.StackTraceLog.Truncated,
+			}))
 
 		// Persist stacktrace content to session error.log for diagnostics API
 		if s.sessionService != nil && sessionID != "" {
-			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", map[string]any{
-				"content":   logsResult.StackTraceLog.Content,
-				"lines":     logsResult.StackTraceLog.Lines,
-				"truncated": logsResult.StackTraceLog.Truncated,
-			})
+			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", toDetailsMap(StackTraceContentDetails{
+				Content:   logsResult.StackTraceLog.Content,
+				Lines:     logsResult.StackTraceLog.Lines,
+				Truncated: logsResult.StackTraceLog.Truncated,
+			}))
 		}
 	} else {
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace", "No stacktrace.txt content available on remote site", nil)

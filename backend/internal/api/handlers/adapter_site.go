@@ -12,11 +12,11 @@ import (
 
 // SiteServiceInterface defines site service methods
 type SiteServiceInterface interface {
-	// Core CRUD — typed returns
+	// Core CRUD — typed inputs and returns
 	List(ctx context.Context) ([]models.Site, error)
 	GetByID(ctx context.Context, id int64) (*models.Site, error)
-	Create(ctx context.Context, input any) (*models.Site, error)
-	Update(ctx context.Context, id int64, input any) (*models.Site, error)
+	Create(ctx context.Context, input SiteCreateInput) (*models.Site, error)
+	Update(ctx context.Context, id int64, input SiteUpdateInput) (*models.Site, error)
 	Delete(ctx context.Context, id int64) error
 	TestConnection(ctx context.Context, id int64) (*site.ConnectionResult, error)
 	TestConnectionWithCredentials(ctx context.Context, url, username, password string) (*site.ConnectionResult, error)
@@ -66,47 +66,22 @@ func (a *SiteServiceAdapter) GetByID(ctx context.Context, id int64) (*models.Sit
 	return a.Service.GetByID(ctx, id)
 }
 
-func (a *SiteServiceAdapter) Create(ctx context.Context, input any) (*models.Site, error) {
-	in, ok := input.(SiteCreateInput)
-	if !ok {
-		if m, ok := input.(map[string]any); ok {
-			in = SiteCreateInput{
-				Name:     getString(m, "name"),
-				URL:      getString(m, "url"),
-				Username: getString(m, "username"),
-				Password: getStringAny(m, "password", "applicationPassword", "application_password"),
-			}
-		}
-	}
+func (a *SiteServiceAdapter) Create(ctx context.Context, input SiteCreateInput) (*models.Site, error) {
 	siteInput := site.CreateInput{
-		Name:     in.Name,
-		URL:      in.URL,
-		Username: in.Username,
-		Password: in.Password,
+		Name:     input.Name,
+		URL:      input.URL,
+		Username: input.Username,
+		Password: input.Password,
 	}
 	return a.Service.Create(ctx, siteInput)
 }
 
-func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input any) (*models.Site, error) {
-	updateInput := site.UpdateInput{}
-	if in, ok := input.(SiteUpdateInput); ok {
-		updateInput.Name = in.Name
-		updateInput.URL = in.URL
-		updateInput.Username = in.Username
-		updateInput.Password = in.Password
-	} else if m, ok := input.(map[string]any); ok {
-		if v, ok := m["name"].(string); ok {
-			updateInput.Name = &v
-		}
-		if v, ok := m["url"].(string); ok {
-			updateInput.URL = &v
-		}
-		if v, ok := m["username"].(string); ok {
-			updateInput.Username = &v
-		}
-		if v, ok := firstString(m, "password", "applicationPassword", "application_password"); ok && v != "" {
-			updateInput.Password = &v
-		}
+func (a *SiteServiceAdapter) Update(ctx context.Context, id int64, input SiteUpdateInput) (*models.Site, error) {
+	updateInput := site.UpdateInput{
+		Name:     input.Name,
+		URL:      input.URL,
+		Username: input.Username,
+		Password: input.Password,
 	}
 	return a.Service.Update(ctx, id, updateInput)
 }

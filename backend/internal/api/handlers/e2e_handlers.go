@@ -15,7 +15,7 @@ import (
 type E2EServiceInterface interface {
 	ListSuites(ctx context.Context) ([]e2e.TestSuite, error)
 	GetCases(ctx context.Context, suiteID string) ([]e2e.TestCase, error)
-	StartRun(ctx context.Context, opts any) (*e2e.TestRun, error)
+	StartRun(ctx context.Context, opts e2e.RunOptions) (*e2e.TestRun, error)
 	AbortRun(ctx context.Context, runID string) error
 	ListRuns(ctx context.Context, limit int) ([]e2e.TestRun, error)
 	GetRun(ctx context.Context, runID string) (*e2e.RunSummary, error)
@@ -54,7 +54,7 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var opts map[string]any
+	var opts e2e.RunOptions
 	if !decodeJSON(w, r, &opts) {
 		return
 	}

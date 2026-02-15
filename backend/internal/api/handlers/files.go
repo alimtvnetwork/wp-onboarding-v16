@@ -47,40 +47,16 @@ func GetLocalFileContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get plugin to find its path
+	// Get plugin to find its path — returns *models.Plugin with Path field
 	pluginData, err := Services.PluginService.GetByID(r.Context(), pluginID)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusNotFound, "E2001", wordpress.ResponseMessagePluginNotFound.String())
 		return
 	}
 
-	// Extract path from plugin data
-	plugin, ok := pluginData.(interface{ GetPath() string })
-	if !ok {
-		// Try to get path from map
-		if pm, ok := pluginData.(map[string]any); ok {
-			if p, ok := pm["path"].(string); ok {
-				pluginPath := p
-				filePath := pathutil.MustJoin(pluginPath, req.Path)
-				content, err := readFileContent(filePath)
-				if err != nil {
-					respondError(w, wordpress.HttpStatusNotFound, "E2002", "File not found: "+err.Error())
-					return
-				}
-				respondSuccess(w, FileContentResponse{
-					Path:    req.Path,
-					Content: content,
-				})
-				return
-			}
-		}
-		respondError(w, wordpress.HttpStatusServerError, "E9002", "Could not determine plugin path")
-		return
-	}
-
-	pluginPath := plugin.GetPath()
+	pluginPath := pluginData.Path
 	filePath := pathutil.MustJoin(pluginPath, req.Path)
-	
+
 	content, err := readFileContent(filePath)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusNotFound, "E2002", "File not found: "+err.Error())
