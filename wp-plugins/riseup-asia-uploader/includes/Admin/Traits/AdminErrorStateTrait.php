@@ -2,20 +2,24 @@
 /**
  * AdminErrorStateTrait — Unseen error tracking, flash state, and global notice.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\Database\Database;
 
 trait AdminErrorStateTrait {
 
     /** Get unseen error count. */
     private function getUnseenErrorCount(): int {
         try {
-            $db = RiseupDatabase::getInstance();
+            $db = Database::getInstance();
             $pdo = $db->getPdo();
             if (!$pdo) {
                 return 0;
@@ -34,7 +38,7 @@ trait AdminErrorStateTrait {
     /** Get a flash state value. */
     private function getFlashValue(string $key, string|int $default = ''): string|int {
         try {
-            $db = RiseupDatabase::getInstance();
+            $db = Database::getInstance();
             $pdo = $db->getPdo();
             if (!$pdo) {
                 return $default;
@@ -50,9 +54,7 @@ trait AdminErrorStateTrait {
         }
     }
 
-    /**
-     * Render global admin notice when there are unseen errors.
-     */
+    /** Render global admin notice when there are unseen errors. */
     public function renderGlobalErrorNotice(): void {
         $unseen = $this->getUnseenErrorCount();
         if ($unseen <= 0) {

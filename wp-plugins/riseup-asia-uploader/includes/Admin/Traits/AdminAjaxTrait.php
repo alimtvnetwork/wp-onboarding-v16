@@ -2,16 +2,15 @@
 /**
  * Admin AJAX Trait — Shell delegating to AdminAjaxUpdateTrait and AdminAjaxSnapshotTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/AdminAjaxUpdateTrait.php';
-require_once __DIR__ . '/AdminAjaxSnapshotTrait.php';
 
 trait AdminAjaxTrait {
     use AdminAjaxUpdateTrait;

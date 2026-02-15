@@ -4,30 +4,30 @@
  *
  * WordPress admin menu pages for logs viewer and settings.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin
  * @since   1.5.0
  */
+
+namespace RiseupAsia\Admin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Admin\Traits\AdminMenuSettingsTrait;
+use RiseupAsia\Admin\Traits\AdminPagesTrait;
+use RiseupAsia\Admin\Traits\AdminAjaxTrait;
+use RiseupAsia\Admin\Traits\AdminErrorPageTrait;
+use RiseupAsia\Admin\Traits\AdminErrorAjaxTrait;
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\HookType;
 
-// Load trait files
-require_once __DIR__ . '/Traits/AdminMenuSettingsTrait.php';
-require_once __DIR__ . '/Traits/AdminPagesTrait.php';
-require_once __DIR__ . '/Traits/AdminAjaxTrait.php';
-require_once __DIR__ . '/Traits/AdminErrorPageTrait.php';
-require_once __DIR__ . '/Traits/AdminErrorAjaxTrait.php';
-
 /**
- * Class RiseupAdmin
+ * Class Admin
  *
  * Handles admin menu pages and settings.
  */
-class RiseupAdmin {
+class Admin {
 
     use AdminMenuSettingsTrait;
     use AdminPagesTrait;
@@ -67,19 +67,11 @@ class RiseupAdmin {
         ),
     );
 
-    /**
-     * Singleton instance.
-     *
-     * @var RiseupAdmin|null
-     */
+    /** @var Admin|null */
     private static $instance = null;
 
-    /**
-     * Get singleton instance.
-     *
-     * @return RiseupAdmin
-     */
-    public static function getInstance() {
+    /** Get singleton instance. */
+    public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -87,9 +79,7 @@ class RiseupAdmin {
         return self::$instance;
     }
 
-    /**
-     * Constructor.
-     */
+    /** Constructor. */
     private function __construct() {
         add_action(HookType::AdminMenu->value, array($this, 'addAdminMenu'));
         add_action(HookType::AdminInit->value, array($this, 'registerSettings'));
@@ -107,3 +97,5 @@ class RiseupAdmin {
         add_action(HookType::ajax('riseup_clear_log_file'), array($this, 'ajaxClearLogFile'));
     }
 }
+
+class_alias(Admin::class, 'RiseupAdmin');

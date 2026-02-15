@@ -1,10 +1,12 @@
 <?php
 /**
- * PathUtilsCoreTrait — core path operations: join, logging, directory getters.
+ * PathUtilsCoreTrait — core path operations.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Helpers\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Helpers\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -14,52 +16,33 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathDatabaseType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Logging\FileLogger;
 
 trait PathUtilsCoreTrait {
 
-    /** @var RiseupFileLogger|null */
-    private static $logger = null;
+    private static ?FileLogger $logger = null;
+    private static bool $isBootstrapping = false;
 
-    /** @var bool */
-    private static $isBootstrapping = false;
-
-    /**
-     * Get logger instance (null-safe, re-entrancy guard).
-     *
-     * @return RiseupFileLogger|null
-     */
-    private static function getLogger(): ?RiseupFileLogger {
-        if (self::$isBootstrapping) {
-            return null;
-        }
-
-        if (self::$logger !== null) {
-            return self::$logger;
-        }
-
-        if (RiseupBooleanHelpers::isClassNotLoaded('RiseupFileLogger')) {
-            return null;
-        }
-
+    private static function getLogger(): ?FileLogger {
+        if (self::$isBootstrapping) { return null; }
+        if (self::$logger !== null) { return self::$logger; }
+        if (BooleanHelpers::isClassNotLoaded(FileLogger::class)) { return null; }
         return self::initializeLogger();
     }
 
-    /** Initialize the logger with re-entrancy guard. */
-    private static function initializeLogger(): ?RiseupFileLogger {
+    private static function initializeLogger(): ?FileLogger {
         self::$isBootstrapping = true;
         try {
-            self::$logger = RiseupFileLogger::getInstance();
-        } catch (Throwable $e) {
+            self::$logger = FileLogger::getInstance();
+        } catch (\Throwable $e) {
             error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
             self::$logger = null;
         }
-
         self::$isBootstrapping = false;
-
         return self::$logger;
     }
 
-    /** Log a message safely — falls back to error_log() when logger is unavailable. */
     private static function safeLog(string $level, string $message, array $context = array()): void {
         $upper = strtoupper($level);
         $method = strtolower($level);
@@ -77,13 +60,9 @@ trait PathUtilsCoreTrait {
         }
     }
 
-    /** Join path segments safely. */
     public static function join(string ...$segments): string {
         $filtered = array_filter($segments, function($seg) { return $seg !== null && $seg !== ''; });
-        if (empty($filtered)) {
-            return '';
-        }
-
+        if (empty($filtered)) { return ''; }
         $path = implode('/', $filtered);
         $path = str_replace('\\\\', '/', $path);
         $path = preg_replace('#/+#', '/', $path);
@@ -91,29 +70,13 @@ trait PathUtilsCoreTrait {
         return $path;
     }
 
-    /** @return string Base path (wp-content/uploads/riseup-asia-uploader). */
     public static function getBaseDir(): string {
         $uploadDir = wp_upload_dir();
         return self::join($uploadDir['basedir'], PluginConfigType::UploadsSubdir->value);
     }
 
-    /** @return string Full path to logs directory. */
-    public static function getLogsDir(): string {
-        return self::join(self::getBaseDir(), PathSubdirType::Logs->value);
-    }
-
-    /** @return string Full path to snapshots directory. */
-    public static function getSnapshotsDir(): string {
-        return self::join(self::getBaseDir(), PathSubdirType::Snapshots->value);
-    }
-
-    /** @return string Full path to temp directory. */
-    public static function getTempDir(): string {
-        return self::join(self::getBaseDir(), PathSubdirType::Temp->value);
-    }
-
-    /** @return string Full path to SQLite database file. */
-    public static function getDbPath(): string {
-        return self::join(self::getBaseDir(), PathDatabaseType::Plugin->value);
-    }
+    public static function getLogsDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Logs->value); }
+    public static function getSnapshotsDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Snapshots->value); }
+    public static function getTempDir(): string { return self::join(self::getBaseDir(), PathSubdirType::Temp->value); }
+    public static function getDbPath(): string { return self::join(self::getBaseDir(), PathDatabaseType::Plugin->value); }
 }

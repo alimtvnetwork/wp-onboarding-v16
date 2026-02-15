@@ -2,38 +2,35 @@
 /**
  * Riseup Asia Uploader - Post Manager
  *
- * Shell class — logic delegated to domain-specific traits.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Post
  * @since   1.4.0
  */
+
+namespace RiseupAsia\Post;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Post\Traits\PostCrudTrait;
+use RiseupAsia\Post\Traits\PostQueryTrait;
+use RiseupAsia\Post\Traits\CategoryTrait;
 use RiseupAsia\Enums\PostStatusType;
+use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Logging\Logger;
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
-require_once dirname(__FILE__) . '/Traits/PostCrudTrait.php';
-require_once dirname(__FILE__) . '/Traits/PostQueryTrait.php';
-require_once dirname(__FILE__) . '/Traits/CategoryTrait.php';
-
-/**
- * Class RiseupPostManager
- *
- * Provides methods for creating and updating posts and categories.
- */
-class RiseupPostManager {
+class PostManager {
 
     use PostCrudTrait;
     use PostQueryTrait;
     use CategoryTrait;
 
-    private RiseupLogger $logger;
-    private RiseupFileLogger $fileLogger;
-    private static ?RiseupPostManager $instance = null;
+    private Logger $logger;
+    private FileLogger $fileLogger;
+    private static ?PostManager $instance = null;
 
-    public static function getInstance(): RiseupPostManager {
+    public static function getInstance(): PostManager {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -41,21 +38,16 @@ class RiseupPostManager {
         return self::$instance;
     }
 
-    /** Constructor. */
     private function __construct() {
-        $this->fileLogger = RiseupFileLogger::getInstance();
-        $this->logger = RiseupLogger::getInstance();
+        $this->fileLogger = FileLogger::getInstance();
+        $this->logger = Logger::getInstance();
         $this->fileLogger->info('Post manager initialized');
     }
 
-    /**
-     * Validate post status.
-     *
-     * @param string $status Input status.
-     * @return string Valid status.
-     */
     private function validatePostStatus(string $status): string {
         $validStatuses = PostStatusType::validValues();
         return in_array($status, $validStatuses, true) ? $status : PostStatusType::Draft->value;
     }
 }
+
+class_alias(PostManager::class, 'RiseupPostManager');

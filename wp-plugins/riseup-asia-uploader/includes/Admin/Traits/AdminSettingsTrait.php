@@ -2,13 +2,17 @@
 /**
  * AdminSettingsTrait — Settings registration, sanitization, and retrieval.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\Update\UpdateResolver;
 
 trait AdminSettingsTrait {
 
@@ -22,7 +26,7 @@ trait AdminSettingsTrait {
 
         register_setting(
             'riseup_asia_settings_group',
-            RiseupUpdateResolver::OPTION_NAME,
+            UpdateResolver::OPTION_NAME,
             array($this, 'sanitizeUpdateSettings')
         );
     }
@@ -54,7 +58,7 @@ trait AdminSettingsTrait {
 
     /** Sanitize auto-update settings on save. */
     public function sanitizeUpdateSettings(array $input): array {
-        $current = get_option(RiseupUpdateResolver::OPTION_NAME, array());
+        $current = get_option(UpdateResolver::OPTION_NAME, array());
         $sanitized = $this->buildSanitizedUpdateFields($input, $current);
 
         if (isset($current['master_url']) && $current['master_url'] !== $sanitized['master_url']) {

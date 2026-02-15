@@ -2,30 +2,29 @@
 /**
  * AdminMenuTrait — Menu registration, submenus, and asset enqueuing.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait AdminMenuTrait {
 
-    /**
-     * Add admin menu items.
-     */
+    /** Add admin menu items. */
     public function addAdminMenu() {
         $this->registerMainMenu();
         $this->registerSubmenus();
         $this->registerErrorSubmenu();
     }
 
-    /**
-     * Register the main admin menu page.
-     */
+    /** Register the main admin menu page. */
     private function registerMainMenu() {
         add_menu_page(
             __('Riseup Asia Uploader', 'riseup-asia-uploader'),
@@ -38,9 +37,7 @@ trait AdminMenuTrait {
         );
     }
 
-    /**
-     * Register standard submenus.
-     */
+    /** Register standard submenus. */
     private function registerSubmenus() {
         $submenus = array(
             array('riseup-asia-uploader', 'Activity Logs', 'renderLogsPage'),
@@ -61,9 +58,7 @@ trait AdminMenuTrait {
         }
     }
 
-    /**
-     * Register the error log submenu with notification bubble.
-     */
+    /** Register the error log submenu with notification bubble. */
     private function registerErrorSubmenu() {
         $errorBubble = $this->buildErrorBubble();
 
@@ -77,11 +72,7 @@ trait AdminMenuTrait {
         );
     }
 
-    /**
-     * Build the error count bubble HTML.
-     *
-     * @return string HTML string or empty.
-     */
+    /** Build the error count bubble HTML. */
     private function buildErrorBubble(): string {
         $unseen = $this->getUnseenErrorCount();
         if ($unseen <= 0) {
@@ -91,11 +82,7 @@ trait AdminMenuTrait {
         return sprintf(' <span class="riseup-error-bubble">%d</span>', $unseen);
     }
 
-    /**
-     * Enqueue admin assets.
-     *
-     * @param string $hook Current admin page.
-     */
+    /** Enqueue admin assets. */
     public function enqueueAdminAssets($hook) {
         if (strpos($hook, 'riseup-asia') === false) {
             return;
@@ -105,7 +92,7 @@ trait AdminMenuTrait {
             'riseup-admin-styles',
             plugins_url('assets/admin.css', dirname(__FILE__)),
             array(),
-            PLUGIN_VERSION
+            PluginConfigType::Version->value
         );
     }
 }

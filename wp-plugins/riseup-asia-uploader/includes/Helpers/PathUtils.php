@@ -2,26 +2,25 @@
 /**
  * Riseup Asia Uploader - Path Utilities
  *
- * Shell class delegating to PathUtilsCoreTrait, PathUtilsDirTrait, PathUtilsFileTrait.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Helpers
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Helpers;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/Traits/PathUtilsCoreTrait.php';
-require_once __DIR__ . '/Traits/PathUtilsDirTrait.php';
-require_once __DIR__ . '/Traits/PathUtilsFileTrait.php';
+use RiseupAsia\Helpers\Traits\PathUtilsCoreTrait;
+use RiseupAsia\Helpers\Traits\PathUtilsDirTrait;
+use RiseupAsia\Helpers\Traits\PathUtilsFileTrait;
 
-/**
- * Path utility class for safe path operations.
- */
-class RiseupPathUtils {
+class PathUtils {
 
     use PathUtilsCoreTrait;
     use PathUtilsDirTrait;
     use PathUtilsFileTrait;
 }
+
+class_alias(PathUtils::class, 'RiseupPathUtils');

@@ -2,29 +2,24 @@
 /**
  * Riseup Asia Uploader - Update Resolver
  *
- * Shell class delegating to UpdateResolverUrlTrait, UpdateResolverFetchTrait,
- * and UpdateResolverWpHooksTrait.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Update
  * @since   1.8.0
  */
+
+namespace RiseupAsia\Update;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Update\Traits\UpdateResolverUrlTrait;
+use RiseupAsia\Update\Traits\UpdateResolverFetchTrait;
+use RiseupAsia\Update\Traits\UpdateResolverWpHooksTrait;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Database\Database;
 
-require_once __DIR__ . '/Traits/UpdateResolverUrlTrait.php';
-require_once __DIR__ . '/Traits/UpdateResolverHooksTrait.php';
-require_once __DIR__ . '/Traits/UpdateResolverWpHooksTrait.php';
-
-/**
- * Class RiseupUpdateResolver
- *
- * Manages plugin auto-updates with 301 redirect resolution.
- */
-class RiseupUpdateResolver {
+class UpdateResolver {
 
     use UpdateResolverUrlTrait;
     use UpdateResolverFetchTrait;
@@ -33,16 +28,10 @@ class RiseupUpdateResolver {
     const OPTION_NAME = 'riseup_update_settings';
     const DEFAULT_CACHE_DAYS = 7;
 
-    /** @var RiseupFileLogger */
-    private $fileLogger;
+    private FileLogger $fileLogger;
+    private Database $db;
+    private static ?UpdateResolver $instance = null;
 
-    /** @var RiseupDatabase */
-    private $db;
-
-    /** @var RiseupUpdateResolver|null */
-    private static $instance = null;
-
-    /** Get singleton instance. */
     public static function getInstance(): static {
         if (self::$instance === null) {
             self::$instance = new self();
@@ -51,26 +40,18 @@ class RiseupUpdateResolver {
         return self::$instance;
     }
 
-    /**
-     * Constructor.
-     */
     private function __construct() {
-        $this->fileLogger = RiseupFileLogger::getInstance();
-        $this->db = RiseupDatabase::getInstance();
+        $this->fileLogger = FileLogger::getInstance();
+        $this->db = Database::getInstance();
 
         $settings = $this->getSettings();
         if (!empty($settings['enabled'])) {
-            add_filter(HookType::PreSetSiteTransientUpdatePlugins->value, array($this, 'check_for_plugin_update'));
-            add_filter(HookType::PluginsApi->value, array($this, 'plugin_info'), 10, 3);
+            add_filter(HookType::PreSetSiteTransientUpdatePlugins->value, array($this, 'checkForPluginUpdate'));
+            add_filter(HookType::PluginsApi->value, array($this, 'pluginInfo'), 10, 3);
             $this->fileLogger->info('Auto-update hooks registered');
         }
     }
 
-    /**
-     * Get update settings.
-     *
-     * @return array Settings array with defaults.
-     */
     public function getSettings(): array {
         $defaults = array(
             'enabled' => false, 'master_url' => '', 'resolved_url' => '', 'resolved_at' => '',
@@ -81,10 +62,11 @@ class RiseupUpdateResolver {
         return wp_parse_args($settings, $defaults);
     }
 
-    /** Save update settings. */
     public function saveSettings(array $settings): bool {
         $current = $this->getSettings();
         $merged = wp_parse_args($settings, $current);
         return update_option(self::OPTION_NAME, $merged);
     }
 }
+
+class_alias(UpdateResolver::class, 'RiseupUpdateResolver');

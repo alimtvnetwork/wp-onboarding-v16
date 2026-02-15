@@ -4,28 +4,33 @@
  *
  * Manages agent sites for multi-site orchestration (master-agent architecture).
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Agent
  * @since   1.8.0
  */
+
+namespace RiseupAsia\Agent;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once __DIR__ . '/Traits/AgentCrudTrait.php';
-require_once __DIR__ . '/Traits/AgentRemoteTrait.php';
-require_once __DIR__ . '/Traits/AgentLoggingTrait.php';
+use RiseupAsia\Agent\Traits\AgentCrudTrait;
+use RiseupAsia\Agent\Traits\AgentRemoteTrait;
+use RiseupAsia\Agent\Traits\AgentLoggingTrait;
+use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Database\Database;
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
-class RiseupAgentManager {
+class AgentManager {
 
     use AgentCrudTrait;
     use AgentRemoteTrait;
     use AgentLoggingTrait;
 
     private string $encryptionKey;
-    private RiseupFileLogger $fileLogger;
-    private RiseupDatabase $db;
-    private static ?RiseupAgentManager $instance = null;
+    private FileLogger $fileLogger;
+    private Database $db;
+    private static ?AgentManager $instance = null;
 
     public static function getInstance(): self {
         if (self::$instance === null) {
@@ -36,8 +41,8 @@ class RiseupAgentManager {
     }
 
     private function __construct() {
-        $this->fileLogger = RiseupFileLogger::getInstance();
-        $this->db = RiseupDatabase::getInstance();
+        $this->fileLogger = FileLogger::getInstance();
+        $this->db = Database::getInstance();
         $this->encryptionKey = substr(hash('sha256', AUTH_KEY . SECURE_AUTH_KEY), 0, 32);
     }
 
@@ -80,3 +85,5 @@ class RiseupAgentManager {
         );
     }
 }
+
+class_alias(AgentManager::class, 'RiseupAgentManager');

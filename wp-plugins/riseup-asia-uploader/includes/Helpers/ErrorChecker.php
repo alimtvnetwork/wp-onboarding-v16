@@ -1,20 +1,13 @@
 <?php
 
+namespace RiseupAsia\Helpers;
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 use RiseupAsia\Enums\ErrorType;
 
-/**
- * Centralized error-type inspection.
- *
- * Encapsulates raw E_* constant checks so callers delegate to ErrorType
- * for the actual constant groupings. Adding a new fatal type requires
- * changing ONE place (ErrorType).
- *
- * @since 1.57.0
- */
 class ErrorChecker
 {
     private const LABEL_FATAL = 'fatal';
@@ -24,46 +17,25 @@ class ErrorChecker
     private const LABEL_UNKNOWN_TYPE = 'UNKNOWN_ERROR_TYPE';
 
     public static function isFatalError(?array $error): bool {
-        if ($error === null) {
-            return false;
-        }
-
+        if ($error === null) { return false; }
         return in_array($error['type'], ErrorType::FATAL_TYPES, true);
     }
 
     public static function isWarning(?array $error): bool {
-        if ($error === null) {
-            return false;
-        }
-
+        if ($error === null) { return false; }
         return in_array($error['type'], ErrorType::WARNING_TYPES, true);
     }
 
     public static function isRecoverable(?array $error): bool {
-        if ($error === null) {
-            return false;
-        }
-
+        if ($error === null) { return false; }
         return in_array($error['type'], ErrorType::RECOVERABLE_TYPES, true);
     }
 
     public static function getSeverityLabel(?array $error): string {
-        if ($error === null) {
-            return self::LABEL_UNKNOWN;
-        }
-
-        if (self::isFatalError($error)) {
-            return self::LABEL_FATAL;
-        }
-
-        if (self::isWarning($error)) {
-            return self::LABEL_WARNING;
-        }
-
-        if (self::isRecoverable($error)) {
-            return self::LABEL_RECOVERABLE;
-        }
-
+        if ($error === null) { return self::LABEL_UNKNOWN; }
+        if (self::isFatalError($error)) { return self::LABEL_FATAL; }
+        if (self::isWarning($error)) { return self::LABEL_WARNING; }
+        if (self::isRecoverable($error)) { return self::LABEL_RECOVERABLE; }
         return self::LABEL_UNKNOWN;
     }
 
@@ -72,6 +44,8 @@ class ErrorChecker
     }
 
     public static function isInvalidPdoExtension(): bool {
-        return RiseupBooleanHelpers::isClassMissing('PDO') || RiseupBooleanHelpers::isExtensionMissing('pdo_sqlite');
+        return BooleanHelpers::isClassMissing('PDO') || BooleanHelpers::isExtensionMissing('pdo_sqlite');
     }
 }
+
+class_alias(ErrorChecker::class, 'ErrorChecker');

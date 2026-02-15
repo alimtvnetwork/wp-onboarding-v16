@@ -2,9 +2,11 @@
 /**
  * AgentRemoteActionTrait — Redirect resolution, connection testing, and plugin sync.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Agent\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Agent\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -14,6 +16,7 @@ use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentRemoteActionTrait {
 
@@ -57,7 +60,7 @@ trait AgentRemoteActionTrait {
             }
 
             $status = wp_remote_retrieve_response_code($response);
-            if (RiseupBooleanHelpers::isNotInList($status, array(301, 302, 303, 307, 308))) {
+            if (BooleanHelpers::isNotInList($status, array(301, 302, 303, 307, 308))) {
                 break;
             }
 

@@ -6,13 +6,14 @@
  * @since   1.57.0
  */
 
+namespace RiseupAsia\Upload\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 trait UploadIgnorePatternTrait {
 
-    /** Compile a gitignore-style pattern to regex. */
     private function compilePattern(string $pattern): array {
         $info = array(
             'original'   => $pattern,
@@ -49,7 +50,6 @@ trait UploadIgnorePatternTrait {
         return $info;
     }
 
-    /** Match a compiled pattern against a path. */
     private function matchPattern(array $pattern, string $path): bool {
         return preg_match($pattern['regex'], $path) === 1;
     }

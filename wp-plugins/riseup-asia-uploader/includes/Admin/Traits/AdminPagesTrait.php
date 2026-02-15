@@ -4,26 +4,30 @@
  *
  * Rendering methods for admin pages (logs, settings, agents, snapshots).
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Database\Database;
+use RiseupAsia\Update\UpdateResolver;
+use RiseupAsia\Snapshot\SnapshotFactory;
+
 trait AdminPagesTrait {
 
-    /**
-     * Render the logs page.
-     */
+    /** Render the logs page. */
     public function renderLogsPage() {
         $filters = $this->buildLogFilters();
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $perPage = 50;
         $offset = ($page - 1) * $perPage;
 
-        $db = RiseupDatabase::getInstance();
+        $db = Database::getInstance();
         $result = $db->queryTransactions($filters, $perPage, $offset);
         $logs = $result['logs'];
         $total = $result['total'];
@@ -34,11 +38,7 @@ trait AdminPagesTrait {
         include dirname(__FILE__) . '/../../templates/admin-logs.php';
     }
 
-    /**
-     * Build log filters from query parameters.
-     *
-     * @return array Filter values.
-     */
+    /** Build log filters from query parameters. */
     private function buildLogFilters(): array {
         $keys = array(
             'action' => 'filter_action', 'user' => 'filter_user', 'status' => 'filter_status',
@@ -55,11 +55,7 @@ trait AdminPagesTrait {
         return $filters;
     }
 
-    /**
-     * Get action label map for display.
-     *
-     * @return array Action labels.
-     */
+    /** Get action label map for display. */
     private function getActionLabels(): array {
         return array(
             'upload_initiated' => 'Upload Initiated',
@@ -80,15 +76,12 @@ trait AdminPagesTrait {
         );
     }
 
-    /**
-     * Render the settings page.
-     */
+    /** Render the settings page. */
     public function renderSettingsPage() {
         $settings = self::getSettings();
-        $updateSettings = RiseupUpdateResolver::getInstance()->getSettings();
+        $updateSettings = UpdateResolver::getInstance()->getSettings();
 
-        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotFactory.php';
-        $detector = RiseupSnapshotFactory::detector();
+        $detector = SnapshotFactory::detector();
         $snapshotSettings = $detector->getSettings();
         $snapshotProviders = $detector->detectAvailableProviders();
 
@@ -98,11 +91,7 @@ trait AdminPagesTrait {
         include dirname(__FILE__) . '/../../templates/admin-settings.php';
     }
 
-    /**
-     * Build endpoint group metadata for display.
-     *
-     * @return array Endpoint groups.
-     */
+    /** Build endpoint group metadata for display. */
     private function buildEndpointGroups(): array {
         return array(
             'core' => array(
@@ -151,12 +140,7 @@ trait AdminPagesTrait {
         );
     }
 
-    /**
-     * Flatten endpoint groups for backward compatibility.
-     *
-     * @param array $groups Endpoint groups.
-     * @return array Flat endpoint metadata.
-     */
+    /** Flatten endpoint groups for backward compatibility. */
     private function flattenEndpointGroups(array $groups): array {
         $endpointsMeta = array();
         foreach ($groups as $group) {
@@ -168,16 +152,12 @@ trait AdminPagesTrait {
         return $endpointsMeta;
     }
 
-    /**
-     * Render the agent sites page.
-     */
+    /** Render the agent sites page. */
     public function renderAgentsPage() {
         include dirname(__FILE__) . '/../../templates/admin-agents.php';
     }
 
-    /**
-     * Render the snapshots page.
-     */
+    /** Render the snapshots page. */
     public function renderSnapshotsPage() {
         include dirname(__FILE__) . '/../../templates/admin-snapshots.php';
     }

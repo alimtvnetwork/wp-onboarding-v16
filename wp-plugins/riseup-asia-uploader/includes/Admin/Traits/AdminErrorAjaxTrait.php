@@ -4,9 +4,11 @@
  *
  * AJAX handlers for error dismissal, clearing, and log file operations.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -14,19 +16,19 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\FileLogger;
 
 trait AdminErrorAjaxTrait {
 
-    /**
-     * AJAX handler: Dismiss error flash (mark all as seen).
-     */
+    /** AJAX handler: Dismiss error flash (mark all as seen). */
     public function ajaxDismissErrorFlash() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
-        $db = RiseupDatabase::getInstance();
+        $db = Database::getInstance();
         $pdo = $db->getPdo();
 
         $stmt = $pdo->query('SELECT MAX(id) FROM error_sessions');
@@ -39,16 +41,14 @@ trait AdminErrorAjaxTrait {
         wp_send_json_success(array('message' => 'All errors marked as seen', 'last_seen_id' => $maxId));
     }
 
-    /**
-     * AJAX handler: Clear all error sessions.
-     */
+    /** AJAX handler: Clear all error sessions. */
     public function ajaxClearErrorSessions() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
             wp_send_json_error(array('message' => ResponseMessageType::Unauthorized->value));
         }
 
-        $db = RiseupDatabase::getInstance();
+        $db = Database::getInstance();
         $pdo = $db->getPdo();
 
         $pdo->exec('DELETE FROM error_sessions');
@@ -61,7 +61,7 @@ trait AdminErrorAjaxTrait {
 
     /** Resolve a log file type to its absolute path. */
     private function resolveLogFilePath(string $type): string|false {
-        $logger = RiseupFileLogger::getInstance();
+        $logger = FileLogger::getInstance();
         switch ($type) {
             case 'log':
                 return $logger->getLogFile();
@@ -74,9 +74,7 @@ trait AdminErrorAjaxTrait {
         }
     }
 
-    /**
-     * AJAX handler: Read a log file's contents.
-     */
+    /** AJAX handler: Read a log file's contents. */
     public function ajaxReadLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {
@@ -93,12 +91,7 @@ trait AdminErrorAjaxTrait {
         wp_send_json_success($this->readLogFileContent($path));
     }
 
-    /**
-     * Read a log file's content with size-based truncation.
-     *
-     * @param string $path File path.
-     * @return array File content data.
-     */
+    /** Read a log file's content with size-based truncation. */
     private function readLogFileContent(string $path): array {
         $exists = file_exists($path);
         $content = '';
@@ -127,9 +120,7 @@ trait AdminErrorAjaxTrait {
         );
     }
 
-    /**
-     * AJAX handler: Clear (truncate) a log file.
-     */
+    /** AJAX handler: Clear (truncate) a log file. */
     public function ajaxClearLogFile() {
         check_ajax_referer('riseup_admin_nonce', 'nonce');
         if (!current_user_can(CapabilityType::ManageOptions->value)) {

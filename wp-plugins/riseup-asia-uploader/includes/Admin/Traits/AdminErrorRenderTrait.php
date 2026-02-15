@@ -2,19 +2,21 @@
 /**
  * AdminErrorRenderTrait — Error page rendering, fetching, and querying.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Admin\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Admin\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Database\Database;
+
 trait AdminErrorRenderTrait {
 
-    /**
-     * Render the error log page.
-     */
+    /** Render the error log page. */
     public function renderErrorsPage() {
         $defaults = $this->getErrorPageDefaults();
         extract($defaults);
@@ -32,11 +34,7 @@ trait AdminErrorRenderTrait {
         include dirname(__FILE__) . '/../../templates/admin-errors.php';
     }
 
-    /**
-     * Get safe default values for the error page.
-     *
-     * @return array Default variables.
-     */
+    /** Get safe default values for the error page. */
     private function getErrorPageDefaults(): array {
         return array(
             'errors'           => array(),
@@ -53,14 +51,9 @@ trait AdminErrorRenderTrait {
         );
     }
 
-    /**
-     * Fetch errors for the admin page with pagination and filters.
-     *
-     * @param array $defaults Default page variables.
-     * @return array Updated page variables.
-     */
+    /** Fetch errors for the admin page with pagination and filters. */
     private function fetchErrorsForPage(array $defaults): array {
-        $db = RiseupDatabase::getInstance();
+        $db = Database::getInstance();
         $pdo = $db->getPdo();
 
         if (!$pdo) {
@@ -79,14 +72,8 @@ trait AdminErrorRenderTrait {
         return $this->queryErrorPage($pdo, $defaults);
     }
 
-    /**
-     * Query error sessions for page rendering.
-     *
-     * @param PDO   $pdo      Database connection.
-     * @param array $defaults Default variables.
-     * @return array Updated variables.
-     */
-    private function queryErrorPage(PDO $pdo, array $defaults): array {
+    /** Query error sessions for page rendering. */
+    private function queryErrorPage(\PDO $pdo, array $defaults): array {
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $perPage = 50;
         $offset = ($page - 1) * $perPage;
@@ -99,9 +86,7 @@ trait AdminErrorRenderTrait {
         return $this->assembleErrorPageResult($errors, $total, $totalPages, $page, $defaults);
     }
 
-    /**
-     * Build WHERE clause and params from filter defaults.
-     */
+    /** Build WHERE clause and params from filter defaults. */
     private function buildErrorFilters(array $defaults): array {
         $where = array();
         $params = array();
@@ -121,29 +106,23 @@ trait AdminErrorRenderTrait {
         return array('where_sql' => $whereSql, 'params' => $params);
     }
 
-    /**
-     * Count total filtered error sessions.
-     */
-    private function countFilteredErrors(PDO $pdo, array $filter): int {
+    /** Count total filtered error sessions. */
+    private function countFilteredErrors(\PDO $pdo, array $filter): int {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$filter['where_sql']}");
         $stmt->execute($filter['params']);
 
         return (int) $stmt->fetchColumn();
     }
 
-    /**
-     * Fetch paginated filtered error sessions.
-     */
-    private function fetchFilteredErrors(PDO $pdo, array $filter, int $perPage, int $offset): array {
+    /** Fetch paginated filtered error sessions. */
+    private function fetchFilteredErrors(\PDO $pdo, array $filter, int $perPage, int $offset): array {
         $stmt = $pdo->prepare("SELECT * FROM error_sessions {$filter['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?");
         $stmt->execute(array_merge($filter['params'], array($perPage, $offset)));
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Assemble the final error page result array.
-     */
+    /** Assemble the final error page result array. */
     private function assembleErrorPageResult(array $errors, int $total, int $totalPages, int $page, array $defaults): array {
         $lastSeenId = $this->getFlashValue('last_seen_error_id', 0);
         $hasUnseen = ($this->getFlashValue('has_unseen_errors', '0') === '1');
@@ -159,9 +138,7 @@ trait AdminErrorRenderTrait {
         );
     }
 
-    /**
-     * Resolve the latest error time string.
-     */
+    /** Resolve the latest error time string. */
     private function resolveLatestErrorTime(array $errors, bool $hasUnseen): string {
         if (empty($errors) || !$hasUnseen) {
             return '';

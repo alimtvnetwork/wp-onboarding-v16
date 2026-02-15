@@ -2,25 +2,20 @@
 /**
  * Boolean Helper Functions
  *
- * Shell class — logic delegated to domain-specific traits.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Helpers
  * @since   1.18.0
  */
+
+namespace RiseupAsia\Helpers;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load trait files
-require_once __DIR__ . '/Traits/BooleanDomainTrait.php';
+use RiseupAsia\Helpers\Traits\BooleanDomainTrait;
 
-/**
- * Class RiseupBooleanHelpers
- *
- * Centralized boolean check functions for domain-specific guards.
- */
-class RiseupBooleanHelpers {
-
+class BooleanHelpers {
     use BooleanDomainTrait;
 }
+
+class_alias(BooleanHelpers::class, 'RiseupBooleanHelpers');

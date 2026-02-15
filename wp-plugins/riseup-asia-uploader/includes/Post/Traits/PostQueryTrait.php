@@ -2,13 +2,17 @@
 /**
  * PostQueryTrait — Post listing with pagination.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Post\Traits
  * @since   1.4.0
  */
+
+namespace RiseupAsia\Post\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait PostQueryTrait {
 
@@ -54,7 +58,7 @@ trait PostQueryTrait {
                 'limit' => $args['posts_per_page'], 'offset' => $args['offset'],
                 'posts' => $posts,
             );
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List posts exception');
         }
     }

@@ -2,13 +2,17 @@
 /**
  * AgentCrudWriteTrait — Add, update, remove operations for agent sites.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Agent\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Agent\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait AgentCrudWriteTrait {
 
