@@ -55,7 +55,7 @@ trait ManagerSettingsTrait {
                 $settings[$key] = $this->castSettingValue($row['value'], $row['type']);
             }
             return $settings;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to read snapshot_settings from SQLite', array('error' => $e->getMessage()));
             return array();
         }
@@ -75,7 +75,7 @@ trait ManagerSettingsTrait {
                     $dbValue = is_bool($value) ? ($value ? '1' : '0') : (string)$value;
                     $stmt->execute(array($dbKey, $dbValue, $type, $now));
                 }
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $this->log(LogLevelType::Error->value, 'Failed to update snapshot_settings', array('error' => $e->getMessage()));
             }
         }

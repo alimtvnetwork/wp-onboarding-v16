@@ -129,7 +129,7 @@ trait DetectorProviderTrait {
             try {
                 $pdo = new PDO('sqlite::memory:');
                 return $pdo->query('SELECT sqlite_version()')->fetchColumn();
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 return null;
             }
         }

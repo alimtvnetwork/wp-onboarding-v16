@@ -123,7 +123,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
                 'error' => 'WP Reset integration not yet implemented',
             );
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'WP Reset snapshot failed', array(
                 'error' => $e->getMessage(),
             ));

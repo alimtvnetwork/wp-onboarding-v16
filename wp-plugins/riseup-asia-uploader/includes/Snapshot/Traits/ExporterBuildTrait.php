@@ -81,7 +81,7 @@ trait ExporterBuildTrait {
     private function attemptZipAssembly(PDO $pdo, array $snapshot, int $snapshotId, string $snapshotDir, array $zipMeta): array {
         try {
             return $this->assembleZipArchive($pdo, $snapshot, $snapshotId, $snapshotDir, $zipMeta['path'], $zipMeta['filename']);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'ZIP export build failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             $this->cleanupFailedExport($pdo, $snapshotId, $zipMeta['path']);
 

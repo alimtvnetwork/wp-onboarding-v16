@@ -50,7 +50,7 @@ trait ManagerImportValidationTrait {
 
             $pdo = null;
             return array('valid' => true);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array('valid' => false, 'error' => 'SQLite error: ' . $e->getMessage());
         }
     }

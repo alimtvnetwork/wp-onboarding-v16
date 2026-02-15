@@ -23,14 +23,10 @@ class RiseupUploadIgnore {
 
     use UploadIgnorePatternTrait;
 
-    /** @var array */
-    private $patterns = array();
-    /** @var array */
-    private $negations = array();
-    /** @var bool */
-    private $isLoaded = false;
-    /** @var RiseupFileLogger */
-    private $fileLogger;
+    private array $patterns = array();
+    private array $negations = array();
+    private bool $isLoaded = false;
+    private RiseupFileLogger $fileLogger;
 
     public function __construct() {
         $this->fileLogger = RiseupFileLogger::getInstance();
@@ -42,7 +38,7 @@ class RiseupUploadIgnore {
      * @param string $pluginDir The plugin directory path.
      * @return bool True if file was loaded.
      */
-    public function load($pluginDir) {
+    public function load(string $pluginDir): bool {
         $ignoreFile = rtrim($pluginDir, '/\\') . '/' . IGNORE_FILENAME;
         $this->fileLogger->debug('Loading uploadignore', array('path' => $ignoreFile));
 
@@ -82,7 +78,7 @@ class RiseupUploadIgnore {
                 'negations' => count($this->negations),
             ));
             return true;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to load uploadignore');
             $this->isLoaded = false;
             return false;
@@ -92,7 +88,7 @@ class RiseupUploadIgnore {
     /**
      * Check if a relative path should be ignored.
      */
-    public function shouldIgnore($relativePath) {
+    public function shouldIgnore(string $relativePath): bool {
         $path = str_replace('\\', '/', $relativePath);
         $path = ltrim($path, '/');
 
@@ -115,25 +111,22 @@ class RiseupUploadIgnore {
         return $isIgnored;
     }
 
-    /** @return array */
-    public function getPatterns() {
+    public function getPatterns(): array {
         return $this->patterns;
     }
 
-    /** @return array */
-    public function getNegations() {
+    public function getNegations(): array {
         return $this->negations;
     }
 
-    /** @return bool */
-    public function isLoaded() {
+    public function isLoaded(): bool {
         return $this->isLoaded;
     }
 
     /**
      * Create an instance and load from a directory.
      */
-    public static function fromDirectory($pluginDir) {
+    public static function fromDirectory(string $pluginDir): self {
         $instance = new self();
         $instance->load($pluginDir);
         return $instance;

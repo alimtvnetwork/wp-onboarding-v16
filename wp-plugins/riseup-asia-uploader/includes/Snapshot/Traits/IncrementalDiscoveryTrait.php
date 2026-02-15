@@ -39,7 +39,7 @@ trait IncrementalDiscoveryTrait {
             }
 
             return null;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to find master snapshot from DB', array('error' => $e->getMessage()));
             return null;
         }

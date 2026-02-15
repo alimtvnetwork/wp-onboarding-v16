@@ -21,7 +21,7 @@ trait IncrementalExportTrait {
                 'success' => true, 'rows' => $exported,
                 'file_size' => filesize($filepath), 'checksum' => md5_file($filepath),
             );
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0, 'file_size' => 0, 'checksum' => '');
         }
     }

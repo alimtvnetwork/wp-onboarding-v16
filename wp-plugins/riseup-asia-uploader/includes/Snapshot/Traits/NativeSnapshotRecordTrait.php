@@ -43,7 +43,7 @@ trait NativeSnapshotRecordTrait {
 
             $this->insertSnapshotMeta($pdo);
             return $pdo;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to create SQLite database', array('filepath' => $filepath, 'error' => $e->getMessage()));
             return null;
         }

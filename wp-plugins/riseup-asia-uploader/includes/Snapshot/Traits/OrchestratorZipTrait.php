@@ -24,7 +24,7 @@ trait OrchestratorZipTrait {
             $zip->close();
 
             return $this->validateZipExport($zip_path, $zip_filename, $file_count);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array('success' => false, 'error' => $e->getMessage());
         }
     }

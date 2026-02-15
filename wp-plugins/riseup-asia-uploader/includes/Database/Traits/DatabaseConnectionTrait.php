@@ -30,7 +30,7 @@ trait DatabaseConnectionTrait {
             $this->fileLogger->info('Database path resolved', array('path' => $this->dbPath));
 
             return $this->initDatabase();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Database init failed');
 
             return false;
