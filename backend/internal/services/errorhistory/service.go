@@ -336,15 +336,16 @@ func (s *Service) BulkExport(ids []int64) (string, error) {
 }
 
 // GetStats returns error history statistics
-func (s *Service) GetStats() (map[string]any, error) {
-	stats := make(map[string]any)
+func (s *Service) GetStats() (*models.ErrorHistoryStats, error) {
+	stats := &models.ErrorHistoryStats{
+		ByLevel: make(map[string]int),
+		ByCode:  make(map[string]int),
+	}
 
 	// Total count
-	var total int
-	if err := s.db.QueryRow("SELECT COUNT(*) FROM ErrorHistory").Scan(&total); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM ErrorHistory").Scan(&stats.Total); err != nil {
 		return nil, err
 	}
-	stats["total"] = total
 
 	// Count by level
 	rows, err := s.db.Query("SELECT Level, COUNT(*) FROM ErrorHistory GROUP BY Level")
@@ -353,14 +354,12 @@ func (s *Service) GetStats() (map[string]any, error) {
 	}
 	defer rows.Close()
 
-	byLevel := make(map[string]int)
 	for rows.Next() {
 		var level string
 		var count int
 		rows.Scan(&level, &count)
-		byLevel[level] = count
+		stats.ByLevel[level] = count
 	}
-	stats["byLevel"] = byLevel
 
 	// Count by code (top 10)
 	codeRows, err := s.db.Query("SELECT Code, COUNT(*) as cnt FROM ErrorHistory GROUP BY Code ORDER BY cnt DESC LIMIT 10")
@@ -369,14 +368,12 @@ func (s *Service) GetStats() (map[string]any, error) {
 	}
 	defer codeRows.Close()
 
-	byCode := make(map[string]int)
 	for codeRows.Next() {
 		var code string
 		var count int
 		codeRows.Scan(&code, &count)
-		byCode[code] = count
+		stats.ByCode[code] = count
 	}
-	stats["byCode"] = byCode
 
 	return stats, nil
 }

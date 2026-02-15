@@ -74,6 +74,13 @@ type ErrorHistoryInput struct {
 	MarkdownReport     string          `json:"markdownReport,omitempty"`
 }
 
+// ErrorHistoryStats contains aggregated error history statistics
+type ErrorHistoryStats struct {
+	Total   int            `json:"total"`
+	ByLevel map[string]int `json:"byLevel"`
+	ByCode  map[string]int `json:"byCode"`
+}
+
 // ErrorHistoryFilters for querying error history
 type ErrorHistoryFilters struct {
 	Code      string `json:"code,omitempty"`
