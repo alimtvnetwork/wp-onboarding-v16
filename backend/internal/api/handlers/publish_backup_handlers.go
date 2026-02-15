@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"wp-plugin-publish/internal/database"
 	"wp-plugin-publish/internal/wordpress"
+	"wp-plugin-publish/internal/ws"
 )
 
 // PublishInput represents the request body for publishing
@@ -97,9 +99,9 @@ var DeleteBackup = handleDeleteByID(backupService, "Backup service", "id", "back
 
 // VersionServiceInterface defines version history service methods
 type VersionServiceInterface interface {
-	GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) (any, error)
-	GetVersion(ctx context.Context, versionID int64) (any, error)
-	Rollback(ctx context.Context, versionID int64) (any, error)
+	GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) ([]database.PluginVersionRow, error)
+	GetVersion(ctx context.Context, versionID int64) (*database.PluginVersionRow, error)
+	Rollback(ctx context.Context, versionID int64) (*ws.RollbackCompleteData, error)
 	DeleteVersion(ctx context.Context, versionID int64) error
 }
 

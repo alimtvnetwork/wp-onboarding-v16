@@ -12,6 +12,9 @@ import (
 	"wp-plugin-publish/pkg/apperror"
 )
 
+// PluginVersionRow re-exports the database type for service consumers.
+type PluginVersionRow = database.PluginVersionRow
+
 // Config holds version service configuration
 type Config struct {
 	DB     *database.DB
@@ -36,7 +39,7 @@ func New(cfg Config) *Service {
 }
 
 // GetVersions returns version history for a plugin
-func (s *Service) GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) (any, error) {
+func (s *Service) GetVersions(ctx context.Context, pluginID int64, siteID *int64, limit int) ([]PluginVersionRow, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -44,7 +47,7 @@ func (s *Service) GetVersions(ctx context.Context, pluginID int64, siteID *int64
 }
 
 // GetVersion returns a specific version entry
-func (s *Service) GetVersion(ctx context.Context, versionID int64) (any, error) {
+func (s *Service) GetVersion(ctx context.Context, versionID int64) (*PluginVersionRow, error) {
 	return s.db.GetPluginVersionByID(versionID)
 }
 
@@ -91,21 +94,20 @@ func (s *Service) RecordVersion(ctx context.Context, pluginID, siteID int64, fil
 // Rollback restores a plugin to a previous version
 func (s *Service) Rollback(ctx context.Context, versionID int64) (*ws.RollbackCompleteData, error) {
 	// Get version info
-	version, err := s.db.GetPluginVersionByID(versionID)
+	ver, err := s.db.GetPluginVersionByID(versionID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrVersionNotFound, "version not found").
 			WithVersionID(versionID)
 	}
 
-	backupPath, _ := version["backupPath"].(string)
-	if backupPath == "" {
+	if ver.BackupPath == "" {
 		return nil, apperror.New(apperror.ErrVersionNoBackup, "no backup available for this version").
 			WithVersionID(versionID)
 	}
 
-	pluginID, _ := version["pluginId"].(int64)
-	siteID, _ := version["siteId"].(int64)
-	versionStr, _ := version["version"].(string)
+	pluginID := ver.PluginID
+	siteID := ver.SiteID
+	versionStr := ver.Version
 
 	s.log.Info("Starting rollback",
 		"versionId", versionID,
