@@ -7,17 +7,18 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"wp-plugin-publish/internal/services/e2e"
 	"wp-plugin-publish/internal/wordpress"
 )
 
 // E2EServiceInterface defines E2E test service methods
 type E2EServiceInterface interface {
-	ListSuites(ctx context.Context) (any, error)
-	GetCases(ctx context.Context, suiteID string) (any, error)
-	StartRun(ctx context.Context, opts any) (any, error)
+	ListSuites(ctx context.Context) ([]e2e.TestSuite, error)
+	GetCases(ctx context.Context, suiteID string) ([]e2e.TestCase, error)
+	StartRun(ctx context.Context, opts any) (*e2e.TestRun, error)
 	AbortRun(ctx context.Context, runID string) error
-	ListRuns(ctx context.Context, limit int) (any, error)
-	GetRun(ctx context.Context, runID string) (any, error)
+	ListRuns(ctx context.Context, limit int) ([]e2e.TestRun, error)
+	GetRun(ctx context.Context, runID string) (*e2e.RunSummary, error)
 	DeleteRun(ctx context.Context, runID string) error
 }
 
@@ -34,7 +35,7 @@ var GetE2ESuites = handleListNilSafe(e2eServiceGetter, "E7001",
 // GetE2ECases returns test cases for a suite
 func GetE2ECases(w http.ResponseWriter, r *http.Request) {
 	if E2EService == nil {
-		respondSuccess(w, []any{})
+		respondSuccess(w, []e2e.TestCase{})
 		return
 	}
 	vars := mux.Vars(r)
@@ -69,7 +70,7 @@ func StartE2ERun(w http.ResponseWriter, r *http.Request) {
 // GetE2ERuns returns past test runs
 func GetE2ERuns(w http.ResponseWriter, r *http.Request) {
 	if E2EService == nil {
-		respondSuccess(w, []any{})
+		respondSuccess(w, []e2e.TestRun{})
 		return
 	}
 
