@@ -18,13 +18,8 @@ use RiseupAsia\Enums\TableType;
 
 trait ExporterHelpersTrait {
 
-    /**
-     * Get a full snapshot record by ID (validates it's not incremental).
-     *
-     * @param int $snapshotId Snapshot ID.
-     * @return array|null Snapshot record or null.
-     */
-    private function getFullSnapshot($snapshotId) {
+    /** Get a full snapshot record by ID (validates it's not incremental). */
+    private function getFullSnapshot(int $snapshotId): ?array {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
@@ -51,13 +46,8 @@ trait ExporterHelpersTrait {
         return $snapshot;
     }
 
-    /**
-     * Get a valid (non-expired) export record for a snapshot.
-     *
-     * @param int $snapshotId Full snapshot ID.
-     * @return array|null Export record or null.
-     */
-    private function getValidExport($snapshotId) {
+    /** Get a valid (non-expired) export record for a snapshot. */
+    private function getValidExport(int $snapshotId): ?array {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
@@ -68,13 +58,8 @@ trait ExporterHelpersTrait {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    /**
-     * Get an export record by ID.
-     *
-     * @param int $exportId Export ID.
-     * @return array|null
-     */
-    private function getExportById($exportId) {
+    /** Get an export record by ID. */
+    private function getExportById(int $exportId): ?array {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
@@ -85,12 +70,8 @@ trait ExporterHelpersTrait {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    /**
-     * Delete an export record.
-     *
-     * @param int $exportId Export ID.
-     */
-    private function deleteExportRecord($exportId) {
+    /** Delete an export record. */
+    private function deleteExportRecord(int $exportId): void {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return;
@@ -100,14 +81,8 @@ trait ExporterHelpersTrait {
         $stmt->execute(array($exportId));
     }
 
-    /**
-     * Log helper.
-     *
-     * @param string $level   Log level.
-     * @param string $message Log message.
-     * @param array  $context Context data.
-     */
-    private function log($level, $message, $context = array()) {
+    /** Log helper. */
+    private function log(string $level, string $message, array $context = array()): void {
         $context['class'] = 'RiseupSnapshotExporter';
         switch ($level) {
             case LogLevelType::Error->value:
@@ -125,10 +100,8 @@ trait ExporterHelpersTrait {
         }
     }
 
-    /**
-     * Reset singleton (for testing).
-     */
-    public static function reset() {
+    /** Reset singleton (for testing). */
+    public static function reset(): void {
         self::$instance = null;
     }
 }

@@ -12,14 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait UpdateResolverUrlTrait {
 
-    /**
-     * Resolve a URL through 301 redirects to get the final destination.
-     *
-     * @param string $url           The URL to resolve.
-     * @param int    $maxRedirects  Maximum redirects to follow.
-     * @return string|WP_Error Final URL or error.
-     */
-    public function resolveUrl($url, $maxRedirects = 5) {
+    /** Resolve a URL through 301 redirects to get the final destination. */
+    public function resolveUrl(string $url, int $maxRedirects = 5): string|WP_Error {
         $this->fileLogger->info('Resolving URL through redirects', array('url' => $url));
 
         $currentUrl = $url;
@@ -39,13 +33,8 @@ trait UpdateResolverUrlTrait {
         return new WP_Error('max_redirects', 'Maximum redirect limit exceeded');
     }
 
-    /**
-     * Follow a single HTTP redirect and return the target URL.
-     *
-     * @param string $url URL to check.
-     * @return string|WP_Error|null Redirect target, WP_Error on failure, null if no redirect.
-     */
-    private function followSingleRedirect(string $url) {
+    /** Follow a single HTTP redirect and return the target URL. */
+    private function followSingleRedirect(string $url): string|WP_Error|null {
         $response = wp_remote_head($url, array('timeout' => 15, 'redirection' => 0, 'sslverify' => true));
 
         if (is_wp_error($response)) {
@@ -75,26 +64,14 @@ trait UpdateResolverUrlTrait {
         return $location;
     }
 
-    /**
-     * Log a successful URL resolution.
-     *
-     * @param string $original Original URL.
-     * @param string $final    Final resolved URL.
-     * @param int    $hops     Number of redirects followed.
-     * @return string The final URL.
-     */
+    /** Log a successful URL resolution. */
     private function logResolvedUrl(string $original, string $final, int $hops): string {
         $this->fileLogger->info('URL resolved', array('original' => $original, 'final' => $final, 'hops' => $hops));
         return $final;
     }
 
-    /**
-     * Get the update URL, using cache if valid or resolving fresh.
-     *
-     * @param bool $forceResolve Force fresh resolution, ignoring cache.
-     * @return string|WP_Error Resolved URL or error.
-     */
-    public function getUpdateUrl($forceResolve = false) {
+    /** Get the update URL, using cache if valid or resolving fresh. */
+    public function getUpdateUrl(bool $forceResolve = false): string|WP_Error {
         $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {
@@ -116,13 +93,8 @@ trait UpdateResolverUrlTrait {
         return $resolved;
     }
 
-    /**
-     * Check if the cached URL is still valid.
-     *
-     * @param array $settings Settings array.
-     * @return bool True if cache is valid.
-     */
-    private function isCacheValid($settings) {
+    /** Check if the cached URL is still valid. */
+    private function isCacheValid(array $settings): bool {
         if (empty($settings['resolved_url']) || empty($settings['resolved_at'])) {
             return false;
         }
@@ -131,12 +103,8 @@ trait UpdateResolverUrlTrait {
         return time() < ($resolvedAt + ($cacheDays * DAY_IN_SECONDS));
     }
 
-    /**
-     * Clear the cached resolved URL.
-     *
-     * @return bool True on success.
-     */
-    public function clearCache() {
+    /** Clear the cached resolved URL. */
+    public function clearCache(): bool {
         $this->fileLogger->info('Clearing update URL cache');
         return $this->saveSettings(array('resolved_url' => '', 'resolved_at' => ''));
     }

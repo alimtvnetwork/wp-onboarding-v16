@@ -18,14 +18,8 @@ trait ResponseTrait {
     /**
      * Safely execute a callable with comprehensive error handling.
      * Catches both Exception and Error (Throwable) for complete coverage.
-     *
-     * @param callable $callback   The function to execute.
-     * @param string   $context    Description of the operation for error messages.
-     * @param array    $logContext Additional context for logging.
-     *
-     * @return WP_REST_Response|mixed The result of the callback or an error response.
      */
-    private function safeExecute($callback, $context = 'operation', $logContext = array()) {
+    private function safeExecute(callable $callback, string $context = 'operation', array $logContext = array()): WP_REST_Response {
         try {
             return call_user_func($callback);
         } catch (Throwable $e) {
@@ -47,15 +41,8 @@ trait ResponseTrait {
         }
     }
 
-    /**
-     * Create an error response with optional exception details.
-     *
-     * @param string         $message   Error message.
-     * @param int            $status    HTTP status code.
-     * @param Throwable|null $exception Optional exception for stack trace.
-     * @return WP_REST_Response
-     */
-    private function errorResponse($message, $status, $exception = null) {
+    /** Create an error response with optional exception details. */
+    private function errorResponse(string $message, int $status, ?Throwable $exception = null): WP_REST_Response {
         $this->logErrorWithBacktrace($message, $status, $exception);
 
         $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
@@ -66,14 +53,8 @@ trait ResponseTrait {
             ->toResponse();
     }
 
-    /**
-     * Log an error with backtrace context.
-     *
-     * @param string         $message   Error message.
-     * @param int            $status    HTTP status code.
-     * @param Throwable|null $exception Optional exception.
-     */
-    private function logErrorWithBacktrace(string $message, int $status, $exception) {
+    /** Log an error with backtrace context. */
+    private function logErrorWithBacktrace(string $message, int $status, ?Throwable $exception): void {
         if ($exception instanceof Throwable) {
             $this->fileLogger->logException($exception, $message);
 
@@ -95,14 +76,8 @@ trait ResponseTrait {
         ));
     }
 
-    /**
-     * Get a meaningful error code from an exception.
-     *
-     * @param Throwable $exception The exception.
-     *
-     * @return string
-     */
-    private function getExceptionCode($exception) {
+    /** Get a meaningful error code from an exception. */
+    private function getExceptionCode(Throwable $exception): string {
         $code = $exception->getCode();
         if (is_int($code) && $code > 0) {
             return 'E' . $code;
