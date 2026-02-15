@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotErrorType;
 
 trait ManagerExportTrait {
@@ -54,7 +55,7 @@ trait ManagerExportTrait {
 
     private function createExportManifest(array $snapshot): array {
         return array(
-            'version' => PLUGIN_VERSION,
+            'version' => PluginConfigType::Version->value,
             'format_version' => '1.0',
             'created_at' => date('c'),
             'exported_at' => date('c'),

@@ -21,6 +21,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\PluginConfigType;
 
 // =============================================================================
 // ERROR HANDLING (standalone functions — must load before class)
@@ -209,7 +210,7 @@ class RiseupAsia {
      */
     private function __construct() {
         $this->fileLogger = RiseupFileLogger::getInstance();
-        $this->fileLogger->info('Plugin constructor starting', array('version' => PLUGIN_VERSION));
+        $this->fileLogger->info('Plugin constructor starting', array('version' => PluginConfigType::Version->value));
 
         RiseupDependencyLoader::logSummary($this->fileLogger);
 

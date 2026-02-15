@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
@@ -53,7 +54,7 @@ trait NativeSnapshotRecordTrait {
         $meta = array(
             'created_at' => date('c'), 'wp_version' => get_bloginfo('version'),
             'site_url' => get_site_url(), 'php_version' => PHP_VERSION,
-            'provider' => $this->provider_id, 'plugin_version' => PLUGIN_VERSION,
+            'provider' => $this->provider_id, 'plugin_version' => PluginConfigType::Version->value,
         );
         $stmt = $pdo->prepare('INSERT INTO _snapshot_meta (key, value) VALUES (?, ?)');
         foreach ($meta as $key => $value) {

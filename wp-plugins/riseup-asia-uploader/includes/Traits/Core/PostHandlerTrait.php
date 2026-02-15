@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait PostHandlerTrait
 {
@@ -72,7 +73,7 @@ trait PostHandlerTrait
             $perPage = (int) $limit;
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::Logs->value)
+                ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Logs->value)
                 ->setResults($result['logs'])
                 ->setPagination($total, $perPage, $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1)
                 ->toResponse();
@@ -100,7 +101,7 @@ trait PostHandlerTrait
             $stats = $this->db->getStats();
 
             return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::LogsStats->value)
+                ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::LogsStats->value)
                 ->setSingleResult($stats)
                 ->toResponse();
         } catch (Throwable $e) {

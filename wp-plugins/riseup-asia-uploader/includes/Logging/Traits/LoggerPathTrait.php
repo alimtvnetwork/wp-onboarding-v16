@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait LoggerPathTrait {
 
@@ -35,13 +36,13 @@ trait LoggerPathTrait {
     /** Ensure log directories exist. */
     private function ensureDirectories(): bool {
         if (!RiseupInitHelpers::ensureDirNative($this->baseDir, true)) {
-            error_log(LOG_PREFIX . ' Failed to create base directory: ' . $this->baseDir);
+            error_log(PluginConfigType::LogPrefix->value . ' Failed to create base directory: ' . $this->baseDir);
 
             return false;
         }
 
         if (!RiseupInitHelpers::ensureDirNative($this->logsDir, false)) {
-            error_log(LOG_PREFIX . ' Failed to create logs directory: ' . $this->logsDir);
+            error_log(PluginConfigType::LogPrefix->value . ' Failed to create logs directory: ' . $this->logsDir);
 
             return false;
         }

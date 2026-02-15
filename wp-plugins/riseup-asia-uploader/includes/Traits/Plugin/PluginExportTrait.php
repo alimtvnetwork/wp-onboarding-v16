@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
 
 trait PluginExportTrait
@@ -21,23 +22,23 @@ trait PluginExportTrait
         $this->fileLogger->info('Export-self endpoint called');
 
         try {
-            $plugin_dir = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG;
+            $plugin_dir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
             $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-            $zip_content = $this->createPluginZip($plugin_dir, PLUGIN_SLUG, $ignore);
+            $zip_content = $this->createPluginZip($plugin_dir, PluginConfigType::Slug->value, $ignore);
 
             if ($zip_content === null) {
                 return $this->errorResponse('Failed to create or read ZIP file', HttpStatusType::ServerError->value);
             }
 
-            $this->logger->logPluginAction(ActionType::ExportSelf->value, PLUGIN_SLUG, StatusType::Success->value, array(
+            $this->logger->logPluginAction(ActionType::ExportSelf->value, PluginConfigType::Slug->value, StatusType::Success->value, array(
                 'size' => strlen($zip_content),
             ));
 
             return new WP_REST_Response(array(
                 'success'    => true,
                 'plugin_zip' => base64_encode($zip_content),
-                'slug'       => PLUGIN_SLUG,
-                'version'    => PLUGIN_VERSION,
+                'slug'       => PluginConfigType::Slug->value,
+                'version'    => PluginConfigType::Version->value,
             ), HttpStatusType::Ok->value);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Export-self error');

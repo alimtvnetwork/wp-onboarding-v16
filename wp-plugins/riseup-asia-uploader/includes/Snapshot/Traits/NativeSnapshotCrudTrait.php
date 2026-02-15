@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\TableType;
 
 trait NativeSnapshotCrudTrait {
@@ -70,7 +71,7 @@ trait NativeSnapshotCrudTrait {
 
     private function buildExportManifest(int $snapshotId, array $snapshot): array {
         return array(
-            'version' => PLUGIN_VERSION, 'created_at' => date('c'), 'snapshot_id' => $snapshotId,
+            'version' => PluginConfigType::Version->value, 'created_at' => date('c'), 'snapshot_id' => $snapshotId,
             'filename' => $snapshot['filename'], 'scope' => $snapshot['scope'],
             'tables' => json_decode($snapshot['tables_json'], true),
             'total_rows' => $snapshot['total_rows'], 'file_size' => $snapshot['file_size'],

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathDatabaseType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait PathUtilsCoreTrait {
 
@@ -93,7 +94,7 @@ trait PathUtilsCoreTrait {
     /** @return string Base path (wp-content/uploads/riseup-asia-uploader). */
     public static function getBaseDir(): string {
         $uploadDir = wp_upload_dir();
-        return self::join($uploadDir['basedir'], UPLOADS_SUBDIR);
+        return self::join($uploadDir['basedir'], PluginConfigType::UploadsSubdir->value);
     }
 
     /** @return string Full path to logs directory. */

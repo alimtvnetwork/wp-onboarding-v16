@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PluginConfigType;
+
 trait LoggerContextTrait {
 
     /** Get database instance (lazy loading). */
@@ -73,8 +75,8 @@ trait LoggerContextTrait {
         if ($sourceMachine) {
             $enhanced['source_machine'] = $sourceMachine;
         }
-        if (empty($enhanced['plugin_version']) && defined('PLUGIN_VERSION')) {
-            $enhanced['plugin_version'] = PLUGIN_VERSION;
+        if (empty($enhanced['plugin_version'])) {
+            $enhanced['plugin_version'] = PluginConfigType::Version->value;
         }
         if (!empty($extraEnhanced)) {
             $enhanced = array_merge($enhanced, $extraEnhanced);

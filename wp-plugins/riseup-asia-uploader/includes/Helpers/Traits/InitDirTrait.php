@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PluginConfigType;
+
 trait InitDirTrait {
 
     /**
@@ -129,6 +131,6 @@ trait InitDirTrait {
             return dirname(__DIR__) . '/data';
         }
 
-        return $upload_dir['basedir'] . '/' . UPLOADS_SUBDIR;
+        return $upload_dir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value;
     }
 }

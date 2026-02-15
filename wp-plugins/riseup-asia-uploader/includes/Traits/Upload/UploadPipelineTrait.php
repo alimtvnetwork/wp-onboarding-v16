@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\PluginConfigType;
 
 require_once __DIR__ . '/UploadParserTrait.php';
 
@@ -62,7 +63,7 @@ trait UploadPipelineTrait
             'client_version' => $input['client_plugin_version'],
             'file_size'      => strlen($input['zip_content']),
         ), array(
-            'plugin_version' => $input['client_plugin_version'] ?: PLUGIN_VERSION,
+            'plugin_version' => $input['client_plugin_version'] ?: PluginConfigType::Version->value,
             'upload_source'  => $input['upload_source'],
         ));
     }
@@ -91,7 +92,7 @@ trait UploadPipelineTrait
 
     private function buildUploadEnvelope(array $result, array $input): WP_REST_Response {
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . EndpointType::Upload->route())
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route())
             ->setSingleResult(array(
                 'plugin_slug'    => $result['slug'],
                 'is_update'      => $result['is_update'],

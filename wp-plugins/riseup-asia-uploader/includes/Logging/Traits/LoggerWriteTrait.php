@@ -12,12 +12,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PluginConfigType;
+
 trait LoggerWriteTrait {
 
     /** Write to log file. */
     private function write(string $entry, bool $isError = false): bool {
         if (!$this->isInitialized && !$this->initializePaths()) {
-            error_log(LOG_PREFIX . ' ' . trim($entry));
+            error_log(PluginConfigType::LogPrefix->value . ' ' . trim($entry));
 
             return false;
         }

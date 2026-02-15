@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
+use RiseupAsia\Enums\PluginConfigType;
 
 /**
  * Handles plugin activation: directory creation, log initialization, and security file placement.
@@ -60,8 +61,8 @@ class RiseupActivationHandler
         }
 
         return array(
-            'base' => $uploadDir['basedir'] . '/' . UPLOADS_SUBDIR,
-            'logs' => $uploadDir['basedir'] . '/' . UPLOADS_SUBDIR . PathSubdirType::Logs->value,
+            'base' => $uploadDir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value,
+            'logs' => $uploadDir['basedir'] . '/' . PluginConfigType::UploadsSubdir->value . PathSubdirType::Logs->value,
         );
     }
 
@@ -76,7 +77,7 @@ class RiseupActivationHandler
 
     private static function writeLogFiles(string $logsDir): void {
         $timestamp = gmdate(self::TIMESTAMP_FORMAT) . 'Z';
-        $version = defined('PLUGIN_VERSION') ? PLUGIN_VERSION : self::VERSION_UNKNOWN;
+        $version = PluginConfigType::Version->value;
 
         self::writeMainLog($logsDir, $timestamp, $version);
         self::writeErrorLog($logsDir, $timestamp, $version);
