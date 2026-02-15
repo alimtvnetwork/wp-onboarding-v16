@@ -30,7 +30,7 @@ trait InvalidRouteTrait
     }
 
     private function buildInvalidRouteTrace(string $method, string $path, array $backtrace): array {
-        $frames = function_exists('riseup_backtrace_to_frames') ? riseup_backtrace_to_frames($backtrace) : array();
+        $frames = class_exists('RiseupFrameBuilder') ? RiseupFrameBuilder::backtraceToFrames($backtrace) : array();
 
         return array(
             'BackendMessage'             => "Route not found: {$method} /{$path}",

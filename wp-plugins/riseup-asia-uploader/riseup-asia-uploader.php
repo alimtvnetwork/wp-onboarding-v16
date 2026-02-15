@@ -269,7 +269,7 @@ class RiseupAsia {
 
 require_once __DIR__ . '/includes/Activation/ActivationHandler.php';
 
-register_activation_hook(__FILE__, 'riseup_asia_activate');
+register_activation_hook(__FILE__, [RiseupActivationHandler::class, 'activate']);
 
 /**
  * Initialize the plugin.
