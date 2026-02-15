@@ -11,6 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
@@ -78,9 +79,9 @@ trait CleanerStorageTrait {
         try {
             $snapshots = array();
 
-            if ($settings['retention_type'] === 'days') {
+            if ($settings['retention_type'] === RetentionType::Days->value) {
                 $snapshots = $this->getSnapshotsOlderThan($settings['retention_days']);
-            } elseif ($settings['retention_type'] === 'count') {
+            } elseif ($settings['retention_type'] === RetentionType::Count->value) {
                 $snapshots = $this->getSnapshotsBeyondCount($settings['retention_count']);
             }
 

@@ -7,12 +7,14 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
+use RiseupAsia\Enums\SnapshotModeType;
 
 trait ManagerRestoreValidationTrait {
 
     private function validateIncrementalParent(array $snapshot, int $snapshotId): ?array {
-        $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === 'incremental');
+        $isIncremental = (isset($snapshot['scope']) && $snapshot['scope'] === SnapshotModeType::Incremental->value);
         if (!$isIncremental) {
             return null;
         }
@@ -70,9 +72,9 @@ trait ManagerRestoreValidationTrait {
 
     private function getRestoreTables(array $snapshot, array $options): array {
         $allTables = json_decode($snapshot['tables_json'], true);
-        $mode = $options['mode'] ?? 'full';
+        $mode = $options['mode'] ?? RestoreModeType::Full->value;
 
-        $isSelective = ($mode === 'selective' && !empty($options['tables']));
+        $isSelective = ($mode === RestoreModeType::Selective->value && !empty($options['tables']));
         if ($isSelective) {
             return array_intersect($allTables, $options['tables']);
         }

@@ -50,7 +50,7 @@ trait PluginListTrait
      */
     private function collectPluginList(): array {
         $all_plugins    = get_plugins();
-        $active_plugins = get_option('active_plugins', array());
+        $active_plugins = get_option(\RiseupAsia\Enums\OptionNameType::ActivePlugins->value, array());
         $plugins        = array();
 
         foreach ($all_plugins as $plugin_file => $plugin_data) {

@@ -7,6 +7,7 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
 trait WorkerProgressTrait {
@@ -18,7 +19,7 @@ trait WorkerProgressTrait {
         try {
             $stmt = $pdo->prepare("INSERT OR REPLACE INTO " . TableType::SnapshotProgress->value . "
                 (snapshot_id, table_name, status, rows_total, rows_exported, started_at)
-                VALUES (0, ?, 'pending', 0, 0, ?)");
+                VALUES (0, ?, '" . SnapshotStatusType::Pending->value . "', 0, 0, ?)");
 
             $now = gmdate('c');
             foreach ($tables as $table) {
@@ -44,11 +45,12 @@ trait WorkerProgressTrait {
                 WHERE snapshot_id = 0 AND table_name = ?");
             $stmt->execute(array(
                 $status, $rows,
-                ($status === 'complete' || $status === 'failed') ? $now : null,
+                ($status === SnapshotStatusType::Complete->value || $status === SnapshotStatusType::Failed->value) ? $now : null,
                 $error, $table,
             ));
         } catch (Exception $e) {
             // Non-fatal
         }
     }
+}
 }

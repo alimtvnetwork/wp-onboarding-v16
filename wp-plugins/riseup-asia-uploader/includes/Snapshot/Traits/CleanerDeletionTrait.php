@@ -110,7 +110,7 @@ trait CleanerDeletionTrait {
         try {
             $incrementals = $this->db->query_all(
                 'SELECT id FROM ' . TableType::Snapshots->value .
-                " WHERE scope = 'incremental' AND filepath LIKE ?",
+                " WHERE scope = '" . \RiseupAsia\Enums\SnapshotModeType::Incremental->value . "' AND filepath LIKE ?",
                 array($parentDir . '/incremental/%')
             ) ?: array();
 

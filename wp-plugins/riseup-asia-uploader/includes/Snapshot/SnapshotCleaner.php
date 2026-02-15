@@ -96,7 +96,7 @@ class RiseupSnapshotCleaner {
 
     private function executeRetentionPhase(array $settings, bool $dryRun, array $results): array {
         try {
-            if ($settings['retention_type'] === 'none') {
+            if ($settings['retention_type'] === RetentionType::None->value) {
                 $this->log(LogLevelType::Debug->value, 'Retention policy is "none" - skipping policy cleanup');
             } else {
                 $retention = $this->cleanByRetention($settings, $dryRun);
