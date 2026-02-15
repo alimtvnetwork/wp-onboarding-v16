@@ -54,13 +54,13 @@ type WSHub interface {
 // SessionService interface for session-based logging
 type SessionService interface {
 	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
-	Log(sessionID, level, step, message string, details map[string]any)
+	Log(sessionID, level, step, message string, details json.RawMessage)
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
 	EndSession(sessionID, status, errorMsg string)
 	SaveRequest(sessionID string, req *session.SessionRequest)
 	SaveResponse(sessionID string, resp *session.SessionResponse)
-	SaveError(sessionID string, stackTrace *session.SessionStackTrace, errorMsg string, details map[string]any)
+	SaveError(sessionID string, stackTrace *session.SessionStackTrace, errorMsg string, details json.RawMessage)
 }
 
 // Service provides site management operations
@@ -1211,7 +1211,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	}
 
 	// Log start
-	s.logRemoteAction(sessionID, siteID, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), toDetailsMap(RemoteActionContext{
+	s.logRemoteAction(sessionID, siteID, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), session.ToJSON(RemoteActionContext{
 		SiteID:     siteID,
 		SiteName:   site.Name,
 		SiteURL:    site.URL,
@@ -1246,7 +1246,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
 		errMsg := "failed to decrypt password"
-		s.logRemoteAction(sessionID, siteID, action, "error", "decrypt", errMsg, toDetailsMap(ErrorDetail{Error: err.Error()}))
+		s.logRemoteAction(sessionID, siteID, action, "error", "decrypt", errMsg, session.ToJSON(ErrorDetail{Error: err.Error()}))
 		s.endRemoteSession(sessionID, "error", errMsg)
 		return apperror.Wrap(err, apperror.ErrInternal, errMsg)
 	}
@@ -1259,7 +1259,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.LogStageStart(sessionID, action)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), toDetailsMap(RemoteActionExecDetails{
+	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), session.ToJSON(RemoteActionExecDetails{
 		TargetURL:  site.URL,
 		PluginSlug: pluginSlug,
 	}))
@@ -1293,10 +1293,10 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			s.sessionService.SaveError(sessionID, &session.SessionStackTrace{
 				Golang: goFrames,
 				PHP:    phpFrames,
-			}, err.Error(), toDetailsMap(errDetails))
+			}, err.Error(), session.ToJSON(errDetails))
 		}
 
-		s.logRemoteAction(sessionID, siteID, action, "error", action, fmt.Sprintf("Failed to %s plugin: %s", action, pluginSlug), toDetailsMap(errDetails))
+		s.logRemoteAction(sessionID, siteID, action, "error", action, fmt.Sprintf("Failed to %s plugin: %s", action, pluginSlug), session.ToJSON(errDetails))
 
 		if s.sessionService != nil && sessionID != "" {
 			s.sessionService.LogStageEnd(sessionID, action, "error", durationMs)
@@ -1343,7 +1343,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 		})
 		s.sessionService.LogStageEnd(sessionID, action, "success", durationMs)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), toDetailsMap(DurationDetail{
+	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), session.ToJSON(DurationDetail{
 		DurationMs: durationMs,
 	}))
 
@@ -1474,30 +1474,36 @@ func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
 }
 
 // logRemoteAction logs a remote plugin action to session and WebSocket.
-// It extracts human-readable names from the details map for structured logging.
-func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level, step, message string, details map[string]any) {
+// It extracts human-readable names from the details for structured logging.
+func (s *Service) logRemoteAction(sessionID string, siteID int64, action, level, step, message string, details json.RawMessage) {
 	// Log to session file
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.Log(sessionID, level, step, message, details)
 	}
 
+	// Convert to map for WSHub boundary (still map[string]any)
+	var detailsMap map[string]any
+	if len(details) > 0 {
+		_ = json.Unmarshal(details, &detailsMap)
+	}
+
 	// Broadcast via WebSocket
 	if s.wsHub != nil {
-		s.wsHub.BroadcastRemotePluginLogWithSession(siteID, action, sessionID, level, step, message, details)
+		s.wsHub.BroadcastRemotePluginLogWithSession(siteID, action, sessionID, level, step, message, detailsMap)
 	}
 
 	// Resolve names from details or DB for structured logging
 	siteName := ""
 	siteURL := ""
 	pluginSlug := ""
-	if details != nil {
-		if v, ok := details["siteName"].(string); ok {
+	if detailsMap != nil {
+		if v, ok := detailsMap["siteName"].(string); ok {
 			siteName = v
 		}
-		if v, ok := details["siteUrl"].(string); ok {
+		if v, ok := detailsMap["siteUrl"].(string); ok {
 			siteURL = v
 		}
-		if v, ok := details["pluginSlug"].(string); ok {
+		if v, ok := detailsMap["pluginSlug"].(string); ok {
 			pluginSlug = v
 		}
 	}
@@ -1583,12 +1589,12 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
 			fmt.Sprintf("Retrieved %d recent PHP error(s) from remote site", len(result.Entries)),
-			toDetailsMap(PHPErrorCountDetail{PHPErrorCount: len(result.Entries)}))
+			session.ToJSON(PHPErrorCountDetail{PHPErrorCount: len(result.Entries)}))
 
 		// Log each PHP error to session for full traceability
 		if s.sessionService != nil && sessionID != "" {
 			for _, entry := range result.Entries {
-				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, toDetailsMap(PHPErrorDetail{
+				s.sessionService.Log(sessionID, "error", "remote_php_error", entry.Message, session.ToJSON(PHPErrorDetail{
 					PHPFile:    entry.File,
 					PHPLine:    entry.Line,
 					PHPLevel:   entry.Level,
@@ -1616,7 +1622,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace",
 			fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", logsResult.StackTraceLog.Lines, logsResult.StackTraceLog.TotalSize),
-			toDetailsMap(StackTraceLogDetails{
+			session.ToJSON(StackTraceLogDetails{
 				Lines:     logsResult.StackTraceLog.Lines,
 				TotalSize: logsResult.StackTraceLog.TotalSize,
 				Truncated: logsResult.StackTraceLog.Truncated,
@@ -1624,7 +1630,7 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 		// Persist stacktrace content to session error.log for diagnostics API
 		if s.sessionService != nil && sessionID != "" {
-			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", toDetailsMap(StackTraceContentDetails{
+			s.sessionService.Log(sessionID, "info", "remote_php_stacktrace", "PHP stacktrace.txt content from remote site", session.ToJSON(StackTraceContentDetails{
 				Content:   logsResult.StackTraceLog.Content,
 				Lines:     logsResult.StackTraceLog.Lines,
 				Truncated: logsResult.StackTraceLog.Truncated,
