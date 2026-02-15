@@ -49,11 +49,11 @@ type Session struct {
 
 // LogEntry represents a single log entry in a session
 type LogEntry struct {
-	Timestamp string                 `json:"timestamp"`
-	Level     string                 `json:"level"`  // debug, info, warn, error
-	Step      string                 `json:"step"`   // backup, package, upload, activate, etc.
-	Message   string                 `json:"message"`
-	Details   map[string]any         `json:"details,omitempty"`
+	Timestamp string          `json:"timestamp"`
+	Level     string          `json:"level"`  // debug, info, warn, error
+	Step      string          `json:"step"`   // backup, package, upload, activate, etc.
+	Message   string          `json:"message"`
+	Details   json.RawMessage `json:"details,omitempty"`
 }
 
 // SessionDiagnostics is the structured payload returned for error modal / session detail view
@@ -221,7 +221,7 @@ func (s *Service) StartSession(sessionType SessionType, pluginID, siteID int64, 
 }
 
 // Log writes a log entry to the session
-func (s *Service) Log(sessionID, level, step, message string, details map[string]any) {
+func (s *Service) Log(sessionID, level, step, message string, details json.RawMessage) {
 	s.mu.RLock()
 	session, exists := s.sessions[sessionID]
 	s.mu.RUnlock()
@@ -254,8 +254,12 @@ func (s *Service) Log(sessionID, level, step, message string, details map[string
 
 	// Write details as indented JSON if present
 	if len(details) > 0 {
-		detailsJSON, _ := json.MarshalIndent(details, "    ", "  ")
-		session.logFile.WriteString(fmt.Sprintf("    %s\n", string(detailsJSON)))
+		// Re-indent the raw JSON for readability
+		var parsed json.RawMessage
+		if json.Unmarshal(details, &parsed) == nil {
+			detailsJSON, _ := json.MarshalIndent(parsed, "    ", "  ")
+			session.logFile.WriteString(fmt.Sprintf("    %s\n", string(detailsJSON)))
+		}
 	}
 }
 
@@ -388,17 +392,21 @@ func (s *Service) SaveResponse(sessionID string, resp *SessionResponse) {
 	}
 }
 
+// ErrorLogData is the typed structure persisted as error.log in session folders.
+type ErrorLogData struct {
+	Timestamp  string             `json:"timestamp"`
+	Error      string             `json:"error"`
+	StackTrace *SessionStackTrace `json:"stackTrace,omitempty"`
+	Details    json.RawMessage    `json:"details,omitempty"`
+}
+
 // SaveError persists error details (including stack traces) as error.log in the session folder
-func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details map[string]any) {
-	errorData := map[string]any{
-		"timestamp": time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
-		"error":     errorMsg,
-	}
-	if stackTrace != nil {
-		errorData["stackTrace"] = stackTrace
-	}
-	if len(details) > 0 {
-		errorData["details"] = details
+func (s *Service) SaveError(sessionID string, stackTrace *SessionStackTrace, errorMsg string, details json.RawMessage) {
+	errorData := ErrorLogData{
+		Timestamp:  time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
+		Error:      errorMsg,
+		StackTrace: stackTrace,
+		Details:    details,
 	}
 
 	data, err := json.MarshalIndent(errorData, "", "  ")
@@ -471,14 +479,10 @@ func (s *Service) GetSessionDiagnostics(sessionID string) (*SessionDiagnostics, 
 
 	// Read error.log for stack traces
 	if data, err := os.ReadFile(s.getErrorLogPath(sessionID)); err == nil {
-		var errorData map[string]any
+		var errorData ErrorLogData
 		if json.Unmarshal(data, &errorData) == nil {
-			if stData, ok := errorData["stackTrace"]; ok {
-				stJSON, _ := json.Marshal(stData)
-				var st SessionStackTrace
-				if json.Unmarshal(stJSON, &st) == nil {
-					diag.StackTrace = &st
-				}
+			if errorData.StackTrace != nil {
+				diag.StackTrace = errorData.StackTrace
 			}
 		}
 	}
@@ -505,10 +509,15 @@ func extractPHPStackTraceFromLogs(logs string) string {
 		if braceIdx < 0 {
 			continue
 		}
-		var ctx map[string]any
+		// stackTraceContentContext is used to extract the "content" field from
+		// remote_php_stacktrace log lines serialised as JSON.
+		type stackTraceContentContext struct {
+			Content string `json:"content"`
+		}
+		var ctx stackTraceContentContext
 		if json.Unmarshal([]byte(line[braceIdx:]), &ctx) == nil {
-			if content, ok := ctx["content"].(string); ok && content != "" {
-				return content
+			if ctx.Content != "" {
+				return ctx.Content
 			}
 		}
 	}

@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"crypto/md5"
 	"database/sql"
 	"fmt"
@@ -37,7 +38,7 @@ type SitePasswordDecryptor interface {
 // SessionLogger interface for session-based logging
 type SessionLogger interface {
 	StartSession(sessionType session.SessionType, pluginID, siteID int64, pluginName, siteName string) (string, error)
-	Log(sessionID, level, step, message string, details map[string]any)
+	Log(sessionID, level, step, message string, details json.RawMessage)
 	LogStageStart(sessionID, stageName string)
 	LogStageEnd(sessionID, stageName, status string, durationMs int64)
 	EndSession(sessionID, status, errorMsg string)
@@ -866,8 +867,9 @@ func (s *Service) broadcastStageLog(pluginID, siteID int64, sessionID, level, st
 	// Broadcast to WebSocket
 	s.broadcastDetailedLog(pluginID, siteID, level, stage, message, details)
 	
-	// Also log to session
-	s.sessionLog(sessionID, level, stage, message, details)
+	// Also log to session (marshal the map to json.RawMessage for session boundary)
+	detailsJSON, _ := json.Marshal(details)
+	s.sessionLog(sessionID, level, stage, message, json.RawMessage(detailsJSON))
 }
 
 // broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility.
@@ -1446,7 +1448,7 @@ func getBool(m map[string]any, key string, defaultVal bool) bool {
 // Session logging helper methods
 
 // sessionLog writes a log entry to the session file
-func (s *Service) sessionLog(sessionID, level, step, message string, details map[string]any) {
+func (s *Service) sessionLog(sessionID, level, step, message string, details json.RawMessage) {
 	if s.sessionService == nil || sessionID == "" {
 		return
 	}
