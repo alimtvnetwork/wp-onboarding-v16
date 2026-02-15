@@ -1,14 +1,4 @@
 <?php
-/**
- * ErrorChecker — Centralized Error Type Inspection
- *
- * Encapsulates raw E_* constant checks so callers never need to
- * remember the specific list. Delegates to ErrorType for the
- * actual constant groupings.
- *
- * @package RiseupAsiaUploader
- * @since   1.57.0
- */
 
 if (!defined('ABSPATH')) {
     exit;
@@ -19,21 +9,21 @@ use RiseupAsia\Enums\ErrorType;
 /**
  * Centralized error-type inspection.
  *
- * WHY THIS CLASS EXISTS:
- * - Inline `in_array($error['type'], [E_ERROR, ...])` is duplicated
- *   across shutdown handlers, loggers, and health checks.
- * - A single is_fatal_error() call is self-documenting for AI and humans.
- * - Adding a new fatal type requires changing ONE place (ErrorType).
+ * Encapsulates raw E_* constant checks so callers delegate to ErrorType
+ * for the actual constant groupings. Adding a new fatal type requires
+ * changing ONE place (ErrorType).
+ *
+ * @since 1.57.0
  */
-class ErrorChecker {
+class ErrorChecker
+{
+    private const LABEL_FATAL = 'fatal';
+    private const LABEL_WARNING = 'warning';
+    private const LABEL_RECOVERABLE = 'recoverable';
+    private const LABEL_UNKNOWN = 'unknown';
+    private const LABEL_UNKNOWN_TYPE = 'UNKNOWN_ERROR_TYPE';
 
-    /**
-     * Determine whether the given error array represents a fatal PHP error.
-     *
-     * @param array|null $error Value returned by error_get_last().
-     * @return bool True when $error is non-null and its type is fatal.
-     */
-    public static function is_fatal_error($error) {
+    public static function isFatalError(?array $error): bool {
         if ($error === null) {
             return false;
         }
@@ -41,13 +31,7 @@ class ErrorChecker {
         return in_array($error['type'], ErrorType::FATAL_TYPES, true);
     }
 
-    /**
-     * Determine whether the given error array is a warning-level error.
-     *
-     * @param array|null $error Value returned by error_get_last().
-     * @return bool
-     */
-    public static function is_warning($error) {
+    public static function isWarning(?array $error): bool {
         if ($error === null) {
             return false;
         }
@@ -55,13 +39,7 @@ class ErrorChecker {
         return in_array($error['type'], ErrorType::WARNING_TYPES, true);
     }
 
-    /**
-     * Determine whether the given error is recoverable.
-     *
-     * @param array|null $error Value returned by error_get_last().
-     * @return bool
-     */
-    public static function is_recoverable($error) {
+    public static function isRecoverable(?array $error): bool {
         if ($error === null) {
             return false;
         }
@@ -69,57 +47,31 @@ class ErrorChecker {
         return in_array($error['type'], ErrorType::RECOVERABLE_TYPES, true);
     }
 
-    /**
-     * Get a human-readable label for the error severity.
-     *
-     * @param array|null $error Value returned by error_get_last().
-     * @return string 'fatal', 'warning', 'recoverable', or 'unknown'.
-     */
-    public static function get_severity_label($error) {
+    public static function getSeverityLabel(?array $error): string {
         if ($error === null) {
-            return 'unknown';
+            return self::LABEL_UNKNOWN;
         }
 
-        if (self::is_fatal_error($error)) {
-            return 'fatal';
+        if (self::isFatalError($error)) {
+            return self::LABEL_FATAL;
         }
 
-        if (self::is_warning($error)) {
-            return 'warning';
+        if (self::isWarning($error)) {
+            return self::LABEL_WARNING;
         }
 
-        if (self::is_recoverable($error)) {
-            return 'recoverable';
+        if (self::isRecoverable($error)) {
+            return self::LABEL_RECOVERABLE;
         }
 
-        return 'unknown';
+        return self::LABEL_UNKNOWN;
     }
 
-    /**
-     * Convert an E_* integer to a human-readable string.
-     *
-     * Replaces all inline type-mapping arrays.
-     *
-     * @param int $type PHP error type constant (e.g., E_ERROR).
-     * @return string Human-readable label (e.g., 'E_ERROR') or 'UNKNOWN_ERROR_TYPE'.
-     */
-    public static function get_type_label($type) {
-        if (isset(ErrorType::TYPE_LABELS[$type])) {
-            return ErrorType::TYPE_LABELS[$type];
-        }
-
-        return 'UNKNOWN_ERROR_TYPE';
+    public static function getTypeLabel(int $type): string {
+        return ErrorType::TYPE_LABELS[$type] ?? self::LABEL_UNKNOWN_TYPE;
     }
 
-    /**
-     * Check if PDO and pdo_sqlite extensions are NOT available.
-     *
-     * Centralizes the extension check so inline `class_exists('PDO')`
-     * or `extension_loaded('pdo_sqlite')` are never needed in business logic.
-     *
-     * @return bool True when PDO/SQLite is NOT available (invalid state).
-     */
-    public static function is_invalid_pdo_extension() {
+    public static function isInvalidPdoExtension(): bool {
         return RiseupBooleanHelpers::isClassMissing('PDO') || RiseupBooleanHelpers::isExtensionMissing('pdo_sqlite');
     }
 }
