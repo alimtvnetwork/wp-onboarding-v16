@@ -2,24 +2,15 @@
 /**
  * WorkerTableExportTrait — Single table MySQL → SQLite export.
  *
- * Handles individual table export, schema conversion, and batch row insertion.
- *
  * @package RiseupAsiaUploader
  * @since   2.0.0
  */
 
 trait WorkerTableExportTrait {
 
-    /**
-     * Export a single MySQL table to its own .sqlite file.
-     *
-     * @param string $snapshot_dir Snapshot directory path.
-     * @param string $table        MySQL table name.
-     * @return array Result: success, rows, filename, file_size, checksum.
-     */
-    private function exportTableToFile($snapshot_dir, $table) {
+    private function exportTableToFile(string $snapshotDir, string $table): array {
         $filename = $table . '.sqlite';
-        $filepath = $snapshot_dir . '/' . $filename;
+        $filepath = $snapshotDir . '/' . $filename;
 
         try {
             $sqlite = $this->createSqliteAndSchema($filepath, $table);
@@ -34,7 +25,7 @@ trait WorkerTableExportTrait {
             $sqlite = null;
 
             return $this->buildExportResult($filename, $filepath, $exported);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array(
                 'success' => false, 'error' => $e->getMessage(),
                 'rows' => 0, 'filename' => $filename, 'file_size' => 0, 'checksum' => '',
@@ -42,13 +33,6 @@ trait WorkerTableExportTrait {
         }
     }
 
-    /**
-     * Create a SQLite file and initialize the table schema.
-     *
-     * @param string $filepath SQLite file path.
-     * @param string $table    Table name.
-     * @return PDO SQLite connection.
-     */
     private function createSqliteAndSchema(string $filepath, string $table): PDO {
         $sqlite = new PDO('sqlite:' . $filepath);
         $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -65,14 +49,6 @@ trait WorkerTableExportTrait {
         return $sqlite;
     }
 
-    /**
-     * Batch export all rows from a MySQL table to SQLite.
-     *
-     * @param PDO    $sqlite SQLite connection.
-     * @param string $table  Table name.
-     * @param int    $count  Total row count.
-     * @return int Number of rows exported.
-     */
     private function batchExportRows(PDO $sqlite, string $table, int $count): int {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
         $column_names = array_column($columns, 'Field');
@@ -85,28 +61,12 @@ trait WorkerTableExportTrait {
         return $exported;
     }
 
-    /**
-     * Prepare the SQLite INSERT statement for export.
-     *
-     * @param PDO    $sqlite      SQLite connection.
-     * @param string $table       Table name.
-     * @param array  $columnNames Column names.
-     * @return PDOStatement Prepared statement.
-     */
     private function prepareExportInsert(PDO $sqlite, string $table, array $columnNames): PDOStatement {
         $placeholders = implode(', ', array_fill(0, count($columnNames), '?'));
         $columnList = implode(', ', array_map(function($c) { return "`{$c}`"; }, $columnNames));
         return $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
     }
 
-    /**
-     * Export rows in batches using a prepared statement.
-     *
-     * @param PDOStatement $stmt  Prepared insert statement.
-     * @param string       $table Table name.
-     * @param int          $count Total rows.
-     * @return int Rows exported.
-     */
     private function exportRowsInBatches(PDOStatement $stmt, string $table, int $count): int {
         $offset = 0;
         $exported = 0;
@@ -126,14 +86,6 @@ trait WorkerTableExportTrait {
         return $exported;
     }
 
-    /**
-     * Build the export result array.
-     *
-     * @param string $filename Filename.
-     * @param string $filepath Full path.
-     * @param int    $rows     Rows exported.
-     * @return array Result.
-     */
     private function buildExportResult(string $filename, string $filepath, int $rows): array {
         return array(
             'success'   => true,
@@ -144,13 +96,7 @@ trait WorkerTableExportTrait {
         );
     }
 
-    /**
-     * Get MySQL CREATE TABLE statement.
-     *
-     * @param string $table Table name.
-     * @return string|null CREATE statement or null.
-     */
-    private function getCreateTableSql($table) {
+    private function getCreateTableSql(string $table): ?string {
         $result = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
         return $result ? $result[1] : null;
     }

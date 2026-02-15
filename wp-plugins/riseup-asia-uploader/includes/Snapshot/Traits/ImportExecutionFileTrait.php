@@ -1,6 +1,6 @@
 <?php
 /**
- * ImportExecutionFileTrait — File validation, directory copy, and size utilities for imports.
+ * ImportExecutionFileTrait — File validation, directory copy, and size utilities.
  *
  * @package RiseupAsiaUploader
  * @since   1.57.0
@@ -14,13 +14,7 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait ImportExecutionFileTrait {
 
-    /**
-     * Validate table .sqlite files exist with checksum verification.
-     *
-     * @param string $snapshotRoot Root directory.
-     * @param array  $tables       Table records.
-     */
-    private function validateTableFiles(string $snapshotRoot, array $tables) {
+    private function validateTableFiles(string $snapshotRoot, array $tables): void {
         foreach ($tables as $table) {
             $sqlitePath = RiseupPathUtils::join($snapshotRoot, $table['sqlite_file']);
             if (!RiseupPathUtils::fileExists($sqlitePath)) {
@@ -36,13 +30,7 @@ trait ImportExecutionFileTrait {
         }
     }
 
-    /**
-     * Validate incremental backup files.
-     *
-     * @param string $snapshotRoot Root directory.
-     * @param array  $incrementals Incremental records.
-     */
-    private function validateIncrementalFiles(string $snapshotRoot, array $incrementals) {
+    private function validateIncrementalFiles(string $snapshotRoot, array $incrementals): void {
         foreach ($incrementals as $inc) {
             $incDir = RiseupPathUtils::join($snapshotRoot, $inc['relative_path']);
             if (!RiseupPathUtils::dirExists($incDir)) {
@@ -56,13 +44,7 @@ trait ImportExecutionFileTrait {
         }
     }
 
-    /**
-     * Validate plugin archive files.
-     *
-     * @param string $snapshotRoot Root directory.
-     * @param array  $plugins      Plugin records.
-     */
-    private function validatePluginFiles(string $snapshotRoot, array $plugins) {
+    private function validatePluginFiles(string $snapshotRoot, array $plugins): void {
         foreach ($plugins as $plugin) {
             $zipPath = RiseupPathUtils::join($snapshotRoot, $plugin['zip_file']);
             if (!RiseupPathUtils::fileExists($zipPath)) {
@@ -78,13 +60,7 @@ trait ImportExecutionFileTrait {
         }
     }
 
-    /**
-     * Copy a directory recursively.
-     *
-     * @param string $src  Source directory.
-     * @param string $dest Destination directory.
-     */
-    private function copyDirectory($src, $dest) {
+    private function copyDirectory(string $src, string $dest): void {
         if (!RiseupPathUtils::ensureDir($dest, false)) {
             throw new Exception("Failed to create directory: {$dest}");
         }
@@ -104,12 +80,7 @@ trait ImportExecutionFileTrait {
         }
     }
 
-    /**
-     * Delete a directory recursively.
-     *
-     * @param string $dir Directory path.
-     */
-    private function deleteDirectory($dir) {
+    private function deleteDirectory(string $dir): void {
         if (RiseupBooleanHelpers::isDirMissing($dir)) return;
         $entries = scandir($dir);
         foreach ($entries as $entry) {
@@ -124,13 +95,7 @@ trait ImportExecutionFileTrait {
         rmdir($dir);
     }
 
-    /**
-     * Get total size of a directory recursively.
-     *
-     * @param string $dir Directory path.
-     * @return int Total size in bytes.
-     */
-    private function getDirectorySize($dir) {
+    private function getDirectorySize(string $dir): int {
         $size = 0;
         $entries = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS));
         foreach ($entries as $entry) {

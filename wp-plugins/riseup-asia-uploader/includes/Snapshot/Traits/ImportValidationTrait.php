@@ -14,14 +14,7 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait ImportValidationTrait {
 
-    /**
-     * Validate a SQLite file using PRAGMA integrity_check.
-     *
-     * @param string $path  Full path to .sqlite file.
-     * @param string $label Label for error messages.
-     * @throws Exception On integrity failure.
-     */
-    private function validateSqliteFile($path, $label) {
+    private function validateSqliteFile(string $path, string $label): void {
         try {
             $pdo = new PDO('sqlite:' . $path);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -36,13 +29,7 @@ trait ImportValidationTrait {
         }
     }
 
-    /**
-     * Read snapshot metadata from a-root.db.
-     *
-     * @param string $rootDbPath Path to a-root.db.
-     * @return array|null Metadata row.
-     */
-    private function readRootDbMetadata($rootDbPath) {
+    private function readRootDbMetadata(string $rootDbPath): ?array {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -55,13 +42,7 @@ trait ImportValidationTrait {
         }
     }
 
-    /**
-     * Read table inventory from a-root.db.
-     *
-     * @param string $rootDbPath Path to a-root.db.
-     * @return array List of table records.
-     */
-    private function readRootDbTables($rootDbPath) {
+    private function readRootDbTables(string $rootDbPath): array {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -73,13 +54,7 @@ trait ImportValidationTrait {
         }
     }
 
-    /**
-     * Read incremental backup registry from a-root.db.
-     *
-     * @param string $rootDbPath Path to a-root.db.
-     * @return array List of incremental records.
-     */
-    private function readRootDbIncrementals($rootDbPath) {
+    private function readRootDbIncrementals(string $rootDbPath): array {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -91,13 +66,7 @@ trait ImportValidationTrait {
         }
     }
 
-    /**
-     * Read plugin snapshots from a-root.db.
-     *
-     * @param string $rootDbPath Path to a-root.db.
-     * @return array List of plugin snapshot records.
-     */
-    private function readRootDbPlugins($rootDbPath) {
+    private function readRootDbPlugins(string $rootDbPath): array {
         try {
             $pdo = new PDO('sqlite:' . $rootDbPath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -109,14 +78,7 @@ trait ImportValidationTrait {
         }
     }
 
-    /**
-     * Find a file recursively in a directory (one level deep).
-     *
-     * @param string $dir      Directory to search.
-     * @param string $filename Filename to find.
-     * @return string|null Full path or null.
-     */
-    private function findFileRecursive($dir, $filename) {
+    private function findFileRecursive(string $dir, string $filename): ?string {
         $path = RiseupPathUtils::join($dir, $filename);
         if (RiseupPathUtils::fileExists($path)) {
             return $path;

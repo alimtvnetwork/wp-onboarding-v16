@@ -6,6 +6,8 @@
  * @since   1.57.0
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -15,78 +17,48 @@ use RiseupAsia\Enums\TableType;
 
 trait ExporterBuildCollectTrait {
 
-    /**
-     * Collect all .sqlite and .db files from a snapshot directory.
-     *
-     * @param string $dir Snapshot directory.
-     * @return array Map of absolute path => relative path.
-     */
-    private function collectSnapshotFiles($dir) {
+    private function collectSnapshotFiles(string $dir): array {
         $files = array();
-        if (RiseupBooleanHelpers::isDirMissing($dir)) {
-            return $files;
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $path = $item->getPathname();
+            $files[] = $path;
         }
 
-        $iterator = new DirectoryIterator($dir);
-        foreach ($iterator as $file) {
-            if ($file->isDot() || $file->isDir()) {
-                continue;
-            }
-            $ext = strtolower($file->getExtension());
-            if (in_array($ext, array('sqlite', 'db'), true)) {
-                $files[$file->getPathname()] = $file->getFilename();
-            }
-        }
         return $files;
     }
 
-    /**
-     * Collect all .sqlite files from incremental subdirectories.
-     *
-     * @param string $incrementalDir The incremental/ directory path.
-     * @return array Map of absolute path => relative path.
-     */
-    private function collectIncrementalFiles($incrementalDir) {
+    private function collectIncrementalFiles(string $incrementalDir): array {
         $files = array();
-        if (RiseupBooleanHelpers::isDirMissing($incrementalDir)) {
+        if (!is_dir($incrementalDir)) {
             return $files;
         }
 
-        $subdirs = new DirectoryIterator($incrementalDir);
-        foreach ($subdirs as $subdir) {
-            if ($subdir->isDot() || !$subdir->isDir()) {
-                continue;
-            }
-            $subdirName = $subdir->getFilename();
-            $innerIterator = new DirectoryIterator($subdir->getPathname());
-            foreach ($innerIterator as $file) {
-                if ($file->isDot() || $file->isDir()) {
-                    continue;
-                }
-                $ext = strtolower($file->getExtension());
-                if (in_array($ext, array('sqlite', 'db'), true)) {
-                    $files[$file->getPathname()] = $subdirName . '/' . $file->getFilename();
-                }
-            }
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($incrementalDir, RecursiveDirectoryIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $path = $item->getPathname();
+            $files[] = $path;
         }
+
         return $files;
     }
 
-    /**
-     * Get all incremental snapshots belonging to a full snapshot.
-     *
-     * @param int    $parentId   Parent full snapshot ID.
-     * @param string $parentName Parent snapshot filename.
-     * @return array List of incremental snapshot records.
-     */
-    private function getIncrementalSnapshots($parentId, $parentName) {
+    private function getIncrementalSnapshots(int $parentId, string $parentName): array {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return array();
         }
 
         $stmt = $pdo->prepare(
-            'SELECT id, filename, filepath, scope, status, created_at FROM ' . TableType::Snapshots->value .
+            'SELECT id, filename, filepath, scope, status, created_at FROM ' . TableType::SnapshotExports->value .
             ' WHERE scope = \'incremental\' AND filepath LIKE ? AND status = ? ORDER BY created_at ASC'
         );
         $parentDir = '%/' . $parentName . '/incremental/%';

@@ -2,8 +2,6 @@
 /**
  * NativeTableExportTrait — MySQL-to-SQLite table export.
  *
- * Shell trait — schema conversion delegated to NativeTableExportConvertTrait.
- *
  * @package RiseupAsiaUploader
  * @since   1.57.0
  */
@@ -20,10 +18,7 @@ trait NativeTableExportTrait {
 
     use NativeTableExportConvertTrait;
 
-    /**
-     * Export a single MySQL table to SQLite.
-     */
-    private function exportTable($sqlite, $table, $snapshot_id) {
+    private function exportTable(PDO $sqlite, string $table, int $snapshotId): array {
         try {
             $create_sql = $this->getCreateTableSql($table);
             if (!$create_sql) {
@@ -39,7 +34,7 @@ trait NativeTableExportTrait {
             }
 
             return $this->exportTableRows($sqlite, $table, $count);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             if ($sqlite->inTransaction()) {
                 $sqlite->rollBack();
             }
@@ -47,8 +42,7 @@ trait NativeTableExportTrait {
         }
     }
 
-    /** Export rows from a MySQL table to SQLite in batches. */
-    private function exportTableRows($sqlite, $table, int $count): array {
+    private function exportTableRows(PDO $sqlite, string $table, int $count): array {
         $insert = $this->prepareInsertStatement($sqlite, $table);
 
         $sqlite->beginTransaction();
@@ -58,7 +52,6 @@ trait NativeTableExportTrait {
         return array('success' => true, 'rows' => $result['exported'], 'bytes' => $result['bytes']);
     }
 
-    /** Prepare the INSERT statement for a table. */
     private function prepareInsertStatement(PDO $sqlite, string $table): array {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
         $column_names = array_column($columns, 'Field');
@@ -70,7 +63,6 @@ trait NativeTableExportTrait {
         return array('stmt' => $stmt);
     }
 
-    /** Execute batched row export from MySQL to SQLite. */
     private function executeBatchExport(PDOStatement $stmt, string $table, int $count): array {
         $batch_size = SNAPSHOT_BATCH_SIZE;
         $offset = 0;
@@ -96,8 +88,7 @@ trait NativeTableExportTrait {
         return array('exported' => $exported, 'bytes' => $bytes);
     }
 
-    /** Log export progress at 25% intervals. */
-    private function logExportProgress(string $table, int $offset, int $count, int $batch_size) {
+    private function logExportProgress(string $table, int $offset, int $count, int $batchSize): void {
         $progress = ($offset / $count) * 100;
         $prev = (($offset - $batch_size) / $count) * 100;
 
@@ -110,8 +101,7 @@ trait NativeTableExportTrait {
         }
     }
 
-    /** Get MySQL CREATE TABLE statement. */
-    private function getCreateTableSql($table) {
+    private function getCreateTableSql(string $table): ?string {
         $result = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
         return $result ? $result[1] : null;
     }

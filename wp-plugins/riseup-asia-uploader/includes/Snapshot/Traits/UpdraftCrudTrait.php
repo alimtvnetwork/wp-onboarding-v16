@@ -16,8 +16,7 @@ use RiseupAsia\Enums\TableType;
 
 trait UpdraftCrudTrait {
 
-    /** Create a snapshot using UpdraftPlus. */
-    public function createSnapshot($options) {
+    public function createSnapshot(array $options): array {
         if (!$this->isAvailable()) {
             return array('success' => false, 'error' => 'UpdraftPlus is not available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
@@ -25,55 +24,37 @@ trait UpdraftCrudTrait {
         $this->log(LogLevelType::Info->value, 'Creating snapshot via UpdraftPlus', $options);
 
         try {
-            // TODO: Implement UpdraftPlus integration
             return array('success' => false, 'error' => 'UpdraftPlus integration not yet implemented');
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'UpdraftPlus snapshot failed', array('error' => $e->getMessage()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
 
-    /** @return array Restore result. */
-    public function restoreSnapshot($snapshot_id, $options) {
+    public function restoreSnapshot(int $snapshotId, array $options): array {
         return array('success' => false, 'error' => 'UpdraftPlus restore not yet implemented');
     }
 
-    /** @return array Delete result. */
-    public function deleteSnapshot($snapshot_id) {
+    public function deleteSnapshot(int $snapshotId): array {
         return array('success' => false, 'error' => 'UpdraftPlus delete not yet implemented');
     }
 
-    /** @return array Export result. */
-    public function exportSnapshot($snapshot_id) {
+    public function exportSnapshot(int $snapshotId): array {
         return array('success' => false, 'error' => 'UpdraftPlus export not yet implemented');
     }
 
-    /** @return array Import result. */
-    public function importSnapshot($filepath) {
+    public function importSnapshot(string $filepath): array {
         return array('success' => false, 'error' => 'UpdraftPlus import not yet implemented');
     }
 
-    /**
-     * Get snapshot details.
-     *
-     * @param int $snapshot_id Snapshot ID.
-     * @return array|null Snapshot or null.
-     */
-    public function getSnapshot($snapshot_id) {
+    public function getSnapshot(int $snapshotId): ?array {
         return $this->db->querySingle(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ? AND provider = ?',
-            array($snapshot_id, $this->provider_id)
+            array($snapshotId, $this->provider_id)
         );
     }
 
-    /**
-     * List snapshots.
-     *
-     * @param int $limit  Limit.
-     * @param int $offset Offset.
-     * @return array List result.
-     */
-    public function listSnapshots($limit = 50, $offset = 0) {
+    public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
@@ -90,12 +71,7 @@ trait UpdraftCrudTrait {
         );
     }
 
-    /**
-     * Get available tables.
-     *
-     * @return array Tables list.
-     */
-    public function getAvailableTables() {
+    public function getAvailableTables(): array {
         global $wpdb;
         $all_tables = $wpdb->get_results("SHOW TABLE STATUS", ARRAY_A);
 

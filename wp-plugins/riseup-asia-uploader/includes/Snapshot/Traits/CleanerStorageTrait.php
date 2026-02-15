@@ -1,8 +1,6 @@
 <?php
 /**
- * Cleaner Storage Trait
- *
- * Storage statistics and cleanup estimation.
+ * CleanerStorageTrait — Storage statistics and cleanup estimation.
  *
  * @package RiseupAsiaUploader
  * @since   1.9.0
@@ -18,12 +16,7 @@ use RiseupAsia\Enums\TableType;
 
 trait CleanerStorageTrait {
 
-    /**
-     * Get storage statistics for snapshots.
-     *
-     * @return array Storage stats with counts, sizes, and disk info.
-     */
-    public function getStorageStats() {
+    public function getStorageStats(): array {
         $stats = array(
             'total_snapshots'      => 0,
             'total_size_bytes'     => 0,
@@ -75,13 +68,7 @@ trait CleanerStorageTrait {
         return $stats;
     }
 
-    /**
-     * Estimate space that would be freed by cleanup.
-     *
-     * @param array $settings Snapshot settings.
-     * @return array { snapshots_count, bytes, bytes_formatted }.
-     */
-    public function estimateCleanup($settings) {
+    public function estimateCleanup(array $settings): array {
         $estimate = array(
             'snapshots_count' => 0,
             'bytes'           => 0,

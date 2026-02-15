@@ -2,8 +2,6 @@
 /**
  * DetectorSettingsTrait — provider selection and settings management.
  *
- * Shell trait — validation delegated to DetectorValidationTrait.
- *
  * @package RiseupAsiaUploader
  * @since   1.57.0
  */
@@ -27,7 +25,7 @@ trait DetectorSettingsTrait {
      *
      * @return string Provider ID.
      */
-    public function getPreferredProvider() {
+    public function getPreferredProvider(): string {
         $settings = get_option(OPTION_SNAPSHOT_SETTINGS, array());
         $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : SnapshotProviderType::Auto->value;
 
@@ -51,7 +49,7 @@ trait DetectorSettingsTrait {
      *
      * @return string Provider ID.
      */
-    public function getBestAvailableProvider() {
+    public function getBestAvailableProvider(): string {
         $providers = $this->detectAvailableProviders();
         $priority = array(SnapshotProviderType::WpReset->value, SnapshotProviderType::Updraft->value, SnapshotProviderType::Native->value);
 
@@ -72,34 +70,34 @@ trait DetectorSettingsTrait {
      * @return RiseupSnapshotProviderInterface Provider instance.
      * @throws Exception If provider not available.
      */
-    public function getProviderInstance($provider_id = null) {
-        if ($provider_id === null) {
-            $provider_id = $this->getPreferredProvider();
+    public function getProviderInstance(?string $providerId = null): RiseupSnapshotProviderInterface {
+        if ($providerId === null) {
+            $providerId = $this->getPreferredProvider();
         }
 
-        if (isset($this->provider_instances[$provider_id])) {
-            return $this->provider_instances[$provider_id];
+        if (isset($this->provider_instances[$providerId])) {
+            return $this->provider_instances[$providerId];
         }
 
-        $this->assertProviderAvailable($provider_id);
+        $this->assertProviderAvailable($providerId);
 
-        $instance = $this->instantiateProvider($provider_id);
-        $this->provider_instances[$provider_id] = $instance;
+        $instance = $this->instantiateProvider($providerId);
+        $this->provider_instances[$providerId] = $instance;
 
         return $instance;
     }
 
     /** Assert a provider is available, throwing if not. */
-    private function assertProviderAvailable(string $provider_id) {
+    private function assertProviderAvailable(string $providerId): void {
         $providers = $this->detectAvailableProviders();
         foreach ($providers as $provider) {
-            $isMatch = ($provider['id'] === $provider_id && $provider['available']);
+            $isMatch = ($provider['id'] === $providerId && $provider['available']);
             if ($isMatch) {
                 return;
             }
         }
 
-        throw new Exception(sprintf('Snapshot provider "%s" is not available', $provider_id));
+        throw new Exception(sprintf('Snapshot provider "%s" is not available', $providerId));
     }
 
     /**
@@ -108,8 +106,8 @@ trait DetectorSettingsTrait {
      * @param string $provider_id Provider ID.
      * @return RiseupSnapshotProviderInterface
      */
-    private function instantiateProvider(string $provider_id) {
-        switch ($provider_id) {
+    private function instantiateProvider(string $providerId): RiseupSnapshotProviderInterface {
+        switch ($providerId) {
             case SnapshotProviderType::WpReset->value:
                 require_once dirname(__FILE__) . '/../SnapshotProviderWpReset.php';
                 return new RiseupSnapshotProviderWPReset($this->logger, $this->db);
@@ -128,7 +126,7 @@ trait DetectorSettingsTrait {
      *
      * @return array Snapshot settings.
      */
-    public function getSettings() {
+    public function getSettings(): array {
         $defaults = array(
             'preferred_provider' => SnapshotProviderType::Auto->value,
             'schedule_enabled' => false, 'schedule_frequency' => SnapshotFrequencyType::Daily->value,
@@ -151,7 +149,7 @@ trait DetectorSettingsTrait {
      * @param array $settings Settings to update.
      * @return bool True if settings were updated.
      */
-    public function updateSettings($settings) {
+    public function updateSettings(array $settings): bool {
         $current = $this->getSettings();
         $updated = $this->validateSettings(array_merge($current, $settings));
 

@@ -14,27 +14,14 @@ use RiseupAsia\Enums\SnapshotScopeType;
 
 trait NativeTableExportConvertTrait {
 
-    /**
-     * Convert MySQL CREATE TABLE to SQLite compatible syntax.
-     *
-     * @param string $mysql_create MySQL CREATE statement.
-     * @param string $table        Table name.
-     * @return string SQLite CREATE statement.
-     */
-    private function convertCreateStatement($mysql_create, $table) {
-        $sql = $this->stripMysqlTableOptions($mysql_create);
+    private function convertCreateStatement(string $mysqlCreate, string $table): string {
+        $sql = $this->stripMysqlTableOptions($mysqlCreate);
         $sql = $this->convertMysqlDataTypes($sql);
         $sql = $this->stripMysqlColumnModifiers($sql);
         $sql = $this->stripMysqlIndexDefinitions($sql);
         return $sql;
     }
 
-    /**
-     * Remove MySQL table-level options (ENGINE, CHARSET, etc.).
-     *
-     * @param string $sql SQL statement.
-     * @return string Cleaned SQL.
-     */
     private function stripMysqlTableOptions(string $sql): string {
         $sql = preg_replace('/\s+ENGINE\s*=\s*\w+/i', '', $sql);
         $sql = preg_replace('/\s+DEFAULT\s+CHARSET\s*=\s*\w+/i', '', $sql);
@@ -44,12 +31,6 @@ trait NativeTableExportConvertTrait {
         return preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $sql);
     }
 
-    /**
-     * Strip column-level MySQL modifiers (COLLATE, CHARSET, UNSIGNED, ZEROFILL).
-     *
-     * @param string $sql SQL statement.
-     * @return string Cleaned SQL.
-     */
     private function stripMysqlColumnModifiers(string $sql): string {
         $sql = preg_replace('/\s+COLLATE\s+\w+/i', '', $sql);
         $sql = preg_replace('/\s+CHARACTER\s+SET\s+\w+/i', '', $sql);
@@ -57,12 +38,6 @@ trait NativeTableExportConvertTrait {
         return preg_replace('/\s+ZEROFILL\b/i', '', $sql);
     }
 
-    /**
-     * Remove MySQL KEY/INDEX definitions not supported in SQLite.
-     *
-     * @param string $sql SQL statement.
-     * @return string Cleaned SQL.
-     */
     private function stripMysqlIndexDefinitions(string $sql): string {
         $sql = preg_replace('/,\s*KEY\s+[^,]+(?=,|\))/i', '', $sql);
         $sql = preg_replace('/,\s*UNIQUE\s+KEY\s+[^,]+(?=,|\))/i', '', $sql);
@@ -71,12 +46,6 @@ trait NativeTableExportConvertTrait {
         return preg_replace('/,\s*\)/', ')', $sql);
     }
 
-    /**
-     * Apply MySQL-to-SQLite data type conversions.
-     *
-     * @param string $sql SQL statement.
-     * @return string Converted SQL.
-     */
     private function convertMysqlDataTypes(string $sql): string {
         $type_map = array(
             '/\bTINYINT\s*\(\d+\)/i' => 'INTEGER', '/\bSMALLINT\s*\(\d+\)/i' => 'INTEGER',
@@ -101,14 +70,7 @@ trait NativeTableExportConvertTrait {
         return $sql;
     }
 
-    /**
-     * Get tables for a given scope.
-     *
-     * @param string $scope  Scope type.
-     * @param array  $custom Custom table list for 'custom' scope.
-     * @return array List of table names.
-     */
-    private function getTablesForScope($scope, $custom = array()) {
+    private function getTablesForScope(string $scope, array $custom = array()): array {
         $all_tables = $this->wpdb->get_col("SHOW TABLES");
         $prefix = $this->wpdb->prefix;
 
@@ -126,14 +88,7 @@ trait NativeTableExportConvertTrait {
         }
     }
 
-    /**
-     * Get content-only tables.
-     *
-     * @param array  $all_tables All tables.
-     * @param string $prefix     WP table prefix.
-     * @return array Content tables.
-     */
-    private function getContentTables(array $all_tables, string $prefix): array {
+    private function getContentTables(array $allTables, string $prefix): array {
         $content_tables = array(
             $prefix . 'posts', $prefix . 'postmeta', $prefix . 'comments', $prefix . 'commentmeta',
             $prefix . 'terms', $prefix . 'termmeta', $prefix . 'term_taxonomy', $prefix . 'term_relationships',

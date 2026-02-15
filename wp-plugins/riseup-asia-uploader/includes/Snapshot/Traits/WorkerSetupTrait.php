@@ -14,9 +14,6 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait WorkerSetupTrait {
 
-    /**
-     * Prepare the snapshot directory.
-     */
     private function prepareSnapshotDir(array $config): array {
         $title = $config['title'] ?? ('Snapshot ' . date('Y-m-d H:i'));
         $scope = $config['scope'] ?? 'wordpress';
@@ -41,7 +38,6 @@ trait WorkerSetupTrait {
         return array('success' => true, 'snapshot_dir' => $snapshot_dir, 'dir_name' => $dir_name, 'title' => $title, 'scope' => $scope, 'type' => $type);
     }
 
-    /** Initialize a-root.db. */
     private function initRootDb(string $snapshotDir, array $config): PDO {
         $rootPdo = $this->rootDb->create($snapshotDir . '/a-root.db');
         $this->rootDb->populateMetadata($rootPdo, array(
@@ -50,24 +46,19 @@ trait WorkerSetupTrait {
         return $rootPdo;
     }
 
-    /** Populate dependencies and return seed order. */
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config['scope'] ?? 'wordpress');
         $this->log(LogLevelType::Info->value, 'Export order determined', array('tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
         return $analysis['seed_order'];
     }
 
-    /** Get the base snapshots directory. */
-    private function getSnapshotsBaseDir() {
+    private function getSnapshotsBaseDir(): string {
         $base = RiseupPathUtils::getSnapshotsDir();
         RiseupPathUtils::ensureDir($base, true);
         return $base;
     }
 
-    /**
-     * Log a message.
-     */
-    private function log($level, $message, $context = array()) {
+    private function log(string $level, string $message, array $context = array()): void {
         $full = '[SNAPSHOT] [WORKER] ' . $message;
         if (!empty($context)) {
             $full .= ' ' . json_encode($context);

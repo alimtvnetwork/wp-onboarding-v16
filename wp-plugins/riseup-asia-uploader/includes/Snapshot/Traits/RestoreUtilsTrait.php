@@ -56,19 +56,19 @@ trait RestoreUtilsTrait {
     /**
      * Log an audit trail entry for the restore operation.
      *
-     * @param string $snapshot_dir    Snapshot directory.
-     * @param int    $tables_restored Number of tables restored.
-     * @param int    $total_rows      Total rows restored.
-     * @param float  $duration        Duration in seconds.
+     * @param string $snapshotDir    Snapshot directory.
+     * @param int    $tablesRestored Number of tables restored.
+     * @param int    $totalRows      Total rows restored.
+     * @param float  $duration       Duration in seconds.
      */
-    private function logAuditRestore($snapshot_dir, $tables_restored, $total_rows, $duration) {
+    private function logAuditRestore(string $snapshotDir, int $tablesRestored, int $totalRows, float $duration): void {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return;
         }
 
         try {
-            $details = $this->buildAuditDetails($snapshot_dir, $tables_restored, $total_rows, $duration);
+            $details = $this->buildAuditDetails($snapshotDir, $tablesRestored, $totalRows, $duration);
             $this->insertAuditRecord($pdo, $details);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to log audit for restore', array('error' => $e->getMessage()));
@@ -115,7 +115,7 @@ trait RestoreUtilsTrait {
      * @param string $message Message.
      * @param array  $context Context data.
      */
-    private function log($level, $message, $context = array()) {
+    private function log(string $level, string $message, array $context = array()): void {
         if (!$this->logger) {
             return;
         }

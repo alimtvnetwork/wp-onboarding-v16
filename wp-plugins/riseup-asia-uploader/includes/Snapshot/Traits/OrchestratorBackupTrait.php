@@ -16,10 +16,7 @@ use RiseupAsia\Enums\TableType;
 
 trait OrchestratorBackupTrait {
 
-    /**
-     * Execute a full end-to-end backup (dispatcher).
-     */
-    public function executeFullBackup($options = array()) {
+    public function executeFullBackup(array $options = array()): array {
         $resolved = $this->resolveBackupOptions($options);
         $this->log(LogLevelType::Info->value, 'Starting full backup orchestration', $resolved);
 
@@ -42,7 +39,7 @@ trait OrchestratorBackupTrait {
         );
     }
 
-    private function executeAsyncBackup($resolved) {
+    private function executeAsyncBackup(array $resolved): array {
         try {
             $worker_result = $this->runWorkerExport($resolved, true);
             if (!$worker_result['success']) {
@@ -67,7 +64,7 @@ trait OrchestratorBackupTrait {
         }
     }
 
-    private function executeSyncBackup($resolved) {
+    private function executeSyncBackup(array $resolved): array {
         $start_time = microtime(true);
         try {
             $worker_result = $this->runWorkerExport($resolved, false);
@@ -85,16 +82,16 @@ trait OrchestratorBackupTrait {
     }
 
     /** Register snapshot, snapshot plugins, and create ZIP for sync backup. */
-    private function finalizeSyncExport(array $resolved, array $worker_result): array {
-        $snapshot_dir = $worker_result['path'];
+    private function finalizeSyncExport(array $resolved, array $workerResult): array {
+        $snapshot_dir = $workerResult['path'];
         $plugin_stats = $resolved['include_plugins'] ? $this->snapshotPlugins($snapshot_dir, $resolved['plugin_selection']) : array('count' => 0, 'total_size' => 0);
-        $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $worker_result, $plugin_stats, $snapshot_dir);
+        $snapshot_id = $this->registerSnapshot($resolved['title'], $resolved['scope'], $workerResult, $plugin_stats, $snapshot_dir);
         $zip_result = $resolved['compression'] ? $this->executeZipPhase($snapshot_dir, $resolved) : array('path' => null, 'size' => 0);
 
         return array(
-            'success' => true, 'snapshot_id' => $snapshot_id, 'directory' => $worker_result['directory'],
-            'path' => $worker_result['path'], 'tables' => $worker_result['tables'],
-            'total_rows' => $worker_result['total_rows'], 'plugins' => $plugin_stats['count'],
+            'success' => true, 'snapshot_id' => $snapshot_id, 'directory' => $workerResult['directory'],
+            'path' => $workerResult['path'], 'tables' => $workerResult['tables'],
+            'total_rows' => $workerResult['total_rows'], 'plugins' => $plugin_stats['count'],
             'zip_path' => $zip_result['path'], 'zip_size' => $zip_result['size'],
         );
     }
@@ -116,7 +113,7 @@ trait OrchestratorBackupTrait {
     /**
      * Execute an incremental backup against the latest full snapshot.
      */
-    public function executeIncrementalBackup($options = array()) {
+    public function executeIncrementalBackup(array $options = array()): array {
         $this->log(LogLevelType::Info->value, 'Starting incremental backup orchestration', $options);
         try {
             $incremental = RiseupIncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
@@ -136,7 +133,7 @@ trait OrchestratorBackupTrait {
         }
     }
 
-    private function resolveMasterDir(array $options, $incremental): ?string {
+    private function resolveMasterDir(array $options, object $incremental): ?string {
         if (!empty($options['master_snapshot_id'])) {
             $pdo = $this->db->getPdo();
             if ($pdo) {

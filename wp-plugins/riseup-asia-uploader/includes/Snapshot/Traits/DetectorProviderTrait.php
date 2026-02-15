@@ -14,12 +14,7 @@ if (!defined('ABSPATH')) {
 
 trait DetectorProviderTrait {
 
-    /**
-     * Detect all available snapshot providers.
-     *
-     * @return array Provider detection results.
-     */
-    public function detectAvailableProviders() {
+    public function detectAvailableProviders(): array {
         $providers = array(
             $this->detectWPReset(),
             $this->detectUpdraft(),
@@ -29,12 +24,7 @@ trait DetectorProviderTrait {
         return $providers;
     }
 
-    /**
-     * Detect WP Reset plugin.
-     *
-     * @return array Provider detection result.
-     */
-    private function detectWPReset() {
+    private function detectWPReset(): array {
         $result = array(
             'id' => SnapshotProviderType::WpReset->value, 'name' => 'WP Reset', 'available' => false,
             'capabilities' => array(), 'version' => null, 'detection_method' => null,
@@ -72,12 +62,7 @@ trait DetectorProviderTrait {
         return $result;
     }
 
-    /**
-     * Detect Updraft Plus plugin.
-     *
-     * @return array Provider detection result.
-     */
-    private function detectUpdraft() {
+    private function detectUpdraft(): array {
         $result = array(
             'id' => SnapshotProviderType::Updraft->value, 'name' => 'UpdraftPlus', 'available' => false,
             'capabilities' => array(), 'version' => null, 'detection_method' => null,
@@ -121,12 +106,7 @@ trait DetectorProviderTrait {
         return $result;
     }
 
-    /**
-     * Detect native SQLite provider (always available).
-     *
-     * @return array Provider detection result.
-     */
-    private function detectNative() {
+    private function detectNative(): array {
         $has_sqlite = extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
         return array(
             'id' => SnapshotProviderType::Native->value, 'name' => 'Native SQLite', 'available' => $has_sqlite,
@@ -140,12 +120,7 @@ trait DetectorProviderTrait {
         );
     }
 
-    /**
-     * Get SQLite version.
-     *
-     * @return string|null SQLite library version.
-     */
-    private function getSqliteVersion() {
+    private function getSqliteVersion(): ?string {
         if (class_exists('SQLite3')) {
             $version = SQLite3::version();
             return $version['versionString'];
@@ -161,12 +136,7 @@ trait DetectorProviderTrait {
         return null;
     }
 
-    /**
-     * Log detection results.
-     *
-     * @param array $providers Detected providers.
-     */
-    private function logDetectionResults($providers) {
+    private function logDetectionResults(array $providers): void {
         $available = array_filter($providers, function($p) { return $p['available']; });
         $this->logger->info('[SNAPSHOT] Provider detection complete', array(
             'total' => count($providers), 'available' => count($available),
