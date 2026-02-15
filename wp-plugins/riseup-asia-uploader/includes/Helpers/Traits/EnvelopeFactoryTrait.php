@@ -12,14 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait EnvelopeFactoryTrait {
 
-    /**
-     * Create a success envelope.
-     *
-     * @param string $message Optional success message.
-     * @param int    $code    HTTP status code (default 200).
-     * @return static
-     */
-    public static function success($message = 'OK', $code = 200) {
+    /** Create a success envelope. */
+    public static function success(string $message = 'OK', int $code = 200): static {
         $builder = new self();
         $builder->is_success = true;
         $builder->code = $code;
@@ -27,15 +21,8 @@ trait EnvelopeFactoryTrait {
         return $builder;
     }
 
-    /**
-     * Create an error envelope.
-     *
-     * @param string         $message   Error message.
-     * @param int            $code      HTTP status code (default 500).
-     * @param Throwable|null $exception Optional exception for stack trace extraction.
-     * @return static
-     */
-    public static function error($message, $code = 500, $exception = null) {
+    /** Create an error envelope. */
+    public static function error(string $message, int $code = 500, ?Throwable $exception = null): static {
         $builder = new self();
         $builder->is_success = false;
         $builder->code = $code;

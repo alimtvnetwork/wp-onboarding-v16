@@ -42,12 +42,8 @@ class RiseupUpdateResolver {
     /** @var RiseupUpdateResolver|null */
     private static $instance = null;
 
-    /**
-     * Get singleton instance.
-     *
-     * @return RiseupUpdateResolver
-     */
-    public static function getInstance() {
+    /** Get singleton instance. */
+    public static function getInstance(): static {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -75,7 +71,7 @@ class RiseupUpdateResolver {
      *
      * @return array Settings array with defaults.
      */
-    public function getSettings() {
+    public function getSettings(): array {
         $defaults = array(
             'enabled' => false, 'master_url' => '', 'resolved_url' => '', 'resolved_at' => '',
             'cache_days' => self::DEFAULT_CACHE_DAYS, 'last_check' => '', 'last_error' => '',
@@ -85,13 +81,8 @@ class RiseupUpdateResolver {
         return wp_parse_args($settings, $defaults);
     }
 
-    /**
-     * Save update settings.
-     *
-     * @param array $settings Settings to save.
-     * @return bool True on success.
-     */
-    public function saveSettings($settings) {
+    /** Save update settings. */
+    public function saveSettings(array $settings): bool {
         $current = $this->getSettings();
         $merged = wp_parse_args($settings, $current);
         return update_option(self::OPTION_NAME, $merged);

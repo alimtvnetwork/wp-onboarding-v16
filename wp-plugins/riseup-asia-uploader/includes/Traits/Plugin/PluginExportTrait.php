@@ -16,13 +16,8 @@ use RiseupAsia\Enums\StatusType;
 
 trait PluginExportTrait
 {
-    /**
-     * Handle export-self (export this plugin as ZIP).
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handleExportSelf($request) {
+    /** Handle export-self (export this plugin as ZIP). */
+    public function handleExportSelf(WP_REST_Request $request): WP_REST_Response {
         $this->fileLogger->info('Export-self endpoint called');
 
         try {
@@ -50,13 +45,8 @@ trait PluginExportTrait
         }
     }
 
-    /**
-     * Export any installed plugin as a base64-encoded ZIP.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handleExportPlugin($request) {
+    /** Export any installed plugin as a base64-encoded ZIP. */
+    public function handleExportPlugin(WP_REST_Request $request): WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
@@ -68,15 +58,8 @@ trait PluginExportTrait
         });
     }
 
-    /**
-     * Create a ZIP archive of a plugin directory and return its binary content.
-     *
-     * @param string             $plugin_dir Plugin directory path.
-     * @param string             $slug       Plugin slug.
-     * @param RiseupUploadIgnore $ignore     Ignore patterns.
-     * @return string|null ZIP content or null on failure.
-     */
-    private function createPluginZip(string $plugin_dir, string $slug, $ignore) {
+    /** Create a ZIP archive of a plugin directory and return its binary content. */
+    private function createPluginZip(string $plugin_dir, string $slug, RiseupUploadIgnore $ignore): ?string {
         $temp_dir = $this->get_temp_dir();
         $zip_file = $temp_dir . '/' . $slug . '.zip';
 

@@ -14,18 +14,12 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait AnalyzerGraphTrait {
 
-    /**
-     * Build adjacency list from dependency edges.
-     *
-     * @param array $dependencies Dependency edges.
-     * @param array $all_tables   All table names.
-     * @return array Adjacency list and in-degree map.
-     */
-    private function buildAdjacencyList($dependencies, $all_tables) {
+    /** Build adjacency list from dependency edges. */
+    private function buildAdjacencyList(array $dependencies, array $allTables): array {
         $graph = array();
         $in_degree = array();
 
-        foreach ($all_tables as $table) {
+        foreach ($allTables as $table) {
             $graph[$table] = array();
             $in_degree[$table] = 0;
         }
@@ -47,15 +41,9 @@ trait AnalyzerGraphTrait {
         return array('graph' => $graph, 'in_degree' => $in_degree);
     }
 
-    /**
-     * Topological sort using Kahn's algorithm.
-     *
-     * @param array $all_tables   All table names.
-     * @param array $dependencies Dependency edges.
-     * @return array Sorted table names.
-     */
-    public function topologicalSort($all_tables, $dependencies) {
-        $adj = $this->buildAdjacencyList($dependencies, $all_tables);
+    /** Topological sort using Kahn's algorithm. */
+    public function topologicalSort(array $allTables, array $dependencies): array {
+        $adj = $this->buildAdjacencyList($dependencies, $allTables);
         $graph = $adj['graph'];
         $in_degree = $adj['in_degree'];
 
@@ -85,12 +73,12 @@ trait AnalyzerGraphTrait {
             }
         }
 
-        if (count($sorted) < count($all_tables)) {
-            $cycled = array_diff($all_tables, $sorted);
+        if (count($sorted) < count($allTables)) {
+            $cycled = array_diff($allTables, $sorted);
             $this->log(LogLevelType::Warn->value, 'Cycle detected in table dependencies', array(
                 'cycled_tables' => array_values($cycled),
                 'sorted_count'  => count($sorted),
-                'total_count'   => count($all_tables),
+                'total_count'   => count($allTables),
             ));
 
             foreach ($cycled as $table) {

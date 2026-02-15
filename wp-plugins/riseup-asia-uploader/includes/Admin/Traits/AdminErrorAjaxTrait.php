@@ -59,13 +59,8 @@ trait AdminErrorAjaxTrait {
         wp_send_json_success(array('message' => 'All error sessions cleared'));
     }
 
-    /**
-     * Resolve a log file type to its absolute path.
-     *
-     * @param string $type One of 'log', 'error', 'stacktrace'.
-     * @return string|false File path or false if invalid type.
-     */
-    private function resolveLogFilePath($type) {
+    /** Resolve a log file type to its absolute path. */
+    private function resolveLogFilePath(string $type): string|false {
         $logger = RiseupFileLogger::getInstance();
         switch ($type) {
             case 'log':

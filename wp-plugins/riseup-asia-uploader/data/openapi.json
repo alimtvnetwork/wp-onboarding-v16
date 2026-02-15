@@ -3,7 +3,7 @@
   "info": {
     "title": "Riseup Asia Uploader API",
     "description": "WordPress companion plugin REST API for remote plugin management, blog post publishing, delta file sync, and audit logging.",
-    "version": "1.5.0",
+    "version": "1.58.0",
     "contact": {
       "name": "MD ALIM UL KARIM",
       "url": "https://rasia.pro/alim-r-profile-v1"
@@ -164,14 +164,14 @@
       },
       "UploadRequest": {
         "type": "object",
-        "required": ["slug", "zip"],
+        "required": ["slug", "plugin_zip"],
         "properties": {
           "slug": {
             "type": "string",
             "description": "Plugin directory name",
             "example": "my-plugin"
           },
-          "zip": {
+          "plugin_zip": {
             "type": "string",
             "format": "byte",
             "description": "Base64-encoded ZIP file"
@@ -404,7 +404,7 @@
               "schema": { "$ref": "#/components/schemas/UploadRequest" },
               "example": {
                 "slug": "my-plugin",
-                "zip": "UEsDBBQAAAAIAA...",
+                "plugin_zip": "UEsDBBQAAAAIAA...",
                 "activate": true,
                 "overwrite": true,
                 "upload_source": "upload_script"
@@ -780,6 +780,700 @@
           }
         }
       }
+    },
+    "/opcache-reset": {
+      "post": {
+        "summary": "Reset OPcache",
+        "description": "Resets the PHP OPcache to clear cached bytecode.",
+        "operationId": "resetOpcache",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "OPcache reset result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/media": {
+      "post": {
+        "summary": "Upload media",
+        "description": "Upload media files (images, documents) to the WordPress media library.",
+        "operationId": "uploadMedia",
+        "tags": ["Content"],
+        "responses": {
+          "200": {
+            "description": "Media uploaded",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/exists": {
+      "post": {
+        "summary": "Check plugin exists",
+        "description": "Check if a plugin exists by slug.",
+        "operationId": "pluginExists",
+        "tags": ["Plugins"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["plugin"],
+                "properties": {
+                  "plugin": { "type": "string", "description": "Plugin slug" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plugin existence check",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/export": {
+      "post": {
+        "summary": "Export plugin as ZIP",
+        "description": "Export any installed plugin as a base64-encoded ZIP archive.",
+        "operationId": "exportPlugin",
+        "tags": ["Plugins"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["slug"],
+                "properties": {
+                  "slug": { "type": "string", "description": "Plugin slug" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plugin exported",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "plugin_zip": { "type": "string", "format": "byte" },
+                    "slug": { "type": "string" },
+                    "size": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/sync-manifest": {
+      "post": {
+        "summary": "Get sync manifest",
+        "description": "Get cached file manifest for delta sync comparison.",
+        "operationId": "getSyncManifest",
+        "tags": ["Sync"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["slug"],
+                "properties": {
+                  "slug": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync manifest",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/plugins/sync": {
+      "post": {
+        "summary": "Push delta sync",
+        "description": "Push delta file changes (replacements and deletions) to a plugin.",
+        "operationId": "syncPlugin",
+        "tags": ["Sync"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["slug", "files"],
+                "properties": {
+                  "slug": { "type": "string" },
+                  "files": { "type": "array", "items": { "type": "object" } }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sync result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents": {
+      "get": {
+        "summary": "List agent sites",
+        "description": "Returns a list of registered agent sites.",
+        "operationId": "listAgents",
+        "tags": ["Agents"],
+        "responses": {
+          "200": {
+            "description": "List of agents",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/add": {
+      "post": {
+        "summary": "Add agent site",
+        "description": "Register a new agent site for remote management.",
+        "operationId": "addAgent",
+        "tags": ["Agents"],
+        "responses": {
+          "201": {
+            "description": "Agent added",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/remove": {
+      "post": {
+        "summary": "Remove agent site",
+        "description": "Remove a registered agent site.",
+        "operationId": "removeAgent",
+        "tags": ["Agents"],
+        "responses": {
+          "200": {
+            "description": "Agent removed",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/test": {
+      "post": {
+        "summary": "Test agent connectivity",
+        "description": "Test connectivity to an agent site.",
+        "operationId": "testAgent",
+        "tags": ["Agents"],
+        "responses": {
+          "200": {
+            "description": "Test result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/sync": {
+      "post": {
+        "summary": "Sync to agent",
+        "description": "Sync plugins to an agent site.",
+        "operationId": "syncAgent",
+        "tags": ["Agents"],
+        "responses": {
+          "200": {
+            "description": "Sync result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/plugins": {
+      "post": {
+        "summary": "List agent plugins",
+        "description": "List plugins on an agent site.",
+        "operationId": "agentPlugins",
+        "tags": ["Agents"],
+        "responses": {
+          "200": {
+            "description": "Agent plugins",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/action": {
+      "post": {
+        "summary": "Execute agent action",
+        "description": "Execute a plugin action on an agent site.",
+        "operationId": "agentAction",
+        "tags": ["Agents"],
+        "responses": {
+          "200": {
+            "description": "Action result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/history": {
+      "get": {
+        "summary": "Agent action history",
+        "description": "Get history of actions performed on agent sites.",
+        "operationId": "agentHistory",
+        "tags": ["Agents"],
+        "responses": {
+          "200": {
+            "description": "Action history",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/list": {
+      "get": {
+        "summary": "List snapshots",
+        "description": "Returns a list of all database snapshots.",
+        "operationId": "listSnapshots",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "List of snapshots",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/schedule": {
+      "post": {
+        "summary": "Schedule snapshot",
+        "description": "Create or schedule a database snapshot.",
+        "operationId": "scheduleSnapshot",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Snapshot scheduled",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/info": {
+      "post": {
+        "summary": "Snapshot info",
+        "description": "Get details about a specific snapshot.",
+        "operationId": "snapshotInfo",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Snapshot details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/delete": {
+      "post": {
+        "summary": "Delete snapshot",
+        "description": "Delete a database snapshot.",
+        "operationId": "deleteSnapshot",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Snapshot deleted",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/restore": {
+      "post": {
+        "summary": "Restore snapshot",
+        "description": "Restore a database from a snapshot.",
+        "operationId": "restoreSnapshot",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Snapshot restored",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/export": {
+      "post": {
+        "summary": "Export snapshot",
+        "description": "Export a snapshot as a downloadable ZIP archive.",
+        "operationId": "exportSnapshot",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Snapshot exported",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/import": {
+      "post": {
+        "summary": "Import snapshot",
+        "description": "Import a snapshot from a ZIP archive.",
+        "operationId": "importSnapshot",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Snapshot imported",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/settings": {
+      "get": {
+        "summary": "Get snapshot settings",
+        "description": "Get current snapshot configuration settings.",
+        "operationId": "getSnapshotSettings",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Settings",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update snapshot settings",
+        "description": "Update snapshot configuration settings.",
+        "operationId": "updateSnapshotSettings",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Settings updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/providers": {
+      "get": {
+        "summary": "List snapshot providers",
+        "description": "List available snapshot providers.",
+        "operationId": "listSnapshotProviders",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Provider list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/tables": {
+      "get": {
+        "summary": "List snapshot tables",
+        "description": "List available database tables for snapshotting.",
+        "operationId": "listSnapshotTables",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Table list",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/dependencies": {
+      "post": {
+        "summary": "Analyze dependencies",
+        "description": "Analyze foreign key dependencies between database tables.",
+        "operationId": "analyzeDependencies",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Dependency analysis",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/export-pertable": {
+      "post": {
+        "summary": "Export per-table",
+        "description": "Export a snapshot with per-table SQLite files.",
+        "operationId": "exportPertable",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Per-table export result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/full-backup": {
+      "post": {
+        "summary": "Full backup",
+        "description": "Trigger a full backup orchestration.",
+        "operationId": "fullBackup",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Backup result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/incremental": {
+      "post": {
+        "summary": "Incremental backup",
+        "description": "Trigger an incremental backup.",
+        "operationId": "incrementalBackup",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Incremental result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/cleanup": {
+      "post": {
+        "summary": "Cleanup snapshots",
+        "description": "Clean up old, orphaned, or stuck snapshots.",
+        "operationId": "cleanupSnapshots",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Cleanup result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/progress": {
+      "post": {
+        "summary": "Snapshot progress",
+        "description": "Poll the progress of a snapshot job.",
+        "operationId": "snapshotProgress",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Progress data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/download": {
+      "post": {
+        "summary": "Prepare snapshot download",
+        "description": "Prepare a snapshot for download.",
+        "operationId": "snapshotDownload",
+        "tags": ["Snapshots"],
+        "responses": {
+          "200": {
+            "description": "Download prepared",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/snapshots/download-file": {
+      "get": {
+        "summary": "Download snapshot file",
+        "description": "Download a snapshot file. Authenticated via nonce, not basic auth.",
+        "operationId": "snapshotDownloadFile",
+        "tags": ["Snapshots"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Binary file stream",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/error-logs": {
+      "get": {
+        "summary": "Query error logs",
+        "description": "Query PHP error logs captured by the plugin.",
+        "operationId": "queryErrorLogs",
+        "tags": ["Diagnostics"],
+        "responses": {
+          "200": {
+            "description": "Error logs",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/error-sessions": {
+      "get": {
+        "summary": "Query error sessions",
+        "description": "Query error sessions with grouped error context.",
+        "operationId": "queryErrorSessions",
+        "tags": ["Diagnostics"],
+        "responses": {
+          "200": {
+            "description": "Error sessions",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "tags": [
@@ -792,12 +1486,24 @@
       "description": "WordPress plugin management operations"
     },
     {
-      "name": "Posts",
-      "description": "Blog post and category management"
+      "name": "Sync",
+      "description": "Delta file synchronization"
     },
     {
-      "name": "Logs",
-      "description": "Transaction logging and audit trail"
+      "name": "Content",
+      "description": "Blog post, category, and media management"
+    },
+    {
+      "name": "Agents",
+      "description": "Remote agent site management"
+    },
+    {
+      "name": "Snapshots",
+      "description": "Database snapshot and backup operations"
+    },
+    {
+      "name": "Diagnostics",
+      "description": "Transaction logging, error logs, and audit trail"
     }
   ]
 }

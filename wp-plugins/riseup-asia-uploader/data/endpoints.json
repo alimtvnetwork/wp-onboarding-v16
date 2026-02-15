@@ -1,7 +1,7 @@
 {
   "namespace": "riseup-asia-uploader/v1",
-  "version": "1.27.0",
-  "description": "Complete listing of all REST API endpoints registered by the Riseup Asia Uploader plugin. This file is the single source of truth for endpoint documentation.",
+  "version": "1.58.0",
+  "description": "Complete listing of all REST API endpoints registered by the Riseup Asia Uploader plugin. Synchronized with EndpointType enum.",
   "endpoints": [
     {
       "path": "status",
@@ -15,6 +15,13 @@
       "methods": ["GET"],
       "category": "system",
       "description": "OpenAPI 3.0 specification",
+      "auth": true
+    },
+    {
+      "path": "opcache-reset",
+      "methods": ["POST"],
+      "category": "system",
+      "description": "Reset PHP OPcache",
       "auth": true
     },
     {
@@ -53,6 +60,14 @@
       "methods": ["POST"],
       "category": "plugins",
       "description": "Delete a plugin by slug",
+      "auth": true,
+      "body": { "plugin": "string (slug)" }
+    },
+    {
+      "path": "plugins/exists",
+      "methods": ["POST"],
+      "category": "plugins",
+      "description": "Check if a plugin exists by slug",
       "auth": true,
       "body": { "plugin": "string (slug)" }
     },
@@ -118,6 +133,13 @@
       "auth": true
     },
     {
+      "path": "media",
+      "methods": ["POST"],
+      "category": "content",
+      "description": "Upload media files",
+      "auth": true
+    },
+    {
       "path": "logs",
       "methods": ["GET"],
       "category": "diagnostics",
@@ -170,7 +192,21 @@
       "path": "agents/plugins",
       "methods": ["POST"],
       "category": "agents",
-      "description": "Execute plugin action on an agent site",
+      "description": "List plugins on an agent site",
+      "auth": true
+    },
+    {
+      "path": "agents/action",
+      "methods": ["POST"],
+      "category": "agents",
+      "description": "Execute a plugin action on an agent site",
+      "auth": true
+    },
+    {
+      "path": "agents/history",
+      "methods": ["GET"],
+      "category": "agents",
+      "description": "Get agent action history",
       "auth": true
     },
     {
@@ -276,6 +312,41 @@
       "methods": ["POST"],
       "category": "snapshots",
       "description": "Cleanup old/orphan snapshots",
+      "auth": true
+    },
+    {
+      "path": "snapshots/progress",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Poll snapshot job progress",
+      "auth": true
+    },
+    {
+      "path": "snapshots/download",
+      "methods": ["POST"],
+      "category": "snapshots",
+      "description": "Prepare snapshot download",
+      "auth": true
+    },
+    {
+      "path": "snapshots/download-file",
+      "methods": ["GET"],
+      "category": "snapshots",
+      "description": "Download a snapshot file (nonce-validated)",
+      "auth": false
+    },
+    {
+      "path": "error-logs",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "Query PHP error logs",
+      "auth": true
+    },
+    {
+      "path": "error-sessions",
+      "methods": ["GET"],
+      "category": "diagnostics",
+      "description": "Query error sessions",
       "auth": true
     }
   ]

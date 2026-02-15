@@ -17,7 +17,7 @@ use RiseupAsia\Enums\StatusType;
 trait SnapshotBackupOpsTrait {
 
     /** Handle per-table snapshot export. */
-    public function handleExportPertable($request) {
+    public function handleExportPertable(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $analyzer = RiseupDependencyAnalyzer::getInstance($this->fileLogger);
@@ -34,7 +34,7 @@ trait SnapshotBackupOpsTrait {
     }
 
     /** Handle snapshot cleanup. */
-    public function handleSnapshotCleanup($request) {
+    public function handleSnapshotCleanup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $cleaner = RiseupSnapshotFactory::cleaner($this->fileLogger, $this->db);
@@ -46,7 +46,7 @@ trait SnapshotBackupOpsTrait {
     }
 
     /** Handle snapshot job progress polling. */
-    public function handleSnapshotProgress($request) {
+    public function handleSnapshotProgress(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $job_id = $body['job_id'] ?? null;
@@ -83,7 +83,7 @@ trait SnapshotBackupOpsTrait {
     }
 
     /** Log cleanup if not a dry run. */
-    private function logCleanupIfNotDryRun(array $body, array $result) {
+    private function logCleanupIfNotDryRun(array $body, array $result): void {
         if ($body['dry_run'] ?? false) {
             return;
         }
