@@ -18,8 +18,7 @@ use RiseupAsia\Enums\StatusType;
 
 trait PluginLifecycleDeleteTrait {
 
-    /** Handle delete plugin request. */
-    public function handleDeletePlugin($request) {
+    public function handleDeletePlugin(WP_REST_Request $request): WP_REST_Response {
         $loadError = $this->loadPluginFunctions(true);
         if ($loadError) {
             return $loadError;
@@ -38,11 +37,10 @@ trait PluginLifecycleDeleteTrait {
         return $this->tryDeletePlugin($resolved['slug'], $resolved['plugin_file']);
     }
 
-    /** Deactivate a plugin before deletion. */
-    private function deactivateBeforeDelete(string $slug, string $plugin_file) {
+    private function deactivateBeforeDelete(string $slug, string $pluginFile): bool|WP_REST_Response {
         try {
-            if (is_plugin_active($plugin_file)) {
-                deactivate_plugins($plugin_file);
+            if (is_plugin_active($pluginFile)) {
+                deactivate_plugins($pluginFile);
             }
             return true;
         } catch (Throwable $e) {
@@ -50,10 +48,9 @@ trait PluginLifecycleDeleteTrait {
         }
     }
 
-    /** Attempt to delete a plugin. */
-    private function tryDeletePlugin(string $slug, string $plugin_file) {
+    private function tryDeletePlugin(string $slug, string $pluginFile): WP_REST_Response {
         try {
-            $result = delete_plugins(array($plugin_file));
+            $result = delete_plugins(array($pluginFile));
             $error = $this->checkDeleteResult($result);
             if ($error) {
                 $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, array('error' => $error));
@@ -71,8 +68,7 @@ trait PluginLifecycleDeleteTrait {
             ->toResponse();
     }
 
-    /** Check the result of delete_plugins and return error string or null. */
-    private function checkDeleteResult($result): ?string {
+    private function checkDeleteResult(mixed $result): ?string {
         if (is_wp_error($result)) {
             return $result->get_error_message();
         }

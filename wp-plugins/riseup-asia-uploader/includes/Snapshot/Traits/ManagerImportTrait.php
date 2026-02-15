@@ -2,8 +2,6 @@
 /**
  * ManagerImportTrait — Snapshot ZIP import operations.
  *
- * Shell trait — delegates to ManagerImportValidationTrait and ManagerImportRecordTrait.
- *
  * @package RiseupAsiaUploader
  * @since   2.0.0
  */
@@ -18,38 +16,35 @@ trait ManagerImportTrait {
     use ManagerImportValidationTrait;
     use ManagerImportRecordTrait;
 
-    /**
-     * Import a snapshot from an uploaded ZIP file.
-     */
-    public function importSnapshot($uploaded_path) {
-        if (RiseupBooleanHelpers::isFileMissing($uploaded_path)) {
+    public function importSnapshot(string $uploadedPath): array {
+        if (RiseupBooleanHelpers::isFileMissing($uploadedPath)) {
             return array('success' => false, 'error' => 'Uploaded file not found');
         }
 
-        $ext = strtolower(pathinfo($uploaded_path, PATHINFO_EXTENSION));
+        $ext = strtolower(pathinfo($uploadedPath, PATHINFO_EXTENSION));
         if ($ext !== 'zip') {
             return array('success' => false, 'error' => 'Invalid file type. Expected ZIP file.');
         }
 
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
-            'path' => $uploaded_path, 'size' => RiseupPathUtils::formatBytes(filesize($uploaded_path)),
+            'path' => $uploadedPath, 'size' => RiseupPathUtils::formatBytes(filesize($uploadedPath)),
         ));
 
-        $temp_dir = RiseupPathUtils::join(RiseupPathUtils::getTempDir(), 'import_' . uniqid());
-        $isDirCreationFailed = !RiseupPathUtils::ensureDir($temp_dir, false);
+        $tempDir = RiseupPathUtils::join(RiseupPathUtils::getTempDir(), 'import_' . uniqid());
+        $isDirCreationFailed = !RiseupPathUtils::ensureDir($tempDir, false);
         if ($isDirCreationFailed) {
             return array('success' => false, 'error' => 'Failed to create temp directory');
         }
 
         try {
-            $extracted = $this->extractAndValidateZip($uploaded_path, $temp_dir);
-            $result = $this->moveAndRecordSnapshot($extracted['manifest'], $extracted['sqlite_path'], $temp_dir);
+            $extracted = $this->extractAndValidateZip($uploadedPath, $tempDir);
+            $result = $this->moveAndRecordSnapshot($extracted['manifest'], $extracted['sqlite_path'], $tempDir);
 
-            $this->deleteDirectory($temp_dir);
+            $this->deleteDirectory($tempDir);
             return $result;
         } catch (Exception $e) {
-            if (RiseupPathUtils::dirExists($temp_dir)) {
-                $this->deleteDirectory($temp_dir);
+            if (RiseupPathUtils::dirExists($tempDir)) {
+                $this->deleteDirectory($tempDir);
             }
 
             $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
@@ -57,33 +52,30 @@ trait ManagerImportTrait {
         }
     }
 
-    /** Extract ZIP and validate contents. */
-    private function extractAndValidateZip($uploaded_path, $temp_dir) {
-        $this->extractZipToDir($uploaded_path, $temp_dir);
-        $manifest = $this->loadAndValidateManifest($temp_dir);
-        $sqlite_path = $this->validateSnapshotSqlite($manifest, $temp_dir);
+    private function extractAndValidateZip(string $uploadedPath, string $tempDir): array {
+        $this->extractZipToDir($uploadedPath, $tempDir);
+        $manifest = $this->loadAndValidateManifest($tempDir);
+        $sqlitePath = $this->validateSnapshotSqlite($manifest, $tempDir);
 
-        return array('manifest' => $manifest, 'sqlite_path' => $sqlite_path);
+        return array('manifest' => $manifest, 'sqlite_path' => $sqlitePath);
     }
 
-    /** Extract a ZIP file into a directory. */
-    private function extractZipToDir(string $uploaded_path, string $temp_dir) {
+    private function extractZipToDir(string $uploadedPath, string $tempDir): void {
         $zip = new ZipArchive();
-        if ($zip->open($uploaded_path) !== true) {
+        if ($zip->open($uploadedPath) !== true) {
             throw new Exception('Failed to open ZIP file');
         }
-        $zip->extractTo($temp_dir);
+        $zip->extractTo($tempDir);
         $zip->close();
     }
 
-    /** Load and validate the manifest.json from the extracted directory. */
-    private function loadAndValidateManifest(string $temp_dir): array {
-        $manifest_path = RiseupPathUtils::join($temp_dir, 'manifest.json');
-        if (RiseupBooleanHelpers::isFileMissing($manifest_path)) {
+    private function loadAndValidateManifest(string $tempDir): array {
+        $manifestPath = RiseupPathUtils::join($tempDir, 'manifest.json');
+        if (RiseupBooleanHelpers::isFileMissing($manifestPath)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }
 
-        $manifest = json_decode(file_get_contents($manifest_path), true);
+        $manifest = json_decode(file_get_contents($manifestPath), true);
         if (!$manifest) {
             throw new Exception('Invalid manifest.json format');
         }
@@ -96,51 +88,49 @@ trait ManagerImportTrait {
         return $manifest;
     }
 
-    /** Validate the SQLite file referenced by the manifest. */
-    private function validateSnapshotSqlite(array $manifest, string $temp_dir): string {
-        $sqlite_filename = $manifest['snapshot']['filename'];
-        $sqlite_path = RiseupPathUtils::join($temp_dir, $sqlite_filename);
+    private function validateSnapshotSqlite(array $manifest, string $tempDir): string {
+        $sqliteFilename = $manifest['snapshot']['filename'];
+        $sqlitePath = RiseupPathUtils::join($tempDir, $sqliteFilename);
 
-        if (RiseupBooleanHelpers::isFileMissing($sqlite_path)) {
-            throw new Exception('SQLite file not found in archive: ' . $sqlite_filename);
+        if (RiseupBooleanHelpers::isFileMissing($sqlitePath)) {
+            throw new Exception('SQLite file not found in archive: ' . $sqliteFilename);
         }
 
-        $integrity = $this->validateSqliteIntegrity($sqlite_path);
+        $integrity = $this->validateSqliteIntegrity($sqlitePath);
         if (!$integrity['valid']) {
             throw new Exception('SQLite integrity check failed: ' . $integrity['error']);
         }
 
-        return $sqlite_path;
+        return $sqlitePath;
     }
 
-    /** Move validated snapshot to storage and create DB record. */
-    private function moveAndRecordSnapshot($manifest, $sqlite_path, $temp_dir) {
-        $snapshots_dir = RiseupPathUtils::getSnapshotsDir();
-        $isDirCreationFailed = !RiseupPathUtils::ensureDir($snapshots_dir, true);
+    private function moveAndRecordSnapshot(array $manifest, string $sqlitePath, string $tempDir): array {
+        $snapshotsDir = RiseupPathUtils::getSnapshotsDir();
+        $isDirCreationFailed = !RiseupPathUtils::ensureDir($snapshotsDir, true);
         if ($isDirCreationFailed) {
             throw new Exception('Failed to ensure snapshots directory');
         }
 
         $sequence = $this->getNextImportSequence();
-        $new_filename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
-        $dest_path = RiseupPathUtils::join($snapshots_dir, $new_filename);
+        $newFilename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
+        $destPath = RiseupPathUtils::join($snapshotsDir, $newFilename);
 
-        if (RiseupBooleanHelpers::isCopyFailed($sqlite_path, $dest_path)) {
+        if (RiseupBooleanHelpers::isCopyFailed($sqlitePath, $destPath)) {
             throw new Exception('Failed to copy snapshot file to destination');
         }
 
-        $snapshot_id = $this->createImportedSnapshotRecord($manifest, $sequence, $new_filename, $dest_path);
-        if (!$snapshot_id) {
-            RiseupPathUtils::deleteFile($dest_path);
+        $snapshotId = $this->createImportedSnapshotRecord($manifest, $sequence, $newFilename, $destPath);
+        if (!$snapshotId) {
+            RiseupPathUtils::deleteFile($destPath);
             throw new Exception('Failed to create snapshot record');
         }
 
         $this->log(LogLevelType::Info->value, 'Snapshot imported successfully', array(
-            'snapshot_id' => $snapshot_id, 'filename' => $new_filename,
+            'snapshot_id' => $snapshotId, 'filename' => $newFilename,
         ));
 
         return array(
-            'success' => true, 'snapshot_id' => $snapshot_id, 'filename' => $new_filename,
+            'success' => true, 'snapshot_id' => $snapshotId, 'filename' => $newFilename,
             'tables' => count($manifest['snapshot']['tables']),
             'rows' => $manifest['snapshot']['total_rows'],
         );

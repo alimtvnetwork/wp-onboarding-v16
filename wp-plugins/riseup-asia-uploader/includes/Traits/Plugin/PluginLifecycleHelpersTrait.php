@@ -16,13 +16,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 
 trait PluginLifecycleHelpersTrait {
 
-    /**
-     * Handle plugin existence check.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response
-     */
-    public function handlePluginExists($request) {
+    public function handlePluginExists(WP_REST_Request $request): WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
@@ -36,29 +30,22 @@ trait PluginLifecycleHelpersTrait {
         }
     }
 
-    /** Build the plugin existence check response. */
     private function buildPluginExistsResponse(string $slug): WP_REST_Response {
-         $plugin_file = $this->findPluginFile($slug);
-        $exists = (bool) $plugin_file;
-        $status = $exists ? (is_plugin_active($plugin_file) ? 'active' : 'inactive') : 'not_installed';
+        $pluginFile = $this->findPluginFile($slug);
+        $exists = (bool) $pluginFile;
+        $status = $exists ? (is_plugin_active($pluginFile) ? 'active' : 'inactive') : 'not_installed';
 
         return RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::PluginExists->value)
             ->setSingleResult(array(
                 'plugin_slug' => $slug, 'exists' => $exists, 'status' => $status,
-                'plugin_file' => $exists ? $plugin_file : null,
+                'plugin_file' => $exists ? $pluginFile : null,
                 'requestUrl' => $_SERVER['REQUEST_URI'] ?? '', 'responseUrl' => home_url(),
             ))
             ->toResponse();
     }
 
-    /**
-     * Load WordPress plugin admin functions if not already available.
-     *
-     * @param bool $includeFileFunctions Whether to also load file.php.
-     * @return WP_REST_Response|null Error response on failure, null on success.
-     */
-    private function loadPluginFunctions($includeFileFunctions = false) {
+    private function loadPluginFunctions(bool $includeFileFunctions = false): ?WP_REST_Response {
         try {
             if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -74,13 +61,7 @@ trait PluginLifecycleHelpersTrait {
         }
     }
 
-    /**
-     * Resolve and validate a plugin slug from a REST request body.
-     *
-     * @param WP_REST_Request $request REST request.
-     * @return array|WP_REST_Response Resolved info or error response.
-     */
-    private function resolvePluginFromRequest($request) {
+    private function resolvePluginFromRequest(WP_REST_Request $request): array|WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
 
@@ -89,27 +70,19 @@ trait PluginLifecycleHelpersTrait {
         }
 
         try {
-            $plugin_file = $this->findPluginFile($slug);
+            $pluginFile = $this->findPluginFile($slug);
 
-            if (!$plugin_file) {
+            if (!$pluginFile) {
                 return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
 
-            return array('slug' => $slug, 'plugin_file' => $plugin_file);
+            return array('slug' => $slug, 'plugin_file' => $pluginFile);
         } catch (Throwable $e) {
             return $this->errorResponse('Failed to locate plugin: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
     }
 
-    /**
-     * Log a plugin lifecycle action, swallowing failures.
-     *
-     * @param string $action Action constant.
-     * @param string $slug   Plugin slug.
-     * @param string $status Status constant.
-     * @param array  $extra  Optional extra context.
-     */
-    private function logPluginLifecycle($action, $slug, $status, $extra = array()) {
+    private function logPluginLifecycle(string $action, string $slug, string $status, array $extra = array()): void {
         try {
             $this->logger->logPluginAction($action, $slug, $status, $extra);
         } catch (Throwable $e) {

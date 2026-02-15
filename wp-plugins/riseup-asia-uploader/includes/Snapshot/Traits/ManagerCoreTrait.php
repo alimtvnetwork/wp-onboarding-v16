@@ -16,14 +16,12 @@ use RiseupAsia\Enums\TableType;
 
 trait ManagerCoreTrait {
 
-    /** Get the active snapshot provider. */
-    public function getProvider() {
-        $provider_id = $this->detector->getActiveProvider();
-        return $this->detector->getProviderInstance($provider_id, $this->logger, $this->db);
+    public function getProvider(): ?RiseupSnapshotProviderInterface {
+        $providerId = $this->detector->getActiveProvider();
+        return $this->detector->getProviderInstance($providerId, $this->logger, $this->db);
     }
 
-    /** Create a new snapshot. */
-    public function createSnapshot($options = array()) {
+    public function createSnapshot(array $options = array()): array {
         $provider = $this->getProvider();
         if (!$provider) {
             return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
@@ -31,34 +29,35 @@ trait ManagerCoreTrait {
 
         $this->log(LogLevelType::Info->value, 'Creating snapshot', array(
             'provider' => $provider->getProviderId(),
-            'scope' => isset($options['scope']) ? $options['scope'] : 'default',
+            'scope' => $options['scope'] ?? 'default',
         ));
 
         return $provider->createSnapshot($options);
     }
 
-    /** Delete a snapshot. */
-    public function deleteSnapshot($snapshot_id) {
+    public function deleteSnapshot(int $snapshotId): array {
         $provider = $this->getProvider();
         if (!$provider) {
             return array('success' => false, 'error' => 'No provider available');
         }
 
-        return $provider->deleteSnapshot($snapshot_id);
+        return $provider->deleteSnapshot($snapshotId);
     }
 
-    /** Get snapshot details. */
-    public function getSnapshot($snapshot_id) {
+    public function getSnapshot(int $snapshotId): ?array {
         $provider = $this->getProvider();
         if (!$provider) {
             return null;
         }
 
-        return $provider->getSnapshot($snapshot_id);
+        return $provider->getSnapshot($snapshotId);
     }
 
-    /** List all snapshots. */
-    public function listSnapshots($limit = 50, $offset = 0) {
+    public function getSnapshotById(int $snapshotId): ?array {
+        return $this->getSnapshot($snapshotId);
+    }
+
+    public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($limit, $offset)
@@ -72,13 +71,11 @@ trait ManagerCoreTrait {
         );
     }
 
-    /** Get available providers and their status. */
-    public function getProviders() {
+    public function getProviders(): array {
         return $this->detector->getAvailableProviders();
     }
 
-    /** Get available database tables. */
-    public function getAvailableTables() {
+    public function getAvailableTables(): array {
         $provider = $this->getProvider();
         if (!$provider) {
             return array();
@@ -87,8 +84,7 @@ trait ManagerCoreTrait {
         return $provider->getAvailableTables();
     }
 
-    /** Log a message with manager context. */
-    private function log($level, $message, $context = array()) {
+    private function log(string $level, string $message, array $context = array()): void {
         $full = '[SNAPSHOT] [MANAGER] ' . $message;
         if (!empty($context)) {
             $full .= ' ' . json_encode($context);

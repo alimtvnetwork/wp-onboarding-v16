@@ -2,8 +2,6 @@
 /**
  * NativeSnapshotRecordTrait — snapshot SQLite creation and record management.
  *
- * Shell trait — CRUD ops delegated to NativeSnapshotCrudTrait.
- *
  * @package RiseupAsiaUploader
  * @since   1.57.0
  */
@@ -22,17 +20,16 @@ trait NativeSnapshotRecordTrait {
 
     use NativeSnapshotCrudTrait;
 
-    /** Create SQLite database file. */
-    private function createSqliteDatabase($filepath) {
-        $snapshots_dir = $this->getSnapshotsDir();
-        if (!RiseupPathUtils::isSafePath($filepath, $snapshots_dir)) {
-            $this->log(LogLevelType::Error->value, 'Unsafe path detected for SQLite database', array('filepath' => $filepath, 'base' => $snapshots_dir));
+    private function createSqliteDatabase(string $filepath): ?PDO {
+        $snapshotsDir = $this->getSnapshotsDir();
+        if (!RiseupPathUtils::isSafePath($filepath, $snapshotsDir)) {
+            $this->log(LogLevelType::Error->value, 'Unsafe path detected for SQLite database', array('filepath' => $filepath, 'base' => $snapshotsDir));
             return null;
         }
 
-        $parent_dir = dirname($filepath);
-        if (!RiseupPathUtils::ensureDir($parent_dir, true)) {
-            $this->log(LogLevelType::Error->value, 'Failed to ensure parent directory for SQLite', array('parent' => $parent_dir));
+        $parentDir = dirname($filepath);
+        if (!RiseupPathUtils::ensureDir($parentDir, true)) {
+            $this->log(LogLevelType::Error->value, 'Failed to ensure parent directory for SQLite', array('parent' => $parentDir));
             return null;
         }
 
@@ -52,12 +49,7 @@ trait NativeSnapshotRecordTrait {
         }
     }
 
-    /**
-     * Insert metadata into SQLite snapshot.
-     *
-     * @param PDO $pdo SQLite PDO instance.
-     */
-    private function insertSnapshotMeta(PDO $pdo) {
+    private function insertSnapshotMeta(PDO $pdo): void {
         $meta = array(
             'created_at' => date('c'), 'wp_version' => get_bloginfo('version'),
             'site_url' => get_site_url(), 'php_version' => PHP_VERSION,
@@ -69,18 +61,7 @@ trait NativeSnapshotRecordTrait {
         }
     }
 
-    /**
-     * Create a snapshot record in the database.
-     *
-     * @param int    $sequence Sequence number.
-     * @param string $filename Filename without extension.
-     * @param string $filepath Full path to file.
-     * @param string $scope    Snapshot scope.
-     * @param array  $tables   Tables included.
-     * @param string $trigger  Trigger source.
-     * @return int|false Snapshot ID or false.
-     */
-    private function createSnapshotRecord($sequence, $filename, $filepath, $scope, $tables, $trigger) {
+    private function createSnapshotRecord(int $sequence, string $filename, string $filepath, string $scope, array $tables, string $trigger): int|false {
         $result = $this->db->insert(TableType::Snapshots->value, array(
             'sequence' => $sequence, 'filename' => $filename . '.sqlite', 'filepath' => $filepath,
             'provider' => $this->provider_id, 'scope' => $scope, 'tables_json' => json_encode($tables),
@@ -89,14 +70,7 @@ trait NativeSnapshotRecordTrait {
         return $result ? $this->db->lastInsertId() : false;
     }
 
-    /**
-     * Update snapshot status.
-     *
-     * @param int    $snapshot_id Snapshot ID.
-     * @param string $status      New status.
-     * @param string $error       Error message (optional).
-     */
-    private function updateSnapshotStatus($snapshot_id, $status, $error = null) {
+    private function updateSnapshotStatus(int $snapshotId, string $status, ?string $error = null): void {
         $data = array('status' => $status, 'updated_at' => date('c'));
         if ($error) {
             $data['error_message'] = $error;
@@ -104,20 +78,14 @@ trait NativeSnapshotRecordTrait {
         if ($status === SnapshotStatusType::Running->value) {
             $data['started_at'] = date('c');
         }
-        $this->db->update(TableType::Snapshots->value, $data, array('id' => $snapshot_id));
+        $this->db->update(TableType::Snapshots->value, $data, array('id' => $snapshotId));
     }
 
-    /**
-     * Finalize a snapshot with completion details.
-     *
-     * @param int   $snapshot_id Snapshot ID.
-     * @param array $details     Completion details.
-     */
-    private function finalizeSnapshot($snapshot_id, $details) {
+    private function finalizeSnapshot(int $snapshotId, array $details): void {
         $this->db->update(TableType::Snapshots->value, array(
             'status' => $details['status'], 'file_size' => $details['file_size'],
             'total_rows' => $details['total_rows'], 'table_counts_json' => json_encode($details['table_counts']),
             'duration_ms' => $details['duration_ms'], 'completed_at' => date('c'), 'updated_at' => date('c'),
-        ), array('id' => $snapshot_id));
+        ), array('id' => $snapshotId));
     }
 }

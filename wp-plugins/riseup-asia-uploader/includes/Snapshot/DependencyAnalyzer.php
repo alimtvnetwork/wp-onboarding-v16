@@ -18,41 +18,24 @@ require_once __DIR__ . '/Traits/AnalyzerGraphTrait.php';
 
 /**
  * Dependency Analyzer class.
- *
- * Queries INFORMATION_SCHEMA to build a directed graph of table
- * dependencies and returns a topologically sorted seed order.
  */
 class RiseupDependencyAnalyzer {
 
     use AnalyzerQueryTrait;
     use AnalyzerGraphTrait;
 
-    /** @var wpdb */
-    private $wpdb;
+    private \wpdb $wpdb;
+    private RiseupFileLogger $logger;
+    private static ?self $instance = null;
 
-    /** @var RiseupFileLogger */
-    private $logger;
-
-    /** @var RiseupDependencyAnalyzer|null */
-    private static $instance = null;
-
-    /**
-     * Get singleton instance.
-     *
-     * @param RiseupFileLogger|null $logger Logger instance.
-     * @return RiseupDependencyAnalyzer
-     */
-    public static function getInstance($logger = null) {
+    public static function getInstance(?RiseupFileLogger $logger = null): self {
         if (self::$instance === null && $logger) {
             self::$instance = new self($logger);
         }
         return self::$instance;
     }
 
-    /**
-     * Constructor.
-     */
-    private function __construct($logger) {
+    private function __construct(RiseupFileLogger $logger) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;

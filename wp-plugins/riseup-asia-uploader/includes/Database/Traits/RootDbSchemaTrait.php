@@ -14,12 +14,7 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait RootDbSchemaTrait {
 
-    /**
-     * Create the standard a-root.db schema.
-     *
-     * @param PDO $pdo SQLite PDO connection.
-     */
-    private function createSchema($pdo) {
+    private function createSchema(PDO $pdo): void {
         $pdo->exec("CREATE TABLE IF NOT EXISTS snapshot_meta (
             id              INTEGER PRIMARY KEY,
             title           TEXT NOT NULL,
@@ -74,16 +69,10 @@ trait RootDbSchemaTrait {
         )");
     }
 
-    /**
-     * Populate metadata in a-root.db.
-     *
-     * @param PDO   $pdo    SQLite PDO connection.
-     * @param array $config Metadata config with keys: title, type, settings.
-     */
-    public function populateMetadata($pdo, $config) {
+    public function populateMetadata(PDO $pdo, array $config): void {
         global $wpdb;
-        $mysql_version = $wpdb->get_var("SELECT VERSION()");
-        $wp_version = get_bloginfo('version');
+        $mysqlVersion = $wpdb->get_var("SELECT VERSION()");
+        $wpVersion = get_bloginfo('version');
 
         $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_meta
             (id, title, type, created_at, created_by, mysql_version, wp_version, plugin_version, table_count, total_rows, config_json)
@@ -92,23 +81,16 @@ trait RootDbSchemaTrait {
         $stmt->execute(array(
             $config['title'] ?? 'Untitled Snapshot', $config['type'] ?? 'full',
             gmdate('c'), gethostname() ?: php_uname('n'),
-            $mysql_version, $wp_version, PLUGIN_VERSION,
+            $mysqlVersion, $wpVersion, PLUGIN_VERSION,
             isset($config['settings']) ? json_encode($config['settings']) : null,
         ));
 
         $this->log(LogLevelType::Info->value, 'Metadata populated', array(
-            'title' => $config['title'] ?? 'Untitled', 'mysql_version' => $mysql_version, 'wp_version' => $wp_version,
+            'title' => $config['title'] ?? 'Untitled', 'mysql_version' => $mysqlVersion, 'wp_version' => $wpVersion,
         ));
     }
 
-    /**
-     * Populate dependency graph in a-root.db.
-     *
-     * @param PDO    $pdo   SQLite PDO connection.
-     * @param string $scope Table scope for analysis.
-     * @return array Analysis result.
-     */
-    public function populateDependencies($pdo, $scope = 'all') {
+    public function populateDependencies(PDO $pdo, string $scope = 'all'): array {
         $analysis = $this->analyzer->analyze($scope);
 
         $stmt = $pdo->prepare("INSERT OR IGNORE INTO table_dependencies

@@ -12,15 +12,7 @@ if (!defined('ABSPATH')) {
 
 trait FileCacheScanTrait {
 
-    /**
-     * Get cached file manifest for a plugin, refreshing stale entries.
-     *
-     * @param string               $pluginSlug Plugin slug.
-     * @param string               $pluginDir  Absolute path to plugin directory.
-     * @param RiseupUploadIgnore   $ignore     Upload ignore patterns.
-     * @return array{files: array, cached: int, computed: int, removed: int}
-     */
-    public function getManifest($pluginSlug, $pluginDir, $ignore) {
+    public function getManifest(string $pluginSlug, string $pluginDir, RiseupUploadIgnore $ignore): array {
         $this->logger->debug('FileCache: Building manifest', array('slug' => $pluginSlug));
 
         if (!$this->db->isReady()) {
@@ -45,9 +37,6 @@ trait FileCacheScanTrait {
         return $result;
     }
 
-    /**
-     * Reconcile disk files against cached entries to build the manifest.
-     */
     private function reconcileManifest(string $pluginSlug, string $pluginDir, array $diskFiles, array $cachedEntries): array {
         $files = array();
         $cachedCount = 0;
@@ -66,9 +55,6 @@ trait FileCacheScanTrait {
         return array('files' => $files, 'cached' => $cachedCount, 'computed' => $computedCount, 'removed' => $removedCount);
     }
 
-    /**
-     * Resolve a single file entry: use cache if valid, otherwise compute hash.
-     */
     private function resolveFileEntry(string $pluginSlug, string $pluginDir, array $fileInfo, array $cachedEntries): array {
         $path = $fileInfo['path'];
         $mtimeStr = gmdate('c', $fileInfo['mtime']);
@@ -94,9 +80,6 @@ trait FileCacheScanTrait {
         );
     }
 
-    /**
-     * Remove cache entries for files that no longer exist on disk.
-     */
     private function pruneStaleEntries(string $pluginSlug, array $cachedEntries, array $activePaths): int {
         $removed = 0;
         foreach ($cachedEntries as $path => $entry) {
@@ -108,10 +91,7 @@ trait FileCacheScanTrait {
         return $removed;
     }
 
-    /**
-     * Scan a directory recursively and collect raw file info (no hashing).
-     */
-    private function scanDirectory($baseDir, $dir, $ignore, &$files) {
+    private function scanDirectory(string $baseDir, string $dir, RiseupUploadIgnore $ignore, array &$files): void {
         $items = @scandir($dir);
         if ($items === false) {
             return;
@@ -138,7 +118,6 @@ trait FileCacheScanTrait {
         }
     }
 
-    /** Build a file info array for a single file. */
     private function buildFileInfo(string $relPath, string $fullPath): array {
         return array(
             'path'  => str_replace('\\', '/', $relPath),
@@ -147,10 +126,7 @@ trait FileCacheScanTrait {
         );
     }
 
-    /**
-     * Full scan fallback when database is not available.
-     */
-    private function fullScan($pluginDir, $ignore) {
+    private function fullScan(string $pluginDir, RiseupUploadIgnore $ignore): array {
         $diskFiles = array();
         $this->scanDirectory($pluginDir, $pluginDir, $ignore, $diskFiles);
 

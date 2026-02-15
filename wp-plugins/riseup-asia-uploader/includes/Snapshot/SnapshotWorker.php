@@ -35,35 +35,33 @@ class RiseupSnapshotWorker {
     use WorkerTableExportTrait;
     use WorkerProgressTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
-    /** @var RiseupDatabase */
-    private $db;
-    /** @var RiseupRootDb */
-    private $rootDb;
-    /** @var RiseupDependencyAnalyzer */
-    private $analyzer;
-    /** @var wpdb */
-    private $wpdb;
-    /** @var int */
-    private $batchSize;
-    /** @var int */
-    private $poolSize;
-    /** @var RiseupSnapshotWorker|null */
-    private static $instance = null;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private RiseupRootDb $rootDb;
+    private RiseupDependencyAnalyzer $analyzer;
+    private \wpdb $wpdb;
+    private int $batchSize;
+    private int $poolSize;
+    private static ?self $instance = null;
 
-    /**
-     * Get singleton instance.
-     */
-    public static function getInstance($logger = null, $db = null, $rootDb = null, $analyzer = null) {
+    public static function getInstance(
+        ?RiseupFileLogger $logger = null,
+        ?RiseupDatabase $db = null,
+        ?RiseupRootDb $rootDb = null,
+        ?RiseupDependencyAnalyzer $analyzer = null
+    ): self {
         if (self::$instance === null && $logger && $db && $rootDb && $analyzer) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
         return self::$instance;
     }
 
-    /** Constructor. */
-    private function __construct($logger, $db, $rootDb, $analyzer) {
+    private function __construct(
+        RiseupFileLogger $logger,
+        RiseupDatabase $db,
+        RiseupRootDb $rootDb,
+        RiseupDependencyAnalyzer $analyzer
+    ) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
@@ -74,15 +72,11 @@ class RiseupSnapshotWorker {
         $this->poolSize  = SNAPSHOT_WORKER_POOL_DEFAULT;
     }
 
-    /**
-     * Set the worker pool size.
-     */
-    public function setPoolSize($size) {
-        $this->poolSize = max(SNAPSHOT_WORKER_POOL_MIN, min(SNAPSHOT_WORKER_POOL_MAX, (int) $size));
+    public function setPoolSize(int $size): void {
+        $this->poolSize = max(SNAPSHOT_WORKER_POOL_MIN, min(SNAPSHOT_WORKER_POOL_MAX, $size));
     }
 
-    /** @return int */
-    public function getPoolSize() {
+    public function getPoolSize(): int {
         return $this->poolSize;
     }
 }
