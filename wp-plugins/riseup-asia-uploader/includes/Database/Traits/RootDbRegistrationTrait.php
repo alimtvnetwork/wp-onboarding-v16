@@ -14,27 +14,21 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait RootDbRegistrationTrait {
 
-    /**
-     * Register a table export in a-root.db.
-     */
-    public function registerTable($pdo, $table_name, $row_count, $sqlite_file, $file_size = 0, $checksum = '') {
+    /** Register a table export in a-root.db. */
+    public function registerTable(PDO $pdo, string $tableName, int $rowCount, string $sqliteFile, int $fileSize = 0, string $checksum = ''): void {
         $stmt = $pdo->prepare("INSERT OR REPLACE INTO snapshot_tables
             (table_name, row_count, sqlite_file, file_size_bytes, checksum_md5, exported_at) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute(array($table_name, $row_count, $sqlite_file, $file_size, $checksum, gmdate('c')));
+        $stmt->execute(array($tableName, $rowCount, $sqliteFile, $fileSize, $checksum, gmdate('c')));
     }
 
-    /**
-     * Update final stats in snapshot_meta.
-     */
-    public function updateStats($pdo, $table_count, $total_rows) {
+    /** Update final stats in snapshot_meta. */
+    public function updateStats(PDO $pdo, int $tableCount, int $totalRows): void {
         $stmt = $pdo->prepare("UPDATE snapshot_meta SET table_count = ?, total_rows = ? WHERE id = 1");
-        $stmt->execute(array($table_count, $total_rows));
+        $stmt->execute(array($tableCount, $totalRows));
     }
 
-    /**
-     * Register an incremental backup in a-root.db.
-     */
-    public function registerIncremental($pdo, $info) {
+    /** Register an incremental backup in a-root.db. */
+    public function registerIncremental(PDO $pdo, array $info): void {
         $stmt = $pdo->prepare("INSERT INTO incremental_backups
             (sequence_num, folder_name, created_at, tables_changed, total_new_rows, relative_path) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
@@ -43,10 +37,8 @@ trait RootDbRegistrationTrait {
         ));
     }
 
-    /**
-     * Register a plugin snapshot in a-root.db.
-     */
-    public function registerPluginSnapshot($pdo, $info) {
+    /** Register a plugin snapshot in a-root.db. */
+    public function registerPluginSnapshot(PDO $pdo, array $info): void {
         $stmt = $pdo->prepare("INSERT INTO plugin_snapshots
             (plugin_slug, plugin_name, plugin_version, zip_file, file_size_bytes, checksum_md5) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(array(
@@ -55,13 +47,8 @@ trait RootDbRegistrationTrait {
         ));
     }
 
-    /**
-     * Read metadata from an existing a-root.db.
-     *
-     * @param string $filepath Path to a-root.db file.
-     * @return array|null Metadata or null if invalid.
-     */
-    public function readMetadata($filepath) {
+    /** Read metadata from an existing a-root.db. */
+    public function readMetadata(string $filepath): ?array {
         if (!RiseupPathUtils::fileExists($filepath)) {
             return null;
         }

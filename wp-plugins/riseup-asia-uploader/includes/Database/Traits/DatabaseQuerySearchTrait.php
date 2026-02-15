@@ -25,7 +25,7 @@ trait DatabaseQuerySearchTrait {
 
         try {
             return $this->executeTransactionQuery($filters, $limit, $offset);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to query transactions');
             return array('total' => 0, 'logs' => array());
         }
@@ -57,13 +57,13 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyFilters($query, array $filters): void {
+    private function applyFilters(RiseupORM $query, array $filters): void {
         $this->applyEqualityFilters($query, $filters);
         $this->applyDateRangeFilters($query, $filters);
         $this->applyTextFilters($query, $filters);
     }
 
-    private function applyEqualityFilters($query, array $filters): void {
+    private function applyEqualityFilters(RiseupORM $query, array $filters): void {
         if (!empty($filters['plugin'])) {
             $query->where('plugin_slug', $filters['plugin']);
         }
@@ -89,7 +89,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyDateRangeFilters($query, array $filters): void {
+    private function applyDateRangeFilters(RiseupORM $query, array $filters): void {
         if (!empty($filters['from'])) {
             $query->whereGte('created_at', $filters['from'] . 'T00:00:00Z');
         }
@@ -98,7 +98,7 @@ trait DatabaseQuerySearchTrait {
         }
     }
 
-    private function applyTextFilters($query, array $filters): void {
+    private function applyTextFilters(RiseupORM $query, array $filters): void {
         if (!empty($filters['source_machine'])) {
             $query->whereLike('source_machine', '%' . $filters['source_machine'] . '%');
         }
@@ -118,7 +118,7 @@ trait DatabaseQuerySearchTrait {
                     ->whereGte('created_at', gmdate('Y-m-d\TH:i:s\Z', time() - 86400))
                     ->count(),
             );
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get stats');
             return array();
         }
@@ -149,7 +149,7 @@ trait DatabaseQuerySearchTrait {
 
             $this->fileLogger->info('Cleanup complete', array('deleted' => $deleted));
             return $deleted;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to cleanup transactions');
             return 0;
         }

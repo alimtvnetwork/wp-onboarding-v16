@@ -14,33 +14,21 @@ if (!defined('ABSPATH')) {
 
 trait OrmMutationTrait {
 
-    /**
-     * Create a new record instance.
-     *
-     * @return $this
-     */
-    public function create() {
+    /** Create a new record instance. */
+    public function create(): static {
         $this->isNew = true;
         $this->data = array();
         return $this;
     }
 
-    /**
-     * Set a column value.
-     *
-     * @return $this
-     */
-    public function set(string $column, $value) {
+    /** Set a column value. */
+    public function set(string $column, string|int|float|bool|null $value): static {
         $this->data[$column] = $value;
         return $this;
     }
 
-    /**
-     * Save the record (insert or update).
-     *
-     * @return int|false Insert ID or rows affected, false on error.
-     */
-    public function save() {
+    /** Save the record (insert or update). */
+    public function save(): int|false {
         if (!self::$pdo) {
             return false;
         }
@@ -52,12 +40,8 @@ trait OrmMutationTrait {
         }
     }
 
-    /**
-     * Perform INSERT.
-     *
-     * @return int|false Insert ID or false.
-     */
-    private function doInsert() {
+    /** Perform INSERT. */
+    private function doInsert(): int|false {
         if (empty($this->data)) {
             return false;
         }
