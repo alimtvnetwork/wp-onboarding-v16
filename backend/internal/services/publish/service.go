@@ -210,20 +210,20 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 
 	// Create WordPress client
 	s.log.Info("Creating WordPress client", "siteUrl", siteInfo.URL, "username", siteInfo.Username)
-	s.broadcastDetailedLog(pluginID, siteID, "info", "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), map[string]any{
+	s.broadcastDetailedLog(pluginID, siteID, "info", "connect", fmt.Sprintf("Connecting to WordPress: %s", siteInfo.URL), marshalDetails(map[string]any{
 		"siteUrl":  siteInfo.URL,
 		"username": siteInfo.Username,
-	})
+	}))
 	wpClient := s.wpClientFactory(siteInfo.URL, siteInfo.Username, password)
 
 	// Stage 1: Create backup (optional)
 	if options.CreateBackup {
 		stage := s.runStage("backup", func() error {
 			s.broadcastProgress(pluginID, siteID, "backup", 10, "Creating backup...")
-			s.broadcastDetailedLog(pluginID, siteID, "info", "backup", "Initiating remote plugin backup", map[string]any{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "backup", "Initiating remote plugin backup", marshalDetails(map[string]any{
 				"mappingId":  mapping.ID,
 				"remoteSlug": mapping.RemoteSlug,
-			})
+			}))
 			// TODO: Implement backup creation via s.backupService
 			return nil
 		})
@@ -244,18 +244,18 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 		plug := pluginInfo
 		var err error
 		
-		s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Packaging plugin from: %s", plug.Path), map[string]any{
+		s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Packaging plugin from: %s", plug.Path), marshalDetails(map[string]any{
 			"pluginPath":      plug.Path,
 			"pluginName":      plug.Name,
 			"mode":            options.Mode,
 			"excludePatterns": plug.ExcludePatterns,
-		})
+		}))
 		
 		if options.Mode == "selected" && len(options.Files) > 0 {
 			fileCount = len(options.Files)
-			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", fileCount), map[string]any{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("Creating selective ZIP with %d files", fileCount), marshalDetails(map[string]any{
 				"selectedFiles": options.Files,
-			})
+			}))
 			zipPath, err = s.createSelectiveZip(plug.Path, plug.Name, options.Files)
 		} else {
 			fileCount = plug.FileCount
@@ -267,12 +267,12 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 			if info, statErr := os.Stat(zipPath); statErr == nil {
 				// Log ZIP internal structure for debugging
 				zipEntries := s.getZipStructure(zipPath)
-				s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), map[string]any{
+				s.broadcastDetailedLog(pluginID, siteID, "info", "package", fmt.Sprintf("ZIP created: %s (%d bytes)", filepath.Base(zipPath), info.Size()), marshalDetails(map[string]any{
 					"zipPath":  zipPath,
 					"zipSize":  info.Size(),
 					"fileCount": fileCount,
 					"zipStructure": zipEntries,
-				})
+				}))
 				// Log first 20 entries for quick visibility
 				maxShow := 20
 				if len(zipEntries) < maxShow {
@@ -340,26 +340,26 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 
 		// ALWAYS keep ZIP on failure - essential for debugging upload issues
 		if publishFailed {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), map[string]any{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP for debugging (publish failed): %s", zipPath), marshalDetails(map[string]any{
 				"zipPath": zipPath,
 				"reason":  "publish_failed",
-			})
+			}))
 			return
 		}
 
 		// On success: check user preference
 		if options.KeepZipFiles {
-			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), map[string]any{
+			s.broadcastDetailedLog(pluginID, siteID, "info", "cleanup", fmt.Sprintf("Keeping temp ZIP (user setting): %s", zipPath), marshalDetails(map[string]any{
 				"zipPath":      zipPath,
 				"keepZipFiles": true,
-			})
+			}))
 			return
 		}
 
 		// Success + user doesn't want to keep: remove
-		s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), map[string]any{
+		s.broadcastDetailedLog(pluginID, siteID, "debug", "cleanup", fmt.Sprintf("Removing temp ZIP: %s", zipPath), marshalDetails(map[string]any{
 			"keepZipFiles": options.KeepZipFiles,
-		})
+		}))
 		os.Remove(zipPath)
 	}()
 
@@ -453,10 +453,10 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 	result.Stages = append(result.Stages, stage)
 	
 	// Broadcast stage complete event for frontend tracking
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status, stage.Duration, map[string]any{
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "upload", stage.Status, stage.Duration, marshalDetails(map[string]any{
 		"remoteSlug": mapping.RemoteSlug,
 		"activated":  alreadyActivated,
-	})
+	}))
 	
 	if stage.Status == "failed" {
 		result.ErrorMessage = stage.Message
@@ -551,10 +551,10 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 	result.Stages = append(result.Stages, stage)
 	
 	// Broadcast stage complete event
-	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status, stage.Duration, map[string]any{
+	s.broadcastStageComplete(pluginID, siteID, sessionID, "activate", stage.Status, stage.Duration, marshalDetails(map[string]any{
 		"remoteSlug": mapping.RemoteSlug,
 		"skipped":    alreadyActivated,
-	})
+	}))
 	if stage.Status == "failed" {
 		result.ActivationStatus = "error"
 		result.ErrorMessage = stage.Message
@@ -667,11 +667,11 @@ func (s *Service) Publish(ctx context.Context, pluginID, siteID int64, opts any)
 			return "info"
 		}
 		return "error"
-	}(), "complete", completionMessage, map[string]any{
+	}(), "complete", completionMessage, marshalDetails(map[string]any{
 		"success":      result.Success,
 		"filesUpdated": result.FilesUpdated,
 		"durationMs":   result.Duration,
-	})
+	}))
 	s.broadcastProgress(pluginID, siteID, status, 100, completionMessage)
 
 	s.log.Info("Plugin published", 
@@ -805,7 +805,7 @@ func (s *Service) broadcastProgress(pluginID, siteID int64, step string, progres
 // broadcastStageStatus explicitly marks a publish stage as success/error.
 // This is used for late-stage failures (e.g. activation) where a subsequent stage (cleanup)
 // would otherwise cause the UI to incorrectly treat the prior stage as successful.
-func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, status string, progress int, message string, details map[string]any) {
+func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, status string, progress int, message string, details json.RawMessage) {
 	if s.wsHub == nil {
 		return
 	}
@@ -829,58 +829,48 @@ func (s *Service) broadcastStageStatus(pluginID, siteID int64, stage string, sta
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, stage, message, details)
 }
 
-// StageContext provides structured what/why/where/result context for logging
+// StageContext provides structured what/why/where/result context for logging.
+// InnerData uses map[string]any internally for dynamic construction, but is always
+// marshaled to json.RawMessage before crossing the WSHub boundary.
 type StageContext struct {
-	What       string                 // What is being done
-	Why        string                 // Why it's being done
-	Where      string                 // Target URL/path
-	Result     string                 // Outcome description
-	InnerData  map[string]any // HTTP status, response snippets, etc.
+	What      string         `json:"what"`                // What is being done
+	Why       string         `json:"why,omitempty"`       // Why it's being done
+	Where     string         `json:"where,omitempty"`     // Target URL/path
+	Result    string         `json:"result,omitempty"`    // Outcome description
+	InnerData map[string]any `json:"innerData,omitempty"` // HTTP status, response snippets, etc.
 }
 
 // broadcastStageLog sends a detailed log entry with structured what/why/where/result context
 func (s *Service) broadcastStageLog(pluginID, siteID int64, sessionID, level, stage string, ctx StageContext) {
-	details := map[string]any{
-		"what": ctx.What,
-	}
-	if ctx.Why != "" {
-		details["why"] = ctx.Why
-	}
-	if ctx.Where != "" {
-		details["where"] = ctx.Where
-	}
-	if ctx.Result != "" {
-		details["result"] = ctx.Result
-	}
-	if ctx.InnerData != nil {
-		for k, v := range ctx.InnerData {
-			details[k] = v
-		}
-	}
-
 	// Build display message
 	message := ctx.What
 	if ctx.Result != "" {
 		message = fmt.Sprintf("%s → %s", ctx.What, ctx.Result)
 	}
 
+	// Marshal the StageContext itself as the details payload
+	detailsJSON, _ := json.Marshal(ctx)
+
 	// Broadcast to WebSocket
-	s.broadcastDetailedLog(pluginID, siteID, level, stage, message, details)
-	
-	// Also log to session (marshal the map to json.RawMessage for session boundary)
-	detailsJSON, _ := json.Marshal(details)
-	s.sessionLog(sessionID, level, stage, message, json.RawMessage(detailsJSON))
+	s.broadcastDetailedLog(pluginID, siteID, level, stage, message, detailsJSON)
+
+	// Also log to session
+	s.sessionLog(sessionID, level, stage, message, detailsJSON)
 }
 
 // broadcastDetailedLog sends a detailed log entry with structured data for inner operation visibility.
-// It resolves plugin/site names by looking up from the database if not provided in the details map.
-func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, message string, details map[string]any) {
+// It resolves plugin/site names by looking up from the database if not provided in the details.
+func (s *Service) broadcastDetailedLog(pluginID, siteID int64, level, step, message string, details json.RawMessage) {
 	if s.wsHub == nil {
 		return
 	}
 	s.wsHub.BroadcastPublishLog(pluginID, siteID, level, step, message, details)
 
-	// Resolve human-readable names — try details map first, then DB lookup
+	// Parse details for name resolution
+	var detailsMap map[string]any
+	if len(details) > 0 {
+		_ = json.Unmarshal(details, &detailsMap)
+	}
 	pluginName := ""
 	siteName := ""
 	siteURL := ""
@@ -978,7 +968,7 @@ func (s *Service) runStageWithSession(sessionID, name string, fn func() error) S
 }
 
 // broadcastStageComplete sends a stage_complete event for frontend tracking
-func (s *Service) broadcastStageComplete(pluginID, siteID int64, sessionID, stageName, status string, durationMs int64, details map[string]any) {
+func (s *Service) broadcastStageComplete(pluginID, siteID int64, sessionID, stageName, status string, durationMs int64, details json.RawMessage) {
 	if s.wsHub == nil {
 		return
 	}
@@ -1443,6 +1433,18 @@ func getBool(m map[string]any, key string, defaultVal bool) bool {
 		return v
 	}
 	return defaultVal
+}
+
+// marshalDetails converts a map to json.RawMessage for WS broadcast boundaries.
+func marshalDetails(m map[string]any) json.RawMessage {
+	if m == nil {
+		return nil
+	}
+	data, err := json.Marshal(m)
+	if err != nil {
+		return nil
+	}
+	return data
 }
 
 // Session logging helper methods

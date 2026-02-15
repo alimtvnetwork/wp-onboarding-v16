@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -343,7 +344,7 @@ func parseLogLevel(level string) logger.Level {
 // initServices creates and wires all application services
 func initServices(db *database.DB, cfg *config.Config, wsHub *ws.Hub, log *logger.Logger) *Services {
 	// WordPress REST API client factory with progress callback support
-	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details map[string]any)) *wordpress.Client {
+	wpClientFactoryWithProgress := func(siteURL, username, password string, onProgress func(step, status, message string, details json.RawMessage)) *wordpress.Client {
 		return wordpress.NewClient(wordpress.ClientConfig{
 			BaseURL:         siteURL,
 			Username:        username,

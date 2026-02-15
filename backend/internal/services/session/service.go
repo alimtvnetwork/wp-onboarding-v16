@@ -66,19 +66,19 @@ type SessionDiagnostics struct {
 
 // SessionRequest captures the original inbound request
 type SessionRequest struct {
-	URL     string                 `json:"url"`
-	Method  string                 `json:"method"`
-	Headers map[string]string      `json:"headers,omitempty"`
-	Body    map[string]any         `json:"body,omitempty"`
+	URL     string            `json:"url"`
+	Method  string            `json:"method"`
+	Headers map[string]string `json:"headers,omitempty"`
+	Body    json.RawMessage   `json:"body,omitempty"`
 }
 
 // SessionResponse captures the delegated response from WordPress
 type SessionResponse struct {
-	RequestURL  string                 `json:"requestUrl"`
-	ResponseURL string                 `json:"responseUrl"`
-	StatusCode  int                    `json:"statusCode"`
-	Headers     map[string]string      `json:"headers,omitempty"`
-	Body        any                    `json:"body,omitempty"`
+	RequestURL  string            `json:"requestUrl"`
+	ResponseURL string            `json:"responseUrl"`
+	StatusCode  int               `json:"statusCode"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	Body        json.RawMessage   `json:"body,omitempty"`
 }
 
 // SessionStackTrace holds dual Go + PHP stack traces

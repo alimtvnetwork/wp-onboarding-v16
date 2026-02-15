@@ -5,18 +5,15 @@ package site
 
 import "encoding/json"
 
-// toDetailsMap converts a typed struct to map[string]any for WS broadcast boundaries.
-// This preserves the map[string]any interface contract while ensuring call sites use typed structs.
-func toDetailsMap(v any) map[string]any {
+// toJSON converts a typed struct to json.RawMessage for WS broadcast boundaries.
+// This replaces the legacy toDetailsMap helper, ensuring typed structs are serialized
+// directly to json.RawMessage without an intermediate map[string]any.
+func toJSON(v any) json.RawMessage {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return nil
 	}
-	var m map[string]any
-	if json.Unmarshal(data, &m) != nil {
-		return nil
-	}
-	return m
+	return data
 }
 
 // --- Connection test detail structs ---
@@ -59,11 +56,11 @@ type SiteIDDetail struct {
 
 // BootstrapLogDetails carries bootstrap progress context with step info.
 type BootstrapLogDetails struct {
-	SiteID   int64  `json:"siteId"`
-	SiteName string `json:"siteName,omitempty"`
-	Step     string `json:"step,omitempty"`
-	Status   string `json:"status,omitempty"`
-	Details  any    `json:"details,omitempty"`
+	SiteID   int64           `json:"siteId"`
+	SiteName string          `json:"siteName,omitempty"`
+	Step     string          `json:"step,omitempty"`
+	Status   string          `json:"status,omitempty"`
+	Details  json.RawMessage `json:"details,omitempty"`
 }
 
 // ZipCreationDetails carries ZIP archive creation context.

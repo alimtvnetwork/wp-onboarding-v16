@@ -3,6 +3,8 @@
 // instead of map[string]any literals, per the Generic Enforce Pattern (GE-1).
 package ws
 
+import "encoding/json"
+
 import "time"
 
 // --- Auto-publish events ---
@@ -149,27 +151,27 @@ type PublishStageProgressData struct {
 
 // PublishStageStatusData is broadcast for explicit stage status updates (may include details).
 type PublishStageStatusData struct {
-	PluginID int64          `json:"pluginId"`
-	SiteID   int64          `json:"siteId"`
-	Stage    string         `json:"stage"`
-	Step     string         `json:"step"`
-	Status   string         `json:"status"`
-	Progress int            `json:"progress"`
-	Total    int            `json:"total"`
-	Message  string         `json:"message"`
-	Details  map[string]any `json:"details,omitempty"`
+	PluginID int64           `json:"pluginId"`
+	SiteID   int64           `json:"siteId"`
+	Stage    string          `json:"stage"`
+	Step     string          `json:"step"`
+	Status   string          `json:"status"`
+	Progress int             `json:"progress"`
+	Total    int             `json:"total"`
+	Message  string          `json:"message"`
+	Details  json.RawMessage `json:"details,omitempty"`
 }
 
 // PublishStageCompleteData is broadcast when a publish stage completes.
 type PublishStageCompleteData struct {
-	Type      string         `json:"type"`
-	SessionID string         `json:"sessionId"`
-	Stage     string         `json:"stage"`
-	Status    string         `json:"status"`
-	Duration  int64          `json:"duration"`
-	PluginID  int64          `json:"pluginId"`
-	SiteID    int64          `json:"siteId"`
-	Details   map[string]any `json:"details,omitempty"`
+	Type      string          `json:"type"`
+	SessionID string          `json:"sessionId"`
+	Stage     string          `json:"stage"`
+	Status    string          `json:"status"`
+	Duration  int64           `json:"duration"`
+	PluginID  int64           `json:"pluginId"`
+	SiteID    int64           `json:"siteId"`
+	Details   json.RawMessage `json:"details,omitempty"`
 }
 
 // --- Scheduler events ---
