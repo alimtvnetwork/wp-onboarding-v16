@@ -66,8 +66,8 @@ trait EnvelopeFactoryTrait {
         $trace_lines = explode("\n", $exception->getTraceAsString());
         $errors['DelegatedServiceErrorStack'] = $trace_lines;
 
-        if (function_exists('riseup_exception_to_frames')) {
-            $frames = riseup_exception_to_frames($exception);
+        if (class_exists('RiseupFrameBuilder')) {
+            $frames = RiseupFrameBuilder::exceptionToFrames($exception);
             $errors['Backend'] = self::framesToLines($frames);
         }
 
@@ -79,8 +79,8 @@ trait EnvelopeFactoryTrait {
      */
     private static function buildBacktraceErrors(array $errors): array {
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
-        if (function_exists('riseup_backtrace_to_frames')) {
-            $frames = riseup_backtrace_to_frames($backtrace);
+        if (class_exists('RiseupFrameBuilder')) {
+            $frames = RiseupFrameBuilder::backtraceToFrames($backtrace);
             $errors['Backend'] = self::framesToLines($frames);
         }
 
