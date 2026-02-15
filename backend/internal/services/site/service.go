@@ -1211,33 +1211,33 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	}
 
 	// Log start
-	s.logRemoteAction(sessionID, siteID, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), map[string]any{
-		"siteId":     siteID,
-		"siteName":   site.Name,
-		"siteUrl":    site.URL,
-		"pluginSlug": pluginSlug,
-	})
+	s.logRemoteAction(sessionID, siteID, action, "info", "start", fmt.Sprintf("Starting %s action for plugin: %s", action, pluginSlug), toDetailsMap(RemoteActionContext{
+		SiteID:     siteID,
+		SiteName:   site.Name,
+		SiteURL:    site.URL,
+		PluginSlug: pluginSlug,
+	}))
 
 	// Save request.json — the inbound request from frontend
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.SaveRequest(sessionID, &session.SessionRequest{
 			URL:    fmt.Sprintf("/api/v1/sites/%d/remote-plugins/%s/%s", siteID, pluginSlug, action),
 			Method: "POST",
-			Body: map[string]any{
-				"siteId":     siteID,
-				"pluginSlug": pluginSlug,
-				"action":     action,
-			},
+		Body: toDetailsMap(RemoteActionRequestBody{
+				SiteID:     siteID,
+				PluginSlug: pluginSlug,
+				Action:     action,
+			}),
 		})
 	}
 
 	// Broadcast start event
 	if s.wsHub != nil {
-		s.wsHub.BroadcastWithSession("remote_plugin_action_started", map[string]any{
-			"siteId":     siteID,
-			"siteName":   site.Name,
-			"action":     action,
-			"pluginSlug": pluginSlug,
+		s.wsHub.BroadcastWithSession("remote_plugin_action_started", RemoteActionStartedEvent{
+			SiteID:     siteID,
+			SiteName:   site.Name,
+			Action:     action,
+			PluginSlug: pluginSlug,
 		}, sessionID)
 	}
 
@@ -1246,7 +1246,7 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	password, err := decrypt(site.PasswordEncrypted, s.encryptionKey)
 	if err != nil {
 		errMsg := "failed to decrypt password"
-		s.logRemoteAction(sessionID, siteID, action, "error", "decrypt", errMsg, map[string]any{"error": err.Error()})
+		s.logRemoteAction(sessionID, siteID, action, "error", "decrypt", errMsg, toDetailsMap(ErrorDetail{Error: err.Error()}))
 		s.endRemoteSession(sessionID, "error", errMsg)
 		return apperror.Wrap(err, apperror.ErrInternal, errMsg)
 	}
@@ -1259,10 +1259,10 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	if s.sessionService != nil && sessionID != "" {
 		s.sessionService.LogStageStart(sessionID, action)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), map[string]any{
-		"targetUrl":  site.URL,
-		"pluginSlug": pluginSlug,
-	})
+	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Executing %s action on plugin: %s", action, pluginSlug), toDetailsMap(RemoteActionExecDetails{
+		TargetURL:  site.URL,
+		PluginSlug: pluginSlug,
+	}))
 
 	err = execFn(client)
 	durationMs := time.Since(startTime).Milliseconds()
@@ -1273,28 +1273,16 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 		// Save response.json with error data
 		if s.sessionService != nil && sessionID != "" {
-			statusCode := 0
-			if sc, ok := errDetails["statusCode"].(int); ok {
-				statusCode = sc
-			}
-			requestURL := ""
-			if u, ok := errDetails["url"].(string); ok {
-				requestURL = u
-			}
-			responseBody := ""
-			if rb, ok := errDetails["responseBody"].(string); ok {
-				responseBody = rb
-			}
 			// Parse response body for structured storage
-			var parsedBody any = responseBody
+			var parsedBody any = errDetails.ResponseBody
 			var bodyMap map[string]any
-			if json.Unmarshal([]byte(responseBody), &bodyMap) == nil {
+			if json.Unmarshal([]byte(errDetails.ResponseBody), &bodyMap) == nil {
 				parsedBody = bodyMap
 			}
 			s.sessionService.SaveResponse(sessionID, &session.SessionResponse{
-				RequestURL:  requestURL,
-				ResponseURL: requestURL,
-				StatusCode:  statusCode,
+				RequestURL:  errDetails.URL,
+				ResponseURL: errDetails.URL,
+				StatusCode:  errDetails.StatusCode,
 				Body:        parsedBody,
 			})
 
@@ -1305,10 +1293,10 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			s.sessionService.SaveError(sessionID, &session.SessionStackTrace{
 				Golang: goFrames,
 				PHP:    phpFrames,
-			}, err.Error(), errDetails)
+			}, err.Error(), toDetailsMap(errDetails))
 		}
 
-		s.logRemoteAction(sessionID, siteID, action, "error", action, fmt.Sprintf("Failed to %s plugin: %s", action, pluginSlug), errDetails)
+		s.logRemoteAction(sessionID, siteID, action, "error", action, fmt.Sprintf("Failed to %s plugin: %s", action, pluginSlug), toDetailsMap(errDetails))
 
 		if s.sessionService != nil && sessionID != "" {
 			s.sessionService.LogStageEnd(sessionID, action, "error", durationMs)
@@ -1324,14 +1312,14 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 		// Broadcast failure
 		if s.wsHub != nil {
-			s.wsHub.BroadcastWithSession("remote_plugin_action_complete", map[string]any{
-				"siteId":       siteID,
-				"action":       action,
-				"pluginSlug":   pluginSlug,
-				"success":      false,
-				"error":        err.Error(),
-				"errorDetails": errDetails,
-				"durationMs":   durationMs,
+		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
+				SiteID:       siteID,
+				Action:       action,
+				PluginSlug:   pluginSlug,
+				Success:      false,
+				Error:        err.Error(),
+				ErrorDetails: errDetails,
+				DurationMs:   durationMs,
 			}, sessionID)
 		}
 
@@ -1351,13 +1339,13 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 			RequestURL:  fmt.Sprintf("%s/wp-json/riseup-asia-uploader/v1/plugins/%s", site.URL, action),
 			ResponseURL: site.URL,
 			StatusCode:  200,
-			Body:        map[string]any{"success": true, "action": action, "plugin": pluginSlug},
+		Body:        RemoteActionSuccessBody{Success: true, Action: action, Plugin: pluginSlug},
 		})
 		s.sessionService.LogStageEnd(sessionID, action, "success", durationMs)
 	}
-	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), map[string]any{
-		"durationMs": durationMs,
-	})
+	s.logRemoteAction(sessionID, siteID, action, "info", action, fmt.Sprintf("Successfully %sd plugin: %s", action, pluginSlug), toDetailsMap(DurationDetail{
+		DurationMs: durationMs,
+	}))
 
 	// Invalidate cache since plugin status changed
 	_ = s.InvalidateRemotePluginsCache(ctx, siteID)
@@ -1366,13 +1354,13 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 
 	// Broadcast success
 	if s.wsHub != nil {
-		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", map[string]any{
-			"siteId":     siteID,
-			"siteName":   site.Name,
-			"action":     action,
-			"pluginSlug": pluginSlug,
-			"success":    true,
-			"durationMs": durationMs,
+		s.wsHub.BroadcastWithSession("remote_plugin_action_complete", RemoteActionCompleteEvent{
+			SiteID:     siteID,
+			SiteName:   site.Name,
+			Action:     action,
+			PluginSlug: pluginSlug,
+			Success:    true,
+			DurationMs: durationMs,
 		}, sessionID)
 	}
 
@@ -1380,94 +1368,108 @@ func (s *Service) executeRemotePluginAction(ctx context.Context, siteID int64, p
 	return nil
 }
 
-// buildPHPStackFrames extracts PHP stack trace frames from error details into typed structs
-func (s *Service) buildPHPStackFrames(details map[string]any) []session.StackFrame {
-	var frames []session.StackFrame
-	if rawFrames, ok := details["stackTraceFrames"].([]any); ok {
-		for _, f := range rawFrames {
-			if fm, ok := f.(map[string]any); ok {
-				frame := session.StackFrame{}
-				if fn, ok := fm["function"].(string); ok {
-					frame.Function = fn
-				}
-				if file, ok := fm["file"].(string); ok {
-					frame.File = file
-				}
-				if line, ok := fm["line"].(float64); ok {
-					frame.Line = int(line)
-				}
-				if class, ok := fm["class"].(string); ok {
-					frame.Class = class
-				}
-				frames = append(frames, frame)
-			}
-		}
+// buildPHPStackFrames converts typed PHP stack frames into session StackFrame structs
+func (s *Service) buildPHPStackFrames(details *ExtractedErrorDetails) []session.StackFrame {
+	frames := make([]session.StackFrame, 0, len(details.StackTraceFrames))
+	for _, f := range details.StackTraceFrames {
+		frames = append(frames, session.StackFrame{
+			Function: f.Function,
+			File:     f.File,
+			Line:     f.Line,
+			Class:    f.Class,
+		})
 	}
 	return frames
 }
 
 // extractErrorDetails extracts PHP stack trace frames and other details from WordPress API errors
-func (s *Service) extractErrorDetails(err error) map[string]any {
-	details := map[string]any{
-		"error": err.Error(),
+func (s *Service) extractErrorDetails(err error) *ExtractedErrorDetails {
+	details := &ExtractedErrorDetails{
+		Error: err.Error(),
 	}
 
-	// Try to extract API error details
-	if apiErr, ok := err.(*wordpress.APIError); ok {
-		details["method"] = apiErr.Method
-		details["endpoint"] = apiErr.Endpoint
-		details["url"] = apiErr.URL
-		details["statusCode"] = apiErr.StatusCode
-		details["requestBody"] = apiErr.RequestBody
-		details["responseBody"] = apiErr.ResponseBody
-		if apiErr.StackTrace != "" {
-			details["stackTrace"] = apiErr.StackTrace
-		}
-		if apiErr.PluginSlugIn != "" {
-			details["pluginSlugIn"] = apiErr.PluginSlugIn
-		}
-		if apiErr.PluginIDUsed != "" {
-			details["pluginIdUsed"] = apiErr.PluginIDUsed
-		}
+	apiErr, ok := err.(*wordpress.APIError)
+	if !ok {
+		return details
+	}
 
-		// Try to parse stackTraceFrames from response body if present
-		var respData map[string]any
-		if err := json.Unmarshal([]byte(apiErr.ResponseBody), &respData); err == nil {
-			// Try envelope format first: Errors.Backend and Errors.DelegatedServiceErrorStack
-			if errorsObj, ok := respData["Errors"].(map[string]any); ok {
-				if backendMsg, ok := errorsObj["BackendMessage"].(string); ok {
-					details["errorMessage"] = backendMsg
+	details.Method = apiErr.Method
+	details.Endpoint = apiErr.Endpoint
+	details.URL = apiErr.URL
+	details.StatusCode = apiErr.StatusCode
+	details.RequestBody = apiErr.RequestBody
+	details.ResponseBody = apiErr.ResponseBody
+	if apiErr.StackTrace != "" {
+		details.StackTrace = apiErr.StackTrace
+	}
+	if apiErr.PluginSlugIn != "" {
+		details.PluginSlugIn = apiErr.PluginSlugIn
+	}
+	if apiErr.PluginIDUsed != "" {
+		details.PluginIDUsed = apiErr.PluginIDUsed
+	}
+
+	// Try to parse structured data from response body
+	var respData map[string]any
+	if json.Unmarshal([]byte(apiErr.ResponseBody), &respData) != nil {
+		return details
+	}
+
+	// Envelope format: Errors.Backend and Errors.DelegatedServiceErrorStack
+	if errorsObj, ok := respData["Errors"].(map[string]any); ok {
+		if backendMsg, ok := errorsObj["BackendMessage"].(string); ok {
+			details.ErrorMessage = backendMsg
+		}
+		if delegatedStack, ok := errorsObj["DelegatedServiceErrorStack"].([]any); ok {
+			lines := make([]string, 0, len(delegatedStack))
+			for _, line := range delegatedStack {
+				if str, ok := line.(string); ok {
+					lines = append(lines, str)
 				}
-				if delegatedStack, ok := errorsObj["DelegatedServiceErrorStack"].([]any); ok {
-					lines := make([]string, 0, len(delegatedStack))
-					for _, line := range delegatedStack {
-						if s, ok := line.(string); ok {
-							lines = append(lines, s)
+			}
+			details.DelegatedServiceErrorStack = lines
+		}
+		if backendStack, ok := errorsObj["Backend"].([]any); ok && len(backendStack) > 0 {
+			if raw, marshalErr := json.Marshal(backendStack); marshalErr == nil {
+				details.PHPBackendStack = raw
+			}
+		}
+	}
+
+	// Legacy format: error.details.stackTraceFrames
+	if errObj, ok := respData["error"].(map[string]any); ok {
+		if detailsObj, ok := errObj["details"].(map[string]any); ok {
+			if frames, ok := detailsObj["stackTraceFrames"].([]any); ok {
+				parsed := make([]PHPStackFrame, 0, len(frames))
+				for _, f := range frames {
+					if fm, ok := f.(map[string]any); ok {
+						frame := PHPStackFrame{}
+						if fn, ok := fm["function"].(string); ok {
+							frame.Function = fn
 						}
+						if file, ok := fm["file"].(string); ok {
+							frame.File = file
+						}
+						if line, ok := fm["line"].(float64); ok {
+							frame.Line = int(line)
+						}
+						if class, ok := fm["class"].(string); ok {
+							frame.Class = class
+						}
+						parsed = append(parsed, frame)
 					}
-					details["delegatedServiceErrorStack"] = lines
 				}
-				if backendStack, ok := errorsObj["Backend"].([]any); ok && len(backendStack) > 0 {
-					details["phpBackendStack"] = backendStack
-				}
+				details.StackTraceFrames = parsed
 			}
-
-			// Legacy format: error.details.stackTraceFrames
-			if errObj, ok := respData["error"].(map[string]any); ok {
-				if detailsObj, ok := errObj["details"].(map[string]any); ok {
-					if frames, ok := detailsObj["stackTraceFrames"].([]any); ok {
-						details["stackTraceFrames"] = frames
-					}
-					if file, ok := detailsObj["fileFull"].(string); ok {
-						details["errorFile"] = file
-					}
-					if line, ok := detailsObj["line"].(float64); ok {
-						details["errorLine"] = int(line)
-					}
-				}
+			if file, ok := detailsObj["fileFull"].(string); ok {
+				details.ErrorFile = file
+			}
+			if line, ok := detailsObj["line"].(float64); ok {
+				details.ErrorLine = int(line)
 			}
 		}
 	}
+
 	return details
 }
 
@@ -1543,7 +1545,7 @@ func (s *Service) endRemoteSession(sessionID, status, errorMsg string) {
 // fetchAndAttachRemotePHPErrors pulls recent PHP error sessions from the remote WordPress
 // site and enriches the error details map with them. It also logs them to the session.
 // This runs best-effort and never returns errors — failures are silently logged.
-func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessionID string, siteID int64, action, pluginSlug, siteName, siteURL string, errDetails map[string]any) {
+func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessionID string, siteID int64, action, pluginSlug, siteName, siteURL string, errDetails *ExtractedErrorDetails) {
 	s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors", "Pulling recent PHP error sessions from remote site...", nil)
 
 	// Fetch error sessions
@@ -1555,26 +1557,28 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 
 	if result != nil && len(result.Entries) > 0 {
 		// Attach to error details so they appear in error.log.txt and WebSocket broadcast
-		phpErrors := make([]map[string]any, 0, len(result.Entries))
+		phpErrors := make([]PHPErrorEntry, 0, len(result.Entries))
 		for _, entry := range result.Entries {
-			phpErr := map[string]any{
-				"id":        entry.ID,
-				"level":     entry.Level,
-				"message":   entry.Message,
-				"file":      entry.File,
-				"line":      entry.Line,
-				"createdAt": entry.CreatedAt,
+			phpErr := PHPErrorEntry{
+				ID:        entry.ID,
+				Level:     entry.Level,
+				Message:   entry.Message,
+				File:      entry.File,
+				Line:      entry.Line,
+				CreatedAt: entry.CreatedAt,
 			}
 			if len(entry.StackTraceFrames) > 0 {
-				phpErr["stackTraceFrames"] = entry.StackTraceFrames
+				if raw, marshalErr := json.Marshal(entry.StackTraceFrames); marshalErr == nil {
+					phpErr.StackTraceFrames = raw
+				}
 			}
 			phpErrors = append(phpErrors, phpErr)
 		}
-		errDetails["remotePHPErrors"] = phpErrors
-		errDetails["remotePHPErrorCount"] = len(result.Entries)
+		errDetails.RemotePHPErrors = phpErrors
+		errDetails.RemotePHPErrorCount = len(result.Entries)
 
 		if result.Flash.HasUnseen {
-			errDetails["remotePHPFlashUnseen"] = result.Flash.UnseenCount
+			errDetails.RemotePHPFlashUnseen = result.Flash.UnseenCount
 		}
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_errors",
@@ -1607,8 +1611,8 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 	}
 
 	if logsResult != nil && logsResult.StackTraceLog != nil && logsResult.StackTraceLog.Exists && logsResult.StackTraceLog.Content != "" {
-		errDetails["remotePHPStackTrace"] = logsResult.StackTraceLog.Content
-		errDetails["remotePHPStackTraceLines"] = logsResult.StackTraceLog.Lines
+		errDetails.RemotePHPStackTrace = logsResult.StackTraceLog.Content
+		errDetails.RemotePHPStackTraceLines = logsResult.StackTraceLog.Lines
 
 		s.logRemoteAction(sessionID, siteID, action, "info", "fetch_php_stacktrace",
 			fmt.Sprintf("Retrieved PHP stacktrace.txt (%d lines, %d bytes)", logsResult.StackTraceLog.Lines, logsResult.StackTraceLog.TotalSize),
@@ -1634,27 +1638,9 @@ func (s *Service) fetchAndAttachRemotePHPErrors(client *wordpress.Client, sessio
 // logToErrorFile writes error details to data/errors/error.log.txt
 // Uses MD5 deduplication to suppress identical error entries.
 // Format matches the standardized error log spec with full request attribution.
-func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details map[string]any) {
-	// Extract fields from details
-	statusCode := 0
-	if sc, ok := details["statusCode"].(int); ok {
-		statusCode = sc
-	}
-	endpoint := ""
-	if ep, ok := details["endpoint"].(string); ok {
-		endpoint = ep
-	}
-	responseBody := ""
-	if rb, ok := details["responseBody"].(string); ok {
-		responseBody = rb
-	}
-	errMsg := ""
-	if em, ok := details["error"].(string); ok {
-		errMsg = em
-	}
-
+func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteName, siteURL string, details *ExtractedErrorDetails) {
 	// Build deduplication hash from stable error identity (excludes timestamp)
-	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteID, pluginSlug, endpoint, statusCode, responseBody)
+	hashInput := fmt.Sprintf("%s|%d|%s|%s|%d|%s", action, siteID, pluginSlug, details.Endpoint, details.StatusCode, details.ResponseBody)
 	hashBytes := md5.Sum([]byte(hashInput))
 	hashHex := hex.EncodeToString(hashBytes[:])
 
@@ -1685,24 +1671,22 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	defer f.Close()
 
 	// Build delegated URL (the full WordPress endpoint that was actually called)
-	method := "POST"
-	if m, ok := details["method"].(string); ok && m != "" {
-		method = m
+	method := details.Method
+	if method == "" {
+		method = "POST"
 	}
-	delegatedURL := ""
-	if u, ok := details["url"].(string); ok && u != "" {
-		delegatedURL = u
-	} else if endpoint != "" {
-		delegatedURL = fmt.Sprintf("%s/wp-json%s", siteURL, endpoint)
+	delegatedURL := details.URL
+	if delegatedURL == "" && details.Endpoint != "" {
+		delegatedURL = fmt.Sprintf("%s/wp-json%s", siteURL, details.Endpoint)
 	}
 
 	// Detect if a WP Core mutation endpoint was used (guard rail)
 	isWPCoreMutation := false
 	blockedEndpoint := ""
 	requiredEndpoint := ""
-	if strings.Contains(endpoint, "/wp/v2/plugins") && method != "GET" {
+	if strings.Contains(details.Endpoint, "/wp/v2/plugins") && method != "GET" {
 		isWPCoreMutation = true
-		blockedEndpoint = endpoint
+		blockedEndpoint = details.Endpoint
 		// Determine the correct Riseup Uploader endpoint
 		switch action {
 		case "disable":
@@ -1718,15 +1702,13 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 
 	// Plugin identifier from request body (pluginSlugIn from APIError)
 	pluginIdentifier := pluginSlug
-	if psi, ok := details["pluginSlugIn"].(string); ok && psi != "" {
-		pluginIdentifier = psi
+	if details.PluginSlugIn != "" {
+		pluginIdentifier = details.PluginSlugIn
 	}
 
 	// Request body - use actual request body from APIError, fall back to reconstruction
-	requestBody := ""
-	if rb, ok := details["requestBody"].(string); ok && rb != "" {
-		requestBody = rb
-	} else {
+	requestBody := details.RequestBody
+	if requestBody == "" {
 		requestBody = fmt.Sprintf(`{"plugin":"%s"}`, pluginIdentifier)
 	}
 
@@ -1741,15 +1723,15 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	logEntry += fmt.Sprintf("  Requested Action: %s\n", action)
 	logEntry += "  Delegated Request:\n"
 	logEntry += fmt.Sprintf("    Method: %s\n", method)
-	logEntry += fmt.Sprintf("    Endpoint: %s\n", endpoint)
-	logEntry += fmt.Sprintf("    Request Body:\n")
+	logEntry += fmt.Sprintf("    Endpoint: %s\n", details.Endpoint)
+	logEntry += "    Request Body:\n"
 	logEntry += fmt.Sprintf("      %s\n", requestBody)
 	logEntry += "  Delegated Response:\n"
-	logEntry += fmt.Sprintf("    Status Code: %d\n", statusCode)
+	logEntry += fmt.Sprintf("    Status Code: %d\n", details.StatusCode)
 
 	// Response body
-	if len(responseBody) > 0 {
-		displayBody := responseBody
+	if len(details.ResponseBody) > 0 {
+		displayBody := details.ResponseBody
 		if len(displayBody) > 2000 {
 			displayBody = displayBody[:2000] + "... (truncated)"
 		}
@@ -1758,7 +1740,7 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 
 	// Error summary
 	logEntry += "  Error Summary:\n"
-	logEntry += fmt.Sprintf("    %s\n", errMsg)
+	logEntry += fmt.Sprintf("    %s\n", details.Error)
 	if isWPCoreMutation {
 		logEntry += "    WARNING: This request was sent to a WordPress Core endpoint instead of the Riseup Uploader.\n"
 	} else {
@@ -1774,34 +1756,23 @@ func (s *Service) logToErrorFile(action string, siteID int64, pluginSlug, siteNa
 	}
 
 	// PHP stack trace frames
-	if frames, ok := details["stackTraceFrames"].([]any); ok && len(frames) > 0 {
+	if len(details.StackTraceFrames) > 0 {
 		logEntry += "  PHP Stack Trace Frames:\n"
-		for i, frame := range frames {
-			if frameMap, ok := frame.(map[string]any); ok {
-				file := frameMap["file"]
-				line := frameMap["line"]
-				fn := frameMap["function"]
-				class := frameMap["class"]
-				if class != nil {
-					logEntry += fmt.Sprintf("    #%d %s::%s() at %s:%v\n", i, class, fn, file, line)
-				} else {
-					logEntry += fmt.Sprintf("    #%d %s() at %s:%v\n", i, fn, file, line)
-				}
+		for i, frame := range details.StackTraceFrames {
+			if frame.Class != "" {
+				logEntry += fmt.Sprintf("    #%d %s::%s() at %s:%d\n", i, frame.Class, frame.Function, frame.File, frame.Line)
+			} else {
+				logEntry += fmt.Sprintf("    #%d %s() at %s:%d\n", i, frame.Function, frame.File, frame.Line)
 			}
 		}
 	}
 
 	// Remote PHP error sessions (fetched from plugin's SQLite DB)
-	if phpErrors, ok := details["remotePHPErrors"].([]map[string]any); ok && len(phpErrors) > 0 {
-		logEntry += fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(phpErrors))
-		for i, phpErr := range phpErrors {
-			msg, _ := phpErr["message"].(string)
-			file, _ := phpErr["file"].(string)
-			line := phpErr["line"]
-			level, _ := phpErr["level"].(string)
-			created, _ := phpErr["createdAt"].(string)
-			logEntry += fmt.Sprintf("    [%d] [%s] %s\n", i+1, strings.ToUpper(level), msg)
-			logEntry += fmt.Sprintf("        File: %s  Line: %v  At: %s\n", file, line, created)
+	if len(details.RemotePHPErrors) > 0 {
+		logEntry += fmt.Sprintf("  Remote PHP Error Sessions (%d entries):\n", len(details.RemotePHPErrors))
+		for i, phpErr := range details.RemotePHPErrors {
+			logEntry += fmt.Sprintf("    [%d] [%s] %s\n", i+1, strings.ToUpper(phpErr.Level), phpErr.Message)
+			logEntry += fmt.Sprintf("        File: %s  Line: %d  At: %s\n", phpErr.File, phpErr.Line, phpErr.CreatedAt)
 		}
 	}
 

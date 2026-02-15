@@ -107,3 +107,104 @@ type StackTraceContentDetails struct {
 	Lines     int    `json:"lines"`
 	Truncated bool   `json:"truncated"`
 }
+
+// RemoteActionContext carries context for remote plugin action logs.
+type RemoteActionContext struct {
+	SiteID     int64  `json:"siteId"`
+	SiteName   string `json:"siteName,omitempty"`
+	SiteURL    string `json:"siteUrl,omitempty"`
+	PluginSlug string `json:"pluginSlug,omitempty"`
+}
+
+// RemoteActionExecDetails carries target context for a remote plugin action execution step.
+type RemoteActionExecDetails struct {
+	TargetURL  string `json:"targetUrl"`
+	PluginSlug string `json:"pluginSlug"`
+}
+
+// DurationDetail carries a duration in milliseconds.
+type DurationDetail struct {
+	DurationMs int64 `json:"durationMs"`
+}
+
+// RemoteActionStartedEvent is the BroadcastWithSession payload for "remote_plugin_action_started".
+type RemoteActionStartedEvent struct {
+	SiteID     int64  `json:"siteId"`
+	SiteName   string `json:"siteName"`
+	Action     string `json:"action"`
+	PluginSlug string `json:"pluginSlug"`
+}
+
+// RemoteActionCompleteEvent is the BroadcastWithSession payload for "remote_plugin_action_complete".
+type RemoteActionCompleteEvent struct {
+	SiteID       int64                  `json:"siteId"`
+	SiteName     string                 `json:"siteName,omitempty"`
+	Action       string                 `json:"action"`
+	PluginSlug   string                 `json:"pluginSlug"`
+	Success      bool                   `json:"success"`
+	Error        string                 `json:"error,omitempty"`
+	ErrorDetails *ExtractedErrorDetails `json:"errorDetails,omitempty"`
+	DurationMs   int64                  `json:"durationMs"`
+}
+
+// RemoteActionRequestBody is the typed body for session SaveRequest in remote actions.
+type RemoteActionRequestBody struct {
+	SiteID     int64  `json:"siteId"`
+	PluginSlug string `json:"pluginSlug"`
+	Action     string `json:"action"`
+}
+
+// RemoteActionSuccessBody is the typed body for session SaveResponse on success.
+type RemoteActionSuccessBody struct {
+	Success bool   `json:"success"`
+	Action  string `json:"action"`
+	Plugin  string `json:"plugin"`
+}
+
+// --- Extracted error details ---
+
+// PHPStackFrame represents a single frame in a PHP stack trace.
+type PHPStackFrame struct {
+	Function string `json:"function"`
+	File     string `json:"file"`
+	Line     int    `json:"line"`
+	Class    string `json:"class,omitempty"`
+}
+
+// PHPErrorEntry represents a PHP error entry from the remote WordPress site.
+type PHPErrorEntry struct {
+	ID               int             `json:"id"`
+	Level            string          `json:"level"`
+	Message          string          `json:"message"`
+	File             string          `json:"file"`
+	Line             int             `json:"line"`
+	CreatedAt        string          `json:"createdAt"`
+	StackTraceFrames json.RawMessage `json:"stackTraceFrames,omitempty"`
+}
+
+// ExtractedErrorDetails carries structured error context extracted from WordPress API errors.
+// This replaces the legacy map[string]any return from extractErrorDetails.
+type ExtractedErrorDetails struct {
+	Error                      string          `json:"error"`
+	Method                     string          `json:"method,omitempty"`
+	Endpoint                   string          `json:"endpoint,omitempty"`
+	URL                        string          `json:"url,omitempty"`
+	StatusCode                 int             `json:"statusCode,omitempty"`
+	RequestBody                string          `json:"requestBody,omitempty"`
+	ResponseBody               string          `json:"responseBody,omitempty"`
+	StackTrace                 string          `json:"stackTrace,omitempty"`
+	PluginSlugIn               string          `json:"pluginSlugIn,omitempty"`
+	PluginIDUsed               string          `json:"pluginIdUsed,omitempty"`
+	ErrorMessage               string          `json:"errorMessage,omitempty"`
+	DelegatedServiceErrorStack []string        `json:"delegatedServiceErrorStack,omitempty"`
+	PHPBackendStack            json.RawMessage `json:"phpBackendStack,omitempty"`
+	StackTraceFrames           []PHPStackFrame `json:"stackTraceFrames,omitempty"`
+	ErrorFile                  string          `json:"errorFile,omitempty"`
+	ErrorLine                  int             `json:"errorLine,omitempty"`
+	// Enriched by fetchAndAttachRemotePHPErrors
+	RemotePHPErrors          []PHPErrorEntry `json:"remotePHPErrors,omitempty"`
+	RemotePHPErrorCount      int             `json:"remotePHPErrorCount,omitempty"`
+	RemotePHPFlashUnseen     int             `json:"remotePHPFlashUnseen,omitempty"`
+	RemotePHPStackTrace      string          `json:"remotePHPStackTrace,omitempty"`
+	RemotePHPStackTraceLines int             `json:"remotePHPStackTraceLines,omitempty"`
+}
