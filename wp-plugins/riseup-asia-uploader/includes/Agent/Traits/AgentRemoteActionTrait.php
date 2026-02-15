@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
 
 trait AgentRemoteActionTrait {
@@ -72,7 +73,7 @@ trait AgentRemoteActionTrait {
     public function testConnection(int $agentId): array {
         $this->fileLogger->info('Testing agent connection', array('id' => $agentId));
 
-        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, API_FULL_NAMESPACE . '/status');
+        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/status');
 
         if (is_wp_error($result)) {
             return $this->handleTestConnectionFailure($agentId, $result);
@@ -105,7 +106,7 @@ trait AgentRemoteActionTrait {
     public function syncPlugins(int $agentId): array|\WP_Error {
         $this->fileLogger->info('Syncing plugins from agent', array('id' => $agentId));
 
-        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, API_FULL_NAMESPACE . '/plugins');
+        $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/plugins');
 
         if (is_wp_error($result)) {
             $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Failed->value, null, $result->get_error_message());
@@ -128,7 +129,7 @@ trait AgentRemoteActionTrait {
             'agent_id' => $agentId, 'action' => $action, 'slug' => $slug,
         ));
 
-        $endpoint = API_FULL_NAMESPACE . '/plugins/' . urlencode($slug) . '/' . $action;
+        $endpoint = PluginConfigType::apiFullNamespace() . '/plugins/' . urlencode($slug) . '/' . $action;
         $result = $this->apiRequest($agentId, HttpMethodType::Post->value, $endpoint);
 
         if (is_wp_error($result)) {

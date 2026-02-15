@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
-
+use RiseupAsia\Enums\PluginConfigType;
 trait RootDbSchemaTrait {
 
     private function createSchema(PDO $pdo): void {
@@ -81,7 +81,7 @@ trait RootDbSchemaTrait {
         $stmt->execute(array(
             $config['title'] ?? 'Untitled Snapshot', $config['type'] ?? 'full',
             gmdate('c'), gethostname() ?: php_uname('n'),
-            $mysqlVersion, $wpVersion, PLUGIN_VERSION,
+            $mysqlVersion, $wpVersion, PluginConfigType::Version->value,
             isset($config['settings']) ? json_encode($config['settings']) : null,
         ));
 

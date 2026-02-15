@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PluginConfigType;
+
 // Load trait files
 require_once __DIR__ . '/Traits/UploadIgnorePatternTrait.php';
 
@@ -39,7 +41,7 @@ class RiseupUploadIgnore {
      * @return bool True if file was loaded.
      */
     public function load(string $pluginDir): bool {
-        $ignoreFile = rtrim($pluginDir, '/\\') . '/' . IGNORE_FILENAME;
+        $ignoreFile = rtrim($pluginDir, '/\\') . '/' . PluginConfigType::IgnoreFilename->value;
         $this->fileLogger->debug('Loading uploadignore', array('path' => $ignoreFile));
 
         if (RiseupBooleanHelpers::isFileMissing($ignoreFile)) {

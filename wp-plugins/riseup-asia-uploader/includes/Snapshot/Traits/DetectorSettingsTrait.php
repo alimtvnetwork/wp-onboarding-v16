@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
@@ -26,7 +27,7 @@ trait DetectorSettingsTrait {
      * @return string Provider ID.
      */
     public function getPreferredProvider(): string {
-        $settings = get_option(OPTION_SNAPSHOT_SETTINGS, array());
+        $settings = get_option(OptionNameType::SnapshotSettings->value, array());
         $preferred = isset($settings['preferred_provider']) ? $settings['preferred_provider'] : SnapshotProviderType::Auto->value;
 
         if ($preferred === SnapshotProviderType::Auto->value) {
@@ -139,7 +140,7 @@ trait DetectorSettingsTrait {
             'worker_pool_size' => SNAPSHOT_WORKER_POOL_DEFAULT, 'storage_mode' => 'per-table',
         );
 
-        $saved = get_option(OPTION_SNAPSHOT_SETTINGS, array());
+        $saved = get_option(OptionNameType::SnapshotSettings->value, array());
         return array_merge($defaults, $saved);
     }
 
@@ -153,7 +154,7 @@ trait DetectorSettingsTrait {
         $current = $this->getSettings();
         $updated = $this->validateSettings(array_merge($current, $settings));
 
-        $result = update_option(OPTION_SNAPSHOT_SETTINGS, $updated);
+        $result = update_option(OptionNameType::SnapshotSettings->value, $updated);
         if ($result) {
             $this->logger->info('[SNAPSHOT] Settings updated', array('changed_keys' => array_keys(array_diff_assoc($settings, $current))));
         }

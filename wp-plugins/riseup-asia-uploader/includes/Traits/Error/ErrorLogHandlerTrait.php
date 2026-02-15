@@ -9,6 +9,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PluginConfigType;
+
 trait ErrorLogHandlerTrait {
 
     /** Handle error-logs endpoint. */
@@ -16,7 +18,7 @@ trait ErrorLogHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error logs endpoint called');
             $settings = $this->resolveLogSettings($request);
-            $result = array('version' => PLUGIN_VERSION, 'settings' => $settings);
+            $result = array('version' => PluginConfigType::Version->value, 'settings' => $settings);
 
             if ($settings['include_error_log']) {
                 $result['error_log'] = $this->readLogTail($this->fileLogger->getErrorFile(), $settings['max_lines']);

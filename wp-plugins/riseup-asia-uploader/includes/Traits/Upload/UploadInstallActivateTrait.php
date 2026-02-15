@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 
 trait UploadInstallActivateTrait
@@ -69,7 +70,7 @@ trait UploadInstallActivateTrait
     private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
         $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $error_msg);
         return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::Upload->value)
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Upload->value)
             ->setSingleResult(array(
                 'plugin_slug' => $slug, 'is_update' => $is_update,
                 'activated' => false, 'activation_error' => $error_msg,
@@ -110,8 +111,8 @@ trait UploadInstallActivateTrait
     /** Resolve the effective version based on self-update status and available sources. */
     private function resolveEffectiveVersion(string $installed, string $client, bool $is_self_update): string {
         if ($is_self_update) {
-            return $client ?: ($installed ?: PLUGIN_VERSION);
+            return $client ?: ($installed ?: PluginConfigType::Version->value);
         }
-        return $installed ?: ($client ?: PLUGIN_VERSION);
+        return $installed ?: ($client ?: PluginConfigType::Version->value);
     }
 }

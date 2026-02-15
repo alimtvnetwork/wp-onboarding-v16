@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
@@ -118,7 +119,7 @@ trait ExporterPublicApiTrait {
         }
 
         $nonce = wp_create_nonce('riseup_snapshot_download_' . $exportId);
-        return rest_url(API_FULL_NAMESPACE . '/' . EndpointType::SnapshotDownloadFile->value . '?token=' . $nonce . '&id=' . $exportId);
+        return rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::SnapshotDownloadFile->value . '?token=' . $nonce . '&id=' . $exportId);
     }
 
     /**

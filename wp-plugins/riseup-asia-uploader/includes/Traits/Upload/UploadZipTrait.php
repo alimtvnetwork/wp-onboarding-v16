@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 
@@ -129,7 +130,7 @@ trait UploadZipTrait
 
     /** Pre-log self-update activity before files are replaced. */
     private function preLogSelfUpdate($slug, $upload_source, $client_version, $file_size) {
-        $old_version = PLUGIN_VERSION;
+        $old_version = PluginConfigType::Version->value;
         $this->fileLogger->info('Self-update detected, pre-logging activity', array('old_version' => $old_version));
 
         $this->logger->logPluginAction(

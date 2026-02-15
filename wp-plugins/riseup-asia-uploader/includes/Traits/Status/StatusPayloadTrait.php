@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\EndpointType;
-
+use RiseupAsia\Enums\PluginConfigType;
 trait StatusPayloadTrait {
 
     /** Handle status check. */
@@ -22,7 +22,7 @@ trait StatusPayloadTrait {
         $db_available = $this->db !== null;
 
         return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::Status->value)
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value)
             ->setSingleResult($this->buildStatusPayload($live_version, $db_available))
             ->toResponse();
     }
@@ -31,11 +31,11 @@ trait StatusPayloadTrait {
      * Detect the live plugin version from the file header on disk.
      */
     private function detectLiveVersion(): string {
-        $main_plugin_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
+        $main_plugin_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/' . PluginConfigType::Slug->value . '.php';
         clearstatcache(true, $main_plugin_file);
 
         if (RiseupBooleanHelpers::isFileMissing($main_plugin_file)) {
-            return PLUGIN_VERSION;
+            return PluginConfigType::Version->value;
         }
 
         $this->invalidateVersionCaches($main_plugin_file);
@@ -50,7 +50,7 @@ trait StatusPayloadTrait {
         }
 
         opcache_invalidate($main_plugin_file, true);
-        $constants_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/includes/constants.php';
+        $constants_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/includes/constants.php';
         if (file_exists($constants_file)) {
             opcache_invalidate($constants_file, true);
         }
@@ -63,7 +63,7 @@ trait StatusPayloadTrait {
             return $m[1];
         }
 
-        return PLUGIN_VERSION;
+        return PluginConfigType::Version->value;
     }
 
     /**
@@ -71,7 +71,7 @@ trait StatusPayloadTrait {
      */
     private function collectRegisteredRoutes(): array {
         $routes = array();
-        $ns_prefix = '/' . API_FULL_NAMESPACE;
+        $ns_prefix = '/' . PluginConfigType::apiFullNamespace();
 
         foreach (rest_get_server()->get_routes() as $route => $handlers) {
             if (strpos($route, $ns_prefix) !== 0) {
@@ -105,7 +105,7 @@ trait StatusPayloadTrait {
     private function loadEndpointsReference(): ?array {
         $path = plugin_dir_path(__FILE__) . '../data/endpoints.json';
         if (RiseupBooleanHelpers::isFileMissing($path)) {
-            $path = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/data/endpoints.json';
+            $path = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/endpoints.json';
             if (RiseupBooleanHelpers::isFileMissing($path)) {
                 return null;
             }
@@ -131,7 +131,7 @@ trait StatusPayloadTrait {
     /** Build core status fields. */
     private function buildCoreStatusFields(string $version, bool $dbAvailable): array {
         return array(
-            'Plugin'      => PLUGIN_NAME,
+            'Plugin'      => PluginConfigType::Name->value,
             'Version'     => $version,
             'Slug'        => \RiseupAsia\Enums\PluginConfigType::Slug->value,
             'Api'         => \RiseupAsia\Enums\PluginConfigType::apiFullNamespace(),

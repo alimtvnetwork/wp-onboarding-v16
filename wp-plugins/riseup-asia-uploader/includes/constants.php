@@ -2,13 +2,13 @@
 /**
  * Riseup Asia Uploader - Plugin Constants
  *
- * MIGRATION STATUS: Most constants have been migrated to PHP 8.2+ backed enums.
- * See includes/Enums/ for the canonical sources. Constants here are retained
- * only for backward compatibility with external consumers.
+ * Contains only non-deprecated runtime configuration constants.
+ * All identity, path, REST, and option constants have been migrated
+ * to PHP 8.2+ backed enums in includes/Enums/.
  *
  * @package RiseupAsiaUploader
  * @since   1.4.0
- * @deprecated Use PluginConfigType, OptionNameType, and other enum classes instead.
+ * @see     PluginConfigType, OptionNameType, PathSubdirType
  */
 
 if (!defined('ABSPATH')) {
@@ -16,75 +16,10 @@ if (!defined('ABSPATH')) {
 }
 
 // =============================================================================
-// PLUGIN IDENTITY — @see PluginConfigType enum
-// =============================================================================
-
-/** @deprecated Use PluginConfigType::Version->value */
-if (!defined('PLUGIN_VERSION')) {
-    define('PLUGIN_VERSION', '1.57.0');
-}
-/** @deprecated Use PluginConfigType::Slug->value */
-if (!defined('PLUGIN_SLUG')) {
-    define('PLUGIN_SLUG', 'riseup-asia-uploader');
-}
-/** @deprecated Use PluginConfigType::Name->value */
-if (!defined('PLUGIN_NAME')) {
-    define('PLUGIN_NAME', 'Riseup Asia Uploader');
-}
-/** @deprecated Use PluginConfigType::MinWpVersion->value */
-if (!defined('MIN_WP_VERSION')) {
-    define('MIN_WP_VERSION', '5.6');
-}
-/** @deprecated Use PluginConfigType::MinPhpVersion->value */
-if (!defined('MIN_PHP_VERSION')) {
-    define('MIN_PHP_VERSION', '8.2');
-}
-
-// =============================================================================
-// PATHS — @see PathSubdirType, PathDatabaseType, PathLogFileType, PathConfigType enums
-// UPLOADS_SUBDIR retained as plugin identity slug.
-// =============================================================================
-
-/** @deprecated Use PluginConfigType::UploadsSubdir->value */
-if (!defined('UPLOADS_SUBDIR')) {
-    define('UPLOADS_SUBDIR', 'riseup-asia-uploader');
-}
-
-// =============================================================================
-// REST API CONFIGURATION — @see PluginConfigType enum
-// =============================================================================
-
-/** @deprecated Use PluginConfigType::ApiNamespace->value */
-if (!defined('API_NAMESPACE')) {
-    define('API_NAMESPACE', 'riseup-asia-uploader');
-}
-/** @deprecated Use PluginConfigType::ApiVersion->value */
-if (!defined('API_VERSION')) {
-    define('API_VERSION', 'v1');
-}
-/** @deprecated Use PluginConfigType::apiFullNamespace() */
-if (!defined('API_FULL_NAMESPACE')) {
-    define('API_FULL_NAMESPACE', API_NAMESPACE . '/' . API_VERSION);
-}
-/** @deprecated Use PluginConfigType::LegacyNamespace->value */
-if (!defined('LEGACY_NAMESPACE')) {
-    define('LEGACY_NAMESPACE', 'riseup-uploader/v1');
-}
-
-// =============================================================================
 // DATABASE CONFIGURATION
 // =============================================================================
 if (!defined('DB_WAL_MODE')) {
     define('DB_WAL_MODE', true);
-}
-
-// =============================================================================
-// LOGGING PREFIX — @see PluginConfigType::LogPrefix
-// =============================================================================
-
-/** @deprecated Use PluginConfigType::LogPrefix->value */
-if (!defined('LOG_PREFIX')) {
-    define('LOG_PREFIX', '[Riseup Asia]');
 }
 
 // =============================================================================
@@ -127,25 +62,11 @@ if (!defined('SNAPSHOT_WORKER_POOL_DEFAULT')) {
 }
 
 // =============================================================================
-// WORDPRESS OPTIONS — @see OptionNameType enum
-// =============================================================================
-
-/** @deprecated Use OptionNameType::SnapshotSettings->value */
-if (!defined('OPTION_SNAPSHOT_SETTINGS')) {
-    define('OPTION_SNAPSHOT_SETTINGS', 'riseup_snapshot_settings');
-}
-
-// =============================================================================
 // SNAPSHOT CLEANUP CONSTANTS
 // =============================================================================
 
 if (!defined('SNAPSHOT_STUCK_HOURS')) {
     define('SNAPSHOT_STUCK_HOURS', 24);
-}
-
-/** @deprecated Use OptionNameType::LogRetrieval->value */
-if (!defined('OPTION_LOG_RETRIEVAL')) {
-    define('OPTION_LOG_RETRIEVAL', 'riseup_log_retrieval_settings');
 }
 
 if (!defined('LOG_RETRIEVAL_MAX_LINES')) {
@@ -161,13 +82,4 @@ if (!defined('DEFAULT_LIMIT')) {
 }
 if (!defined('MAX_LIMIT')) {
     define('MAX_LIMIT', 500);
-}
-
-// =============================================================================
-// IGNORE FILE — @see PluginConfigType::IgnoreFilename
-// =============================================================================
-
-/** @deprecated Use PluginConfigType::IgnoreFilename->value */
-if (!defined('IGNORE_FILENAME')) {
-    define('IGNORE_FILENAME', '.uploadignore');
 }

@@ -6,6 +6,7 @@
  * @since   1.57.0
  */
 
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotProviderType;
 
 if (!defined('ABSPATH')) {
@@ -114,7 +115,7 @@ trait DetectorProviderTrait {
                 'full_site' => false, 'database_only' => true, 'selective' => true,
                 'scheduled' => true, 'restore' => true, 'export' => true, 'import' => true,
             ),
-            'version' => PLUGIN_VERSION,
+            'version' => PluginConfigType::Version->value,
             'detection_method' => $has_sqlite ? 'extension_loaded' : 'extension_missing',
             'sqlite_version' => $has_sqlite ? $this->getSqliteVersion() : null,
         );

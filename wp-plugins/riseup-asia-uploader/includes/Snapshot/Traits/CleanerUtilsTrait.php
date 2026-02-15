@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\TriggerSourceType;
@@ -28,7 +29,7 @@ trait CleanerUtilsTrait {
         );
 
         $saved = get_option(
-            defined('OPTION_SNAPSHOT_SETTINGS') ? OPTION_SNAPSHOT_SETTINGS : 'riseup_snapshot_settings',
+            OptionNameType::SnapshotSettings->value,
             array()
         );
         if (is_array($saved)) {

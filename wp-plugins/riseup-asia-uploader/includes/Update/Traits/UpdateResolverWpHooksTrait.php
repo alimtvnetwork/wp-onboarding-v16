@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PluginConfigType;
+
 trait UpdateResolverWpHooksTrait {
 
     /** WordPress filter: Check for plugin updates. */
@@ -29,9 +31,9 @@ trait UpdateResolverWpHooksTrait {
             return $transient;
         }
 
-        $pluginFile = PLUGIN_SLUG . '/' . PLUGIN_SLUG . '.php';
+        $pluginFile = PluginConfigType::Slug->value . '/' . PluginConfigType::Slug->value . '.php';
 
-        if (version_compare($updateInfo['version'], PLUGIN_VERSION, '>')) {
+        if (version_compare($updateInfo['version'], PluginConfigType::Version->value, '>')) {
             $transient->response[$pluginFile] = $this->buildUpdateTransientEntry($updateInfo, $pluginFile);
         } else {
             unset($transient->response[$pluginFile]);
@@ -43,10 +45,10 @@ trait UpdateResolverWpHooksTrait {
 
     /** Build a transient entry for an available update. */
     private function buildUpdateTransientEntry(array $updateInfo, string $pluginFile): object {
-        $this->fileLogger->info('Update available', array('current' => PLUGIN_VERSION, 'new' => $updateInfo['version']));
+        $this->fileLogger->info('Update available', array('current' => PluginConfigType::Version->value, 'new' => $updateInfo['version']));
 
         return (object) array(
-            'id' => PLUGIN_SLUG, 'slug' => PLUGIN_SLUG, 'plugin' => $pluginFile,
+            'id' => PluginConfigType::Slug->value, 'slug' => PluginConfigType::Slug->value, 'plugin' => $pluginFile,
             'new_version' => $updateInfo['version'], 'url' => $updateInfo['url'] ?? '',
             'package' => $updateInfo['package'], 'icons' => array(), 'banners' => array(),
             'tested' => $updateInfo['tested'] ?? '', 'requires' => $updateInfo['requires'] ?? '',
@@ -57,8 +59,8 @@ trait UpdateResolverWpHooksTrait {
     /** Build a transient entry indicating no update available. */
     private function buildNoUpdateTransientEntry(string $pluginFile): object {
         return (object) array(
-            'id' => PLUGIN_SLUG, 'slug' => PLUGIN_SLUG,
-            'plugin' => $pluginFile, 'new_version' => PLUGIN_VERSION, 'url' => '', 'package' => '',
+            'id' => PluginConfigType::Slug->value, 'slug' => PluginConfigType::Slug->value,
+            'plugin' => $pluginFile, 'new_version' => PluginConfigType::Version->value, 'url' => '', 'package' => '',
         );
     }
 
@@ -68,7 +70,7 @@ trait UpdateResolverWpHooksTrait {
             return $result;
         }
 
-        if (!isset($args->slug) || $args->slug !== PLUGIN_SLUG) {
+        if (!isset($args->slug) || $args->slug !== PluginConfigType::Slug->value) {
             return $result;
         }
 
@@ -85,11 +87,11 @@ trait UpdateResolverWpHooksTrait {
     /** Build the plugin info object for the details modal. */
     private function buildPluginInfoObject(array $updateInfo): object {
         return (object) array(
-            'name' => PLUGIN_NAME, 'slug' => PLUGIN_SLUG,
-            'version' => $updateInfo['version'] ?? PLUGIN_VERSION,
+            'name' => PluginConfigType::Name->value, 'slug' => PluginConfigType::Slug->value,
+            'version' => $updateInfo['version'] ?? PluginConfigType::Version->value,
             'author' => 'MD ALIM UL KARIM', 'homepage' => 'https://rasia.pro/alim-r-profile-v1',
-            'requires' => $updateInfo['requires'] ?? MIN_WP_VERSION,
-            'requires_php' => $updateInfo['requires_php'] ?? MIN_PHP_VERSION,
+            'requires' => $updateInfo['requires'] ?? PluginConfigType::MinWpVersion->value,
+            'requires_php' => $updateInfo['requires_php'] ?? PluginConfigType::MinPhpVersion->value,
             'tested' => $updateInfo['tested'] ?? get_bloginfo('version'),
             'download_link' => $updateInfo['package'] ?? '',
             'sections' => array(

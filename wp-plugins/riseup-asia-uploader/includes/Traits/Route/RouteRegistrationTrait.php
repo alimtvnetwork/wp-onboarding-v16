@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait RouteRegistrationTrait
 {
@@ -22,14 +23,14 @@ trait RouteRegistrationTrait
      * Register REST API routes.
      */
     public function registerRoutes() {
-        $this->fileLogger->info('Registering REST API routes', array('namespace' => API_FULL_NAMESPACE));
+        $this->fileLogger->info('Registering REST API routes', array('namespace' => PluginConfigType::apiFullNamespace()));
 
         $registered = 0;
         $failed = 0;
 
         $safeRegister = function (string $route, array $args) use (&$registered, &$failed): void {
             try {
-                register_rest_route(API_FULL_NAMESPACE, $route, $args);
+                register_rest_route(PluginConfigType::apiFullNamespace(), $route, $args);
                 $registered++;
             } catch (Throwable $e) {
                 $failed++;

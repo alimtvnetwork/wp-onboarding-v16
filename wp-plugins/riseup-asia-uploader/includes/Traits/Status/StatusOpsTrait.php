@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait StatusOpsTrait {
 
@@ -35,7 +36,7 @@ trait StatusOpsTrait {
      * Load and validate the OpenAPI spec from disk.
      */
     private function loadOpenApiSpec(): array|WP_REST_Response {
-        $spec_file = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG . '/data/openapi.json';
+        $spec_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/openapi.json';
 
         if (RiseupBooleanHelpers::isFileMissing($spec_file)) {
             return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
@@ -79,7 +80,7 @@ trait StatusOpsTrait {
         wp_cache_delete('plugins', 'plugins');
 
         return RiseupEnvelopeBuilder::success('OPcache reset complete')
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . '/' . EndpointType::OpcacheReset->value)
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::OpcacheReset->value)
             ->setSingleResult($result)
             ->toResponse();
     }
@@ -110,9 +111,9 @@ trait StatusOpsTrait {
             return 0;
         }
 
-        $plugin_dir = WP_PLUGIN_DIR . '/' . PLUGIN_SLUG;
+        $plugin_dir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
         $files_to_invalidate = array(
-            $plugin_dir . '/' . PLUGIN_SLUG . '.php',
+            $plugin_dir . '/' . PluginConfigType::Slug->value . '.php',
             $plugin_dir . '/includes/constants.php',
         );
         $invalidated = 0;
