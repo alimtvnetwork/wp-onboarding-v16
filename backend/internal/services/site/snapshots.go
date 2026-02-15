@@ -48,7 +48,7 @@ func (s *Service) GetRemoteSnapshot(ctx context.Context, siteID, snapshotID int6
 }
 
 // CreateRemoteSnapshot triggers a new snapshot on a remote site.
-func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
+func (s *Service) CreateRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotCreateOptions) (*wordpress.SnapshotCreateResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -82,13 +82,13 @@ func (s *Service) DeleteRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 }
 
 // RestoreRemoteSnapshot triggers a restore from snapshot on a remote site.
-func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64, opts map[string]any) (map[string]any, error) {
+func (s *Service) RestoreRemoteSnapshot(ctx context.Context, siteID, snapshotID int64) (*wordpress.SnapshotRestoreResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := client.RestoreSnapshot(snapshotID, opts)
+	result, err := client.RestoreSnapshot(snapshotID)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to restore snapshot").
 			WithSiteID(siteID).
@@ -116,7 +116,7 @@ func (s *Service) GetRemoteSnapshotSettings(ctx context.Context, siteID int64) (
 }
 
 // UpdateRemoteSnapshotSettings updates snapshot settings on a remote site.
-func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings map[string]any) (*wordpress.SnapshotSettings, error) {
+func (s *Service) UpdateRemoteSnapshotSettings(ctx context.Context, siteID int64, settings wordpress.SnapshotSettings) (*wordpress.SnapshotSettings, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (s *Service) ExportRemoteSnapshot(ctx context.Context, siteID, snapshotID i
 
 // DownloadSnapshotZip requests a cached ZIP build for a snapshot, then streams the ZIP file back.
 // The Go proxy fetches the download URL from WordPress and pipes the binary response to the caller.
-func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, map[string]any, error) {
+func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID int64) (*http.Response, *wordpress.SnapshotDownloadResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, nil, err
@@ -200,23 +200,22 @@ func (s *Service) DownloadSnapshotZip(ctx context.Context, siteID, snapshotID in
 			WithSnapshotID(snapshotID)
 	}
 
-	downloadURL, _ := meta["url"].(string)
-	if downloadURL == "" {
+	if meta.URL == "" {
 		return nil, nil, apperror.New(apperror.ErrInternal, "no download URL in response").
 			WithSiteID(siteID).
 			WithSnapshotID(snapshotID)
 	}
 
 	// Step 2: Stream the ZIP file from the download URL
-	zipResp, err := client.StreamSnapshotZip(downloadURL)
+	zipResp, err := client.StreamSnapshotZip(meta.URL)
 	if err != nil {
 		return nil, nil, apperror.Wrap(err, apperror.ErrWPConnection, "failed to stream snapshot ZIP").
 			WithSiteID(siteID).
 			WithSnapshotID(snapshotID).
-			WithURL(downloadURL)
+			WithURL(meta.URL)
 	}
 
-	s.log.Info("Remote snapshot ZIP download started", "siteId", siteID, "snapshotId", snapshotID, "cached", meta["cached"])
+	s.log.Info("Remote snapshot ZIP download started", "siteId", siteID, "snapshotId", snapshotID, "cached", meta.Cached)
 	return zipResp, meta, nil
 }
 
@@ -236,7 +235,7 @@ func (s *Service) createWPClient(ctx context.Context, siteID int64) (*wordpress.
 }
 
 // FullBackupRemoteSnapshot triggers an end-to-end full backup on a remote site.
-func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
+func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -253,7 +252,7 @@ func (s *Service) FullBackupRemoteSnapshot(ctx context.Context, siteID int64, op
 }
 
 // IncrementalBackupRemoteSnapshot triggers an incremental backup on a remote site.
-func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
+func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID int64, opts wordpress.SnapshotBackupOptions) (*wordpress.SnapshotBackupResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -270,7 +269,7 @@ func (s *Service) IncrementalBackupRemoteSnapshot(ctx context.Context, siteID in
 }
 
 // ImportRemoteSnapshot uploads a ZIP file to import as a snapshot on a remote site.
-func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (map[string]any, error) {
+func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPath string) (*wordpress.SnapshotImportResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
@@ -287,7 +286,7 @@ func (s *Service) ImportRemoteSnapshot(ctx context.Context, siteID int64, zipPat
 }
 
 // CleanupRemoteSnapshots triggers cleanup on a remote site.
-func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts map[string]any) (map[string]any, error) {
+func (s *Service) CleanupRemoteSnapshots(ctx context.Context, siteID int64, opts wordpress.SnapshotCleanupOptions) (*wordpress.SnapshotCleanupResult, error) {
 	client, err := s.createWPClient(ctx, siteID)
 	if err != nil {
 		return nil, err
