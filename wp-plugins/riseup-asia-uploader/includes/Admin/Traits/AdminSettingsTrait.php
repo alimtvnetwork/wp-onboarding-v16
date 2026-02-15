@@ -12,10 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait AdminSettingsTrait {
 
-    /**
-     * Register settings.
-     */
-    public function registerSettings() {
+    /** Register settings. */
+    public function registerSettings(): void {
         register_setting(
             'riseup_asia_settings_group',
             self::OPTION_NAME,
@@ -29,13 +27,8 @@ trait AdminSettingsTrait {
         );
     }
 
-    /**
-     * Sanitize settings on save.
-     *
-     * @param array $input Raw input.
-     * @return array Sanitized settings.
-     */
-    public function sanitizeSettings($input) {
+    /** Sanitize settings on save. */
+    public function sanitizeSettings(array $input): array {
         $sanitized = self::$defaults;
 
         if (!empty($input['endpoints']) && is_array($input['endpoints'])) {
@@ -59,13 +52,8 @@ trait AdminSettingsTrait {
         return $sanitized;
     }
 
-    /**
-     * Sanitize auto-update settings on save.
-     *
-     * @param array $input Raw input.
-     * @return array Sanitized settings.
-     */
-    public function sanitizeUpdateSettings($input) {
+    /** Sanitize auto-update settings on save. */
+    public function sanitizeUpdateSettings(array $input): array {
         $current = get_option(RiseupUpdateResolver::OPTION_NAME, array());
         $sanitized = $this->buildSanitizedUpdateFields($input, $current);
 
@@ -77,13 +65,7 @@ trait AdminSettingsTrait {
         return $sanitized;
     }
 
-    /**
-     * Build sanitized update settings fields.
-     *
-     * @param array $input   Raw input.
-     * @param array $current Current settings.
-     * @return array Sanitized fields.
-     */
+    /** Build sanitized update settings fields. */
     private function buildSanitizedUpdateFields(array $input, array $current): array {
         return array(
             'enabled'      => !empty($input['enabled']),
@@ -99,36 +81,22 @@ trait AdminSettingsTrait {
         );
     }
 
-    /**
-     * Get plugin settings.
-     *
-     * @return array Settings array.
-     */
-    public static function getSettings() {
+    /** Get plugin settings. */
+    public static function getSettings(): array {
         $settings = get_option(self::OPTION_NAME, array());
 
         return wp_parse_args($settings, self::$defaults);
     }
 
-    /**
-     * Check if an endpoint is enabled.
-     *
-     * @param string $endpoint Endpoint name.
-     * @return bool True if enabled.
-     */
-    public static function isEndpointEnabled($endpoint) {
+    /** Check if an endpoint is enabled. */
+    public static function isEndpointEnabled(string $endpoint): bool {
         $settings = self::getSettings();
 
         return !empty($settings['endpoints'][$endpoint]['enabled']);
     }
 
-    /**
-     * Check if an endpoint requires authentication.
-     *
-     * @param string $endpoint Endpoint name.
-     * @return bool True if auth required.
-     */
-    public static function isAuthRequired($endpoint) {
+    /** Check if an endpoint requires authentication. */
+    public static function isAuthRequired(string $endpoint): bool {
         $settings = self::getSettings();
 
         return !empty($settings['endpoints'][$endpoint]['auth_required']);

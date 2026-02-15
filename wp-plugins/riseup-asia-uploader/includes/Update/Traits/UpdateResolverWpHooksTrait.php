@@ -12,13 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait UpdateResolverWpHooksTrait {
 
-    /**
-     * WordPress filter: Check for plugin updates.
-     *
-     * @param object $transient Update transient data.
-     * @return object Modified transient.
-     */
-    public function checkForPluginUpdate($transient) {
+    /** WordPress filter: Check for plugin updates. */
+    public function checkForPluginUpdate(object $transient): object {
         if (empty($transient->checked)) {
             return $transient;
         }
@@ -46,13 +41,7 @@ trait UpdateResolverWpHooksTrait {
         return $transient;
     }
 
-    /**
-     * Build a transient entry for an available update.
-     *
-     * @param array  $updateInfo Update info.
-     * @param string $pluginFile Plugin file path.
-     * @return object Transient entry.
-     */
+    /** Build a transient entry for an available update. */
     private function buildUpdateTransientEntry(array $updateInfo, string $pluginFile): object {
         $this->fileLogger->info('Update available', array('current' => PLUGIN_VERSION, 'new' => $updateInfo['version']));
 
@@ -65,12 +54,7 @@ trait UpdateResolverWpHooksTrait {
         );
     }
 
-    /**
-     * Build a transient entry indicating no update available.
-     *
-     * @param string $pluginFile Plugin file path.
-     * @return object Transient entry.
-     */
+    /** Build a transient entry indicating no update available. */
     private function buildNoUpdateTransientEntry(string $pluginFile): object {
         return (object) array(
             'id' => PLUGIN_SLUG, 'slug' => PLUGIN_SLUG,
@@ -78,15 +62,8 @@ trait UpdateResolverWpHooksTrait {
         );
     }
 
-    /**
-     * WordPress filter: Plugin information for "View Details" modal.
-     *
-     * @param false|object|array $result The result object or array.
-     * @param string             $action The type of information being requested.
-     * @param object             $args   Plugin API arguments.
-     * @return false|object Plugin information or false.
-     */
-    public function pluginInfo($result, $action, $args) {
+    /** WordPress filter: Plugin information for "View Details" modal. */
+    public function pluginInfo(false|object|array $result, string $action, object $args): false|object {
         if ($action !== 'plugin_information') {
             return $result;
         }
@@ -105,12 +82,7 @@ trait UpdateResolverWpHooksTrait {
         return $this->buildPluginInfoObject($updateInfo);
     }
 
-    /**
-     * Build the plugin info object for the details modal.
-     *
-     * @param array $updateInfo Update metadata.
-     * @return object Plugin info.
-     */
+    /** Build the plugin info object for the details modal. */
     private function buildPluginInfoObject(array $updateInfo): object {
         return (object) array(
             'name' => PLUGIN_NAME, 'slug' => PLUGIN_SLUG,
@@ -127,12 +99,8 @@ trait UpdateResolverWpHooksTrait {
         );
     }
 
-    /**
-     * Test connection to update server.
-     *
-     * @return array Test result with status and message.
-     */
-    public function testConnection() {
+    /** Test connection to update server. */
+    public function testConnection(): array {
         $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {

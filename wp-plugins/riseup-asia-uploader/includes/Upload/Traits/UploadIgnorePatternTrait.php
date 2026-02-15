@@ -12,13 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait UploadIgnorePatternTrait {
 
-    /**
-     * Compile a gitignore-style pattern to regex.
-     *
-     * @param string $pattern The pattern to compile.
-     * @return array Compiled pattern info.
-     */
-    private function compilePattern($pattern) {
+    /** Compile a gitignore-style pattern to regex. */
+    private function compilePattern(string $pattern): array {
         $info = array(
             'original'   => $pattern,
             'anchored'   => false,
@@ -54,14 +49,8 @@ trait UploadIgnorePatternTrait {
         return $info;
     }
 
-    /**
-     * Match a compiled pattern against a path.
-     *
-     * @param array  $pattern The compiled pattern.
-     * @param string $path    The path to match.
-     * @return bool True if matches.
-     */
-    private function matchPattern($pattern, $path) {
+    /** Match a compiled pattern against a path. */
+    private function matchPattern(array $pattern, string $path): bool {
         return preg_match($pattern['regex'], $path) === 1;
     }
 }
