@@ -23,7 +23,6 @@ trait OrchestratorHelpersTrait {
         return array('success' => false, 'error' => $e->getMessage(), 'phase' => $phase);
     }
 
-    /** Get directory size in bytes. */
     private function getDirectorySize(string $dir): int {
         $size = 0;
         if (RiseupBooleanHelpers::isDirMissing($dir)) return 0;
@@ -34,14 +33,14 @@ trait OrchestratorHelpersTrait {
         return $size;
     }
 
-    private function formatBytes($bytes) {
+    private function formatBytes(int $bytes): string {
         if ($bytes < 1024) return $bytes . ' B';
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
         if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
         return round($bytes / 1073741824, 1) . ' GB';
     }
 
-    private function log($level, $message, $context = array()) {
+    private function log(string $level, string $message, array $context = array()): void {
         $full = '[SNAPSHOT] [ORCHESTRATOR] ' . $message;
         if (!empty($context)) $full .= ' ' . json_encode($context);
         if (!$this->logger) return;

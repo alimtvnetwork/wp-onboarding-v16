@@ -2,63 +2,45 @@
 /**
  * ManagerTableRestoreTrait — Low-level MySQL table restore from SQLite.
  *
- * Handles single-table restore, truncate-and-insert, batch insertion,
- * and pre-restore backup creation.
- *
  * @package RiseupAsiaUploader
  * @since   2.0.0
  */
 
 trait ManagerTableRestoreTrait {
 
-    /**
-     * Restore a single table from SQLite to MySQL.
-     *
-     * @param PDO    $sqlite SQLite PDO instance.
-     * @param string $table  Table name.
-     * @return array Result with rows count.
-     */
-    private function restoreTable($sqlite, $table) {
+    private function restoreTable(PDO $sqlite, string $table): array {
         try {
             $check = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");
             if (!$check->fetch()) {
                 return array('success' => false, 'error' => 'Table not found in snapshot', 'rows' => 0);
             }
 
-            $columns_result = $sqlite->query("PRAGMA table_info('{$table}')");
-            $columns = $columns_result->fetchAll(PDO::FETCH_ASSOC);
-            $column_names = array_column($columns, 'name');
+            $columnsResult = $sqlite->query("PRAGMA table_info('{$table}')");
+            $columns = $columnsResult->fetchAll(PDO::FETCH_ASSOC);
+            $columnNames = array_column($columns, 'name');
 
-            return $this->truncateAndInsert($sqlite, $table, $column_names);
+            return $this->truncateAndInsert($sqlite, $table, $columnNames);
         } catch (Exception $e) {
             return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
         }
     }
 
-    /**
-     * Truncate a MySQL table and batch-insert rows from SQLite.
-     *
-     * @param PDO    $sqlite       SQLite PDO connection.
-     * @param string $table        Table name.
-     * @param array  $column_names Column name list.
-     * @return array Result with success and rows count.
-     */
-    private function truncateAndInsert($sqlite, $table, $column_names) {
+    private function truncateAndInsert(PDO $sqlite, string $table, array $columnNames): array {
         $this->wpdb->query("START TRANSACTION");
 
         try {
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
             $this->wpdb->query("TRUNCATE TABLE `{$table}`");
 
-            $count_stmt = $sqlite->query("SELECT COUNT(*) FROM `{$table}`");
-            $row_count = $count_stmt->fetchColumn();
+            $countStmt = $sqlite->query("SELECT COUNT(*) FROM `{$table}`");
+            $rowCount = (int) $countStmt->fetchColumn();
 
-            $total_rows = $this->insertBatchFromSqlite($sqlite, $table, $column_names, $row_count);
+            $totalRows = $this->insertBatchFromSqlite($sqlite, $table, $columnNames, $rowCount);
 
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
             $this->wpdb->query("COMMIT");
 
-            return array('success' => true, 'rows' => $total_rows);
+            return array('success' => true, 'rows' => $totalRows);
         } catch (Exception $e) {
             $this->wpdb->query("ROLLBACK");
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
@@ -66,49 +48,34 @@ trait ManagerTableRestoreTrait {
         }
     }
 
-    /**
-     * Batch-insert rows from a SQLite table into MySQL.
-     *
-     * @param PDO    $sqlite       SQLite PDO connection.
-     * @param string $table        Table name.
-     * @param array  $column_names Column name list.
-     * @param int    $row_count    Total row count.
-     * @return int Total rows inserted.
-     */
-    private function insertBatchFromSqlite($sqlite, $table, $column_names, $row_count) {
-        $batch_size = SNAPSHOT_BATCH_SIZE;
+    private function insertBatchFromSqlite(PDO $sqlite, string $table, array $columnNames, int $rowCount): int {
+        $batchSize = SNAPSHOT_BATCH_SIZE;
         $offset = 0;
-        $total_rows = 0;
-        $columns_sql = '`' . implode('`, `', $column_names) . '`';
-        $placeholders_sql = implode(', ', array_fill(0, count($column_names), '%s'));
+        $totalRows = 0;
+        $columnsSql = '`' . implode('`, `', $columnNames) . '`';
+        $placeholdersSql = implode(', ', array_fill(0, count($columnNames), '%s'));
 
-        while ($offset < $row_count) {
-            $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$batch_size} OFFSET {$offset}")->fetchAll(PDO::FETCH_ASSOC);
+        while ($offset < $rowCount) {
+            $rows = $sqlite->query("SELECT * FROM `{$table}` LIMIT {$batchSize} OFFSET {$offset}")->fetchAll(PDO::FETCH_ASSOC);
 
             foreach ($rows as $row) {
                 $values = array();
-                foreach ($column_names as $col) {
-                    $values[] = isset($row[$col]) ? $row[$col] : null;
+                foreach ($columnNames as $col) {
+                    $values[] = $row[$col] ?? null;
                 }
 
-                $sql = "INSERT INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders_sql})";
+                $sql = "INSERT INTO `{$table}` ({$columnsSql}) VALUES ({$placeholdersSql})";
                 $this->wpdb->query($this->wpdb->prepare($sql, $values));
-                $total_rows++;
+                $totalRows++;
             }
 
-            $offset += $batch_size;
+            $offset += $batchSize;
         }
 
-        return $total_rows;
+        return $totalRows;
     }
 
-    /**
-     * Create a pre-restore backup snapshot.
-     *
-     * @param int $original_snapshot_id Original snapshot being restored.
-     * @return array Result.
-     */
-    private function createPreRestoreBackup($original_snapshot_id) {
+    private function createPreRestoreBackup(int $originalSnapshotId): array {
         $provider = $this->getProvider();
         if (!$provider) {
             return array('success' => false, 'error' => 'No provider available');
@@ -117,7 +84,7 @@ trait ManagerTableRestoreTrait {
         return $provider->createSnapshot(array(
             'scope' => \RiseupAsia\Enums\SnapshotScopeType::WordPress->value,
             'trigger' => \RiseupAsia\Enums\SnapshotTriggerType::Api->value,
-            'pre_restore_of' => $original_snapshot_id,
+            'pre_restore_of' => $originalSnapshotId,
         ));
     }
 }

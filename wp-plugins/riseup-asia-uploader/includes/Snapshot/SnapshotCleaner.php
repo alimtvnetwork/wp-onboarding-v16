@@ -24,9 +24,6 @@ require_once dirname(__FILE__) . '/Traits/CleanerUtilsTrait.php';
 
 /**
  * Snapshot Cleaner class.
- *
- * Manages cleanup of old snapshots based on retention policies,
- * removes orphan files, handles stuck snapshots, and provides storage statistics.
  */
 class RiseupSnapshotCleaner {
 
@@ -36,32 +33,17 @@ class RiseupSnapshotCleaner {
     use CleanerStorageTrait;
     use CleanerUtilsTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
 
-    /** @var RiseupDatabase */
-    private $db;
-
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger $logger Logger instance.
-     * @param RiseupDatabase   $db     Database instance.
-     */
-    public function __construct($logger, $db) {
+    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         $this->logger = $logger;
         $this->db = $db;
     }
 
-    /**
-     * Execute full cleanup with unified response format.
-     *
-     * @param array $options Optional overrides (retention_type, retention_days, retention_count, dry_run).
-     * @return array Cleanup result summary.
-     */
-    public function execute($options = array()) {
+    public function execute(array $options = array()): array {
         $start = microtime(true);
-        $dry_run = !empty($options['dry_run']);
+        $dryRun = !empty($options['dry_run']);
 
         $results = array(
             'success'           => true,
@@ -69,44 +51,38 @@ class RiseupSnapshotCleaner {
             'orphans'           => array('removed' => 0, 'files' => array()),
             'stuck'             => array('cleaned' => 0, 'ids' => array()),
             'errors'            => array(),
-            'dry_run'           => $dry_run,
+            'dry_run'           => $dryRun,
             'space_freed_bytes' => 0,
         );
 
         $settings = $this->loadSettings($options);
 
-        $results = $this->executeRetentionPhase($settings, $dry_run, $results);
-        $results = $this->executeOrphanPhase($dry_run, $results);
-        $results = $this->executeStuckPhase($dry_run, $results);
+        $results = $this->executeRetentionPhase($settings, $dryRun, $results);
+        $results = $this->executeOrphanPhase($dryRun, $results);
+        $results = $this->executeStuckPhase($dryRun, $results);
 
         $results['success']  = empty($results['errors']);
         $results['duration'] = round(microtime(true) - $start, 3);
 
-        $total_deleted = $results['retention']['deleted']
+        $totalDeleted = $results['retention']['deleted']
             + $results['orphans']['removed']
             + $results['stuck']['cleaned'];
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
-            'deleted_total' => $total_deleted,
+            'deleted_total' => $totalDeleted,
             'space_freed'   => RiseupPathUtils::formatBytes($results['space_freed_bytes']),
             'duration'      => $results['duration'],
-            'dry_run'       => $dry_run,
+            'dry_run'       => $dryRun,
         ));
 
-        if (!$dry_run && $total_deleted > 0) {
+        if (!$dryRun && $totalDeleted > 0) {
             $this->logCleanupAudit($results);
         }
 
         return $results;
     }
 
-    /**
-     * Run full cleanup (legacy entry point for scheduler).
-     *
-     * @param array $settings Snapshot settings.
-     * @return array Legacy-format result.
-     */
-    public function runCleanup($settings) {
+    public function runCleanup(array $settings): array {
         $result = $this->execute($settings);
 
         return array(
@@ -118,20 +94,12 @@ class RiseupSnapshotCleaner {
         );
     }
 
-    /**
-     * Execute retention cleanup phase.
-     *
-     * @param array $settings Resolved settings.
-     * @param bool  $dry_run  Simulate only.
-     * @param array $results  Current results.
-     * @return array Updated results.
-     */
-    private function executeRetentionPhase($settings, $dry_run, $results) {
+    private function executeRetentionPhase(array $settings, bool $dryRun, array $results): array {
         try {
             if ($settings['retention_type'] === 'none') {
                 $this->log(LogLevelType::Debug->value, 'Retention policy is "none" - skipping policy cleanup');
             } else {
-                $retention = $this->cleanByRetention($settings, $dry_run);
+                $retention = $this->cleanByRetention($settings, $dryRun);
                 $results['retention'] = $retention;
                 $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
             }
@@ -142,16 +110,9 @@ class RiseupSnapshotCleaner {
         return $results;
     }
 
-    /**
-     * Execute orphan cleanup phase.
-     *
-     * @param bool  $dry_run Simulate only.
-     * @param array $results Current results.
-     * @return array Updated results.
-     */
-    private function executeOrphanPhase($dry_run, $results) {
+    private function executeOrphanPhase(bool $dryRun, array $results): array {
         try {
-            $orphans = $this->cleanupOrphanFiles($dry_run);
+            $orphans = $this->cleanupOrphanFiles($dryRun);
             $results['orphans'] = $orphans;
             $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
         } catch (Throwable $e) {
@@ -161,16 +122,9 @@ class RiseupSnapshotCleaner {
         return $results;
     }
 
-    /**
-     * Execute stuck snapshot cleanup phase.
-     *
-     * @param bool  $dry_run Simulate only.
-     * @param array $results Current results.
-     * @return array Updated results.
-     */
-    private function executeStuckPhase($dry_run, $results) {
+    private function executeStuckPhase(bool $dryRun, array $results): array {
         try {
-            $stuck = $this->cleanupStuckSnapshots($dry_run);
+            $stuck = $this->cleanupStuckSnapshots($dryRun);
             $results['stuck'] = $stuck;
         } catch (Throwable $e) {
             $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();

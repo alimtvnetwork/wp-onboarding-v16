@@ -12,12 +12,7 @@ use RiseupAsia\Enums\TableType;
 
 trait IncrementalDiscoveryTrait {
 
-    /**
-     * Find the latest full (master) snapshot directory.
-     *
-     * @return string|null Path or null.
-     */
-    public function findLatestMasterSnapshot() {
+    public function findLatestMasterSnapshot(): ?string {
         $masterFromDb = $this->findMasterFromDb();
         if ($masterFromDb) {
             return $masterFromDb;
@@ -26,7 +21,6 @@ trait IncrementalDiscoveryTrait {
         return $this->findMasterFromFilesystem();
     }
 
-    /** Find the latest master snapshot from the database. */
     private function findMasterFromDb(): ?string {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
@@ -50,14 +44,13 @@ trait IncrementalDiscoveryTrait {
         }
     }
 
-    /** Find the latest master snapshot from the filesystem (fallback). */
     private function findMasterFromFilesystem(): ?string {
-        $base_dir = $this->getSnapshotsBaseDir();
-        if (RiseupBooleanHelpers::isDirMissing($base_dir)) {
+        $baseDir = $this->getSnapshotsBaseDir();
+        if (RiseupBooleanHelpers::isDirMissing($baseDir)) {
             return null;
         }
 
-        $dirs = glob($base_dir . '/*_full_*', GLOB_ONLYDIR);
+        $dirs = glob($baseDir . '/*_full_*', GLOB_ONLYDIR);
         if (empty($dirs)) {
             return null;
         }
@@ -72,13 +65,7 @@ trait IncrementalDiscoveryTrait {
         return null;
     }
 
-    /**
-     * Get master table inventory from a-root.db.
-     *
-     * @param PDO $rootPdo a-root.db connection.
-     * @return array Map of table_name => { row_count, pk_column }.
-     */
-    private function getMasterTableInventory($rootPdo) {
+    private function getMasterTableInventory(PDO $rootPdo): array {
         $rows = $rootPdo->query("SELECT table_name, row_count FROM snapshot_tables ORDER BY table_name")->fetchAll(PDO::FETCH_ASSOC);
 
         $inventory = array();
@@ -90,22 +77,16 @@ trait IncrementalDiscoveryTrait {
         return $inventory;
     }
 
-    /**
-     * Detect the auto-increment primary key column of a MySQL table.
-     *
-     * @param string $table Table name.
-     * @return string|null PK column name or null.
-     */
-    private function detectPrimaryKey($table) {
+    private function detectPrimaryKey(string $table): ?string {
         $columns = $this->wpdb->get_results("SHOW COLUMNS FROM `{$table}`", ARRAY_A);
         foreach ($columns as $col) {
-            if ($col['Key'] === 'PRI' && strpos($col['Extra'], 'auto_increment') !== false) {
+            if ($col['Key'] === 'PRI' && str_contains($col['Extra'], 'auto_increment')) {
                 return $col['Field'];
             }
         }
         foreach ($columns as $col) {
             if ($col['Key'] === 'PRI' && in_array(strtolower($col['Type']), array('bigint', 'int', 'mediumint', 'smallint', 'tinyint'))
-                || (strpos(strtolower($col['Type']), 'int') !== false && $col['Key'] === 'PRI')) {
+                || (str_contains(strtolower($col['Type']), 'int') && $col['Key'] === 'PRI')) {
                 return $col['Field'];
             }
         }

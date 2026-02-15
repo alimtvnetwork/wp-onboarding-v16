@@ -8,13 +8,7 @@
 
 trait ManagerImportValidationTrait {
 
-    /**
-     * Validate manifest structure and version.
-     *
-     * @param array $manifest Manifest data.
-     * @return array Validation result.
-     */
-    private function validateManifest($manifest) {
+    private function validateManifest(array $manifest): array {
         $required = array('version', 'snapshot');
         foreach ($required as $field) {
             if (!isset($manifest[$field])) {
@@ -22,28 +16,22 @@ trait ManagerImportValidationTrait {
             }
         }
 
-        $snapshot_required = array('filename', 'tables', 'scope');
-        foreach ($snapshot_required as $field) {
+        $snapshotRequired = array('filename', 'tables', 'scope');
+        foreach ($snapshotRequired as $field) {
             if (!isset($manifest['snapshot'][$field])) {
                 return array('valid' => false, 'error' => "Missing snapshot field: {$field}");
             }
         }
 
-        $format_version = isset($manifest['format_version']) ? $manifest['format_version'] : '1.0';
-        if (version_compare($format_version, '2.0', '>=')) {
-            return array('valid' => false, 'error' => 'Unsupported format version: ' . $format_version);
+        $formatVersion = $manifest['format_version'] ?? '1.0';
+        if (version_compare($formatVersion, '2.0', '>=')) {
+            return array('valid' => false, 'error' => 'Unsupported format version: ' . $formatVersion);
         }
 
         return array('valid' => true);
     }
 
-    /**
-     * Validate SQLite database integrity.
-     *
-     * @param string $filepath Path to SQLite file.
-     * @return array Validation result.
-     */
-    private function validateSqliteIntegrity($filepath) {
+    private function validateSqliteIntegrity(string $filepath): array {
         try {
             $pdo = new PDO('sqlite:' . $filepath);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -55,8 +43,8 @@ trait ManagerImportValidationTrait {
                 return array('valid' => false, 'error' => 'Database integrity check failed: ' . $integrity);
             }
 
-            $meta_check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='_snapshot_meta'");
-            if (!$meta_check->fetch()) {
+            $metaCheck = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='_snapshot_meta'");
+            if (!$metaCheck->fetch()) {
                 return array('valid' => false, 'error' => 'Missing _snapshot_meta table');
             }
 
@@ -67,13 +55,7 @@ trait ManagerImportValidationTrait {
         }
     }
 
-    /**
-     * Delete a directory recursively.
-     *
-     * @param string $dir Directory path.
-     * @return bool Success.
-     */
-    private function deleteDirectory($dir) {
+    private function deleteDirectory(string $dir): bool {
         if (!RiseupPathUtils::dirExists($dir)) {
             return true;
         }

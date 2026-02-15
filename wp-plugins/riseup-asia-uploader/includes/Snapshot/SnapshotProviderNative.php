@@ -29,42 +29,21 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
     use NativeTableExportTrait;
     use NativeSnapshotRecordTrait;
 
-    /** @var string */
     protected string $provider_id = SnapshotProviderType::Native->value;
+    protected string $provider_name = 'Native SQLite';
+    private \wpdb $wpdb;
 
-    /** @var string */
-    protected $provider_name = 'Native SQLite';
-
-    /** @var wpdb */
-    private $wpdb;
-
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger $logger Logger instance.
-     * @param RiseupDatabase   $db     Database instance.
-     */
-    public function __construct($logger, $db) {
+    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         parent::__construct($logger, $db);
         global $wpdb;
         $this->wpdb = $wpdb;
     }
 
-    /**
-     * Check if provider is available.
-     *
-     * @return bool True if SQLite extension is loaded.
-     */
-    public function isAvailable() {
+    public function isAvailable(): bool {
         return extension_loaded('sqlite3') || extension_loaded('pdo_sqlite');
     }
 
-    /**
-     * Get provider capabilities.
-     *
-     * @return array Capabilities array.
-     */
-    public function getCapabilities() {
+    public function getCapabilities(): array {
         return array(
             'full_site' => false, 'database_only' => true, 'selective' => true,
             'scheduled' => true, 'restore' => true, 'export' => true, 'import' => true,

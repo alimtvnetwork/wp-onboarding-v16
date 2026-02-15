@@ -13,8 +13,7 @@ use RiseupAsia\Enums\SnapshotScopeType;
 
 trait ManagerSettingsTrait {
 
-    /** Get current snapshot settings. */
-    public function getSettings() {
+    public function getSettings(): array {
         $settings = $this->readSettingsFromDb();
 
         $defaults = array(
@@ -39,8 +38,7 @@ trait ManagerSettingsTrait {
         return array_merge($defaults, $settings);
     }
 
-    /** Read settings from SQLite snapshot_settings table. */
-    private function readSettingsFromDb() {
+    private function readSettingsFromDb(): array {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return array();
@@ -60,8 +58,7 @@ trait ManagerSettingsTrait {
         }
     }
 
-    /** Update snapshot settings in SQLite. */
-    public function updateSettings($settings) {
+    public function updateSettings(array $settings): array {
         $pdo = $this->db->getPdo();
 
         if ($pdo) {
@@ -92,8 +89,7 @@ trait ManagerSettingsTrait {
         return $result;
     }
 
-    /** Cast a setting value to its declared type. */
-    private function castSettingValue($value, $type) {
+    private function castSettingValue(string $value, string $type): string|int|bool|array {
         switch ($type) {
             case 'int':
                 return (int) $value;

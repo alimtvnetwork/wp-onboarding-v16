@@ -12,24 +12,18 @@ if (!defined('ABSPATH')) {
 
 trait FileSystemDirTrait {
 
-    /**
-     * Get temp directory path.
-     */
-    private function getTempDir() {
-        $temp_dir = RiseupPathUtils::getTempDir();
-        RiseupPathUtils::ensureDir($temp_dir);
-        return $temp_dir;
+    private function getTempDir(): string {
+        $tempDir = RiseupPathUtils::getTempDir();
+        RiseupPathUtils::ensureDir($tempDir);
+        return $tempDir;
     }
 
-    /**
-     * Detect plugin slug from ZIP file.
-     */
-    private function detectPluginSlugFromZip($zip) {
+    private function detectPluginSlugFromZip(ZipArchive $zip): ?string {
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $name = $zip->getNameIndex($i);
             if (preg_match('/^([^\/]+)\/[^\/]+\.php$/', $name, $matches)) {
                 $content = $zip->getFromIndex($i);
-                if ($content && strpos($content, 'Plugin Name:') !== false) {
+                if ($content && str_contains($content, 'Plugin Name:')) {
                     return $matches[1];
                 }
             }
@@ -37,10 +31,7 @@ trait FileSystemDirTrait {
         return null;
     }
 
-    /**
-     * Delete a directory recursively.
-     */
-    private function deleteDirectory($dir) {
+    private function deleteDirectory(string $dir): bool {
         if (RiseupBooleanHelpers::isDirMissing($dir)) {
             return false;
         }
@@ -58,10 +49,7 @@ trait FileSystemDirTrait {
         return @rmdir($dir);
     }
 
-    /**
-     * Copy a directory recursively.
-     */
-    private function copyDirectory($src, $dst) {
+    private function copyDirectory(string $src, string $dst): bool {
         if (RiseupBooleanHelpers::isDirMissing($src)) {
             return false;
         }
@@ -72,53 +60,49 @@ trait FileSystemDirTrait {
 
         $files = array_diff(scandir($src), array('.', '..'));
         foreach ($files as $file) {
-            $src_path = $src . '/' . $file;
-            $dst_path = $dst . '/' . $file;
-            if (is_dir($src_path)) {
-                $this->copyDirectory($src_path, $dst_path);
+            $srcPath = $src . '/' . $file;
+            $dstPath = $dst . '/' . $file;
+            if (is_dir($srcPath)) {
+                $this->copyDirectory($srcPath, $dstPath);
             } else {
-                copy($src_path, $dst_path);
+                copy($srcPath, $dstPath);
             }
         }
 
         return true;
     }
 
-    /**
-     * Add directory to ZIP recursively.
-     */
-    private function addDirToZip($zip, $src_dir, $zip_dir, $ignore) {
-        $dir = opendir($src_dir);
+    private function addDirToZip(ZipArchive $zip, string $srcDir, string $zipDir, object $ignore): void {
+        $dir = opendir($srcDir);
         if (!$dir) {
             return;
         }
 
-        $zip->addEmptyDir($zip_dir);
+        $zip->addEmptyDir($zipDir);
 
         while (($file = readdir($dir)) !== false) {
             if ($file === '.' || $file === '..') {
                 continue;
             }
-            $this->processZipEntry($zip, $src_dir, $zip_dir, $file, $ignore);
+            $this->processZipEntry($zip, $srcDir, $zipDir, $file, $ignore);
         }
 
         closedir($dir);
     }
 
-    /** Process a single directory entry for ZIP archival. */
-    private function processZipEntry($zip, string $src_dir, string $zip_dir, string $file, $ignore) {
-        $src_path = $src_dir . '/' . $file;
-        $zip_path = $zip_dir . '/' . $file;
+    private function processZipEntry(ZipArchive $zip, string $srcDir, string $zipDir, string $file, object $ignore): void {
+        $srcPath = $srcDir . '/' . $file;
+        $zipPath = $zipDir . '/' . $file;
 
-        $relative = str_replace($src_dir . '/', '', $src_path);
+        $relative = str_replace($srcDir . '/', '', $srcPath);
         if ($ignore->shouldIgnore($relative)) {
             return;
         }
 
-        if (is_dir($src_path)) {
-            $this->addDirToZip($zip, $src_path, $zip_path, $ignore);
+        if (is_dir($srcPath)) {
+            $this->addDirToZip($zip, $srcPath, $zipPath, $ignore);
         } else {
-            $zip->addFile($src_path, $zip_path);
+            $zip->addFile($srcPath, $zipPath);
         }
     }
 }

@@ -18,14 +18,10 @@ if (!defined('ABSPATH')) {
  */
 class RiseupSnapshotFactory {
 
-    /** @var RiseupSnapshotDetector|null */
-    private static $detector = null;
+    private static ?RiseupSnapshotDetector $detector = null;
+    private static ?RiseupSnapshotCleaner $cleaner = null;
 
-    /** @var RiseupSnapshotCleaner|null */
-    private static $cleaner = null;
-
-    /** Get or create the RiseupSnapshotDetector singleton. */
-    public static function detector($logger = null, $db = null) {
+    public static function detector(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): RiseupSnapshotDetector {
         if (self::$detector === null) {
             require_once dirname(__FILE__) . '/SnapshotDetector.php';
             self::$detector = new RiseupSnapshotDetector(
@@ -36,8 +32,7 @@ class RiseupSnapshotFactory {
         return self::$detector;
     }
 
-    /** Get or create the RiseupSnapshotCleaner singleton. */
-    public static function cleaner($logger = null, $db = null) {
+    public static function cleaner(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): RiseupSnapshotCleaner {
         if (self::$cleaner === null) {
             require_once dirname(__FILE__) . '/SnapshotCleaner.php';
             self::$cleaner = new RiseupSnapshotCleaner(
@@ -48,8 +43,7 @@ class RiseupSnapshotFactory {
         return self::$cleaner;
     }
 
-    /** Get the RiseupSnapshotScheduler singleton. */
-    public static function scheduler($logger = null, $db = null) {
+    public static function scheduler(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): RiseupSnapshotScheduler {
         require_once dirname(__FILE__) . '/SnapshotScheduler.php';
         return RiseupSnapshotScheduler::getInstance(
             $logger ?: RiseupFileLogger::getInstance(),
@@ -57,8 +51,7 @@ class RiseupSnapshotFactory {
         );
     }
 
-    /** Get the RiseupSnapshotManager singleton. */
-    public static function manager($logger = null, $db = null) {
+    public static function manager(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): RiseupSnapshotManager {
         require_once dirname(__FILE__) . '/SnapshotManager.php';
         return RiseupSnapshotManager::getInstance(
             $logger ?: RiseupFileLogger::getInstance(),
@@ -66,8 +59,7 @@ class RiseupSnapshotFactory {
         );
     }
 
-    /** Get the RiseupSnapshotWorker singleton. */
-    public static function worker($logger = null, $db = null) {
+    public static function worker(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): RiseupSnapshotWorker {
         require_once dirname(__FILE__) . '/SnapshotWorker.php';
         require_once dirname(__FILE__) . '/DependencyAnalyzer.php';
         require_once dirname(__FILE__) . '/../Database/RootDb.php';
@@ -78,16 +70,14 @@ class RiseupSnapshotFactory {
         return RiseupSnapshotWorker::getInstance($l, $d, $rootDb, $analyzer);
     }
 
-    /** Get the RiseupSnapshotOrchestrator singleton. */
-    public static function orchestrator($logger = null, $db = null) {
+    public static function orchestrator(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): RiseupSnapshotOrchestrator {
         require_once dirname(__FILE__) . '/SnapshotOrchestrator.php';
         $l = $logger ?: RiseupFileLogger::getInstance();
         $d = $db ?: RiseupDatabase::getInstance();
         return RiseupSnapshotOrchestrator::getInstance($l, $d, self::manager($l, $d));
     }
 
-    /** Get the RiseupSnapshotExporter singleton. */
-    public static function exporter($logger = null, $db = null) {
+    public static function exporter(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): RiseupSnapshotExporter {
         require_once dirname(__FILE__) . '/SnapshotExporter.php';
         return RiseupSnapshotExporter::getInstance(
             $logger ?: RiseupFileLogger::getInstance(),
@@ -95,8 +85,7 @@ class RiseupSnapshotFactory {
         );
     }
 
-    /** Reset all cached instances (useful for testing). */
-    public static function reset() {
+    public static function reset(): void {
         self::$detector = null;
         self::$cleaner = null;
     }

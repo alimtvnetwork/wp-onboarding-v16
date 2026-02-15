@@ -11,12 +11,7 @@ use RiseupAsia\Enums\TableType;
 
 trait WorkerProgressTrait {
 
-    /**
-     * Initialize progress records for all tables.
-     *
-     * @param array $tables Table names.
-     */
-    private function initProgressRecords($tables) {
+    private function initProgressRecords(array $tables): void {
         $pdo = $this->db->getPdo();
         if (!$pdo) return;
 
@@ -38,15 +33,7 @@ trait WorkerProgressTrait {
         }
     }
 
-    /**
-     * Update progress for a table.
-     *
-     * @param string      $table  Table name.
-     * @param string      $status Status: pending, running, complete, failed.
-     * @param int         $rows   Rows exported.
-     * @param string|null $error  Error message if failed.
-     */
-    private function updateProgress($table, $status, $rows = 0, $error = null) {
+    private function updateProgress(string $table, string $status, int $rows = 0, ?string $error = null): void {
         $pdo = $this->db->getPdo();
         if (!$pdo) return;
 

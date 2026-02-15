@@ -2,8 +2,6 @@
 /**
  * ManagerRestoreTrait — Snapshot restore operations.
  *
- * Shell trait — validation delegated to ManagerRestoreValidationTrait.
- *
  * @package RiseupAsiaUploader
  * @since   2.0.0
  */
@@ -17,37 +15,29 @@ trait ManagerRestoreTrait {
 
     use ManagerRestoreValidationTrait;
 
-    /**
-     * Restore from a snapshot with safety checks.
-     *
-     * @param int   $snapshot_id Snapshot ID.
-     * @param array $options     Restore options.
-     * @return array Result with success status.
-     */
-    public function restoreSnapshot($snapshot_id, $options = array()) {
-        $guard = $this->guardRestorePreConditions($snapshot_id, $options);
+    public function restoreSnapshot(int $snapshotId, array $options = array()): array {
+        $guard = $this->guardRestorePreConditions($snapshotId, $options);
         if ($guard !== null) {
             return $guard;
         }
 
-        $snapshot = $this->getProvider()->getSnapshot($snapshot_id);
+        $snapshot = $this->getProvider()->getSnapshot($snapshotId);
 
         $this->log(LogLevelType::Info->value, 'Starting snapshot restore', array(
-            'snapshot_id' => $snapshot_id, 'filename' => $snapshot['filename'], 'create_backup' => !empty($options['create_backup']),
+            'snapshot_id' => $snapshotId, 'filename' => $snapshot['filename'], 'create_backup' => !empty($options['create_backup']),
         ));
 
-        $backup_id = $this->handlePreRestoreBackup($options, $snapshot_id);
-        if ($backup_id instanceof array) {
-            return $backup_id;
+        $backupId = $this->handlePreRestoreBackup($options, $snapshotId);
+        if ($backupId instanceof array) {
+            return $backupId;
         }
 
         $result = $this->executeRestore($snapshot, $options);
 
-        return $this->finalizeRestoreResult($result, $snapshot_id, $backup_id);
+        return $this->finalizeRestoreResult($result, $snapshotId, $backupId);
     }
 
-    /** Validate all pre-conditions for a restore operation. */
-    private function guardRestorePreConditions(int $snapshot_id, array $options) {
+    private function guardRestorePreConditions(int $snapshotId, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
             return array('success' => false, 'error' => 'Restore requires explicit confirmation (confirm=true)', 'code' => SnapshotErrorType::RestoreNoConfirm->value);
         }
@@ -57,33 +47,29 @@ trait ManagerRestoreTrait {
             return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 
-        $snapshot = $provider->getSnapshot($snapshot_id);
+        $snapshot = $provider->getSnapshot($snapshotId);
         if (!$snapshot) {
             return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
 
-        return $this->validateIncrementalParent($snapshot, $snapshot_id);
+        return $this->validateIncrementalParent($snapshot, $snapshotId);
     }
 
-    /** Log and enrich the restore result. */
-    private function finalizeRestoreResult(array $result, int $snapshot_id, $backup_id): array {
+    private function finalizeRestoreResult(array $result, int $snapshotId, int|null $backupId): array {
         if ($result['success']) {
-            $result['backup_id'] = $backup_id;
+            $result['backup_id'] = $backupId;
             $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
-                'snapshot_id' => $snapshot_id, 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
+                'snapshot_id' => $snapshotId, 'tables' => $result['tables'] ?? 0, 'rows' => $result['rows'] ?? 0,
             ));
         } else {
-            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array('snapshot_id' => $snapshot_id, 'error' => $result['error']));
+            $this->log(LogLevelType::Error->value, 'Snapshot restore failed', array('snapshot_id' => $snapshotId, 'error' => $result['error']));
         }
 
         return $result;
     }
 
-    /**
-     * Execute the actual restore operation.
-     */
-    private function executeRestore($snapshot, $options) {
-        $start_time = microtime(true);
+    private function executeRestore(array $snapshot, array $options): array {
+        $startTime = microtime(true);
         $filepath = $snapshot['filepath'];
 
         if (!RiseupPathUtils::fileExists($filepath)) {
@@ -102,23 +88,22 @@ trait ManagerRestoreTrait {
             $counts = $this->restoreAllTables($sqlite, $tables, $options);
             $sqlite = null;
 
-            return array('success' => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $start_time);
+            return array('success' => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $startTime);
         } catch (Exception $e) {
             $this->log(LogLevelType::Error->value, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
 
-    /** Restore all tables from the snapshot SQLite handle. */
     private function restoreAllTables(PDO $sqlite, array $tables, array $options): array {
-        $total_rows = 0;
-        $restored_tables = 0;
+        $totalRows = 0;
+        $restoredTables = 0;
 
         foreach ($tables as $table) {
             $result = $this->restoreTable($sqlite, $table);
             if ($result['success']) {
-                $total_rows += $result['rows'];
-                $restored_tables++;
+                $totalRows += $result['rows'];
+                $restoredTables++;
                 $this->log(LogLevelType::Info->value, sprintf('Table %s restored (%d rows)', $table, $result['rows']));
                 continue;
             }
@@ -129,6 +114,6 @@ trait ManagerRestoreTrait {
             }
         }
 
-        return array('tables' => $restored_tables, 'rows' => $total_rows);
+        return array('tables' => $restoredTables, 'rows' => $totalRows);
     }
 }

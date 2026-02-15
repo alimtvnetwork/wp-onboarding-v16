@@ -15,11 +15,8 @@ use RiseupAsia\Enums\StatusType;
 
 trait SnapshotCrudRestoreTrait {
 
-    /**
-     * Handle deleting a snapshot.
-     */
-    public function handleDeleteSnapshot($request) {
-        return $this->safeExecute(function() use ($request) {
+    public function handleDeleteSnapshot(WP_REST_Request $request): WP_REST_Response {
+        return $this->safeExecute(function() use ($request): WP_REST_Response {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $this->fileLogger->info('Deleting snapshot', array('id' => $id));
@@ -39,16 +36,13 @@ trait SnapshotCrudRestoreTrait {
                 $result['success'] ? null : ($result['error'] ?? 'Delete failed')
             );
 
-            $status_code = $result['success'] ? 200 : 400;
-            return new WP_REST_Response($result, $status_code);
+            $statusCode = $result['success'] ? 200 : 400;
+            return new WP_REST_Response($result, $statusCode);
         }, 'delete_snapshot');
     }
 
-    /**
-     * Handle restoring a snapshot.
-     */
-    public function handleRestoreSnapshot($request) {
-        return $this->safeExecute(function() use ($request) {
+    public function handleRestoreSnapshot(WP_REST_Request $request): WP_REST_Response {
+        return $this->safeExecute(function() use ($request): WP_REST_Response {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
             $options = $this->parseRestoreOptions($body);
@@ -68,9 +62,6 @@ trait SnapshotCrudRestoreTrait {
         }, 'restore_snapshot');
     }
 
-    /**
-     * Parse restore options from the request body.
-     */
     private function parseRestoreOptions(array $body): array {
         return array(
             'confirm'            => !empty($body['confirm']),
@@ -83,10 +74,7 @@ trait SnapshotCrudRestoreTrait {
         );
     }
 
-    /**
-     * Route a restore operation to the appropriate engine.
-     */
-    private function routeRestoreToEngine(int $id, array $options, $manager): array {
+    private function routeRestoreToEngine(int $id, array $options, RiseupSnapshotManager $manager): array {
         $snapshot = $manager->getSnapshotById($id);
 
         if ($snapshot && $this->isPerTableSnapshot($snapshot)) {
@@ -105,10 +93,7 @@ trait SnapshotCrudRestoreTrait {
         return $result;
     }
 
-    /**
-     * Check if a snapshot is a per-table snapshot.
-     */
-    private function isPerTableSnapshot($snapshot) {
+    private function isPerTableSnapshot(array $snapshot): bool {
         $filepath = $snapshot['filepath'] ?? '';
         if (is_dir($filepath)) {
             return file_exists($filepath . '/a-root.db');
@@ -120,10 +105,7 @@ trait SnapshotCrudRestoreTrait {
         return false;
     }
 
-    /**
-     * Resolve the snapshot directory path from a snapshot record.
-     */
-    private function resolveSnapshotDir($snapshot) {
+    private function resolveSnapshotDir(array $snapshot): ?string {
         $filepath = $snapshot['filepath'] ?? '';
         if (is_dir($filepath)) {
             return $filepath;

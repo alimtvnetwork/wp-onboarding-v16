@@ -33,31 +33,20 @@ class RiseupSnapshotManager {
     use ManagerImportTrait;
     use ManagerSettingsTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
-    /** @var RiseupDatabase */
-    private $db;
-    /** @var RiseupSnapshotDetector */
-    private $detector;
-    /** @var wpdb */
-    private $wpdb;
-    /** @var RiseupSnapshotManager|null */
-    private static $instance = null;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private RiseupSnapshotDetector $detector;
+    private \wpdb $wpdb;
+    private static ?self $instance = null;
 
-    /**
-     * Get singleton instance.
-     */
-    public static function getInstance($logger = null, $db = null) {
+    public static function getInstance(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): self {
         if (self::$instance === null && $logger && $db) {
             self::$instance = new self($logger, $db);
         }
         return self::$instance;
     }
 
-    /**
-     * Constructor.
-     */
-    private function __construct($logger, $db) {
+    private function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         $this->logger = $logger;
         $this->db = $db;
         require_once dirname(__FILE__) . '/SnapshotFactory.php';

@@ -20,13 +20,7 @@ use RiseupAsia\Enums\TriggerSourceType;
 
 trait CleanerUtilsTrait {
 
-    /**
-     * Load retention settings from WP options with overrides.
-     *
-     * @param array $overrides User-provided overrides.
-     * @return array Resolved settings.
-     */
-    private function loadSettings($overrides) {
+    private function loadSettings(array $overrides): array {
         $defaults = array(
             'retention_type'  => RetentionType::Days->value,
             'retention_days'  => defined('SNAPSHOT_RETENTION_DAYS_DEFAULT') ? SNAPSHOT_RETENTION_DAYS_DEFAULT : 30,
@@ -44,22 +38,11 @@ trait CleanerUtilsTrait {
         return array_merge($defaults, array_filter($overrides, function($v) { return $v !== null; }));
     }
 
-    /**
-     * Get ZIP path from SQLite path.
-     *
-     * @param string $sqlite_path Path to .sqlite file.
-     * @return string Path to .zip file.
-     */
-    private function getZipPath($sqlite_path) {
-        return preg_replace('/\.sqlite$/', '.zip', $sqlite_path);
+    private function getZipPath(string $sqlitePath): string {
+        return preg_replace('/\.sqlite$/', '.zip', $sqlitePath);
     }
 
-    /**
-     * Delete a directory recursively.
-     *
-     * @param string $dir Directory path.
-     */
-    private function deleteDirectoryRecursive($dir) {
+    private function deleteDirectoryRecursive(string $dir): void {
         if (RiseupBooleanHelpers::isDirMissing($dir)) return;
 
         $items = array_diff(scandir($dir), array('.', '..'));
@@ -74,13 +57,7 @@ trait CleanerUtilsTrait {
         @rmdir($dir);
     }
 
-    /**
-     * Get total size of a directory recursively.
-     *
-     * @param string $dir Directory path.
-     * @return int Total size in bytes.
-     */
-    private function getDirectorySize($dir) {
+    private function getDirectorySize(string $dir): int {
         $size = 0;
         if (RiseupBooleanHelpers::isDirMissing($dir)) return 0;
 
@@ -95,12 +72,7 @@ trait CleanerUtilsTrait {
         return $size;
     }
 
-    /**
-     * Log cleanup results to the audit trail.
-     *
-     * @param array $results Cleanup results from execute().
-     */
-    private function logCleanupAudit($results) {
+    private function logCleanupAudit(array $results): void {
         try {
             $this->db->logTransaction(
                 ActionType::SnapshotCleanup->value,
@@ -121,19 +93,12 @@ trait CleanerUtilsTrait {
         }
     }
 
-    /**
-     * Log a message with cleaner context prefix.
-     *
-     * @param string $level   Log level (e.g. LogLevelType::Info->value).
-     * @param string $message Message.
-     * @param array  $context Additional context.
-     */
-    private function log($level, $message, $context = array()) {
+    private function log(string $level, string $message, array $context = array()): void {
         $prefix = '[SNAPSHOT] [CLEANER]';
-        $full_message = $prefix . ' ' . $message;
+        $fullMessage = $prefix . ' ' . $message;
 
         if (!empty($context)) {
-            $full_message .= ' ' . json_encode($context);
+            $fullMessage .= ' ' . json_encode($context);
         }
 
         if (!$this->logger) {
@@ -141,11 +106,11 @@ trait CleanerUtilsTrait {
         }
 
         switch ($level) {
-            case LogLevelType::Debug->value: $this->logger->debug($full_message); break;
-            case LogLevelType::Info->value:  $this->logger->info($full_message);  break;
-            case LogLevelType::Warn->value:  $this->logger->warn($full_message);  break;
-            case LogLevelType::Error->value: $this->logger->error($full_message);  break;
-            default:      $this->logger->info($full_message);
+            case LogLevelType::Debug->value: $this->logger->debug($fullMessage); break;
+            case LogLevelType::Info->value:  $this->logger->info($fullMessage);  break;
+            case LogLevelType::Warn->value:  $this->logger->warn($fullMessage);  break;
+            case LogLevelType::Error->value: $this->logger->error($fullMessage);  break;
+            default:      $this->logger->info($fullMessage);
         }
     }
 }

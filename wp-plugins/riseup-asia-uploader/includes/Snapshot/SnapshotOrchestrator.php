@@ -31,31 +31,27 @@ class RiseupSnapshotOrchestrator {
     use OrchestratorZipTrait;
     use OrchestratorRegistrationTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
-    /** @var RiseupDatabase */
-    private $db;
-    /** @var RiseupSnapshotManager */
-    private $manager;
-    /** @var RiseupSnapshotWorker */
-    private $worker;
-    /** @var RiseupRootDb */
-    private $rootDb;
-    /** @var RiseupDependencyAnalyzer */
-    private $analyzer;
-    /** @var wpdb */
-    private $wpdb;
-    /** @var RiseupSnapshotOrchestrator|null */
-    private static $instance = null;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private RiseupSnapshotManager $manager;
+    private RiseupSnapshotWorker $worker;
+    private RiseupRootDb $rootDb;
+    private RiseupDependencyAnalyzer $analyzer;
+    private \wpdb $wpdb;
+    private static ?self $instance = null;
 
-    public static function getInstance($logger = null, $db = null, $manager = null) {
+    public static function getInstance(
+        ?RiseupFileLogger $logger = null,
+        ?RiseupDatabase $db = null,
+        ?RiseupSnapshotManager $manager = null
+    ): self {
         if (self::$instance === null && $logger && $db && $manager) {
             self::$instance = new self($logger, $db, $manager);
         }
         return self::$instance;
     }
 
-    private function __construct($logger, $db, $manager) {
+    private function __construct(RiseupFileLogger $logger, RiseupDatabase $db, RiseupSnapshotManager $manager) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
