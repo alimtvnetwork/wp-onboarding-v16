@@ -317,7 +317,20 @@ func (db *DB) CreatePluginVersion(pluginID, siteID int64, version, backupPath st
 }
 
 // PluginVersionRow holds a single plugin version record from the database.
-type PluginVersionRow = map[string]any
+type PluginVersionRow struct {
+	ID            int64  `json:"id"`
+	PluginID      int64  `json:"pluginId"`
+	SiteID        int64  `json:"siteId"`
+	SiteName      string `json:"siteName"`
+	Version       string `json:"version"`
+	BackupPath    string `json:"backupPath"`
+	FilesUpdated  int64  `json:"filesUpdated"`
+	GitCommitHash string `json:"gitCommitHash"`
+	PublishType   string `json:"publishType"`
+	Status        string `json:"status"`
+	Notes         string `json:"notes"`
+	CreatedAt     string `json:"createdAt"`
+}
 
 // GetPluginVersions returns version history for a plugin, optionally filtered by site
 func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]PluginVersionRow, error) {
@@ -346,29 +359,23 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]Plu
 
 	var versions []PluginVersionRow
 	for rows.Next() {
-		var id, pluginId, siteId, filesUpdated int64
+		var v PluginVersionRow
 		var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
-		
-		err := rows.Scan(&id, &pluginId, &siteId, &siteName, &version, &backupPath, 
-			&filesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
+
+		err := rows.Scan(&v.ID, &v.PluginID, &v.SiteID, &siteName, &version, &backupPath,
+			&v.FilesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
 		if err != nil {
 			continue
 		}
 
-		v := PluginVersionRow{
-			"id":            id,
-			"pluginId":      pluginId,
-			"siteId":        siteId,
-			"siteName":      siteName.String,
-			"version":       version.String,
-			"backupPath":    backupPath.String,
-			"filesUpdated":  filesUpdated,
-			"gitCommitHash": gitCommitHash.String,
-			"publishType":   publishType.String,
-			"status":        status.String,
-			"notes":         notes.String,
-			"createdAt":     createdAt.String,
-		}
+		v.SiteName = siteName.String
+		v.Version = version.String
+		v.BackupPath = backupPath.String
+		v.GitCommitHash = gitCommitHash.String
+		v.PublishType = publishType.String
+		v.Status = status.String
+		v.Notes = notes.String
+		v.CreatedAt = createdAt.String
 		versions = append(versions, v)
 	}
 
@@ -379,8 +386,8 @@ func (db *DB) GetPluginVersions(pluginID int64, siteID *int64, limit int) ([]Plu
 }
 
 // GetPluginVersionByID returns a specific version entry
-func (db *DB) GetPluginVersionByID(versionID int64) (PluginVersionRow, error) {
-	var id, pluginId, siteId, filesUpdated int64
+func (db *DB) GetPluginVersionByID(versionID int64) (*PluginVersionRow, error) {
+	var v PluginVersionRow
 	var siteName, version, backupPath, gitCommitHash, publishType, status, notes, createdAt sql.NullString
 
 	err := db.QueryRow(`
@@ -389,26 +396,21 @@ func (db *DB) GetPluginVersionByID(versionID int64) (PluginVersionRow, error) {
 		FROM PluginVersions pv
 		LEFT JOIN Sites s ON pv.SiteId = s.Id
 		WHERE pv.Id = ?
-	`, versionID).Scan(&id, &pluginId, &siteId, &siteName, &version, &backupPath, 
-		&filesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
+	`, versionID).Scan(&v.ID, &v.PluginID, &v.SiteID, &siteName, &version, &backupPath,
+		&v.FilesUpdated, &gitCommitHash, &publishType, &status, &notes, &createdAt)
 	if err != nil {
 		return nil, err
 	}
 
-	return PluginVersionRow{
-		"id":            id,
-		"pluginId":      pluginId,
-		"siteId":        siteId,
-		"siteName":      siteName.String,
-		"version":       version.String,
-		"backupPath":    backupPath.String,
-		"filesUpdated":  filesUpdated,
-		"gitCommitHash": gitCommitHash.String,
-		"publishType":   publishType.String,
-		"status":        status.String,
-		"notes":         notes.String,
-		"createdAt":     createdAt.String,
-	}, nil
+	v.SiteName = siteName.String
+	v.Version = version.String
+	v.BackupPath = backupPath.String
+	v.GitCommitHash = gitCommitHash.String
+	v.PublishType = publishType.String
+	v.Status = status.String
+	v.Notes = notes.String
+	v.CreatedAt = createdAt.String
+	return &v, nil
 }
 
 // DeletePluginVersion removes a version entry
