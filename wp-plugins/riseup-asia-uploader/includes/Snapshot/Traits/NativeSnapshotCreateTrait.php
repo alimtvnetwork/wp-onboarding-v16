@@ -22,10 +22,7 @@ trait NativeSnapshotCreateTrait {
 
     use NativeSnapshotExecTrait;
 
-    /**
-     * Create a snapshot (schedules via cron).
-     */
-    public function createSnapshot($options) {
+    public function createSnapshot(array $options): array {
         $this->log(LogLevelType::Info->value, 'Snapshot creation requested', $options);
 
         $guardError = $this->guardCreateSnapshot();
@@ -66,7 +63,7 @@ trait NativeSnapshotCreateTrait {
     }
 
     /** Create snapshot record and return its ID. */
-    private function initSnapshotRecord(array $options, array $tables) {
+    private function initSnapshotRecord(array $options, array $tables): int|false {
         $sequence = $this->getNextSequence();
         $filename = $this->generateSnapshotFilename($sequence);
         $filepath = RiseupPathUtils::join($this->getSnapshotsDir(), $filename . '.sqlite');
@@ -76,24 +73,24 @@ trait NativeSnapshotCreateTrait {
     }
 
     /** Schedule snapshot via cron or execute directly as fallback. */
-    private function scheduleOrExecute(int $snapshot_id, array $tables, string $filename): array {
+    private function scheduleOrExecute(int $snapshotId, array $tables, string $filename): array {
         $scheduled = wp_schedule_single_event(
             time() + 5,
             HookType::CronSnapshotImmediate->value,
-            array(array('snapshot_id' => $snapshot_id, 'tables' => $tables))
+            array(array('snapshot_id' => $snapshotId, 'tables' => $tables))
         );
 
         if ($scheduled === false) {
             $this->log(LogLevelType::Warn->value, 'Cron scheduling failed, executing directly');
-            return $this->executeSnapshot($snapshot_id, $tables);
+            return $this->executeSnapshot($snapshotId, $tables);
         }
 
         $this->log(LogLevelType::Info->value, 'Snapshot scheduled via cron', array(
-            'snapshot_id' => $snapshot_id, 'filename' => $filename, 'tables' => count($tables),
+            'snapshot_id' => $snapshotId, 'filename' => $filename, 'tables' => count($tables),
         ));
 
         return array(
-            'success' => true, 'snapshot_id' => $snapshot_id,
+            'success' => true, 'snapshot_id' => $snapshotId,
             'filename' => $filename . '.sqlite', 'status' => SnapshotStatusType::Scheduled->value,
             'tables' => count($tables), 'scheduled_at' => date('c', time() + 5),
         );

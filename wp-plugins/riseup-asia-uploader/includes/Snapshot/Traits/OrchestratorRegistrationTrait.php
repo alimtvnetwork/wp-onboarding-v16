@@ -14,10 +14,7 @@ use RiseupAsia\Enums\TableType;
 
 trait OrchestratorRegistrationTrait {
 
-    /**
-     * Register the completed snapshot in the snapshots table.
-     */
-    private function registerSnapshot($title, $scope, $worker_result, $plugin_stats, $snapshot_dir) {
+    private function registerSnapshot(string $title, string $scope, array $workerResult, array $pluginStats, string $snapshotDir): int|false {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return false;
@@ -25,23 +22,21 @@ trait OrchestratorRegistrationTrait {
 
         try {
             $sequence = $this->getNextSnapshotSequence($pdo);
-            $tables_json = $this->buildSnapshotTablesJson($worker_result, $plugin_stats);
-            $dir_size = $this->getDirectorySize($snapshot_dir);
+            $tables_json = $this->buildSnapshotTablesJson($workerResult, $pluginStats);
+            $dir_size = $this->getDirectorySize($snapshotDir);
 
-            return $this->insertSnapshotRecord($pdo, $sequence, $snapshot_dir, $scope, $tables_json, $worker_result, $dir_size);
+            return $this->insertSnapshotRecord($pdo, $sequence, $snapshotDir, $scope, $tables_json, $workerResult, $dir_size);
         } catch (Exception $e) {
             $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array('error' => $e->getMessage()));
             return false;
         }
     }
 
-    /** Get next snapshot sequence. */
     private function getNextSnapshotSequence(PDO $pdo): int {
         $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
         return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
     }
 
-    /** Build tables JSON metadata. */
     private function buildSnapshotTablesJson(array $workerResult, array $pluginStats): string {
         return json_encode(array(
             'exported' => $workerResult['tables'] ?? 0, 'total_rows' => $workerResult['total_rows'] ?? 0,
@@ -50,7 +45,6 @@ trait OrchestratorRegistrationTrait {
         ));
     }
 
-    /** Insert a snapshot record. */
     private function insertSnapshotRecord(PDO $pdo, int $sequence, string $snapshotDir, string $scope, string $tablesJson, array $workerResult, int $dirSize): int {
         $now = gmdate('c');
         $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "

@@ -14,8 +14,7 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait SnapshotProviderLockTrait {
 
-    /** Check if a snapshot operation is currently in progress. */
-    protected function isLocked() {
+    protected function isLocked(): bool {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
 
         if (!RiseupPathUtils::fileExists($lock_file)) {
@@ -25,7 +24,6 @@ trait SnapshotProviderLockTrait {
         return $this->isLockFresh($lock_file);
     }
 
-    /** Check if lock file is still fresh (not stale). */
     private function isLockFresh(string $lock_file): bool {
         $lock_time = filemtime($lock_file);
         $age = time() - $lock_time;
@@ -39,8 +37,7 @@ trait SnapshotProviderLockTrait {
         return true;
     }
 
-    /** Acquire a lock for snapshot operations. */
-    protected function acquireLock() {
+    protected function acquireLock(): bool {
         if ($this->isLocked()) {
             return false;
         }
@@ -53,7 +50,6 @@ trait SnapshotProviderLockTrait {
         return $this->writeLockFile();
     }
 
-    /** Write the lock file to disk. */
     private function writeLockFile(): bool {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
         $lock_data = json_encode(array(
@@ -73,8 +69,7 @@ trait SnapshotProviderLockTrait {
         return true;
     }
 
-    /** Release the snapshot lock. */
-    protected function releaseLock() {
+    protected function releaseLock(): void {
         $lock_file = RiseupPathUtils::join($this->getSnapshotsDir(), '.lock');
 
         if (RiseupPathUtils::fileExists($lock_file)) {

@@ -14,8 +14,7 @@ use RiseupAsia\Enums\TableType;
 
 trait IncrementalRegistrationTrait {
 
-    /** Register the incremental snapshot in the tracking table. */
-    private function registerIncrementalSnapshot($title, $master_dir, $folder_name, $sequence, $tables_changed, $total_new_rows, $incremental_dir) {
+    private function registerIncrementalSnapshot(string $title, string $masterDir, string $folderName, int $sequence, int $tablesChanged, int $totalNewRows, string $incrementalDir): int|false {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return false;
@@ -23,23 +22,21 @@ trait IncrementalRegistrationTrait {
 
         try {
             $snap_sequence = $this->getNextTrackingSequence($pdo);
-            $tables_json = $this->buildIncrementalMetaJson($master_dir, $folder_name, $sequence, $tables_changed, $total_new_rows);
-            $dir_size = $this->calculateDirectorySize($incremental_dir);
+            $tables_json = $this->buildIncrementalMetaJson($masterDir, $folderName, $sequence, $tablesChanged, $totalNewRows);
+            $dir_size = $this->calculateDirectorySize($incrementalDir);
 
-            return $this->insertIncrementalRecord($pdo, $snap_sequence, $folder_name, $incremental_dir, $tables_json, $total_new_rows, $dir_size);
-        } catch (Exception $e) {
+            return $this->insertIncrementalRecord($pdo, $snap_sequence, $folderName, $incrementalDir, $tables_json, $totalNewRows, $dir_size);
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to register incremental snapshot', array('error' => $e->getMessage()));
             return false;
         }
     }
 
-    /** Get the next tracking sequence. */
     private function getNextTrackingSequence(PDO $pdo): int {
         $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
         return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
     }
 
-    /** Build the incremental metadata JSON. */
     private function buildIncrementalMetaJson(string $masterDir, string $folderName, int $sequence, int $tablesChanged, int $totalNewRows): string {
         return json_encode(array(
             'type' => 'incremental', 'master' => basename($masterDir), 'sequence' => $sequence,
@@ -47,7 +44,6 @@ trait IncrementalRegistrationTrait {
         ));
     }
 
-    /** Calculate total size of a directory. */
     private function calculateDirectorySize(string $dir): int {
         if (RiseupBooleanHelpers::isDirMissing($dir)) {
             return 0;
@@ -63,7 +59,6 @@ trait IncrementalRegistrationTrait {
         return $size;
     }
 
-    /** Insert an incremental snapshot record. */
     private function insertIncrementalRecord(PDO $pdo, int $sequence, string $filename, string $filepath, string $tablesJson, int $totalRows, int $dirSize): int {
         $now = gmdate('c');
         $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "
@@ -79,41 +74,38 @@ trait IncrementalRegistrationTrait {
         return (int)$pdo->lastInsertId();
     }
 
-    /** Invalidate any cached ZIP export for the parent full snapshot. */
-    private function invalidateParentZipExport($master_dir) {
+    private function invalidateParentZipExport(string $masterDir): void {
         try {
-            $parent = $this->findParentSnapshot($master_dir);
+            $parent = $this->findParentSnapshot($masterDir);
             if (!$parent) {
                 return;
             }
 
-            $this->doInvalidateZip($parent, $master_dir);
-        } catch (Exception $e) {
+            $this->doInvalidateZip($parent, $masterDir);
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to invalidate parent ZIP export', array('error' => $e->getMessage()));
         }
     }
 
-    /** Find the parent snapshot record by filepath. */
-    private function findParentSnapshot(string $master_dir): ?array {
+    private function findParentSnapshot(string $masterDir): ?array {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return null;
         }
 
         $stmt = $pdo->prepare('SELECT id FROM ' . TableType::Snapshots->value . ' WHERE filepath = ? AND status = ? LIMIT 1');
-        $stmt->execute(array($master_dir, SnapshotStatusType::Complete->value));
+        $stmt->execute(array($masterDir, SnapshotStatusType::Complete->value));
         $parent = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$parent) {
-            $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($master_dir)));
+            $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($masterDir)));
             return null;
         }
 
         return $parent;
     }
 
-    /** Perform the actual ZIP invalidation for a parent snapshot. */
-    private function doInvalidateZip(array $parent, string $master_dir) {
+    private function doInvalidateZip(array $parent, string $masterDir): void {
         require_once dirname(__FILE__) . '/../SnapshotExporter.php';
         $exporter = RiseupSnapshotExporter::getInstance($this->logger, $this->db);
         if (!$exporter) {

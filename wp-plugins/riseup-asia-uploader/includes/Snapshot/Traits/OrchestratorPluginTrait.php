@@ -10,22 +10,15 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait OrchestratorPluginTrait {
 
-    /**
-     * Snapshot installed WordPress plugins as ZIP files.
-     *
-     * @param string $snapshot_dir Snapshot directory.
-     * @param string $selection    'all' or 'selective'.
-     * @return array Stats: count, total_size, plugins[].
-     */
-    private function snapshotPlugins($snapshot_dir, $selection = 'all') {
-        $plugins_dir = $snapshot_dir . '/plugins';
+    private function snapshotPlugins(string $snapshotDir, string $selection = 'all'): array {
+        $plugins_dir = $snapshotDir . '/plugins';
         if (!RiseupPathUtils::ensureDir($plugins_dir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }
 
         $plugins_to_snapshot = $this->collectPluginsToSnapshot($selection);
-        $rootPdo = $this->openRootDbForPlugins($snapshot_dir);
+        $rootPdo = $this->openRootDbForPlugins($snapshotDir);
 
         $count = 0;
         $total_size = 0;
@@ -45,8 +38,7 @@ trait OrchestratorPluginTrait {
         return array('count' => $count, 'total_size' => $total_size, 'plugins' => $plugin_list);
     }
 
-    /** Collect plugins eligible for snapshotting. */
-    private function collectPluginsToSnapshot($selection) {
+    private function collectPluginsToSnapshot(string $selection): array {
         if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
@@ -74,8 +66,7 @@ trait OrchestratorPluginTrait {
         return $plugins_to_snapshot;
     }
 
-    /** Archive a single plugin as ZIP. */
-    private function archiveSinglePlugin($info, $plugins_dir, $rootPdo) {
+    private function archiveSinglePlugin(array $info, string $pluginsDir, ?PDO $rootPdo): ?array {
         $slug = $info['slug'];
         $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
 
@@ -85,7 +76,7 @@ trait OrchestratorPluginTrait {
         }
 
         $zip_filename = $slug . '.zip';
-        $zip_path = $plugins_dir . '/' . $zip_filename;
+        $zip_path = $pluginsDir . '/' . $zip_filename;
         $zip_result = $this->createPluginZip($plugin_path, $zip_path, $slug);
 
         if (!$zip_result['success']) {
@@ -106,22 +97,21 @@ trait OrchestratorPluginTrait {
         return array('success' => true, 'size' => $entry['size'], 'entry' => $entry);
     }
 
-    /** Create a ZIP from a plugin directory. */
-    private function createPluginZip($source_dir, $zip_path, $slug) {
+    private function createPluginZip(string $sourceDir, string $zipPath, string $slug): array {
         try {
             $zip = new ZipArchive();
-            if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
                 return array('success' => false, 'error' => 'Failed to create ZIP');
             }
 
-            $source_dir = rtrim($source_dir, '/\\\\');
+            $sourceDir = rtrim($sourceDir, '/\\\\');
             $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($source_dir, RecursiveDirectoryIterator::SKIP_DOTS),
+                new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
                 RecursiveIteratorIterator::SELF_FIRST
             );
 
             foreach ($iterator as $item) {
-                $relative = $slug . '/' . substr($item->getPathname(), strlen($source_dir) + 1);
+                $relative = $slug . '/' . substr($item->getPathname(), strlen($sourceDir) + 1);
                 $relative = str_replace('\\', '/', $relative);
                 if ($item->isDir()) {
                     $zip->addEmptyDir($relative);
@@ -132,9 +122,9 @@ trait OrchestratorPluginTrait {
 
             $zip->close();
 
-            $size = filesize($zip_path);
+            $size = filesize($zipPath);
             if ($size === 0) {
-                @unlink($zip_path);
+                @unlink($zipPath);
                 return array('success' => false, 'error' => 'ZIP file is empty');
             }
 
@@ -144,7 +134,6 @@ trait OrchestratorPluginTrait {
         }
     }
 
-    /** Open a-root.db for plugin registration. */
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
         if (RiseupBooleanHelpers::isFileMissing($root_path)) {

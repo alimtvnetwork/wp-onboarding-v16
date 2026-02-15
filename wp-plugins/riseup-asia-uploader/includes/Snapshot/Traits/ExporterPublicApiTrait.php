@@ -24,7 +24,7 @@ trait ExporterPublicApiTrait {
      * @param int $fullSnapshotId The full snapshot's ID.
      * @return array {success: bool, export?: array, error?: string}
      */
-    public function getOrBuildZip($fullSnapshotId) {
+    public function getOrBuildZip(int $fullSnapshotId): array {
         $this->log(LogLevelType::Info->value, 'getOrBuildZip called', array('snapshot_id' => $fullSnapshotId));
 
         $snapshot = $this->getFullSnapshot($fullSnapshotId);
@@ -51,7 +51,7 @@ trait ExporterPublicApiTrait {
      * @param int $fullSnapshotId The full snapshot's ID.
      * @return bool True if an export was invalidated.
      */
-    public function invalidateZip($fullSnapshotId) {
+    public function invalidateZip(int $fullSnapshotId): bool {
         $this->log(LogLevelType::Info->value, 'Invalidating ZIP export', array('snapshot_id' => $fullSnapshotId));
 
         $pdo = $this->db->get_pdo();
@@ -82,7 +82,7 @@ trait ExporterPublicApiTrait {
      *
      * @param int $fullSnapshotId The full snapshot's ID.
      */
-    public function removeExports($fullSnapshotId) {
+    public function removeExports(int $fullSnapshotId): void {
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
             return;
@@ -111,7 +111,7 @@ trait ExporterPublicApiTrait {
      * @param int $exportId The export record ID.
      * @return string|null Download URL or null.
      */
-    public function getDownloadUrl($exportId) {
+    public function getDownloadUrl(int $exportId): ?string {
         $export = $this->getExportById($exportId);
         if (!$export || $export['status'] !== SnapshotExportStatusType::Valid->value) {
             return null;
@@ -128,7 +128,7 @@ trait ExporterPublicApiTrait {
      * @param string $token    The nonce token.
      * @return array|null The export record, or null if invalid.
      */
-    public function validateDownloadToken($exportId, $token) {
+    public function validateDownloadToken(int $exportId, string $token): ?array {
         $valid = wp_verify_nonce($token, 'riseup_snapshot_download_' . $exportId);
         if (!$valid) {
             $this->log(LogLevelType::Warn->value, 'Invalid download token', array('export_id' => $exportId));
@@ -160,7 +160,7 @@ trait ExporterPublicApiTrait {
      * @param int $fullSnapshotId The full snapshot's ID.
      * @return array|null Export metadata or null.
      */
-    public function getExportStatus($fullSnapshotId) {
+    public function getExportStatus(int $fullSnapshotId): ?array {
         $pdo = $this->db->get_pdo();
         if (!$pdo) {
             return null;

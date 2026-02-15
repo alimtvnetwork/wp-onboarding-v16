@@ -2,8 +2,7 @@
 /**
  * Scheduler Trigger Trait
  *
- * Public trigger methods: triggerSnapshotNow, scheduleRestore,
- * clearAllSchedules, getStatus, getStorageStats, estimateCleanup, runManualCleanup.
+ * Public trigger methods.
  *
  * @package RiseupAsiaUploader
  * @since   1.9.0
@@ -19,44 +18,24 @@ if (!defined('ABSPATH')) {
 
 trait SchedulerTriggerTrait {
 
-    /**
-     * Get storage statistics for the scheduler status panel.
-     *
-     * @return array Storage stats from cleaner.
-     */
-    public function getStorageStats() {
+    public function getStorageStats(): array {
         $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->getStorageStats();
     }
 
-    /**
-     * Estimate what cleanup would remove without actually deleting.
-     *
-     * @return array Cleanup estimate.
-     */
-    public function estimateCleanup() {
+    public function estimateCleanup(): array {
         $settings = $this->detector->getSettings();
         $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->estimateCleanup($settings);
     }
 
-    /**
-     * Run cleanup manually (not via cron).
-     *
-     * @return array Cleanup result.
-     */
-    public function runManualCleanup() {
+    public function runManualCleanup(): array {
         $settings = $this->detector->getSettings();
         $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->runCleanup($settings);
     }
 
-    /**
-     * Get scheduler status information.
-     *
-     * @return array Status info.
-     */
-    public function getStatus() {
+    public function getStatus(): array {
         $settings = $this->detector->getSettings();
 
         $scheduled_next = wp_next_scheduled(HookType::CronSnapshotScheduled->value);
@@ -75,13 +54,7 @@ trait SchedulerTriggerTrait {
         );
     }
 
-    /**
-     * Trigger a manual "Snapshot Now" operation via WP-Cron.
-     *
-     * @param array $options Snapshot options (snapshot_type, title, scope, master_snapshot_id).
-     * @return array Result with job status.
-     */
-    public function triggerSnapshotNow($options = array()) {
+    public function triggerSnapshotNow(array $options = array()): array {
         $this->logger->info('[SCHEDULER] Snapshot Now triggered (scheduling cron)', $options);
 
         try {
@@ -130,17 +103,10 @@ trait SchedulerTriggerTrait {
         }
     }
 
-    /**
-     * Schedule a restore operation to run in the background via WP-Cron.
-     *
-     * @param int   $snapshot_id Snapshot ID to restore.
-     * @param array $options     Restore options.
-     * @return array Result with scheduling status.
-     */
-    public function scheduleRestore($snapshot_id, $options = array()) {
-        $this->logger->info('[SCHEDULER] Scheduling background restore', array('snapshot_id' => $snapshot_id));
+    public function scheduleRestore(int $snapshotId, array $options = array()): array {
+        $this->logger->info('[SCHEDULER] Scheduling background restore', array('snapshot_id' => $snapshotId));
 
-        $cron_args = array('snapshot_id' => $snapshot_id, 'options' => $options);
+        $cron_args = array('snapshot_id' => $snapshotId, 'options' => $options);
 
         $scheduled = wp_schedule_single_event(time() + 5, HookType::CronSnapshotRestore->value, array($cron_args));
 
@@ -151,15 +117,12 @@ trait SchedulerTriggerTrait {
         return array(
             'success'     => true,
             'scheduled'   => true,
-            'snapshot_id' => $snapshot_id,
+            'snapshot_id' => $snapshotId,
             'message'     => 'Restore has been scheduled and will run in the background.',
         );
     }
 
-    /**
-     * Clear all scheduled events on plugin deactivation.
-     */
-    public function clearAllSchedules() {
+    public function clearAllSchedules(): void {
         $this->clearScheduledSnapshot();
 
         $cleanup = wp_next_scheduled(HookType::CronSnapshotCleanup->value);

@@ -10,17 +10,11 @@ use RiseupAsia\Enums\TableType;
 
 trait WorkerJobProgressTrait {
 
-    /**
-     * Get the current progress of a snapshot job.
-     *
-     * @param int $job_id Job ID.
-     * @return array|null Progress info or null.
-     */
-    public function getJobProgress($job_id) {
+    public function getJobProgress(int $jobId): ?array {
         $pdo = $this->db->getPdo();
         if (!$pdo) return null;
 
-        $job = $this->getJob($pdo, $job_id);
+        $job = $this->getJob($pdo, $jobId);
         if (!$job) return null;
 
         $all_tables = json_decode($job['tables_json'], true);
@@ -42,12 +36,6 @@ trait WorkerJobProgressTrait {
         );
     }
 
-    /**
-     * Load table-level progress records.
-     *
-     * @param PDO $pdo Database connection.
-     * @return array Table progress records.
-     */
     private function loadTableProgress(PDO $pdo): array {
         try {
             $stmt = $pdo->prepare("SELECT table_name, status, rows_total, rows_exported, error_message

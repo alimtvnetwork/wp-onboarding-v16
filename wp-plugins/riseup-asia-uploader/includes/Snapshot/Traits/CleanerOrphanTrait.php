@@ -1,8 +1,6 @@
 <?php
 /**
- * Cleaner Orphan Trait
- *
- * Orphan file cleanup and stuck/failed snapshot handling.
+ * CleanerOrphanTrait — Orphan file cleanup and stuck/failed snapshot handling.
  *
  * @package RiseupAsiaUploader
  * @since   1.9.0
@@ -18,14 +16,7 @@ use RiseupAsia\Enums\SnapshotStatusType;
 
 trait CleanerOrphanTrait {
 
-    /**
-     * Cleanup orphan files and directories.
-     *
-     * @param bool $dry_run If true, only report what would be done.
-     *
-     * @return array Results of the cleanup.
-     */
-    private function cleanupOrphanFiles($dry_run = false) {
+    private function cleanupOrphanFiles(bool $dryRun = false): array {
         $result = array('removed' => 0, 'errors' => array());
 
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
@@ -42,18 +33,13 @@ trait CleanerOrphanTrait {
         );
 
         foreach ($iterator as $item) {
-            $path = str_replace('\\', '/', $item->getPathname()); // Normalize Windows paths
-            if (in_array($path, $known_paths)) {
-                continue;
-            }
+            $path = str_replace('\\', '/', $item->getPathname());
+            if (in_array($path, $known_paths)) { continue; }
+            if ($item->isDir()) { continue; }
 
-            if ($item->isDir()) {
-                continue; // Skip directories, they're handled separately
-            }
-
-            if (!$dry_run) {
+            if (!$dryRun) {
                 try {
-                    if (@unlink($path)) { // Suppress warnings
+                    if (@unlink($path)) {
                         $result['removed']++;
                     } else {
                         $result['errors'][] = "Failed to delete orphan file: {$path}";
@@ -71,14 +57,7 @@ trait CleanerOrphanTrait {
         return $result;
     }
 
-    /**
-     * Cleanup orphan SQLite files.
-     *
-     * @param bool $dry_run If true, only report what would be done.
-     *
-     * @return array Results of the cleanup.
-     */
-    private function cleanupOrphanSqliteFiles($dry_run = false) {
+    private function cleanupOrphanSqliteFiles(bool $dryRun = false): array {
         $result = array('removed' => 0, 'errors' => array());
 
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
@@ -95,20 +74,15 @@ trait CleanerOrphanTrait {
         );
 
         foreach ($iterator as $item) {
-            $path = str_replace('\\', '/', $item->getPathname()); // Normalize Windows paths
+            $path = str_replace('\\', '/', $item->getPathname());
             $filename = basename($path);
 
-            if (substr($filename, -7) !== '.sqlite3') {
-                continue;
-            }
+            if (substr($filename, -7) !== '.sqlite3') { continue; }
+            if (in_array($filename, $known_files)) { continue; }
 
-            if (in_array($filename, $known_files)) {
-                continue;
-            }
-
-            if (!$dry_run) {
+            if (!$dryRun) {
                 try {
-                    if (@unlink($path)) { // Suppress warnings
+                    if (@unlink($path)) {
                         $result['removed']++;
                     } else {
                         $result['errors'][] = "Failed to delete orphan SQLite file: {$path}";
@@ -126,14 +100,7 @@ trait CleanerOrphanTrait {
         return $result;
     }
 
-    /**
-     * Cleanup orphan directories.
-     *
-     * @param bool $dry_run If true, only report what would be done.
-     *
-     * @return array Results of the cleanup.
-     */
-    private function cleanupOrphanDirectories($dry_run = false) {
+    private function cleanupOrphanDirectories(bool $dryRun = false): array {
         $result = array('removed' => 0, 'errors' => array());
 
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
@@ -153,21 +120,17 @@ trait CleanerOrphanTrait {
         $dirs = array();
         foreach ($iterator as $item) {
             if ($item->isDir()) {
-                $dirs[] = str_replace('\\', '/', $item->getPathname()); // Normalize Windows paths
+                $dirs[] = str_replace('\\', '/', $item->getPathname());
             }
         }
-        $dirs = array_reverse($dirs); // Start with the deepest directories
+        $dirs = array_reverse($dirs);
 
         foreach ($dirs as $dir) {
-            if (in_array($dir, $known_paths)) {
-                continue;
-            }
-
-            // Only delete empty directories
+            if (in_array($dir, $known_paths)) { continue; }
             if (RiseupBooleanHelpers::isDirEmpty($dir)) {
-                if (!$dry_run) {
+                if (!$dryRun) {
                     try {
-                        if (@rmdir($dir)) { // Suppress warnings
+                        if (@rmdir($dir)) {
                             $result['removed']++;
                         } else {
                             $result['errors'][] = "Failed to delete orphan directory: {$dir}";
@@ -186,8 +149,7 @@ trait CleanerOrphanTrait {
         return $result;
     }
 
-    /** Cleanup stuck/failed snapshots older than the configured threshold. */
-    private function cleanupStuckSnapshots($dry_run = false) {
+    private function cleanupStuckSnapshots(bool $dryRun = false): array {
         $result = array('cleaned' => 0, 'ids' => array());
 
         $stuck_hours = defined('SNAPSHOT_STUCK_HOURS') ? SNAPSHOT_STUCK_HOURS : 24;
@@ -207,7 +169,7 @@ trait CleanerOrphanTrait {
         foreach ($stuck as $snapshot) {
             $result['ids'][] = (int) $snapshot['id'];
 
-            if (!$dry_run) {
+            if (!$dryRun) {
                 $this->db->execute(
                     'UPDATE ' . TableType::Snapshots->value . ' SET status = ?, error = ? WHERE id = ?',
                     array(

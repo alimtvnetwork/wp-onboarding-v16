@@ -13,15 +13,7 @@ use RiseupAsia\Enums\TableType;
 
 trait WorkerJobLifecycleTrait {
 
-    /**
-     * Create a snapshot job record in the jobs table.
-     *
-     * @param string $snapshot_dir Snapshot directory.
-     * @param array  $tables       Ordered table list.
-     * @param array  $config       Original config.
-     * @return int|false Job ID.
-     */
-    private function createJob($snapshot_dir, $tables, $config) {
+    private function createJob(string $snapshotDir, array $tables, array $config): int|false {
         $pdo = $this->db->getPdo();
         if (!$pdo) return false;
 
@@ -48,116 +40,79 @@ trait WorkerJobLifecycleTrait {
                 VALUES (?, ?, ?, ?, ?, ?, ?)");
 
             $stmt->execute(array(
-                $snapshot_dir, json_encode($tables), $this->poolSize,
+                $snapshotDir, json_encode($tables), $this->poolSize,
                 SnapshotJobStatusType::Queued->value, json_encode($config), $now, $now,
             ));
 
             return (int) $pdo->lastInsertId();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to create snapshot job', array('error' => $e->getMessage()));
             return false;
         }
     }
 
-    /**
-     * Load a job record.
-     *
-     * @param PDO $pdo    Database connection.
-     * @param int $job_id Job ID.
-     * @return array|null Job record.
-     */
-    private function getJob($pdo, $job_id) {
+    private function getJob(PDO $pdo, int $jobId): ?array {
         $stmt = $pdo->prepare("SELECT * FROM " . TableType::SnapshotJobs->value . " WHERE id = ?");
-        $stmt->execute(array($job_id));
+        $stmt->execute(array($jobId));
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
 
-    /**
-     * Update job status.
-     *
-     * @param PDO         $pdo    Database connection.
-     * @param int         $job_id Job ID.
-     * @param string      $status New status.
-     * @param string|null $error  Error message (if failed).
-     */
-    private function updateJobStatus($pdo, $job_id, $status, $error = null) {
+    private function updateJobStatus(PDO $pdo, int $jobId, string $status, ?string $error = null): void {
         $now = gmdate('c');
         $completed = ($status === SnapshotJobStatusType::Complete->value || $status === SnapshotJobStatusType::Failed->value) ? $now : null;
 
         $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET status = ?, updated_at = ?, completed_at = COALESCE(?, completed_at) WHERE id = ?");
-        $stmt->execute(array($status, $now, $completed, $job_id));
+        $stmt->execute(array($status, $now, $completed, $jobId));
 
         if ($error) {
-            $job = $this->getJob($pdo, $job_id);
+            $job = $this->getJob($pdo, $jobId);
             $errors = json_decode($job['errors_json'] ?? '[]', true);
             $errors[] = $error;
             $stmt2 = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . " SET errors_json = ? WHERE id = ?");
-            $stmt2->execute(array(json_encode($errors), $job_id));
+            $stmt2->execute(array(json_encode($errors), $jobId));
         }
     }
 
-    /**
-     * Update job after a batch completes.
-     *
-     * @param PDO   $pdo            Database connection.
-     * @param int   $job_id         Job ID.
-     * @param int   $next_batch     Next batch index.
-     * @param int   $batch_exported Tables exported in this batch.
-     * @param int   $batch_rows     Rows exported in this batch.
-     * @param array $batch_errors   Errors from this batch.
-     */
-    private function updateJobBatchProgress($pdo, $job_id, $next_batch, $batch_exported, $batch_rows, $batch_errors) {
+    private function updateJobBatchProgress(PDO $pdo, int $jobId, int $nextBatch, int $batchExported, int $batchRows, array $batchErrors): void {
         $now = gmdate('c');
-        $job = $this->getJob($pdo, $job_id);
-        $all_errors = array_merge(json_decode($job['errors_json'] ?? '[]', true), $batch_errors);
+        $job = $this->getJob($pdo, $jobId);
+        $all_errors = array_merge(json_decode($job['errors_json'] ?? '[]', true), $batchErrors);
 
         $stmt = $pdo->prepare("UPDATE " . TableType::SnapshotJobs->value . "
             SET current_batch = ?, tables_exported = tables_exported + ?,
                 total_rows = total_rows + ?, errors_json = ?, updated_at = ?
             WHERE id = ?");
 
-        $stmt->execute(array($next_batch, $batch_exported, $batch_rows, json_encode($all_errors), $now, $job_id));
+        $stmt->execute(array($nextBatch, $batchExported, $batchRows, json_encode($all_errors), $now, $jobId));
     }
 
-    /**
-     * Finalize a completed job.
-     *
-     * @param PDO    $pdo          Database connection.
-     * @param int    $job_id       Job ID.
-     * @param string $snapshot_dir Snapshot directory.
-     */
-    private function finalizeJob($pdo, $job_id, $snapshot_dir) {
-        $job = $this->getJob($pdo, $job_id);
+    private function finalizeJob(PDO $pdo, int $jobId, string $snapshotDir): void {
+        $job = $this->getJob($pdo, $jobId);
 
-        $root_path = $snapshot_dir . '/a-root.db';
+        $root_path = $snapshotDir . '/a-root.db';
         if (file_exists($root_path)) {
             try {
                 $rootPdo = new PDO('sqlite:' . $root_path);
                 $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $this->rootDb->updateStats($rootPdo, (int) $job['tables_exported'], (int) $job['total_rows']);
                 $rootPdo = null;
-            } catch (Exception $e) {
+            } catch (Throwable $e) {
                 $this->log(LogLevelType::Warn->value, 'Failed to finalize a-root.db stats', array('error' => $e->getMessage()));
             }
         }
 
-        $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Complete->value);
+        $this->updateJobStatus($pdo, $jobId, SnapshotJobStatusType::Complete->value);
 
         $errors = json_decode($job['errors_json'] ?? '[]', true);
         $this->log(LogLevelType::Info->value, 'Snapshot job complete', array(
-            'job_id' => $job_id, 'tables_exported' => $job['tables_exported'],
+            'job_id' => $jobId, 'tables_exported' => $job['tables_exported'],
             'total_rows' => $job['total_rows'], 'errors' => count($errors),
         ));
     }
 
-    /**
-     * Schedule the next worker batch via WP-Cron.
-     *
-     * @param int $job_id Job ID.
-     */
-    private function scheduleNextBatch($job_id) {
-        wp_schedule_single_event(time() + 5, HookType::CronSnapshotWorkerBatch->value, array(array('job_id' => $job_id)));
+    private function scheduleNextBatch(int $jobId): void {
+        wp_schedule_single_event(time() + 5, HookType::CronSnapshotWorkerBatch->value, array(array('job_id' => $jobId)));
     }
 }

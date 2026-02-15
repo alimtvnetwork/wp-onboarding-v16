@@ -11,13 +11,7 @@ use RiseupAsia\Enums\SnapshotFrequencyType;
 
 trait SchedulerConfigTrait {
 
-    /**
-     * Register custom cron schedules.
-     *
-     * @param array $schedules Existing schedules.
-     * @return array Modified schedules.
-     */
-    public function registerCronSchedules($schedules) {
+    public function registerCronSchedules(array $schedules): array {
         if (!isset($schedules[SnapshotFrequencyType::Weekly->value])) {
             $schedules[SnapshotFrequencyType::Weekly->value] = array(
                 'interval' => WEEK_IN_SECONDS,
@@ -35,10 +29,7 @@ trait SchedulerConfigTrait {
         return $schedules;
     }
 
-    /**
-     * Ensure cleanup cron is scheduled.
-     */
-    private function ensureCleanupScheduled() {
+    private function ensureCleanupScheduled(): void {
         if (!wp_next_scheduled(HookType::CronSnapshotCleanup->value)) {
             $timestamp = strtotime('tomorrow 04:00:00');
             wp_schedule_event($timestamp, 'daily', HookType::CronSnapshotCleanup->value);
@@ -46,10 +37,7 @@ trait SchedulerConfigTrait {
         }
     }
 
-    /**
-     * Sync cron schedule with user settings.
-     */
-    public function syncScheduleWithSettings() {
+    public function syncScheduleWithSettings(): void {
         $settings = $this->detector->getSettings();
         $this->clearScheduledSnapshot();
 
@@ -76,10 +64,7 @@ trait SchedulerConfigTrait {
         }
     }
 
-    /**
-     * Clear scheduled snapshot cron.
-     */
-    public function clearScheduledSnapshot() {
+    public function clearScheduledSnapshot(): void {
         $timestamp = wp_next_scheduled(HookType::CronSnapshotScheduled->value);
         if ($timestamp) {
             wp_unschedule_event($timestamp, HookType::CronSnapshotScheduled->value);

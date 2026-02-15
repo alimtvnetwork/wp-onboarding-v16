@@ -91,9 +91,9 @@ trait RestoreTableTrait {
      * @param string $strategy    'truncate' or 'merge'.
      * @return array Result: success, rows, error.
      */
-    private function restoreTableFromFile($sqlite_path, $table, $strategy = 'truncate') {
+    private function restoreTableFromFile(string $sqlitePath, string $table, string $strategy = 'truncate'): array {
         try {
-            $validated = $this->openAndValidateSqliteTable($sqlite_path, $table);
+            $validated = $this->openAndValidateSqliteTable($sqlitePath, $table);
             if (!$validated['success']) {
                 return $validated;
             }
@@ -102,7 +102,7 @@ trait RestoreTableTrait {
                 $validated['sqlite'], $table, $validated['columns'],
                 $strategy, $validated['row_count']
             );
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
         }
     }

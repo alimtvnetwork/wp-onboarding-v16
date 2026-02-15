@@ -1,8 +1,6 @@
 <?php
 /**
- * Cleaner Retention Trait
- *
- * Retention-policy cleanup logic and master snapshot protection.
+ * CleanerRetentionTrait — Retention-policy cleanup logic and master snapshot protection.
  *
  * @package RiseupAsiaUploader
  * @since   1.9.0
@@ -17,23 +15,15 @@ use RiseupAsia\Enums\SnapshotStatusType;
 
 trait CleanerRetentionTrait {
 
-    /**
-     * Cleanup by retention policy (days or count) with master protection.
-     *
-     * @param array $settings Resolved settings.
-     * @param bool  $dry_run  Simulate only.
-     * @return array { deleted, skipped_master, bytes_freed, details }.
-     */
-    private function cleanByRetention($settings, $dry_run = false) {
+    private function cleanByRetention(array $settings, bool $dryRun = false): array {
         $resolved = $this->resolveRetentionSnapshots($settings);
         if (empty($resolved['snapshots'])) {
             return array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
         }
 
-        return $this->processRetentionDeletions($resolved['snapshots'], $resolved['reason'], $dry_run);
+        return $this->processRetentionDeletions($resolved['snapshots'], $resolved['reason'], $dryRun);
     }
 
-    /** Resolve which snapshots to delete based on retention settings. */
     private function resolveRetentionSnapshots(array $settings): array {
         if ($settings['retention_type'] === 'days' && !empty($settings['retention_days'])) {
             return array(
@@ -52,8 +42,7 @@ trait CleanerRetentionTrait {
         return array('snapshots' => array(), 'reason' => '');
     }
 
-    /** Process retention deletions for a list of snapshots. */
-    private function processRetentionDeletions(array $snapshots, string $reason, bool $dry_run): array {
+    private function processRetentionDeletions(array $snapshots, string $reason, bool $dryRun): array {
         $result = array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
 
         foreach ($snapshots as $snapshot) {
@@ -66,15 +55,14 @@ trait CleanerRetentionTrait {
                 'id' => $snapshot['id'], 'filename' => $snapshot['filename'] ?? '', 'reason' => $reason,
             );
 
-            $this->applyRetentionDelete($snapshot, $dry_run, $result);
+            $this->applyRetentionDelete($snapshot, $dryRun, $result);
         }
 
         return $result;
     }
 
-    /** Apply a single retention deletion (or simulate in dry-run). */
-    private function applyRetentionDelete(array $snapshot, bool $dry_run, array &$result) {
-        if ($dry_run) {
+    private function applyRetentionDelete(array $snapshot, bool $dryRun, array &$result): void {
+        if ($dryRun) {
             $result['deleted']++;
             $result['bytes_freed'] += $snapshot['size'] ?? 0;
             return;
@@ -87,21 +75,14 @@ trait CleanerRetentionTrait {
         }
     }
 
-    /**
-     * Determine if a snapshot is a master (permanent, never auto-deleted).
-     *
-     * @param array $snap Snapshot record.
-     * @return bool
-     */
-    private function isMasterSnapshot($snap) {
+    private function isMasterSnapshot(array $snap): bool {
         if (isset($snap['scope']) && $snap['scope'] === 'full') return true;
         if (isset($snap['type']) && $snap['type'] === 'full') return true;
         if (isset($snap['filename']) && strpos($snap['filename'], '_full_') !== false) return true;
         return false;
     }
 
-    /** Get snapshots older than N days. */
-    private function getSnapshotsOlderThan($days) {
+    private function getSnapshotsOlderThan(int $days): array {
         $cutoff = date('c', strtotime("-{$days} days"));
 
         return $this->db->queryAll(
@@ -111,8 +92,7 @@ trait CleanerRetentionTrait {
         ) ?: array();
     }
 
-    /** Get snapshots beyond the count limit. */
-    private function getSnapshotsBeyondCount($count) {
+    private function getSnapshotsBeyondCount(int $count): array {
         $total_result = $this->db->querySingle(
             'SELECT COUNT(*) as cnt FROM ' . TableType::Snapshots->value . ' WHERE status = ?',
             array(SnapshotStatusType::Complete->value)

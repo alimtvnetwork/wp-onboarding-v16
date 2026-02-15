@@ -14,10 +14,7 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait WorkerExecuteTrait {
 
-    /**
-     * Execute a full per-table snapshot export (async via WP-Cron).
-     */
-    public function execute($config) {
+    public function execute(array $config): array {
         $start_time = microtime(true);
         $prepared = $this->prepareSnapshotDir($config);
         if (!$prepared['success']) {
@@ -37,16 +34,13 @@ trait WorkerExecuteTrait {
 
             $this->scheduleNextBatch($job_id);
             return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
 
-    /**
-     * Execute a synchronous full snapshot (blocks until complete).
-     */
-    public function executeSynchronous($config) {
+    public function executeSynchronous(array $config): array {
         $start_time = microtime(true);
         $prepared = $this->prepareSnapshotDir($config);
         if (!$prepared['success']) {
@@ -63,7 +57,7 @@ trait WorkerExecuteTrait {
             $rootPdo = null;
 
             return $this->buildSyncSnapshotResult($prepared, $export, $start_time);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Synchronous snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage());
         }

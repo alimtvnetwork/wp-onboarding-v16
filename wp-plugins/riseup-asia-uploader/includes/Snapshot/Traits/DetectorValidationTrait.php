@@ -16,13 +16,7 @@ use RiseupAsia\Enums\SnapshotScopeType;
 
 trait DetectorValidationTrait {
 
-    /**
-     * Validate and sanitize settings.
-     *
-     * @param array $settings Settings to validate.
-     * @return array Validated settings.
-     */
-    private function validateSettings($settings) {
+    private function validateSettings(array $settings): array {
         $this->validateEnumFields($settings);
         $this->clampNumericFields($settings);
         $this->castBooleanFields($settings);
@@ -31,8 +25,7 @@ trait DetectorValidationTrait {
         return $settings;
     }
 
-    /** Validate enum-style fields against allowed values. */
-    private function validateEnumFields(array &$settings) {
+    private function validateEnumFields(array &$settings): void {
         $rules = array(
             'preferred_provider' => array(SnapshotProviderType::Auto->value, SnapshotProviderType::WpReset->value, SnapshotProviderType::Updraft->value, SnapshotProviderType::Native->value),
             'schedule_frequency' => array(SnapshotFrequencyType::Manual->value, SnapshotFrequencyType::Daily->value, SnapshotFrequencyType::Weekly->value, SnapshotFrequencyType::Monthly->value),
@@ -48,8 +41,7 @@ trait DetectorValidationTrait {
         }
     }
 
-    /** Clamp numeric fields to valid ranges. */
-    private function clampNumericFields(array &$settings) {
+    private function clampNumericFields(array &$settings): void {
         $settings['retention_days']      = max(1, min(365, intval($settings['retention_days'])));
         $settings['retention_count']     = max(1, min(100, intval($settings['retention_count'])));
         $settings['schedule_day']        = max(1, min(28, intval($settings['schedule_day'])));
@@ -58,15 +50,13 @@ trait DetectorValidationTrait {
         $settings['worker_pool_size']    = max(SNAPSHOT_WORKER_POOL_MIN, min(SNAPSHOT_WORKER_POOL_MAX, intval($settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT)));
     }
 
-    /** Cast boolean fields. */
-    private function castBooleanFields(array &$settings) {
+    private function castBooleanFields(array &$settings): void {
         $settings['schedule_enabled']        = (bool) $settings['schedule_enabled'];
         $settings['pre_restore_backup']      = (bool) $settings['pre_restore_backup'];
         $settings['require_restore_confirm'] = (bool) $settings['require_restore_confirm'];
     }
 
-    /** Validate storage_mode, schedule_time, and custom_tables. */
-    private function validateMiscFields(array &$settings) {
+    private function validateMiscFields(array &$settings): void {
         $valid_storage = array('single', 'per-table');
         if (RiseupBooleanHelpers::isNotInList($settings['storage_mode'] ?? 'per-table', $valid_storage)) {
             $settings['storage_mode'] = 'per-table';

@@ -11,12 +11,7 @@ use RiseupAsia\Enums\SnapshotJobStatusType;
 
 trait WorkerBatchProcessTrait {
 
-    /**
-     * Process a single worker batch (called by WP-Cron).
-     *
-     * @param array $args { job_id: int }
-     */
-    public function processWorkerBatch($args) {
+    public function processWorkerBatch(array $args): void {
         $job_id = $args['job_id'] ?? 0;
         if (!$job_id) {
             $this->log(LogLevelType::Error->value, 'Worker batch called without job_id');
@@ -38,7 +33,7 @@ trait WorkerBatchProcessTrait {
 
             $this->updateJobStatus($pdo, $job_id, SnapshotJobStatusType::Processing->value);
             $this->processJobBatch($pdo, $job_id, $job);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Worker batch failed', array(
                 'job_id' => $job_id, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
             ));
@@ -46,13 +41,6 @@ trait WorkerBatchProcessTrait {
         }
     }
 
-    /**
-     * Process a single batch within a job.
-     *
-     * @param PDO   $pdo   Database connection.
-     * @param int   $jobId Job ID.
-     * @param array $job   Job record.
-     */
     private function processJobBatch(PDO $pdo, int $jobId, array $job): void {
         $all_tables  = json_decode($job['tables_json'], true);
         $pool_size   = (int) $job['pool_size'];
@@ -83,12 +71,6 @@ trait WorkerBatchProcessTrait {
         }
     }
 
-    /**
-     * Open a-root.db for batch registration.
-     *
-     * @param string $snapshotDir Snapshot directory.
-     * @return PDO|null Root PDO or null.
-     */
     private function openRootDbForBatch(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
         if (RiseupBooleanHelpers::isFileMissing($root_path)) {

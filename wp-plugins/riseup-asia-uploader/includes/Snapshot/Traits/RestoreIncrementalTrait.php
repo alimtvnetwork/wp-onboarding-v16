@@ -16,16 +16,6 @@ use RiseupAsia\Enums\LogLevelType;
 
 trait RestoreIncrementalTrait {
 
-    /**
-     * Apply incrementals phase based on mode.
-     *
-     * @param PDO    $rootPdo            Root DB connection.
-     * @param string $snapshotDir        Snapshot directory.
-     * @param array  $restoreOrder       Restore order.
-     * @param string $mode               Restore mode.
-     * @param bool   $applyIncrementals  Whether to apply incrementals.
-     * @return array Result with applied, total_rows, errors.
-     */
     private function applyIncrementalsPhase(PDO $rootPdo, string $snapshotDir, array $restoreOrder, string $mode, bool $applyIncrementals): array {
         $shouldApply = ($applyIncrementals && $mode !== 'incremental') || $mode === 'incremental';
 
@@ -36,15 +26,7 @@ trait RestoreIncrementalTrait {
         return $this->applyIncrementals($rootPdo, $snapshotDir, $restoreOrder);
     }
 
-    /**
-     * Apply incremental backups in sequence order.
-     *
-     * @param PDO    $rootPdo       a-root.db PDO connection.
-     * @param string $snapshot_dir  Master snapshot directory.
-     * @param array  $restore_order Tables to consider.
-     * @return array Result: applied, total_rows, errors.
-     */
-    private function applyIncrementals($rootPdo, $snapshot_dir, $restore_order) {
+    private function applyIncrementals(PDO $rootPdo, string $snapshotDir, array $restoreOrder): array {
         $incrementals = $rootPdo->query(
             "SELECT sequence_num, folder_name, relative_path FROM incremental_backups ORDER BY sequence_num ASC"
         )->fetchAll(PDO::FETCH_ASSOC);
@@ -60,7 +42,7 @@ trait RestoreIncrementalTrait {
         $errors = array();
 
         foreach ($incrementals as $inc) {
-            $result = $this->applySingleIncremental($inc, $snapshot_dir, $restore_order);
+            $result = $this->applySingleIncremental($inc, $snapshotDir, $restoreOrder);
             $total_rows += $result['rows'];
             $applied++;
             if (!empty($result['errors'])) {
@@ -71,14 +53,6 @@ trait RestoreIncrementalTrait {
         return array('applied' => $applied, 'total_rows' => $total_rows, 'errors' => $errors);
     }
 
-    /**
-     * Apply a single incremental backup.
-     *
-     * @param array  $inc          Incremental record.
-     * @param string $snapshotDir  Snapshot directory.
-     * @param array  $restoreOrder Restore order.
-     * @return array Result with rows, errors.
-     */
     private function applySingleIncremental(array $inc, string $snapshotDir, array $restoreOrder): array {
         $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
         if (RiseupBooleanHelpers::isDirMissing($inc_dir)) {

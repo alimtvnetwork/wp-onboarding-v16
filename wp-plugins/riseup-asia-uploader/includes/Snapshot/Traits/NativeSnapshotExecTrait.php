@@ -15,94 +15,103 @@ use RiseupAsia\Enums\SnapshotStatusType;
 
 trait NativeSnapshotExecTrait {
 
-    /**
-     * Execute the actual snapshot export (called by cron).
-     */
-    public function executeSnapshot($snapshot_id, $tables) {
+    public function executeSnapshot(int $snapshotId, array $tables): array {
         $start_time = microtime(true);
 
-        $snapshot = $this->getSnapshot($snapshot_id);
+        $snapshot = $this->getSnapshot($snapshotId);
         if (!$snapshot) {
             return array('success' => false, 'error' => 'Snapshot record not found');
         }
 
         if (!$this->acquireLock()) {
-            $this->updateSnapshotStatus($snapshot_id, SnapshotStatusType::Failed->value, 'Failed to acquire lock');
+            $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, 'Failed to acquire lock');
             return array('success' => false, 'error' => 'Failed to acquire lock');
         }
 
         try {
-            return $this->runSnapshotExport($snapshot_id, $snapshot['filepath'], $tables, $start_time);
-        } catch (Exception $e) {
+            return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $start_time);
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
-            $this->updateSnapshotStatus($snapshot_id, SnapshotStatusType::Failed->value, $e->getMessage());
+            $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, $e->getMessage());
             return array('success' => false, 'error' => $e->getMessage());
         } finally {
             $this->releaseLock();
         }
     }
 
-    /** Run the core snapshot export loop. */
-    private function runSnapshotExport(int $snapshot_id, string $filepath, array $tables, float $start_time): array {
-        $this->updateSnapshotStatus($snapshot_id, SnapshotStatusType::Running->value);
-        $this->log(LogLevelType::Info->value, 'Starting snapshot export', array(
-            'snapshot_id' => $snapshot_id, 'filepath' => $filepath, 'tables' => count($tables),
-        ));
+    private function runSnapshotExport(int $snapshotId, string $filepath, array $tables, float $startTime): array {
+        $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Running->value, 'Exporting');
 
-        $sqlite = $this->createSqliteDatabase($filepath);
-        if (!$sqlite) {
-            throw new Exception('Failed to create SQLite database');
+        $sqlite = new PDO('sqlite:' . $filepath);
+        $sqlite->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $sqlite->beginTransaction();
+
+        try {
+            $table_counts = $this->exportAllTables($sqlite, $tables, $snapshotId);
+            $sqlite->commit();
+            return $this->buildExportResult($snapshotId, $filepath, $tables, $table_counts, $startTime);
+        } catch (Throwable $e) {
+            $sqlite->rollBack();
+            throw $e;
         }
-
-        $table_counts = $this->exportAllTables($sqlite, $tables, $snapshot_id);
-        $sqlite = null;
-
-        return $this->buildExportResult($snapshot_id, $filepath, $tables, $table_counts, $start_time);
     }
 
-    /** Export all tables and return row counts map. */
-    private function exportAllTables(PDO $sqlite, array $tables, int $snapshot_id): array {
+    private function exportAllTables(PDO $sqlite, array $tables, int $snapshotId): array {
         $table_counts = array();
-        foreach ($tables as $table) {
-            $this->log(LogLevelType::Debug->value, 'Exporting table: ' . $table);
-            $result = $this->exportTable($sqlite, $table, $snapshot_id);
-            $this->logTableExportResult($table, $result);
 
-            if ($result['success']) {
-                $table_counts[$table] = $result['rows'];
-            }
+        foreach ($tables as $table) {
+            $result = $this->exportTable($sqlite, $table, $snapshotId);
+            $table_counts[$table] = $result;
+            $this->logTableExportResult($table, $result);
         }
 
         return $table_counts;
     }
 
-    /** Log export result for a single table. */
-    private function logTableExportResult(string $table, array $result) {
+    private function logTableExportResult(string $table, array $result): void {
         if ($result['success']) {
-            $this->log(LogLevelType::Info->value, sprintf('%s complete (%d rows, %s)', $table, $result['rows'], $this->formatBytes($result['bytes'])));
-
-            return;
+            $this->log(LogLevelType::Debug->value, 'Exported table', array(
+                'table' => $table,
+                'rows' => $result['rows'],
+                'bytes' => RiseupPathUtils::formatBytes($result['bytes']),
+            ));
+        } else {
+            $this->log(LogLevelType::Error->value, 'Failed to export table', array(
+                'table' => $table,
+                'error' => $result['error'],
+            ));
         }
-
-        $this->log(LogLevelType::Error->value, 'Failed to export table: ' . $table, array('error' => $result['error']));
     }
 
-    /** Build final export result array and finalize snapshot record. */
-    private function buildExportResult(int $snapshot_id, string $filepath, array $tables, array $table_counts, float $start_time): array {
-        $total_rows = array_sum($table_counts);
-        $file_size = filesize($filepath);
-        $duration = microtime(true) - $start_time;
+    private function buildExportResult(int $snapshotId, string $filepath, array $tables, array $tableCounts, float $startTime): array {
+        $total_rows = 0;
+        $total_bytes = 0;
+        foreach ($tableCounts as $table => $result) {
+            $total_rows += $result['rows'];
+            $total_bytes += $result['bytes'];
+        }
 
-        $this->finalizeSnapshot($snapshot_id, array(
-            'status' => SnapshotStatusType::Complete->value, 'file_size' => $file_size,
-            'total_rows' => $total_rows, 'table_counts' => $table_counts,
-            'duration_ms' => (int)($duration * 1000),
+        $duration = microtime(true) - $startTime;
+        $this->log(LogLevelType::Info->value, 'Snapshot complete', array(
+            'id' => $snapshotId,
+            'tables' => count($tables),
+            'rows' => $total_rows,
+            'bytes' => RiseupPathUtils::formatBytes($total_bytes),
+            'duration' => round($duration, 2) . 's',
         ));
 
+        $this->updateSnapshotStatus(
+            $snapshotId,
+            SnapshotStatusType::Complete->value,
+            sprintf('Exported %d tables (%s)', count($tables), RiseupPathUtils::formatBytes($total_bytes))
+        );
+
         return array(
-            'success' => true, 'snapshot_id' => $snapshot_id, 'filename' => basename($filepath),
-            'filepath' => $filepath, 'size' => $file_size, 'tables' => count($tables),
-            'rows' => $total_rows, 'duration' => $duration,
+            'success' => true,
+            'tables' => count($tables),
+            'rows' => $total_rows,
+            'bytes' => $total_bytes,
+            'filepath' => $filepath,
         );
     }
 }
