@@ -8,6 +8,7 @@
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
+use RiseupAsia\Enums\SnapshotStatusType;
 
 trait WorkerBatchExportTrait {
 
@@ -53,7 +54,7 @@ trait WorkerBatchExportTrait {
         $errors = array();
 
         foreach ($tables as $table) {
-            $this->updateProgress($table, 'running');
+            $this->updateProgress($table, SnapshotStatusType::Running->value);
             $result = $this->exportTableToFile($snapshotDir, $table);
 
             if ($result['success']) {
@@ -65,10 +66,10 @@ trait WorkerBatchExportTrait {
                         $result['filename'], $result['file_size'], $result['checksum']
                     );
                 }
-                $this->updateProgress($table, 'complete', $result['rows']);
+                $this->updateProgress($table, SnapshotStatusType::Complete->value, $result['rows']);
             } else {
                 $errors[] = $table . ': ' . $result['error'];
-                $this->updateProgress($table, 'failed', 0, $result['error']);
+                $this->updateProgress($table, SnapshotStatusType::Failed->value, 0, $result['error']);
             }
         }
 

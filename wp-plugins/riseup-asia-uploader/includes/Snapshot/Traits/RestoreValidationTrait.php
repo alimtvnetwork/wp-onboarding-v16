@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 
 trait RestoreValidationTrait {
@@ -52,13 +53,13 @@ trait RestoreValidationTrait {
      * @return array Result with success, tables, inventory.
      */
     private function prepareRestoreOrder(PDO $rootPdo, array $options): array {
-        $mode = $options['mode'] ?? 'full';
+        $mode = $options['mode'] ?? RestoreModeType::Full->value;
         $selected_tables = $options['tables'] ?? array();
 
         $table_inventory = $this->getTableInventory($rootPdo);
         $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
 
-        if ($mode === 'selective' && !empty($selected_tables)) {
+        if ($mode === RestoreModeType::Selective->value && !empty($selected_tables)) {
             $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
                 return in_array($t, $selected_tables);
             }));

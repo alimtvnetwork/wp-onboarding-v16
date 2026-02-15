@@ -13,11 +13,12 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\RestoreModeType;
 
 trait RestoreIncrementalTrait {
 
     private function applyIncrementalsPhase(PDO $rootPdo, string $snapshotDir, array $restoreOrder, string $mode, bool $applyIncrementals): array {
-        $shouldApply = ($applyIncrementals && $mode !== 'incremental') || $mode === 'incremental';
+        $shouldApply = ($applyIncrementals && $mode !== RestoreModeType::Incremental->value) || $mode === RestoreModeType::Incremental->value;
 
         if (!$shouldApply) {
             return array('applied' => 0, 'total_rows' => 0, 'errors' => array());

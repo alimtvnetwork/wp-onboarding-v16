@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
 
@@ -37,7 +38,7 @@ trait ExporterHelpersTrait {
             return null;
         }
 
-        if ($snapshot['scope'] === 'incremental') {
+        if ($snapshot['scope'] === SnapshotModeType::Incremental->value) {
             $this->log(LogLevelType::Warn->value, 'Cannot export incremental snapshot directly', array('id' => $snapshotId));
             return null;
         }

@@ -2,15 +2,13 @@
 /**
  * Riseup Asia Uploader - Plugin Constants
  *
- * All string constants centralized to avoid magic strings.
- * These can be overridden by defining them before this file is loaded.
- *
- * NAMING CONVENTION: Constants do NOT use the RISEUP_ prefix.
- * Categorized constants live in Enum classes (HookEnum, CapabilityEnum, etc.).
- * Only non-categorized constants remain here as define() calls.
+ * MIGRATION STATUS: Most constants have been migrated to PHP 8.2+ backed enums.
+ * See includes/Enums/ for the canonical sources. Constants here are retained
+ * only for backward compatibility with external consumers.
  *
  * @package RiseupAsiaUploader
  * @since   1.4.0
+ * @deprecated Use PluginConfigType, OptionNameType, and other enum classes instead.
  */
 
 if (!defined('ABSPATH')) {
@@ -18,57 +16,60 @@ if (!defined('ABSPATH')) {
 }
 
 // =============================================================================
-// PLUGIN IDENTITY
+// PLUGIN IDENTITY — @see PluginConfigType enum
 // =============================================================================
 
+/** @deprecated Use PluginConfigType::Version->value */
 if (!defined('PLUGIN_VERSION')) {
     define('PLUGIN_VERSION', '1.57.0');
 }
+/** @deprecated Use PluginConfigType::Slug->value */
 if (!defined('PLUGIN_SLUG')) {
     define('PLUGIN_SLUG', 'riseup-asia-uploader');
 }
+/** @deprecated Use PluginConfigType::Name->value */
 if (!defined('PLUGIN_NAME')) {
     define('PLUGIN_NAME', 'Riseup Asia Uploader');
 }
+/** @deprecated Use PluginConfigType::MinWpVersion->value */
 if (!defined('MIN_WP_VERSION')) {
     define('MIN_WP_VERSION', '5.6');
 }
+/** @deprecated Use PluginConfigType::MinPhpVersion->value */
 if (!defined('MIN_PHP_VERSION')) {
     define('MIN_PHP_VERSION', '8.2');
 }
 
 // =============================================================================
-// PATHS - Only UPLOADS_SUBDIR (plugin identity slug) remains here.
-// Other path constants migrated to PathSubdirType, PathDatabaseType,
-// PathLogFileType, and PathConfigType enums.
+// PATHS — @see PathSubdirType, PathDatabaseType, PathLogFileType, PathConfigType enums
+// UPLOADS_SUBDIR retained as plugin identity slug.
 // =============================================================================
 
+/** @deprecated Use PluginConfigType::UploadsSubdir->value */
 if (!defined('UPLOADS_SUBDIR')) {
     define('UPLOADS_SUBDIR', 'riseup-asia-uploader');
 }
 
 // =============================================================================
-// REST API CONFIGURATION
+// REST API CONFIGURATION — @see PluginConfigType enum
 // =============================================================================
 
+/** @deprecated Use PluginConfigType::ApiNamespace->value */
 if (!defined('API_NAMESPACE')) {
     define('API_NAMESPACE', 'riseup-asia-uploader');
 }
+/** @deprecated Use PluginConfigType::ApiVersion->value */
 if (!defined('API_VERSION')) {
     define('API_VERSION', 'v1');
 }
+/** @deprecated Use PluginConfigType::apiFullNamespace() */
 if (!defined('API_FULL_NAMESPACE')) {
     define('API_FULL_NAMESPACE', API_NAMESPACE . '/' . API_VERSION);
 }
-
-// Legacy namespace support (for backward compatibility)
+/** @deprecated Use PluginConfigType::LegacyNamespace->value */
 if (!defined('LEGACY_NAMESPACE')) {
     define('LEGACY_NAMESPACE', 'riseup-uploader/v1');
 }
-
-// =============================================================================
-// REST API ENDPOINTS — migrated to EndpointType enum
-// =============================================================================
 
 // =============================================================================
 // DATABASE CONFIGURATION
@@ -77,14 +78,11 @@ if (!defined('DB_WAL_MODE')) {
     define('DB_WAL_MODE', true);
 }
 
-// RESPONSE MESSAGES — migrated to ResponseMessageType enum
-
-// HTTP STATUS CODES — migrated to HttpStatusType enum
-
 // =============================================================================
-// LOGGING PREFIX
+// LOGGING PREFIX — @see PluginConfigType::LogPrefix
 // =============================================================================
 
+/** @deprecated Use PluginConfigType::LogPrefix->value */
 if (!defined('LOG_PREFIX')) {
     define('LOG_PREFIX', '[Riseup Asia]');
 }
@@ -128,13 +126,11 @@ if (!defined('SNAPSHOT_WORKER_POOL_DEFAULT')) {
     define('SNAPSHOT_WORKER_POOL_DEFAULT', 5);
 }
 
-// CRON_SNAPSHOT_* constants removed — use HookType::CronSnapshot*->value instead.
+// =============================================================================
+// WORDPRESS OPTIONS — @see OptionNameType enum
+// =============================================================================
 
-// SNAPSHOT ERROR CODES — migrated to SnapshotErrorType enum
-
-// ENDPOINT_ERROR_LOGS, ENDPOINT_ERROR_SESSIONS — migrated to EndpointType enum
-
-// WordPress options key for snapshot settings
+/** @deprecated Use OptionNameType::SnapshotSettings->value */
 if (!defined('OPTION_SNAPSHOT_SETTINGS')) {
     define('OPTION_SNAPSHOT_SETTINGS', 'riseup_snapshot_settings');
 }
@@ -147,6 +143,7 @@ if (!defined('SNAPSHOT_STUCK_HOURS')) {
     define('SNAPSHOT_STUCK_HOURS', 24);
 }
 
+/** @deprecated Use OptionNameType::LogRetrieval->value */
 if (!defined('OPTION_LOG_RETRIEVAL')) {
     define('OPTION_LOG_RETRIEVAL', 'riseup_log_retrieval_settings');
 }
@@ -167,9 +164,10 @@ if (!defined('MAX_LIMIT')) {
 }
 
 // =============================================================================
-// IGNORE FILE
+// IGNORE FILE — @see PluginConfigType::IgnoreFilename
 // =============================================================================
 
+/** @deprecated Use PluginConfigType::IgnoreFilename->value */
 if (!defined('IGNORE_FILENAME')) {
     define('IGNORE_FILENAME', '.uploadignore');
 }

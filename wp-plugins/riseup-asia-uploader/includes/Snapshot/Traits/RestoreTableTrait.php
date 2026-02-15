@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\RestoreStrategyType;
 
 require_once dirname(__FILE__) . '/RestoreSqliteValidationTrait.php';
 
@@ -80,7 +81,7 @@ trait RestoreTableTrait {
             return array('success' => false, 'error' => 'SQLite file missing (' . $table_info['sqlite_file'] . ')', 'rows' => 0);
         }
 
-        return $this->restoreTableFromFile($sqlite_path, $table, 'truncate');
+        return $this->restoreTableFromFile($sqlite_path, $table, RestoreStrategyType::Truncate->value);
     }
 
     /**
@@ -88,7 +89,7 @@ trait RestoreTableTrait {
      *
      * @param string $sqlite_path Path to the table's .sqlite file.
      * @param string $table       MySQL table name.
-     * @param string $strategy    'truncate' or 'merge'.
+     * @param string $strategy    RestoreStrategyType value ('truncate' or 'merge').
      * @return array Result: success, rows, error.
      */
     private function restoreTableFromFile(string $sqlitePath, string $table, string $strategy = 'truncate'): array {

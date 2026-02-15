@@ -44,7 +44,7 @@ trait OrchestratorPluginTrait {
         }
 
         $all_plugins = get_plugins();
-        $active_plugins = get_option('active_plugins', array());
+        $active_plugins = get_option(\RiseupAsia\Enums\OptionNameType::ActivePlugins->value, array());
         $plugins_to_snapshot = array();
 
         foreach ($all_plugins as $plugin_file => $plugin_data) {
@@ -52,9 +52,9 @@ trait OrchestratorPluginTrait {
             if ($slug === '.') {
                 $slug = basename($plugin_file, '.php');
             }
-            if ($slug === PLUGIN_SLUG) continue;
+            if ($slug === \RiseupAsia\Enums\PluginConfigType::Slug->value) continue;
 
-            $isEligible = ($selection === 'all' || in_array($plugin_file, $active_plugins));
+            $isEligible = ($selection === \RiseupAsia\Enums\PluginSelectionType::All->value || in_array($plugin_file, $active_plugins));
             if (!$isEligible) continue;
 
             $plugins_to_snapshot[$plugin_file] = array(

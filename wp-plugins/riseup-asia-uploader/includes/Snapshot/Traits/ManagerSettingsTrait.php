@@ -7,9 +7,12 @@
  */
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\PluginSelectionType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotWorkerModeType;
 
 trait ManagerSettingsTrait {
 
@@ -17,12 +20,12 @@ trait ManagerSettingsTrait {
         $settings = $this->readSettingsFromDb();
 
         $defaults = array(
-            'mode'               => 'per_table',
-            'backup_type'        => 'incremental',
+            'mode'               => SnapshotWorkerModeType::PerTable->value,
+            'backup_type'        => SnapshotModeType::Incremental->value,
             'worker_count'       => 10,
             'storage_path'       => 'snapshots/',
             'include_plugins'    => true,
-            'plugin_selection'   => 'all',
+            'plugin_selection'   => PluginSelectionType::All->value,
             'retention_days'     => SNAPSHOT_RETENTION_DAYS_DEFAULT,
             'retention_count'    => SNAPSHOT_RETENTION_COUNT_DEFAULT,
             'compression'        => true,

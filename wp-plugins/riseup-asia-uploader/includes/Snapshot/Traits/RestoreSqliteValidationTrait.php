@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\RestoreStrategyType;
+
 trait RestoreSqliteValidationTrait {
 
     /**
@@ -79,7 +81,7 @@ trait RestoreSqliteValidationTrait {
         $this->wpdb->query("START TRANSACTION");
 
         try {
-            if ($strategy === 'truncate') {
+            if ($strategy === RestoreStrategyType::Truncate->value) {
                 $this->wpdb->query("TRUNCATE TABLE `{$table}`");
             }
 
@@ -106,7 +108,7 @@ trait RestoreSqliteValidationTrait {
     private function buildInsertTemplate(string $table, array $columns, string $strategy): string {
         $columns_sql = '`' . implode('`, `', $columns) . '`';
         $placeholders = implode(', ', array_fill(0, count($columns), '%s'));
-        $verb = ($strategy === 'merge') ? 'REPLACE' : 'INSERT';
+        $verb = ($strategy === RestoreStrategyType::Merge->value) ? 'REPLACE' : 'INSERT';
         return "{$verb} INTO `{$table}` ({$columns_sql}) VALUES ({$placeholders})";
     }
 
