@@ -5,30 +5,24 @@
  * Logs all operations to file with file path and line numbers.
  * Shell class — logic delegated to domain-specific traits.
  *
- * Implements MD5-based deduplication: identical log entries are written once
- * and subsequent occurrences are silently suppressed.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Logging
  * @since   1.4.0
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\Logging;
 
-// Load traits
-require_once dirname(__FILE__) . '/Traits/LoggerPathTrait.php';
-require_once dirname(__FILE__) . '/Traits/LoggerFormatTrait.php';
-require_once dirname(__FILE__) . '/Traits/LoggerWriteTrait.php';
-require_once dirname(__FILE__) . '/Traits/LoggerDedupTrait.php';
-require_once dirname(__FILE__) . '/Traits/LoggerLevelMethodsTrait.php';
+use RiseupAsia\Logging\Traits\LoggerPathTrait;
+use RiseupAsia\Logging\Traits\LoggerFormatTrait;
+use RiseupAsia\Logging\Traits\LoggerWriteTrait;
+use RiseupAsia\Logging\Traits\LoggerDedupTrait;
+use RiseupAsia\Logging\Traits\LoggerLevelMethodsTrait;
 
 /**
- * Class RiseupFileLogger
+ * Class FileLogger
  *
  * Provides file-based logging with detailed context and MD5 deduplication.
  */
-class RiseupFileLogger {
+class FileLogger {
 
     use LoggerPathTrait;
     use LoggerFormatTrait;
@@ -44,36 +38,21 @@ class RiseupFileLogger {
     private const TABLE_ERROR_SESSIONS = 'error_sessions';
     private const TABLE_FLASH_STATE = 'flash_state';
     private const KEY_HAS_UNSEEN_ERRORS = 'has_unseen_errors';
+    private const USER_AGENT_MAX_LENGTH = 200;
 
-    /** @var RiseupFileLogger|null */
-    private static $instance = null;
-
-    /** @var string|null */
-    private $baseDir = null;
-
-    /** @var string|null */
-    private $logsDir = null;
-
-    /** @var string|null */
-    private $logFile = null;
-
-    /** @var string|null */
-    private $errorFile = null;
-
-    /** @var string|null */
-    private $stacktraceFile = null;
-
-    /** @var bool */
-    private $isInitialized = false;
+    private static ?self $instance = null;
+    private ?string $baseDir = null;
+    private ?string $logsDir = null;
+    private ?string $logFile = null;
+    private ?string $errorFile = null;
+    private ?string $stacktraceFile = null;
+    private bool $isInitialized = false;
 
     /** @var array<string, bool> */
-    private $dedupHashes = array();
+    private array $dedupHashes = array();
+    private ?array $requestMetadataCache = null;
 
-    /** @var array|null */
-    private $requestMetadataCache = null;
-
-    /** @return RiseupFileLogger */
-    public static function getInstance() {
+    public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -81,7 +60,9 @@ class RiseupFileLogger {
         return self::$instance;
     }
 
-    /** Private constructor. */
     private function __construct() {
     }
 }
+
+// Backward compatibility alias for global namespace consumers
+\class_alias(FileLogger::class, 'RiseupFileLogger');

@@ -1,15 +1,13 @@
 <?php
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\ErrorHandling;
 
 /**
  * Stack trace frame construction utilities for error diagnostics.
  *
  * @since 1.57.0
  */
-class RiseupFrameBuilder
+class FrameBuilder
 {
     private const INTERNAL_LABEL = '[internal]';
 
@@ -29,7 +27,7 @@ class RiseupFrameBuilder
     /**
      * @return array<int, array{file: string, fileBase: string, line: int, function: string, class: string}>
      */
-    public static function exceptionToFrames(Throwable $exception): array {
+    public static function exceptionToFrames(\Throwable $exception): array {
         $frames = array();
 
         $frames[] = array(
@@ -127,7 +125,7 @@ class RiseupFrameBuilder
     public static function buildFatalDetails(array $error, array $traceLines, array $frames): array {
         return array(
             'type'             => $error['type'],
-            'typeName'         => RiseupFatalErrorHandler::errorTypeToString($error['type']),
+            'typeName'         => FatalErrorHandler::errorTypeToString($error['type']),
             'message'          => $error['message'],
             'file'             => basename($error['file']),
             'fileFull'         => $error['file'],
@@ -144,3 +142,6 @@ class RiseupFrameBuilder
         );
     }
 }
+
+// Backward compatibility alias for global namespace consumers
+\class_alias(FrameBuilder::class, 'RiseupFrameBuilder');

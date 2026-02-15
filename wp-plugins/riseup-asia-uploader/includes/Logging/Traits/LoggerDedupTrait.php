@@ -1,16 +1,12 @@
 <?php
 /**
- * Logger Dedup Trait
+ * Logger Dedup Trait — MD5-based deduplication for log entries.
  *
- * MD5-based deduplication for log entries.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Logging\Traits
  * @since   1.4.0
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\Logging\Traits;
 
 trait LoggerDedupTrait {
 

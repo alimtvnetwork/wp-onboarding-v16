@@ -1,16 +1,12 @@
 <?php
 /**
- * Logger Write Trait
+ * Logger Write Trait — File writing, stack trace persistence, and error session persistence.
  *
- * File writing, stack trace persistence, and error session persistence.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Logging\Traits
  * @since   1.4.0
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\PluginConfigType;
 
@@ -65,18 +61,18 @@ trait LoggerWriteTrait {
             }
 
             $this->insertErrorSession($pdo, $level, $message, $file, $line, $context, $stackTrace);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             // Silently ignore - we're in the logger, can't recurse
         }
     }
 
     /** Get a PDO connection with error_sessions table available. */
-    private function getErrorSessionsPdo(): ?PDO {
-        if (RiseupBooleanHelpers::isClassMissing('RiseupDatabase')) {
+    private function getErrorSessionsPdo(): ?\PDO {
+        if (\RiseupBooleanHelpers::isClassMissing('RiseupDatabase')) {
             return null;
         }
 
-        $db  = RiseupDatabase::getInstance();
+        $db  = \RiseupDatabase::getInstance();
         $pdo = $db->getPdo();
         if (!$pdo) {
             return null;
@@ -89,7 +85,7 @@ trait LoggerWriteTrait {
     }
 
     /** Insert an error session record and set unseen flag. */
-    private function insertErrorSession(PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stackTrace): void {
+    private function insertErrorSession(\PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stackTrace): void {
         $now = gmdate(self::TIMESTAMP_FORMAT);
         $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 

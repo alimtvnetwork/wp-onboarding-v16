@@ -9,6 +9,8 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\Enums\PluginConfigType;
 ?>
 <style>
 .riseup-admin .button .dashicons {
@@ -21,7 +23,7 @@ if (!defined('ABSPATH')) {
     <h1>
         <span class="dashicons dashicons-admin-settings"></span>
         <?php esc_html_e('Riseup Asia Uploader - Settings', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
 
     <p class="description">
@@ -43,15 +45,15 @@ if (!defined('ABSPATH')) {
             <table class="form-table">
                 <tr>
                     <th><?php esc_html_e('Version', 'riseup-asia-uploader'); ?></th>
-                    <td><code><?php echo esc_html(PLUGIN_VERSION); ?></code></td>
+                    <td><code><?php echo esc_html(PluginConfigType::Version->value); ?></code></td>
                 </tr>
                 <tr>
                     <th><?php esc_html_e('API Namespace', 'riseup-asia-uploader'); ?></th>
-                    <td><code><?php echo esc_html(API_FULL_NAMESPACE); ?></code></td>
+                    <td><code><?php echo esc_html(PluginConfigType::apiFullNamespace()); ?></code></td>
                 </tr>
                 <tr>
                     <th><?php esc_html_e('REST API Base', 'riseup-asia-uploader'); ?></th>
-                    <td><code><?php echo esc_url(rest_url(API_FULL_NAMESPACE)); ?></code></td>
+                    <td><code><?php echo esc_url(rest_url(PluginConfigType::apiFullNamespace())); ?></code></td>
                 </tr>
             </table>
         </div>
@@ -155,7 +157,7 @@ if (!defined('ABSPATH')) {
                     <th scope="row"><?php esc_html_e('Available Version', 'riseup-asia-uploader'); ?></th>
                     <td>
                         <strong><?php echo esc_html($update_settings['new_version']); ?></strong>
-                        <?php if (version_compare($update_settings['new_version'], PLUGIN_VERSION, '>')): ?>
+                        <?php if (version_compare($update_settings['new_version'], PluginConfigType::Version->value, '>')): ?>
                             <span class="dashicons dashicons-arrow-up-alt" style="color: #46b450;"></span>
                             <span style="color: #46b450;"><?php esc_html_e('Update available!', 'riseup-asia-uploader'); ?></span>
                         <?php endif; ?>

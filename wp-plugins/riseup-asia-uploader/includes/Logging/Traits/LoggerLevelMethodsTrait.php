@@ -1,16 +1,12 @@
 <?php
 /**
- * Logger Level Methods Trait
+ * Logger Level Methods Trait — Public convenience methods for each log level.
  *
- * Public convenience methods for each log level (debug, info, warn, error).
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Logging\Traits
  * @since   1.57.0
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
 
@@ -106,7 +102,7 @@ trait LoggerLevelMethodsTrait {
     }
 
     /** Log an exception. */
-    public function logException(Throwable $e, string $context = ''): bool {
+    public function logException(\Throwable $e, string $context = ''): bool {
         if ($this->isDuplicate(LogLevelType::Error->value, $e->getMessage(), $e->getFile(), $e->getLine())) {
             return true;
         }
