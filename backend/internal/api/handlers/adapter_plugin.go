@@ -12,12 +12,12 @@ import (
 type PluginServiceInterface interface {
 	List(ctx context.Context) ([]models.Plugin, error)
 	GetByID(ctx context.Context, id int64) (*models.Plugin, error)
-	Create(ctx context.Context, input any) (*models.Plugin, error)
-	Update(ctx context.Context, id int64, input any) (*models.Plugin, error)
+	Create(ctx context.Context, input plugin.CreateInput) (*models.Plugin, error)
+	Update(ctx context.Context, id int64, input plugin.UpdateInput) (*models.Plugin, error)
 	Delete(ctx context.Context, id int64) error
 	GetMappings(ctx context.Context, pluginID int64) ([]models.PluginMapping, error)
 	GetMappingsBySite(ctx context.Context, siteID int64) ([]models.PluginMapping, error)
-	CreateMapping(ctx context.Context, pluginID int64, input any) (*models.PluginMapping, error)
+	CreateMapping(ctx context.Context, pluginID int64, input plugin.CreateMappingInput) (*models.PluginMapping, error)
 	DeleteMapping(ctx context.Context, id int64) error
 	UpdateMappingsForPlugin(ctx context.Context, pluginID int64, siteIDs []int64, remoteSlug string) error
 	UpdateMappingsForSite(ctx context.Context, siteID int64, pluginIDs []int64) error
@@ -39,47 +39,12 @@ func (a *PluginServiceAdapter) GetByID(ctx context.Context, id int64) (*models.P
 	return a.Service.GetByID(ctx, id)
 }
 
-func (a *PluginServiceAdapter) Create(ctx context.Context, input any) (*models.Plugin, error) {
-	createInput := plugin.CreateInput{}
-	if m, ok := input.(map[string]any); ok {
-		createInput.Name = getStringAny(m, "name")
-		createInput.Path = getStringAny(m, "path", "localPath", "local_path")
-		createInput.WatchEnabled = getBoolAny(m, true, "watchEnabled", "watch_enabled")
-		createInput.ExcludePatterns = getStringSliceAny(m, "excludePatterns", "exclude_patterns")
-		createInput.GitEnabled = getBoolAny(m, false, "gitEnabled", "git_enabled")
-		createInput.GitRemoteURL = getStringAny(m, "gitRemoteUrl", "git_remote_url")
-		createInput.BuildCommand = getStringAny(m, "buildCommand", "build_command")
-		createInput.ForceCreate = getBoolAny(m, false, "forceCreate", "force_create")
-	}
-	return a.Service.Create(ctx, createInput)
+func (a *PluginServiceAdapter) Create(ctx context.Context, input plugin.CreateInput) (*models.Plugin, error) {
+	return a.Service.Create(ctx, input)
 }
 
-func (a *PluginServiceAdapter) Update(ctx context.Context, id int64, input any) (*models.Plugin, error) {
-	updateInput := plugin.UpdateInput{}
-	if m, ok := input.(map[string]any); ok {
-		if v, ok := m["name"].(string); ok {
-			updateInput.Name = &v
-		}
-		if v, ok := firstString(m, "path", "localPath", "local_path"); ok {
-			updateInput.Path = &v
-		}
-		if v, ok := firstBool(m, "watchEnabled", "watch_enabled"); ok {
-			updateInput.WatchEnabled = &v
-		}
-		if v, ok := firstStringSlice(m, "excludePatterns", "exclude_patterns"); ok {
-			updateInput.ExcludePatterns = &v
-		}
-		if v, ok := firstBool(m, "gitEnabled", "git_enabled"); ok {
-			updateInput.GitEnabled = &v
-		}
-		if v, ok := firstString(m, "gitRemoteUrl", "git_remote_url"); ok {
-			updateInput.GitRemoteURL = &v
-		}
-		if v, ok := firstString(m, "buildCommand", "build_command"); ok {
-			updateInput.BuildCommand = &v
-		}
-	}
-	return a.Service.Update(ctx, id, updateInput)
+func (a *PluginServiceAdapter) Update(ctx context.Context, id int64, input plugin.UpdateInput) (*models.Plugin, error) {
+	return a.Service.Update(ctx, id, input)
 }
 
 func (a *PluginServiceAdapter) Delete(ctx context.Context, id int64) error {
@@ -90,18 +55,8 @@ func (a *PluginServiceAdapter) GetMappings(ctx context.Context, pluginID int64) 
 	return a.Service.GetMappings(ctx, pluginID)
 }
 
-func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginID int64, input any) (*models.PluginMapping, error) {
-	createInput := plugin.CreateMappingInput{}
-	createInput.PluginID = pluginID
-	if m, ok := input.(map[string]any); ok {
-		if v, ok := m["siteId"].(float64); ok {
-			createInput.SiteID = int64(v)
-		} else if v, ok := m["site_id"].(float64); ok {
-			createInput.SiteID = int64(v)
-		}
-		createInput.RemoteSlug = getStringAny(m, "remoteSlug", "remote_slug", "remoteSlug")
-	}
-	return a.Service.CreateMapping(ctx, createInput)
+func (a *PluginServiceAdapter) CreateMapping(ctx context.Context, pluginID int64, input plugin.CreateMappingInput) (*models.PluginMapping, error) {
+	return a.Service.CreateMapping(ctx, input)
 }
 
 func (a *PluginServiceAdapter) DeleteMapping(ctx context.Context, id int64) error {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"wp-plugin-publish/internal/services/plugin"
 	"wp-plugin-publish/internal/wordpress"
 )
 
@@ -22,17 +23,17 @@ func CreatePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input map[string]any
+	var input plugin.CreateInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
 
-	plugin, err := Services.PluginService.Create(r.Context(), input)
+	p, err := Services.PluginService.Create(r.Context(), input)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusBadRequest, "E3002", err.Error())
 		return
 	}
-	respondCreated(w, plugin)
+	respondCreated(w, p)
 }
 
 // GetPlugin returns a specific plugin by ID
@@ -53,17 +54,17 @@ func UpdatePlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input map[string]any
+	var input plugin.UpdateInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
 
-	plugin, err := Services.PluginService.Update(r.Context(), id, input)
+	p, err := Services.PluginService.Update(r.Context(), id, input)
 	if err != nil {
 		respondError(w, wordpress.HttpStatusBadRequest, "E3004", err.Error())
 		return
 	}
-	respondSuccess(w, plugin)
+	respondSuccess(w, p)
 }
 
 // DeletePlugin removes a plugin registration
@@ -91,10 +92,11 @@ func CreatePluginMapping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input map[string]any
+	var input plugin.CreateMappingInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
+	input.PluginID = id
 
 	mapping, err := Services.PluginService.CreateMapping(r.Context(), id, input)
 	if err != nil {
@@ -157,27 +159,14 @@ func UpdateSiteMappings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var raw struct {
-		PluginIDs []any `json:"pluginIds"`
+	var input struct {
+		PluginIDs []int64 `json:"pluginIds"`
 	}
-	if !decodeJSON(w, r, &raw) {
+	if !decodeJSON(w, r, &input) {
 		return
 	}
 
-	// Convert JSON numbers (float64) to int64
-	pluginIDs := make([]int64, 0, len(raw.PluginIDs))
-	for _, v := range raw.PluginIDs {
-		switch id := v.(type) {
-		case float64:
-			pluginIDs = append(pluginIDs, int64(id))
-		case int64:
-			pluginIDs = append(pluginIDs, id)
-		case int:
-			pluginIDs = append(pluginIDs, int64(id))
-		}
-	}
-
-	if err := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, pluginIDs); err != nil {
+	if err := Services.PluginService.UpdateMappingsForSite(r.Context(), siteID, input.PluginIDs); err != nil {
 		respondError(w, wordpress.HttpStatusBadRequest, "E3011", err.Error())
 		return
 	}
