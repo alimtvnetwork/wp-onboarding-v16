@@ -27,7 +27,7 @@ trait RouteRegistrationTrait
         $registered = 0;
         $failed = 0;
 
-        $safeRegister = function (string $route, $args) use (&$registered, &$failed) {
+        $safeRegister = function (string $route, array $args) use (&$registered, &$failed): void {
             try {
                 register_rest_route(API_FULL_NAMESPACE, $route, $args);
                 $registered++;
@@ -53,7 +53,7 @@ trait RouteRegistrationTrait
      *
      * @param callable $safeRegister Route registration closure.
      */
-    private function registerUtilityRoutes($safeRegister) {
+    private function registerUtilityRoutes(callable $safeRegister): void {
         $safeRegister(EndpointType::Status->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleStatus'),
@@ -78,7 +78,7 @@ trait RouteRegistrationTrait
      *
      * @param callable $safeRegister Route registration closure.
      */
-    private function registerPostRoutes($safeRegister) {
+    private function registerPostRoutes(callable $safeRegister): void {
         $safeRegister(EndpointType::Posts->route(), array(
             array(
                 'methods'             => HttpMethodType::Get->value,
@@ -111,7 +111,7 @@ trait RouteRegistrationTrait
      *
      * @param callable $safeRegister Route registration closure.
      */
-    private function registerLogRoutes($safeRegister) {
+    private function registerLogRoutes(callable $safeRegister): void {
         $safeRegister(EndpointType::Logs->route(), array(
             'methods'             => HttpMethodType::Get->value,
             'callback'            => array($this, 'handleQueryLogs'),
@@ -130,7 +130,7 @@ trait RouteRegistrationTrait
      *
      * @param callable $safeRegister Route registration closure.
      */
-    private function registerCatchAllRoute($safeRegister) {
+    private function registerCatchAllRoute(callable $safeRegister): void {
         $safeRegister('/(?P<invalid_path>.+)', array(
             'methods'             => array(
                 HttpMethodType::Get->value,

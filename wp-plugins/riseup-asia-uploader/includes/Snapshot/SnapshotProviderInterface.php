@@ -24,111 +24,41 @@ abstract class RiseupSnapshotProviderInterface {
     use SnapshotProviderHelpersTrait;
     use SnapshotProviderLockTrait;
 
-    /** @var string */
-    protected $provider_id;
+    protected string $provider_id;
+    protected string $provider_name;
+    protected RiseupFileLogger $logger;
+    protected RiseupDatabase $db;
 
-    /** @var string */
-    protected $provider_name;
-
-    /** @var RiseupFileLogger */
-    protected $logger;
-
-    /** @var RiseupDatabase */
-    protected $db;
-
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger $logger Logger instance.
-     * @param RiseupDatabase   $db     Database instance.
-     */
-    public function __construct($logger, $db) {
+    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         $this->logger = $logger;
         $this->db = $db;
     }
 
-    /** @return string Provider ID. */
-    public function getProviderId() {
+    public function getProviderId(): string {
         return $this->provider_id;
     }
 
-    /** @return string Provider display name. */
-    public function getProviderName() {
+    public function getProviderName(): string {
         return $this->provider_name;
     }
 
-    /** @return bool True if the provider can be used. */
-    abstract public function isAvailable();
+    abstract public function isAvailable(): bool;
 
-    /**
-     * Get provider capabilities.
-     *
-     * @return array Capabilities: full_site, database_only, selective, scheduled, restore, export, import.
-     */
-    abstract public function getCapabilities();
+    abstract public function getCapabilities(): array;
 
-    /**
-     * Create a snapshot.
-     *
-     * @param array $options Snapshot options (scope, tables, trigger).
-     * @return array Snapshot result.
-     */
-    abstract public function createSnapshot($options);
+    abstract public function createSnapshot(array $options): array;
 
-    /**
-     * Restore from a snapshot.
-     *
-     * @param int   $snapshot_id Snapshot database ID.
-     * @param array $options     Restore options (mode, tables, create_backup, confirm).
-     * @return array Restore result.
-     */
-    abstract public function restoreSnapshot($snapshot_id, $options);
+    abstract public function restoreSnapshot(int $snapshotId, array $options): array;
 
-    /**
-     * Delete a snapshot.
-     *
-     * @param int $snapshot_id Snapshot database ID.
-     * @return array Delete result.
-     */
-    abstract public function deleteSnapshot($snapshot_id);
+    abstract public function deleteSnapshot(int $snapshotId): array;
 
-    /**
-     * Export a snapshot to a downloadable file.
-     *
-     * @param int $snapshot_id Snapshot database ID.
-     * @return array Export result.
-     */
-    abstract public function exportSnapshot($snapshot_id);
+    abstract public function exportSnapshot(int $snapshotId): array;
 
-    /**
-     * Import a snapshot from an uploaded file.
-     *
-     * @param string $filepath Path to the uploaded file.
-     * @return array Import result.
-     */
-    abstract public function importSnapshot($filepath);
+    abstract public function importSnapshot(string $filepath): array;
 
-    /**
-     * Get snapshot details.
-     *
-     * @param int $snapshot_id Snapshot database ID.
-     * @return array|null Snapshot details or null if not found.
-     */
-    abstract public function getSnapshot($snapshot_id);
+    abstract public function getSnapshot(int $snapshotId): ?array;
 
-    /**
-     * List all snapshots.
-     *
-     * @param int $limit  Maximum number to return.
-     * @param int $offset Offset for pagination.
-     * @return array List result with snapshots and total.
-     */
-    abstract public function listSnapshots($limit = 50, $offset = 0);
+    abstract public function listSnapshots(int $limit = 50, int $offset = 0): array;
 
-    /**
-     * Get list of available database tables.
-     *
-     * @return array Table info: name, rows, size, is_core.
-     */
-    abstract public function getAvailableTables();
+    abstract public function getAvailableTables(): array;
 }
