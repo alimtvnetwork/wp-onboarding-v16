@@ -43,22 +43,11 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      *
      * @var string
      */
-    protected $provider_name = 'WP Reset';
+    protected string $provider_name = 'WP Reset';
 
-    /**
-     * WP Reset instance.
-     *
-     * @var WP_Reset|null
-     */
-    private $wp_reset = null;
+    private mixed $wp_reset = null;
 
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger $logger Logger instance.
-     * @param RiseupDatabase   $db     Database instance.
-     */
-    public function __construct($logger, $db) {
+    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         parent::__construct($logger, $db);
         
         // Get WP Reset instance if available
@@ -73,7 +62,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      *
      * @return bool True if WP Reset is installed and active.
      */
-    public function isAvailable() {
+    public function isAvailable(): bool {
         return class_exists('WP_Reset') || class_exists('WP_Reset_Pro');
     }
 
@@ -82,7 +71,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      *
      * @return array Capabilities array.
      */
-    public function getCapabilities() {
+    public function getCapabilities(): array {
         $is_pro = class_exists('WP_Reset_Pro');
         
         return array(
@@ -102,7 +91,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @param array $options Snapshot options.
      * @return array Snapshot result.
      */
-    public function createSnapshot($options) {
+    public function createSnapshot(array $options): array {
         if (!$this->isAvailable()) {
             return array(
                 'success' => false,
@@ -142,7 +131,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @param array $options     Restore options.
      * @return array Restore result.
      */
-    public function restoreSnapshot($snapshot_id, $options) {
+    public function restoreSnapshot(int $snapshotId, array $options): array {
         // TODO: Implement WP Reset restore
         return array(
             'success' => false,
@@ -156,7 +145,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @param int $snapshot_id Snapshot ID.
      * @return array Delete result.
      */
-    public function deleteSnapshot($snapshot_id) {
+    public function deleteSnapshot(int $snapshotId): array {
         // TODO: Implement WP Reset delete
         return array(
             'success' => false,
@@ -170,7 +159,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @param int $snapshot_id Snapshot ID.
      * @return array Export result.
      */
-    public function exportSnapshot($snapshot_id) {
+    public function exportSnapshot(int $snapshotId): array {
         // TODO: Implement WP Reset export
         return array(
             'success' => false,
@@ -184,7 +173,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @param string $filepath Path to file.
      * @return array Import result.
      */
-    public function importSnapshot($filepath) {
+    public function importSnapshot(string $filepath): array {
         // TODO: Implement WP Reset import
         return array(
             'success' => false,
@@ -198,10 +187,10 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @param int $snapshot_id Snapshot ID.
      * @return array|null Snapshot or null.
      */
-    public function getSnapshot($snapshot_id) {
+    public function getSnapshot(int $snapshotId): ?array {
         return $this->db->querySingle(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE id = ? AND provider = ?',
-            array($snapshot_id, $this->provider_id)
+            array($snapshotId, $this->provider_id)
         );
     }
 
@@ -212,7 +201,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      * @param int $offset Offset.
      * @return array List result.
      */
-    public function listSnapshots($limit = 50, $offset = 0) {
+    public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll(
             'SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
             array($this->provider_id, $limit, $offset)
@@ -234,7 +223,7 @@ class RiseupSnapshotProviderWPReset extends RiseupSnapshotProviderInterface {
      *
      * @return array Tables list.
      */
-    public function getAvailableTables() {
+    public function getAvailableTables(): array {
         // WP Reset handles all tables internally
         global $wpdb;
         $tables = array();

@@ -26,36 +26,22 @@ class RiseupSnapshotExporter {
     use ExporterBuildTrait;
     use ExporterHelpersTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
-
-    /** @var RiseupDatabase */
-    private $db;
-
-    /** @var RiseupSnapshotExporter|null */
-    private static $instance = null;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private static ?RiseupSnapshotExporter $instance = null;
 
     /**
      * Get singleton instance.
-     *
-     * @param RiseupFileLogger|null $logger Logger.
-     * @param RiseupDatabase|null   $db     Database.
-     * @return RiseupSnapshotExporter
      */
-    public static function getInstance($logger = null, $db = null) {
+    public static function getInstance(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): ?static {
         if (self::$instance === null && $logger && $db) {
             self::$instance = new self($logger, $db);
         }
+
         return self::$instance;
     }
 
-    /**
-     * Constructor.
-     *
-     * @param RiseupFileLogger $logger Logger.
-     * @param RiseupDatabase   $db     Database.
-     */
-    private function __construct($logger, $db) {
+    private function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
         $this->logger = $logger;
         $this->db     = $db;
     }
