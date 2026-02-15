@@ -18,7 +18,7 @@ trait SyncManifestTrait
     /**
      * Handle sync manifest endpoint.
      */
-    public function handleSyncManifest($request) {
+    public function handleSyncManifest(WP_REST_Request $request): WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
         if (empty($slug)) {
@@ -32,10 +32,8 @@ trait SyncManifestTrait
         }
     }
 
-    /**
-     * Generate a sync manifest for a plugin.
-     */
-    private function generateSyncManifest(string $slug) {
+    /** Generate a sync manifest for a plugin. */
+    private function generateSyncManifest(string $slug): WP_REST_Response {
         if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
@@ -60,10 +58,8 @@ trait SyncManifestTrait
         ), HttpStatusType::Ok->value);
     }
 
-    /**
-     * Recursively scan a directory and collect file info with hashes.
-     */
-    private function scanDirectoryForFiles($base_dir, $dir, $ignore, &$files) {
+    /** Recursively scan a directory and collect file info with hashes. */
+    private function scanDirectoryForFiles(string $baseDir, string $dir, RiseupUploadIgnore $ignore, array &$files): void {
         $items = @scandir($dir);
         if ($items === false) {
             return;
@@ -75,14 +71,14 @@ trait SyncManifestTrait
             }
 
             $full_path = $dir . '/' . $item;
-            $rel_path  = ltrim(str_replace($base_dir, '', $full_path), '/\\');
+            $rel_path  = ltrim(str_replace($baseDir, '', $full_path), '/\\');
 
             if ($ignore->shouldIgnore($rel_path)) {
                 continue;
             }
 
             if (is_dir($full_path)) {
-                $this->scanDirectoryForFiles($base_dir, $full_path, $ignore, $files);
+                $this->scanDirectoryForFiles($baseDir, $full_path, $ignore, $files);
             } else {
                 $files[] = $this->buildFileEntry($rel_path, $full_path);
             }

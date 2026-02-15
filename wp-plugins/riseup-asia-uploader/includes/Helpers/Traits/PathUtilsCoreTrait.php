@@ -27,7 +27,7 @@ trait PathUtilsCoreTrait {
      *
      * @return RiseupFileLogger|null
      */
-    private static function getLogger() {
+    private static function getLogger(): ?RiseupFileLogger {
         if (self::$isBootstrapping) {
             return null;
         }
@@ -58,14 +58,8 @@ trait PathUtilsCoreTrait {
         return self::$logger;
     }
 
-    /**
-     * Log a message safely — falls back to error_log() when logger is unavailable.
-     *
-     * @param string $level   Log level (e.g. LogLevelType::Info->value).
-     * @param string $message Log message.
-     * @param array  $context Optional context.
-     */
-    private static function safeLog($level, $message, $context = array()) {
+    /** Log a message safely — falls back to error_log() when logger is unavailable. */
+    private static function safeLog(string $level, string $message, array $context = array()): void {
         $upper = strtoupper($level);
         $method = strtolower($level);
 
@@ -82,13 +76,8 @@ trait PathUtilsCoreTrait {
         }
     }
 
-    /**
-     * Join path segments safely.
-     *
-     * @param string ...$segments Path segments to join.
-     * @return string Joined path with forward slashes.
-     */
-    public static function join(...$segments) {
+    /** Join path segments safely. */
+    public static function join(string ...$segments): string {
         $filtered = array_filter($segments, function($seg) { return $seg !== null && $seg !== ''; });
         if (empty($filtered)) {
             return '';
@@ -102,28 +91,28 @@ trait PathUtilsCoreTrait {
     }
 
     /** @return string Base path (wp-content/uploads/riseup-asia-uploader). */
-    public static function getBaseDir() {
+    public static function getBaseDir(): string {
         $uploadDir = wp_upload_dir();
         return self::join($uploadDir['basedir'], UPLOADS_SUBDIR);
     }
 
     /** @return string Full path to logs directory. */
-    public static function getLogsDir() {
+    public static function getLogsDir(): string {
         return self::join(self::getBaseDir(), PathSubdirType::Logs->value);
     }
 
     /** @return string Full path to snapshots directory. */
-    public static function getSnapshotsDir() {
+    public static function getSnapshotsDir(): string {
         return self::join(self::getBaseDir(), PathSubdirType::Snapshots->value);
     }
 
     /** @return string Full path to temp directory. */
-    public static function getTempDir() {
+    public static function getTempDir(): string {
         return self::join(self::getBaseDir(), PathSubdirType::Temp->value);
     }
 
     /** @return string Full path to SQLite database file. */
-    public static function getDbPath() {
+    public static function getDbPath(): string {
         return self::join(self::getBaseDir(), PathDatabaseType::Plugin->value);
     }
 }

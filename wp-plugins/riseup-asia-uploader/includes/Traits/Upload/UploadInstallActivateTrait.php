@@ -17,7 +17,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 trait UploadInstallActivateTrait
 {
     /** Reset OPcache and locate the plugin's main file. */
-    private function resetOpcacheAndFindPlugin($slug) {
+    private function resetOpcacheAndFindPlugin(string $slug): string|WP_REST_Response {
         if (function_exists('opcache_reset')) {
             opcache_reset();
         }
@@ -36,7 +36,7 @@ trait UploadInstallActivateTrait
     }
 
     /** Invalidate OPcache entries and WP plugin cache for the given plugin. */
-    private function invalidatePluginCache(string $plugin_file, string $slug) {
+    private function invalidatePluginCache(string $plugin_file, string $slug): void {
         $full_plugin_path = WP_PLUGIN_DIR . '/' . $plugin_file;
         if (function_exists('opcache_invalidate')) {
             opcache_invalidate($full_plugin_path, true);
@@ -52,14 +52,14 @@ trait UploadInstallActivateTrait
     }
 
     /** Activate the plugin if requested or if it was previously active. */
-    private function activateIfNeeded($plugin_file, $slug, $activate, $was_active, $is_update) {
-        if (!$activate && !$was_active) {
+    private function activateIfNeeded(string $pluginFile, string $slug, bool $activate, bool $wasActive, bool $isUpdate): array|WP_REST_Response {
+        if (!$activate && !$wasActive) {
             return array('activated' => false);
         }
 
-        $result = activate_plugin($plugin_file);
+        $result = activate_plugin($pluginFile);
         if (is_wp_error($result)) {
-            return $this->buildActivationFailureResponse($slug, $is_update, $result->get_error_message());
+            return $this->buildActivationFailureResponse($slug, $isUpdate, $result->get_error_message());
         }
 
         return array('activated' => true);
@@ -78,15 +78,15 @@ trait UploadInstallActivateTrait
     }
 
     /** Detect the installed plugin version from disk. */
-    private function detectInstalledVersion($plugin_file, $slug, $is_self_update, $client_version) {
-        $installed_version = $this->readVersionFromFile($plugin_file);
+    private function detectInstalledVersion(string $pluginFile, string $slug, bool $isSelfUpdate, string $clientVersion): array {
+        $installed_version = $this->readVersionFromFile($pluginFile);
 
         if (empty($installed_version)) {
-            $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin_file, false, false);
+            $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . $pluginFile, false, false);
             $installed_version = $plugin_data['Version'] ?? '';
         }
 
-        $version = $this->resolveEffectiveVersion($installed_version, $client_version, $is_self_update);
+        $version = $this->resolveEffectiveVersion($installed_version, $clientVersion, $isSelfUpdate);
         return array('version' => $version);
     }
 

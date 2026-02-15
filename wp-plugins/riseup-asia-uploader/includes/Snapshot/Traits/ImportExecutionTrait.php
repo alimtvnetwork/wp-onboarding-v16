@@ -25,7 +25,7 @@ trait ImportExecutionTrait {
     use ImportExecutionFileTrait;
 
     /** Import a per-table snapshot (with a-root.db). */
-    private function importPerTable($tempDir, $rootDbPath) {
+    private function importPerTable(string $tempDir, string $rootDbPath): array {
         $this->log(LogLevelType::Info->value, 'Detected per-table snapshot format');
         $snapshotRoot = dirname($rootDbPath);
 
@@ -106,7 +106,7 @@ trait ImportExecutionTrait {
     }
 
     /** Register the imported snapshot in the database. */
-    private function registerImportedSnapshot($metadata, $tables, $incrementals, $plugins, $destDir) {
+    private function registerImportedSnapshot(array $metadata, array $tables, array $incrementals, array $plugins, string $destDir): int {
         $tableNames = array_map(function($t) { return $t['table_name']; }, $tables);
         $record = $this->buildSnapshotRecord($metadata, $tables, $incrementals, $plugins, $destDir, $tableNames);
 

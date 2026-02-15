@@ -15,12 +15,8 @@ use RiseupAsia\Enums\EndpointType;
 
 trait SnapshotRouteRegistrationTrait {
 
-    /**
-     * Register snapshot management routes.
-     *
-     * @param callable $safeRegister Route registration closure.
-     */
-    private function registerSnapshotRoutes($safeRegister) {
+    /** Register snapshot management routes. */
+    private function registerSnapshotRoutes(callable $safeRegister): void {
         $perm = $this->buildPermissionCallback('snapshots', array($this, 'checkPluginPermission'));
 
         $safeRegister(EndpointType::SnapshotList->route(), array(

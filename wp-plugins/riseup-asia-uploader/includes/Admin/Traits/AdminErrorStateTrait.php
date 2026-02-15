@@ -12,12 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait AdminErrorStateTrait {
 
-    /**
-     * Get unseen error count.
-     *
-     * @return int
-     */
-    private function getUnseenErrorCount() {
+    /** Get unseen error count. */
+    private function getUnseenErrorCount(): int {
         try {
             $db = RiseupDatabase::getInstance();
             $pdo = $db->getPdo();
@@ -35,14 +31,8 @@ trait AdminErrorStateTrait {
         }
     }
 
-    /**
-     * Get a flash state value.
-     *
-     * @param string $key     Flash key.
-     * @param mixed  $default Default value.
-     * @return string
-     */
-    private function getFlashValue($key, $default = '') {
+    /** Get a flash state value. */
+    private function getFlashValue(string $key, string|int $default = ''): string|int {
         try {
             $db = RiseupDatabase::getInstance();
             $pdo = $db->getPdo();
@@ -63,7 +53,7 @@ trait AdminErrorStateTrait {
     /**
      * Render global admin notice when there are unseen errors.
      */
-    public function renderGlobalErrorNotice() {
+    public function renderGlobalErrorNotice(): void {
         $unseen = $this->getUnseenErrorCount();
         if ($unseen <= 0) {
             return;

@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 trait AgentHandlerCrudTrait {
 
     /** Handle listing all agent sites. */
-    public function handleListAgents($request) {
+    public function handleListAgents(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Listing agent sites');
             $status = $request->get_param('status');
@@ -28,7 +28,7 @@ trait AgentHandlerCrudTrait {
     }
 
     /** Handle adding a new agent site. */
-    public function handleAddAgent($request) {
+    public function handleAddAgent(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Adding agent site');
             $data = $this->extractAgentData($request);
@@ -42,7 +42,7 @@ trait AgentHandlerCrudTrait {
     }
 
     /** Extract agent data from a REST request. */
-    private function extractAgentData($request): array {
+    private function extractAgentData(WP_REST_Request $request): array {
         return array(
             'name' => $request->get_param('name'), 'url' => $request->get_param('url'),
             'username' => $request->get_param('username'), 'app_password' => $request->get_param('app_password'),
@@ -51,7 +51,7 @@ trait AgentHandlerCrudTrait {
     }
 
     /** Handle getting a single agent site. */
-    public function handleGetAgent($request) {
+    public function handleGetAgent(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Getting agent site', array('id' => $id));
@@ -65,7 +65,7 @@ trait AgentHandlerCrudTrait {
     }
 
     /** Handle removing an agent site. */
-    public function handleRemoveAgent($request) {
+    public function handleRemoveAgent(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Removing agent site', array('id' => $id));

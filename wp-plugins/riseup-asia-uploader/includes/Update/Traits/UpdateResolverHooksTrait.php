@@ -12,13 +12,8 @@ if (!defined('ABSPATH')) {
 
 trait UpdateResolverFetchTrait {
 
-    /**
-     * Fetch update information from the update server.
-     *
-     * @param bool $forceCheck Force a fresh check.
-     * @return array|WP_Error Update info or error.
-     */
-    public function fetchUpdateInfo($forceCheck = false) {
+    /** Fetch update information from the update server. */
+    public function fetchUpdateInfo(bool $forceCheck = false): array|WP_Error {
         $settings = $this->getSettings();
         if (!$settings['enabled']) {
             return new WP_Error('disabled', 'Auto-update is disabled');
@@ -118,14 +113,8 @@ trait UpdateResolverFetchTrait {
         return new WP_Error('http_error', $errorMsg);
     }
 
-    /**
-     * Parse the update response body into structured update info.
-     *
-     * @param array  $response  HTTP response.
-     * @param string $updateUrl The URL used for the request.
-     * @return array Update info.
-     */
-    private function parseUpdateResponseBody($response, string $updateUrl): array {
+    /** Parse the update response body into structured update info. */
+    private function parseUpdateResponseBody(array|WP_Error $response, string $updateUrl): array {
         $body = wp_remote_retrieve_body($response);
         $contentType = wp_remote_retrieve_header($response, 'content-type');
 
