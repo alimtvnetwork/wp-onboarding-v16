@@ -2,22 +2,20 @@
 /**
  * Logger Context Trait — user info, IP, source machine resolution.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Logging\Traits
  * @since   1.4.0
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\PluginConfigType;
 
 trait LoggerContextTrait {
 
     /** Get database instance (lazy loading). */
-    private function getDb(): RiseupDatabase {
+    private function getDb(): \RiseupDatabase {
         if ($this->db === null) {
-            $this->db = RiseupDatabase::getInstance();
+            $this->db = \RiseupDatabase::getInstance();
         }
 
         return $this->db;
@@ -56,7 +54,7 @@ trait LoggerContextTrait {
 
     /** Get current user info. */
     private function getUserInfo(): array {
-        if (RiseupBooleanHelpers::isFuncMissing('wp_get_current_user')) {
+        if (\RiseupBooleanHelpers::isFuncMissing('wp_get_current_user')) {
             return array('login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID);
         }
 

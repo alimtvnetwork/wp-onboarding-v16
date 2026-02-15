@@ -2,13 +2,11 @@
 /**
  * Logger Actions Trait — plugin and post action logging methods.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Logging\Traits
  * @since   1.4.0
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;

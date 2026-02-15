@@ -1,0 +1,14 @@
+{
+    "name": "riseup-asia/uploader",
+    "description": "Riseup Asia Uploader WordPress Plugin",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "RiseupAsia\\": "includes/"
+        }
+    }
+}

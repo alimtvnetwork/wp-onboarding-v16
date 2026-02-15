@@ -4,23 +4,21 @@
  *
  * Shell class — logic delegated to domain-specific traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Logging
  * @since   1.4.0
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\Logging;
 
-require_once dirname(__FILE__) . '/Traits/LoggerContextTrait.php';
-require_once dirname(__FILE__) . '/Traits/LoggerActionsTrait.php';
+use RiseupAsia\Logging\Traits\LoggerContextTrait;
+use RiseupAsia\Logging\Traits\LoggerActionsTrait;
 
 /**
- * Class RiseupLogger
+ * Class Logger
  *
  * Provides convenient methods for logging transactions.
  */
-class RiseupLogger {
+class Logger {
 
     use LoggerContextTrait;
     use LoggerActionsTrait;
@@ -31,17 +29,11 @@ class RiseupLogger {
     private const SOURCE_MACHINE_HEADER = 'HTTP_X_RISEUP_SOURCE_MACHINE';
     private const USER_AGENT_MAX_LENGTH = 200;
 
-    /** @var RiseupDatabase|null */
-    private $db = null;
+    private ?\RiseupDatabase $db = null;
+    private FileLogger $fileLogger;
+    private static ?self $instance = null;
 
-    /** @var RiseupFileLogger */
-    private $fileLogger;
-
-    /** @var RiseupLogger|null */
-    private static $instance = null;
-
-    /** @return RiseupLogger */
-    public static function getInstance() {
+    public static function getInstance(): self {
         if (self::$instance === null) {
             self::$instance = new self();
         }
@@ -49,9 +41,11 @@ class RiseupLogger {
         return self::$instance;
     }
 
-    /** Private constructor. */
     private function __construct() {
-        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->fileLogger = FileLogger::getInstance();
         $this->fileLogger->info('Transaction logger initialized');
     }
 }
+
+// Backward compatibility alias for global namespace consumers
+\class_alias(Logger::class, 'RiseupLogger');

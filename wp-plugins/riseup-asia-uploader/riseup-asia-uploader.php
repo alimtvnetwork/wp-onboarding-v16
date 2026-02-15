@@ -22,9 +22,17 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\ErrorHandling\FatalErrorHandler;
+use RiseupAsia\ErrorHandling\FrameBuilder;
 
 // =============================================================================
-// ERROR HANDLING (standalone functions — must load before class)
+// PSR-4 AUTOLOADER
+// =============================================================================
+
+require_once __DIR__ . '/includes/Autoloader.php';
+
+// =============================================================================
+// ERROR HANDLING (standalone — must load before class dependencies)
 // =============================================================================
 
 require_once __DIR__ . '/includes/ErrorHandling/FrameBuilder.php';

@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\ErrorHandling\FrameBuilder;
+
 trait EnvelopeFactoryTrait {
 
     /** Create a success envelope. */
@@ -53,8 +55,8 @@ trait EnvelopeFactoryTrait {
         $trace_lines = explode("\n", $exception->getTraceAsString());
         $errors['DelegatedServiceErrorStack'] = $trace_lines;
 
-        if (class_exists('RiseupFrameBuilder')) {
-            $frames = RiseupFrameBuilder::exceptionToFrames($exception);
+        if (class_exists(FrameBuilder::class)) {
+            $frames = FrameBuilder::exceptionToFrames($exception);
             $errors['Backend'] = self::framesToLines($frames);
         }
 
@@ -66,8 +68,8 @@ trait EnvelopeFactoryTrait {
      */
     private static function buildBacktraceErrors(array $errors): array {
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 0);
-        if (class_exists('RiseupFrameBuilder')) {
-            $frames = RiseupFrameBuilder::backtraceToFrames($backtrace);
+        if (class_exists(FrameBuilder::class)) {
+            $frames = FrameBuilder::backtraceToFrames($backtrace);
             $errors['Backend'] = self::framesToLines($frames);
         }
 

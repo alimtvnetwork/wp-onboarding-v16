@@ -1,8 +1,6 @@
 <?php
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+namespace RiseupAsia\ErrorHandling;
 
 use RiseupAsia\Enums\PathLogFileType;
 
@@ -11,7 +9,7 @@ use RiseupAsia\Enums\PathLogFileType;
  *
  * @since 1.57.0
  */
-class RiseupFatalErrorHandler
+class FatalErrorHandler
 {
     private const FATAL_TYPES = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
     private const PLUGIN_SLUG = 'riseup-asia-uploader';
@@ -74,7 +72,7 @@ class RiseupFatalErrorHandler
             'error'   => array(
                 'code'    => self::ERROR_CODE_FATAL,
                 'message' => 'A fatal error occurred in the plugin: ' . $error['message'],
-                'details' => RiseupFrameBuilder::buildFatalDetails($error, $traceLines, $frames),
+                'details' => FrameBuilder::buildFatalDetails($error, $traceLines, $frames),
             ),
         );
     }
@@ -105,7 +103,7 @@ class RiseupFatalErrorHandler
             http_response_code(500);
         }
 
-        $frameData = RiseupFrameBuilder::buildFatalFrames($error);
+        $frameData = FrameBuilder::buildFatalFrames($error);
         $response = self::buildResponse($error, $frameData['trace_lines'], $frameData['frames']);
 
         $json = @json_encode($response, JSON_UNESCAPED_SLASHES);
@@ -135,4 +133,7 @@ class RiseupFatalErrorHandler
     }
 }
 
-register_shutdown_function([RiseupFatalErrorHandler::class, 'handle']);
+// Backward compatibility alias for global namespace consumers
+\class_alias(FatalErrorHandler::class, 'RiseupFatalErrorHandler');
+
+register_shutdown_function([FatalErrorHandler::class, 'handle']);

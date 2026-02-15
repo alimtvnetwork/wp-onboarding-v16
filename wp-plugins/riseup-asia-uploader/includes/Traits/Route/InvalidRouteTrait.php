@@ -11,8 +11,8 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\HttpStatusType;
-
-trait InvalidRouteTrait
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\ErrorHandling\FrameBuilder;
 {
     public function handleInvalidRoute(WP_REST_Request $request): WP_REST_Response {
         $invalidPath = $request->get_param('invalid_path');
@@ -30,7 +30,7 @@ trait InvalidRouteTrait
     }
 
     private function buildInvalidRouteTrace(string $method, string $path, array $backtrace): array {
-        $frames = class_exists('RiseupFrameBuilder') ? RiseupFrameBuilder::backtraceToFrames($backtrace) : array();
+        $frames = class_exists(FrameBuilder::class) ? FrameBuilder::backtraceToFrames($backtrace) : array();
 
         return array(
             'BackendMessage'             => "Route not found: {$method} /{$path}",
@@ -64,7 +64,7 @@ trait InvalidRouteTrait
 
     public function enrichErrorResponse(WP_REST_Response $response, WP_REST_Server $server, WP_REST_Request $request): WP_REST_Response {
         $route = $request->get_route();
-        if (strpos($route, '/' . API_FULL_NAMESPACE) === false) {
+        if (strpos($route, '/' . PluginConfigType::apiFullNamespace()) === false) {
             return $response;
         }
 
@@ -87,7 +87,7 @@ trait InvalidRouteTrait
 
     private function injectErrorMetadata(array $data): array {
         if (!isset($data['plugin_version'])) {
-            $data['plugin_version'] = PLUGIN_VERSION;
+            $data['plugin_version'] = PluginConfigType::Version->value;
         }
         if (!isset($data['timestamp'])) {
             $data['timestamp'] = gmdate('c');
@@ -104,7 +104,7 @@ trait InvalidRouteTrait
             'route'          => $route,
             'status'         => $status,
             'message'        => isset($data['message']) ? $data['message'] : (isset($data['Status']['Message']) ? $data['Status']['Message'] : 'Unknown'),
-            'plugin_version' => PLUGIN_VERSION,
+            'plugin_version' => PluginConfigType::Version->value,
         ));
     }
 }
