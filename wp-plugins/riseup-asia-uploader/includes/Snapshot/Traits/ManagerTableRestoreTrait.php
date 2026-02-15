@@ -20,7 +20,7 @@ trait ManagerTableRestoreTrait {
             $columnNames = array_column($columns, 'name');
 
             return $this->truncateAndInsert($sqlite, $table, $columnNames);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
         }
     }
@@ -41,7 +41,7 @@ trait ManagerTableRestoreTrait {
             $this->wpdb->query("COMMIT");
 
             return array('success' => true, 'rows' => $totalRows);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
             throw $e;

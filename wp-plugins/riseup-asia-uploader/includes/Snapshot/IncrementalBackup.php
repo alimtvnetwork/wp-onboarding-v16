@@ -36,21 +36,15 @@ class RiseupIncrementalBackup {
     use IncrementalDiscoveryTrait;
     use IncrementalCoreTrait;
 
-    /** @var RiseupFileLogger */
-    private $logger;
-    /** @var RiseupDatabase */
-    private $db;
-    /** @var RiseupRootDb */
-    private $rootDb;
-    /** @var wpdb */
-    private $wpdb;
-    /** @var int */
-    private $batchSize;
-    /** @var RiseupIncrementalBackup|null */
-    private static $instance = null;
+    private RiseupFileLogger $logger;
+    private RiseupDatabase $db;
+    private RiseupRootDb $rootDb;
+    private \wpdb $wpdb;
+    private int $batchSize;
+    private static ?RiseupIncrementalBackup $instance = null;
 
     /** Get singleton instance. */
-    public static function getInstance($logger = null, $db = null, $rootDb = null) {
+    public static function getInstance(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null, ?RiseupRootDb $rootDb = null): ?self {
         if (self::$instance === null && $logger && $db && $rootDb) {
             self::$instance = new self($logger, $db, $rootDb);
         }
@@ -58,7 +52,7 @@ class RiseupIncrementalBackup {
     }
 
     /** Constructor. */
-    private function __construct($logger, $db, $rootDb) {
+    private function __construct(RiseupFileLogger $logger, RiseupDatabase $db, RiseupRootDb $rootDb) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
@@ -68,24 +62,24 @@ class RiseupIncrementalBackup {
     }
 
     /** Execute an incremental backup against a master snapshot. */
-    public function execute($master_dir, $options = array()) {
-        $start_time = microtime(true);
+    public function execute(string $masterDir, array $options = array()): array {
+        $startTime = microtime(true);
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
 
-        $root_path = $master_dir . '/a-root.db';
-        if (RiseupBooleanHelpers::isFileMissing($root_path)) {
-            return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $root_path);
+        $rootPath = $masterDir . '/a-root.db';
+        if (RiseupBooleanHelpers::isFileMissing($rootPath)) {
+            return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $rootPath);
         }
 
-        $this->log(LogLevelType::Info->value, 'Starting incremental backup', array('master_dir' => basename($master_dir), 'title' => $title));
+        $this->log(LogLevelType::Info->value, 'Starting incremental backup', array('master_dir' => basename($masterDir), 'title' => $title));
 
-        return $this->executeIncrementalPipeline($root_path, $title, $master_dir, $start_time);
+        return $this->executeIncrementalPipeline($rootPath, $title, $masterDir, $startTime);
     }
 
     /** Run the incremental backup pipeline (prepare, export, register, finalize). */
-    private function executeIncrementalPipeline(string $root_path, string $title, string $master_dir, float $start_time): array {
+    private function executeIncrementalPipeline(string $rootPath, string $title, string $masterDir, float $startTime): array {
         try {
-            $prepared = $this->prepareIncrementalDir($root_path);
+            $prepared = $this->prepareIncrementalDir($rootPath);
             if (!$prepared['success']) {
                 return $prepared;
             }
@@ -95,15 +89,15 @@ class RiseupIncrementalBackup {
             $this->registerIncrementalInRoot($prepared, $export);
             $prepared['rootPdo'] = null;
 
-            return $this->finalizeIncremental($title, $master_dir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $start_time);
-        } catch (Exception $e) {
+            return $this->finalizeIncremental($title, $masterDir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $startTime);
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Incremental backup failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental');
         }
     }
 
     /** Register the incremental export in the root database. */
-    private function registerIncrementalInRoot(array $prepared, array $export) {
+    private function registerIncrementalInRoot(array $prepared, array $export): void {
         $this->rootDb->registerIncremental($prepared['rootPdo'], array(
             'sequence_num' => $prepared['sequence'], 'folder_name' => $prepared['folder_name'],
             'tables_changed' => $export['tables_changed'], 'total_new_rows' => $export['total_new_rows'],
@@ -112,12 +106,12 @@ class RiseupIncrementalBackup {
     }
 
     /** Get the base snapshots directory. */
-    private function getSnapshotsBaseDir() {
+    private function getSnapshotsBaseDir(): string {
         return RiseupPathUtils::getSnapshotsDir();
     }
 
     /** Format bytes. */
-    private function formatBytes($bytes) {
+    private function formatBytes(int $bytes): string {
         if ($bytes < 1024) return $bytes . ' B';
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
         if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
@@ -125,7 +119,7 @@ class RiseupIncrementalBackup {
     }
 
     /** Log a message. */
-    private function log($level, $message, $context = array()) {
+    private function log(string $level, string $message, array $context = array()): void {
         $full = '[SNAPSHOT] [INCREMENTAL] ' . $message;
         if (!empty($context)) {
             $full .= ' ' . json_encode($context);

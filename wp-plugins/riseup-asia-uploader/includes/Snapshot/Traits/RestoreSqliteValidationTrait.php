@@ -91,7 +91,7 @@ trait RestoreSqliteValidationTrait {
             $this->wpdb->query("COMMIT");
             $sqlite = null;
             return array('success' => true, 'rows' => $total_rows);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
             throw $e;
         }

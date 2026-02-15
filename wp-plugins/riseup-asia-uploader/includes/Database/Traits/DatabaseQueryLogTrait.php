@@ -49,7 +49,7 @@ trait DatabaseQueryLogTrait {
             $this->fileLogger->info('Transaction logged', array('id' => $result));
 
             return $result;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return ErrorResponse::logAndReturnFalse($this->fileLogger, $e, 'Failed to log transaction');
         }
     }
@@ -122,7 +122,7 @@ trait DatabaseQueryLogTrait {
             }
 
             return $log;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get transaction');
             return null;
         }

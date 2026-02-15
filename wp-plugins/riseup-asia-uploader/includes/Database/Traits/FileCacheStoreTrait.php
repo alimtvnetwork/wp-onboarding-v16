@@ -14,7 +14,7 @@ use RiseupAsia\Enums\TableType;
 
 trait FileCacheStoreTrait {
 
-    public function invalidate($pluginSlug) {
+    public function invalidate(string $pluginSlug): int {
         if (!$this->db->isReady()) {
             return 0;
         }
@@ -30,7 +30,7 @@ trait FileCacheStoreTrait {
             ));
 
             return $deleted;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to invalidate', array(
                 'slug'  => $pluginSlug,
                 'error' => $e->getMessage(),
@@ -39,7 +39,7 @@ trait FileCacheStoreTrait {
         }
     }
 
-    private function loadCachedEntries($pluginSlug) {
+    private function loadCachedEntries(string $pluginSlug): array {
         try {
             $rows = RiseupORM::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
@@ -50,7 +50,7 @@ trait FileCacheStoreTrait {
                 $entries[$row['relative_path']] = $row;
             }
             return $entries;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to load cache', array(
                 'slug'  => $pluginSlug,
                 'error' => $e->getMessage(),
@@ -59,7 +59,7 @@ trait FileCacheStoreTrait {
         }
     }
 
-    private function upsertCacheEntry($pluginSlug, $path, $hash, $modifiedAt, $size) {
+    private function upsertCacheEntry(string $pluginSlug, string $path, string $hash, string $modifiedAt, int $size): void {
         try {
             $pdo = $this->db->getPdo();
             if (!$pdo) {
@@ -74,7 +74,7 @@ trait FileCacheStoreTrait {
                 " VALUES (?, ?, ?, ?, ?, ?)"
             );
             $stmt->execute(array($pluginSlug, $path, $hash, $modifiedAt, $size, $now));
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to upsert', array(
                 'path'  => $path,
                 'error' => $e->getMessage(),
@@ -82,13 +82,13 @@ trait FileCacheStoreTrait {
         }
     }
 
-    private function deleteCacheEntry($pluginSlug, $path) {
+    private function deleteCacheEntry(string $pluginSlug, string $path): void {
         try {
             RiseupORM::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->where('relative_path', $path)
                 ->delete();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to delete entry', array(
                 'path'  => $path,
                 'error' => $e->getMessage(),

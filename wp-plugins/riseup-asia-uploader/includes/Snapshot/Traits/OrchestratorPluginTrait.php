@@ -129,7 +129,7 @@ trait OrchestratorPluginTrait {
             }
 
             return array('success' => true);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
@@ -144,7 +144,7 @@ trait OrchestratorPluginTrait {
             $pdo = new PDO('sqlite:' . $root_path);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return $pdo;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Could not open a-root.db for plugin registration', array('error' => $e->getMessage()));
             return null;
         }

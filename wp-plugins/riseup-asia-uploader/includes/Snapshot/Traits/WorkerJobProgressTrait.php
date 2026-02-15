@@ -42,7 +42,7 @@ trait WorkerJobProgressTrait {
                 FROM " . TableType::SnapshotProgress->value . " WHERE snapshot_id = 0");
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return array();
         }
     }

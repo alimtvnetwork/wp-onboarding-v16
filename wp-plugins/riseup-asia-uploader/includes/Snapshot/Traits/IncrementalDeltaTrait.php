@@ -62,7 +62,7 @@ trait IncrementalDeltaTrait {
             $maxId = $tablePdo->query("SELECT MAX(`{$pk}`) FROM `{$tableName}`")->fetchColumn();
             $tablePdo = null;
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : 0;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array('table' => $tableName, 'error' => $e->getMessage()));
             return (int) $info['row_count'];
         }
@@ -95,7 +95,7 @@ trait IncrementalDeltaTrait {
             $maxId = $pdo->query("SELECT MAX(`{$pk}`) FROM `{$tableName}`")->fetchColumn();
             $pdo = null;
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return null;
         }
     }

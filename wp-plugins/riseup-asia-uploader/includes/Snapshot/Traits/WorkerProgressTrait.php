@@ -29,7 +29,7 @@ trait WorkerProgressTrait {
                 $pdo->exec("UPDATE " . TableType::SnapshotProgress->value .
                     " SET rows_total = {$count} WHERE snapshot_id = 0 AND table_name = '{$table}'");
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Failed to init progress records', array('error' => $e->getMessage()));
         }
     }
@@ -48,7 +48,7 @@ trait WorkerProgressTrait {
                 ($status === SnapshotStatusType::Complete->value || $status === SnapshotStatusType::Failed->value) ? $now : null,
                 $error, $table,
             ));
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             // Non-fatal
         }
     }

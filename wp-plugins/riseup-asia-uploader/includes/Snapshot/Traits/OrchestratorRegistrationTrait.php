@@ -26,7 +26,7 @@ trait OrchestratorRegistrationTrait {
             $dir_size = $this->getDirectorySize($snapshotDir);
 
             return $this->insertSnapshotRecord($pdo, $sequence, $snapshotDir, $scope, $tables_json, $workerResult, $dir_size);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to register snapshot', array('error' => $e->getMessage()));
             return false;
         }

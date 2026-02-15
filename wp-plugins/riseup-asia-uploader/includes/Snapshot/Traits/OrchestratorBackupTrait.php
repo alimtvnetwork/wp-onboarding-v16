@@ -59,7 +59,7 @@ trait OrchestratorBackupTrait {
                 'path' => $worker_result['path'], 'total_tables' => $worker_result['total_tables'] ?? null,
                 'pool_size' => $worker_result['pool_size'] ?? null, 'status' => $worker_result['status'] ?? null,
             );
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->buildExceptionResult($e, 'async_orchestration');
         }
     }
@@ -76,7 +76,7 @@ trait OrchestratorBackupTrait {
             $context['duration'] = microtime(true) - $start_time;
             $context['errors'] = $worker_result['errors'] ?? array();
             return $context;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->buildExceptionResult($e, 'sync_orchestration');
         }
     }
@@ -128,7 +128,7 @@ trait OrchestratorBackupTrait {
                 'master' => basename($master_dir), 'tables_changed' => $result['tables_changed'] ?? 0, 'total_new_rows' => $result['total_new_rows'] ?? 0,
             ));
             return $result;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->buildExceptionResult($e, 'incremental_orchestration');
         }
     }

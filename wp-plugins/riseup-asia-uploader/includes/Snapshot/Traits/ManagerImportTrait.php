@@ -42,7 +42,7 @@ trait ManagerImportTrait {
 
             $this->deleteDirectory($tempDir);
             return $result;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             if (RiseupPathUtils::dirExists($tempDir)) {
                 $this->deleteDirectory($tempDir);
             }
