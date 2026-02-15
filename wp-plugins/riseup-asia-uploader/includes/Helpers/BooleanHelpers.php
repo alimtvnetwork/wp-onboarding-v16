@@ -14,15 +14,13 @@ if (!defined('ABSPATH')) {
 
 // Load trait files
 require_once __DIR__ . '/Traits/BooleanDomainTrait.php';
-require_once __DIR__ . '/Traits/BooleanValueTrait.php';
 
 /**
  * Class RiseupBooleanHelpers
  *
- * Centralized boolean check functions that return positive values.
+ * Centralized boolean check functions for domain-specific guards.
  */
 class RiseupBooleanHelpers {
 
     use BooleanDomainTrait;
-    use BooleanValueTrait;
 }
