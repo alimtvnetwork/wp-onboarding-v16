@@ -18,11 +18,8 @@ trait SnapshotExportHandlerTrait {
 
     /**
      * Handle exporting a snapshot as ZIP.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Response.
      */
-    public function handleExportSnapshot($request) {
+    public function handleExportSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
@@ -71,11 +68,8 @@ trait SnapshotExportHandlerTrait {
 
     /**
      * Handle ZIP download request.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Response.
      */
-    public function handleSnapshotDownload($request) {
+    public function handleSnapshotDownload(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $snapshotId = isset($body['snapshot_id']) ? (int) $body['snapshot_id'] : 0;

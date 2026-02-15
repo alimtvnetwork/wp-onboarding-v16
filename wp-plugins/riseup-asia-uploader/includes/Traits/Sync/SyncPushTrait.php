@@ -20,7 +20,7 @@ use RiseupAsia\Enums\TriggerSourceType;
 trait SyncPushTrait
 {
     /** Handle sync push endpoint. */
-    public function handleSyncPush($request) {
+    public function handleSyncPush(WP_REST_Request $request): WP_REST_Response {
         $body = $request->get_json_params();
         $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : '';
         $files = isset($body['files']) ? $body['files'] : array();
@@ -64,7 +64,7 @@ trait SyncPushTrait
     }
 
     /** Process a single file in the sync push operation. */
-    private function processSyncFile(array $file, string $plugin_dir, string $slug, $ignore): array {
+    private function processSyncFile(array $file, string $plugin_dir, string $slug, ?RiseupUploadIgnore $ignore): array {
         $path   = isset($file['path']) ? $file['path'] : '';
         $action = isset($file['action']) ? $file['action'] : '';
 
@@ -78,7 +78,7 @@ trait SyncPushTrait
     }
 
     /** Validate sync file prerequisites. */
-    private function guardSyncFile(string $path, string $action, string $plugin_dir, $ignore): ?array {
+    private function guardSyncFile(string $path, string $action, string $plugin_dir, ?RiseupUploadIgnore $ignore): ?array {
         if (empty($path) || empty($action)) {
             return array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
         }
@@ -155,7 +155,7 @@ trait SyncPushTrait
     }
 
     /** Remove empty parent directories up to the plugin root. */
-    private function cleanEmptyParentDirs(string $filepath, string $stop_dir) {
+    private function cleanEmptyParentDirs(string $filepath, string $stop_dir): void {
         $parent = dirname($filepath);
         while ($parent !== $stop_dir && is_dir($parent) && count(scandir($parent)) <= 2) {
             rmdir($parent);
@@ -178,7 +178,7 @@ trait SyncPushTrait
     }
 
     /** Log the completion of a sync push operation. */
-    private function logSyncCompletion(string $slug, array $counters) {
+    private function logSyncCompletion(string $slug, array $counters): void {
         if (!$this->db) {
             return;
         }

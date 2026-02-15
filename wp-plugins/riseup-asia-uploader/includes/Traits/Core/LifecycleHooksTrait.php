@@ -21,11 +21,8 @@ trait LifecycleHooksTrait
 {
     /**
      * Handle WordPress core activated_plugin hook.
-     *
-     * @param string $plugin       Plugin file path relative to plugins directory.
-     * @param bool   $networkWide  Whether activated for the entire network.
      */
-    public function onPluginActivated($plugin, $networkWide = false) {
+    public function onPluginActivated(string $plugin, bool $networkWide = false): void {
         $this->logLifecycleEvent(ActionType::Enable->value, $plugin, 'activated_plugin', array(
             'network_wide' => $networkWide,
         ));
@@ -33,11 +30,8 @@ trait LifecycleHooksTrait
 
     /**
      * Handle WordPress core deactivated_plugin hook.
-     *
-     * @param string $plugin               Plugin file path relative to plugins directory.
-     * @param bool   $networkDeactivating   Whether deactivating across the network.
      */
-    public function onPluginDeactivated($plugin, $networkDeactivating = false) {
+    public function onPluginDeactivated(string $plugin, bool $networkDeactivating = false): void {
         $this->logLifecycleEvent(ActionType::Disable->value, $plugin, 'deactivated_plugin', array(
             'network_deactivating' => $networkDeactivating,
         ));
@@ -45,11 +39,8 @@ trait LifecycleHooksTrait
 
     /**
      * Handle WordPress core deleted_plugin hook.
-     *
-     * @param string $plugin  Plugin file path relative to plugins directory.
-     * @param bool   $isDeleted Whether the plugin was successfully deleted.
      */
-    public function onPluginDeleted($plugin, $isDeleted = true) {
+    public function onPluginDeleted(string $plugin, bool $isDeleted = true): void {
         if (!$isDeleted) {
             return;
         }
@@ -59,11 +50,6 @@ trait LifecycleHooksTrait
 
     /**
      * Log a plugin lifecycle event with trigger source detection.
-     *
-     * @param string $action     Action constant (enable/disable/delete).
-     * @param string $plugin     Plugin file path.
-     * @param string $hookSource WordPress hook name.
-     * @param array  $extra      Additional context fields.
      */
     private function logLifecycleEvent(string $action, string $plugin, string $hookSource, array $extra) {
         if ($this->isRestRequest()) {
@@ -95,8 +81,6 @@ trait LifecycleHooksTrait
 
     /**
      * Detect the source that triggered the current action.
-     *
-     * @return string One of the TRIGGERED_BY_* constants.
      */
     private function detectTriggerSource(): string {
         if (defined('WP_CLI') && WP_CLI) {
@@ -116,10 +100,8 @@ trait LifecycleHooksTrait
 
     /**
      * Check if the current request is a REST API request.
-     *
-     * @return bool True if REST request.
      */
-    private function isRestRequest() {
+    private function isRestRequest(): bool {
         if (defined('REST_REQUEST') && REST_REQUEST) {
             return true;
         }
@@ -133,11 +115,8 @@ trait LifecycleHooksTrait
 
     /**
      * Extract plugin slug from full plugin file path.
-     *
-     * @param string $pluginFile Plugin file path (e.g., "akismet/akismet.php").
-     * @return string Plugin slug.
      */
-    private function extractPluginSlug($pluginFile) {
+    private function extractPluginSlug(string $pluginFile): string {
         if (strpos($pluginFile, '/') !== false) {
             $parts = explode('/', $pluginFile);
             return $parts[0];

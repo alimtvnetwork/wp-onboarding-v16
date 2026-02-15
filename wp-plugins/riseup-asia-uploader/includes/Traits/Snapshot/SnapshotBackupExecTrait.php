@@ -16,7 +16,7 @@ use RiseupAsia\Enums\StatusType;
 trait SnapshotBackupExecTrait {
 
     /** Handle full end-to-end backup. */
-    public function handleFullBackup($request) {
+    public function handleFullBackup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $this->logBackupInitiated(ActionType::SnapshotFullBackup->value, $body);
@@ -30,7 +30,7 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Handle incremental backup. */
-    public function handleIncrementalBackup($request) {
+    public function handleIncrementalBackup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $this->logBackupInitiated(ActionType::SnapshotIncremental->value, $body);
@@ -55,7 +55,7 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Create the orchestrator for full backup. */
-    private function createFullBackupOrchestrator() {
+    private function createFullBackupOrchestrator(): RiseupSnapshotOrchestrator {
         $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
         return RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
     }
@@ -91,7 +91,7 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Resolve the master directory for an incremental backup. */
-    private function resolveIncrementalMasterDir(array $body) {
+    private function resolveIncrementalMasterDir(array $body): string|WP_REST_Response {
         $incremental = $this->createIncrementalBackup();
 
         $master_dir = $body['master_dir'] ?? null;
@@ -109,7 +109,7 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Create an IncrementalBackup instance. */
-    private function createIncrementalBackup() {
+    private function createIncrementalBackup(): RiseupIncrementalBackup {
         $rootDb = RiseupRootDb::getInstance($this->fileLogger, RiseupDependencyAnalyzer::getInstance($this->fileLogger));
         return RiseupIncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
     }

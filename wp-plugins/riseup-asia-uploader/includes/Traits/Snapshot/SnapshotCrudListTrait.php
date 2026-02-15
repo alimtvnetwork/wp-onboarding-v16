@@ -14,11 +14,8 @@ trait SnapshotCrudListTrait {
 
     /**
      * Handle listing snapshots.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Response.
      */
-    public function handleListSnapshots($request) {
+    public function handleListSnapshots(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $limit = (int) ($request->get_param('limit') ?: 50);
             $offset = (int) ($request->get_param('offset') ?: 0);
@@ -36,11 +33,8 @@ trait SnapshotCrudListTrait {
 
     /**
      * Handle getting a single snapshot.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Response.
      */
-    public function handleGetSnapshot($request) {
+    public function handleGetSnapshot(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
@@ -65,11 +59,8 @@ trait SnapshotCrudListTrait {
 
     /**
      * Alias for handleGetSnapshot.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return WP_REST_Response Response.
      */
-    public function handleSnapshotInfo($request) {
+    public function handleSnapshotInfo(WP_REST_Request $request): WP_REST_Response {
         return $this->handleGetSnapshot($request);
     }
 }

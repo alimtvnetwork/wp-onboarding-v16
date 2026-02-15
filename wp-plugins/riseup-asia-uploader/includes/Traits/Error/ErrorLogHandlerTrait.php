@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 trait ErrorLogHandlerTrait {
 
     /** Handle error-logs endpoint. */
-    public function handleErrorLogs($request) {
+    public function handleErrorLogs(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error logs endpoint called');
             $settings = $this->resolveLogSettings($request);
@@ -33,7 +33,7 @@ trait ErrorLogHandlerTrait {
     }
 
     /** Resolve log retrieval settings from admin defaults and query param overrides. */
-    private function resolveLogSettings($request): array {
+    private function resolveLogSettings(WP_REST_Request $request): array {
         $settings     = RiseupAdmin::get_settings();
         $logSettings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
 
@@ -57,7 +57,7 @@ trait ErrorLogHandlerTrait {
     }
 
     /** Read the last N lines of a log file. */
-    private function readLogTail($filePath, $maxLines) {
+    private function readLogTail(string $filePath, int $maxLines): array {
         $result = array(
             'exists' => false, 'file' => basename($filePath), 'path' => $filePath,
             'content' => '', 'lines' => 0, 'total_size' => 0, 'truncated' => false,

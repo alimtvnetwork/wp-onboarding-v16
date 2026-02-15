@@ -14,7 +14,7 @@ use RiseupAsia\Enums\HttpStatusType;
 trait ErrorSessionHandlerTrait {
 
     /** Handle error-sessions endpoint. */
-    public function handleErrorSessions($request) {
+    public function handleErrorSessions(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error sessions endpoint called');
 
@@ -46,7 +46,7 @@ trait ErrorSessionHandlerTrait {
     }
 
     /** Build query parameters for error sessions listing. */
-    private function buildErrorSessionQuery($request): array {
+    private function buildErrorSessionQuery(WP_REST_Request $request): array {
         $level    = sanitize_text_field($request->get_param('level') ?: '');
         $search   = sanitize_text_field($request->get_param('search') ?: '');
         $since_id = (int) ($request->get_param('since_id') ?: 0);
@@ -99,14 +99,14 @@ trait ErrorSessionHandlerTrait {
     }
 
     /** Parse a JSON context string safely. */
-    private function parseContextJson(string $json) {
+    private function parseContextJson(string $json): mixed {
         if (empty($json)) { return null; }
         $decoded = json_decode($json, true);
         return (json_last_error() === JSON_ERROR_NONE) ? $decoded : $json;
     }
 
     /** Count errors with id > last_seen_id. */
-    private function countUnseenErrors($pdo, $last_seen_id) {
+    private function countUnseenErrors(PDO $pdo, int $last_seen_id): int {
         try {
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM error_sessions WHERE id > ?');
             $stmt->execute(array($last_seen_id));
@@ -117,9 +117,9 @@ trait ErrorSessionHandlerTrait {
     }
 
     /** Parse a PHP stack trace string into structured frames. */
-    private function parseStackTraceString($trace_string) {
+    private function parseStackTraceString(string $traceString): array {
         $frames = array();
-        foreach (explode("\n", $trace_string) as $line) {
+        foreach (explode("\n", $traceString) as $line) {
             $frame = $this->parseTraceFrame(trim($line));
             if ($frame !== null) {
                 $frames[] = $frame;
