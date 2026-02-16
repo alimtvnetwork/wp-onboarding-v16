@@ -2,14 +2,17 @@
 /**
  * UpdraftCrudTrait — CRUD operations for UpdraftPlus snapshot provider.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\TableType;

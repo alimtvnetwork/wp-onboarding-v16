@@ -4,17 +4,20 @@
  *
  * Public trigger methods.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
 
-use RiseupAsia\Enums\HookType;
-use RiseupAsia\Enums\SnapshotModeType;
-use RiseupAsia\Enums\SnapshotScopeType;
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use Throwable;
+use RiseupAsia\Enums\HookType;
+use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotScopeType;
 
 trait SchedulerTriggerTrait {
 

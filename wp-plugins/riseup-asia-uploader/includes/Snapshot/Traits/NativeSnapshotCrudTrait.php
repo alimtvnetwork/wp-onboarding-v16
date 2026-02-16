@@ -2,14 +2,17 @@
 /**
  * NativeSnapshotCrudTrait — Snapshot delete, export, import, list, and get operations.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\TableType;

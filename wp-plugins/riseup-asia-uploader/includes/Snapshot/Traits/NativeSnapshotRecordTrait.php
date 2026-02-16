@@ -2,20 +2,22 @@
 /**
  * NativeSnapshotRecordTrait — snapshot SQLite creation and record management.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
-
-require_once __DIR__ . '/NativeSnapshotCrudTrait.php';
 
 trait NativeSnapshotRecordTrait {
 

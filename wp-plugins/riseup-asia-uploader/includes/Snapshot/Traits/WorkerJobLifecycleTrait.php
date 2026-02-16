@@ -2,10 +2,18 @@
 /**
  * WorkerJobLifecycleTrait — Job creation, status updates, batch progress, and finalization.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotJobStatusType;

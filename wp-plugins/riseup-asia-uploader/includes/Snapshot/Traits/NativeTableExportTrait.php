@@ -2,17 +2,21 @@
 /**
  * NativeTableExportTrait — MySQL-to-SQLite table export.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use PDOStatement;
+use Throwable;
+use Exception;
 use RiseupAsia\Enums\LogLevelType;
-
-require_once __DIR__ . '/NativeTableExportConvertTrait.php';
 
 trait NativeTableExportTrait {
 

@@ -2,10 +2,18 @@
 /**
  * ManagerSettingsTrait — Snapshot settings read/write.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginSelectionType;
 use RiseupAsia\Enums\SnapshotFrequencyType;

@@ -4,13 +4,17 @@
  *
  * Dependency graph construction, topological sort, table inventory, and metadata.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.15.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use PDO;
 
 trait RestoreGraphTrait {
 

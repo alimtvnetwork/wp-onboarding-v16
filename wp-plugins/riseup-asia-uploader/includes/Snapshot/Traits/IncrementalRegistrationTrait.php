@@ -2,10 +2,20 @@
 /**
  * IncrementalRegistrationTrait — Snapshot registration and ZIP invalidation.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use Throwable;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotStatusType;
@@ -45,7 +55,7 @@ trait IncrementalRegistrationTrait {
     }
 
     private function calculateDirectorySize(string $dir): int {
-        if (RiseupBooleanHelpers::isDirMissing($dir)) {
+        if (\RiseupBooleanHelpers::isDirMissing($dir)) {
             return 0;
         }
 
@@ -106,8 +116,7 @@ trait IncrementalRegistrationTrait {
     }
 
     private function doInvalidateZip(array $parent, string $masterDir): void {
-        require_once dirname(__FILE__) . '/../SnapshotExporter.php';
-        $exporter = RiseupSnapshotExporter::getInstance($this->logger, $this->db);
+        $exporter = \RiseupSnapshotExporter::getInstance($this->logger, $this->db);
         if (!$exporter) {
             return;
         }

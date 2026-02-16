@@ -4,12 +4,15 @@
  *
  * Logic delegated to WorkerJobLifecycleTrait and WorkerJobProgressTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
-require_once __DIR__ . '/WorkerJobLifecycleTrait.php';
-require_once __DIR__ . '/WorkerJobProgressTrait.php';
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 trait WorkerJobTrait {
     use WorkerJobLifecycleTrait;

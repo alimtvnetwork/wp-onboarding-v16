@@ -6,6 +6,8 @@
  * @since   1.57.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -16,7 +18,7 @@ use RiseupAsia\Enums\TableType;
 
 trait ManagerCoreTrait {
 
-    public function getProvider(): ?RiseupSnapshotProviderInterface {
+    public function getProvider(): ?\RiseupSnapshotProviderInterface {
         $providerId = $this->detector->getActiveProvider();
         return $this->detector->getProviderInstance($providerId, $this->logger, $this->db);
     }
