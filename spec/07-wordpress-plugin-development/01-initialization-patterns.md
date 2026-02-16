@@ -11,29 +11,28 @@ WordPress plugins are loaded during PHP's compilation phase, before WordPress co
 
 ## Safe Initialization Sequence
 
-### Phase 1: File Include (Immediate Execution)
+### Phase 1: Autoloader Registration (Immediate Execution)
 
-When WordPress includes your main plugin file, this code runs immediately:
+When WordPress includes your main plugin file, only the PSR-4 autoloader should load:
 
 ```php
 <?php
 /**
  * Plugin Name: My Plugin
  * Version: 1.0.0
+ * Requires PHP: 8.2
  */
 
-// Only define constants and include files - NO function calls
-define('MYPLUGIN_VERSION', '1.0.0');
-define('MYPLUGIN_FILE', __FILE__);
-define('MYPLUGIN_DIR', plugin_dir_path(__FILE__));
+if (!defined('ABSPATH')) {
+    exit;
+}
 
-// Include constants first - they define ALL magic strings
-require_once MYPLUGIN_DIR . 'includes/constants.php';
-
-// Include class files - they just define classes, don't instantiate
-require_once MYPLUGIN_DIR . 'includes/class-file-logger.php';
-require_once MYPLUGIN_DIR . 'includes/class-database.php';
+// PSR-4 autoloader — the ONLY require_once permitted in the entry file
+require_once __DIR__ . '/includes/Autoloader.php';
 ```
+
+> **Important:** No manual `require_once` for individual classes or `DependencyLoader::loadManifest()` calls.
+> The autoloader maps the `RiseupAsia\` namespace to `includes/` and resolves all classes on demand.
 
 ### Phase 2: Class Instantiation (Still Early)
 
@@ -265,96 +264,43 @@ class DB_Logger {
 }
 ```
 
-## Complete Bootstrap Template
+## Complete Bootstrap Template (PSR-4)
 
 ```php
 <?php
 /**
  * Plugin Name: My Plugin
- * Plugin URI: https://example.com
- * Description: Description here
  * Version: 1.0.0
- * Author: Author Name
- * Author URI: https://author.com
- * Requires at least: 5.6
- * Requires PHP: 7.4
+ * Requires PHP: 8.2
  */
 
-// Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Phase 1: Define constants (no function calls)
-define('MYPLUGIN_VERSION', '1.0.0');
-define('MYPLUGIN_FILE', __FILE__);
-define('MYPLUGIN_DIR', plugin_dir_path(__FILE__));
+use RiseupAsia\Enums\HookType;
+use RiseupAsia\Activation\ActivationHandler;
+use RiseupAsia\Core\Plugin;
+use RiseupAsia\Admin\Admin;
 
-// Include all class definitions
-require_once MYPLUGIN_DIR . 'includes/constants.php';
-require_once MYPLUGIN_DIR . 'includes/class-file-logger.php';
-require_once MYPLUGIN_DIR . 'includes/class-database.php';
-require_once MYPLUGIN_DIR . 'includes/class-logger.php';
+// PSR-4 AUTOLOADER — all RiseupAsia\ classes resolve automatically
+require_once __DIR__ . '/includes/Autoloader.php';
 
-// Phase 2: Main plugin class with safe constructor
-class My_Plugin {
-    private static $instance = null;
-    private $file_logger;
-    private $db;
-    private $logger;
-    
-    public static function get_instance() {
-        if (self::$instance === null) {
-            self::$instance = new self();
-        }
+register_activation_hook(__FILE__, [ActivationHandler::class, 'activate']);
 
-        return self::$instance;
-    }
-    
-    private function __construct() {
-        // Only create objects - no WP function calls
-        $this->file_logger = new File_Logger();
-        // DB and Logger are created later
-    }
-    
-    public function init() {
-        // Phase 3: Register hooks — use HookEnum constants
-        add_action(HookEnum::PLUGINS_LOADED, [$this, 'on_plugins_loaded'], 5);
-        add_action(HookEnum::REST_API_INIT, [$this, 'register_routes']);
-    }
-    
-    public function on_plugins_loaded() {
-        // Phase 4: NOW safe for WordPress functions
-        $this->file_logger->log('Plugin loading', __FILE__, __LINE__);
-        
-        try {
-            $this->db = My_Database::get_instance();
-            $this->db->init();  // Run migrations
-            
-            $this->logger = new My_Logger($this->file_logger);
-            
-            $this->file_logger->log('Plugin loaded successfully', __FILE__, __LINE__);
-        } catch (\Throwable $e) {
-            $this->file_logger->error('Plugin init failed: ' . $e->getMessage(), __FILE__, __LINE__);
-        }
-    }
-    
-    public function register_routes() {
-        // Phase 6: Register REST endpoints
-        $this->file_logger->log('Registering REST routes', __FILE__, __LINE__);
-        
-        register_rest_route(MYPLUGIN_API_NAMESPACE, '/health', [
-            'methods' => HttpMethodEnum::GET,
-            'callback' => [$this, 'health_check'],
-            'permission_callback' => '__return_true',
-        ]);
+function riseup_asia_init(): void {
+    Plugin::getInstance();
+
+    if (is_admin()) {
+        Admin::getInstance();
     }
 }
 
-// Start the plugin
-$plugin = My_Plugin::get_instance();
-$plugin->init();
+add_action(HookType::PluginsLoaded->value, 'riseup_asia_init');
 ```
+
+> **Note:** No `DependencyLoader::loadManifest()`, no manual `require_once` for classes.
+> All `RiseupAsia\` classes are resolved by the autoloader on first use.
 
 ## Common Pitfalls
 
