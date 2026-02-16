@@ -97,5 +97,3 @@ class Admin {
         add_action(HookType::ajax('riseup_clear_log_file'), array($this, 'ajaxClearLogFile'));
     }
 }
-
-class_alias(Admin::class, 'RiseupAdmin');

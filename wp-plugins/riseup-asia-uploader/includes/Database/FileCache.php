@@ -49,5 +49,3 @@ class FileCache {
         $this->db = $db;
     }
 }
-
-class_alias(FileCache::class, 'RiseupFileCache');

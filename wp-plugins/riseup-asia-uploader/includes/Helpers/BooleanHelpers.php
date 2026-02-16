@@ -17,5 +17,3 @@ use RiseupAsia\Helpers\Traits\BooleanDomainTrait;
 class BooleanHelpers {
     use BooleanDomainTrait;
 }
-
-class_alias(BooleanHelpers::class, 'RiseupBooleanHelpers');

@@ -43,5 +43,3 @@ class DependencyAnalyzer {
         $this->logger = $logger;
     }
 }
-
-class_alias(DependencyAnalyzer::class, 'RiseupDependencyAnalyzer');

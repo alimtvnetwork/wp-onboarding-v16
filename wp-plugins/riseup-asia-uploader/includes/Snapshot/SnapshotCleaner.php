@@ -131,5 +131,3 @@ class SnapshotCleaner {
         return $results;
     }
 }
-
-class_alias(SnapshotCleaner::class, 'RiseupSnapshotCleaner');

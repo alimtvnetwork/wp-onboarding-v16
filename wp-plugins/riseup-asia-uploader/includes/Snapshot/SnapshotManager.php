@@ -41,5 +41,3 @@ class SnapshotManager {
         $this->wpdb = $wpdb;
     }
 }
-
-class_alias(SnapshotManager::class, 'RiseupSnapshotManager');

@@ -46,6 +46,3 @@ class Logger {
         $this->fileLogger->info('Transaction logger initialized');
     }
 }
-
-// Backward compatibility alias for global namespace consumers
-\class_alias(Logger::class, 'RiseupLogger');

@@ -75,5 +75,3 @@ class Database {
         $this->fileLogger->info('Database constructor called');
     }
 }
-
-class_alias(Database::class, 'RiseupDatabase');

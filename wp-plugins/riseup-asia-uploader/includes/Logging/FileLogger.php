@@ -63,6 +63,3 @@ class FileLogger {
     private function __construct() {
     }
 }
-
-// Backward compatibility alias for global namespace consumers
-\class_alias(FileLogger::class, 'RiseupFileLogger');

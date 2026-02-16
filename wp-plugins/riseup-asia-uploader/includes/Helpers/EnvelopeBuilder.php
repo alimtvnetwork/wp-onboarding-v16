@@ -38,5 +38,3 @@ class EnvelopeBuilder {
     private $errors = null;
     private $methods_stack = null;
 }
-
-class_alias(EnvelopeBuilder::class, 'RiseupEnvelopeBuilder');

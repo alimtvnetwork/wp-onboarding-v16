@@ -70,6 +70,3 @@ class ErrorResponse {
         return false;
     }
 }
-
-// Backward compatibility alias for global namespace consumers
-\class_alias(ErrorResponse::class, 'ErrorResponse');

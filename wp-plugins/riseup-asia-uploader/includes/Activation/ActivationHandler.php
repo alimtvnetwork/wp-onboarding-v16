@@ -132,5 +132,3 @@ class ActivationHandler
         }
     }
 }
-
-class_alias(ActivationHandler::class, 'RiseupActivationHandler');

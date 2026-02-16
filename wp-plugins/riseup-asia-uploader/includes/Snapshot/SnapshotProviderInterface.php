@@ -36,5 +36,3 @@ abstract class SnapshotProviderInterface {
     abstract public function listSnapshots(int $limit = 50, int $offset = 0): array;
     abstract public function getAvailableTables(): array;
 }
-
-class_alias(SnapshotProviderInterface::class, 'RiseupSnapshotProviderInterface');

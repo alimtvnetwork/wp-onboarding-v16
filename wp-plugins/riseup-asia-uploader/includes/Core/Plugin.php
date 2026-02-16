@@ -121,5 +121,3 @@ class Plugin {
         }
     }
 }
-
-class_alias(Plugin::class, 'RiseupAsia');

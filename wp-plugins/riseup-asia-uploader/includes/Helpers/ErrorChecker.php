@@ -47,5 +47,3 @@ class ErrorChecker
         return BooleanHelpers::isClassMissing('PDO') || BooleanHelpers::isExtensionMissing('pdo_sqlite');
     }
 }
-
-class_alias(ErrorChecker::class, 'ErrorChecker');

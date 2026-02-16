@@ -217,7 +217,7 @@ All 28 `class_alias()` shims are retained for backward compatibility. **Zero int
 | **Total alias references migrated** | ~800+ |
 | **Files touched across all batches** | 65+ |
 | **Distinct legacy aliases eliminated** | 25 |
-| **Backward-compat `class_alias()` shims retained** | 36 (33 original + 3 newly namespaced globals) |
+| **Backward-compat `class_alias()` shims retained** | **0** (all 36 removed) |
 | **Internal alias references remaining** | **0** |
 | **Global-namespace classes remaining** | **0** |
 

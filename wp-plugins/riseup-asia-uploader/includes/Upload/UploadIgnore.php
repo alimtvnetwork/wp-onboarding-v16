@@ -110,5 +110,3 @@ class UploadIgnore {
         return $instance;
     }
 }
-
-class_alias(UploadIgnore::class, 'RiseupUploadIgnore');

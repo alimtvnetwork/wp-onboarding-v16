@@ -36,5 +36,3 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
         );
     }
 }
-
-class_alias(SnapshotProviderNative::class, 'RiseupSnapshotProviderNative');

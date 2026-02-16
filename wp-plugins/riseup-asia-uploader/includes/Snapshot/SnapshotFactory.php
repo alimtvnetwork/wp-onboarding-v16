@@ -70,5 +70,3 @@ class SnapshotFactory {
         self::$cleaner = null;
     }
 }
-
-class_alias(SnapshotFactory::class, 'RiseupSnapshotFactory');

@@ -65,5 +65,3 @@ class SnapshotScheduler {
     public function executeCronIncremental($args) { $this->executeCronJob('cron incremental backup', fn() => $this->runCronIncremental($args)); }
     public function executeCleanup() { $this->executeCronJob('snapshot cleanup', fn() => $this->runCleanup()); }
 }
-
-class_alias(SnapshotScheduler::class, 'RiseupSnapshotScheduler');

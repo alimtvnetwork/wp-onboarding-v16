@@ -36,5 +36,3 @@ class SnapshotProviderUpdraft extends SnapshotProviderInterface {
         );
     }
 }
-
-class_alias(SnapshotProviderUpdraft::class, 'RiseupSnapshotProviderUpdraft');
