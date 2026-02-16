@@ -4,9 +4,11 @@
  *
  * Shell trait — file validation delegated to ImportExecutionFileTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -17,11 +19,10 @@ use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
-
-require_once __DIR__ . '/ImportExecutionFileTrait.php';
+use RiseupAsia\Helpers\PathUtils;
+use Exception;
 
 trait ImportExecutionTrait {
-
     use ImportExecutionFileTrait;
 
     /** Import a per-table snapshot (with a-root.db). */

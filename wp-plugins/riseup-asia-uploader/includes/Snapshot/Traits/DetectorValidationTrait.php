@@ -2,9 +2,11 @@
 /**
  * DetectorValidationTrait — settings validation and sanitization helpers.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait DetectorValidationTrait {
 

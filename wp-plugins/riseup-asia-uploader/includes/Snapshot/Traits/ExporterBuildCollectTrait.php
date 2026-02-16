@@ -2,11 +2,13 @@
 /**
  * ExporterBuildCollectTrait — File collection and incremental query for ZIP exports.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
 
 declare(strict_types=1);
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;

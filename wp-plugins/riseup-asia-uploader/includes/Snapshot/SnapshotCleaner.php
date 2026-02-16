@@ -2,30 +2,27 @@
 /**
  * Riseup Asia Uploader - Snapshot Cleaner
  *
- * Consolidated cleanup engine handling retention policy enforcement,
- * orphan file cleanup, stuck snapshot handling, and storage management.
- * Supports dry-run mode, master snapshot protection, and audit trail logging.
- *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Snapshot\Traits\CleanerRetentionTrait;
+use RiseupAsia\Snapshot\Traits\CleanerDeletionTrait;
+use RiseupAsia\Snapshot\Traits\CleanerOrphanTrait;
+use RiseupAsia\Snapshot\Traits\CleanerStorageTrait;
+use RiseupAsia\Snapshot\Traits\CleanerUtilsTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\FileLogger;
 
-require_once dirname(__FILE__) . '/Traits/CleanerRetentionTrait.php';
-require_once dirname(__FILE__) . '/Traits/CleanerDeletionTrait.php';
-require_once dirname(__FILE__) . '/Traits/CleanerOrphanTrait.php';
-require_once dirname(__FILE__) . '/Traits/CleanerStorageTrait.php';
-require_once dirname(__FILE__) . '/Traits/CleanerUtilsTrait.php';
-
-/**
- * Snapshot Cleaner class.
- */
-class RiseupSnapshotCleaner {
+class SnapshotCleaner {
 
     use CleanerRetentionTrait;
     use CleanerDeletionTrait;
@@ -33,10 +30,10 @@ class RiseupSnapshotCleaner {
     use CleanerStorageTrait;
     use CleanerUtilsTrait;
 
-    private RiseupFileLogger $logger;
-    private RiseupDatabase $db;
+    private FileLogger $logger;
+    private Database $db;
 
-    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
+    public function __construct(FileLogger $logger, Database $db) {
         $this->logger = $logger;
         $this->db = $db;
     }
@@ -70,7 +67,7 @@ class RiseupSnapshotCleaner {
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
             'deleted_total' => $totalDeleted,
-            'space_freed'   => RiseupPathUtils::formatBytes($results['space_freed_bytes']),
+            'space_freed'   => \RiseupPathUtils::formatBytes($results['space_freed_bytes']),
             'duration'      => $results['duration'],
             'dry_run'       => $dryRun,
         ));
@@ -103,7 +100,7 @@ class RiseupSnapshotCleaner {
                 $results['retention'] = $retention;
                 $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
             }
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $results['errors'][] = 'Retention cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array('error' => $e->getMessage()));
         }
@@ -115,7 +112,7 @@ class RiseupSnapshotCleaner {
             $orphans = $this->cleanupOrphanFiles($dryRun);
             $results['orphans'] = $orphans;
             $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $results['errors'][] = 'Orphan cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array('error' => $e->getMessage()));
         }
@@ -126,10 +123,12 @@ class RiseupSnapshotCleaner {
         try {
             $stuck = $this->cleanupStuckSnapshots($dryRun);
             $results['stuck'] = $stuck;
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array('error' => $e->getMessage()));
         }
         return $results;
     }
 }
+
+class_alias(SnapshotCleaner::class, 'RiseupSnapshotCleaner');

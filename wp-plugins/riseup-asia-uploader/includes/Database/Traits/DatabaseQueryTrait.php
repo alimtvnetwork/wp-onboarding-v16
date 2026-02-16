@@ -5,16 +5,15 @@
  * Transaction logging, querying, filtering, statistics, and cleanup.
  * Logic delegated to sub-traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Database\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/DatabaseQueryLogTrait.php';
-require_once __DIR__ . '/DatabaseQuerySearchTrait.php';
 
 trait DatabaseQueryTrait {
     use DatabaseQueryLogTrait;

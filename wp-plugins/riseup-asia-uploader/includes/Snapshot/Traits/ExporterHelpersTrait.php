@@ -2,9 +2,11 @@
 /**
  * ExporterHelpersTrait — helper methods for snapshot exporter.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -15,6 +17,7 @@ use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ExporterHelpersTrait {
 

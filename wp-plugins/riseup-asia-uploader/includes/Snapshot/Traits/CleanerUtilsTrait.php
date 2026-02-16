@@ -4,9 +4,11 @@
  *
  * Settings, filesystem helpers, audit trail, and logging.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -18,6 +20,8 @@ use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\TriggerSourceType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait CleanerUtilsTrait {
 

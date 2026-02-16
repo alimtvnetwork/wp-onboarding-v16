@@ -1,33 +1,19 @@
 <?php
-/**
- * Riseup Asia Uploader - Snapshot Worker
- *
- * Exports MySQL tables to individual SQLite files.
- * Shell class — logic delegated to domain-specific traits.
- *
- * @package RiseupAsiaUploader
- * @since   1.12.0
- */
+namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) { exit; }
 
-require_once dirname(__FILE__) . '/SqliteSchemaConverter.php';
+use RiseupAsia\Snapshot\Traits\WorkerExecuteTrait;
+use RiseupAsia\Snapshot\Traits\WorkerSetupTrait;
+use RiseupAsia\Snapshot\Traits\WorkerBatchTrait;
+use RiseupAsia\Snapshot\Traits\WorkerJobTrait;
+use RiseupAsia\Snapshot\Traits\WorkerTableExportTrait;
+use RiseupAsia\Snapshot\Traits\WorkerProgressTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Database\RootDb;
+use RiseupAsia\Logging\FileLogger;
 
-// Load trait files
-require_once __DIR__ . '/Traits/WorkerExecuteTrait.php';
-require_once __DIR__ . '/Traits/WorkerSetupTrait.php';
-require_once __DIR__ . '/Traits/WorkerBatchTrait.php';
-require_once __DIR__ . '/Traits/WorkerJobTrait.php';
-require_once __DIR__ . '/Traits/WorkerTableExportTrait.php';
-require_once __DIR__ . '/Traits/WorkerProgressTrait.php';
-
-/**
- * Snapshot Worker class.
- */
-class RiseupSnapshotWorker {
-
+class SnapshotWorker {
     use WorkerExecuteTrait;
     use WorkerSetupTrait;
     use WorkerBatchTrait;
@@ -35,33 +21,23 @@ class RiseupSnapshotWorker {
     use WorkerTableExportTrait;
     use WorkerProgressTrait;
 
-    private RiseupFileLogger $logger;
-    private RiseupDatabase $db;
-    private RiseupRootDb $rootDb;
-    private RiseupDependencyAnalyzer $analyzer;
+    private FileLogger $logger;
+    private Database $db;
+    private RootDb $rootDb;
+    private DependencyAnalyzer $analyzer;
     private \wpdb $wpdb;
     private int $batchSize;
     private int $poolSize;
     private static ?self $instance = null;
 
-    public static function getInstance(
-        ?RiseupFileLogger $logger = null,
-        ?RiseupDatabase $db = null,
-        ?RiseupRootDb $rootDb = null,
-        ?RiseupDependencyAnalyzer $analyzer = null
-    ): self {
+    public static function getInstance(?FileLogger $logger = null, ?Database $db = null, ?RootDb $rootDb = null, ?DependencyAnalyzer $analyzer = null): self {
         if (self::$instance === null && $logger && $db && $rootDb && $analyzer) {
             self::$instance = new self($logger, $db, $rootDb, $analyzer);
         }
         return self::$instance;
     }
 
-    private function __construct(
-        RiseupFileLogger $logger,
-        RiseupDatabase $db,
-        RiseupRootDb $rootDb,
-        RiseupDependencyAnalyzer $analyzer
-    ) {
+    private function __construct(FileLogger $logger, Database $db, RootDb $rootDb, DependencyAnalyzer $analyzer) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
@@ -76,7 +52,7 @@ class RiseupSnapshotWorker {
         $this->poolSize = max(SNAPSHOT_WORKER_POOL_MIN, min(SNAPSHOT_WORKER_POOL_MAX, $size));
     }
 
-    public function getPoolSize(): int {
-        return $this->poolSize;
-    }
+    public function getPoolSize(): int { return $this->poolSize; }
 }
+
+class_alias(SnapshotWorker::class, 'RiseupSnapshotWorker');

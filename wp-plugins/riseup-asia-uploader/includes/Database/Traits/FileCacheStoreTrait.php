@@ -6,6 +6,8 @@
  * @since   1.57.0
  */
 
+namespace RiseupAsia\Database\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }

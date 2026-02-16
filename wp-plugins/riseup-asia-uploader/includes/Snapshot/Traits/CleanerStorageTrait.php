@@ -2,9 +2,11 @@
 /**
  * CleanerStorageTrait — Storage statistics and cleanup estimation.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -14,6 +16,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\PathUtils;
 
 trait CleanerStorageTrait {
 

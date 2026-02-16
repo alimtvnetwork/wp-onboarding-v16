@@ -2,11 +2,17 @@
 /**
  * IncrementalCoreTrait — Preparation, export orchestration, and finalization for incremental backups.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.14.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\BooleanHelpers;
+use PDO;
+use Throwable;
 
 trait IncrementalCoreTrait {
 

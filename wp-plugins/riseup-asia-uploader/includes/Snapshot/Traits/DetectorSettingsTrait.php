@@ -2,9 +2,11 @@
 /**
  * DetectorSettingsTrait — provider selection and settings management.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -14,11 +16,12 @@ use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
-
-require_once __DIR__ . '/DetectorValidationTrait.php';
+use RiseupAsia\Snapshot\SnapshotProviderWPReset;
+use RiseupAsia\Snapshot\SnapshotProviderUpdraft;
+use RiseupAsia\Snapshot\SnapshotProviderNative;
+use RiseupAsia\Snapshot\SnapshotProviderInterface;
 
 trait DetectorSettingsTrait {
-
     use DetectorValidationTrait;
 
     /**

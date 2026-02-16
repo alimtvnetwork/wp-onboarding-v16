@@ -5,16 +5,15 @@
  * Schema migrations v1 through v5.
  * Logic delegated to sub-traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Database\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/DatabaseMigrationsV1V3Trait.php';
-require_once __DIR__ . '/DatabaseMigrationsV4V5Trait.php';
 
 trait DatabaseMigrationsEarlyTrait {
     use DatabaseMigrationsV1V3Trait;

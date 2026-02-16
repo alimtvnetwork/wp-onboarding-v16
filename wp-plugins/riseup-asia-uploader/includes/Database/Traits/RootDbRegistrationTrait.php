@@ -2,9 +2,11 @@
 /**
  * RootDb Registration Trait — table registration, stats, incrementals, plugins, metadata reading.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database\Traits
  * @since   1.12.0
  */
+
+namespace RiseupAsia\Database\Traits;
 
 if (!defined('ABSPATH')) {
     exit;

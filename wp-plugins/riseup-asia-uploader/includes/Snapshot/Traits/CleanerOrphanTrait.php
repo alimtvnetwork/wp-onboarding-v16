@@ -2,9 +2,11 @@
 /**
  * CleanerOrphanTrait — Orphan file cleanup and stuck/failed snapshot handling.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -13,6 +15,8 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait CleanerOrphanTrait {
 

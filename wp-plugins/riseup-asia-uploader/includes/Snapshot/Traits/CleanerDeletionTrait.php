@@ -2,9 +2,11 @@
 /**
  * CleanerDeletionTrait — Snapshot deletion with cascade support.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -12,6 +14,9 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait CleanerDeletionTrait {
 

@@ -4,40 +4,44 @@
  *
  * Shell class — logic delegated to domain-specific traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot
  * @since   1.12.0
  */
+
+namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load trait files
-require_once __DIR__ . '/Traits/AnalyzerQueryTrait.php';
-require_once __DIR__ . '/Traits/AnalyzerGraphTrait.php';
+use RiseupAsia\Snapshot\Traits\AnalyzerQueryTrait;
+use RiseupAsia\Snapshot\Traits\AnalyzerGraphTrait;
+use RiseupAsia\Logging\FileLogger;
 
 /**
  * Dependency Analyzer class.
  */
-class RiseupDependencyAnalyzer {
+class DependencyAnalyzer {
 
     use AnalyzerQueryTrait;
     use AnalyzerGraphTrait;
 
     private \wpdb $wpdb;
-    private RiseupFileLogger $logger;
+    private FileLogger $logger;
     private static ?self $instance = null;
 
-    public static function getInstance(?RiseupFileLogger $logger = null): self {
+    public static function getInstance(?FileLogger $logger = null): self {
         if (self::$instance === null && $logger) {
             self::$instance = new self($logger);
         }
         return self::$instance;
     }
 
-    private function __construct(RiseupFileLogger $logger) {
+    private function __construct(FileLogger $logger) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
     }
 }
+
+class_alias(DependencyAnalyzer::class, 'RiseupDependencyAnalyzer');

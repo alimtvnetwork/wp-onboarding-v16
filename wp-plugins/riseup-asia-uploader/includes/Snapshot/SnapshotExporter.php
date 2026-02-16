@@ -1,48 +1,34 @@
 <?php
-/**
- * Riseup Asia Uploader - Snapshot ZIP Exporter
- *
- * Shell class delegating to ExporterPublicApiTrait, ExporterBuildTrait,
- * and ExporterHelpersTrait.
- *
- * @package RiseupAsiaUploader
- * @since   1.57.0
- */
+namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) { exit; }
 
-require_once dirname(__FILE__) . '/Traits/ExporterPublicApiTrait.php';
-require_once dirname(__FILE__) . '/Traits/ExporterBuildTrait.php';
-require_once dirname(__FILE__) . '/Traits/ExporterHelpersTrait.php';
+use RiseupAsia\Snapshot\Traits\ExporterPublicApiTrait;
+use RiseupAsia\Snapshot\Traits\ExporterBuildTrait;
+use RiseupAsia\Snapshot\Traits\ExporterHelpersTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\FileLogger;
 
-/**
- * Snapshot ZIP Exporter.
- */
-class RiseupSnapshotExporter {
-
+class SnapshotExporter {
     use ExporterPublicApiTrait;
     use ExporterBuildTrait;
     use ExporterHelpersTrait;
 
-    private RiseupFileLogger $logger;
-    private RiseupDatabase $db;
-    private static ?RiseupSnapshotExporter $instance = null;
+    private FileLogger $logger;
+    private Database $db;
+    private static ?SnapshotExporter $instance = null;
 
-    /**
-     * Get singleton instance.
-     */
-    public static function getInstance(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null): ?static {
+    public static function getInstance(?FileLogger $logger = null, ?Database $db = null): ?static {
         if (self::$instance === null && $logger && $db) {
             self::$instance = new self($logger, $db);
         }
-
         return self::$instance;
     }
 
-    private function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
+    private function __construct(FileLogger $logger, Database $db) {
         $this->logger = $logger;
         $this->db     = $db;
     }
 }
+
+class_alias(SnapshotExporter::class, 'RiseupSnapshotExporter');

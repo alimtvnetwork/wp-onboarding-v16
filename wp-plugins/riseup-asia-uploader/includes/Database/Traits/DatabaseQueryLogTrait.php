@@ -2,13 +2,17 @@
 /**
  * DatabaseQueryLogTrait — Transaction logging and enhanced context.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Database\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TableType;
