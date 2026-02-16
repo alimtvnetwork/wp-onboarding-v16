@@ -117,32 +117,21 @@ InitHelpers::logStartupSummary($this->fileLogger);
 
 ---
 
-## 6. Dependency Loading
+## 6. Dependency Resolution
 
-Use `DependencyLoader` for structured file loading with error tracking. Foundation files (boolean helpers, init helpers, dependency loader) load raw; all others go through the manifest.
+All classes are resolved via the PSR-4 autoloader. The entry file (`riseup-asia-uploader.php`) contains a single `require_once` for `Autoloader.php` — no manual class includes or manifest loading.
 
 ```php
-use RiseupAsia\Helpers\DependencyLoader;
-
-DependencyLoader::loadManifest(array(
-    array('FileLogger',  $includes . '/Logging/FileLogger.php'),
-    array('Database',    $includes . '/Database/Database.php'),
-    // ...
-));
-
-// Log results in constructor
-DependencyLoader::logSummary($this->fileLogger);
+// PSR-4 AUTOLOADER — the only require_once in the entry file
+require_once __DIR__ . '/includes/Autoloader.php';
 ```
-
-A broken or missing file is recorded with a full stack trace and reported instead of crashing the entire plugin.
 
 ### Rules
 
-- **Never use raw `require_once`** for non-foundation files
-- Every file in the manifest gets a human-readable label
-- Missing files are logged as errors with stack traces — loading continues for remaining files
-- Use `DependencyLoader::getFailures()` to programmatically inspect failures
-- Foundation files (boolean helpers, init helpers, dependency loader itself) are the only files that load via raw `require_once`
+- **No `require_once` for classes** — the autoloader resolves all `RiseupAsia\` classes on first use
+- **No `DependencyLoader::loadManifest()`** in the entry file or `Plugin` constructor
+- Missing classes trigger a "Class not found" fatal error, caught by `FatalErrorHandler`'s registered shutdown function
+- `DependencyLoader` remains available as a utility for test harnesses or edge-case scenarios but is **not used** during normal plugin bootstrap
 
 ---
 
