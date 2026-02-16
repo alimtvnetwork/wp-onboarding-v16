@@ -1,6 +1,6 @@
 # Riseup Asia Uploader — Coding Guidelines
 
-**Version:** 1.22.0
+**Version:** 1.23.0
 **Updated:** 2026-02-16
 
 This document codifies the mandatory development standards for the WordPress companion plugin. All contributors must follow these rules.
@@ -15,7 +15,7 @@ This document codifies the mandatory development standards for the WordPress com
 
 | ❌ Prohibited | ✅ Required |
 |---------------|-------------|
-| `RiseupPathUtils` (global) | `RiseupAsia\Helpers\PathUtils` |
+| `RiseupPathHelper` (global) | `RiseupAsia\Helpers\PathHelper` |
 | `RiseupSnapshotManager` (global) | `RiseupAsia\Snapshot\SnapshotManager` |
 
 ### Methods
@@ -46,28 +46,28 @@ $this->logAction(ActionType::Upload, StatusType::Success);
 
 ## 3. Path Handling
 
-All file path operations must go through `PathUtils`. Raw `filepath.join()`, string concatenation, or `DIRECTORY_SEPARATOR` usage is prohibited.
+All file path operations must go through `PathHelper`. Raw `filepath.join()`, string concatenation, or `DIRECTORY_SEPARATOR` usage is prohibited.
 
 ### Typed Directory Methods (preferred)
 ```php
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
-$base   = PathUtils::getBaseDir();
-$logs   = PathUtils::getLogsDir();
-$snaps  = PathUtils::getSnapshotsDir();
-$temp   = PathUtils::getTempDir();
-$db     = PathUtils::getDbPath();
+$base   = PathHelper::getBaseDir();
+$logs   = PathHelper::getLogsDir();
+$snaps  = PathHelper::getSnapshotsDir();
+$temp   = PathHelper::getTempDir();
+$db     = PathHelper::getDbPath();
 ```
 
 ### Path Operations
 ```php
-$path = PathUtils::join($base, $subdir, $filename);
-$dir  = PathUtils::ensurePath(true, $base, $subdir);
-$safe = PathUtils::isSafePath($path, $base);
+$path = PathHelper::join($base, $subdir, $filename);
+$dir  = PathHelper::ensurePath(true, $base, $subdir);
+$safe = PathHelper::isSafePath($path, $base);
 ```
 
 ### Security
-Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php` (silence) files via `PathUtils::addSecurityFiles()` or `ensureDir($path, true)`.
+Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php` (silence) files via `PathHelper::addSecurityFiles()` or `ensureDir($path, true)`.
 
 ---
 
@@ -75,7 +75,20 @@ Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php`
 
 > **Canonical source:** [No Raw Negations spec](../../spec/01-coding-guidelines/no-negatives.md)
 
-**Never use `!` on a function call in a condition.** All boolean logic must use positively named guard functions from `BooleanHelpers` instead of raw negations.
+**Never use `!` on a function call in a condition.** All boolean logic must use positively named guard functions instead of raw negations.
+
+### File/Directory Guards — `PathHelper`
+
+```php
+use RiseupAsia\Helpers\PathHelper;
+```
+
+| ❌ Forbidden (raw negation) | ✅ Required (positive guard) |
+|----------------------------|------------------------------|
+| `!file_exists($path)` | `PathHelper::isFileMissing($path)` |
+| `!is_dir($path)` | `PathHelper::isDirMissing($path)` |
+
+### Non-Path Guards — `BooleanHelpers`
 
 ```php
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -83,8 +96,6 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 | ❌ Forbidden (raw negation) | ✅ Required (positive guard) |
 |----------------------------|------------------------------|
-| `!file_exists($path)` | `BooleanHelpers::isFileMissing($path)` |
-| `!is_dir($path)` | `BooleanHelpers::isDirMissing($path)` |
 | `!class_exists('X')` | `BooleanHelpers::isClassMissing('X')` |
 | `!function_exists('f')` | `BooleanHelpers::isFuncMissing('f')` |
 | `!extension_loaded('e')` | `BooleanHelpers::isExtensionMissing('e')` |
@@ -109,6 +120,7 @@ use RiseupAsia\Database\Database;
 
 $db = InitHelpers::initComponent('Database', function () {
     $db = Database::getInstance();
+
     return $db->init() ? $db : null;
 });
 
@@ -138,7 +150,7 @@ require_once __DIR__ . '/includes/Autoloader.php';
 ## 7. Error Handling & Reporting
 
 ### Safe Execution
-All endpoint handlers must be wrapped in `safe_execute` callbacks that catch `\Throwable` (not just `Exception`) to handle PHP 7+ errors like missing classes.
+All endpoint handlers must be wrapped in `safe_execute` callbacks that catch `Throwable` (not just `Exception`) to handle PHP 7+ errors like missing classes.
 
 ### Structured Error Responses
 Every error response must return HTTP 500 with a JSON body containing:
@@ -159,11 +171,13 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 if (BooleanHelpers::isClassMissing('PDO')) {
     $logger->error('PDO extension not installed');
+
     return null;
 }
 
 if (BooleanHelpers::isExtensionMissing('pdo_sqlite')) {
     $logger->error('PDO SQLite driver not loaded');
+
     return null;
 }
 ```
@@ -212,8 +226,8 @@ Each directory has `.htaccess` and `index.php` security files.
 
 | Class | Namespace | Purpose |
 |-------|-----------|---------|
-| `BooleanHelpers` | `RiseupAsia\Helpers` | Semantic boolean checks (replaces raw negations) |
-| `PathUtils` | `RiseupAsia\Helpers` | Path joining, validation, typed dir accessors |
+| `BooleanHelpers` | `RiseupAsia\Helpers` | Semantic boolean checks (function/class/extension/database guards) |
+| `PathHelper` | `RiseupAsia\Helpers` | Path joining, validation, typed dir accessors, file/dir boolean guards |
 | `DependencyLoader` | `RiseupAsia\Helpers` | Structured file loading with error capture |
 | `InitHelpers` | `RiseupAsia\Helpers` | Idempotent dir/DB setup, component startup tracking |
 | `EnvelopeBuilder` | `RiseupAsia\Helpers` | REST API response envelope construction |

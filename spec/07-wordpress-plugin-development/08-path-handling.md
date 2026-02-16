@@ -1,7 +1,7 @@
 # Path Handling Standards
 
-**Version:** 1.0.0  
-**Created:** 2026-02-06  
+**Version:** 2.0.0  
+**Updated:** 2026-02-16  
 **Applies To:** PHP (WordPress Plugin), Go (Backend)
 
 ---
@@ -42,74 +42,52 @@ Before any file operation (read, write, list), validate that:
 
 ### 2.1 Path Utility Class
 
-Located at: `wp-plugins/riseup-asia-uploader/includes/class-path-utils.php`
+Located at: `wp-plugins/riseup-asia-uploader/includes/Helpers/PathHelper.php`
+Namespace: `RiseupAsia\Helpers\PathHelper`
 
 ```php
-class Riseup_Path_Utils {
-    
-    /**
-     * Join path segments safely.
-     * 
-     * @param string ...$segments Path segments to join.
-     * @return string Joined path with forward slashes.
-     */
-    public static function join(...$segments): string;
-    
-    /**
-     * Ensure a directory exists, creating it if necessary.
-     * 
-     * @param string $path      Directory path.
-     * @param bool   $secure    Add .htaccess and index.php for security.
-     * @return bool True if directory exists/was created.
-     */
-    public static function ensure_dir($path, $secure = false): bool;
-    
-    /**
-     * Join and ensure directory exists in one call.
-     * 
-     * @param bool   $secure    Add security files.
-     * @param string ...$segments Path segments.
-     * @return string|false Path if successful, false on failure.
-     */
-    public static function ensure_path($secure, ...$segments);
-    
-    /**
-     * Get the plugin's base uploads directory.
-     * 
-     * @return string Base path (wp-content/uploads/riseup-asia-uploader).
-     */
-    public static function get_base_dir(): string;
-    
-    /**
-     * Validate a path is within allowed boundaries.
-     * 
-     * @param string $path       Path to validate.
-     * @param string $base_path  Allowed base path.
-     * @return bool True if path is safe.
-     */
-    public static function is_safe_path($path, $base_path): bool;
+class PathHelper {
+    // Core path operations (via PathHelperCoreTrait)
+    public static function join(string ...$segments): string;
+    public static function ensureDir(string $path, bool $secure = false): bool;
+    public static function ensurePath(bool $secure, string ...$segments): string|false;
+    public static function getBaseDir(): string;
+    public static function isSafePath(string $path, string $basePath): bool;
+
+    // Directory guards (via PathHelperDirTrait)
+    public static function isDirExists(string $dirPath): bool;
+    public static function isDirMissing(string $dirPath): bool;
+    public static function isDirWritable(string $dirPath): bool;
+    public static function isDirReadonly(string $dirPath): bool;
+    public static function isDirEmpty(string $dirPath): bool;
+
+    // File guards (via PathHelperFileTrait)
+    public static function isFileExists(string $filePath): bool;
+    public static function isFileMissing(string $filePath): bool;
+    public static function isFileUnreadable(string $filePath): bool;
+    public static function isNotRegularFile(string $filePath): bool;
+    public static function isCopyFailed(string $source, string $dest): bool;
 }
 ```
 
 ### 2.2 Usage Pattern
 
 ```php
-// CORRECT: Guard with isDirMissing — single semantic call
-$snapshots_dir = RiseupPathUtils::getSnapshotsDir();
+use RiseupAsia\Helpers\PathHelper;
 
-if (RiseupPathUtils::isDirMissing($snapshots_dir, true)) {
+// CORRECT: Guard with isDirMissing — single semantic call
+$snapshotsDir = PathHelper::getSnapshotsDir();
+
+if (!PathHelper::ensureDir($snapshotsDir)) {
     $this->logger->error('Failed to create snapshots directory');
 
     return false;
 }
 
-$snapshot_file = RiseupPathUtils::join($snapshots_dir, $filename);
-
-// INCORRECT: Verbose two-helper composition
-if (RiseupBooleanHelpers::is_falsy(RiseupInitHelpers::ensureDir($dir, true))) { ... }
+$snapshotFile = PathHelper::join($snapshotsDir, $filename);
 
 // INCORRECT: Raw concatenation
-$bad_path = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/snapshots/' . $filename;
+$badPath = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/snapshots/' . $filename;
 ```
 
 ### 2.3 Error Logging Requirements
@@ -161,6 +139,7 @@ func EnsureDir(path string, log *logger.Logger) error {
         log.Error("path resolution failed",
             "path", path,
             "error", err)
+
         return err
     }
     
@@ -168,10 +147,12 @@ func EnsureDir(path string, log *logger.Logger) error {
         log.Error("directory creation failed",
             "path", absPath,
             "error", err)
+
         return err
     }
     
     log.Debug("directory ensured", "path", absPath)
+
     return nil
 }
 ```
@@ -185,20 +166,20 @@ func EnsureDir(path string, log *logger.Logger) error {
 Always validate paths don't escape their intended boundaries:
 
 ```php
-public static function is_safe_path($path, $base_path): bool {
-    $real_base = realpath($base_path);
-    $real_path = realpath($path);
+public static function isSafePath(string $path, string $basePath): bool {
+    $realBase = realpath($basePath);
+    $realPath = realpath($path);
 
     // For non-existent paths, check the parent
-    if ($real_path === false) {
-        $real_path = realpath(dirname($path));
+    if ($realPath === false) {
+        $realPath = realpath(dirname($path));
     }
 
-    if ($real_path === false) {
+    if ($realPath === false) {
         return false;
     }
 
-    return strpos($real_path, $real_base) === 0;
+    return strpos($realPath, $realBase) === 0;
 }
 ```
 
@@ -242,5 +223,5 @@ Before any path operation:
 
 ---
 
-*Specification Version: 1.0.0*  
-*Last Updated: 2026-02-06*
+*Specification Version: 2.0.0*  
+*Last Updated: 2026-02-16*

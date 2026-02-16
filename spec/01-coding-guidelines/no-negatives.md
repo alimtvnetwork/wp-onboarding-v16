@@ -1,7 +1,7 @@
 # Cross-Language Rule: No Raw Negations — Use Positive Guard Functions
 
-> **Version:** 1.0.0  
-> **Updated:** 2026-02-13  
+> **Version:** 2.0.0  
+> **Updated:** 2026-02-16  
 > **Applies to:** PHP, TypeScript, Go
 
 ---
@@ -18,11 +18,11 @@ Raw negations are easy to miss during code review, cause cognitive overhead, and
 
 | ❌ Forbidden | ✅ Required | Why |
 |-------------|------------|-----|
-| `!file_exists($path)` | `isFileMissing($path)` | Positive name; no `!` to overlook |
-| `!is_dir($path)` | `isDirMissing($path)` | Self-documenting intent |
-| `!class_exists('X')` | `isClassMissing('X')` | Centralized, testable |
-| `!function_exists('f')` | `isFuncMissing('f')` | Same principle |
-| `!extension_loaded('e')` | `isExtensionMissing('e')` | Same principle |
+| `!file_exists($path)` | `PathHelper::isFileMissing($path)` | Positive name; no `!` to overlook |
+| `!is_dir($path)` | `PathHelper::isDirMissing($path)` | Self-documenting intent |
+| `!class_exists('X')` | `BooleanHelpers::isClassMissing('X')` | Centralized, testable |
+| `!function_exists('f')` | `BooleanHelpers::isFuncMissing('f')` | Same principle |
+| `!extension_loaded('e')` | `BooleanHelpers::isExtensionMissing('e')` | Same principle |
 | `!$obj->isActive()` | `$obj->isDisabled()` | Semantic inverse on object |
 | `!arr.includes(x)` | `isMissing(arr, x)` | Named guard |
 | `!strings.Contains(s, x)` | `IsMissing(s, x)` | Named guard |
@@ -39,7 +39,7 @@ The function name must express the **positive assertion** of what is being check
 
 ## Language-Specific Examples
 
-### PHP (snake_case methods)
+### PHP (camelCase methods)
 
 ```php
 // ❌ FORBIDDEN: Raw negation on function call
@@ -52,41 +52,46 @@ if (!is_dir($dir)) {
 }
 
 if (!class_exists('PDO')) {
-    throw new \RuntimeException('PDO not available');
+    throw new RuntimeException('PDO not available');
 }
 
-// ✅ REQUIRED: Positive guard function from RiseupPathUtils / RiseupBooleanHelpers
-if (RiseupBooleanHelpers::is_file_missing($path)) {
+// ✅ REQUIRED: Positive guard function from PathHelper / BooleanHelpers
+use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
+
+if (PathHelper::isFileMissing($path)) {
     return false;
 }
 
-if (RiseupBooleanHelpers::is_dir_missing($dir)) {
+if (PathHelper::isDirMissing($dir)) {
     mkdir($dir, 0755, true);
 }
 
-if (RiseupBooleanHelpers::is_class_missing('PDO')) {
-    throw new \RuntimeException('PDO not available');
+if (BooleanHelpers::isClassMissing('PDO')) {
+    throw new RuntimeException('PDO not available');
 }
 ```
 
-**Utility class:** `RiseupBooleanHelpers` (in `includes/Helpers/`)
+**Utility classes:**
+- `PathHelper` (`RiseupAsia\Helpers\PathHelper`) — file/directory guards
+- `BooleanHelpers` (`RiseupAsia\Helpers\BooleanHelpers`) — function/class/extension/database guards
 
-| Guard Method | Replaces |
-|-------------|----------|
-| `is_file_missing($path)` | `!file_exists($path)` |
-| `is_file_exists($path)` | `file_exists($path)` (with null guard) |
-| `is_dir_missing($path)` | `!is_dir($path)` |
-| `is_dir_exists($path)` | `is_dir($path)` (with null guard) |
-| `is_dir_writable($path)` | `is_dir($path) && is_writable($path)` |
-| `is_dir_readonly($path)` | `!is_dir($path) \|\| !is_writable($path)` |
-| `is_class_missing($name)` | `!class_exists($name)` |
-| `is_class_exists($name)` | `class_exists($name)` |
-| `is_func_missing($name)` | `!function_exists($name)` |
-| `is_func_exists($name)` | `function_exists($name)` |
-| `is_extension_missing($name)` | `!extension_loaded($name)` |
-| `is_extension_loaded($name)` | `extension_loaded($name)` |
-| `is_db_connected($db)` | `$db !== null && $db->is_connected()` |
-| `is_db_disconnected($db)` | `$db === null \|\| !$db->is_connected()` |
+| Guard Method | Replaces | Class |
+|-------------|----------|-------|
+| `isFileMissing($path)` | `!file_exists($path)` | `PathHelper` |
+| `isFileExists($path)` | `file_exists($path)` (with null guard) | `PathHelper` |
+| `isDirMissing($path)` | `!is_dir($path)` | `PathHelper` |
+| `isDirExists($path)` | `is_dir($path)` (with null guard) | `PathHelper` |
+| `isDirWritable($path)` | `is_dir($path) && is_writable($path)` | `PathHelper` |
+| `isDirReadonly($path)` | `!is_dir($path) \|\| !is_writable($path)` | `PathHelper` |
+| `isClassMissing($name)` | `!class_exists($name)` | `BooleanHelpers` |
+| `isClassExists($name)` | `class_exists($name)` | `BooleanHelpers` |
+| `isFuncMissing($name)` | `!function_exists($name)` | `BooleanHelpers` |
+| `isFuncExists($name)` | `function_exists($name)` | `BooleanHelpers` |
+| `isExtensionMissing($name)` | `!extension_loaded($name)` | `BooleanHelpers` |
+| `isExtensionLoaded($name)` | `extension_loaded($name)` | `BooleanHelpers` |
+| `isDbConnected($db)` | `$db !== null && $db->isConnected()` | `BooleanHelpers` |
+| `isDbDisconnected($db)` | `$db === null \|\| !$db->isConnected()` | `BooleanHelpers` |
 
 ### TypeScript (camelCase functions)
 
@@ -178,12 +183,12 @@ Every boolean method on an object **must have a semantic inverse** — never neg
 
 ```php
 // ❌ FORBIDDEN
-if (!$plugin->is_active()) { ... }
-if (!$user->has_permission('admin')) { ... }
+if (!$plugin->isActive()) { ... }
+if (!$user->hasPermission('admin')) { ... }
 
 // ✅ REQUIRED
-if ($plugin->is_disabled()) { ... }
-if ($user->lacks_permission('admin')) { ... }
+if ($plugin->isDisabled()) { ... }
+if ($user->lacksPermission('admin')) { ... }
 ```
 
 ```typescript
@@ -233,12 +238,12 @@ Raw negation is **only** acceptable for:
 ## Checklist Summary (Copy for PRs)
 
 ```
-[ ] No `!file_exists()` — use `is_file_missing()` / `isFileMissing()` / `IsFileMissing()`
-[ ] No `!is_dir()` — use `is_dir_missing()` / `isDirMissing()` / `IsDirMissing()`
-[ ] No `!class_exists()` — use `is_class_missing()` / guard function
-[ ] No `!function_exists()` — use `is_func_missing()` / guard function
-[ ] No `!extension_loaded()` — use `is_extension_missing()` / guard function
-[ ] No `!$obj->is_active()` — use `$obj->is_disabled()` / semantic inverse
+[ ] No `!file_exists()` — use `PathHelper::isFileMissing()`
+[ ] No `!is_dir()` — use `PathHelper::isDirMissing()`
+[ ] No `!class_exists()` — use `BooleanHelpers::isClassMissing()` / guard function
+[ ] No `!function_exists()` — use `BooleanHelpers::isFuncMissing()` / guard function
+[ ] No `!extension_loaded()` — use `BooleanHelpers::isExtensionMissing()` / guard function
+[ ] No `!$obj->isActive()` — use `$obj->isDisabled()` / semantic inverse
 [ ] No `!array.includes()` — use `isItemMissing()` / guard function
 [ ] No `!strings.Contains()` — use `IsMissingSubstring()` / guard function
 [ ] Guard functions live in dedicated utility classes/packages
@@ -257,4 +262,4 @@ Raw negation is **only** acceptable for:
 
 ---
 
-*No-negatives specification v1.0.0 — 2026-02-13*
+*No-negatives specification v2.0.0 — 2026-02-16*

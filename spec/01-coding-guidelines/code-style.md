@@ -1,14 +1,14 @@
 # Cross-Language Code Style — Braces, Nesting, Spacing & Function Size
 
 > **Version:** 2.0.0  
-> **Updated:** 2026-02-13  
+> **Updated:** 2026-02-16  
 > **Applies to:** PHP, TypeScript, Go
 
 ---
 
 ## Overview
 
-These seven rules govern control-flow formatting and function design across **all languages** in the project. Language-specific specs (PHP, TypeScript, Go) reference this document as the single source of truth.
+These nine rules govern control-flow formatting and function design across **all languages** in the project. Language-specific specs (PHP, TypeScript, Go) reference this document as the single source of truth.
 
 ---
 
@@ -210,9 +210,9 @@ if isUpstreamError {
 
 ---
 
-## Rule 4: Blank Line Before `return` When Preceded by Other Statements
+## Rule 4: Blank Line Before `return` or `throw` When Preceded by Other Statements
 
-If a block contains statements before `return`, insert **one blank line** before the `return`. If `return` is the **only statement** in the block, no blank line is needed.
+If a block contains statements before `return` or `throw`, insert **one blank line** before the `return`/`throw`. If `return`/`throw` is the **only statement** in the block, no blank line is needed.
 
 ```php
 // ── PHP ──────────────────────────────────────────────────────
@@ -230,9 +230,27 @@ if (ErrorChecker::is_invalid_pdo_extension()) {
     return $this->envelope->error('SQLite support not available', 500);
 }
 
+// ❌ FORBIDDEN: No blank line before throw
+if (PathHelper::isFileMissing($path)) {
+    $this->logger->error('File not found: ' . $path);
+    throw new RuntimeException('File not found: ' . $path);
+}
+
+// ✅ REQUIRED: Blank line before throw
+if (PathHelper::isFileMissing($path)) {
+    $this->logger->error('File not found: ' . $path);
+
+    throw new RuntimeException('File not found: ' . $path);
+}
+
 // ✅ OK: Return is the only statement — no blank line needed
 if ($error === null) {
     return false;
+}
+
+// ✅ OK: Throw is the only statement — no blank line needed
+if ($error === null) {
+    throw new InvalidArgumentException('Error required');
 }
 ```
 
@@ -250,6 +268,19 @@ const processData = (data: unknown[]) => {
     const filtered = data.filter(isValid);
 
     return filtered.map(transform);
+};
+
+// ❌ FORBIDDEN: No blank line before throw
+const validate = (input: string) => {
+    const trimmed = input.trim();
+    throw new Error(`Invalid input: ${trimmed}`);
+};
+
+// ✅ REQUIRED
+const validate = (input: string) => {
+    const trimmed = input.trim();
+
+    throw new Error(`Invalid input: ${trimmed}`);
 };
 
 // ✅ OK: Return is the only statement
@@ -472,16 +503,95 @@ if ($hasValidFile) {
 
 ---
 
+## Rule 8: No Leading Backslash on Global Types
+
+In catch blocks and type hints, use `Throwable` without the leading backslash, even in namespaced files. The same applies to other global types used in catch blocks or parameter hints.
+
+```php
+// ── PHP ──────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN
+catch (\Throwable $e)
+function foo(\Throwable $e): array
+
+// ✅ REQUIRED
+catch (Throwable $e)
+function foo(Throwable $e): array
+```
+
+```typescript
+// ── TypeScript / Go ─────────────────────────────────────────
+// Not applicable — these languages don't have leading-backslash syntax.
+```
+
+---
+
+## Rule 9: Multi-Line Parameters — More Than Two Parameters
+
+When a function/method signature has **more than two parameters**, each parameter must be on its own line with consistent indentation and a **trailing comma** after the last parameter.
+
+```php
+// ── PHP ──────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN (>2 params on one line)
+function buildRecord(string $label, string $path, bool $success, ?string $error): void {
+
+// ✅ REQUIRED
+function buildRecord(
+    string $label,
+    string $path,
+    bool $success,
+    ?string $error,
+): void {
+
+// ✅ OK: 2 params — single line is fine
+function loadFile(string $label, string $path): bool {
+```
+
+```typescript
+// ── TypeScript ───────────────────────────────────────────────
+
+// ❌ FORBIDDEN (>2 params on one line)
+function buildRecord(label: string, path: string, success: boolean, error?: string): void {
+
+// ✅ REQUIRED
+function buildRecord(
+    label: string,
+    path: string,
+    success: boolean,
+    error?: string,
+): void {
+```
+
+```go
+// ── Go ───────────────────────────────────────────────────────
+
+// ❌ FORBIDDEN (>2 params on one line)
+func BuildRecord(label string, path string, success bool, errMsg string) {
+
+// ✅ REQUIRED
+func BuildRecord(
+	label string,
+	path string,
+	success bool,
+	errMsg string,
+) {
+```
+
+---
+
 ## Checklist Summary (Copy for PRs)
 
 ```
 [ ] No single-line `if (...) return;` — always use braces
 [ ] No nested `if` — ZERO TOLERANCE — flatten with early returns or combined conditions
 [ ] No inline multi-part `if` (2+ operators) — extract to named variable or method
-[ ] Blank line before `return` when preceded by other statements
+[ ] Blank line before `return` or `throw` when preceded by other statements
 [ ] Blank line after closing `}` when followed by more code
 [ ] Functions max 15 lines — extract helpers for longer logic
 [ ] No deeply nested control flow — extract loop/condition bodies to helpers
+[ ] No leading backslash on `Throwable` or other global types in catch/type hints
+[ ] Functions with >2 params — one param per line with trailing comma
 ```
 
 ---
@@ -497,4 +607,4 @@ if ($hasValidFile) {
 
 ---
 
-*Cross-language code style specification v2.1.0 — 2026-02-14*
+*Cross-language code style specification v3.0.0 — 2026-02-16*
