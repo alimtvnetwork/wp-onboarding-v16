@@ -20,6 +20,8 @@ use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TriggerSourceType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SchedulerExecutorTrait {
 
@@ -73,8 +75,7 @@ trait SchedulerExecutorTrait {
             return array('success' => false, 'error' => 'Missing snapshot_id', 'skip_audit' => true);
         }
 
-        require_once dirname(__FILE__) . '/../SnapshotFactory.php';
-        $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
+        $manager = SnapshotFactory::manager($this->logger, $this->db);
         $restoreOptions = $args['options'] ?? array();
         $restoreOptions['confirm'] = true;
 
@@ -111,7 +112,7 @@ trait SchedulerExecutorTrait {
      */
     private function runCleanup(): array {
         $settings = $this->detector->getSettings();
-        $result = RiseupSnapshotFactory::cleaner($this->logger, $this->db)->runCleanup($settings);
+        $result = SnapshotFactory::cleaner($this->logger, $this->db)->runCleanup($settings);
 
         $auditData = array(
             'deleted_by_policy' => $result['deleted_by_policy'] ?? 0,
@@ -124,7 +125,7 @@ trait SchedulerExecutorTrait {
         $cronResult = $this->buildCronResult(array('success' => true), ActionType::SnapshotCleanup->value, TriggerSourceType::Cron->value, $auditData);
         $cronResult['skip_audit'] = ($totalDeleted === 0);
         $cronResult['log_data'] = $auditData + array(
-            'space_freed'  => RiseupPathUtils::formatBytes($result['space_freed_bytes']),
+            'space_freed'  => PathUtils::formatBytes($result['space_freed_bytes']),
             'errors_count' => count($result['errors']),
         );
         return $cronResult;

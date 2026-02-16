@@ -56,7 +56,7 @@ trait ExporterBuildTrait {
 
     /** Ensure the exports directory exists with security files. */
     private function ensureExportsDir(): ?string {
-        $exportsDir = RiseupPathUtils::getSnapshotsDir() . PathSubdirType::Exports->value;
+        $exportsDir = PathUtils::getSnapshotsDir() . PathSubdirType::Exports->value;
         if (!BooleanHelpers::isDirMissing($exportsDir)) {
             return $exportsDir;
         }
@@ -200,7 +200,7 @@ trait ExporterBuildTrait {
         $stmt->execute(array(SnapshotExportStatusType::Valid->value, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
 
         $this->log(LogLevelType::Info->value, 'ZIP export built successfully', array(
-            'snapshot_id' => $snapshotId, 'filename' => $zipFilename, 'size' => RiseupPathUtils::formatBytes($zipSize),
+            'snapshot_id' => $snapshotId, 'filename' => $zipFilename, 'size' => PathUtils::formatBytes($zipSize),
         ));
     }
 }

@@ -83,14 +83,14 @@ trait ImportExecutionTrait {
 
     /** Move snapshot to final location in snapshots directory. */
     private function moveSnapshotToFinalLocation(string $snapshotRoot, array $metadata): string {
-        $snapshotsDir = RiseupPathUtils::getSnapshotsDir();
-        if (!RiseupPathUtils::ensureDir($snapshotsDir, true)) {
+        $snapshotsDir = PathUtils::getSnapshotsDir();
+        if (!PathUtils::ensureDir($snapshotsDir, true)) {
             throw new Exception('Failed to ensure snapshots directory');
         }
 
         $title = $metadata['title'] ?? 'imported';
         $folderName = date('Y-m-d') . '_imported_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $title);
-        $destDir = $this->resolveUniqueDest(RiseupPathUtils::join($snapshotsDir, $folderName), $snapshotsDir, $folderName);
+        $destDir = $this->resolveUniqueDest(PathUtils::join($snapshotsDir, $folderName), $snapshotsDir, $folderName);
 
         $this->copyDirectory($snapshotRoot, $destDir);
         return $destDir;
@@ -99,8 +99,8 @@ trait ImportExecutionTrait {
     /** Resolve a unique destination directory path. */
     private function resolveUniqueDest(string $destDir, string $snapshotsDir, string $folderName): string {
         $counter = 1;
-        while (RiseupPathUtils::dirExists($destDir)) {
-            $destDir = RiseupPathUtils::join($snapshotsDir, $folderName . '_' . $counter);
+        while (PathUtils::dirExists($destDir)) {
+            $destDir = PathUtils::join($snapshotsDir, $folderName . '_' . $counter);
             $counter++;
         }
         return $destDir;

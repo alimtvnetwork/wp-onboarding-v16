@@ -21,13 +21,14 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\PluginSelectionType;
+use RiseupAsia\Helpers\PathUtils;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait OrchestratorPluginTrait {
 
     private function snapshotPlugins(string $snapshotDir, string $selection = 'all'): array {
         $plugins_dir = $snapshotDir . '/plugins';
-        if (!RiseupPathUtils::ensureDir($plugins_dir, true)) {
+        if (!PathUtils::ensureDir($plugins_dir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }
