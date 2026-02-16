@@ -20,6 +20,7 @@ use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreValidationTrait {
 
@@ -40,7 +41,7 @@ trait RestoreValidationTrait {
         }
 
         $root_path = $snapshotDir . '/a-root.db';
-        if (RiseupBooleanHelpers::isFileMissing($root_path)) {
+        if (BooleanHelpers::isFileMissing($root_path)) {
             return array(
                 'success' => false,
                 'error'   => 'Snapshot a-root.db not found at: ' . basename($snapshotDir),

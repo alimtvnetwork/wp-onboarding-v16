@@ -9,6 +9,7 @@
 namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait LoggerContextTrait {
 
@@ -54,7 +55,7 @@ trait LoggerContextTrait {
 
     /** Get current user info. */
     private function getUserInfo(): array {
-        if (\RiseupBooleanHelpers::isFuncMissing('wp_get_current_user')) {
+        if (BooleanHelpers::isFuncMissing('wp_get_current_user')) {
             return array('login' => self::ANONYMOUS_LOGIN, 'id' => self::ANONYMOUS_USER_ID);
         }
 

@@ -18,6 +18,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SnapshotExportHandlerTrait {
 
@@ -48,7 +49,7 @@ trait SnapshotExportHandlerTrait {
             }
 
             $filepath = $result['filepath'];
-            if (\RiseupBooleanHelpers::isFileMissing($filepath)) {
+            if (BooleanHelpers::isFileMissing($filepath)) {
                 $this->logger->logPluginAction(
                     ActionType::SnapshotExport->value, 'snapshot', StatusType::Failed->value,
                     array('snapshot_id' => $id),

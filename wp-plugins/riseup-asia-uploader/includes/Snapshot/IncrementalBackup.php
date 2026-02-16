@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalRegistrationTrait;
@@ -64,7 +65,7 @@ class IncrementalBackup {
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
 
         $rootPath = $masterDir . '/a-root.db';
-        if (\RiseupBooleanHelpers::isFileMissing($rootPath)) {
+        if (BooleanHelpers::isFileMissing($rootPath)) {
             return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $rootPath);
         }
 

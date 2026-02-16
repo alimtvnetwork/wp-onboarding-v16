@@ -19,6 +19,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UploadZipTrait
 {
@@ -80,7 +81,7 @@ trait UploadZipTrait
 
     /** Remove duplicate plugin folders that share the same slug or TextDomain. */
     private function removeDuplicatePlugins($slug, $plugins_dir) {
-        if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+        if (BooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 

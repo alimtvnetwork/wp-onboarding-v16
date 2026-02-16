@@ -9,6 +9,7 @@
 namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait LoggerWriteTrait {
 
@@ -68,7 +69,7 @@ trait LoggerWriteTrait {
 
     /** Get a PDO connection with error_sessions table available. */
     private function getErrorSessionsPdo(): ?\PDO {
-        if (\RiseupBooleanHelpers::isClassMissing('RiseupDatabase')) {
+        if (BooleanHelpers::isClassMissing('RiseupDatabase')) {
             return null;
         }
 

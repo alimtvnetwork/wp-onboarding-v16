@@ -131,7 +131,7 @@ trait CleanerOrphanTrait {
 
         foreach ($dirs as $dir) {
             if (in_array($dir, $known_paths)) { continue; }
-            if (RiseupBooleanHelpers::isDirEmpty($dir)) {
+            if (BooleanHelpers::isDirEmpty($dir)) {
                 if (!$dryRun) {
                     try {
                         if (@rmdir($dir)) {

@@ -67,10 +67,10 @@ class RiseupActivationHandler
     }
 
     private static function ensureDirs(string $baseDir, string $logsDir): void {
-        if (RiseupBooleanHelpers::isDirMissing($baseDir)) {
+        if (\RiseupAsia\Helpers\BooleanHelpers::isDirMissing($baseDir)) {
             wp_mkdir_p($baseDir);
         }
-        if (RiseupBooleanHelpers::isDirMissing($logsDir)) {
+        if (\RiseupAsia\Helpers\BooleanHelpers::isDirMissing($logsDir)) {
             wp_mkdir_p($logsDir);
         }
     }
@@ -102,7 +102,7 @@ class RiseupActivationHandler
 
     private static function writeStacktraceLog(string $logsDir, string $timestamp): void {
         $stacktraceFile = $logsDir . PathLogFileType::Stacktrace->value;
-        if (RiseupBooleanHelpers::isFileMissing($stacktraceFile)) {
+        if (\RiseupAsia\Helpers\BooleanHelpers::isFileMissing($stacktraceFile)) {
             @file_put_contents($stacktraceFile, sprintf(
                 "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
                 $timestamp
@@ -117,12 +117,12 @@ class RiseupActivationHandler
         }
 
         $htaccess = $baseDir . '/.htaccess';
-        if (RiseupBooleanHelpers::isFileMissing($htaccess)) {
+        if (\RiseupAsia\Helpers\BooleanHelpers::isFileMissing($htaccess)) {
             @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
         }
 
         $index = $baseDir . '/index.php';
-        if (RiseupBooleanHelpers::isFileMissing($index)) {
+        if (\RiseupAsia\Helpers\BooleanHelpers::isFileMissing($index)) {
             @file_put_contents($index, "<?php\n// Silence is golden.\n");
         }
     }

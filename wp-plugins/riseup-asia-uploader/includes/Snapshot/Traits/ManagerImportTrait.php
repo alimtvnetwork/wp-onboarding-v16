@@ -16,6 +16,7 @@ use ZipArchive;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ManagerImportTrait {
 
@@ -23,7 +24,7 @@ trait ManagerImportTrait {
     use ManagerImportRecordTrait;
 
     public function importSnapshot(string $uploadedPath): array {
-        if (RiseupBooleanHelpers::isFileMissing($uploadedPath)) {
+        if (BooleanHelpers::isFileMissing($uploadedPath)) {
             return array('success' => false, 'error' => 'Uploaded file not found');
         }
 
@@ -77,7 +78,7 @@ trait ManagerImportTrait {
 
     private function loadAndValidateManifest(string $tempDir): array {
         $manifestPath = RiseupPathUtils::join($tempDir, 'manifest.json');
-        if (RiseupBooleanHelpers::isFileMissing($manifestPath)) {
+        if (BooleanHelpers::isFileMissing($manifestPath)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }
 
@@ -98,7 +99,7 @@ trait ManagerImportTrait {
         $sqliteFilename = $manifest['snapshot']['filename'];
         $sqlitePath = RiseupPathUtils::join($tempDir, $sqliteFilename);
 
-        if (RiseupBooleanHelpers::isFileMissing($sqlitePath)) {
+        if (BooleanHelpers::isFileMissing($sqlitePath)) {
             throw new Exception('SQLite file not found in archive: ' . $sqliteFilename);
         }
 
@@ -121,7 +122,7 @@ trait ManagerImportTrait {
         $newFilename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
         $destPath = RiseupPathUtils::join($snapshotsDir, $newFilename);
 
-        if (RiseupBooleanHelpers::isCopyFailed($sqlitePath, $destPath)) {
+        if (BooleanHelpers::isCopyFailed($sqlitePath, $destPath)) {
             throw new Exception('Failed to copy snapshot file to destination');
         }
 

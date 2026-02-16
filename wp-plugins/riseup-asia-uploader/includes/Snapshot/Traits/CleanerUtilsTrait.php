@@ -48,7 +48,7 @@ trait CleanerUtilsTrait {
     }
 
     private function deleteDirectoryRecursive(string $dir): void {
-        if (RiseupBooleanHelpers::isDirMissing($dir)) return;
+        if (BooleanHelpers::isDirMissing($dir)) return;
 
         $items = array_diff(scandir($dir), array('.', '..'));
         foreach ($items as $item) {
@@ -64,7 +64,7 @@ trait CleanerUtilsTrait {
 
     private function getDirectorySize(string $dir): int {
         $size = 0;
-        if (RiseupBooleanHelpers::isDirMissing($dir)) return 0;
+        if (BooleanHelpers::isDirMissing($dir)) return 0;
 
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)

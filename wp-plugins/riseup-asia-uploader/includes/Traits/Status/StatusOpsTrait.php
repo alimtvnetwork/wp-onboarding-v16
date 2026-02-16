@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait StatusOpsTrait {
 
@@ -42,7 +43,7 @@ trait StatusOpsTrait {
     private function loadOpenApiSpec(): array|WP_REST_Response {
         $spec_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/openapi.json';
 
-        if (\RiseupBooleanHelpers::isFileMissing($spec_file)) {
+        if (BooleanHelpers::isFileMissing($spec_file)) {
             return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
         }
 
@@ -111,7 +112,7 @@ trait StatusOpsTrait {
      * Invalidate OPcache for critical plugin files.
      */
     private function invalidatePluginFiles(): int {
-        if (\RiseupBooleanHelpers::isFuncMissing('opcache_invalidate')) {
+        if (BooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return 0;
         }
 

@@ -20,6 +20,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait PluginListTrait
 {
@@ -33,7 +34,7 @@ trait PluginListTrait
         $this->fileLogger->info('List plugins endpoint called');
 
         try {
-            if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+            if (BooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
@@ -107,12 +108,12 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     private function scanPluginFilesWithCache(string $slug) {
-        if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+        if (BooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (\RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
+        if (BooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
@@ -173,7 +174,7 @@ trait PluginListTrait
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (\RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
+        if (BooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
@@ -184,7 +185,7 @@ trait PluginListTrait
             return $this->errorResponse('File not found or invalid path', HttpStatusType::NotFound->value);
         }
 
-        if (\RiseupBooleanHelpers::isNotRegularFile($real_file_path)) {
+        if (BooleanHelpers::isNotRegularFile($real_file_path)) {
             return $this->errorResponse('File not found', HttpStatusType::NotFound->value);
         }
 

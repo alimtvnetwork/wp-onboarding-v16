@@ -17,6 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait StatusPayloadTrait {
 
@@ -40,7 +41,7 @@ trait StatusPayloadTrait {
         $main_plugin_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/' . PluginConfigType::Slug->value . '.php';
         clearstatcache(true, $main_plugin_file);
 
-        if (\RiseupBooleanHelpers::isFileMissing($main_plugin_file)) {
+        if (BooleanHelpers::isFileMissing($main_plugin_file)) {
             return PluginConfigType::Version->value;
         }
 
@@ -51,7 +52,7 @@ trait StatusPayloadTrait {
 
     /** Invalidate OPcache for plugin file and constants. */
     private function invalidateVersionCaches(string $main_plugin_file) {
-        if (\RiseupBooleanHelpers::isFuncMissing('opcache_invalidate')) {
+        if (BooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return;
         }
 
@@ -110,9 +111,9 @@ trait StatusPayloadTrait {
      */
     private function loadEndpointsReference(): ?array {
         $path = plugin_dir_path(__FILE__) . '../../data/endpoints.json';
-        if (\RiseupBooleanHelpers::isFileMissing($path)) {
+        if (BooleanHelpers::isFileMissing($path)) {
             $path = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/endpoints.json';
-            if (\RiseupBooleanHelpers::isFileMissing($path)) {
+            if (BooleanHelpers::isFileMissing($path)) {
                 return null;
             }
         }

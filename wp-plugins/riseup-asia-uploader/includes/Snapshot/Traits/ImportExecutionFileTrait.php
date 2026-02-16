@@ -81,7 +81,7 @@ trait ImportExecutionFileTrait {
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath, $destPath);
             } else {
-                if (RiseupBooleanHelpers::isCopyFailed($srcPath, $destPath)) {
+                if (BooleanHelpers::isCopyFailed($srcPath, $destPath)) {
                     throw new Exception("Failed to copy file: {$entry}");
                 }
             }
@@ -89,7 +89,7 @@ trait ImportExecutionFileTrait {
     }
 
     private function deleteDirectory(string $dir): void {
-        if (RiseupBooleanHelpers::isDirMissing($dir)) return;
+        if (BooleanHelpers::isDirMissing($dir)) return;
         $entries = scandir($dir);
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;

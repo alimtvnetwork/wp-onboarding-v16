@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use Throwable;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentHandlerActionTrait {
 
@@ -52,7 +53,7 @@ trait AgentHandlerActionTrait {
             $slug = sanitize_text_field($request->get_param('slug'));
             $this->fileLogger->info('Executing agent action', array('id' => $id, 'action' => $action, 'slug' => $slug));
             $allowed_actions = array('enable', 'disable', 'delete');
-            if (\RiseupBooleanHelpers::isNotInList($action, $allowed_actions)) {
+            if (BooleanHelpers::isNotInList($action, $allowed_actions)) {
                 return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowed_actions), 400);
             }
             if (empty($slug)) {

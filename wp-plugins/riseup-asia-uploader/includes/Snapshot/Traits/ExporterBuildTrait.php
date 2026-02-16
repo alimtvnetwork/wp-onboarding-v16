@@ -57,7 +57,7 @@ trait ExporterBuildTrait {
     /** Ensure the exports directory exists with security files. */
     private function ensureExportsDir(): ?string {
         $exportsDir = RiseupPathUtils::getSnapshotsDir() . PathSubdirType::Exports->value;
-        if (!RiseupBooleanHelpers::isDirMissing($exportsDir)) {
+        if (!BooleanHelpers::isDirMissing($exportsDir)) {
             return $exportsDir;
         }
 
