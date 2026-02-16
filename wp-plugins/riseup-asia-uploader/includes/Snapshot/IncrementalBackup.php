@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
@@ -56,7 +57,7 @@ class IncrementalBackup {
         $this->logger = $logger;
         $this->db = $db;
         $this->rootDb = $rootDb;
-        $this->batchSize = SNAPSHOT_BATCH_SIZE;
+        $this->batchSize = SnapshotConfigType::BatchSize->value;
     }
 
     /** Execute an incremental backup against a master snapshot. */

@@ -17,6 +17,7 @@ use PDOStatement;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 
 trait NativeTableExportTrait {
 
@@ -68,7 +69,7 @@ trait NativeTableExportTrait {
     }
 
     private function executeBatchExport(PDOStatement $stmt, string $table, int $count): array {
-        $batch_size = SNAPSHOT_BATCH_SIZE;
+        $batch_size = SnapshotConfigType::BatchSize->value;
         $offset = 0;
         $exported = 0;
         $bytes = 0;

@@ -19,6 +19,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\RetentionType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\PathUtils;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -28,8 +29,8 @@ trait CleanerUtilsTrait {
     private function loadSettings(array $overrides): array {
         $defaults = array(
             'retention_type'  => RetentionType::Days->value,
-            'retention_days'  => defined('SNAPSHOT_RETENTION_DAYS_DEFAULT') ? SNAPSHOT_RETENTION_DAYS_DEFAULT : 30,
-            'retention_count' => defined('SNAPSHOT_RETENTION_COUNT_DEFAULT') ? SNAPSHOT_RETENTION_COUNT_DEFAULT : 10,
+            'retention_days'  => SnapshotConfigType::RetentionDaysDefault->value,
+            'retention_count' => SnapshotConfigType::RetentionCountDefault->value,
         );
 
         $saved = get_option(

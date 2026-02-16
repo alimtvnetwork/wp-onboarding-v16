@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\TableType;
 
@@ -30,7 +31,7 @@ trait OrchestratorBackupTrait {
 
     private function resolveBackupOptions(array $options): array {
         $settings = $this->manager->getSettings();
-        $this->worker->setPoolSize($settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT);
+        $this->worker->setPoolSize($settings['worker_pool_size'] ?? SnapshotConfigType::WorkerPoolDefault->value);
 
         return array(
             'title' => $options['title'] ?? ('Full Backup ' . date('Y-m-d H:i')),

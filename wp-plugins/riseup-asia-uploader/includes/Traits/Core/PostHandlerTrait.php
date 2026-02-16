@@ -17,6 +17,7 @@ use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
@@ -71,7 +72,7 @@ trait PostHandlerTrait
         try {
             $this->db->init();
             $filters = $this->buildLogQueryFilters($request);
-            $limit  = $request->get_param('limit') ?? DEFAULT_LIMIT;
+            $limit  = $request->get_param('limit') ?? PaginationConfigType::DefaultLimit->value;
             $offset = $request->get_param('offset') ?? 0;
 
             $result = $this->db->queryTransactions($filters, $limit, $offset);

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use Throwable;
 use Exception;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 
@@ -61,7 +62,7 @@ trait ManagerTableRestoreTrait {
     }
 
     private function insertBatchFromSqlite(PDO $sqlite, string $table, array $columnNames, int $rowCount): int {
-        $batchSize = SNAPSHOT_BATCH_SIZE;
+        $batchSize = SnapshotConfigType::BatchSize->value;
         $offset = 0;
         $totalRows = 0;
         $columnsSql = '`' . implode('`, `', $columnNames) . '`';

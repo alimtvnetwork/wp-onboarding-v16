@@ -80,8 +80,8 @@ trait AdminAjaxSnapshotTrait {
         }
 
         $settings['worker_pool_size'] = max(
-            SNAPSHOT_WORKER_POOL_MIN,
-            min(SNAPSHOT_WORKER_POOL_MAX, intval($_POST['worker_pool_size']))
+            \RiseupAsia\Enums\SnapshotConfigType::WorkerPoolMin->value,
+            min(\RiseupAsia\Enums\SnapshotConfigType::WorkerPoolMax->value, intval($_POST['worker_pool_size']))
         );
     }
 

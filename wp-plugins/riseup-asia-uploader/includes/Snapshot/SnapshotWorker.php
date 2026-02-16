@@ -11,6 +11,7 @@ use RiseupAsia\Snapshot\Traits\WorkerTableExportTrait;
 use RiseupAsia\Snapshot\Traits\WorkerProgressTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Database\RootDb;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Logging\FileLogger;
 
 class SnapshotWorker {
@@ -44,12 +45,12 @@ class SnapshotWorker {
         $this->db = $db;
         $this->rootDb = $rootDb;
         $this->analyzer = $analyzer;
-        $this->batchSize = SNAPSHOT_BATCH_SIZE;
-        $this->poolSize  = SNAPSHOT_WORKER_POOL_DEFAULT;
+        $this->batchSize = SnapshotConfigType::BatchSize->value;
+        $this->poolSize  = SnapshotConfigType::WorkerPoolDefault->value;
     }
 
     public function setPoolSize(int $size): void {
-        $this->poolSize = max(SNAPSHOT_WORKER_POOL_MIN, min(SNAPSHOT_WORKER_POOL_MAX, $size));
+        $this->poolSize = max(SnapshotConfigType::WorkerPoolMin->value, min(SnapshotConfigType::WorkerPoolMax->value, $size));
     }
 
     public function getPoolSize(): int { return $this->poolSize; }
