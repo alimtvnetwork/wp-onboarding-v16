@@ -4,15 +4,14 @@
  *
  * Shell trait — logic delegated to AgentHandlerCrudTrait and AgentHandlerActionTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Agent
  */
+
+namespace RiseupAsia\Traits\Agent;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/AgentHandlerCrudTrait.php';
-require_once __DIR__ . '/AgentHandlerActionTrait.php';
 
 trait AgentHandlerTrait {
     use AgentHandlerCrudTrait;

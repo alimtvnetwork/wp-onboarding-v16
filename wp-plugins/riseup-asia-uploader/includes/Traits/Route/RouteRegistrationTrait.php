@@ -5,14 +5,17 @@
  * Contains registerRoutes and the utility/post/log/catch-all sub-registrars.
  * Plugin-specific routes (plugins, agents, snapshots) live in PluginRoutesTrait.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Route
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Route;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\PluginConfigType;

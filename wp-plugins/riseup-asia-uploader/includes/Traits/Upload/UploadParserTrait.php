@@ -2,14 +2,18 @@
 /**
  * UploadParserTrait — Upload input parsing for multipart and base64 requests.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Upload
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Upload;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\UploadSourceType;

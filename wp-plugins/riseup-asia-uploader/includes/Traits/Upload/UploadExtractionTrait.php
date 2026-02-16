@@ -4,16 +4,15 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Upload
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Upload;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once dirname(__FILE__) . '/UploadZipTrait.php';
-require_once dirname(__FILE__) . '/UploadInstallTrait.php';
 
 trait UploadExtractionTrait
 {

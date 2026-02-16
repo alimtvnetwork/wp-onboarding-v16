@@ -2,13 +2,19 @@
 /**
  * AgentHandlerActionTrait — REST handlers for agent test, sync, action, and history.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Agent
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Agent;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 
 trait AgentHandlerActionTrait {
 
@@ -17,7 +23,7 @@ trait AgentHandlerActionTrait {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Testing agent connection', array('id' => $id));
-            $manager = RiseupAgentManager::getInstance();
+            $manager = \RiseupAgentManager::getInstance();
             $result = $manager->testConnection($id);
             $status_code = $result['success'] ? 200 : 400;
             return new WP_REST_Response($result, $status_code);
@@ -29,7 +35,7 @@ trait AgentHandlerActionTrait {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Syncing plugins from agent', array('id' => $id));
-            $manager = RiseupAgentManager::getInstance();
+            $manager = \RiseupAgentManager::getInstance();
             $result = $manager->syncPlugins($id);
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);
@@ -46,13 +52,13 @@ trait AgentHandlerActionTrait {
             $slug = sanitize_text_field($request->get_param('slug'));
             $this->fileLogger->info('Executing agent action', array('id' => $id, 'action' => $action, 'slug' => $slug));
             $allowed_actions = array('enable', 'disable', 'delete');
-            if (RiseupBooleanHelpers::isNotInList($action, $allowed_actions)) {
+            if (\RiseupBooleanHelpers::isNotInList($action, $allowed_actions)) {
                 return $this->errorResponse('Invalid action. Allowed: ' . implode(', ', $allowed_actions), 400);
             }
             if (empty($slug)) {
                 return $this->errorResponse('Plugin slug is required', 400);
             }
-            $manager = RiseupAgentManager::getInstance();
+            $manager = \RiseupAgentManager::getInstance();
             $result = $manager->executePluginAction($id, $action, $slug);
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);
@@ -68,7 +74,7 @@ trait AgentHandlerActionTrait {
             $limit = $request->get_param('limit') ?: 50;
             $offset = $request->get_param('offset') ?: 0;
             $this->fileLogger->info('Getting agent action history', array('id' => $id));
-            $manager = RiseupAgentManager::getInstance();
+            $manager = \RiseupAgentManager::getInstance();
             $result = $manager->getActionHistory($id, $limit, $offset);
             return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'actions' => $result['actions']), 200);
         }, 'agent_history');

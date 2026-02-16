@@ -2,14 +2,18 @@
 /**
  * SnapshotImportStreamTrait — snapshot import and file streaming handlers.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Snapshot
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\StatusType;
@@ -41,8 +45,7 @@ trait SnapshotImportStreamTrait {
             ), 400);
         }
 
-        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotExporter.php';
-        $export = RiseupSnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
+        $export = \RiseupSnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
 
         if (!$export) {
             return new WP_REST_Response(array(
@@ -124,8 +127,8 @@ trait SnapshotImportStreamTrait {
                 array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
             );
 
-            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
-            $importer = new RiseupSnapshotImport($this->fileLogger, $this->db, $manager);
+            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $importer = new \RiseupSnapshotImport($this->fileLogger, $this->db, $manager);
             $result = $importer->import($tmp_file);
 
             $this->logger->logPluginAction(

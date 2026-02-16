@@ -2,14 +2,18 @@
 /**
  * SnapshotBackupOpsTrait — Export, cleanup, and progress REST handlers.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Snapshot
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
@@ -20,9 +24,9 @@ trait SnapshotBackupOpsTrait {
     public function handleExportPertable(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $analyzer = RiseupDependencyAnalyzer::getInstance($this->fileLogger);
-            $rootDb = RiseupRootDb::getInstance($this->fileLogger, $analyzer);
-            $worker = RiseupSnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
+            $analyzer = \RiseupDependencyAnalyzer::getInstance($this->fileLogger);
+            $rootDb = \RiseupRootDb::getInstance($this->fileLogger, $analyzer);
+            $worker = \RiseupSnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
 
             $result = $worker->execute(array(
                 'title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? 'wordpress',
@@ -37,7 +41,7 @@ trait SnapshotBackupOpsTrait {
     public function handleSnapshotCleanup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $cleaner = RiseupSnapshotFactory::cleaner($this->fileLogger, $this->db);
+            $cleaner = \RiseupSnapshotFactory::cleaner($this->fileLogger, $this->db);
             $result = $cleaner->execute($this->extractCleanupOptions($body));
 
             $this->logCleanupIfNotDryRun($body, $result);
@@ -114,9 +118,8 @@ trait SnapshotBackupOpsTrait {
 
     /** Fetch job progress from the worker. */
     private function fetchJobProgress(int $jobId) {
-        require_once dirname(__FILE__) . '/../../Snapshot/SnapshotFactory.php';
-        $rootDb = RiseupRootDb::getInstance($this->fileLogger, RiseupDependencyAnalyzer::getInstance($this->fileLogger));
-        $worker = RiseupSnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, RiseupDependencyAnalyzer::getInstance($this->fileLogger));
+        $rootDb = \RiseupRootDb::getInstance($this->fileLogger, \RiseupDependencyAnalyzer::getInstance($this->fileLogger));
+        $worker = \RiseupSnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, \RiseupDependencyAnalyzer::getInstance($this->fileLogger));
         return $worker->getJobProgress($jobId);
     }
 

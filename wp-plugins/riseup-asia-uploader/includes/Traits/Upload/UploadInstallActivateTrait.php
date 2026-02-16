@@ -2,14 +2,17 @@
 /**
  * UploadInstallActivateTrait — OPcache reset, activation, and version detection.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Upload
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Upload;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -69,7 +72,7 @@ trait UploadInstallActivateTrait
     /** Build response for failed activation after upload. */
     private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
         $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $error_msg);
-        return RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
+        return \RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Upload->value)
             ->setSingleResult(array(
                 'plugin_slug' => $slug, 'is_update' => $is_update,
@@ -96,7 +99,7 @@ trait UploadInstallActivateTrait
         $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
         clearstatcache(true, $full_path);
 
-        if (RiseupBooleanHelpers::isFileMissing($full_path)) {
+        if (\RiseupBooleanHelpers::isFileMissing($full_path)) {
             return '';
         }
 

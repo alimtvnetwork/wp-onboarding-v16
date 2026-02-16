@@ -4,15 +4,14 @@
  *
  * Shell trait delegating to SnapshotCrudListTrait and SnapshotCrudMutateTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Snapshot
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/SnapshotCrudListTrait.php';
-require_once __DIR__ . '/SnapshotCrudMutateTrait.php';
 
 trait SnapshotCrudTrait {
     use SnapshotCrudListTrait;

@@ -2,14 +2,18 @@
 /**
  * SnapshotCrudCreateTrait — snapshot creation and scheduling handlers.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Snapshot
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
@@ -34,7 +38,7 @@ trait SnapshotCrudCreateTrait {
             $this->logger->logPluginAction(ActionType::SnapshotCreate->value, 'snapshot', StatusType::Success->value,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
-            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $isPerTable = (($manager->getSettings()['mode'] ?? 'per_table') === 'per_table');
 
             $result = $isPerTable
@@ -50,7 +54,7 @@ trait SnapshotCrudCreateTrait {
      * Execute a per-table snapshot via the orchestrator.
      */
     private function executePerTableSnapshot(array $body, string $scope, $manager): array {
-        $orchestrator = RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
+        $orchestrator = \RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
         return $orchestrator->executeFullBackup(array(
             'title'            => $body['title'] ?? null,
             'scope'            => $scope,

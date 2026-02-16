@@ -2,14 +2,20 @@
 /**
  * PluginExportTrait — Export self and export any plugin as ZIP.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Plugin
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
+use ZipArchive;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -23,7 +29,7 @@ trait PluginExportTrait
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
-            $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
+            $ignore = \RiseupUploadIgnore::fromDirectory($plugin_dir);
             $zip_content = $this->createPluginZip($plugin_dir, PluginConfigType::Slug->value, $ignore);
 
             if ($zip_content === null) {
@@ -60,7 +66,7 @@ trait PluginExportTrait
     }
 
     /** Create a ZIP archive of a plugin directory and return its binary content. */
-    private function createPluginZip(string $plugin_dir, string $slug, RiseupUploadIgnore $ignore): ?string {
+    private function createPluginZip(string $plugin_dir, string $slug, \RiseupUploadIgnore $ignore): ?string {
         $temp_dir = $this->get_temp_dir();
         $zip_file = $temp_dir . '/' . $slug . '.zip';
 
@@ -86,17 +92,17 @@ trait PluginExportTrait
      */
     private function exportPluginBySlug(string $slug) {
         $plugins_dir = WP_PLUGIN_DIR;
-        $plugin_dir  = RiseupPathUtils::join($plugins_dir, $slug);
+        $plugin_dir  = \RiseupPathUtils::join($plugins_dir, $slug);
 
-        if (!RiseupPathUtils::dirExists($plugin_dir)) {
+        if (!\RiseupPathUtils::dirExists($plugin_dir)) {
             return $this->errorResponse('Plugin not found: ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        if (!RiseupPathUtils::isSafePath($plugin_dir, $plugins_dir)) {
+        if (!\RiseupPathUtils::isSafePath($plugin_dir, $plugins_dir)) {
             return $this->errorResponse('Invalid plugin slug', HttpStatusType::BadRequest->value);
         }
 
-        $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $ignore = \RiseupUploadIgnore::fromDirectory($plugin_dir);
         $zip_content = $this->createPluginZip($plugin_dir, $slug . '-backup', $ignore);
 
         if ($zip_content === null) {

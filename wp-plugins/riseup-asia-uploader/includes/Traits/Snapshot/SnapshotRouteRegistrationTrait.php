@@ -2,9 +2,11 @@
 /**
  * SnapshotRouteRegistrationTrait — snapshot route registration.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Snapshot
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;

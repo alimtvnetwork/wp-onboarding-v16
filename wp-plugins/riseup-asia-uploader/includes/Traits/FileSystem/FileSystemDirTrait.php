@@ -2,19 +2,23 @@
 /**
  * FileSystemDirTrait — directory operations, ZIP helpers, temp dir.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\FileSystem
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\FileSystem;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use ZipArchive;
+
 trait FileSystemDirTrait {
 
     private function getTempDir(): string {
-        $tempDir = RiseupPathUtils::getTempDir();
-        RiseupPathUtils::ensureDir($tempDir);
+        $tempDir = \RiseupPathUtils::getTempDir();
+        \RiseupPathUtils::ensureDir($tempDir);
         return $tempDir;
     }
 
@@ -32,7 +36,7 @@ trait FileSystemDirTrait {
     }
 
     private function deleteDirectory(string $dir): bool {
-        if (RiseupBooleanHelpers::isDirMissing($dir)) {
+        if (\RiseupBooleanHelpers::isDirMissing($dir)) {
             return false;
         }
 
@@ -50,11 +54,11 @@ trait FileSystemDirTrait {
     }
 
     private function copyDirectory(string $src, string $dst): bool {
-        if (RiseupBooleanHelpers::isDirMissing($src)) {
+        if (\RiseupBooleanHelpers::isDirMissing($src)) {
             return false;
         }
 
-        if (RiseupBooleanHelpers::isDirMissing($dst)) {
+        if (\RiseupBooleanHelpers::isDirMissing($dst)) {
             wp_mkdir_p($dst);
         }
 

@@ -4,17 +4,15 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Snapshot
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-// Load sub-traits
-require_once __DIR__ . '/SnapshotCrudCreateTrait.php';
-require_once __DIR__ . '/SnapshotCrudRestoreTrait.php';
 
 trait SnapshotCrudMutateTrait {
     use SnapshotCrudCreateTrait;

@@ -4,18 +4,23 @@
  *
  * Shell trait delegating parsing to UploadParserTrait.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Upload
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Upload;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
-
-require_once __DIR__ . '/UploadParserTrait.php';
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait UploadPipelineTrait
 {
@@ -91,7 +96,7 @@ trait UploadPipelineTrait
     }
 
     private function buildUploadEnvelope(array $result, array $input): WP_REST_Response {
-        return RiseupEnvelopeBuilder::success()
+        return \RiseupEnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route())
             ->setSingleResult(array(
                 'plugin_slug'    => $result['slug'],

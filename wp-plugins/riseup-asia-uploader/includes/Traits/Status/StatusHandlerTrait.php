@@ -4,17 +4,15 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Status
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Status;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-// Load sub-traits
-require_once __DIR__ . '/StatusPayloadTrait.php';
-require_once __DIR__ . '/StatusOpsTrait.php';
 
 trait StatusHandlerTrait
 {

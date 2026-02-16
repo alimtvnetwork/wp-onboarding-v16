@@ -2,26 +2,30 @@
 /**
  * AuthPermissionTrait — permission callbacks and endpoint checks.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Auth
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Auth;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_Error;
 use RiseupAsia\Enums\CapabilityType;
 
 trait AuthPermissionTrait
 {
     /** Check if an endpoint is enabled via settings. */
     private function isEndpointEnabled(string $endpoint): bool {
-        return RiseupAdmin::is_endpoint_enabled($endpoint);
+        return \RiseupAdmin::is_endpoint_enabled($endpoint);
     }
 
     /** Check if an endpoint requires authentication via settings. */
     private function isAuthRequired(string $endpoint): bool {
-        return RiseupAdmin::is_auth_required($endpoint);
+        return \RiseupAdmin::is_auth_required($endpoint);
     }
 
     /** Build permission callback with optional auth bypass. */

@@ -4,16 +4,15 @@
  *
  * Logic delegated to SnapshotBackupExecTrait and SnapshotBackupOpsTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Snapshot
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/SnapshotBackupExecTrait.php';
-require_once __DIR__ . '/SnapshotBackupOpsTrait.php';
 
 trait SnapshotBackupHandlerTrait {
     use SnapshotBackupExecTrait;

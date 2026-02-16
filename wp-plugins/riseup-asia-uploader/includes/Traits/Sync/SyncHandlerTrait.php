@@ -4,16 +4,15 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Sync
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Sync;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once dirname(__FILE__) . '/SyncManifestTrait.php';
-require_once dirname(__FILE__) . '/SyncPushTrait.php';
 
 trait SyncHandlerTrait
 {

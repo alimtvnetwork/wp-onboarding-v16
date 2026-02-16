@@ -4,15 +4,14 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Snapshot
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once dirname(__FILE__) . '/SnapshotSettingsHandlerTrait.php';
-require_once dirname(__FILE__) . '/SnapshotBackupHandlerTrait.php';
 
 trait SnapshotBackupTrait {
     use SnapshotSettingsHandlerTrait;

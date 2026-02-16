@@ -4,16 +4,15 @@
  *
  * Logic delegated to PluginLifecycleEnableTrait and PluginLifecycleDeleteTrait.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Plugin
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/PluginLifecycleEnableTrait.php';
-require_once __DIR__ . '/PluginLifecycleDeleteTrait.php';
 
 trait PluginLifecycleActionsTrait {
     use PluginLifecycleEnableTrait;

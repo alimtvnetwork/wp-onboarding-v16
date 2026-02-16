@@ -1,93 +1,121 @@
 <?php
 /**
- * PluginLifecycleHelpersTrait — shared helpers for plugin lifecycle operations.
+ * PluginLifecycleEnableTrait — Enable and disable plugin REST handlers.
  *
- * @package RiseupAsia\Traits
- * @since   1.57.0
+ * @package RiseupAsia\Traits\Plugin
+ * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
+use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\StatusType;
 
-trait PluginLifecycleHelpersTrait {
+trait PluginLifecycleEnableTrait {
 
-    public function handlePluginExists(WP_REST_Request $request): WP_REST_Response {
-        $body = $request->get_json_params();
-        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-        if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
+    /** Handle enable (activate) plugin request. */
+    public function handleEnablePlugin($request) {
+        $loadError = $this->loadPluginFunctions();
+        if ($loadError) {
+            return $loadError;
         }
 
-        try {
-            return $this->buildPluginExistsResponse($slug);
-        } catch (Throwable $e) {
-            return $this->errorResponse('Failed to check plugin existence: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+        $resolved = $this->resolvePluginFromRequest($request);
+        if ($resolved instanceof WP_REST_Response) {
+            return $resolved;
         }
+
+        if (is_plugin_active($resolved['plugin_file'])) {
+            return $this->buildAlreadyActiveResponse($resolved['slug']);
+        }
+
+        return $this->tryActivatePlugin($resolved['slug'], $resolved['plugin_file']);
     }
 
-    private function buildPluginExistsResponse(string $slug): WP_REST_Response {
-        $pluginFile = $this->findPluginFile($slug);
-        $exists = (bool) $pluginFile;
-        $status = $exists ? (is_plugin_active($pluginFile) ? 'active' : 'inactive') : 'not_installed';
+    /** Handle disable (deactivate) plugin request. */
+    public function handleDisablePlugin($request) {
+        $loadError = $this->loadPluginFunctions();
+        if ($loadError) {
+            return $loadError;
+        }
 
-        return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::PluginExists->value)
-            ->setSingleResult(array(
-                'plugin_slug' => $slug, 'exists' => $exists, 'status' => $status,
-                'plugin_file' => $exists ? $pluginFile : null,
-                'requestUrl' => $_SERVER['REQUEST_URI'] ?? '', 'responseUrl' => home_url(),
-            ))
+        $resolved = $this->resolvePluginFromRequest($request);
+        if ($resolved instanceof WP_REST_Response) {
+            return $resolved;
+        }
+
+        if (!is_plugin_active($resolved['plugin_file'])) {
+            return $this->buildAlreadyInactiveResponse($resolved['slug']);
+        }
+
+        return $this->tryDeactivatePlugin($resolved['slug'], $resolved['plugin_file']);
+    }
+
+    /** Build response for already-active plugin. */
+    private function buildAlreadyActiveResponse(string $slug): WP_REST_Response {
+        return \RiseupEnvelopeBuilder::success('Plugin was already active')
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginEnable->route())
+            ->setSingleResult(array('plugin_slug' => $slug, 'activated' => true))
             ->toResponse();
     }
 
-    private function loadPluginFunctions(bool $includeFileFunctions = false): ?WP_REST_Response {
-        try {
-            if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
-                require_once ABSPATH . 'wp-admin/includes/plugin.php';
-            }
-
-            if ($includeFileFunctions && RiseupBooleanHelpers::isFuncMissing('delete_plugins')) {
-                require_once ABSPATH . 'wp-admin/includes/file.php';
-            }
-
-            return null;
-        } catch (Throwable $e) {
-            return $this->errorResponse('Failed to load WordPress plugin functions: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
-        }
+    /** Build response for already-inactive plugin. */
+    private function buildAlreadyInactiveResponse(string $slug): WP_REST_Response {
+        return \RiseupEnvelopeBuilder::success('Plugin was already inactive')
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
+            ->setSingleResult(array('plugin_slug' => $slug, 'deactivated' => true))
+            ->toResponse();
     }
 
-    private function resolvePluginFromRequest(WP_REST_Request $request): array|WP_REST_Response {
-        $body = $request->get_json_params();
-        $slug = isset($body['plugin']) ? sanitize_text_field($body['plugin']) : $request->get_param('slug');
-
-        if (empty($slug)) {
-            return $this->errorResponse('Plugin slug is required in JSON body', HttpStatusType::BadRequest->value);
-        }
-
+    /** Attempt to activate a plugin. */
+    private function tryActivatePlugin(string $slug, string $plugin_file) {
         try {
-            $pluginFile = $this->findPluginFile($slug);
-
-            if (!$pluginFile) {
-                return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
+            $result = activate_plugin($plugin_file);
+            if (is_wp_error($result)) {
+                $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, array('error' => $result->get_error_message()));
+                return $this->errorResponse(ResponseMessageType::ActivationFailed->value . ': ' . $result->get_error_message(), HttpStatusType::ServerError->value);
             }
-
-            return array('slug' => $slug, 'plugin_file' => $pluginFile);
         } catch (Throwable $e) {
-            return $this->errorResponse('Failed to locate plugin: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
+            $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage()));
+            return $this->errorResponse('Exception during activation: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
+
+        $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Success->value);
+        return \RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginEnable->route())
+            ->setSingleResult(array('plugin_slug' => $slug, 'activated' => true))
+            ->toResponse();
     }
 
-    private function logPluginLifecycle(string $action, string $slug, string $status, array $extra = array()): void {
+    /** Attempt to deactivate a plugin. */
+    private function tryDeactivatePlugin(string $slug, string $plugin_file) {
         try {
-            $this->logger->logPluginAction($action, $slug, $status, $extra);
+            deactivate_plugins($plugin_file);
         } catch (Throwable $e) {
-            $this->fileLogger->warn('Failed to log plugin action', array('error' => $e->getMessage()));
+            $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage()));
+            return $this->errorResponse('Exception during deactivation: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
+
+        if (is_plugin_active($plugin_file)) {
+            $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Failed->value, array('error' => 'Plugin remained active'));
+            return $this->errorResponse(ResponseMessageType::DeactivationFailed->value . ': Plugin remained active', HttpStatusType::ServerError->value);
+        }
+
+        $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Success->value);
+        return \RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
+            ->setSingleResult(array('plugin_slug' => $slug, 'deactivated' => true))
+            ->toResponse();
     }
 }

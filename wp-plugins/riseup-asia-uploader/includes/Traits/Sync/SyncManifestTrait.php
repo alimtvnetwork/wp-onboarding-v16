@@ -2,14 +2,19 @@
 /**
  * SyncManifestTrait — sync manifest generation and directory scanning.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Sync
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Sync;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
 
@@ -34,17 +39,17 @@ trait SyncManifestTrait
 
     /** Generate a sync manifest for a plugin. */
     private function generateSyncManifest(string $slug): WP_REST_Response {
-        if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+        if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
+        if (\RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-        $fileCache = RiseupFileCache::getInstance($this->fileLogger, $this->db);
+        $ignore = \RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $fileCache = \RiseupFileCache::getInstance($this->fileLogger, $this->db);
         $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
 
         return new WP_REST_Response(array(
@@ -59,7 +64,7 @@ trait SyncManifestTrait
     }
 
     /** Recursively scan a directory and collect file info with hashes. */
-    private function scanDirectoryForFiles(string $baseDir, string $dir, RiseupUploadIgnore $ignore, array &$files): void {
+    private function scanDirectoryForFiles(string $baseDir, string $dir, \RiseupUploadIgnore $ignore, array &$files): void {
         $items = @scandir($dir);
         if ($items === false) {
             return;
