@@ -18,6 +18,7 @@ use Throwable;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Snapshot\SnapshotFactory;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TriggerSourceType;
 
@@ -93,12 +94,12 @@ trait SchedulerCronTrait {
     /**
      * Create manager + orchestrator instances via factory.
      *
-     * @return array{0: RiseupSnapshotManager, 1: RiseupSnapshotOrchestrator}
+     * @return array{0: \RiseupAsia\Snapshot\SnapshotManager, 1: \RiseupAsia\Snapshot\SnapshotOrchestrator}
      */
     private function createOrchestrator(): array {
         require_once dirname(__FILE__) . '/../SnapshotFactory.php';
-        $manager = RiseupSnapshotFactory::manager($this->logger, $this->db);
-        $orchestrator = RiseupSnapshotFactory::orchestrator($this->logger, $this->db, $manager);
+        $manager = SnapshotFactory::manager($this->logger, $this->db);
+        $orchestrator = SnapshotFactory::orchestrator($this->logger, $this->db, $manager);
         return array($manager, $orchestrator);
     }
 

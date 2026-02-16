@@ -13,6 +13,8 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_REST_Request;
+use RiseupAsia\Upload\UploadIgnore;
+use RiseupAsia\Database\FileCache;
 use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\ActionType;
@@ -53,7 +55,7 @@ trait SyncPushTrait
 
     /** Execute the sync push operation across all files. */
     private function executeSyncPush(string $slug, array $files, string $plugin_dir): array {
-        $ignore = \RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $ignore = UploadIgnore::fromDirectory($plugin_dir);
         $counters = array('files_updated' => 0, 'files_deleted' => 0, 'files_ignored' => 0);
         $results = array();
         $ignored_files = array();
@@ -65,7 +67,7 @@ trait SyncPushTrait
         }
 
         $this->logSyncCompletion($slug, $counters);
-        \RiseupFileCache::getInstance($this->fileLogger, $this->db)->invalidate($slug);
+        FileCache::getInstance($this->fileLogger, $this->db)->invalidate($slug);
 
         return array('success' => true) + $counters + array('ignored_files' => $ignored_files, 'results' => $results);
     }

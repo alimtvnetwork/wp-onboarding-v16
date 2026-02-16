@@ -10,13 +10,14 @@ namespace RiseupAsia\Logging\Traits;
 
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Database\Database;
 
 trait LoggerContextTrait {
 
     /** Get database instance (lazy loading). */
-    private function getDb(): \RiseupDatabase {
+    private function getDb(): Database {
         if ($this->db === null) {
-            $this->db = \RiseupDatabase::getInstance();
+            $this->db = Database::getInstance();
         }
 
         return $this->db;

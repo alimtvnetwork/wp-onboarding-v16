@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Error;
+use RiseupAsia\Agent\AgentManager;
 
 trait AgentHandlerCrudTrait {
 
@@ -27,7 +28,7 @@ trait AgentHandlerCrudTrait {
             $offset = $request->get_param('offset') ?: 0;
             $filters = array();
             if ($status) { $filters['status'] = sanitize_key($status); }
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $result = $manager->listAgents($filters, $limit, $offset);
             return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'agents' => $result['agents']), 200);
         }, 'list_agents');
@@ -38,7 +39,7 @@ trait AgentHandlerCrudTrait {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Adding agent site');
             $data = $this->extractAgentData($request);
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $result = $manager->addAgent($data);
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);
@@ -61,7 +62,7 @@ trait AgentHandlerCrudTrait {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Getting agent site', array('id' => $id));
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $agent = $manager->getAgent($id, false);
             if (!$agent) {
                 return $this->errorResponse('Agent site not found', 404);
@@ -75,7 +76,7 @@ trait AgentHandlerCrudTrait {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Removing agent site', array('id' => $id));
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $result = $manager->removeAgent($id);
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);

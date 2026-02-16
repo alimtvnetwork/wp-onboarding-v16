@@ -111,8 +111,8 @@ class RiseupActivationHandler
     }
 
     private static function ensureSecurity(string $baseDir): void {
-        if (class_exists('RiseupInitHelpers')) {
-            RiseupInitHelpers::addSecurityFiles($baseDir);
+        if (class_exists(\RiseupAsia\Helpers\InitHelpers::class)) {
+            \RiseupAsia\Helpers\InitHelpers::addSecurityFiles($baseDir);
             return;
         }
 

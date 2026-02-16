@@ -18,6 +18,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginSelectionType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
+use RiseupAsia\Snapshot\SnapshotFactory;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Enums\SnapshotScopeType;
@@ -91,7 +92,7 @@ trait ManagerSettingsTrait {
 
         if (isset($settings['frequency'])) {
             $updated = $this->getSettings();
-            $scheduler = RiseupSnapshotFactory::scheduler($this->logger, $this->db);
+            $scheduler = SnapshotFactory::scheduler($this->logger, $this->db);
             $scheduler->syncSchedule($updated);
         }
 

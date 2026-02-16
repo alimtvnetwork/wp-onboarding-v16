@@ -14,13 +14,15 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Snapshot\SnapshotManager;
+use RiseupAsia\Snapshot\DependencyAnalyzer;
 
 trait SnapshotSettingsHandlerTrait {
 
     /** Handle getting snapshot settings. */
     public function handleGetSnapshotSettings(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             return new WP_REST_Response(array('success' => true, 'settings' => $manager->getSettings()), 200);
         }, 'get_snapshot_settings');
     }
@@ -30,7 +32,7 @@ trait SnapshotSettingsHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $this->fileLogger->info('Updating snapshot settings', array('keys' => array_keys($body)));
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $updated = $manager->updateSettings($body);
             $this->logger->logPluginAction('snapshot_settings_update', 'snapshot', StatusType::Success->value, array('keys' => array_keys($body)));
             return new WP_REST_Response(array('success' => true, 'settings' => $updated), 200);
@@ -40,7 +42,7 @@ trait SnapshotSettingsHandlerTrait {
     /** Handle listing snapshot providers. */
     public function handleListSnapshotProviders(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             return new WP_REST_Response(array('success' => true, 'providers' => $manager->getProviders()), 200);
         }, 'list_snapshot_providers');
     }
@@ -48,7 +50,7 @@ trait SnapshotSettingsHandlerTrait {
     /** Handle listing available database tables. */
     public function handleListSnapshotTables(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() {
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             return new WP_REST_Response(array('success' => true, 'tables' => $manager->getAvailableTables()), 200);
         }, 'list_snapshot_tables');
     }
@@ -58,7 +60,7 @@ trait SnapshotSettingsHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
             $scope = isset($body['scope']) ? $body['scope'] : 'all';
-            $analyzer = \RiseupDependencyAnalyzer::getInstance($this->fileLogger);
+            $analyzer = DependencyAnalyzer::getInstance($this->fileLogger);
             $analysis = $analyzer->analyze($scope);
             return new WP_REST_Response(array(
                 'success' => true, 'tables' => $analysis['tables'], 'dependencies' => $analysis['dependencies'],

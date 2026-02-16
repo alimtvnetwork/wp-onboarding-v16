@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Database\Orm;
 
 trait FileCacheStoreTrait {
 
@@ -22,7 +23,7 @@ trait FileCacheStoreTrait {
         }
 
         try {
-            $deleted = RiseupORM::forTable(TableType::FileCache->value)
+            $deleted = Orm::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->delete();
 
@@ -43,7 +44,7 @@ trait FileCacheStoreTrait {
 
     private function loadCachedEntries(string $pluginSlug): array {
         try {
-            $rows = RiseupORM::forTable(TableType::FileCache->value)
+            $rows = Orm::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->findMany();
 
@@ -86,7 +87,7 @@ trait FileCacheStoreTrait {
 
     private function deleteCacheEntry(string $pluginSlug, string $path): void {
         try {
-            RiseupORM::forTable(TableType::FileCache->value)
+            Orm::forTable(TableType::FileCache->value)
                 ->where('plugin_slug', $pluginSlug)
                 ->where('relative_path', $path)
                 ->delete();

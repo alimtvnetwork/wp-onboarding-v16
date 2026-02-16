@@ -11,6 +11,7 @@ namespace RiseupAsia\Logging\Traits;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\InitHelpers;
 
 trait LoggerPathTrait {
 
@@ -20,7 +21,7 @@ trait LoggerPathTrait {
             return true;
         }
 
-        $this->baseDir = \RiseupInitHelpers::resolveBaseDir();
+        $this->baseDir = InitHelpers::resolveBaseDir();
         $this->logsDir        = rtrim($this->baseDir, '/') . PathSubdirType::Logs->value;
         $this->logFile        = $this->logsDir . PathLogFileType::Log->value;
         $this->errorFile      = $this->logsDir . PathLogFileType::Error->value;
@@ -31,13 +32,13 @@ trait LoggerPathTrait {
 
     /** Ensure log directories exist. */
     private function ensureDirectories(): bool {
-        if (!\RiseupInitHelpers::ensureDirNative($this->baseDir, true)) {
+        if (!InitHelpers::ensureDirNative($this->baseDir, true)) {
             error_log(PluginConfigType::LogPrefix->value . ' Failed to create base directory: ' . $this->baseDir);
 
             return false;
         }
 
-        if (!\RiseupInitHelpers::ensureDirNative($this->logsDir, false)) {
+        if (!InitHelpers::ensureDirNative($this->logsDir, false)) {
             error_log(PluginConfigType::LogPrefix->value . ' Failed to create logs directory: ' . $this->logsDir);
 
             return false;

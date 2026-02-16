@@ -16,6 +16,7 @@ use PDO;
 use PDOStatement;
 use Throwable;
 use Exception;
+use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait IncrementalExportTrait {
 
@@ -48,7 +49,7 @@ trait IncrementalExportTrait {
             throw new Exception('Failed to get CREATE TABLE for ' . $table);
         }
 
-        $sqlite->exec(RiseupSqliteSchemaConverter::convert($createResult[1], $table));
+        $sqlite->exec(SqliteSchemaConverter::convert($createResult[1], $table));
         return $sqlite;
     }
 

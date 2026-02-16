@@ -24,6 +24,14 @@ use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\ErrorHandling\FatalErrorHandler;
 use RiseupAsia\ErrorHandling\FrameBuilder;
+use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\Logger;
+use RiseupAsia\Post\PostManager;
+use RiseupAsia\Update\UpdateResolver;
+use RiseupAsia\Snapshot\SnapshotScheduler;
+use RiseupAsia\Admin\Admin;
 
 // =============================================================================
 // PSR-4 AUTOLOADER
@@ -139,16 +147,16 @@ class RiseupAsia {
     use RiseupAsia\Traits\Snapshot\SnapshotBackupTrait;
     use RiseupAsia\Traits\FileSystem\FileSystemTrait;
 
-    /** @var RiseupFileLogger */
+    /** @var FileLogger */
     private $fileLogger;
 
-    /** @var RiseupLogger */
+    /** @var Logger */
     private $logger;
 
-    /** @var RiseupDatabase */
+    /** @var Database */
     private $db;
 
-    /** @var RiseupPostManager */
+    /** @var PostManager */
     private $postManager;
 
     /** @var RiseupAsia|null */
@@ -171,7 +179,7 @@ class RiseupAsia {
      * Constructor — registers hooks and initializes components.
      */
     private function __construct() {
-        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->fileLogger = FileLogger::getInstance();
         $this->fileLogger->info('Plugin constructor starting', array('version' => PluginConfigType::Version->value));
 
         RiseupDependencyLoader::logSummary($this->fileLogger);
@@ -187,7 +195,7 @@ class RiseupAsia {
 
         $this->initComponents();
 
-        RiseupInitHelpers::logStartupSummary($this->fileLogger);
+        InitHelpers::logStartupSummary($this->fileLogger);
         $this->fileLogger->info('Plugin constructor complete', array(
             'db_available' => $this->db !== null,
         ));
@@ -197,26 +205,26 @@ class RiseupAsia {
      * Initialize all plugin components with isolated error handling.
      */
     private function initComponents() {
-        $this->db = RiseupInitHelpers::initComponent('Database', function () {
-            $db = RiseupDatabase::getInstance();
+        $this->db = InitHelpers::initComponent('Database', function () {
+            $db = Database::getInstance();
             return $db->init() ? $db : null;
         });
 
-        $this->logger = RiseupInitHelpers::initComponent('TransactionLogger', function () {
-            return RiseupLogger::getInstance();
+        $this->logger = InitHelpers::initComponent('TransactionLogger', function () {
+            return Logger::getInstance();
         });
 
-        $this->postManager = RiseupInitHelpers::initComponent('PostManager', function () {
-            return RiseupPostManager::getInstance();
+        $this->postManager = InitHelpers::initComponent('PostManager', function () {
+            return PostManager::getInstance();
         });
 
-        RiseupInitHelpers::initComponent('UpdateResolver', function () {
-            return RiseupUpdateResolver::getInstance();
+        InitHelpers::initComponent('UpdateResolver', function () {
+            return UpdateResolver::getInstance();
         });
 
         if ($this->db !== null) {
-            RiseupInitHelpers::initComponent('SnapshotScheduler', function () {
-                $scheduler = RiseupSnapshotScheduler::getInstance($this->fileLogger, $this->db);
+            InitHelpers::initComponent('SnapshotScheduler', function () {
+                $scheduler = SnapshotScheduler::getInstance($this->fileLogger, $this->db);
                 $scheduler->init();
                 return $scheduler;
             });
@@ -241,7 +249,7 @@ function riseup_asia_init() {
     RiseupAsia::getInstance();
 
     if (is_admin()) {
-        RiseupAdmin::getInstance();
+        Admin::getInstance();
     }
 }
 

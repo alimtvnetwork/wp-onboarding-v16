@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Database\Orm;
 
 trait DatabaseQuerySearchTrait {
 
@@ -36,8 +37,8 @@ trait DatabaseQuerySearchTrait {
     private function executeTransactionQuery(array $filters, int $limit, int $offset): array {
         $this->fileLogger->debug('Querying transactions', array('filters' => $filters));
 
-        $countQuery = RiseupORM::forTable(TableType::Transactions->value);
-        $dataQuery = RiseupORM::forTable(TableType::Transactions->value);
+        $countQuery = Orm::forTable(TableType::Transactions->value);
+        $dataQuery = Orm::forTable(TableType::Transactions->value);
 
         $this->applyFilters($countQuery, $filters);
         $this->applyFilters($dataQuery, $filters);
@@ -113,10 +114,10 @@ trait DatabaseQuerySearchTrait {
 
         try {
             return array(
-                'total_transactions' => RiseupORM::forTable(TableType::Transactions->value)->count(),
+                'total_transactions' => Orm::forTable(TableType::Transactions->value)->count(),
                 'by_action'          => $this->countByColumn('action'),
                 'by_status'          => $this->countByColumn('status'),
-                'last_24h'           => RiseupORM::forTable(TableType::Transactions->value)
+                'last_24h'           => Orm::forTable(TableType::Transactions->value)
                     ->whereGte('created_at', gmdate('Y-m-d\TH:i:s\Z', time() - 86400))
                     ->count(),
             );
@@ -127,7 +128,7 @@ trait DatabaseQuerySearchTrait {
     }
 
     private function countByColumn(string $column): array {
-        $rows = RiseupORM::rawExecute(
+        $rows = Orm::rawExecute(
             "SELECT {$column}, COUNT(*) as count FROM " . TableType::Transactions->value . " GROUP BY {$column}"
         );
         $result = array();
@@ -145,7 +146,7 @@ trait DatabaseQuerySearchTrait {
         try {
             $cutoff = gmdate('Y-m-d\TH:i:s\Z', time() - ($daysToKeep * 86400));
 
-            $deleted = RiseupORM::forTable(TableType::Transactions->value)
+            $deleted = Orm::forTable(TableType::Transactions->value)
                 ->whereLt('created_at', $cutoff)
                 ->delete();
 

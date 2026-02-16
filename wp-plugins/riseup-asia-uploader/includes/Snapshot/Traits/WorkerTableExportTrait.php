@@ -16,6 +16,7 @@ use PDO;
 use PDOStatement;
 use Throwable;
 use Exception;
+use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait WorkerTableExportTrait {
 
@@ -55,7 +56,7 @@ trait WorkerTableExportTrait {
             throw new Exception('Failed to get table structure for ' . $table);
         }
 
-        $sqlite->exec(RiseupSqliteSchemaConverter::convert($create_sql, $table));
+        $sqlite->exec(SqliteSchemaConverter::convert($create_sql, $table));
 
         return $sqlite;
     }

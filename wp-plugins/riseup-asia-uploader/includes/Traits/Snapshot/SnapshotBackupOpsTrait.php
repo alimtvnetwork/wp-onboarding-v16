@@ -17,6 +17,10 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Snapshot\DependencyAnalyzer;
+use RiseupAsia\Database\RootDb;
+use RiseupAsia\Snapshot\SnapshotWorker;
+use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SnapshotBackupOpsTrait {
 
@@ -24,9 +28,9 @@ trait SnapshotBackupOpsTrait {
     public function handleExportPertable(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $analyzer = \RiseupDependencyAnalyzer::getInstance($this->fileLogger);
-            $rootDb = \RiseupRootDb::getInstance($this->fileLogger, $analyzer);
-            $worker = \RiseupSnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
+            $analyzer = DependencyAnalyzer::getInstance($this->fileLogger);
+            $rootDb = RootDb::getInstance($this->fileLogger, $analyzer);
+            $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, $analyzer);
 
             $result = $worker->execute(array(
                 'title' => $body['title'] ?? null, 'scope' => $body['scope'] ?? 'wordpress',
@@ -41,7 +45,7 @@ trait SnapshotBackupOpsTrait {
     public function handleSnapshotCleanup(WP_REST_Request $request): WP_REST_Response {
         return $this->safeExecute(function() use ($request) {
             $body = $request->get_json_params();
-            $cleaner = \RiseupSnapshotFactory::cleaner($this->fileLogger, $this->db);
+            $cleaner = SnapshotFactory::cleaner($this->fileLogger, $this->db);
             $result = $cleaner->execute($this->extractCleanupOptions($body));
 
             $this->logCleanupIfNotDryRun($body, $result);
@@ -118,8 +122,8 @@ trait SnapshotBackupOpsTrait {
 
     /** Fetch job progress from the worker. */
     private function fetchJobProgress(int $jobId) {
-        $rootDb = \RiseupRootDb::getInstance($this->fileLogger, \RiseupDependencyAnalyzer::getInstance($this->fileLogger));
-        $worker = \RiseupSnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, \RiseupDependencyAnalyzer::getInstance($this->fileLogger));
+        $rootDb = RootDb::getInstance($this->fileLogger, DependencyAnalyzer::getInstance($this->fileLogger));
+        $worker = SnapshotWorker::getInstance($this->fileLogger, $this->db, $rootDb, DependencyAnalyzer::getInstance($this->fileLogger));
         return $worker->getJobProgress($jobId);
     }
 

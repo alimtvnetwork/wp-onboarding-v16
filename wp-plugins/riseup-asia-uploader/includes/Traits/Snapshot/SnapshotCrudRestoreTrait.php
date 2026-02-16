@@ -16,6 +16,9 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Snapshot\SnapshotManager;
+use RiseupAsia\Snapshot\SnapshotOrchestrator;
+use RiseupAsia\Snapshot\RestoreEngine;
 
 trait SnapshotCrudRestoreTrait {
 
@@ -30,7 +33,7 @@ trait SnapshotCrudRestoreTrait {
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $manager->deleteSnapshot($id);
 
             $this->logger->logPluginAction(
@@ -55,7 +58,7 @@ trait SnapshotCrudRestoreTrait {
                 array('snapshot_id' => $id, 'mode' => $options['mode'], 'phase' => 'initiated'));
             $this->fileLogger->info('Restoring snapshot', array('id' => $id, 'mode' => $options['mode']));
 
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $this->routeRestoreToEngine($id, $options, $manager);
 
             $mode = $result['_mode'] ?? 'legacy';
@@ -78,14 +81,14 @@ trait SnapshotCrudRestoreTrait {
         );
     }
 
-    private function routeRestoreToEngine(int $id, array $options, \RiseupSnapshotManager $manager): array {
+    private function routeRestoreToEngine(int $id, array $options, SnapshotManager $manager): array {
         $snapshot = $manager->getSnapshotById($id);
 
         if ($snapshot && $this->isPerTableSnapshot($snapshot)) {
             $dir = $this->resolveSnapshotDir($snapshot);
             if ($dir && file_exists($dir . '/a-root.db')) {
-                $orchestrator = \RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
-                $engine = \RiseupRestoreEngine::getInstance($this->fileLogger, $this->db, $orchestrator);
+                $orchestrator = SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
+                $engine = RestoreEngine::getInstance($this->fileLogger, $this->db, $orchestrator);
                 $result = $engine->execute($dir, $options);
                 $result['_mode'] = 'per_table';
                 return $result;

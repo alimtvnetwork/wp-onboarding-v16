@@ -17,6 +17,9 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Snapshot\SnapshotExporter;
+use RiseupAsia\Snapshot\SnapshotManager;
+use RiseupAsia\Snapshot\SnapshotImport;
 
 trait SnapshotImportStreamTrait {
 
@@ -45,7 +48,7 @@ trait SnapshotImportStreamTrait {
             ), 400);
         }
 
-        $export = \RiseupSnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
+        $export = SnapshotExporter::getInstance($this->fileLogger, $this->db)->validateDownloadToken($exportId, $token);
 
         if (!$export) {
             return new WP_REST_Response(array(
@@ -127,8 +130,8 @@ trait SnapshotImportStreamTrait {
                 array('filename' => $original_name, 'size' => $files['file']['size'], 'phase' => 'initiated')
             );
 
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
-            $importer = new \RiseupSnapshotImport($this->fileLogger, $this->db, $manager);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
+            $importer = new SnapshotImport($this->fileLogger, $this->db, $manager);
             $result = $importer->import($tmp_file);
 
             $this->logger->logPluginAction(

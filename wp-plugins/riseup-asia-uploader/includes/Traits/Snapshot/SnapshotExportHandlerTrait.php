@@ -20,6 +20,8 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Snapshot\SnapshotManager;
+use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait SnapshotExportHandlerTrait {
 
@@ -37,7 +39,7 @@ trait SnapshotExportHandlerTrait {
                 array('snapshot_id' => $id, 'trigger' => 'api', 'phase' => 'initiated')
             );
 
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $result = $manager->exportSnapshot($id);
 
             if (!$result['success']) {
@@ -103,7 +105,7 @@ trait SnapshotExportHandlerTrait {
             array('snapshot_id' => $snapshotId, 'phase' => 'initiated')
         );
 
-        $exporter = \RiseupSnapshotExporter::getInstance($this->fileLogger, $this->db);
+        $exporter = SnapshotExporter::getInstance($this->fileLogger, $this->db);
         $result = $exporter->getOrBuildZip($snapshotId);
 
         if (!$result['success']) {

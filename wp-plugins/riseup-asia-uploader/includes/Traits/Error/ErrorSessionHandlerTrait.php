@@ -17,6 +17,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Database\Database;
 
 trait ErrorSessionHandlerTrait {
 
@@ -25,7 +26,7 @@ trait ErrorSessionHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error sessions endpoint called');
 
-            $pdo = \RiseupDatabase::getInstance()->getPdo();
+            $pdo = Database::getInstance()->getPdo();
             if (!$pdo) {
                 return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::ServerError->value);
             }
