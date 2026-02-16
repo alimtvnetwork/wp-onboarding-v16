@@ -217,9 +217,9 @@ All 28 `class_alias()` shims are retained for backward compatibility. **Zero int
 | **Total alias references migrated** | ~800+ |
 | **Files touched across all batches** | 65+ |
 | **Distinct legacy aliases eliminated** | 25 |
-| **Backward-compat `class_alias()` shims retained** | 33 |
+| **Backward-compat `class_alias()` shims retained** | 36 (33 original + 3 newly namespaced globals) |
 | **Internal alias references remaining** | **0** |
-| **Global-namespace classes remaining** | 3 (`RiseupAsia`, `RiseupActivationHandler`, `RiseupDependencyLoader`) |
+| **Global-namespace classes remaining** | **0** |
 
 ### Batch Breakdown
 
@@ -228,19 +228,20 @@ All 28 `class_alias()` shims are retained for backward compatibility. **Zero int
 | **Batch 1** (PathUtils, EnvelopeBuilder — prior sessions) | 2 | 31 | ~353 |
 | **Batch 2** (SnapshotExporter, SnapshotFactory, ORM — prior session) | 3 | 12 | ~50 |
 | **Batch 3** (all remaining — current session) | 20 | 34 | ~438 |
-| **Total** | **25** | **65+** | **~841** |
+| **Batch 4** (global-namespace classes) | 3 | 3 | ~8 |
+| **Total** | **28** | **68+** | **~849** |
 
 ---
 
-## 8. Global-Namespace Classes (Not Migrated)
+## 8. Former Global-Namespace Classes (Now Namespaced)
 
-These 3 classes intentionally remain in the global namespace as they serve as plugin entry points:
+All 3 previously global classes have been migrated to PSR-4 namespaced classes with backward-compatibility `class_alias()` shims:
 
-| Class | File | Reason |
-|---|---|---|
-| `RiseupAsia` | `riseup-asia-uploader.php` | Main plugin shell — WordPress plugin header requirement |
-| `RiseupActivationHandler` | `includes/Activation/ActivationHandler.php` | Referenced by `register_activation_hook()` |
-| `RiseupDependencyLoader` | `includes/Helpers/DependencyLoader.php` | Early boot loader before autoloader is available |
+| Legacy Global Name | Namespaced Class | File | Alias Location |
+|---|---|---|---|
+| `RiseupAsia` | `RiseupAsia\Core\Plugin` | `includes/Core/Plugin.php` | Same file |
+| `RiseupActivationHandler` | `RiseupAsia\Activation\ActivationHandler` | `includes/Activation/ActivationHandler.php` | Same file |
+| `RiseupDependencyLoader` | `RiseupAsia\Helpers\DependencyLoader` | `includes/Helpers/DependencyLoader.php` | Same file |
 
 ---
 
@@ -260,6 +261,5 @@ These 3 classes intentionally remain in the global namespace as they serve as pl
 
 ## 10. Remaining Opportunities
 
-1. **Remove `class_alias()` shims** — Once all external consumers (companion plugins, Go backend calls) are verified to use namespaced imports, the 33 `class_alias()` shims can be deleted.
-2. **Namespace the 3 global classes** — `RiseupAsia`, `RiseupActivationHandler`, and `RiseupDependencyLoader` could be namespaced with `class_alias()` shims for the WordPress hook system.
-3. **`constants.php` removal** — The empty backward-compat placeholder can be deleted once all `require_once` references are removed.
+1. **Remove `class_alias()` shims** — Once all external consumers (companion plugins, Go backend calls) are verified to use namespaced imports, the 36 `class_alias()` shims can be deleted.
+2. **`constants.php` removal** — The empty backward-compat placeholder can be deleted once all `require_once` references are removed.

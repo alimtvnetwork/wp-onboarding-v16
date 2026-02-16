@@ -1,4 +1,12 @@
 <?php
+/**
+ * Handles plugin activation: directory creation, log initialization, and security file placement.
+ *
+ * @package RiseupAsia\Activation
+ * @since   1.57.0
+ */
+
+namespace RiseupAsia\Activation;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -7,13 +15,10 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\InitHelpers;
 
-/**
- * Handles plugin activation: directory creation, log initialization, and security file placement.
- *
- * @since 1.57.0
- */
-class RiseupActivationHandler
+class ActivationHandler
 {
     private const TIMESTAMP_FORMAT = 'Y-m-d\TH:i:s';
     private const VERSION_UNKNOWN = 'unknown';
@@ -30,7 +35,7 @@ class RiseupActivationHandler
             self::ensureDirs($dirs['base'], $dirs['logs']);
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
         }
     }
@@ -67,10 +72,10 @@ class RiseupActivationHandler
     }
 
     private static function ensureDirs(string $baseDir, string $logsDir): void {
-        if (\RiseupAsia\Helpers\BooleanHelpers::isDirMissing($baseDir)) {
+        if (BooleanHelpers::isDirMissing($baseDir)) {
             wp_mkdir_p($baseDir);
         }
-        if (\RiseupAsia\Helpers\BooleanHelpers::isDirMissing($logsDir)) {
+        if (BooleanHelpers::isDirMissing($logsDir)) {
             wp_mkdir_p($logsDir);
         }
     }
@@ -102,7 +107,7 @@ class RiseupActivationHandler
 
     private static function writeStacktraceLog(string $logsDir, string $timestamp): void {
         $stacktraceFile = $logsDir . PathLogFileType::Stacktrace->value;
-        if (\RiseupAsia\Helpers\BooleanHelpers::isFileMissing($stacktraceFile)) {
+        if (BooleanHelpers::isFileMissing($stacktraceFile)) {
             @file_put_contents($stacktraceFile, sprintf(
                 "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
                 $timestamp
@@ -111,19 +116,21 @@ class RiseupActivationHandler
     }
 
     private static function ensureSecurity(string $baseDir): void {
-        if (class_exists(\RiseupAsia\Helpers\InitHelpers::class)) {
-            \RiseupAsia\Helpers\InitHelpers::addSecurityFiles($baseDir);
+        if (class_exists(InitHelpers::class)) {
+            InitHelpers::addSecurityFiles($baseDir);
             return;
         }
 
         $htaccess = $baseDir . '/.htaccess';
-        if (\RiseupAsia\Helpers\BooleanHelpers::isFileMissing($htaccess)) {
+        if (BooleanHelpers::isFileMissing($htaccess)) {
             @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
         }
 
         $index = $baseDir . '/index.php';
-        if (\RiseupAsia\Helpers\BooleanHelpers::isFileMissing($index)) {
+        if (BooleanHelpers::isFileMissing($index)) {
             @file_put_contents($index, "<?php\n// Silence is golden.\n");
         }
     }
 }
+
+class_alias(ActivationHandler::class, 'RiseupActivationHandler');
