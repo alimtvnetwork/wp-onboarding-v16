@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
@@ -62,7 +63,7 @@ trait CategoryTrait {
             $args = array(
                 'taxonomy'   => 'category',
                 'hide_empty' => false,
-                'number'     => min((int) ($params['limit'] ?? DEFAULT_LIMIT), MAX_LIMIT),
+                'number'     => min((int) ($params['limit'] ?? PaginationConfigType::DefaultLimit->value), PaginationConfigType::MaxLimit->value),
                 'offset'     => max(0, (int) ($params['offset'] ?? 0)),
                 'orderby'    => 'name',
                 'order'      => 'ASC',

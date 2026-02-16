@@ -16,6 +16,7 @@ use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\UpdateConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentRemoteActionTrait {
@@ -44,7 +45,7 @@ trait AgentRemoteActionTrait {
         }
 
         $resolvedAt = strtotime($agent['redirect_resolved_at']);
-        $cacheDays = UPDATE_CACHE_DAYS_DEFAULT;
+        $cacheDays = UpdateConfigType::CacheDaysDefault->value;
 
         return (time() < $resolvedAt + ($cacheDays * DAY_IN_SECONDS));
     }

@@ -50,7 +50,7 @@ trait DetectorValidationTrait {
         $settings['schedule_day']        = max(1, min(28, intval($settings['schedule_day'])));
         $settings['max_snapshot_size_mb'] = max(50, min(2000, intval($settings['max_snapshot_size_mb'])));
         $settings['batch_size']          = max(100, min(10000, intval($settings['batch_size'])));
-        $settings['worker_pool_size']    = max(SNAPSHOT_WORKER_POOL_MIN, min(SNAPSHOT_WORKER_POOL_MAX, intval($settings['worker_pool_size'] ?? SNAPSHOT_WORKER_POOL_DEFAULT)));
+        $settings['worker_pool_size']    = max(\RiseupAsia\Enums\SnapshotConfigType::WorkerPoolMin->value, min(\RiseupAsia\Enums\SnapshotConfigType::WorkerPoolMax->value, intval($settings['worker_pool_size'] ?? \RiseupAsia\Enums\SnapshotConfigType::WorkerPoolDefault->value)));
     }
 
     private function castBooleanFields(array &$settings): void {

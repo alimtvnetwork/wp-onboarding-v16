@@ -156,7 +156,7 @@ trait CleanerOrphanTrait {
     private function cleanupStuckSnapshots(bool $dryRun = false): array {
         $result = array('cleaned' => 0, 'ids' => array());
 
-        $stuck_hours = defined('SNAPSHOT_STUCK_HOURS') ? SNAPSHOT_STUCK_HOURS : 24;
+        $stuck_hours = \RiseupAsia\Enums\SnapshotConfigType::StuckHours->value;
         $cutoff = date('c', strtotime("-{$stuck_hours} hours"));
 
         $stuck = $this->db->queryAll(

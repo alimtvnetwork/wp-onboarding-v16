@@ -69,8 +69,10 @@ class InitHelpers {
         }
     }
 
+    private const DB_WAL_MODE = true;
+
     private static function applySqlitePragmas(\PDO $pdo): void {
-        if (defined('DB_WAL_MODE') && DB_WAL_MODE) {
+        if (self::DB_WAL_MODE) {
             $pdo->exec('PRAGMA journal_mode = WAL');
         }
         $pdo->exec('PRAGMA auto_vacuum = INCREMENTAL');

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Snapshot\Traits\RestoreValidationTrait;
 use RiseupAsia\Snapshot\Traits\RestoreTableTrait;
 use RiseupAsia\Snapshot\Traits\RestoreIncrementalTrait;
@@ -51,7 +52,7 @@ class RestoreEngine {
         $this->logger = $logger;
         $this->db = $db;
         $this->orchestrator = $orchestrator;
-        $this->batchSize = SNAPSHOT_BATCH_SIZE;
+        $this->batchSize = SnapshotConfigType::BatchSize->value;
     }
 
     public function execute(string $snapshotDir, array $options = array()): array {

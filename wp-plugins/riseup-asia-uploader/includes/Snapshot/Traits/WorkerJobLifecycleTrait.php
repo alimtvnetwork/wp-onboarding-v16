@@ -30,7 +30,7 @@ trait WorkerJobLifecycleTrait {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 snapshot_dir TEXT NOT NULL,
                 tables_json TEXT NOT NULL,
-                pool_size INTEGER NOT NULL DEFAULT " . SNAPSHOT_WORKER_POOL_DEFAULT . ",
+                pool_size INTEGER NOT NULL DEFAULT " . \RiseupAsia\Enums\SnapshotConfigType::WorkerPoolDefault->value . ",
                 current_batch INTEGER NOT NULL DEFAULT 0,
                 tables_exported INTEGER NOT NULL DEFAULT 0,
                 total_rows INTEGER NOT NULL DEFAULT 0,

@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait PostQueryTrait {
@@ -22,7 +23,7 @@ trait PostQueryTrait {
         try {
             $args = array(
                 'post_type'      => 'post',
-                'posts_per_page' => min((int) ($params['limit'] ?? DEFAULT_LIMIT), MAX_LIMIT),
+                'posts_per_page' => min((int) ($params['limit'] ?? PaginationConfigType::DefaultLimit->value), PaginationConfigType::MaxLimit->value),
                 'offset'         => max(0, (int) ($params['offset'] ?? 0)),
                 'orderby'        => 'date',
                 'order'          => 'DESC',

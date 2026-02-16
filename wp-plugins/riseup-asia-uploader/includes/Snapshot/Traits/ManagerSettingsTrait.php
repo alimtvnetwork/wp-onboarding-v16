@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginSelectionType;
+use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotFrequencyType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotProviderType;
@@ -34,10 +35,10 @@ trait ManagerSettingsTrait {
             'storage_path'       => 'snapshots/',
             'include_plugins'    => true,
             'plugin_selection'   => PluginSelectionType::All->value,
-            'retention_days'     => SNAPSHOT_RETENTION_DAYS_DEFAULT,
-            'retention_count'    => SNAPSHOT_RETENTION_COUNT_DEFAULT,
+            'retention_days'     => SnapshotConfigType::RetentionDaysDefault->value,
+            'retention_count'    => SnapshotConfigType::RetentionCountDefault->value,
             'compression'        => true,
-            'batch_size'         => SNAPSHOT_BATCH_SIZE,
+            'batch_size'         => SnapshotConfigType::BatchSize->value,
             'provider'           => SnapshotProviderType::Auto->value,
             'scope'              => SnapshotScopeType::WordPress->value,
             'frequency'          => SnapshotFrequencyType::Manual->value,
