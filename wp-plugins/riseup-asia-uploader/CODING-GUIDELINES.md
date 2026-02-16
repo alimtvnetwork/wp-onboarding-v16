@@ -94,32 +94,34 @@ Use `RiseupInitHelpers` for idempotent resource setup:
 - **Component startup**: `initComponent($name, $callable)` — wraps init in try/catch with timing, records results for diagnostics.
 
 ```php
-$db = RiseupInitHelpers::initComponent('Database', function () {
-    $db = Riseup_Database::get_instance();
-    if (RiseupBooleanHelpers::is_falsy($db->init())) {
-        throw new Exception('Database initialization failed');
-    }
-    return $db;
+use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Database\Database;
+
+$db = InitHelpers::initComponent('Database', function () {
+    $db = Database::getInstance();
+    return $db->init() ? $db : null;
 });
 
-RiseupInitHelpers::logStartupSummary($this->file_logger);
+InitHelpers::logStartupSummary($this->fileLogger);
 ```
 
 ---
 
 ## 6. Dependency Loading
 
-Use `RiseupDependencyLoader` for structured file loading with error tracking. Foundation files (constants, boolean helpers, init helpers, dependency loader) load raw; all others go through the manifest.
+Use `DependencyLoader` (namespaced as `RiseupAsia\Helpers\DependencyLoader`) for structured file loading with error tracking. Foundation files (constants, boolean helpers, init helpers, dependency loader) load raw; all others go through the manifest.
 
 ```php
-RiseupDependencyLoader::loadManifest(array(
-    array('FileLogger',  $includes . '/class-file-logger.php'),
-    array('Database',    $includes . '/class-database.php'),
+use RiseupAsia\Helpers\DependencyLoader;
+
+DependencyLoader::loadManifest(array(
+    array('FileLogger',  $includes . '/Logging/FileLogger.php'),
+    array('Database',    $includes . '/Database/Database.php'),
     // ...
 ));
 
 // Log results in constructor
-RiseupDependencyLoader::logSummary($this->file_logger);
+DependencyLoader::logSummary($this->fileLogger);
 ```
 
 A broken or missing file is recorded with a full stack trace and reported instead of crashing the entire plugin.
@@ -129,7 +131,7 @@ A broken or missing file is recorded with a full stack trace and reported instea
 - **Never use raw `require_once`** for non-foundation files
 - Every file in the manifest gets a human-readable label
 - Missing files are logged as errors with stack traces — loading continues for remaining files
-- Use `RiseupDependencyLoader::getFailures()` to programmatically inspect failures
+- Use `DependencyLoader::getFailures()` to programmatically inspect failures
 - Foundation files (constants, boolean helpers, init helpers, dependency loader itself) are the only files that load via raw `require_once`
 
 ---
@@ -207,9 +209,12 @@ Each directory has `.htaccess` and `index.php` security files.
 
 ## Quick Reference: Utility Classes
 
-| Class | Purpose |
-|-------|---------|
-| `RiseupBooleanHelpers` | Semantic boolean checks (replaces raw negations) |
-| `RiseupPathUtils` | Path joining, validation, typed dir accessors |
-| `RiseupInitHelpers` | Idempotent dir/DB setup, component startup tracking |
-| `RiseupDependencyLoader` | Structured file loading with error capture |
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `BooleanHelpers` | `RiseupAsia\Helpers` | Semantic boolean checks (replaces raw negations) |
+| `PathUtils` | `RiseupAsia\Helpers` | Path joining, validation, typed dir accessors |
+| `DependencyLoader` | `RiseupAsia\Helpers` | Structured file loading with error capture |
+| `InitHelpers` | `RiseupAsia\Helpers` | Idempotent dir/DB setup, component startup tracking |
+| `EnvelopeBuilder` | `RiseupAsia\Helpers` | REST API response envelope construction |
+| `Plugin` | `RiseupAsia\Core` | Main plugin shell (aliased as `RiseupAsia`) |
+| `ActivationHandler` | `RiseupAsia\Activation` | Plugin activation hook handler |
