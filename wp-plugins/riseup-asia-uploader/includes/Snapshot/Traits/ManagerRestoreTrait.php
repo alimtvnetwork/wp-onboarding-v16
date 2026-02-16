@@ -17,6 +17,7 @@ use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotErrorType;
+use RiseupAsia\Helpers\PathUtils;
 
 trait ManagerRestoreTrait {
 
@@ -79,7 +80,7 @@ trait ManagerRestoreTrait {
         $startTime = microtime(true);
         $filepath = $snapshot['filepath'];
 
-        if (!RiseupPathUtils::fileExists($filepath)) {
+        if (!PathUtils::fileExists($filepath)) {
             return array('success' => false, 'error' => 'Snapshot file not found: ' . basename($filepath));
         }
 

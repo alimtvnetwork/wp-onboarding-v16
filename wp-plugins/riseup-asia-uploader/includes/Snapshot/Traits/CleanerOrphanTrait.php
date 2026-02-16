@@ -26,7 +26,7 @@ trait CleanerOrphanTrait {
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_paths = array_map(function ($f) { return $f['filepath']; }, $files);
 
-        $scan_dir = RiseupPathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $scan_dir = PathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (!is_dir($scan_dir)) {
             return $result;
         }
@@ -67,7 +67,7 @@ trait CleanerOrphanTrait {
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_files = array_map(function ($f) { return $f['filename']; }, $files);
 
-        $scan_dir = RiseupPathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $scan_dir = PathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (!is_dir($scan_dir)) {
             return $result;
         }
@@ -111,7 +111,7 @@ trait CleanerOrphanTrait {
         $known_paths = array_map(function ($f) { return dirname($f['filepath']); }, $files);
         $known_paths = array_unique($known_paths);
 
-        $scan_dir = RiseupPathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $scan_dir = PathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (!is_dir($scan_dir)) {
             return $result;
         }

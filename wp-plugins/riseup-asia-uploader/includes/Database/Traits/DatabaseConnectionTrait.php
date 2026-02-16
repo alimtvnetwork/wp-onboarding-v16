@@ -12,6 +12,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\InitHelpers;
+use RiseupAsia\Database\ORM;
+
 trait DatabaseConnectionTrait {
 
     /**
@@ -47,13 +51,13 @@ trait DatabaseConnectionTrait {
         $baseDir = $this->fileLogger->getBaseDir();
         $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
-        if (RiseupPathUtils::isDirMissing($baseDir, true)) {
+        if (PathUtils::isDirMissing($baseDir, true)) {
             $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
 
             throw new Exception('Failed to create data directory: ' . $baseDir);
         }
 
-        $dbPath = RiseupPathUtils::getDbPath();
+        $dbPath = PathUtils::getDbPath();
         $this->fileLogger->info('Database path set', array('path' => $dbPath));
 
         return $dbPath;
@@ -66,14 +70,14 @@ trait DatabaseConnectionTrait {
         $this->fileLogger->info('Initializing PDO connection');
 
         try {
-            $this->pdo = RiseupInitHelpers::initSqliteConnection($this->dbPath, $this->fileLogger);
+            $this->pdo = InitHelpers::initSqliteConnection($this->dbPath, $this->fileLogger);
 
             if ($this->pdo === null) {
                 return false;
             }
 
             $this->fileLogger->debug('Configuring ORM');
-            RiseupORM::configure($this->pdo);
+            ORM::configure($this->pdo);
             $this->fileLogger->info('ORM configured');
 
             $this->createTables();

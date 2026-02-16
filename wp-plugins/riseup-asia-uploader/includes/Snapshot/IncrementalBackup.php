@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathUtils;
 use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalRegistrationTrait;
@@ -106,7 +107,7 @@ class IncrementalBackup {
 
     /** Get the base snapshots directory. */
     private function getSnapshotsBaseDir(): string {
-        return \RiseupPathUtils::getSnapshotsDir();
+        return PathUtils::getSnapshotsDir();
     }
 
     /** Format bytes. */

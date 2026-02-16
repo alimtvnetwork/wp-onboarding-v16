@@ -87,7 +87,7 @@ trait CleanerUtilsTrait {
                     'retention_skipped' => $results['retention']['skipped_master'],
                     'orphans_removed'   => $results['orphans']['removed'],
                     'stuck_cleaned'     => $results['stuck']['cleaned'],
-                    'space_freed'       => RiseupPathUtils::formatBytes($results['space_freed_bytes']),
+                    'space_freed'       => PathUtils::formatBytes($results['space_freed_bytes']),
                     'errors'            => count($results['errors']),
                     'duration'          => $results['duration'],
                 )),
