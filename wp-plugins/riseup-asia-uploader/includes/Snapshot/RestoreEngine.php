@@ -20,7 +20,7 @@ use RiseupAsia\Snapshot\Traits\RestoreValidationTrait;
 use RiseupAsia\Snapshot\Traits\RestoreTableTrait;
 use RiseupAsia\Snapshot\Traits\RestoreIncrementalTrait;
 use RiseupAsia\Snapshot\Traits\RestoreGraphTrait;
-use RiseupAsia\Snapshot\Traits\RestoreUtilsTrait;
+use RiseupAsia\Snapshot\Traits\RestoreHelperTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 
@@ -30,7 +30,7 @@ class RestoreEngine {
     use RestoreTableTrait;
     use RestoreIncrementalTrait;
     use RestoreGraphTrait;
-    use RestoreUtilsTrait;
+    use RestoreHelperTrait;
 
     private FileLogger $logger;
     private Database $db;

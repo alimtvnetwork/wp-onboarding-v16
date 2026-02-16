@@ -13,14 +13,13 @@ if (!defined('ABSPATH')) {
 }
 
 use ZipArchive;
-use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait FileSystemDirTrait {
 
     private function getTempDir(): string {
-        $tempDir = PathUtils::getTempDir();
-        PathUtils::ensureDir($tempDir);
+        $tempDir = PathHelper::getTempDir();
+        PathHelper::ensureDir($tempDir);
         return $tempDir;
     }
 
@@ -38,7 +37,7 @@ trait FileSystemDirTrait {
     }
 
     private function deleteDirectory(string $dir): bool {
-        if (BooleanHelpers::isDirMissing($dir)) {
+        if (PathHelper::isDirMissing($dir)) {
             return false;
         }
 
@@ -56,11 +55,11 @@ trait FileSystemDirTrait {
     }
 
     private function copyDirectory(string $src, string $dst): bool {
-        if (BooleanHelpers::isDirMissing($src)) {
+        if (PathHelper::isDirMissing($src)) {
             return false;
         }
 
-        if (BooleanHelpers::isDirMissing($dst)) {
+        if (PathHelper::isDirMissing($dst)) {
             wp_mkdir_p($dst);
         }
 

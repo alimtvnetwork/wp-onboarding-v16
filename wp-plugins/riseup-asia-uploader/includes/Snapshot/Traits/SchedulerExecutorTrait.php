@@ -20,7 +20,7 @@ use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TriggerSourceType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SchedulerExecutorTrait {
@@ -125,7 +125,7 @@ trait SchedulerExecutorTrait {
         $cronResult = $this->buildCronResult(array('success' => true), ActionType::SnapshotCleanup->value, TriggerSourceType::Cron->value, $auditData);
         $cronResult['skip_audit'] = ($totalDeleted === 0);
         $cronResult['log_data'] = $auditData + array(
-            'space_freed'  => PathUtils::formatBytes($result['space_freed_bytes']),
+            'space_freed'  => PathHelper::formatBytes($result['space_freed_bytes']),
             'errors_count' => count($result['errors']),
         );
         return $cronResult;

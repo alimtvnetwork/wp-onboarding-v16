@@ -1,6 +1,6 @@
 <?php
 /**
- * PathUtilsCoreTrait — core path operations.
+ * PathHelperCoreTrait — core path operations.
  *
  * @package RiseupAsia\Helpers\Traits
  * @since   1.57.0
@@ -19,7 +19,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Logging\FileLogger;
 
-trait PathUtilsCoreTrait {
+trait PathHelperCoreTrait {
 
     private static ?FileLogger $logger = null;
     private static bool $isBootstrapping = false;

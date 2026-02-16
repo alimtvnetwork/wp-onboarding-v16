@@ -14,8 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\PathUtils;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotExporter;
 
 trait CleanerDeletionTrait {
@@ -43,7 +42,7 @@ trait CleanerDeletionTrait {
         $this->log(LogLevelType::Debug->value, 'Deleted snapshot', array(
             'id' => $snapshot['id'],
             'filename' => $snapshot['filename'] ?? '',
-            'bytes_freed' => PathUtils::formatBytes($bytes_freed),
+            'bytes_freed' => PathHelper::formatBytes($bytes_freed),
         ));
 
         return array('success' => true, 'bytes_freed' => $bytes_freed);
@@ -51,7 +50,7 @@ trait CleanerDeletionTrait {
 
     private function cascadeDeleteIncrementalDir(string $filepath, int $parentId): int {
         $incremental_dir = $filepath . '/incremental';
-        if (BooleanHelpers::isDirMissing($incremental_dir)) {
+        if (PathHelper::isDirMissing($incremental_dir)) {
             return 0;
         }
 
@@ -62,7 +61,7 @@ trait CleanerDeletionTrait {
         $this->log(LogLevelType::Info->value, 'Cascade-deleted incremental children', array(
             'parent_id'   => $parentId,
             'parent_dir'  => basename($filepath),
-            'bytes_freed' => PathUtils::formatBytes($inc_size),
+            'bytes_freed' => PathHelper::formatBytes($inc_size),
         ));
 
         return $inc_size;
@@ -71,18 +70,18 @@ trait CleanerDeletionTrait {
     private function deleteSingleFileSnapshot(string $filepath): int {
         $bytes_freed = 0;
 
-        if (PathUtils::fileExists($filepath)) {
+        if (PathHelper::fileExists($filepath)) {
             $bytes_freed = filesize($filepath);
-            if (!PathUtils::deleteFile($filepath)) {
+            if (!PathHelper::deleteFile($filepath)) {
                 $this->log(LogLevelType::Warn->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
                 return -1;
             }
         }
 
         $zip_path = $this->getZipPath($filepath);
-        if (PathUtils::fileExists($zip_path)) {
+        if (PathHelper::fileExists($zip_path)) {
             $bytes_freed += filesize($zip_path);
-            PathUtils::deleteFile($zip_path);
+            PathHelper::deleteFile($zip_path);
         }
 
         return $bytes_freed;

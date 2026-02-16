@@ -13,8 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\PathUtils;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use Exception;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
@@ -24,8 +23,8 @@ trait ImportExecutionFileTrait {
 
     private function validateTableFiles(string $snapshotRoot, array $tables): void {
         foreach ($tables as $table) {
-            $sqlitePath = PathUtils::join($snapshotRoot, $table['sqlite_file']);
-            if (!PathUtils::fileExists($sqlitePath)) {
+            $sqlitePath = PathHelper::join($snapshotRoot, $table['sqlite_file']);
+            if (!PathHelper::fileExists($sqlitePath)) {
                 throw new Exception("Missing table file: {$table['sqlite_file']}");
             }
             if (!empty($table['checksum_md5'])) {
@@ -40,12 +39,12 @@ trait ImportExecutionFileTrait {
 
     private function validateIncrementalFiles(string $snapshotRoot, array $incrementals): void {
         foreach ($incrementals as $inc) {
-            $incDir = PathUtils::join($snapshotRoot, $inc['relative_path']);
-            if (!PathUtils::dirExists($incDir)) {
+            $incDir = PathHelper::join($snapshotRoot, $inc['relative_path']);
+            if (!PathHelper::dirExists($incDir)) {
                 $this->log(LogLevelType::Warn->value, 'Incremental directory missing, skipping', array('folder' => $inc['folder_name']));
                 continue;
             }
-            $incFiles = glob(PathUtils::join($incDir, '*.sqlite'));
+            $incFiles = glob(PathHelper::join($incDir, '*.sqlite'));
             foreach ($incFiles as $incFile) {
                 $this->validateSqliteFile($incFile, basename($incFile));
             }
@@ -54,8 +53,8 @@ trait ImportExecutionFileTrait {
 
     private function validatePluginFiles(string $snapshotRoot, array $plugins): void {
         foreach ($plugins as $plugin) {
-            $zipPath = PathUtils::join($snapshotRoot, $plugin['zip_file']);
-            if (!PathUtils::fileExists($zipPath)) {
+            $zipPath = PathHelper::join($snapshotRoot, $plugin['zip_file']);
+            if (!PathHelper::fileExists($zipPath)) {
                 $this->log(LogLevelType::Warn->value, 'Plugin archive missing, skipping', array('plugin' => $plugin['plugin_slug']));
                 continue;
             }
@@ -69,19 +68,19 @@ trait ImportExecutionFileTrait {
     }
 
     private function copyDirectory(string $src, string $dest): void {
-        if (!PathUtils::ensureDir($dest, false)) {
+        if (!PathHelper::ensureDir($dest, false)) {
             throw new Exception("Failed to create directory: {$dest}");
         }
 
         $entries = scandir($src);
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;
-            $srcPath = PathUtils::join($src, $entry);
-            $destPath = PathUtils::join($dest, $entry);
+            $srcPath = PathHelper::join($src, $entry);
+            $destPath = PathHelper::join($dest, $entry);
             if (is_dir($srcPath)) {
                 $this->copyDirectory($srcPath, $destPath);
             } else {
-                if (BooleanHelpers::isCopyFailed($srcPath, $destPath)) {
+                if (PathHelper::isCopyFailed($srcPath, $destPath)) {
                     throw new Exception("Failed to copy file: {$entry}");
                 }
             }
@@ -89,11 +88,11 @@ trait ImportExecutionFileTrait {
     }
 
     private function deleteDirectory(string $dir): void {
-        if (BooleanHelpers::isDirMissing($dir)) return;
+        if (PathHelper::isDirMissing($dir)) return;
         $entries = scandir($dir);
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;
-            $path = PathUtils::join($dir, $entry);
+            $path = PathHelper::join($dir, $entry);
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             } else {

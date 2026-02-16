@@ -13,14 +13,14 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait SnapshotProviderLockTrait {
 
     protected function isLocked(): bool {
-        $lock_file = PathUtils::join($this->getSnapshotsDir(), '.lock');
+        $lock_file = PathHelper::join($this->getSnapshotsDir(), '.lock');
 
-        if (!PathUtils::fileExists($lock_file)) {
+        if (!PathHelper::fileExists($lock_file)) {
             return false;
         }
 
@@ -32,7 +32,7 @@ trait SnapshotProviderLockTrait {
         $age = time() - $lock_time;
 
         if ($age > 1800) {
-            PathUtils::deleteFile($lock_file);
+            PathHelper::deleteFile($lock_file);
             $this->log(LogLevelType::Warn->value, 'Removed stale lock file', array('age_minutes' => round($age / 60)));
             return false;
         }
@@ -54,7 +54,7 @@ trait SnapshotProviderLockTrait {
     }
 
     private function writeLockFile(): bool {
-        $lock_file = PathUtils::join($this->getSnapshotsDir(), '.lock');
+        $lock_file = PathHelper::join($this->getSnapshotsDir(), '.lock');
         $lock_data = json_encode(array(
             'locked_at' => date('c'), 'locked_by' => $this->provider_id, 'pid' => getmypid(),
         ));
@@ -73,10 +73,10 @@ trait SnapshotProviderLockTrait {
     }
 
     protected function releaseLock(): void {
-        $lock_file = PathUtils::join($this->getSnapshotsDir(), '.lock');
+        $lock_file = PathHelper::join($this->getSnapshotsDir(), '.lock');
 
-        if (PathUtils::fileExists($lock_file)) {
-            PathUtils::deleteFile($lock_file);
+        if (PathHelper::fileExists($lock_file)) {
+            PathHelper::deleteFile($lock_file);
             $this->log(LogLevelType::Debug->value, 'Lock released');
         }
     }
