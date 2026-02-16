@@ -24,7 +24,15 @@ use RiseupAsia\Enums\StatusType;
 
 trait RestoreHelperTrait {
 
-    private function buildRestoreResult(array $masterResult, array $incResult, ?int $backupId, array $errors, float $duration, array $meta, int $totalRows): array {
+    private function buildRestoreResult(
+        array $masterResult,
+        array $incResult,
+        ?int $backupId,
+        array $errors,
+        float $duration,
+        array $meta,
+        int $totalRows,
+    ): array {
         $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
             'tables_restored'      => $masterResult['tables_restored'],
             'total_rows'           => $totalRows,
@@ -46,7 +54,12 @@ trait RestoreHelperTrait {
         );
     }
 
-    private function logAuditRestore(string $snapshotDir, int $tablesRestored, int $totalRows, float $duration): void {
+    private function logAuditRestore(
+        string $snapshotDir,
+        int $tablesRestored,
+        int $totalRows,
+        float $duration,
+    ): void {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return;
@@ -60,7 +73,13 @@ trait RestoreHelperTrait {
         }
     }
 
-    private function buildAuditDetails(string $snapshotDir, int $tablesRestored, int $totalRows, float $duration): string {
+    private function buildAuditDetails(
+        string $snapshotDir,
+        int $tablesRestored,
+        int $totalRows,
+        float $duration,
+    ): string {
+
         return json_encode(array(
             'directory' => basename($snapshotDir), 'tables_restored' => $tablesRestored,
             'total_rows' => $totalRows, 'duration' => round($duration, 2), 'type' => 'per_table',
@@ -78,7 +97,11 @@ trait RestoreHelperTrait {
         ));
     }
 
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         if (!$this->logger) {
             return;
         }

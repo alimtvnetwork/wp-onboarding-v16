@@ -25,6 +25,7 @@ trait ManagerTableRestoreTrait {
         try {
             $check = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$table}'");
             if (!$check->fetch()) {
+
                 return array('success' => false, 'error' => 'Table not found in snapshot', 'rows' => 0);
             }
 
@@ -34,11 +35,16 @@ trait ManagerTableRestoreTrait {
 
             return $this->truncateAndInsert($sqlite, $table, $columnNames);
         } catch (Throwable $e) {
+
             return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0);
         }
     }
 
-    private function truncateAndInsert(PDO $sqlite, string $table, array $columnNames): array {
+    private function truncateAndInsert(
+        PDO $sqlite,
+        string $table,
+        array $columnNames,
+    ): array {
         $this->wpdb->query("START TRANSACTION");
 
         try {
@@ -57,11 +63,17 @@ trait ManagerTableRestoreTrait {
         } catch (Throwable $e) {
             $this->wpdb->query("ROLLBACK");
             $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
+
             throw $e;
         }
     }
 
-    private function insertBatchFromSqlite(PDO $sqlite, string $table, array $columnNames, int $rowCount): int {
+    private function insertBatchFromSqlite(
+        PDO $sqlite,
+        string $table,
+        array $columnNames,
+        int $rowCount,
+    ): int {
         $batchSize = SnapshotConfigType::BatchSize->value;
         $offset = 0;
         $totalRows = 0;
@@ -91,12 +103,13 @@ trait ManagerTableRestoreTrait {
     private function createPreRestoreBackup(int $originalSnapshotId): array {
         $provider = $this->getProvider();
         if (!$provider) {
+
             return array('success' => false, 'error' => 'No provider available');
         }
 
         return $provider->createSnapshot(array(
-            'scope' => \RiseupAsia\Enums\SnapshotScopeType::WordPress->value,
-            'trigger' => \RiseupAsia\Enums\SnapshotTriggerType::Api->value,
+            'scope' => SnapshotScopeType::WordPress->value,
+            'trigger' => SnapshotTriggerType::Api->value,
             'pre_restore_of' => $originalSnapshotId,
         ));
     }

@@ -19,15 +19,11 @@ use RiseupAsia\Enums\SnapshotStatusType;
 
 trait WorkerBatchExportTrait {
 
-    /**
-     * Export all tables in pool-sized batches synchronously.
-     *
-     * @param array  $seedOrder   Ordered table list.
-     * @param string $snapshotDir Snapshot directory.
-     * @param PDO    $rootPdo     Root DB connection.
-     * @return array Export results.
-     */
-    private function exportBatchesSynchronously(array $seedOrder, string $snapshotDir, PDO $rootPdo): array {
+    private function exportBatchesSynchronously(
+        array $seedOrder,
+        string $snapshotDir,
+        PDO $rootPdo,
+    ): array {
         $total_rows = 0;
         $exported_tables = 0;
         $errors = array();
@@ -47,15 +43,11 @@ trait WorkerBatchExportTrait {
         return array('total_rows' => $total_rows, 'exported_tables' => $exported_tables, 'errors' => $errors);
     }
 
-    /**
-     * Export a batch of tables to SQLite files.
-     *
-     * @param array    $tables      Table names.
-     * @param string   $snapshotDir Snapshot directory.
-     * @param PDO|null $rootPdo     Root DB connection for registration.
-     * @return array Result with rows, exported, errors.
-     */
-    private function exportBatchTables(array $tables, string $snapshotDir, ?PDO $rootPdo): array {
+    private function exportBatchTables(
+        array $tables,
+        string $snapshotDir,
+        ?PDO $rootPdo,
+    ): array {
         $rows = 0;
         $exported = 0;
         $errors = array();
@@ -83,16 +75,12 @@ trait WorkerBatchExportTrait {
         return array('rows' => $rows, 'exported' => $exported, 'errors' => $errors);
     }
 
-    /**
-     * Build the async snapshot result.
-     *
-     * @param array $prepared  Prepared context.
-     * @param array $seedOrder Seed order.
-     * @param int   $jobId     Job ID.
-     * @param float $startTime Start time.
-     * @return array Result.
-     */
-    private function buildAsyncSnapshotResult(array $prepared, array $seedOrder, int $jobId, float $startTime): array {
+    private function buildAsyncSnapshotResult(
+        array $prepared,
+        array $seedOrder,
+        int $jobId,
+        float $startTime,
+    ): array {
         $duration = microtime(true) - $startTime;
 
         $this->log(LogLevelType::Info->value, 'Snapshot job created, first batch scheduled', array(
@@ -109,15 +97,12 @@ trait WorkerBatchExportTrait {
         );
     }
 
-    /**
-     * Build the sync snapshot result.
-     *
-     * @param array $prepared  Prepared context.
-     * @param array $export    Export results.
-     * @param float $startTime Start time.
-     * @return array Result.
-     */
-    private function buildSyncSnapshotResult(array $prepared, array $export, float $startTime): array {
+    private function buildSyncSnapshotResult(
+        array $prepared,
+        array $export,
+        float $startTime,
+    ): array {
+
         return array(
             'success' => true, 'directory' => $prepared['dir_name'], 'path' => $prepared['snapshot_dir'],
             'tables' => $export['exported_tables'], 'total_rows' => $export['total_rows'],

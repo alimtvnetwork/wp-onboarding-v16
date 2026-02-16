@@ -15,7 +15,6 @@ use Throwable;
 
 trait IncrementalCoreTrait {
 
-    /** Prepare the incremental directory and load master inventory. */
     private function prepareIncrementalDir(string $rootPath): array {
         $rootPdo = new PDO('sqlite:' . $rootPath);
         $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -23,6 +22,7 @@ trait IncrementalCoreTrait {
         $master_tables = $this->getMasterTableInventory($rootPdo);
         if (empty($master_tables)) {
             $rootPdo = null;
+
             return array('success' => false, 'error' => 'No tables found in master snapshot');
         }
 
@@ -33,6 +33,7 @@ trait IncrementalCoreTrait {
 
         if (!PathHelper::ensureDir($incremental_dir, true)) {
             $rootPdo = null;
+
             return array('success' => false, 'error' => 'Failed to create incremental directory: ' . $folder_name);
         }
 
@@ -41,8 +42,12 @@ trait IncrementalCoreTrait {
         return array('success' => true, 'rootPdo' => $rootPdo, 'master_tables' => $master_tables, 'sequence' => $sequence, 'folder_name' => $folder_name, 'incremental_dir' => $incremental_dir);
     }
 
-    /** Export changed tables. */
-    private function exportChangedTables(array $masterTables, string $incDir, PDO $rootPdo, int $sequence): array {
+    private function exportChangedTables(
+        array $masterTables,
+        string $incDir,
+        PDO $rootPdo,
+        int $sequence,
+    ): array {
         $tables_changed = 0;
         $total_new_rows = 0;
         $errors = array();
@@ -64,8 +69,15 @@ trait IncrementalCoreTrait {
         return array('tables_changed' => $tables_changed, 'total_new_rows' => $total_new_rows, 'errors' => $errors, 'exported_tables' => $exported_tables);
     }
 
-    /** Finalize the incremental backup. */
-    private function finalizeIncremental(string $title, string $masterDir, string $folderName, int $sequence, array $export, string $incrementalDir, float $startTime): array {
+    private function finalizeIncremental(
+        string $title,
+        string $masterDir,
+        string $folderName,
+        int $sequence,
+        array $export,
+        string $incrementalDir,
+        float $startTime,
+    ): array {
         $duration = microtime(true) - $startTime;
 
         $snapshot_id = $this->registerIncrementalSnapshot($title, $masterDir, $folderName, $sequence, $export['tables_changed'], $export['total_new_rows'], $incrementalDir);

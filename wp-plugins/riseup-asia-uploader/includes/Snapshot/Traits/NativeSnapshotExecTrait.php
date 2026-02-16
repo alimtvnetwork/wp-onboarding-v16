@@ -25,26 +25,35 @@ trait NativeSnapshotExecTrait {
 
         $snapshot = $this->getSnapshot($snapshotId);
         if (!$snapshot) {
+
             return array('success' => false, 'error' => 'Snapshot record not found');
         }
 
         if (!$this->acquireLock()) {
             $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, 'Failed to acquire lock');
+
             return array('success' => false, 'error' => 'Failed to acquire lock');
         }
 
         try {
+
             return $this->runSnapshotExport($snapshotId, $snapshot['filepath'], $tables, $start_time);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, $e->getMessage());
+
             return array('success' => false, 'error' => $e->getMessage());
         } finally {
             $this->releaseLock();
         }
     }
 
-    private function runSnapshotExport(int $snapshotId, string $filepath, array $tables, float $startTime): array {
+    private function runSnapshotExport(
+        int $snapshotId,
+        string $filepath,
+        array $tables,
+        float $startTime,
+    ): array {
         $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Running->value, 'Exporting');
 
         $sqlite = new PDO('sqlite:' . $filepath);
@@ -54,14 +63,20 @@ trait NativeSnapshotExecTrait {
         try {
             $table_counts = $this->exportAllTables($sqlite, $tables, $snapshotId);
             $sqlite->commit();
+
             return $this->buildExportResult($snapshotId, $filepath, $tables, $table_counts, $startTime);
         } catch (Throwable $e) {
             $sqlite->rollBack();
+
             throw $e;
         }
     }
 
-    private function exportAllTables(PDO $sqlite, array $tables, int $snapshotId): array {
+    private function exportAllTables(
+        PDO $sqlite,
+        array $tables,
+        int $snapshotId,
+    ): array {
         $table_counts = array();
 
         foreach ($tables as $table) {
@@ -88,7 +103,13 @@ trait NativeSnapshotExecTrait {
         }
     }
 
-    private function buildExportResult(int $snapshotId, string $filepath, array $tables, array $tableCounts, float $startTime): array {
+    private function buildExportResult(
+        int $snapshotId,
+        string $filepath,
+        array $tables,
+        array $tableCounts,
+        float $startTime,
+    ): array {
         $total_rows = 0;
         $total_bytes = 0;
         foreach ($tableCounts as $table => $result) {

@@ -20,7 +20,13 @@ use RiseupAsia\Snapshot\SqliteSchemaConverter;
 
 trait IncrementalExportTrait {
 
-    private function exportDeltaRows(string $incrementalDir, string $table, string $pkColumn, int $lastMaxId, int $expectedCount): array {
+    private function exportDeltaRows(
+        string $incrementalDir,
+        string $table,
+        string $pkColumn,
+        int $lastMaxId,
+        int $expectedCount,
+    ): array {
         $filename = $table . '.sqlite';
         $filepath = $incrementalDir . '/' . $filename;
 
@@ -34,6 +40,7 @@ trait IncrementalExportTrait {
                 'file_size' => filesize($filepath), 'checksum' => md5_file($filepath),
             );
         } catch (Throwable $e) {
+
             return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0, 'file_size' => 0, 'checksum' => '');
         }
     }
@@ -46,20 +53,28 @@ trait IncrementalExportTrait {
 
         $createResult = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
         if (!$createResult) {
+
             throw new Exception('Failed to get CREATE TABLE for ' . $table);
         }
 
         $sqlite->exec(SqliteSchemaConverter::convert($createResult[1], $table));
+
         return $sqlite;
     }
 
-    private function batchExportDelta(PDO $sqlite, string $table, string $pkColumn, int $lastMaxId): int {
+    private function batchExportDelta(
+        PDO $sqlite,
+        string $table,
+        string $pkColumn,
+        int $lastMaxId,
+    ): int {
         $prepared = $this->prepareDeltaBatchStatement($sqlite, $table);
         $sqlite->beginTransaction();
 
         $exported = $this->executeDeltaBatchLoop($prepared['stmt'], $table, $pkColumn, $lastMaxId);
 
         $sqlite->commit();
+
         return $exported;
     }
 
@@ -70,10 +85,16 @@ trait IncrementalExportTrait {
         $columnList = implode(', ', array_map(function(string $c): string { return "`{$c}`"; }, $columnNames));
 
         $stmt = $sqlite->prepare("INSERT OR REPLACE INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
+
         return array('stmt' => $stmt, 'columns' => $columnNames);
     }
 
-    private function executeDeltaBatchLoop(PDOStatement $stmt, string $table, string $pkColumn, int $lastMaxId): int {
+    private function executeDeltaBatchLoop(
+        PDOStatement $stmt,
+        string $table,
+        string $pkColumn,
+        int $lastMaxId,
+    ): int {
         $offset = 0;
         $exported = 0;
 

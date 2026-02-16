@@ -22,22 +22,34 @@ use RiseupAsia\Helpers\PathHelper;
 
 trait RestoreIncrementalTrait {
 
-    private function applyIncrementalsPhase(PDO $rootPdo, string $snapshotDir, array $restoreOrder, string $mode, bool $applyIncrementals): array {
+    private function applyIncrementalsPhase(
+        PDO $rootPdo,
+        string $snapshotDir,
+        array $restoreOrder,
+        string $mode,
+        bool $applyIncrementals,
+    ): array {
         $shouldApply = ($applyIncrementals && $mode !== RestoreModeType::Incremental->value) || $mode === RestoreModeType::Incremental->value;
 
         if (!$shouldApply) {
+
             return array('applied' => 0, 'total_rows' => 0, 'errors' => array());
         }
 
         return $this->applyIncrementals($rootPdo, $snapshotDir, $restoreOrder);
     }
 
-    private function applyIncrementals(PDO $rootPdo, string $snapshotDir, array $restoreOrder): array {
+    private function applyIncrementals(
+        PDO $rootPdo,
+        string $snapshotDir,
+        array $restoreOrder,
+    ): array {
         $incrementals = $rootPdo->query(
             "SELECT sequence_num, folder_name, relative_path FROM incremental_backups ORDER BY sequence_num ASC"
         )->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($incrementals)) {
+
             return array('applied' => 0, 'total_rows' => 0, 'errors' => array());
         }
 
@@ -59,10 +71,15 @@ trait RestoreIncrementalTrait {
         return array('applied' => $applied, 'total_rows' => $total_rows, 'errors' => $errors);
     }
 
-    private function applySingleIncremental(array $inc, string $snapshotDir, array $restoreOrder): array {
+    private function applySingleIncremental(
+        array $inc,
+        string $snapshotDir,
+        array $restoreOrder,
+    ): array {
         $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
         if (PathHelper::isDirMissing($inc_dir)) {
             $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
+
             return array('rows' => 0, 'errors' => array('Incremental directory missing: ' . $inc['folder_name']));
         }
 
