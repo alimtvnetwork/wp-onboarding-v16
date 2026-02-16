@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotStatusType;
+use RiseupAsia\Helpers\PathUtils;
 
 trait NativeSnapshotExecTrait {
 
@@ -77,7 +78,7 @@ trait NativeSnapshotExecTrait {
             $this->log(LogLevelType::Debug->value, 'Exported table', array(
                 'table' => $table,
                 'rows' => $result['rows'],
-                'bytes' => RiseupPathUtils::formatBytes($result['bytes']),
+                'bytes' => PathUtils::formatBytes($result['bytes']),
             ));
         } else {
             $this->log(LogLevelType::Error->value, 'Failed to export table', array(
@@ -100,14 +101,14 @@ trait NativeSnapshotExecTrait {
             'id' => $snapshotId,
             'tables' => count($tables),
             'rows' => $total_rows,
-            'bytes' => RiseupPathUtils::formatBytes($total_bytes),
+            'bytes' => PathUtils::formatBytes($total_bytes),
             'duration' => round($duration, 2) . 's',
         ));
 
         $this->updateSnapshotStatus(
             $snapshotId,
             SnapshotStatusType::Complete->value,
-            sprintf('Exported %d tables (%s)', count($tables), RiseupPathUtils::formatBytes($total_bytes))
+            sprintf('Exported %d tables (%s)', count($tables), PathUtils::formatBytes($total_bytes))
         );
 
         return array(

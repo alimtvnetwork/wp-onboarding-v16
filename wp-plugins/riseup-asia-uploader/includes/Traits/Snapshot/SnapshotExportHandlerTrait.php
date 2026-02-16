@@ -19,6 +19,7 @@ use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait SnapshotExportHandlerTrait {
 
@@ -128,7 +129,7 @@ trait SnapshotExportHandlerTrait {
             )
         );
 
-        return \RiseupEnvelopeBuilder::success()
+        return EnvelopeBuilder::success()
             ->setResults(array(array(
                 'url'               => $downloadUrl,
                 'filename'          => $export['zip_filename'],

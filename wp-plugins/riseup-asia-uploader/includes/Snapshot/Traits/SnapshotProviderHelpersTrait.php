@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\PathUtils;
 
 trait SnapshotProviderHelpersTrait {
 
@@ -40,11 +41,11 @@ trait SnapshotProviderHelpersTrait {
     }
 
     protected function getSnapshotsDir(): string {
-        return RiseupPathUtils::getSnapshotsDir();
+        return PathUtils::getSnapshotsDir();
     }
 
     protected function ensureSnapshotsDir(): bool {
-        $dir = RiseupPathUtils::ensurePath(true, RiseupPathUtils::getSnapshotsDir());
+        $dir = PathUtils::ensurePath(true, PathUtils::getSnapshotsDir());
 
         if ($dir === false) {
             $this->log(LogLevelType::Error->value, 'Failed to ensure snapshots directory');
@@ -66,6 +67,6 @@ trait SnapshotProviderHelpersTrait {
     }
 
     protected function formatBytes(int $bytes, int $decimals = 1): string {
-        return RiseupPathUtils::formatBytes($bytes, $decimals);
+        return PathUtils::formatBytes($bytes, $decimals);
     }
 }

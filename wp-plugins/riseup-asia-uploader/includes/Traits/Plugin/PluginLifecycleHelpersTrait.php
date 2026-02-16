@@ -21,6 +21,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait PluginLifecycleEnableTrait {
 
@@ -64,7 +65,7 @@ trait PluginLifecycleEnableTrait {
 
     /** Build response for already-active plugin. */
     private function buildAlreadyActiveResponse(string $slug): WP_REST_Response {
-        return \RiseupEnvelopeBuilder::success('Plugin was already active')
+        return EnvelopeBuilder::success('Plugin was already active')
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginEnable->route())
             ->setSingleResult(array('plugin_slug' => $slug, 'activated' => true))
             ->toResponse();
@@ -72,7 +73,7 @@ trait PluginLifecycleEnableTrait {
 
     /** Build response for already-inactive plugin. */
     private function buildAlreadyInactiveResponse(string $slug): WP_REST_Response {
-        return \RiseupEnvelopeBuilder::success('Plugin was already inactive')
+        return EnvelopeBuilder::success('Plugin was already inactive')
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
             ->setSingleResult(array('plugin_slug' => $slug, 'deactivated' => true))
             ->toResponse();
@@ -92,7 +93,7 @@ trait PluginLifecycleEnableTrait {
         }
 
         $this->logPluginLifecycle(ActionType::Enable->value, $slug, StatusType::Success->value);
-        return \RiseupEnvelopeBuilder::success()
+        return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginEnable->route())
             ->setSingleResult(array('plugin_slug' => $slug, 'activated' => true))
             ->toResponse();
@@ -113,7 +114,7 @@ trait PluginLifecycleEnableTrait {
         }
 
         $this->logPluginLifecycle(ActionType::Disable->value, $slug, StatusType::Success->value);
-        return \RiseupEnvelopeBuilder::success()
+        return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDisable->route())
             ->setSingleResult(array('plugin_slug' => $slug, 'deactivated' => true))
             ->toResponse();

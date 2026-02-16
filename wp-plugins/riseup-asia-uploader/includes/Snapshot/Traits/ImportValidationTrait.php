@@ -85,16 +85,16 @@ trait ImportValidationTrait {
     }
 
     private function findFileRecursive(string $dir, string $filename): ?string {
-        $path = RiseupPathUtils::join($dir, $filename);
-        if (RiseupPathUtils::fileExists($path)) {
+        $path = PathUtils::join($dir, $filename);
+        if (PathUtils::fileExists($path)) {
             return $path;
         }
 
         $entries = scandir($dir);
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;
-            $subPath = RiseupPathUtils::join($dir, $entry, $filename);
-            if (RiseupPathUtils::fileExists($subPath)) {
+            $subPath = PathUtils::join($dir, $entry, $filename);
+            if (PathUtils::fileExists($subPath)) {
                 return $subPath;
             }
         }

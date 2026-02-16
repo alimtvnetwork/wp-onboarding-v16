@@ -18,6 +18,7 @@ use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait StatusPayloadTrait {
 
@@ -28,7 +29,7 @@ trait StatusPayloadTrait {
         $live_version = $this->detectLiveVersion();
         $db_available = $this->db !== null;
 
-        return \RiseupEnvelopeBuilder::success()
+        return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Status->value)
             ->setSingleResult($this->buildStatusPayload($live_version, $db_available))
             ->toResponse();

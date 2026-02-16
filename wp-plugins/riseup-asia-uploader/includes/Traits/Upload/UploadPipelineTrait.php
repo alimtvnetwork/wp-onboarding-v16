@@ -21,6 +21,7 @@ use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait UploadPipelineTrait
 {
@@ -96,7 +97,7 @@ trait UploadPipelineTrait
     }
 
     private function buildUploadEnvelope(array $result, array $input): WP_REST_Response {
-        return \RiseupEnvelopeBuilder::success()
+        return EnvelopeBuilder::success()
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Upload->route())
             ->setSingleResult(array(
                 'plugin_slug'    => $result['slug'],

@@ -21,6 +21,7 @@ use RiseupAsia\Snapshot\Traits\CleanerStorageTrait;
 use RiseupAsia\Snapshot\Traits\CleanerUtilsTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Helpers\PathUtils;
 
 class SnapshotCleaner {
 
@@ -67,7 +68,7 @@ class SnapshotCleaner {
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
             'deleted_total' => $totalDeleted,
-            'space_freed'   => \RiseupPathUtils::formatBytes($results['space_freed_bytes']),
+            'space_freed'   => PathUtils::formatBytes($results['space_freed_bytes']),
             'duration'      => $results['duration'],
             'dry_run'       => $dryRun,
         ));

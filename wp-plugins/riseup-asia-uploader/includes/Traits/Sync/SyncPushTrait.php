@@ -22,6 +22,7 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SyncActionType;
 use RiseupAsia\Enums\TriggerSourceType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathUtils;
 
 trait SyncPushTrait
 {
@@ -131,7 +132,7 @@ trait SyncPushTrait
 
         $dir = dirname($full_path);
         if (BooleanHelpers::isDirMissing($dir)) {
-            \RiseupPathUtils::ensureDir($dir);
+            PathUtils::ensureDir($dir);
         }
 
         $written = file_put_contents($full_path, $decoded) !== false;

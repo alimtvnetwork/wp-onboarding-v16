@@ -17,6 +17,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait ResponseTrait {
 
@@ -52,7 +53,7 @@ trait ResponseTrait {
 
         $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
-        return \RiseupEnvelopeBuilder::error($message, $status, $exception)
+        return EnvelopeBuilder::error($message, $status, $exception)
             ->setRequestedAt($requestedAt)
             ->setDelegatedAt(home_url())
             ->toResponse();

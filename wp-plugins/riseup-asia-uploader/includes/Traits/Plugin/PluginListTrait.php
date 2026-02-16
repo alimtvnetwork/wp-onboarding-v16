@@ -21,6 +21,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait PluginListTrait
 {
@@ -40,7 +41,7 @@ trait PluginListTrait
 
             $plugins = $this->collectPluginList();
 
-            return \RiseupEnvelopeBuilder::success()
+            return EnvelopeBuilder::success()
                 ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Plugins->route())
                 ->setResults($plugins)
                 ->toResponse();

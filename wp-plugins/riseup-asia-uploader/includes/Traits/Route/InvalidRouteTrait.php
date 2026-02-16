@@ -18,6 +18,7 @@ use WP_REST_Server;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\ErrorHandling\FrameBuilder;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait InvalidRouteTrait
 {
@@ -30,7 +31,7 @@ trait InvalidRouteTrait
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
         $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
 
-        return \RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HttpStatusType::NotFound->value)
+        return EnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HttpStatusType::NotFound->value)
             ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
             ->setErrors($trace)
             ->toResponse();
