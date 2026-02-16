@@ -42,39 +42,8 @@ require_once __DIR__ . '/includes/ErrorHandling/FatalErrorHandler.php';
 // LOAD DEPENDENCIES IN ORDER
 // =============================================================================
 
-// Foundation: PSR-4 namespaced enums (must load before constants.php and all classes)
-require_once __DIR__ . '/includes/Enums/UploadSourceType.php';
-require_once __DIR__ . '/includes/Enums/CapabilityType.php';
-require_once __DIR__ . '/includes/Enums/HttpMethodType.php';
-require_once __DIR__ . '/includes/Enums/HookType.php';
-require_once __DIR__ . '/includes/Enums/PathSubdirType.php';
-require_once __DIR__ . '/includes/Enums/PathDatabaseType.php';
-require_once __DIR__ . '/includes/Enums/PathLogFileType.php';
-require_once __DIR__ . '/includes/Enums/PathConfigType.php';
-require_once __DIR__ . '/includes/Enums/EndpointType.php';
-require_once __DIR__ . '/includes/Enums/TableType.php';
-require_once __DIR__ . '/includes/Enums/ErrorType.php';
-require_once __DIR__ . '/includes/Enums/LogLevelType.php';
-require_once __DIR__ . '/includes/Enums/ActionType.php';
-require_once __DIR__ . '/includes/Enums/StatusType.php';
-require_once __DIR__ . '/includes/Enums/PostStatusType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotStatusType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotJobStatusType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotScopeType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotFrequencyType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotProviderType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotTriggerType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotExportStatusType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotModeType.php';
-require_once __DIR__ . '/includes/Enums/RetentionType.php';
-require_once __DIR__ . '/includes/Enums/AgentStatusType.php';
-require_once __DIR__ . '/includes/Enums/TriggerSourceType.php';
-require_once __DIR__ . '/includes/Enums/SyncActionType.php';
-require_once __DIR__ . '/includes/Enums/ResponseMessageType.php';
-require_once __DIR__ . '/includes/Enums/HttpStatusType.php';
-require_once __DIR__ . '/includes/Enums/SnapshotErrorType.php';
-
-// Error checker (uses RiseupAsia\Enums\ErrorType internally)
+// Enums are now autoloaded via PSR-4 (includes/Autoloader.php).
+// Only non-autoloaded legacy files need explicit requires.
 require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';
 require_once __DIR__ . '/includes/constants.php';
 
