@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Upload\Traits\UploadIgnorePatternTrait;
 use RiseupAsia\Enums\PluginConfigType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
 
 class UploadIgnore {
@@ -34,7 +34,7 @@ class UploadIgnore {
         $ignoreFile = rtrim($pluginDir, '/\\') . '/' . PluginConfigType::IgnoreFilename->value;
         $this->fileLogger->debug('Loading uploadignore', array('path' => $ignoreFile));
 
-        if (BooleanHelpers::isFileMissing($ignoreFile)) {
+        if (PathHelper::isFileMissing($ignoreFile)) {
             $this->fileLogger->debug('No uploadignore file found');
             $this->isLoaded = false;
             return false;

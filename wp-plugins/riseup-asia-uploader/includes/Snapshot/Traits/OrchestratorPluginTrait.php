@@ -21,14 +21,14 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\PluginSelectionType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait OrchestratorPluginTrait {
 
     private function snapshotPlugins(string $snapshotDir, string $selection = 'all'): array {
         $plugins_dir = $snapshotDir . '/plugins';
-        if (!PathUtils::ensureDir($plugins_dir, true)) {
+        if (!PathHelper::ensureDir($plugins_dir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }
@@ -86,7 +86,7 @@ trait OrchestratorPluginTrait {
         $slug = $info['slug'];
         $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (BooleanHelpers::isDirMissing($plugin_path)) {
+        if (PathHelper::isDirMissing($plugin_path)) {
             $this->log(LogLevelType::Info->value, 'Skipping single-file plugin: ' . $slug);
             return null;
         }
@@ -152,7 +152,7 @@ trait OrchestratorPluginTrait {
 
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
-        if (BooleanHelpers::isFileMissing($root_path)) {
+        if (PathHelper::isFileMissing($root_path)) {
             return null;
         }
 

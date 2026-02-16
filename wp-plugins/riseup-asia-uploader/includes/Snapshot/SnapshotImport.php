@@ -8,7 +8,7 @@ use RiseupAsia\Snapshot\Traits\ImportValidationTrait;
 use RiseupAsia\Snapshot\Traits\ImportExecutionTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 class SnapshotImport {
     use ImportValidationTrait;
@@ -24,7 +24,7 @@ class SnapshotImport {
         $this->logger  = $logger;
         $this->db      = $db;
         $this->manager = $manager;
-        $this->baseDir = PathUtils::getBaseDir();
+        $this->baseDir = PathHelper::getBaseDir();
     }
 
     /**
@@ -39,11 +39,11 @@ class SnapshotImport {
 
         $this->log(LogLevelType::Info->value, 'Starting snapshot import', array(
             'path' => basename($uploadedPath),
-            'size' => PathUtils::formatBytes(filesize($uploadedPath)),
+            'size' => PathHelper::formatBytes(filesize($uploadedPath)),
         ));
 
-        $tempDir = PathUtils::join(PathUtils::getTempDir(), 'import_' . uniqid());
-        if (!PathUtils::ensureDir($tempDir, false)) {
+        $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
+        if (!PathHelper::ensureDir($tempDir, false)) {
             return $this->fail('Failed to create temp directory');
         }
 
@@ -57,7 +57,7 @@ class SnapshotImport {
      * @return array|null Failure result or null if valid.
      */
     private function guardImportFile(string $path): ?array {
-        if (!PathUtils::fileExists($path)) { return $this->fail('Uploaded file not found'); }
+        if (!PathHelper::fileExists($path)) { return $this->fail('Uploaded file not found'); }
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         if ($ext !== 'zip') { return $this->fail('Invalid file type. Expected ZIP file.'); }
         return null;
@@ -106,7 +106,7 @@ class SnapshotImport {
      * @param Exception $e       The exception.
      */
     private function cleanupOnFailure(string $tempDir, \Throwable $e): void {
-        if (PathUtils::dirExists($tempDir)) { $this->deleteDirectory($tempDir); }
+        if (PathHelper::dirExists($tempDir)) { $this->deleteDirectory($tempDir); }
         $this->log(LogLevelType::Error->value, 'Snapshot import failed', array('error' => $e->getMessage()));
     }
 

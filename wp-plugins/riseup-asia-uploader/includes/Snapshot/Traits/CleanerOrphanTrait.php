@@ -15,8 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\SnapshotStatusType;
-use RiseupAsia\Helpers\PathUtils;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait CleanerOrphanTrait {
 
@@ -26,7 +25,7 @@ trait CleanerOrphanTrait {
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_paths = array_map(function ($f) { return $f['filepath']; }, $files);
 
-        $scan_dir = PathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (!is_dir($scan_dir)) {
             return $result;
         }
@@ -67,7 +66,7 @@ trait CleanerOrphanTrait {
         $files = $this->db->queryAll('SELECT filepath, filename FROM ' . TableType::Snapshots->value) ?: array();
         $known_files = array_map(function ($f) { return $f['filename']; }, $files);
 
-        $scan_dir = PathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (!is_dir($scan_dir)) {
             return $result;
         }
@@ -111,7 +110,7 @@ trait CleanerOrphanTrait {
         $known_paths = array_map(function ($f) { return dirname($f['filepath']); }, $files);
         $known_paths = array_unique($known_paths);
 
-        $scan_dir = PathUtils::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
+        $scan_dir = PathHelper::trailingslashit(trailingslashit(WP_CONTENT_DIR) . defined('SNAPSHOT_DIR') ? SNAPSHOT_DIR : 'snapshots');
         if (!is_dir($scan_dir)) {
             return $result;
         }
@@ -131,7 +130,7 @@ trait CleanerOrphanTrait {
 
         foreach ($dirs as $dir) {
             if (in_array($dir, $known_paths)) { continue; }
-            if (BooleanHelpers::isDirEmpty($dir)) {
+            if (PathHelper::isDirEmpty($dir)) {
                 if (!$dryRun) {
                     try {
                         if (@rmdir($dir)) {

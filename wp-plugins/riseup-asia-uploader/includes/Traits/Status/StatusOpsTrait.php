@@ -17,7 +17,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait StatusOpsTrait {
@@ -44,7 +44,7 @@ trait StatusOpsTrait {
     private function loadOpenApiSpec(): array|WP_REST_Response {
         $spec_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/openapi.json';
 
-        if (BooleanHelpers::isFileMissing($spec_file)) {
+        if (PathHelper::isFileMissing($spec_file)) {
             return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
         }
 

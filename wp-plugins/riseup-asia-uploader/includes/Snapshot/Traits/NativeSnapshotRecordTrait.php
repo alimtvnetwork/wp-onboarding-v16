@@ -18,7 +18,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait NativeSnapshotRecordTrait {
 
@@ -26,13 +26,13 @@ trait NativeSnapshotRecordTrait {
 
     private function createSqliteDatabase(string $filepath): ?PDO {
         $snapshotsDir = $this->getSnapshotsDir();
-        if (!PathUtils::isSafePath($filepath, $snapshotsDir)) {
+        if (!PathHelper::isSafePath($filepath, $snapshotsDir)) {
             $this->log(LogLevelType::Error->value, 'Unsafe path detected for SQLite database', array('filepath' => $filepath, 'base' => $snapshotsDir));
             return null;
         }
 
         $parentDir = dirname($filepath);
-        if (!PathUtils::ensureDir($parentDir, true)) {
+        if (!PathHelper::ensureDir($parentDir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to ensure parent directory for SQLite', array('parent' => $parentDir));
             return null;
         }

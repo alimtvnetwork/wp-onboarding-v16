@@ -16,7 +16,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait CleanerStorageTrait {
 
@@ -46,7 +46,7 @@ trait CleanerStorageTrait {
             if ($db_stats) {
                 $stats['total_snapshots']      = intval($db_stats['count']);
                 $stats['total_size_bytes']     = intval($db_stats['total_size']);
-                $stats['total_size_formatted'] = PathUtils::formatBytes($stats['total_size_bytes']);
+                $stats['total_size_formatted'] = PathHelper::formatBytes($stats['total_size_bytes']);
 
                 if ($db_stats['oldest']) {
                     $stats['oldest_timestamp'] = strtotime($db_stats['oldest']);
@@ -56,12 +56,12 @@ trait CleanerStorageTrait {
                 }
             }
 
-            $snapshots_dir = PathUtils::getSnapshotsDir();
-            if (PathUtils::dirExists($snapshots_dir)) {
-                $free = PathUtils::getFreeSpace($snapshots_dir);
+            $snapshots_dir = PathHelper::getSnapshotsDir();
+            if (PathHelper::dirExists($snapshots_dir)) {
+                $free = PathHelper::getFreeSpace($snapshots_dir);
                 if ($free !== false) {
                     $stats['disk_free_bytes']     = $free;
-                    $stats['disk_free_formatted'] = PathUtils::formatBytes($free);
+                    $stats['disk_free_formatted'] = PathHelper::formatBytes($free);
                 }
             }
 
@@ -94,7 +94,7 @@ trait CleanerStorageTrait {
 
             $estimate['snapshots_count'] = count($snapshots);
             $estimate['bytes']           = array_sum(array_column($snapshots, 'size'));
-            $estimate['bytes_formatted'] = PathUtils::formatBytes($estimate['bytes']);
+            $estimate['bytes_formatted'] = PathHelper::formatBytes($estimate['bytes']);
 
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to estimate cleanup', array('error' => $e->getMessage()));

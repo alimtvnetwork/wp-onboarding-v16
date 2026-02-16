@@ -22,7 +22,7 @@ use RiseupAsia\Snapshot\SnapshotExporter;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait IncrementalRegistrationTrait {
 
@@ -57,7 +57,7 @@ trait IncrementalRegistrationTrait {
     }
 
     private function calculateDirectorySize(string $dir): int {
-        if (BooleanHelpers::isDirMissing($dir)) {
+        if (PathHelper::isDirMissing($dir)) {
             return 0;
         }
 

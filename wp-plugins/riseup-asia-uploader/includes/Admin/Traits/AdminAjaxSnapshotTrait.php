@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\CapabilityType;
 use RiseupAsia\Enums\ResponseMessageType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait AdminAjaxSnapshotTrait {
@@ -131,7 +131,7 @@ trait AdminAjaxSnapshotTrait {
                 $result['deleted_by_policy'],
                 $result['deleted_orphans'],
                 $result['deleted_failed'],
-                PathUtils::formatBytes($result['space_freed_bytes'])
+                PathHelper::formatBytes($result['space_freed_bytes'])
             ),
             'result' => $result,
         ));
