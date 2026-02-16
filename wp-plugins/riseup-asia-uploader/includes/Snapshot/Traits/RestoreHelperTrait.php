@@ -1,6 +1,6 @@
 <?php
 /**
- * Restore Utils Trait
+ * Restore Helper Trait
  *
  * Result building, audit logging, and log helper.
  *
@@ -22,20 +22,8 @@ use RiseupAsia\Enums\TableType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 
-trait RestoreUtilsTrait {
+trait RestoreHelperTrait {
 
-    /**
-     * Build the final restore result.
-     *
-     * @param array    $masterResult Master restore result.
-     * @param array    $incResult    Incremental result.
-     * @param int|null $backupId     Pre-restore backup ID.
-     * @param array    $errors       All errors.
-     * @param float    $duration     Duration.
-     * @param array    $meta         Snapshot metadata.
-     * @param int      $totalRows    Total rows restored.
-     * @return array Final result.
-     */
     private function buildRestoreResult(array $masterResult, array $incResult, ?int $backupId, array $errors, float $duration, array $meta, int $totalRows): array {
         $this->log(LogLevelType::Info->value, 'Per-table restore complete', array(
             'tables_restored'      => $masterResult['tables_restored'],
@@ -58,14 +46,6 @@ trait RestoreUtilsTrait {
         );
     }
 
-    /**
-     * Log an audit trail entry for the restore operation.
-     *
-     * @param string $snapshotDir    Snapshot directory.
-     * @param int    $tablesRestored Number of tables restored.
-     * @param int    $totalRows      Total rows restored.
-     * @param float  $duration       Duration in seconds.
-     */
     private function logAuditRestore(string $snapshotDir, int $tablesRestored, int $totalRows, float $duration): void {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
@@ -80,15 +60,6 @@ trait RestoreUtilsTrait {
         }
     }
 
-    /**
-     * Build audit detail JSON for restore.
-     *
-     * @param string $snapshotDir    Snapshot directory.
-     * @param int    $tablesRestored Tables restored.
-     * @param int    $totalRows      Total rows.
-     * @param float  $duration       Duration.
-     * @return string JSON-encoded details.
-     */
     private function buildAuditDetails(string $snapshotDir, int $tablesRestored, int $totalRows, float $duration): string {
         return json_encode(array(
             'directory' => basename($snapshotDir), 'tables_restored' => $tablesRestored,
@@ -96,12 +67,6 @@ trait RestoreUtilsTrait {
         ));
     }
 
-    /**
-     * Insert an audit record into the transactions table.
-     *
-     * @param PDO    $pdo     Database connection.
-     * @param string $details JSON details.
-     */
     private function insertAuditRecord(PDO $pdo, string $details): void {
         $stmt = $pdo->prepare(
             "INSERT INTO " . TableType::Transactions->value .
@@ -113,13 +78,6 @@ trait RestoreUtilsTrait {
         ));
     }
 
-    /**
-     * Log a message.
-     *
-     * @param string $level   Log level.
-     * @param string $message Message.
-     * @param array  $context Context data.
-     */
     private function log(string $level, string $message, array $context = array()): void {
         if (!$this->logger) {
             return;

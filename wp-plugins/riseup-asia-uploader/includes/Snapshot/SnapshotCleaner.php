@@ -18,10 +18,10 @@ use RiseupAsia\Snapshot\Traits\CleanerRetentionTrait;
 use RiseupAsia\Snapshot\Traits\CleanerDeletionTrait;
 use RiseupAsia\Snapshot\Traits\CleanerOrphanTrait;
 use RiseupAsia\Snapshot\Traits\CleanerStorageTrait;
-use RiseupAsia\Snapshot\Traits\CleanerUtilsTrait;
+use RiseupAsia\Snapshot\Traits\CleanerHelperTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 class SnapshotCleaner {
 
@@ -29,7 +29,7 @@ class SnapshotCleaner {
     use CleanerDeletionTrait;
     use CleanerOrphanTrait;
     use CleanerStorageTrait;
-    use CleanerUtilsTrait;
+    use CleanerHelperTrait;
 
     private FileLogger $logger;
     private Database $db;
@@ -68,7 +68,7 @@ class SnapshotCleaner {
 
         $this->log(LogLevelType::Info->value, 'Cleanup complete', array(
             'deleted_total' => $totalDeleted,
-            'space_freed'   => PathUtils::formatBytes($results['space_freed_bytes']),
+            'space_freed'   => PathHelper::formatBytes($results['space_freed_bytes']),
             'duration'      => $results['duration'],
             'dry_run'       => $dryRun,
         ));

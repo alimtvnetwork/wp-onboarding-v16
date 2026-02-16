@@ -16,8 +16,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
-use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
 use RiseupAsia\Snapshot\Traits\IncrementalRegistrationTrait;
@@ -27,9 +26,6 @@ use RiseupAsia\Database\Database;
 use RiseupAsia\Database\RootDb;
 use RiseupAsia\Logging\FileLogger;
 
-/**
- * Incremental Backup class.
- */
 class IncrementalBackup {
 
     use IncrementalDeltaTrait;
@@ -61,13 +57,12 @@ class IncrementalBackup {
         $this->batchSize = SnapshotConfigType::BatchSize->value;
     }
 
-    /** Execute an incremental backup against a master snapshot. */
     public function execute(string $masterDir, array $options = array()): array {
         $startTime = microtime(true);
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
 
         $rootPath = $masterDir . '/a-root.db';
-        if (BooleanHelpers::isFileMissing($rootPath)) {
+        if (PathHelper::isFileMissing($rootPath)) {
             return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $rootPath);
         }
 
@@ -76,7 +71,6 @@ class IncrementalBackup {
         return $this->executeIncrementalPipeline($rootPath, $title, $masterDir, $startTime);
     }
 
-    /** Run the incremental backup pipeline (prepare, export, register, finalize). */
     private function executeIncrementalPipeline(string $rootPath, string $title, string $masterDir, float $startTime): array {
         try {
             $prepared = $this->prepareIncrementalDir($rootPath);
@@ -96,7 +90,6 @@ class IncrementalBackup {
         }
     }
 
-    /** Register the incremental export in the root database. */
     private function registerIncrementalInRoot(array $prepared, array $export): void {
         $this->rootDb->registerIncremental($prepared['rootPdo'], array(
             'sequence_num' => $prepared['sequence'], 'folder_name' => $prepared['folder_name'],
@@ -105,12 +98,10 @@ class IncrementalBackup {
         ));
     }
 
-    /** Get the base snapshots directory. */
     private function getSnapshotsBaseDir(): string {
-        return PathUtils::getSnapshotsDir();
+        return PathHelper::getSnapshotsDir();
     }
 
-    /** Format bytes. */
     private function formatBytes(int $bytes): string {
         if ($bytes < 1024) return $bytes . ' B';
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
@@ -118,7 +109,6 @@ class IncrementalBackup {
         return round($bytes / 1073741824, 1) . ' GB';
     }
 
-    /** Log a message. */
     private function log(string $level, string $message, array $context = array()): void {
         $full = '[SNAPSHOT] [INCREMENTAL] ' . $message;
         if (!empty($context)) {

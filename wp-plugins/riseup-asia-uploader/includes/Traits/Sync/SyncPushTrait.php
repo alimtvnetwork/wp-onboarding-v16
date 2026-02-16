@@ -23,8 +23,7 @@ use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SyncActionType;
 use RiseupAsia\Enums\TriggerSourceType;
-use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait SyncPushTrait
 {
@@ -43,7 +42,7 @@ trait SyncPushTrait
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-            if (BooleanHelpers::isDirMissing($plugin_dir)) {
+            if (PathHelper::isDirMissing($plugin_dir)) {
                 return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
@@ -133,8 +132,8 @@ trait SyncPushTrait
         }
 
         $dir = dirname($full_path);
-        if (BooleanHelpers::isDirMissing($dir)) {
-            PathUtils::ensureDir($dir);
+        if (PathHelper::isDirMissing($dir)) {
+            PathHelper::ensureDir($dir);
         }
 
         $written = file_put_contents($full_path, $decoded) !== false;
@@ -147,7 +146,7 @@ trait SyncPushTrait
 
     /** Delete a file during sync with audit trail. */
     private function syncDeleteFile(string $path, string $action, string $full_path, string $plugin_dir, string $slug): array {
-        if (BooleanHelpers::isFileMissing($full_path)) {
+        if (PathHelper::isFileMissing($full_path)) {
             return array('path' => $path, 'action' => $action, 'status' => 'success', 'reason' => 'Already absent');
         }
 

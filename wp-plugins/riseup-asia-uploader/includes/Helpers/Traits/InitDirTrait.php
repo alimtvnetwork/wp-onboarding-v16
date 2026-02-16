@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait InitDirTrait {
 
@@ -25,8 +25,8 @@ trait InitDirTrait {
             return self::$ensured_dirs[$normalized];
         }
 
-        if (BooleanHelpers::isClassExists(PathUtils::class)) {
-            $result = PathUtils::ensureDir($path, $secure);
+        if (BooleanHelpers::isClassExists(PathHelper::class)) {
+            $result = PathHelper::ensureDir($path, $secure);
             self::$ensured_dirs[$normalized] = $result;
             return $result;
         }
@@ -39,7 +39,7 @@ trait InitDirTrait {
     public static function ensureDirNative(string $path, bool $secure = false): bool {
         if (empty($path)) { return false; }
 
-        if (BooleanHelpers::isDirMissing($path)) {
+        if (PathHelper::isDirMissing($path)) {
             if (!@mkdir($path, 0755, true)) {
                 if (function_exists('wp_mkdir_p') && !wp_mkdir_p($path)) {
                     return false;
@@ -55,14 +55,14 @@ trait InitDirTrait {
         $success = true;
 
         $htaccess = $path . '/.htaccess';
-        if (BooleanHelpers::isFileMissing($htaccess)) {
+        if (PathHelper::isFileMissing($htaccess)) {
             if (@file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n") === false) {
                 $success = false;
             }
         }
 
         $index = $path . '/index.php';
-        if (BooleanHelpers::isFileMissing($index)) {
+        if (PathHelper::isFileMissing($index)) {
             if (@file_put_contents($index, "<?php\n// Silence is golden.\n") === false) {
                 $success = false;
             }

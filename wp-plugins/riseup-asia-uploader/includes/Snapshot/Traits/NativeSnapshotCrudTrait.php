@@ -16,7 +16,7 @@ use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
 
 trait NativeSnapshotCrudTrait {
@@ -28,16 +28,16 @@ trait NativeSnapshotCrudTrait {
         }
 
         $filepath = $snapshot['filepath'];
-        if (PathUtils::fileExists($filepath)) {
-            if (!PathUtils::deleteFile($filepath)) {
+        if (PathHelper::fileExists($filepath)) {
+            if (!PathHelper::deleteFile($filepath)) {
                 $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
                 return array('success' => false, 'error' => 'Failed to delete snapshot file');
             }
         }
 
         $zip_path = str_replace('.sqlite', '.zip', $filepath);
-        if (PathUtils::fileExists($zip_path)) {
-            PathUtils::deleteFile($zip_path);
+        if (PathHelper::fileExists($zip_path)) {
+            PathHelper::deleteFile($zip_path);
         }
 
         $this->db->delete(TableType::Snapshots->value, array('id' => $snapshotId));
@@ -52,7 +52,7 @@ trait NativeSnapshotCrudTrait {
         }
 
         $filepath = $snapshot['filepath'];
-        if (!PathUtils::fileExists($filepath)) {
+        if (!PathHelper::fileExists($filepath)) {
             return array('success' => false, 'error' => 'Snapshot file not found');
         }
 

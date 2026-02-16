@@ -1,6 +1,6 @@
 <?php
 /**
- * PathUtilsFileTrait — file operations.
+ * PathHelperFileTrait — file guards and operations.
  *
  * @package RiseupAsia\Helpers\Traits
  * @since   1.57.0
@@ -13,9 +13,18 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\BooleanHelpers;
 
-trait PathUtilsFileTrait {
+trait PathHelperFileTrait {
+
+    // ── File Guards (moved from BooleanDomainTrait) ──
+
+    public static function isFileExists(string $filePath): bool { return !empty($filePath) && file_exists($filePath); }
+    public static function isFileMissing(string $filePath): bool { return empty($filePath) || !file_exists($filePath); }
+    public static function isFileUnreadable(string $filePath): bool { return empty($filePath) || !file_exists($filePath) || !is_readable($filePath); }
+    public static function isNotRegularFile(string $path): bool { return !is_file($path); }
+    public static function isCopyFailed(string $source, string $dest): bool { return !copy($source, $dest); }
+
+    // ── File Operations ──
 
     public static function fileExists(string $path): bool { $path = self::join($path); return !empty($path) && is_file($path); }
     public static function dirExists(string $path): bool { $path = self::join($path); return !empty($path) && is_dir($path); }
@@ -34,8 +43,8 @@ trait PathUtilsFileTrait {
     public static function deleteFile(string $path): bool {
         $path = self::join($path);
         if (empty($path)) { self::safeLog(LogLevelType::Warn->value, '[PATH] Empty path provided to deleteFile'); return false; }
-        if (BooleanHelpers::isFileMissing($path)) { return true; }
-        if (BooleanHelpers::isNotRegularFile($path)) { self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $path)); return false; }
+        if (self::isFileMissing($path)) { return true; }
+        if (self::isNotRegularFile($path)) { self::safeLog(LogLevelType::Error->value, '[PATH] Path is not a file', array('path' => $path)); return false; }
         if (!@unlink($path)) {
             $error = error_get_last();
             self::safeLog(LogLevelType::Error->value, '[PATH] Failed to delete file', array('path' => $path, 'error' => $error ? $error['message'] : 'Unknown error'));
@@ -47,8 +56,8 @@ trait PathUtilsFileTrait {
     public static function deleteDir(string $path): bool {
         $path = self::join($path);
         if (empty($path)) { return false; }
-        if (BooleanHelpers::isFileMissing($path)) { return true; }
-        if (BooleanHelpers::isNotDirectory($path)) { return false; }
+        if (self::isFileMissing($path)) { return true; }
+        if (self::isNotDirectory($path)) { return false; }
 
         $files = array_diff(scandir($path), array('.', '..'));
         foreach ($files as $file) {
@@ -66,8 +75,8 @@ trait PathUtilsFileTrait {
 
     public static function getFreeSpace(string $path) {
         $path = self::join($path);
-        while (BooleanHelpers::isNotDirectory($path) && $path !== dirname($path)) { $path = dirname($path); }
-        if (BooleanHelpers::isNotDirectory($path)) { return false; }
+        while (self::isNotDirectory($path) && $path !== dirname($path)) { $path = dirname($path); }
+        if (self::isNotDirectory($path)) { return false; }
         return @disk_free_space($path);
     }
 

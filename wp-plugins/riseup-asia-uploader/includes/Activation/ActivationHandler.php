@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
 
 class ActivationHandler
@@ -72,10 +72,10 @@ class ActivationHandler
     }
 
     private static function ensureDirs(string $baseDir, string $logsDir): void {
-        if (BooleanHelpers::isDirMissing($baseDir)) {
+        if (PathHelper::isDirMissing($baseDir)) {
             wp_mkdir_p($baseDir);
         }
-        if (BooleanHelpers::isDirMissing($logsDir)) {
+        if (PathHelper::isDirMissing($logsDir)) {
             wp_mkdir_p($logsDir);
         }
     }
@@ -107,7 +107,7 @@ class ActivationHandler
 
     private static function writeStacktraceLog(string $logsDir, string $timestamp): void {
         $stacktraceFile = $logsDir . PathLogFileType::Stacktrace->value;
-        if (BooleanHelpers::isFileMissing($stacktraceFile)) {
+        if (PathHelper::isFileMissing($stacktraceFile)) {
             @file_put_contents($stacktraceFile, sprintf(
                 "# Riseup Asia Uploader - Stack Trace Log (initialized %s)\n\n",
                 $timestamp
@@ -122,12 +122,12 @@ class ActivationHandler
         }
 
         $htaccess = $baseDir . '/.htaccess';
-        if (BooleanHelpers::isFileMissing($htaccess)) {
+        if (PathHelper::isFileMissing($htaccess)) {
             @file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n");
         }
 
         $index = $baseDir . '/index.php';
-        if (BooleanHelpers::isFileMissing($index)) {
+        if (PathHelper::isFileMissing($index)) {
             @file_put_contents($index, "<?php\n// Silence is golden.\n");
         }
     }

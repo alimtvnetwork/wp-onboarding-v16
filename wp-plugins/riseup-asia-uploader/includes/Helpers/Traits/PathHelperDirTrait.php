@@ -1,6 +1,6 @@
 <?php
 /**
- * PathUtilsDirTrait — directory creation, security files, and validation.
+ * PathHelperDirTrait — directory guards, creation, security files, and validation.
  *
  * @package RiseupAsia\Helpers\Traits
  * @since   1.57.0
@@ -13,9 +13,18 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\BooleanHelpers;
 
-trait PathUtilsDirTrait {
+trait PathHelperDirTrait {
+
+    // ── Directory Guards (moved from BooleanDomainTrait) ──
+
+    public static function isDirExists(string $dirPath): bool { return !empty($dirPath) && is_dir($dirPath); }
+    public static function isDirMissing(string $dirPath): bool { return empty($dirPath) || !is_dir($dirPath); }
+    public static function isDirWritable(string $dirPath): bool { return !empty($dirPath) && is_dir($dirPath) && is_writable($dirPath); }
+    public static function isDirReadonly(string $dirPath): bool { return empty($dirPath) || !is_dir($dirPath) || !is_writable($dirPath); }
+    public static function isNotDirectory(string $path): bool { return !is_dir($path); }
+
+    // ── Path Safety ──
 
     public static function isSafePath(string $path, string $basePath): bool {
         $realBase = realpath($basePath);
@@ -55,9 +64,7 @@ trait PathUtilsDirTrait {
         return $isSafe;
     }
 
-    public static function isDirMissing(string $path, bool $secure = false): bool {
-        return !self::ensureDir($path, $secure);
-    }
+    // ── Directory Creation ──
 
     public static function ensureDir(string $path, bool $secure = false): bool {
         $path = self::join($path);
@@ -99,7 +106,7 @@ trait PathUtilsDirTrait {
         $success = true;
 
         $htaccessPath = self::join($path, '.htaccess');
-        if (BooleanHelpers::isFileMissing($htaccessPath)) {
+        if (self::isFileMissing($htaccessPath)) {
             $content = "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n";
             if (@file_put_contents($htaccessPath, $content) === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create .htaccess', array('path' => $htaccessPath));
@@ -108,7 +115,7 @@ trait PathUtilsDirTrait {
         }
 
         $indexPath = self::join($path, 'index.php');
-        if (BooleanHelpers::isFileMissing($indexPath)) {
+        if (self::isFileMissing($indexPath)) {
             if (@file_put_contents($indexPath, "<?php\n// Silence is golden.\n") === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create index.php', array('path' => $indexPath));
                 $success = false;
@@ -124,7 +131,7 @@ trait PathUtilsDirTrait {
             self::safeLog(LogLevelType::Error->value, '[PATH] Empty path from segments', array('segments' => $segments));
             return false;
         }
-        if (self::isDirMissing($path, $secure)) { return false; }
+        if (!self::ensureDir($path, $secure)) { return false; }
         return $path;
     }
 }

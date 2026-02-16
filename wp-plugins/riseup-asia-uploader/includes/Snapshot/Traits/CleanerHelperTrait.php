@@ -1,6 +1,6 @@
 <?php
 /**
- * Cleaner Utils Trait
+ * Cleaner Helper Trait
  *
  * Settings, filesystem helpers, audit trail, and logging.
  *
@@ -21,10 +21,9 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\TriggerSourceType;
-use RiseupAsia\Helpers\PathUtils;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
-trait CleanerUtilsTrait {
+trait CleanerHelperTrait {
 
     private function loadSettings(array $overrides): array {
         $defaults = array(
@@ -49,7 +48,7 @@ trait CleanerUtilsTrait {
     }
 
     private function deleteDirectoryRecursive(string $dir): void {
-        if (BooleanHelpers::isDirMissing($dir)) return;
+        if (PathHelper::isDirMissing($dir)) return;
 
         $items = array_diff(scandir($dir), array('.', '..'));
         foreach ($items as $item) {
@@ -65,7 +64,7 @@ trait CleanerUtilsTrait {
 
     private function getDirectorySize(string $dir): int {
         $size = 0;
-        if (BooleanHelpers::isDirMissing($dir)) return 0;
+        if (PathHelper::isDirMissing($dir)) return 0;
 
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
@@ -87,7 +86,7 @@ trait CleanerUtilsTrait {
                     'retention_skipped' => $results['retention']['skipped_master'],
                     'orphans_removed'   => $results['orphans']['removed'],
                     'stuck_cleaned'     => $results['stuck']['cleaned'],
-                    'space_freed'       => PathUtils::formatBytes($results['space_freed_bytes']),
+                    'space_freed'       => PathHelper::formatBytes($results['space_freed_bytes']),
                     'errors'            => count($results['errors']),
                     'duration'          => $results['duration'],
                 )),

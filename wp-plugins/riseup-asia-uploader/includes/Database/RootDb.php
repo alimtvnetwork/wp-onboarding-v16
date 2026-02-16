@@ -17,14 +17,10 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Database\Traits\RootDbSchemaTrait;
 use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
 
-/**
- * Root Database Manager class.
- */
 class RootDb {
 
     use RootDbSchemaTrait;
@@ -50,8 +46,8 @@ class RootDb {
         $this->log(LogLevelType::Info->value, 'Creating a-root.db', array('path' => $filepath));
 
         $dir = dirname($filepath);
-        if (BooleanHelpers::isDirMissing($dir)) {
-            PathUtils::ensureDir($dir);
+        if (PathHelper::isDirMissing($dir)) {
+            PathHelper::ensureDir($dir);
         }
 
         $pdo = new \PDO('sqlite:' . $filepath);

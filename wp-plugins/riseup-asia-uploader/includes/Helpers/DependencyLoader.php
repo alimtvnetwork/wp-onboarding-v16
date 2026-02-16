@@ -19,7 +19,7 @@ class DependencyLoader {
     private static array $results = array();
 
     public static function load(string $label, string $path): bool {
-        if (BooleanHelpers::isFileMissing($path)) {
+        if (PathHelper::isFileMissing($path)) {
             self::recordResult($label, $path, false, 'File not found: ' . $path);
             return false;
         }

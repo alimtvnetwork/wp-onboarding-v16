@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Database\ORM;
 
@@ -51,13 +51,13 @@ trait DatabaseConnectionTrait {
         $baseDir = $this->fileLogger->getBaseDir();
         $this->fileLogger->debug('Base directory', array('dir' => $baseDir));
 
-        if (PathUtils::isDirMissing($baseDir, true)) {
+        if (!PathHelper::ensureDir($baseDir, true)) {
             $this->fileLogger->error('Failed to create base directory', array('dir' => $baseDir));
 
             throw new Exception('Failed to create data directory: ' . $baseDir);
         }
 
-        $dbPath = PathUtils::getDbPath();
+        $dbPath = PathHelper::getDbPath();
         $this->fileLogger->info('Database path set', array('path' => $dbPath));
 
         return $dbPath;
