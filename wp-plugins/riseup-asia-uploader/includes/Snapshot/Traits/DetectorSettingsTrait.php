@@ -74,7 +74,7 @@ trait DetectorSettingsTrait {
      * @return RiseupSnapshotProviderInterface Provider instance.
      * @throws Exception If provider not available.
      */
-    public function getProviderInstance(?string $providerId = null): RiseupSnapshotProviderInterface {
+    public function getProviderInstance(?string $providerId = null): SnapshotProviderInterface {
         if ($providerId === null) {
             $providerId = $this->getPreferredProvider();
         }
@@ -101,27 +101,23 @@ trait DetectorSettingsTrait {
             }
         }
 
-        throw new Exception(sprintf('Snapshot provider "%s" is not available', $providerId));
+        throw new \Exception(sprintf('Snapshot provider "%s" is not available', $providerId));
     }
 
     /**
      * Instantiate a provider by ID.
      *
-     * @param string $provider_id Provider ID.
-     * @return RiseupSnapshotProviderInterface
+     * @return SnapshotProviderInterface
      */
-    private function instantiateProvider(string $providerId): RiseupSnapshotProviderInterface {
+    private function instantiateProvider(string $providerId): SnapshotProviderInterface {
         switch ($providerId) {
             case SnapshotProviderType::WpReset->value:
-                require_once dirname(__FILE__) . '/../SnapshotProviderWpReset.php';
-                return new RiseupSnapshotProviderWPReset($this->logger, $this->db);
+                return new SnapshotProviderWPReset($this->logger, $this->db);
             case SnapshotProviderType::Updraft->value:
-                require_once dirname(__FILE__) . '/../SnapshotProviderUpdraft.php';
-                return new RiseupSnapshotProviderUpdraft($this->logger, $this->db);
+                return new SnapshotProviderUpdraft($this->logger, $this->db);
             case SnapshotProviderType::Native->value:
             default:
-                require_once dirname(__FILE__) . '/../SnapshotProviderNative.php';
-                return new RiseupSnapshotProviderNative($this->logger, $this->db);
+                return new SnapshotProviderNative($this->logger, $this->db);
         }
     }
 
