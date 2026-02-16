@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\PluginConfigType;
-use RiseupAsia\Helpers\DependencyLoader;
+
 use RiseupAsia\Helpers\InitHelpers;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Database\Database;
@@ -73,7 +73,7 @@ class Plugin {
         $this->fileLogger = FileLogger::getInstance();
         $this->fileLogger->info('Plugin constructor starting', array('version' => PluginConfigType::Version->value));
 
-        DependencyLoader::logSummary($this->fileLogger);
+        
 
         // Register REST routes and lifecycle hooks BEFORE component init
         add_action(HookType::RestApiInit->value, array($this, 'registerRoutes'));
