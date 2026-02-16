@@ -2,9 +2,18 @@
 /**
  * ManagerImportValidationTrait — Manifest and SQLite validation for snapshot imports.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use Throwable;
 
 trait ManagerImportValidationTrait {
 

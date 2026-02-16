@@ -2,12 +2,19 @@
 /**
  * ManagerRestoreTrait — Snapshot restore operations.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
-require_once __DIR__ . '/ManagerRestoreValidationTrait.php';
+namespace RiseupAsia\Snapshot\Traits;
 
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use Throwable;
+use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotErrorType;
 

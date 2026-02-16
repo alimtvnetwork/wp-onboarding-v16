@@ -4,18 +4,20 @@
  *
  * Master table restoration: single table restore and file-level orchestration.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.15.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
+use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreStrategyType;
-
-require_once dirname(__FILE__) . '/RestoreSqliteValidationTrait.php';
 
 trait RestoreTableTrait {
 

@@ -2,9 +2,15 @@
 /**
  * SchedulerConfigTrait — Cron schedule registration, sync, and cleanup scheduling.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\SnapshotFrequencyType;

@@ -2,9 +2,15 @@
 /**
  * ManagerRestoreValidationTrait — Incremental parent validation and pre-restore backup handling.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreModeType;

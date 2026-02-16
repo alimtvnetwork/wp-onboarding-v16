@@ -2,10 +2,18 @@
 /**
  * WorkerJobProgressTrait — Snapshot job progress queries.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\TableType;
 
 trait WorkerJobProgressTrait {

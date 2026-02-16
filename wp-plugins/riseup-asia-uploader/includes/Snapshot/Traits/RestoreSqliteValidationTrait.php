@@ -2,14 +2,18 @@
 /**
  * RestoreSqliteValidationTrait — SQLite file validation and batch MySQL insertion.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.15.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\RestoreStrategyType;
 
 trait RestoreSqliteValidationTrait {

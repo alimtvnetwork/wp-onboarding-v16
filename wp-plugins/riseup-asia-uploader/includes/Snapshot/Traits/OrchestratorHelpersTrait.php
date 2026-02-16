@@ -6,10 +6,15 @@
  * @since   1.57.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use Exception;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 
 trait OrchestratorHelpersTrait {

@@ -4,14 +4,19 @@
  *
  * Prereq validation, restore order preparation, and safety backup creation.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.15.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use Throwable;
+use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;

@@ -2,14 +2,20 @@
 /**
  * ManagerImportTrait — Snapshot ZIP import operations.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
-use RiseupAsia\Enums\LogLevelType;
+namespace RiseupAsia\Snapshot\Traits;
 
-require_once __DIR__ . '/ManagerImportValidationTrait.php';
-require_once __DIR__ . '/ManagerImportRecordTrait.php';
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use ZipArchive;
+use Throwable;
+use Exception;
+use RiseupAsia\Enums\LogLevelType;
 
 trait ManagerImportTrait {
 

@@ -4,12 +4,15 @@
  *
  * Logic delegated to WorkerBatchProcessTrait and WorkerBatchExportTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
-require_once __DIR__ . '/WorkerBatchProcessTrait.php';
-require_once __DIR__ . '/WorkerBatchExportTrait.php';
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 trait WorkerBatchTrait {
     use WorkerBatchProcessTrait;

@@ -4,17 +4,22 @@
  *
  * Shared cron-job wrapper, result building, and factory helpers.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
 
-use RiseupAsia\Enums\SnapshotModeType;
-use RiseupAsia\Enums\SnapshotScopeType;
-use RiseupAsia\Enums\SnapshotTriggerType;
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use Throwable;
+use RiseupAsia\Enums\SnapshotModeType;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Enums\TriggerSourceType;
 
 trait SchedulerCronTrait {
 

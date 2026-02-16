@@ -2,10 +2,20 @@
 /**
  * OrchestratorZipTrait — ZIP export creation and validation.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use ZipArchive;
+use Throwable;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 
 trait OrchestratorZipTrait {

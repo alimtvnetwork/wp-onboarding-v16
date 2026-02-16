@@ -2,9 +2,11 @@
 /**
  * SnapshotProviderHelpersTrait — Shared helpers for snapshot providers.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;

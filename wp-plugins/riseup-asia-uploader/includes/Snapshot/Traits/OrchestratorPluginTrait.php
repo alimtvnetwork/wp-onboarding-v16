@@ -2,11 +2,25 @@
 /**
  * OrchestratorPluginTrait — Plugin snapshot creation and archival.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use ZipArchive;
+use Throwable;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Enums\OptionNameType;
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\PluginSelectionType;
 
 trait OrchestratorPluginTrait {
 

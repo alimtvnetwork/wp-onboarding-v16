@@ -2,9 +2,21 @@
 /**
  * ManagerTableRestoreTrait — Low-level MySQL table restore from SQLite.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+use PDO;
+use Throwable;
+use Exception;
+use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Enums\SnapshotTriggerType;
 
 trait ManagerTableRestoreTrait {
 
