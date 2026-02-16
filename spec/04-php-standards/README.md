@@ -45,7 +45,7 @@ try {
 try {
     $result = $manager->process();
 
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     $this->logger->logException($e, 'process_failed');
     wp_send_json_error([
         'message'          => $e->getMessage(),
@@ -71,7 +71,7 @@ public function handleUpload($request) {
 private function safeExecute(callable $callback) {
     try {
         return $callback();
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $this->logger->logException($e, 'endpoint_error');
 
         return $this->envelope->error($e->getMessage(), 500);
@@ -96,7 +96,7 @@ register_shutdown_function(function() {
 register_shutdown_function(function() {
     $error = error_get_last();
     if (ErrorChecker::isFatalError($error)) {
-        // Log to fatal-errors.log via RiseupPathUtils::getFatalErrorLog()
+        // Log to fatal-errors.log via PathHelper::getFatalErrorLog()
         // Include memory_get_peak_usage() for diagnostics
         // Send JSON response before process dies (if REST_REQUEST)
     }
@@ -137,7 +137,7 @@ The logger captures two outputs for every error:
 
 ```php
 // ✅ Dual logging: structured + raw
-public function logException(\Throwable $e, string $context = '') {
+public function logException(Throwable $e, string $context = '') {
     // Structured frames for JSON responses
     $frames = $this->formatStackFrames($e);
     
@@ -240,7 +240,7 @@ Never construct file paths with string concatenation or partial accessors. Every
 ### How It Works (Internal Architecture)
 
 ```
-Caller code          →  RiseupPathUtils::getRootDb()
+Caller code          →  PathHelper::getRootDb()
                               ↓
 Accessor internals   →  self::getDataDir() + PathConst::ROOT_DB
                               ↓                    ↓
@@ -258,13 +258,13 @@ Final path           →  '/var/www/.../uploads/riseup-asia-uploader/a-root.db'
 $path = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/data.db';
 
 // ❌ FORBIDDEN: Partial accessor — caller still concatenates a magic string
-$path = RiseupPathUtils::getDataDir() . '/data.db';
+$path = PathHelper::getDataDir() . '/data.db';
 
 // ❌ FORBIDDEN: Using PathConst directly in business logic (leaks internals)
-$path = RiseupPathUtils::getDataDir() . PathConst::ROOT_DB;
+$path = PathHelper::getDataDir() . PathConst::ROOT_DB;
 
 // ✅ REQUIRED: Single typed accessor — no path fragments visible to caller
-$path = RiseupPathUtils::getRootDb();
+$path = PathHelper::getRootDb();
 ```
 
 ### Why This Matters
@@ -276,7 +276,7 @@ $path = RiseupPathUtils::getRootDb();
 | `getDataDir() . PathConst::X` | Leaks the composition pattern; callers shouldn't know how paths are built |
 | `getRootDb()` ✅ | Filename lives in `PathConst`, directory in `getDataDir()`, both hidden from caller |
 
-> **Rule:** If a path does not have a typed accessor in `RiseupPathUtils`, create one before using it. See [PHP Enum Spec](./enums.md) for full `PathEnum` and `RiseupPathUtils` listings.
+> **Rule:** If a path does not have a typed accessor in `PathHelper`, create one before using it. See [PHP Enum Spec](./enums.md) for full `PathEnum` and `PathHelper` listings.
 
 ---
 
@@ -621,13 +621,13 @@ public function handleUpload($request) {
 
 | Pattern | Why | Alternative |
 |---------|-----|-------------|
-| `catch (Exception $e)` | Misses PHP 7+ `Error` types | `catch (\Throwable $e)` |
+| `catch (Exception $e)` | Misses PHP 7+ `Error` types | `catch (Throwable $e)` |
 | Magic strings in hooks | Unmaintainable, typo-prone | `HookType::*->value` enum cases |
 | Inline concatenation at call site | Hard to read, duplicated | Compose a named constant first |
 | Magic strings in handlers | Unmaintainable | `constants.php` |
 | `wp_die()` in REST handlers | Breaks JSON responses | `wp_send_json_error()` |
-| Manual path concatenation | Fragile paths | `RiseupPathUtils` fully-typed accessors |
-| `getDataDir() . '/file.db'` | Partial accessor, still magic | Add a typed accessor to `RiseupPathUtils` |
+| Manual path concatenation | Fragile paths | `PathHelper` fully-typed accessors |
+| `getDataDir() . '/file.db'` | Partial accessor, still magic | Add a typed accessor to `PathHelper` |
 | Constructor WordPress calls | Load order issues | Lazy initialization |
 | `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
 | Inline `!class_exists('PDO')` checks | Duplicated logic | `ErrorChecker::isInvalidPdoExtension()` |

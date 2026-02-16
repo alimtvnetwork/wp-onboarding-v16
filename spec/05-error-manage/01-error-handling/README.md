@@ -118,7 +118,7 @@ public function handle_request($request) {
 }
 ```
 
-The wrapper catches `\Throwable` (not just `Exception`) to capture PHP 7+ Errors like missing classes.
+The wrapper catches `Throwable` (not just `Exception`) to capture PHP 7+ Errors like missing classes.
 
 ### Structured Error Response
 
@@ -168,7 +168,7 @@ Use `ErrorChecker::is_fatal_error()` to centralize fatal error detection. `Error
 register_shutdown_function(function() {
     $error = error_get_last();
     if (ErrorChecker::is_fatal_error($error)) {
-        // Log to fatal-errors.log via RiseupPathUtils::getFatalErrorLog()
+        // Log to fatal-errors.log via PathHelper::getFatalErrorLog()
         // Include memory_get_peak_usage() for diagnostics
         // Send JSON response before process terminates (if REST_REQUEST)
     }

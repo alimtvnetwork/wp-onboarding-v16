@@ -1,7 +1,7 @@
 # Project Context
 
 > **Location:** `.lovable/memory/02-project-context.md`  
-> **Updated:** 2026-02-09
+> **Updated:** 2026-02-16
 
 ---
 
@@ -27,6 +27,21 @@ This repository contains **three projects**:
 - **Database:** SQLite with Split DB Architecture
 - **Config:** JSON seed + SQLite runtime
 - **Companion WP Plugin:** `wp-plugins/riseup-asia-uploader/` (PHP, current: v1.36.1)
+
+---
+
+## Key Architecture Patterns
+
+| Pattern | Details |
+|---------|---------|
+| **Universal Response Envelope** | PascalCase keys (Go/PHP compat), Status/Attributes/Results/Navigation/Errors/MethodsStack |
+| **Modular API Client** | `src/lib/api/` — types, envelope, client, methods, barrel index |
+| **Error Store** | `buildCapturedError()` factory + `commitErrorToStore()` helper |
+| **API Query Factory** | `useApiQuery` / `useApiQueryPaginated` wrapping React Query |
+| **WordPress Endpoint Mapping** | Centralized `endpoint_map.go` with `WPEndpointName` enum |
+| **apperror Package** | `apperror.Wrap(err, code, message)` with `.WithContext()` — no `fmt.Errorf` |
+| **PHP Standards** | `CODING-GUIDELINES.md` — 11 mandatory rules, `PathHelper`, `BooleanHelpers`, `DependencyLoader` |
+| **PHP Bootstrapping Guards** | Static `$bootstrapping` flags prevent circular dependencies during init |
 
 ---
 
@@ -61,21 +76,6 @@ This repository contains **three projects**:
 | 8 | ✅ | PHP: Logger context consolidation (`prepare_context`) |
 | 9 | ✅ | Frontend: GlobalErrorModal decomposition into 7 sub-files |
 | 10 | ✅ | Cross-stack: Envelope JSON schema (v1.0.0) alignment |
-
----
-
-## Key Architecture Patterns
-
-| Pattern | Details |
-|---------|---------|
-| **Universal Response Envelope** | PascalCase keys (Go/PHP compat), Status/Attributes/Results/Navigation/Errors/MethodsStack |
-| **Modular API Client** | `src/lib/api/` — types, envelope, client, methods, barrel index |
-| **Error Store** | `buildCapturedError()` factory + `commitErrorToStore()` helper |
-| **API Query Factory** | `useApiQuery` / `useApiQueryPaginated` wrapping React Query |
-| **WordPress Endpoint Mapping** | Centralized `endpoint_map.go` with `WPEndpointName` enum |
-| **apperror Package** | `apperror.Wrap(err, code, message)` with `.WithContext()` — no `fmt.Errorf` |
-| **PHP Standards** | `CODING-GUIDELINES.md` — 11 mandatory rules, `RiseupPathUtils`, `RiseupBooleanHelpers`, `RiseupDependencyLoader` |
-| **PHP Bootstrapping Guards** | Static `$bootstrapping` flags prevent circular dependencies during init |
 
 ---
 

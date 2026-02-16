@@ -16,7 +16,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
-| 1.1 | `catch (Exception $e)` | `catch (\Throwable $e)` | Misses PHP 7+ `Error`, `TypeError`, `ParseError` |
+| 1.1 | `catch (Exception $e)` | `catch (Throwable $e)` | Misses PHP 7+ `Error`, `TypeError`, `ParseError` |
 | 1.2 | `$error && in_array($error['type'], [E_ERROR, ...])` | `ErrorChecker::isFatalError($error)` | Duplicated logic; central list in `ErrorType::FATAL_TYPES` |
 | 1.3 | Inline `E_*` → string mapping arrays | `ErrorChecker::getTypeLabel($type)` | Uses `ErrorType::TYPE_LABELS`; one place to update |
 | 1.4 | `wp_die()` in REST handlers | `wp_send_json_error()` or `$this->envelope->error()` | `wp_die()` breaks JSON response format |
@@ -55,10 +55,10 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
-| 3.1 | `WP_CONTENT_DIR . '/uploads/.../file.db'` | `RiseupPathUtils::getRootDb()` | Manual concatenation; magic string |
-| 3.2 | `RiseupPathUtils::getDataDir() . '/file.db'` | `RiseupPathUtils::getRootDb()` | Partial accessor; magic filename at call site |
-| 3.3 | `RiseupPathUtils::getDataDir() . PathDatabaseType::Root->value` | `RiseupPathUtils::getRootDb()` | Leaks internal composition to caller |
-| 3.4 | Any path without a typed accessor | Create accessor in `RiseupPathUtils` first | Every path must have a single-call accessor |
+| 3.1 | `WP_CONTENT_DIR . '/uploads/.../file.db'` | `PathHelper::getRootDb()` | Manual concatenation; magic string |
+| 3.2 | `PathHelper::getDataDir() . '/file.db'` | `PathHelper::getRootDb()` | Partial accessor; magic filename at call site |
+| 3.3 | `PathHelper::getDataDir() . PathDatabaseType::Root->value` | `PathHelper::getRootDb()` | Leaks internal composition to caller |
+| 3.4 | Any path without a typed accessor | Create accessor in `PathHelper` first | Every path must have a single-call accessor |
 
 ---
 
@@ -72,11 +72,11 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | 4.2 | `RiseupBooleanHelpers::isTruthy(...)` | `$isValue` | Unnecessary indirection |
 | 4.3 | `!$plugin->isActive()` | `$plugin->isDisabled()` | Negation is easy to miss; use semantic inverse |
 | 4.4 | `$value` for boolean variables | `$isValue`, `$hasPermission` | Ambiguous naming; must use `$is*` / `$has*` prefix |
-| 4.5 | `!file_exists($path)` | `RiseupBooleanHelpers::isFileMissing($path)` | Raw negation; use positive guard |
-| 4.6 | `!is_dir($path)` | `RiseupBooleanHelpers::isDirMissing($path)` | Raw negation; use positive guard |
-| 4.7 | `!class_exists('X')` | `RiseupBooleanHelpers::isClassMissing('X')` | Raw negation; use positive guard |
-| 4.8 | `!function_exists('f')` | `RiseupBooleanHelpers::isFuncMissing('f')` | Raw negation; use positive guard |
-| 4.9 | `!extension_loaded('e')` | `RiseupBooleanHelpers::isExtensionMissing('e')` | Raw negation; use positive guard |
+| 4.5 | `!file_exists($path)` | `PathHelper::isFileMissing($path)` | Raw negation; use positive guard |
+| 4.6 | `!is_dir($path)` | `PathHelper::isDirMissing($path)` | Raw negation; use positive guard |
+| 4.7 | `!class_exists('X')` | `BooleanHelpers::isClassMissing('X')` | Raw negation; use positive guard |
+| 4.8 | `!function_exists('f')` | `BooleanHelpers::isFuncMissing('f')` | Raw negation; use positive guard |
+| 4.9 | `!extension_loaded('e')` | `BooleanHelpers::isExtensionMissing('e')` | Raw negation; use positive guard |
 
 ---
 
@@ -117,31 +117,33 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 ## Checklist Summary (Copy for PRs)
 
 ```
-[ ] No `catch (Exception $e)` — all use `catch (\Throwable $e)`
+[ ] No `catch (Exception $e)` — all use `catch (Throwable $e)`
 [ ] No inline `in_array($error['type'], [...])` — use `ErrorChecker`
 [ ] No inline E_* → string maps — use `ErrorChecker::getTypeLabel()`
 [ ] No `wp_die()` in REST handlers
 [ ] No `error_log()` — use structured logger
 [ ] No string literals in add_action/add_filter — use `HookType::*->value`
 [ ] No inline concatenation at call sites — compose named constants first
-[ ] No manual path concatenation — use `RiseupPathUtils` accessors
-[ ] No `RiseupBooleanHelpers` trivial wrappers — use semantic methods
+[ ] No manual path concatenation — use `PathHelper` accessors
+[ ] No `BooleanHelpers` trivial wrappers — use semantic methods
 [ ] No `!$obj->isActive()` — use `$obj->isDisabled()`
-[ ] No `!file_exists()` — use `isFileMissing()`
-[ ] No `!is_dir()` — use `isDirMissing()`
-[ ] No `!class_exists()` — use `isClassMissing()`
-[ ] No `!function_exists()` — use `isFuncMissing()`
-[ ] No `!extension_loaded()` — use `isExtensionMissing()`
+[ ] No `!file_exists()` — use `PathHelper::isFileMissing()`
+[ ] No `!is_dir()` — use `PathHelper::isDirMissing()`
+[ ] No `!class_exists()` — use `BooleanHelpers::isClassMissing()`
+[ ] No `!function_exists()` — use `BooleanHelpers::isFuncMissing()`
+[ ] No `!extension_loaded()` — use `BooleanHelpers::isExtensionMissing()`
 [ ] No raw `!` on any function call — use positive guard function
 [ ] No boolean vars without `$is*` / `$has*` prefix
 [ ] No WordPress calls in constructors
 [ ] No inline `!class_exists('PDO')` — use `ErrorChecker::isInvalidPdoExtension()`
-[ ] Blank line before `return` when preceded by other statements
+[ ] Blank line before `return` or `throw` when preceded by other statements
 [ ] No single-line `if (...) return;` — always use braces
 [ ] Blank line after closing `}` when followed by more code
 [ ] No nested `if` — ZERO TOLERANCE — absolute ban
 [ ] No inline multi-part `if` (2+ operators) — extract to `$is*` variable or method
 [ ] Functions max 15 lines — extract helpers for longer logic
+[ ] No leading backslash on `Throwable` — use `catch (Throwable $e)`
+[ ] Functions with >2 params — one param per line with trailing comma
 ```
 
 ---
@@ -150,7 +152,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 - [PHP Coding Standards](./README.md) — Full spec with examples
 - [PHP Enum Classes](./enums.md) — `HookType`, `CapabilityType`, `HttpMethodType`, Path enums, `ErrorType`, `ErrorChecker`
-- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rules 1-7 (braces, nesting, spacing, function size)
+- [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rules 1-9 (braces, nesting, spacing, function size, Throwable, multi-line params)
 - [WordPress Error Handling](../07-wordpress-plugin-development/07-error-handling.md) — Complete error handling patterns
 - [WordPress Initialization](../07-wordpress-plugin-development/01-initialization-patterns.md) — Bootstrap patterns
 - [WordPress API Design](../07-wordpress-plugin-development/04-api-design.md) — REST endpoint patterns

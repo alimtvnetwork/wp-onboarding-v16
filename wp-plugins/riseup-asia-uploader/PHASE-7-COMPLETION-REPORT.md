@@ -56,7 +56,7 @@ includes/
 │   ├── EnvelopeBuilder.php
 │   ├── ErrorChecker.php
 │   ├── InitHelpers.php
-│   ├── PathUtils.php
+│   ├── PathHelper.php
 │   └── Traits/ (9 files)
 ├── Logging/                    # 2 classes + 7 traits
 │   ├── FileLogger.php
@@ -174,7 +174,7 @@ All 28 `class_alias()` shims are retained for backward compatibility. **Zero int
 
 | Legacy Alias | Namespaced Class | Migration Batch |
 |---|---|---|
-| `RiseupPathUtils` | `RiseupAsia\Helpers\PathUtils` | Batch 1 |
+| `RiseupPathUtils` | `RiseupAsia\Helpers\PathHelper` | Batch 1 |
 | `RiseupEnvelopeBuilder` | `RiseupAsia\Helpers\EnvelopeBuilder` | Batch 2 |
 | `RiseupSnapshotManager` | `RiseupAsia\Snapshot\SnapshotManager` | Batch 3 |
 | `RiseupInitHelpers` | `RiseupAsia\Helpers\InitHelpers` | Batch 3 |
@@ -225,7 +225,7 @@ All 28 `class_alias()` shims are retained for backward compatibility. **Zero int
 
 | Batch | Aliases | Files | Refs |
 |---|---|---|---|
-| **Batch 1** (PathUtils, EnvelopeBuilder — prior sessions) | 2 | 31 | ~353 |
+| **Batch 1** (PathHelper, EnvelopeBuilder — prior sessions) | 2 | 31 | ~353 |
 | **Batch 2** (SnapshotExporter, SnapshotFactory, ORM — prior session) | 3 | 12 | ~50 |
 | **Batch 3** (all remaining — current session) | 20 | 34 | ~438 |
 | **Batch 4** (global-namespace classes) | 3 | 3 | ~8 |

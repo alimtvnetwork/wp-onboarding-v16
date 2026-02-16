@@ -6,7 +6,7 @@
 ## Core Principle
 
 > **Every operation that can fail MUST be wrapped in try-catch with logging.**  
-> **Always catch `\Throwable`, not just `Exception`.**
+> **Always catch `Throwable`, not just `Exception`.**
 
 Errors should never cause silent failures or unexplained crashes. Every error must be:
 1. Caught (as `\Throwable`)
@@ -17,7 +17,7 @@ Errors should never cause silent failures or unexplained crashes. Every error mu
 
 ## Try-Catch Pattern
 
-### Rule: Catch `\Throwable`, Not `Exception`
+### Rule: Catch `Throwable`, Not `Exception`
 
 PHP 7+ introduces `Error` and `TypeError` that are **not** subclasses of `Exception`. Catching only `Exception` will miss fatal-class errors like missing classes, type mismatches, and division by zero.
 
@@ -32,7 +32,7 @@ try {
 // ✅ REQUIRED: Catches all throwables
 try {
     $result = $manager->process();
-} catch (\Throwable $e) {
+} catch (Throwable $e) {
     $this->file_logger->log_exception($e, 'process_failed');
     wp_send_json_error([
         'message'          => $e->getMessage(),
@@ -44,7 +44,7 @@ try {
 
 ### With Specific Exception Types
 
-When you need to handle specific error types differently, catch them first, then catch `\Throwable` as the final fallback:
+When you need to handle specific error types differently, catch them first, then catch `Throwable` as the final fallback:
 
 ```php
 public function database_operation() {
@@ -62,7 +62,7 @@ public function database_operation() {
         );
         return [];
 
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         // Catch-all for unexpected errors (TypeError, Error, etc.)
         $this->file_logger->error(
             sprintf('Unexpected error: %s', $e->getMessage()),
@@ -91,7 +91,7 @@ public function handle_upload($request) {
 private function safe_execute(callable $callback) {
     try {
         return $callback();
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $this->logger->log_exception($e, 'endpoint_error');
 
         return $this->envelope->error($e->getMessage(), 500);
@@ -245,7 +245,7 @@ class Riseup_Asia_Uploader {
         $severity = ErrorChecker::get_severity_label($error);
 
         // Log to fatal-errors.log via typed accessor
-        $log_path = RiseupPathUtils::getFatalErrorLog();
+        $log_path = PathHelper::getFatalErrorLog();
         $timestamp = gmdate('Y-m-d\TH:i:s.') . sprintf('%03d', (microtime(true) * 1000) % 1000) . 'Z';
         $memory_peak = memory_get_peak_usage(true);
 
@@ -312,7 +312,7 @@ public function insert_record($data) {
         );
         return false;
 
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $this->file_logger->error(
             sprintf('Unexpected insert error: %s', $e->getMessage()),
             __FILE__, __LINE__
@@ -345,7 +345,7 @@ public function save_file($path, $content) {
 
         return true;
 
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $this->file_logger->error($e->getMessage(), __FILE__, __LINE__);
         return false;
     }
@@ -383,7 +383,7 @@ public function call_external_api($url, $data) {
 
         return json_decode($body, true);
 
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $this->file_logger->error(
             sprintf('API call failed: %s', $e->getMessage()),
             __FILE__, __LINE__
@@ -407,7 +407,7 @@ public function init() {
 
         $this->file_logger->log('Plugin initialized successfully', __FILE__, __LINE__);
 
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $this->file_logger->error(
             sprintf('Plugin initialization failed: %s', $e->getMessage()),
             __FILE__, __LINE__
@@ -451,7 +451,7 @@ class Riseup_Logger {
         if ($this->db === null) {
             try {
                 $this->db = Riseup_Database::get_instance();
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $this->file_logger->error(
                     'Database unavailable, falling back to file-only logging',
                     __FILE__, __LINE__
@@ -476,7 +476,7 @@ class Riseup_Logger {
         if ($is_db_ready) {
             try {
                 $db->insert_log($message, $level);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Silently fail — already logged to file
             }
         }
@@ -521,7 +521,7 @@ public function handle_request($request) {
     } catch (AuthenticationException $e) {
         return $this->envelope->error($e->getMessage(), 401, 'authentication_failed');
 
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $this->file_logger->error(
             sprintf('Unhandled error in API: %s', $e->getMessage()),
             __FILE__, __LINE__
@@ -544,17 +544,17 @@ For serious errors, capture dual outputs:
  * 1. Structured frames → included in JSON error responses
  * 2. Raw backtrace → written to stacktrace.txt for deep debugging
  */
-public function log_exception(\Throwable $e, string $context = '') {
+public function log_exception(Throwable $e, string $context = '') {
     // Structured frames for JSON responses
     $frames = $this->formatStackFrames($e);
 
     // Raw backtrace to file (unlimited depth)
     $backtrace = debug_backtrace(0, 0);
-    $stacktrace_path = RiseupPathUtils::getStacktraceFile();
+    $stacktrace_path = PathHelper::getStacktraceFile();
     @file_put_contents($stacktrace_path, $this->formatBacktrace($backtrace), FILE_APPEND);
 
     // Error log entry
-    $error_path = RiseupPathUtils::getErrorFile();
+    $error_path = PathHelper::getErrorFile();
     $entry = sprintf(
         "[%s] [%s] %s: %s\n  File: %s:%d\n  Trace: %s\n",
         gmdate('c'),
@@ -586,7 +586,7 @@ if (!is_writable($dir)) {
 
 ```php
 try {
-    $db_path = RiseupPathUtils::getRootDb();
+    $db_path = PathHelper::getRootDb();
     $this->pdo = new PDO('sqlite:' . $db_path);
 } catch (PDOException $e) {
     $this->file_logger->error(
@@ -617,11 +617,11 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 
 | Pattern | Why | Required Alternative |
 |---------|-----|---------------------|
-| `catch (Exception $e)` | Misses `Error`, `TypeError` | `catch (\Throwable $e)` |
+| `catch (Exception $e)` | Misses `Error`, `TypeError` | `catch (Throwable $e)` |
 | Inline `in_array($error['type'], [...])` | Duplicated, hard to read | `ErrorChecker::is_fatal_error()` |
 | `$db_available` (no prefix) | Ambiguous boolean name | `$is_db_available` |
 | `error_log()` | No structure | `$this->file_logger->error()` |
-| Magic string paths in error logs | Fragile | `RiseupPathUtils::getFatalErrorLog()` |
+| Magic string paths in error logs | Fragile | `PathHelper::getFatalErrorLog()` |
 | `wp_die()` in REST handlers | Breaks JSON responses | `wp_send_json_error()` or envelope |
 | `add_action('admin_notices', ...)` | Magic string hook | `add_action(HookEnum::ADMIN_NOTICES, ...)` |
 

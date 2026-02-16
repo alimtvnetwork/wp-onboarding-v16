@@ -1,5 +1,5 @@
 # Memory: features/wordpress-plugin/snapshot-import-export
-Updated: 2026-02-06
+Updated: 2026-02-16
 
 ## Overview
 
@@ -133,7 +133,7 @@ public function importSnapshot($filepath) {
 
 ## Path Handling
 
-All file operations use `RiseupPathUtils` for:
+All file operations use `PathHelper` (`RiseupAsia\Helpers\PathHelper`) for:
 - Safe path joining
 - Directory creation with security files
 - Path traversal prevention

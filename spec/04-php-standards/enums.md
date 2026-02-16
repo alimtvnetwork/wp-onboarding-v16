@@ -583,7 +583,7 @@ enum PathConfigType: string
 }
 ```
 
-### Usage in RiseupPathUtils
+### Usage in PathHelper
 
 ```php
 use RiseupAsia\Enums\PathSubdirType;
@@ -647,8 +647,8 @@ final class ErrorType
 1. **Add the case** to the appropriate enum in `includes/Enums/`.
 2. **Ensure `isEqual()` exists** — it should already be there; verify.
 3. **Add a PHPDoc comment** if the case is non-obvious.
-4. **If PathSubdirType:** Add a corresponding typed accessor to `RiseupPathUtils`.
-5. **If PathDatabaseType/PathLogFileType/PathConfigType:** Add a typed accessor to `RiseupPathUtils`.
+4. **If PathSubdirType:** Add a corresponding typed accessor to `PathHelper`.
+5. **If PathDatabaseType/PathLogFileType/PathConfigType:** Add a typed accessor to `PathHelper`.
 6. **If HookType:** Update all `add_action`/`add_filter` calls.
 7. **If CapabilityType:** Update all `current_user_can()` calls.
 8. **If HttpMethodType:** Update all `register_rest_route()` calls.
