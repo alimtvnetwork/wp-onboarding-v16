@@ -2,9 +2,11 @@
 /**
  * CleanerRetentionTrait — Retention-policy cleanup logic and master snapshot protection.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;

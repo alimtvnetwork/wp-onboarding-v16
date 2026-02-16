@@ -5,26 +5,28 @@
  * SQLite database for transaction logging using the micro-ORM.
  * Shell class — logic delegated to domain-specific traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database
  * @since   1.4.0
  */
+
+namespace RiseupAsia\Database;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load trait files
-require_once __DIR__ . '/Traits/DatabaseConnectionTrait.php';
-require_once __DIR__ . '/Traits/DatabaseMigrationsEarlyTrait.php';
-require_once __DIR__ . '/Traits/DatabaseMigrationsLateTrait.php';
-require_once __DIR__ . '/Traits/DatabaseQueryTrait.php';
+use RiseupAsia\Database\Traits\DatabaseConnectionTrait;
+use RiseupAsia\Database\Traits\DatabaseMigrationsEarlyTrait;
+use RiseupAsia\Database\Traits\DatabaseMigrationsLateTrait;
+use RiseupAsia\Database\Traits\DatabaseQueryTrait;
+use RiseupAsia\Logging\FileLogger;
 
 /**
- * Class RiseupDatabase
+ * Class Database
  *
  * Handles all SQLite database operations for transaction logging.
  */
-class RiseupDatabase {
+class Database {
 
     use DatabaseConnectionTrait;
     use DatabaseMigrationsEarlyTrait;
@@ -37,16 +39,16 @@ class RiseupDatabase {
     public const DEFAULT_LIMIT = 50;
     public const MAX_LIMIT     = 1000;
 
-    /** @var PDO|null */
+    /** @var \PDO|null */
     private $pdo = null;
 
     /** @var string */
     private $dbPath;
 
-    /** @var RiseupFileLogger */
+    /** @var FileLogger */
     private $fileLogger;
 
-    /** @var RiseupDatabase|null */
+    /** @var Database|null */
     private static $instance = null;
 
     /** @var bool */
@@ -55,7 +57,7 @@ class RiseupDatabase {
     /**
      * Get singleton instance.
      *
-     * @return RiseupDatabase
+     * @return Database
      */
     public static function getInstance() {
         if (self::$instance === null) {
@@ -69,7 +71,9 @@ class RiseupDatabase {
      * Constructor.
      */
     private function __construct() {
-        $this->fileLogger = RiseupFileLogger::getInstance();
+        $this->fileLogger = FileLogger::getInstance();
         $this->fileLogger->info('Database constructor called');
     }
 }
+
+class_alias(Database::class, 'RiseupDatabase');

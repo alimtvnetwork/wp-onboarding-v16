@@ -2,9 +2,11 @@
 /**
  * ExporterPublicApiTrait — public API methods for snapshot ZIP export.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -16,6 +18,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ExporterPublicApiTrait {
 

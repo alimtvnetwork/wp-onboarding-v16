@@ -2,14 +2,20 @@
 /**
  * IncrementalDiscoveryTrait — Master snapshot discovery and table inventory.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\BooleanHelpers;
+use PDO;
+use Throwable;
 
 trait IncrementalDiscoveryTrait {
 

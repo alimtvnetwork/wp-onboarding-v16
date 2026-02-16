@@ -1,64 +1,34 @@
 <?php
-/**
- * Riseup Asia Uploader - UpdraftPlus Snapshot Provider
- *
- * Integrates with UpdraftPlus plugin for database backups.
- * Shell class — logic delegated to UpdraftCrudTrait.
- *
- * @package RiseupAsiaUploader
- * @since   1.9.0
- */
+namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) {
-    exit;
-}
-
-require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
-require_once dirname(__FILE__) . '/Traits/UpdraftCrudTrait.php';
+if (!defined('ABSPATH')) { exit; }
 
 use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Snapshot\Traits\UpdraftCrudTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\FileLogger;
 
-/**
- * UpdraftPlus Snapshot Provider.
- */
-class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
-
+class SnapshotProviderUpdraft extends SnapshotProviderInterface {
     use UpdraftCrudTrait;
 
-    /** @var string Provider ID — literal used because ->value is not a constant expression. */
     protected string $provider_id = 'updraft';
-
     protected string $provider_name = 'UpdraftPlus';
-
     private mixed $updraft = null;
 
-    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
+    public function __construct(FileLogger $logger, Database $db) {
         parent::__construct($logger, $db);
-
         if (class_exists('UpdraftPlus')) {
             global $updraftplus;
             $this->updraft = $updraftplus;
         }
     }
 
-    /**
-     * Check if provider is available.
-     *
-     * @return bool True if UpdraftPlus is installed and active.
-     */
     public function isAvailable(): bool {
         return class_exists('UpdraftPlus') || isset($GLOBALS['updraftplus']);
     }
 
-    /**
-     * Get provider capabilities.
-     *
-     * @return array Capabilities array.
-     */
     public function getCapabilities(): array {
-        $is_premium = defined('UPDRAFTPLUS_VERSION') &&
-                      strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
-
+        $is_premium = defined('UPDRAFTPLUS_VERSION') && strpos(UPDRAFTPLUS_VERSION, 'premium') !== false;
         return array(
             'full_site' => true, 'database_only' => true,
             'selective' => $is_premium, 'scheduled' => true,
@@ -66,3 +36,5 @@ class RiseupSnapshotProviderUpdraft extends RiseupSnapshotProviderInterface {
         );
     }
 }
+
+class_alias(SnapshotProviderUpdraft::class, 'RiseupSnapshotProviderUpdraft');

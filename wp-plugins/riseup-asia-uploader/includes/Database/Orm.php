@@ -5,31 +5,32 @@
  * A lightweight Idiorm-style fluent query builder for SQLite.
  * Shell class — logic delegated to domain-specific traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database
  * @since   1.4.0
  */
+
+namespace RiseupAsia\Database;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-// Load traits
-require_once dirname(__FILE__) . '/Traits/OrmWhereTrait.php';
-require_once dirname(__FILE__) . '/Traits/OrmQueryTrait.php';
-require_once dirname(__FILE__) . '/Traits/OrmMutationTrait.php';
+use RiseupAsia\Database\Traits\OrmWhereTrait;
+use RiseupAsia\Database\Traits\OrmQueryTrait;
+use RiseupAsia\Database\Traits\OrmMutationTrait;
 
 /**
- * Class RiseupORM
+ * Class Orm
  *
  * Fluent query builder with method chaining support.
  */
-class RiseupORM {
+class Orm {
 
     use OrmWhereTrait;
     use OrmQueryTrait;
     use OrmMutationTrait;
 
-    /** @var PDO|null */
+    /** @var \PDO|null */
     private static $pdo = null;
 
     /** @var string */
@@ -74,11 +75,11 @@ class RiseupORM {
     /**
      * Configure the ORM with a PDO instance.
      */
-    public static function configure(PDO $pdo): void {
+    public static function configure(\PDO $pdo): void {
         self::$pdo = $pdo;
     }
 
-    public static function getPdo(): ?PDO {
+    public static function getPdo(): ?\PDO {
         return self::$pdo;
     }
 
@@ -102,8 +103,8 @@ class RiseupORM {
         try {
             $stmt = self::$pdo->prepare($sql);
             $stmt->execute($params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
             return array();
         }
     }
@@ -112,3 +113,5 @@ class RiseupORM {
     private function __construct() {
     }
 }
+
+class_alias(Orm::class, 'RiseupORM');

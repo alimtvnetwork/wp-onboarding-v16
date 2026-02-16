@@ -2,33 +2,28 @@
 /**
  * Riseup Asia Uploader - Restore Engine
  *
- * Dependency-aware restoration from per-table SQLite snapshots.
  * Shell class — logic delegated to domain-specific traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot
  * @since   1.15.0
  */
+
+namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Snapshot\Traits\RestoreValidationTrait;
+use RiseupAsia\Snapshot\Traits\RestoreTableTrait;
+use RiseupAsia\Snapshot\Traits\RestoreIncrementalTrait;
+use RiseupAsia\Snapshot\Traits\RestoreGraphTrait;
+use RiseupAsia\Snapshot\Traits\RestoreUtilsTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\FileLogger;
 
-// Load traits
-require_once dirname(__FILE__) . '/Traits/RestoreValidationTrait.php';
-require_once dirname(__FILE__) . '/Traits/RestoreTableTrait.php';
-require_once dirname(__FILE__) . '/Traits/RestoreIncrementalTrait.php';
-require_once dirname(__FILE__) . '/Traits/RestoreGraphTrait.php';
-require_once dirname(__FILE__) . '/Traits/RestoreUtilsTrait.php';
-
-/**
- * Restore Engine class.
- *
- * Reads a-root.db to determine the table dependency graph and restore order,
- * then replays master + incremental SQLite files into MySQL.
- */
-class RiseupRestoreEngine {
+class RestoreEngine {
 
     use RestoreValidationTrait;
     use RestoreTableTrait;
@@ -36,29 +31,21 @@ class RiseupRestoreEngine {
     use RestoreGraphTrait;
     use RestoreUtilsTrait;
 
-    private RiseupFileLogger $logger;
-    private RiseupDatabase $db;
-    private ?RiseupSnapshotOrchestrator $orchestrator;
+    private FileLogger $logger;
+    private Database $db;
+    private ?SnapshotOrchestrator $orchestrator;
     private \wpdb $wpdb;
     private int $batchSize;
     private static ?self $instance = null;
 
-    public static function getInstance(
-        ?RiseupFileLogger $logger = null,
-        ?RiseupDatabase $db = null,
-        ?RiseupSnapshotOrchestrator $orchestrator = null
-    ): self {
+    public static function getInstance(?FileLogger $logger = null, ?Database $db = null, ?SnapshotOrchestrator $orchestrator = null): self {
         if (self::$instance === null && $logger && $db) {
             self::$instance = new self($logger, $db, $orchestrator);
         }
         return self::$instance;
     }
 
-    private function __construct(
-        RiseupFileLogger $logger,
-        RiseupDatabase $db,
-        ?RiseupSnapshotOrchestrator $orchestrator = null
-    ) {
+    private function __construct(FileLogger $logger, Database $db, ?SnapshotOrchestrator $orchestrator = null) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
@@ -79,7 +66,7 @@ class RiseupRestoreEngine {
 
         try {
             return $this->executeRestoreWorkflow($snapshotDir, $options);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             return $this->handleRestoreFailure($e);
         }
     }
@@ -107,18 +94,16 @@ class RiseupRestoreEngine {
         );
     }
 
-    private function openRootPdo(string $snapshotDir): PDO {
-        $pdo = new PDO('sqlite:' . $snapshotDir . '/a-root.db');
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    private function openRootPdo(string $snapshotDir): \PDO {
+        $pdo = new \PDO('sqlite:' . $snapshotDir . '/a-root.db');
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         return $pdo;
     }
 
-    private function runRestoreWithFkDisabled(PDO $rootPdo, string $snapshotDir, array $restoreOrder, array $options): array {
+    private function runRestoreWithFkDisabled(\PDO $rootPdo, string $snapshotDir, array $restoreOrder, array $options): array {
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 0");
-
         $master = $this->restoreMasterTables($restoreOrder['tables'], $restoreOrder['inventory'], $snapshotDir, $options);
         $inc = $this->applyIncrementalsPhase($rootPdo, $snapshotDir, $restoreOrder['tables'], $options['mode'] ?? 'full', $options['apply_incrementals'] ?? true);
-
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
 
         return array(
@@ -128,7 +113,7 @@ class RiseupRestoreEngine {
         );
     }
 
-    private function handleRestoreFailure(Throwable $e): array {
+    private function handleRestoreFailure(\Throwable $e): array {
         $this->wpdb->query("SET FOREIGN_KEY_CHECKS = 1");
         $this->log(LogLevelType::Error->value, 'Restore engine failed', array(
             'error' => $e->getMessage(), 'trace' => $e->getTraceAsString(),
@@ -136,3 +121,5 @@ class RiseupRestoreEngine {
         return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'restore');
     }
 }
+
+class_alias(RestoreEngine::class, 'RiseupRestoreEngine');

@@ -2,16 +2,18 @@
 /**
  * DetectorProviderTrait — provider detection (WP Reset, Updraft, Native).
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
 
-use RiseupAsia\Enums\PluginConfigType;
-use RiseupAsia\Enums\SnapshotProviderType;
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Enums\SnapshotProviderType;
 
 trait DetectorProviderTrait {
 

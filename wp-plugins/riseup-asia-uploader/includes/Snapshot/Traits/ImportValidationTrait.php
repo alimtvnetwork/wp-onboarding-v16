@@ -2,15 +2,21 @@
 /**
  * ImportValidationTrait — SQLite validation and root DB reading.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\PathUtils;
+use PDO;
+use PDOException;
+use Exception;
 
 trait ImportValidationTrait {
 

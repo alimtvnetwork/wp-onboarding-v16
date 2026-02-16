@@ -1,30 +1,16 @@
 <?php
-/**
- * Riseup Asia Uploader - Native SQLite Snapshot Provider
- *
- * Shell class delegating to NativeSnapshotCreateTrait, NativeTableExportTrait,
- * and NativeSnapshotRecordTrait.
- *
- * @package RiseupAsiaUploader
- * @since   1.9.0
- */
+namespace RiseupAsia\Snapshot;
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) { exit; }
 
 use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Snapshot\Traits\NativeSnapshotCreateTrait;
+use RiseupAsia\Snapshot\Traits\NativeTableExportTrait;
+use RiseupAsia\Snapshot\Traits\NativeSnapshotRecordTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\FileLogger;
 
-require_once dirname(__FILE__) . '/SnapshotProviderInterface.php';
-require_once dirname(__FILE__) . '/Traits/NativeSnapshotCreateTrait.php';
-require_once dirname(__FILE__) . '/Traits/NativeTableExportTrait.php';
-require_once dirname(__FILE__) . '/Traits/NativeSnapshotRecordTrait.php';
-
-/**
- * Native SQLite Snapshot Provider.
- */
-class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
-
+class SnapshotProviderNative extends SnapshotProviderInterface {
     use NativeSnapshotCreateTrait;
     use NativeTableExportTrait;
     use NativeSnapshotRecordTrait;
@@ -33,7 +19,7 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
     protected string $provider_name = 'Native SQLite';
     private \wpdb $wpdb;
 
-    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
+    public function __construct(FileLogger $logger, Database $db) {
         parent::__construct($logger, $db);
         global $wpdb;
         $this->wpdb = $wpdb;
@@ -50,3 +36,5 @@ class RiseupSnapshotProviderNative extends RiseupSnapshotProviderInterface {
         );
     }
 }
+
+class_alias(SnapshotProviderNative::class, 'RiseupSnapshotProviderNative');

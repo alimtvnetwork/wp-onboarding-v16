@@ -6,6 +6,8 @@
  * @since   1.57.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
 if (!defined('ABSPATH')) {
     exit;
 }

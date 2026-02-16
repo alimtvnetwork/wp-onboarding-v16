@@ -4,9 +4,11 @@
  *
  * Shell trait — file collection delegated to ExporterBuildCollectTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -18,11 +20,10 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
-
-require_once __DIR__ . '/ExporterBuildCollectTrait.php';
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ExporterBuildTrait {
-
     use ExporterBuildCollectTrait;
 
     /**

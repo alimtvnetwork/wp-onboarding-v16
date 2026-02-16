@@ -2,33 +2,32 @@
 /**
  * Riseup Asia Uploader - Incremental Backup
  *
- * Tracks last_max_id per table from the master (full) snapshot and exports
- * only new/changed rows into sequenced incremental folders.
  * Shell class — logic delegated to domain-specific traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot
  * @since   1.14.0
  */
+
+namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 use RiseupAsia\Enums\LogLevelType;
-
-require_once dirname(__FILE__) . '/SqliteSchemaConverter.php';
-
-// Load trait files
-require_once __DIR__ . '/Traits/IncrementalDeltaTrait.php';
-require_once __DIR__ . '/Traits/IncrementalExportTrait.php';
-require_once __DIR__ . '/Traits/IncrementalRegistrationTrait.php';
-require_once __DIR__ . '/Traits/IncrementalDiscoveryTrait.php';
-require_once __DIR__ . '/Traits/IncrementalCoreTrait.php';
+use RiseupAsia\Snapshot\Traits\IncrementalDeltaTrait;
+use RiseupAsia\Snapshot\Traits\IncrementalExportTrait;
+use RiseupAsia\Snapshot\Traits\IncrementalRegistrationTrait;
+use RiseupAsia\Snapshot\Traits\IncrementalDiscoveryTrait;
+use RiseupAsia\Snapshot\Traits\IncrementalCoreTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Database\RootDb;
+use RiseupAsia\Logging\FileLogger;
 
 /**
  * Incremental Backup class.
  */
-class RiseupIncrementalBackup {
+class IncrementalBackup {
 
     use IncrementalDeltaTrait;
     use IncrementalExportTrait;
@@ -36,23 +35,21 @@ class RiseupIncrementalBackup {
     use IncrementalDiscoveryTrait;
     use IncrementalCoreTrait;
 
-    private RiseupFileLogger $logger;
-    private RiseupDatabase $db;
-    private RiseupRootDb $rootDb;
+    private FileLogger $logger;
+    private Database $db;
+    private RootDb $rootDb;
     private \wpdb $wpdb;
     private int $batchSize;
-    private static ?RiseupIncrementalBackup $instance = null;
+    private static ?IncrementalBackup $instance = null;
 
-    /** Get singleton instance. */
-    public static function getInstance(?RiseupFileLogger $logger = null, ?RiseupDatabase $db = null, ?RiseupRootDb $rootDb = null): ?self {
+    public static function getInstance(?FileLogger $logger = null, ?Database $db = null, ?RootDb $rootDb = null): ?self {
         if (self::$instance === null && $logger && $db && $rootDb) {
             self::$instance = new self($logger, $db, $rootDb);
         }
         return self::$instance;
     }
 
-    /** Constructor. */
-    private function __construct(RiseupFileLogger $logger, RiseupDatabase $db, RiseupRootDb $rootDb) {
+    private function __construct(FileLogger $logger, Database $db, RootDb $rootDb) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
@@ -67,7 +64,7 @@ class RiseupIncrementalBackup {
         $title = $options['title'] ?? ('Incremental ' . date('Y-m-d H:i'));
 
         $rootPath = $masterDir . '/a-root.db';
-        if (RiseupBooleanHelpers::isFileMissing($rootPath)) {
+        if (\RiseupBooleanHelpers::isFileMissing($rootPath)) {
             return array('success' => false, 'error' => 'Master snapshot a-root.db not found at: ' . $rootPath);
         }
 
@@ -90,7 +87,7 @@ class RiseupIncrementalBackup {
             $prepared['rootPdo'] = null;
 
             return $this->finalizeIncremental($title, $masterDir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $startTime);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Incremental backup failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
             return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental');
         }
@@ -107,7 +104,7 @@ class RiseupIncrementalBackup {
 
     /** Get the base snapshots directory. */
     private function getSnapshotsBaseDir(): string {
-        return RiseupPathUtils::getSnapshotsDir();
+        return \RiseupPathUtils::getSnapshotsDir();
     }
 
     /** Format bytes. */
@@ -132,3 +129,5 @@ class RiseupIncrementalBackup {
         }
     }
 }
+
+class_alias(IncrementalBackup::class, 'RiseupIncrementalBackup');

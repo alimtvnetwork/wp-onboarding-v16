@@ -2,11 +2,16 @@
 /**
  * IncrementalDeltaTrait — Delta detection and max-ID resolution.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   2.0.0
  */
 
+namespace RiseupAsia\Snapshot\Traits;
+
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\BooleanHelpers;
+use PDO;
+use Throwable;
 
 trait IncrementalDeltaTrait {
 

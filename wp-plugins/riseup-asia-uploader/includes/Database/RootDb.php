@@ -4,53 +4,58 @@
  *
  * Shell class — logic delegated to domain-specific traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database
  * @since   1.12.0
  */
+
+namespace RiseupAsia\Database;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use RiseupAsia\Database\Traits\RootDbSchemaTrait;
+use RiseupAsia\Database\Traits\RootDbRegistrationTrait;
 use RiseupAsia\Enums\LogLevelType;
-
-require_once dirname(__FILE__) . '/Traits/RootDbSchemaTrait.php';
-require_once dirname(__FILE__) . '/Traits/RootDbRegistrationTrait.php';
+use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Logging\FileLogger;
+use RiseupAsia\Snapshot\DependencyAnalyzer;
 
 /**
  * Root Database Manager class.
  */
-class RiseupRootDb {
+class RootDb {
 
     use RootDbSchemaTrait;
     use RootDbRegistrationTrait;
 
-    private RiseupFileLogger $logger;
-    private RiseupDependencyAnalyzer $analyzer;
+    private FileLogger $logger;
+    private DependencyAnalyzer $analyzer;
     private static ?self $instance = null;
 
-    public static function getInstance(?RiseupFileLogger $logger = null, ?RiseupDependencyAnalyzer $analyzer = null): self {
+    public static function getInstance(?FileLogger $logger = null, ?DependencyAnalyzer $analyzer = null): self {
         if (self::$instance === null && $logger && $analyzer) {
             self::$instance = new self($logger, $analyzer);
         }
         return self::$instance;
     }
 
-    private function __construct(RiseupFileLogger $logger, RiseupDependencyAnalyzer $analyzer) {
+    private function __construct(FileLogger $logger, DependencyAnalyzer $analyzer) {
         $this->logger = $logger;
         $this->analyzer = $analyzer;
     }
 
-    public function create(string $filepath): PDO {
+    public function create(string $filepath): \PDO {
         $this->log(LogLevelType::Info->value, 'Creating a-root.db', array('path' => $filepath));
 
         $dir = dirname($filepath);
-        if (RiseupBooleanHelpers::isDirMissing($dir)) {
-            RiseupPathUtils::ensureDir($dir);
+        if (BooleanHelpers::isDirMissing($dir)) {
+            PathUtils::ensureDir($dir);
         }
 
-        $pdo = new PDO('sqlite:' . $filepath);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo = new \PDO('sqlite:' . $filepath);
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $pdo->exec('PRAGMA journal_mode = WAL');
 
         $this->createSchema($pdo);
@@ -78,3 +83,5 @@ class RiseupRootDb {
         }
     }
 }
+
+class_alias(RootDb::class, 'RiseupRootDb');

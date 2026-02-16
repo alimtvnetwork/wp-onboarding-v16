@@ -4,9 +4,11 @@
  *
  * CREATE, UPDATE, and DELETE operations for the fluent query builder.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database\Traits
  * @since   1.4.0
  */
+
+namespace RiseupAsia\Database\Traits;
 
 if (!defined('ABSPATH')) {
     exit;

@@ -2,15 +2,23 @@
 /**
  * ImportExecutionFileTrait — File validation, directory copy, and size utilities.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Snapshot\Traits;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\BooleanHelpers;
+use Exception;
+use RecursiveIteratorIterator;
+use RecursiveDirectoryIterator;
+use ZipArchive;
 
 trait ImportExecutionFileTrait {
 

@@ -2,9 +2,11 @@
 /**
  * DatabaseMigrationsV1V3Trait — Schema migrations v1 through v3.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Database\Traits
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Database\Traits;
 
 if (!defined('ABSPATH')) {
     exit;

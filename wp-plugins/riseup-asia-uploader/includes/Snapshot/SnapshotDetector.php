@@ -4,31 +4,37 @@
  *
  * Shell class delegating to DetectorProviderTrait and DetectorSettingsTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Snapshot
  * @since   1.9.0
  */
+
+namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-require_once dirname(__FILE__) . '/Traits/DetectorProviderTrait.php';
-require_once dirname(__FILE__) . '/Traits/DetectorSettingsTrait.php';
+use RiseupAsia\Snapshot\Traits\DetectorProviderTrait;
+use RiseupAsia\Snapshot\Traits\DetectorSettingsTrait;
+use RiseupAsia\Database\Database;
+use RiseupAsia\Logging\FileLogger;
 
 /**
  * Snapshot Provider Detector class.
  */
-class RiseupSnapshotDetector {
+class SnapshotDetector {
 
     use DetectorProviderTrait;
     use DetectorSettingsTrait;
 
-    private RiseupFileLogger $logger;
-    private RiseupDatabase $db;
+    private FileLogger $logger;
+    private Database $db;
     private array $provider_instances = array();
 
-    public function __construct(RiseupFileLogger $logger, RiseupDatabase $db) {
+    public function __construct(FileLogger $logger, Database $db) {
         $this->logger = $logger;
         $this->db = $db;
     }
 }
+
+class_alias(SnapshotDetector::class, 'RiseupSnapshotDetector');
