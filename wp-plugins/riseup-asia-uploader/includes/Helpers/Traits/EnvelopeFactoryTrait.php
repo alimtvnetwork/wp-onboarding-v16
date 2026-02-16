@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\ErrorHandling\FrameBuilder;
 
 trait EnvelopeFactoryTrait {
@@ -21,10 +22,15 @@ trait EnvelopeFactoryTrait {
         $builder->is_success = true;
         $builder->code = $code;
         $builder->message = $message;
+
         return $builder;
     }
 
-    public static function error(string $message, int $code = 500, ?\Throwable $exception = null): static {
+    public static function error(
+        string $message,
+        int $code = 500,
+        ?Throwable $exception = null,
+    ): static {
         $builder = new self();
         $builder->is_success = false;
         $builder->code = $code;
@@ -38,17 +44,18 @@ trait EnvelopeFactoryTrait {
             'Frontend' => array(),
         );
 
-        if ($exception instanceof \Throwable) {
+        if ($exception instanceof Throwable) {
             $errors = self::buildExceptionErrors($errors, $exception);
         } else {
             $errors = self::buildBacktraceErrors($errors);
         }
 
         $builder->errors = $errors;
+
         return $builder;
     }
 
-    private static function buildExceptionErrors(array $errors, \Throwable $exception): array {
+    private static function buildExceptionErrors(array $errors, Throwable $exception): array {
         $trace_lines = explode("\n", $exception->getTraceAsString());
         $errors['DelegatedServiceErrorStack'] = $trace_lines;
 
@@ -79,6 +86,7 @@ trait EnvelopeFactoryTrait {
             $class = isset($frame['class']) ? $frame['class'] . '::' : '';
             $lines[] = "{$file}:{$line} {$class}{$fn}";
         }
+
         return $lines;
     }
 }

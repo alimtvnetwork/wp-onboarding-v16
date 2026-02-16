@@ -8,6 +8,7 @@
 
 namespace RiseupAsia\Logging\Traits;
 
+use Throwable;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Database\Database;
@@ -32,7 +33,12 @@ trait LoggerWriteTrait {
     }
 
     /** Write a stack trace entry to the dedicated stacktrace.txt file. */
-    private function writeStacktrace(string $message, string $file, int $line, string $stackTrace): void {
+    private function writeStacktrace(
+        string $message,
+        string $file,
+        int $line,
+        string $stackTrace,
+    ): void {
         if (empty($stackTrace)) {
             return;
         }
@@ -55,7 +61,14 @@ trait LoggerWriteTrait {
     }
 
     /** Persist an error/warn entry to the error_sessions SQLite table. */
-    private function persistToErrorSessions(string $level, string $message, string $file, int $line, array $context = array(), string $stackTrace = ''): void {
+    private function persistToErrorSessions(
+        string $level,
+        string $message,
+        string $file,
+        int $line,
+        array $context = array(),
+        string $stackTrace = '',
+    ): void {
         try {
             $pdo = $this->getErrorSessionsPdo();
             if (!$pdo) {
@@ -63,7 +76,7 @@ trait LoggerWriteTrait {
             }
 
             $this->insertErrorSession($pdo, $level, $message, $file, $line, $context, $stackTrace);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Silently ignore - we're in the logger, can't recurse
         }
     }
@@ -87,7 +100,15 @@ trait LoggerWriteTrait {
     }
 
     /** Insert an error session record and set unseen flag. */
-    private function insertErrorSession(\PDO $pdo, string $level, string $message, string $file, int $line, array $context, string $stackTrace): void {
+    private function insertErrorSession(
+        \PDO $pdo,
+        string $level,
+        string $message,
+        string $file,
+        int $line,
+        array $context,
+        string $stackTrace,
+    ): void {
         $now = gmdate(self::TIMESTAMP_FORMAT);
         $contextJson = !empty($context) ? json_encode($context, JSON_UNESCAPED_SLASHES) : null;
 

@@ -40,7 +40,7 @@ trait ImportExecutionFileTrait {
     private function validateIncrementalFiles(string $snapshotRoot, array $incrementals): void {
         foreach ($incrementals as $inc) {
             $incDir = PathHelper::join($snapshotRoot, $inc['relative_path']);
-            if (!PathHelper::dirExists($incDir)) {
+            if (PathHelper::isDirMissing($incDir)) {
                 $this->log(LogLevelType::Warn->value, 'Incremental directory missing, skipping', array('folder' => $inc['folder_name']));
                 continue;
             }

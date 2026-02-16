@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Enums\StatusType;
@@ -24,11 +25,13 @@ trait PostCrudTrait {
 
         if (empty($data['title'])) {
             $this->fileLogger->warn('Post creation failed: title required');
+
             return array('success' => false, 'error' => 'Title is required');
         }
 
         if (empty($data['content'])) {
             $this->fileLogger->warn('Post creation failed: content required');
+
             return array('success' => false, 'error' => 'Content is required');
         }
 
@@ -49,7 +52,7 @@ trait PostCrudTrait {
             ));
 
             return array('success' => true, 'post' => $this->formatPost(get_post($postId)));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post creation exception');
         }
     }
@@ -61,6 +64,7 @@ trait PostCrudTrait {
             $post = get_post($postId);
             if (!$post) {
                 $this->fileLogger->warn('Post not found', array('post_id' => $postId));
+
                 return array('success' => false, 'error' => 'Post not found');
             }
 
@@ -76,8 +80,9 @@ trait PostCrudTrait {
             $this->fileLogger->info('Post updated', array('post_id' => $postId));
 
             $updatedPost = get_post($postId);
+
             return array('success' => true, 'post' => $this->formatPost($updatedPost, true));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Post update exception');
         }
     }
@@ -108,13 +113,21 @@ trait PostCrudTrait {
         if (isset($data['content'])) { $postData['post_content'] = wp_kses_post($data['content']); }
         if (isset($data['slug']))    { $postData['post_name']    = sanitize_title($data['slug']); }
         if (isset($data['status']))  { $postData['post_status']  = $this->validatePostStatus($data['status']); }
+
         return $postData;
     }
 
-    private function handlePostError(string $action, int $postId, string $title, string $errorMsg, array $data = array()): array {
+    private function handlePostError(
+        string $action,
+        int $postId,
+        string $title,
+        string $errorMsg,
+        array $data = array(),
+    ): array {
         $this->fileLogger->error('Post operation failed', array('error' => $errorMsg));
         $details = !empty($title) ? array('title' => $title) : $data;
         $this->logger->logPostAction($action, $postId, StatusType::Failed->value, $details, $errorMsg);
+
         return array('success' => false, 'error' => $errorMsg);
     }
 
@@ -131,6 +144,7 @@ trait PostCrudTrait {
             'permalink' => get_permalink($post->ID),
         );
         $result[$isUpdate ? 'updated_at' : 'created_at'] = ($isUpdate ? $post->post_modified_gmt : $post->post_date_gmt) . 'Z';
+
         return $result;
     }
 }

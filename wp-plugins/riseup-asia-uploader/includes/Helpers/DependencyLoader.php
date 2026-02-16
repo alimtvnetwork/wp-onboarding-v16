@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Logging\FileLogger;
 
 class DependencyLoader {
@@ -21,20 +22,28 @@ class DependencyLoader {
     public static function load(string $label, string $path): bool {
         if (PathHelper::isFileMissing($path)) {
             self::recordResult($label, $path, false, 'File not found: ' . $path);
+
             return false;
         }
 
         try {
             require_once $path;
             self::recordResult($label, $path, true, null);
+
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             self::recordResult($label, $path, false, $e->getMessage());
+
             return false;
         }
     }
 
-    private static function recordResult(string $label, string $path, bool $success, ?string $error) {
+    private static function recordResult(
+        string $label,
+        string $path,
+        bool $success,
+        ?string $error,
+    ): void {
         self::$results[] = array(
             'label'   => $label,
             'file'    => basename($path),
@@ -50,6 +59,7 @@ class DependencyLoader {
                 $failures++;
             }
         }
+
         return $failures;
     }
 

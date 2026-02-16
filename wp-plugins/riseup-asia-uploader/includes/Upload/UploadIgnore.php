@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Upload\Traits\UploadIgnorePatternTrait;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\PathHelper;
@@ -37,6 +38,7 @@ class UploadIgnore {
         if (PathHelper::isFileMissing($ignoreFile)) {
             $this->fileLogger->debug('No uploadignore file found');
             $this->isLoaded = false;
+
             return false;
         }
 
@@ -45,6 +47,7 @@ class UploadIgnore {
             if ($content === false) {
                 $this->fileLogger->warn('Failed to read uploadignore file');
                 $this->isLoaded = false;
+
                 return false;
             }
 
@@ -69,10 +72,12 @@ class UploadIgnore {
                 'patterns'  => count($this->patterns),
                 'negations' => count($this->negations),
             ));
+
             return true;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to load uploadignore');
             $this->isLoaded = false;
+
             return false;
         }
     }
@@ -107,6 +112,7 @@ class UploadIgnore {
     public static function fromDirectory(string $pluginDir): self {
         $instance = new self();
         $instance->load($pluginDir);
+
         return $instance;
     }
 }

@@ -56,12 +56,21 @@ trait PathHelperDirTrait {
         return self::join($realParent, basename($path));
     }
 
-    private static function checkTraversal(string $path, string $realPath, string $realBase): bool {
+    private static function checkTraversal(
+        string $path,
+        string $realPath,
+        string $realBase,
+    ): bool {
         $isSafe = strpos($realPath, $realBase) === 0;
         if (!$isSafe) {
             self::safeLog(LogLevelType::Error->value, '[PATH] Path traversal attempt detected', array('path' => $path, 'resolved' => $realPath, 'base' => $realBase));
         }
+
         return $isSafe;
+    }
+
+    public static function isPathMissing(string $path, string $basePath): bool {
+        return !self::isSafePath($path, $basePath);
     }
 
     // ── Directory Creation ──

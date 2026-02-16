@@ -2,6 +2,8 @@
 
 namespace RiseupAsia\ErrorHandling;
 
+use Throwable;
+
 /**
  * Stack trace frame construction utilities for error diagnostics.
  *
@@ -27,7 +29,7 @@ class FrameBuilder
     /**
      * @return array<int, array{file: string, fileBase: string, line: int, function: string, class: string}>
      */
-    public static function exceptionToFrames(\Throwable $exception): array {
+    public static function exceptionToFrames(Throwable $exception): array {
         $frames = array();
 
         $frames[] = array(
@@ -122,7 +124,11 @@ class FrameBuilder
         return $frames;
     }
 
-    public static function buildFatalDetails(array $error, array $traceLines, array $frames): array {
+    public static function buildFatalDetails(
+        array $error,
+        array $traceLines,
+        array $frames,
+    ): array {
         return array(
             'type'             => $error['type'],
             'typeName'         => FatalErrorHandler::errorTypeToString($error['type']),

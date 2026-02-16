@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Helpers\PathHelper;
@@ -41,14 +42,23 @@ class IncrementalBackup {
     private int $batchSize;
     private static ?IncrementalBackup $instance = null;
 
-    public static function getInstance(?FileLogger $logger = null, ?Database $db = null, ?RootDb $rootDb = null): ?self {
+    public static function getInstance(
+        ?FileLogger $logger = null,
+        ?Database $db = null,
+        ?RootDb $rootDb = null,
+    ): ?self {
         if (self::$instance === null && $logger && $db && $rootDb) {
             self::$instance = new self($logger, $db, $rootDb);
         }
+
         return self::$instance;
     }
 
-    private function __construct(FileLogger $logger, Database $db, RootDb $rootDb) {
+    private function __construct(
+        FileLogger $logger,
+        Database $db,
+        RootDb $rootDb,
+    ) {
         global $wpdb;
         $this->wpdb = $wpdb;
         $this->logger = $logger;
@@ -71,7 +81,12 @@ class IncrementalBackup {
         return $this->executeIncrementalPipeline($rootPath, $title, $masterDir, $startTime);
     }
 
-    private function executeIncrementalPipeline(string $rootPath, string $title, string $masterDir, float $startTime): array {
+    private function executeIncrementalPipeline(
+        string $rootPath,
+        string $title,
+        string $masterDir,
+        float $startTime,
+    ): array {
         try {
             $prepared = $this->prepareIncrementalDir($rootPath);
             if (!$prepared['success']) {
@@ -84,8 +99,9 @@ class IncrementalBackup {
             $prepared['rootPdo'] = null;
 
             return $this->finalizeIncremental($title, $masterDir, $prepared['folder_name'], $prepared['sequence'], $export, $prepared['incremental_dir'], $startTime);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Incremental backup failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+
             return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'incremental');
         }
     }
@@ -106,10 +122,15 @@ class IncrementalBackup {
         if ($bytes < 1024) return $bytes . ' B';
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
         if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
+
         return round($bytes / 1073741824, 1) . ' GB';
     }
 
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $full = '[SNAPSHOT] [INCREMENTAL] ' . $message;
         if (!empty($context)) {
             $full .= ' ' . json_encode($context);

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathLogFileType;
 use RiseupAsia\Enums\PluginConfigType;
+use Throwable;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\InitHelpers;
 
@@ -35,7 +36,7 @@ class ActivationHandler
             self::ensureDirs($dirs['base'], $dirs['logs']);
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
         }
     }

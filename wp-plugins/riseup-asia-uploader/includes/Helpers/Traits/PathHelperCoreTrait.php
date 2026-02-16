@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PathSubdirType;
 use RiseupAsia\Enums\PathDatabaseType;
@@ -28,6 +29,7 @@ trait PathHelperCoreTrait {
         if (self::$isBootstrapping) { return null; }
         if (self::$logger !== null) { return self::$logger; }
         if (BooleanHelpers::isClassNotLoaded(FileLogger::class)) { return null; }
+
         return self::initializeLogger();
     }
 
@@ -35,20 +37,26 @@ trait PathHelperCoreTrait {
         self::$isBootstrapping = true;
         try {
             self::$logger = FileLogger::getInstance();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             error_log('[Riseup Asia] [ERROR] Logger init failed: ' . $e->getMessage());
             self::$logger = null;
         }
         self::$isBootstrapping = false;
+
         return self::$logger;
     }
 
-    private static function safeLog(string $level, string $message, array $context = array()): void {
+    private static function safeLog(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $upper = strtoupper($level);
         $method = strtolower($level);
 
         if (self::$isBootstrapping) {
             error_log('[Riseup Asia] [' . $upper . '] ' . $message);
+
             return;
         }
 
@@ -67,11 +75,13 @@ trait PathHelperCoreTrait {
         $path = str_replace('\\\\', '/', $path);
         $path = preg_replace('#/+#', '/', $path);
         $path = preg_replace('#^([a-zA-Z]):#', '$1:', $path);
+
         return $path;
     }
 
     public static function getBaseDir(): string {
         $uploadDir = wp_upload_dir();
+
         return self::join($uploadDir['basedir'], PluginConfigType::UploadsSubdir->value);
     }
 

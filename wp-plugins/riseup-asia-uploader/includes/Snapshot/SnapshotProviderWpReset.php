@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotProviderType;
@@ -24,6 +25,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
 
     public function getCapabilities(): array {
         $is_pro = class_exists('WP_Reset_Pro');
+
         return array('full_site' => true, 'database_only' => true, 'selective' => true, 'scheduled' => $is_pro, 'restore' => true, 'export' => true, 'import' => true);
     }
 
@@ -34,8 +36,9 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
         $this->log(LogLevelType::Info->value, 'Creating snapshot via WP Reset', $options);
         try {
             return array('success' => false, 'error' => 'WP Reset integration not yet implemented');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'WP Reset snapshot failed', array('error' => $e->getMessage()));
+
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
@@ -52,6 +55,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
     public function listSnapshots(int $limit = 50, int $offset = 0): array {
         $snapshots = $this->db->queryAll('SELECT * FROM ' . TableType::Snapshots->value . ' WHERE provider = ? ORDER BY created_at DESC LIMIT ? OFFSET ?', array($this->provider_id, $limit, $offset));
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
+
         return array('snapshots' => $snapshots ?: array(), 'total' => $total ? (int)$total['count'] : 0);
     }
 
@@ -62,6 +66,7 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
         foreach ($all_tables as $table_info) {
             $tables[] = array('name' => $table_info['Name'], 'rows' => (int)$table_info['Rows'], 'size' => (int)$table_info['Data_length'] + (int)$table_info['Index_length'], 'is_core' => strpos($table_info['Name'], $wpdb->prefix) === 0);
         }
+
         return $tables;
     }
 }

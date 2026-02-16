@@ -96,11 +96,11 @@ trait PluginExportTrait
         $plugins_dir = WP_PLUGIN_DIR;
         $plugin_dir  = PathHelper::join($plugins_dir, $slug);
 
-        if (!PathHelper::dirExists($plugin_dir)) {
+        if (PathHelper::isDirMissing($plugin_dir)) {
             return $this->errorResponse('Plugin not found: ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        if (!PathHelper::isSafePath($plugin_dir, $plugins_dir)) {
+        if (PathHelper::isPathMissing($plugin_dir, $plugins_dir)) {
             return $this->errorResponse('Invalid plugin slug', HttpStatusType::BadRequest->value);
         }
 

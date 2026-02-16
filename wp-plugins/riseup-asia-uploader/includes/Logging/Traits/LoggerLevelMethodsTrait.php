@@ -8,6 +8,7 @@
 
 namespace RiseupAsia\Logging\Traits;
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 
 trait LoggerLevelMethodsTrait {
@@ -88,7 +89,13 @@ trait LoggerLevelMethodsTrait {
     }
 
     /** Log with explicit file and line. */
-    public function logAt(string $level, string $message, string $file, int $line, array $context = array()): bool {
+    public function logAt(
+        string $level,
+        string $message,
+        string $file,
+        int $line,
+        array $context = array(),
+    ): bool {
         if ($this->isDuplicate($level, $message, $file, $line)) {
             return true;
         }
@@ -102,7 +109,7 @@ trait LoggerLevelMethodsTrait {
     }
 
     /** Log an exception. */
-    public function logException(\Throwable $e, string $context = ''): bool {
+    public function logException(Throwable $e, string $context = ''): bool {
         if ($this->isDuplicate(LogLevelType::Error->value, $e->getMessage(), $e->getFile(), $e->getLine())) {
             return true;
         }

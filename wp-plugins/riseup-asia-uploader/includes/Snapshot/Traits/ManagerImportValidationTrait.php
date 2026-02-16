@@ -66,7 +66,7 @@ trait ManagerImportValidationTrait {
     }
 
     private function deleteDirectory(string $dir): bool {
-        if (!PathHelper::dirExists($dir)) {
+        if (PathHelper::isDirMissing($dir)) {
             return true;
         }
 
