@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use Throwable;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait ManagerImportValidationTrait {
 
@@ -66,20 +66,20 @@ trait ManagerImportValidationTrait {
     }
 
     private function deleteDirectory(string $dir): bool {
-        if (!PathUtils::dirExists($dir)) {
+        if (!PathHelper::dirExists($dir)) {
             return true;
         }
 
         $files = array_diff(scandir($dir), array('.', '..'));
         foreach ($files as $file) {
-            $path = PathUtils::join($dir, $file);
+            $path = PathHelper::join($dir, $file);
             if (is_dir($path)) {
                 $this->deleteDirectory($path);
             } else {
-                PathUtils::deleteFile($path);
+                PathHelper::deleteFile($path);
             }
         }
 
-        return PathUtils::deleteDir($dir);
+        return PathHelper::deleteDir($dir);
     }
 }

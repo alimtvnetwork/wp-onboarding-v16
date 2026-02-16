@@ -20,8 +20,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\PathUtils;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait ExporterBuildTrait {
     use ExporterBuildCollectTrait;
@@ -56,8 +55,8 @@ trait ExporterBuildTrait {
 
     /** Ensure the exports directory exists with security files. */
     private function ensureExportsDir(): ?string {
-        $exportsDir = PathUtils::getSnapshotsDir() . PathSubdirType::Exports->value;
-        if (!BooleanHelpers::isDirMissing($exportsDir)) {
+        $exportsDir = PathHelper::getSnapshotsDir() . PathSubdirType::Exports->value;
+        if (!PathHelper::isDirMissing($exportsDir)) {
             return $exportsDir;
         }
 
@@ -200,7 +199,7 @@ trait ExporterBuildTrait {
         $stmt->execute(array(SnapshotExportStatusType::Valid->value, $zipSize, json_encode($includedIds), count($incrementals), $snapshotId));
 
         $this->log(LogLevelType::Info->value, 'ZIP export built successfully', array(
-            'snapshot_id' => $snapshotId, 'filename' => $zipFilename, 'size' => PathUtils::formatBytes($zipSize),
+            'snapshot_id' => $snapshotId, 'filename' => $zipFilename, 'size' => PathHelper::formatBytes($zipSize),
         ));
     }
 }

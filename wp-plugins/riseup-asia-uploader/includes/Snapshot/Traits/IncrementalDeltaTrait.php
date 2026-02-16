@@ -9,7 +9,7 @@
 namespace RiseupAsia\Snapshot\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use PDO;
 use Throwable;
 
@@ -90,7 +90,7 @@ trait IncrementalDeltaTrait {
     }
 
     private function readMaxIdFromSqlite(string $sqlitePath, string $tableName, string $pk): ?int {
-        if (BooleanHelpers::isFileMissing($sqlitePath)) {
+        if (PathHelper::isFileMissing($sqlitePath)) {
             return null;
         }
 

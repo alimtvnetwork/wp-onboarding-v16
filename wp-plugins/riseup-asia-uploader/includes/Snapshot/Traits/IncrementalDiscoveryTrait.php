@@ -12,8 +12,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\PathUtils;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use PDO;
 use Throwable;
 
@@ -53,7 +52,7 @@ trait IncrementalDiscoveryTrait {
 
     private function findMasterFromFilesystem(): ?string {
         $baseDir = $this->getSnapshotsBaseDir();
-        if (BooleanHelpers::isDirMissing($baseDir)) {
+        if (PathHelper::isDirMissing($baseDir)) {
             return null;
         }
 

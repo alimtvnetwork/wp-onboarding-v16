@@ -16,7 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\SnapshotOrchestrator;
 use RiseupAsia\Snapshot\DependencyAnalyzer;
@@ -109,7 +109,7 @@ trait SnapshotBackupExecTrait {
             $master_dir = $incremental->findLatestMasterSnapshot();
         }
 
-        if (!$master_dir || BooleanHelpers::isDirMissing($master_dir)) {
+        if (!$master_dir || PathHelper::isDirMissing($master_dir)) {
             return new WP_REST_Response(array(
                 'success' => false, 'error' => 'No master (full) snapshot found. Create a full backup first.',
             ), 400);

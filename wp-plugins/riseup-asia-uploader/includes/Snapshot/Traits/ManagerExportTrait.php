@@ -16,7 +16,7 @@ use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotErrorType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait ManagerExportTrait {
 
@@ -32,7 +32,7 @@ trait ManagerExportTrait {
         }
 
         $filepath = $snapshot['filepath'];
-        if (!PathUtils::fileExists($filepath)) {
+        if (!PathHelper::fileExists($filepath)) {
             return array('success' => false, 'error' => 'Snapshot file not found');
         }
 
@@ -55,7 +55,7 @@ trait ManagerExportTrait {
 
         $size = filesize($zipPath);
         $this->log(LogLevelType::Info->value, 'Snapshot exported to ZIP', array(
-            'snapshot_id' => $snapshotId, 'zip_path' => $zipPath, 'size' => PathUtils::formatBytes($size),
+            'snapshot_id' => $snapshotId, 'zip_path' => $zipPath, 'size' => PathHelper::formatBytes($size),
         ));
 
         return array('success' => true, 'filepath' => $zipPath, 'filename' => basename($zipPath), 'size' => $size);

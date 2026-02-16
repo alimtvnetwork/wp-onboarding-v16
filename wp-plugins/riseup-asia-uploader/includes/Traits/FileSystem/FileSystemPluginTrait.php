@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use Throwable;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait FileSystemPluginTrait {
 
@@ -109,7 +110,7 @@ trait FileSystemPluginTrait {
     private function findDirPlugin(string $slug): ?string {
         $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (BooleanHelpers::isDirMissing($pluginDir)) {
+        if (PathHelper::isDirMissing($pluginDir)) {
             return null;
         }
 

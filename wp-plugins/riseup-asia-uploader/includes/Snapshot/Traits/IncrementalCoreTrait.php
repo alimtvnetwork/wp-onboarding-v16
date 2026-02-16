@@ -9,8 +9,7 @@
 namespace RiseupAsia\Snapshot\Traits;
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\PathUtils;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use PDO;
 use Throwable;
 
@@ -32,7 +31,7 @@ trait IncrementalCoreTrait {
         $master_dir = dirname($rootPath);
         $incremental_dir = $master_dir . '/incremental/' . $folder_name;
 
-        if (!PathUtils::ensureDir($incremental_dir, true)) {
+        if (!PathHelper::ensureDir($incremental_dir, true)) {
             $rootPdo = null;
             return array('success' => false, 'error' => 'Failed to create incremental directory: ' . $folder_name);
         }

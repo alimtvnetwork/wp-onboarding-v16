@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait RootDbRegistrationTrait {
 
@@ -52,7 +52,7 @@ trait RootDbRegistrationTrait {
 
     /** Read metadata from an existing a-root.db. */
     public function readMetadata(string $filepath): ?array {
-        if (!PathUtils::fileExists($filepath)) {
+        if (!PathHelper::fileExists($filepath)) {
             return null;
         }
 

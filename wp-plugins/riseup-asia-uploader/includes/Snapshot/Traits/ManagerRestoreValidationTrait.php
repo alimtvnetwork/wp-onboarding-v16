@@ -16,7 +16,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotModeType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait ManagerRestoreValidationTrait {
 
@@ -34,7 +34,7 @@ trait ManagerRestoreValidationTrait {
         }
 
         $masterDir = dirname(dirname($snapshot['filepath']));
-        $isMasterMissing = BooleanHelpers::isDirMissing($masterDir) || BooleanHelpers::isFileMissing($masterDir . '/a-root.db');
+        $isMasterMissing = PathHelper::isDirMissing($masterDir) || PathHelper::isFileMissing($masterDir . '/a-root.db');
         if (!$isMasterMissing) {
             return null;
         }

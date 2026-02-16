@@ -23,6 +23,7 @@ use RiseupAsia\Database\FileCache;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait PluginListTrait
@@ -116,7 +117,7 @@ trait PluginListTrait
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (BooleanHelpers::isDirMissing($plugin_dir)) {
+        if (PathHelper::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
@@ -177,7 +178,7 @@ trait PluginListTrait
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (BooleanHelpers::isDirMissing($plugin_dir)) {
+        if (PathHelper::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 

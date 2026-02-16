@@ -20,6 +20,7 @@ use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait SyncManifestTrait
 {
@@ -47,7 +48,7 @@ trait SyncManifestTrait
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (BooleanHelpers::isDirMissing($plugin_dir)) {
+        if (PathHelper::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 

@@ -18,6 +18,7 @@ use PDO;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait RestoreIncrementalTrait {
 
@@ -60,7 +61,7 @@ trait RestoreIncrementalTrait {
 
     private function applySingleIncremental(array $inc, string $snapshotDir, array $restoreOrder): array {
         $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
-        if (BooleanHelpers::isDirMissing($inc_dir)) {
+        if (PathHelper::isDirMissing($inc_dir)) {
             $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
             return array('rows' => 0, 'errors' => array('Incremental directory missing: ' . $inc['folder_name']));
         }

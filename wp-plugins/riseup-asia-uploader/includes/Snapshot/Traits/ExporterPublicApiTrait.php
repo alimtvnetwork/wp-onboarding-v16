@@ -18,7 +18,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Enums\SnapshotExportStatusType;
 use RiseupAsia\Enums\TableType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait ExporterPublicApiTrait {
 
@@ -150,7 +150,7 @@ trait ExporterPublicApiTrait {
             return null;
         }
 
-        if (BooleanHelpers::isFileMissing($export['zip_path'])) {
+        if (PathHelper::isFileMissing($export['zip_path'])) {
             $this->log(LogLevelType::Warn->value, 'Export ZIP file missing', array('path' => $export['zip_path']));
             return null;
         }

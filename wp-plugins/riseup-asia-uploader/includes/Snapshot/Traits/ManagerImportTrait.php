@@ -16,8 +16,7 @@ use ZipArchive;
 use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\BooleanHelpers;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 
 trait ManagerImportTrait {
 
@@ -25,7 +24,7 @@ trait ManagerImportTrait {
     use ManagerImportRecordTrait;
 
     public function importSnapshot(string $uploadedPath): array {
-        if (BooleanHelpers::isFileMissing($uploadedPath)) {
+        if (PathHelper::isFileMissing($uploadedPath)) {
             return array('success' => false, 'error' => 'Uploaded file not found');
         }
 
@@ -35,11 +34,11 @@ trait ManagerImportTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
-            'path' => $uploadedPath, 'size' => PathUtils::formatBytes(filesize($uploadedPath)),
+            'path' => $uploadedPath, 'size' => PathHelper::formatBytes(filesize($uploadedPath)),
         ));
 
-        $tempDir = PathUtils::join(PathUtils::getTempDir(), 'import_' . uniqid());
-        $isDirCreationFailed = !PathUtils::ensureDir($tempDir, false);
+        $tempDir = PathHelper::join(PathHelper::getTempDir(), 'import_' . uniqid());
+        $isDirCreationFailed = !PathHelper::ensureDir($tempDir, false);
         if ($isDirCreationFailed) {
             return array('success' => false, 'error' => 'Failed to create temp directory');
         }
@@ -51,7 +50,7 @@ trait ManagerImportTrait {
             $this->deleteDirectory($tempDir);
             return $result;
         } catch (Throwable $e) {
-            if (PathUtils::dirExists($tempDir)) {
+            if (PathHelper::dirExists($tempDir)) {
                 $this->deleteDirectory($tempDir);
             }
 
@@ -78,8 +77,8 @@ trait ManagerImportTrait {
     }
 
     private function loadAndValidateManifest(string $tempDir): array {
-        $manifestPath = PathUtils::join($tempDir, 'manifest.json');
-        if (BooleanHelpers::isFileMissing($manifestPath)) {
+        $manifestPath = PathHelper::join($tempDir, 'manifest.json');
+        if (PathHelper::isFileMissing($manifestPath)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }
 
@@ -98,9 +97,9 @@ trait ManagerImportTrait {
 
     private function validateSnapshotSqlite(array $manifest, string $tempDir): string {
         $sqliteFilename = $manifest['snapshot']['filename'];
-        $sqlitePath = PathUtils::join($tempDir, $sqliteFilename);
+        $sqlitePath = PathHelper::join($tempDir, $sqliteFilename);
 
-        if (BooleanHelpers::isFileMissing($sqlitePath)) {
+        if (PathHelper::isFileMissing($sqlitePath)) {
             throw new Exception('SQLite file not found in archive: ' . $sqliteFilename);
         }
 
@@ -113,23 +112,23 @@ trait ManagerImportTrait {
     }
 
     private function moveAndRecordSnapshot(array $manifest, string $sqlitePath, string $tempDir): array {
-        $snapshotsDir = PathUtils::getSnapshotsDir();
-        $isDirCreationFailed = !PathUtils::ensureDir($snapshotsDir, true);
+        $snapshotsDir = PathHelper::getSnapshotsDir();
+        $isDirCreationFailed = !PathHelper::ensureDir($snapshotsDir, true);
         if ($isDirCreationFailed) {
             throw new Exception('Failed to ensure snapshots directory');
         }
 
         $sequence = $this->getNextImportSequence();
         $newFilename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
-        $destPath = PathUtils::join($snapshotsDir, $newFilename);
+        $destPath = PathHelper::join($snapshotsDir, $newFilename);
 
-        if (BooleanHelpers::isCopyFailed($sqlitePath, $destPath)) {
+        if (PathHelper::isCopyFailed($sqlitePath, $destPath)) {
             throw new Exception('Failed to copy snapshot file to destination');
         }
 
         $snapshotId = $this->createImportedSnapshotRecord($manifest, $sequence, $newFilename, $destPath);
         if (!$snapshotId) {
-            PathUtils::deleteFile($destPath);
+            PathHelper::deleteFile($destPath);
             throw new Exception('Failed to create snapshot record');
         }
 

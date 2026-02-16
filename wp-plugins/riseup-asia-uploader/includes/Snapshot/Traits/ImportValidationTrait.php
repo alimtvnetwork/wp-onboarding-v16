@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Helpers\PathHelper;
 use PDO;
 use PDOException;
 use Exception;
@@ -85,16 +85,16 @@ trait ImportValidationTrait {
     }
 
     private function findFileRecursive(string $dir, string $filename): ?string {
-        $path = PathUtils::join($dir, $filename);
-        if (PathUtils::fileExists($path)) {
+        $path = PathHelper::join($dir, $filename);
+        if (PathHelper::fileExists($path)) {
             return $path;
         }
 
         $entries = scandir($dir);
         foreach ($entries as $entry) {
             if ($entry === '.' || $entry === '..') continue;
-            $subPath = PathUtils::join($dir, $entry, $filename);
-            if (PathUtils::fileExists($subPath)) {
+            $subPath = PathHelper::join($dir, $entry, $filename);
+            if (PathHelper::fileExists($subPath)) {
                 return $subPath;
             }
         }

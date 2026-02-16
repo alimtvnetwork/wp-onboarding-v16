@@ -16,7 +16,7 @@ use Exception;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
-use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathHelper;
 
 trait OrchestratorHelpersTrait {
 
@@ -31,7 +31,7 @@ trait OrchestratorHelpersTrait {
 
     private function getDirectorySize(string $dir): int {
         $size = 0;
-        if (BooleanHelpers::isDirMissing($dir)) return 0;
+        if (PathHelper::isDirMissing($dir)) return 0;
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS));
         foreach ($iterator as $file) {
             if ($file->isFile()) $size += $file->getSize();
