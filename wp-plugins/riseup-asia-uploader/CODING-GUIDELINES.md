@@ -1,7 +1,7 @@
 # Riseup Asia Uploader — Coding Guidelines
 
-**Version:** 1.21.0
-**Updated:** 2026-02-07
+**Version:** 1.22.0
+**Updated:** 2026-02-16
 
 This document codifies the mandatory development standards for the WordPress companion plugin. All contributors must follow these rules.
 
@@ -10,58 +10,64 @@ This document codifies the mandatory development standards for the WordPress com
 ## 1. Naming Conventions
 
 ### PHP Classes
-- **PascalCase without underscores** for all new classes.
-- Legacy classes (`Riseup_File_Logger`, `Riseup_Database`, etc.) retain underscore style for backward compatibility.
+- **PascalCase** for all classes within the `RiseupAsia\` namespace.
+- The `Riseup` prefix is removed from class names — namespacing handles identity.
 
 | ❌ Prohibited | ✅ Required |
 |---------------|-------------|
-| `Riseup_Path_Utils` | `RiseupPathUtils` |
-| `Riseup_Snapshot_Provider` | `RiseupSnapshotProvider` |
+| `RiseupPathUtils` (global) | `RiseupAsia\Helpers\PathUtils` |
+| `RiseupSnapshotManager` (global) | `RiseupAsia\Snapshot\SnapshotManager` |
 
 ### Methods
 - **camelCase** for all methods: `ensureDir()`, `isSafePath()`, `formatBytes()`.
 
 ### Constants
-- **SCREAMING_SNAKE_CASE** without `RISEUP_` prefix: `REST_NAMESPACE`, `ACTION_UPLOAD`.
+- **PascalCase** enum members: `case Success`, `case ActionUpload`.
+- Configuration values live in typed enums under `RiseupAsia\Enums\`.
 
 ---
 
 ## 2. No Magic Strings
 
-All API namespaces, endpoints, action types, status values, table names, and configuration keys must be defined as constants in `includes/constants.php`. Never use raw string literals for these values in class methods.
+All API namespaces, endpoints, action types, status values, table names, and configuration keys must be defined as typed enum members in `includes/Enums/`. Never use raw string literals for these values in class methods.
 
 ```php
+use RiseupAsia\Enums\ActionType;
+use RiseupAsia\Enums\StatusType;
+
 // ❌ Wrong
-$this->log_action('upload', 'success');
+$this->logAction('upload', 'success');
 
 // ✅ Correct
-$this->log_action(RISEUP_ACTION_UPLOAD, RISEUP_STATUS_SUCCESS);
+$this->logAction(ActionType::Upload, StatusType::Success);
 ```
 
 ---
 
 ## 3. Path Handling
 
-All file path operations must go through `RiseupPathUtils`. Raw `filepath.join()`, string concatenation, or `DIRECTORY_SEPARATOR` usage is prohibited.
+All file path operations must go through `PathUtils`. Raw `filepath.join()`, string concatenation, or `DIRECTORY_SEPARATOR` usage is prohibited.
 
 ### Typed Directory Methods (preferred)
 ```php
-$base   = RiseupPathUtils::getBaseDir();
-$logs   = RiseupPathUtils::getLogsDir();
-$snaps  = RiseupPathUtils::getSnapshotsDir();
-$temp   = RiseupPathUtils::getTempDir();
-$db     = RiseupPathUtils::getDbPath();
+use RiseupAsia\Helpers\PathUtils;
+
+$base   = PathUtils::getBaseDir();
+$logs   = PathUtils::getLogsDir();
+$snaps  = PathUtils::getSnapshotsDir();
+$temp   = PathUtils::getTempDir();
+$db     = PathUtils::getDbPath();
 ```
 
 ### Path Operations
 ```php
-$path = RiseupPathUtils::join($base, $subdir, $filename);
-$dir  = RiseupPathUtils::ensurePath(true, $base, $subdir);
-$safe = RiseupPathUtils::isSafePath($path, $base);
+$path = PathUtils::join($base, $subdir, $filename);
+$dir  = PathUtils::ensurePath(true, $base, $subdir);
+$safe = PathUtils::isSafePath($path, $base);
 ```
 
 ### Security
-Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php` (silence) files via `RiseupPathUtils::addSecurityFiles()` or `ensureDir($path, true)`.
+Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php` (silence) files via `PathUtils::addSecurityFiles()` or `ensureDir($path, true)`.
 
 ---
 
@@ -69,25 +75,29 @@ Sensitive directories must receive `.htaccess` (`Deny from all`) and `index.php`
 
 > **Canonical source:** [No Raw Negations spec](../../spec/01-coding-guidelines/no-negatives.md)
 
-**Never use `!` on a function call in a condition.** All boolean logic must use positively named guard functions from `RiseupBooleanHelpers` instead of raw negations.
+**Never use `!` on a function call in a condition.** All boolean logic must use positively named guard functions from `BooleanHelpers` instead of raw negations.
+
+```php
+use RiseupAsia\Helpers\BooleanHelpers;
+```
 
 | ❌ Forbidden (raw negation) | ✅ Required (positive guard) |
 |----------------------------|------------------------------|
-| `!file_exists($path)` | `RiseupBooleanHelpers::is_file_missing($path)` |
-| `!is_dir($path)` | `RiseupBooleanHelpers::is_dir_missing($path)` |
-| `!class_exists('X')` | `RiseupBooleanHelpers::is_class_missing('X')` |
-| `!function_exists('f')` | `RiseupBooleanHelpers::is_func_missing('f')` |
-| `!extension_loaded('e')` | `RiseupBooleanHelpers::is_extension_missing('e')` |
-| `!$plugin->is_active()` | `$plugin->is_disabled()` |
+| `!file_exists($path)` | `BooleanHelpers::isFileMissing($path)` |
+| `!is_dir($path)` | `BooleanHelpers::isDirMissing($path)` |
+| `!class_exists('X')` | `BooleanHelpers::isClassMissing('X')` |
+| `!function_exists('f')` | `BooleanHelpers::isFuncMissing('f')` |
+| `!extension_loaded('e')` | `BooleanHelpers::isExtensionMissing('e')` |
+| `!$plugin->isActive()` | `$plugin->isDisabled()` |
 | `!$var` (falsy check) | Native `!$var` is OK for simple booleans |
 
-**Note:** Trivial wrappers like `is_falsy()`, `is_truthy()`, `is_null()`, `is_set()`, `is_empty()`, `has_content()` are **deprecated** — use native PHP instead. Only domain-specific guards (file/dir/class/extension checks) are allowed because they encapsulate multi-step logic with safety guards.
+**Note:** Trivial wrappers like `isFalsy()`, `isTruthy()`, `isNull()`, `isSet()`, `isEmpty()`, `hasContent()` are **deprecated** — use native PHP instead. Only domain-specific guards (file/dir/class/extension checks) are allowed because they encapsulate multi-step logic with safety guards.
 
 ---
 
 ## 5. Initialization Helpers
 
-Use `RiseupInitHelpers` for idempotent resource setup:
+Use `InitHelpers` for idempotent resource setup:
 
 - **Directory creation**: `ensureDir($path, $secure)` — cached per-request to avoid redundant filesystem checks.
 - **SQLite connections**: `initSqliteConnection($path, $logger)` — checks PDO/driver availability, enables WAL mode and auto-vacuum.
@@ -109,7 +119,7 @@ InitHelpers::logStartupSummary($this->fileLogger);
 
 ## 6. Dependency Loading
 
-Use `DependencyLoader` (namespaced as `RiseupAsia\Helpers\DependencyLoader`) for structured file loading with error tracking. Foundation files (constants, boolean helpers, init helpers, dependency loader) load raw; all others go through the manifest.
+Use `DependencyLoader` for structured file loading with error tracking. Foundation files (boolean helpers, init helpers, dependency loader) load raw; all others go through the manifest.
 
 ```php
 use RiseupAsia\Helpers\DependencyLoader;
@@ -132,7 +142,7 @@ A broken or missing file is recorded with a full stack trace and reported instea
 - Every file in the manifest gets a human-readable label
 - Missing files are logged as errors with stack traces — loading continues for remaining files
 - Use `DependencyLoader::getFailures()` to programmatically inspect failures
-- Foundation files (constants, boolean helpers, init helpers, dependency loader itself) are the only files that load via raw `require_once`
+- Foundation files (boolean helpers, init helpers, dependency loader itself) are the only files that load via raw `require_once`
 
 ---
 
@@ -156,12 +166,14 @@ A global `register_shutdown_function` intercepts fatal errors, logs memory usage
 Before using external dependencies (PDO, pdo_sqlite, ZipArchive), explicitly check availability:
 
 ```php
-if (RiseupBooleanHelpers::is_class_missing('PDO')) {
+use RiseupAsia\Helpers\BooleanHelpers;
+
+if (BooleanHelpers::isClassMissing('PDO')) {
     $logger->error('PDO extension not installed');
     return null;
 }
 
-if (RiseupBooleanHelpers::is_extension_missing('pdo_sqlite')) {
+if (BooleanHelpers::isExtensionMissing('pdo_sqlite')) {
     $logger->error('PDO SQLite driver not loaded');
     return null;
 }
@@ -184,7 +196,7 @@ Fail gracefully with structured error messages, never with uncaught fatals.
 ## 10. Versioning
 
 Every modification to the plugin must bump the version number in both:
-- `constants.php` (`RISEUP_VERSION`)
+- `VersionType` enum (`VersionType::Current->value`)
 - `riseup-asia-uploader.php` (plugin header `Version:`)
 
 ---
@@ -216,5 +228,5 @@ Each directory has `.htaccess` and `index.php` security files.
 | `DependencyLoader` | `RiseupAsia\Helpers` | Structured file loading with error capture |
 | `InitHelpers` | `RiseupAsia\Helpers` | Idempotent dir/DB setup, component startup tracking |
 | `EnvelopeBuilder` | `RiseupAsia\Helpers` | REST API response envelope construction |
-| `Plugin` | `RiseupAsia\Core` | Main plugin shell (aliased as `RiseupAsia`) |
+| `Plugin` | `RiseupAsia\Core` | Main plugin shell |
 | `ActivationHandler` | `RiseupAsia\Activation` | Plugin activation hook handler |
