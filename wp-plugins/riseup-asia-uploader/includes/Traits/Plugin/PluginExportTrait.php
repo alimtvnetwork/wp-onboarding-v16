@@ -20,6 +20,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\StatusType;
+use RiseupAsia\Helpers\PathUtils;
 
 trait PluginExportTrait
 {
@@ -92,13 +93,13 @@ trait PluginExportTrait
      */
     private function exportPluginBySlug(string $slug) {
         $plugins_dir = WP_PLUGIN_DIR;
-        $plugin_dir  = \RiseupPathUtils::join($plugins_dir, $slug);
+        $plugin_dir  = PathUtils::join($plugins_dir, $slug);
 
-        if (!\RiseupPathUtils::dirExists($plugin_dir)) {
+        if (!PathUtils::dirExists($plugin_dir)) {
             return $this->errorResponse('Plugin not found: ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        if (!\RiseupPathUtils::isSafePath($plugin_dir, $plugins_dir)) {
+        if (!PathUtils::isSafePath($plugin_dir, $plugins_dir)) {
             return $this->errorResponse('Invalid plugin slug', HttpStatusType::BadRequest->value);
         }
 

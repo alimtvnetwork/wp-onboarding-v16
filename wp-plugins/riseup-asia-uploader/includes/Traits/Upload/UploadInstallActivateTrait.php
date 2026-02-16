@@ -18,6 +18,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait UploadInstallActivateTrait
 {
@@ -73,7 +74,7 @@ trait UploadInstallActivateTrait
     /** Build response for failed activation after upload. */
     private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
         $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $error_msg);
-        return \RiseupEnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
+        return EnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Upload->value)
             ->setSingleResult(array(
                 'plugin_slug' => $slug, 'is_update' => $is_update,

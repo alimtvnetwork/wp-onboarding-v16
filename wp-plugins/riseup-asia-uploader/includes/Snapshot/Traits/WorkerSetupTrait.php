@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
+use RiseupAsia\Helpers\PathUtils;
 
 trait WorkerSetupTrait {
 
@@ -34,7 +35,7 @@ trait WorkerSetupTrait {
         $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
         $snapshot_dir = $base_dir . '/' . $dir_name;
 
-        if (!RiseupPathUtils::ensureDir($snapshot_dir, true)) {
+        if (!PathUtils::ensureDir($snapshot_dir, true)) {
             return array('success' => false, 'error' => 'Failed to create snapshot directory');
         }
 
@@ -56,8 +57,8 @@ trait WorkerSetupTrait {
     }
 
     private function getSnapshotsBaseDir(): string {
-        $base = RiseupPathUtils::getSnapshotsDir();
-        RiseupPathUtils::ensureDir($base, true);
+        $base = PathUtils::getSnapshotsDir();
+        PathUtils::ensureDir($base, true);
         return $base;
     }
 

@@ -18,6 +18,7 @@ use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait StatusOpsTrait {
 
@@ -84,7 +85,7 @@ trait StatusOpsTrait {
         $result['files_invalidated'] = $this->invalidatePluginFiles();
         wp_cache_delete('plugins', 'plugins');
 
-        return \RiseupEnvelopeBuilder::success('OPcache reset complete')
+        return EnvelopeBuilder::success('OPcache reset complete')
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::OpcacheReset->value)
             ->setSingleResult($result)
             ->toResponse();

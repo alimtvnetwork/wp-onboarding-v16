@@ -14,12 +14,13 @@ if (!defined('ABSPATH')) {
 
 use ZipArchive;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathUtils;
 
 trait FileSystemDirTrait {
 
     private function getTempDir(): string {
-        $tempDir = \RiseupPathUtils::getTempDir();
-        \RiseupPathUtils::ensureDir($tempDir);
+        $tempDir = PathUtils::getTempDir();
+        PathUtils::ensureDir($tempDir);
         return $tempDir;
     }
 

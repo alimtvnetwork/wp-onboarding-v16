@@ -20,6 +20,7 @@ use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait PostHandlerTrait
 {
@@ -79,7 +80,7 @@ trait PostHandlerTrait
             $total = $result['total'];
             $perPage = (int) $limit;
 
-            return \RiseupEnvelopeBuilder::success()
+            return EnvelopeBuilder::success()
                 ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Logs->value)
                 ->setResults($result['logs'])
                 ->setPagination($total, $perPage, $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1)
@@ -107,7 +108,7 @@ trait PostHandlerTrait
             $this->db->init();
             $stats = $this->db->getStats();
 
-            return \RiseupEnvelopeBuilder::success()
+            return EnvelopeBuilder::success()
                 ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::LogsStats->value)
                 ->setSingleResult($stats)
                 ->toResponse();

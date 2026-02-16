@@ -17,6 +17,7 @@ use Throwable;
 use Exception;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\PathUtils;
 
 trait ManagerImportTrait {
 
@@ -34,11 +35,11 @@ trait ManagerImportTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Importing snapshot from ZIP', array(
-            'path' => $uploadedPath, 'size' => RiseupPathUtils::formatBytes(filesize($uploadedPath)),
+            'path' => $uploadedPath, 'size' => PathUtils::formatBytes(filesize($uploadedPath)),
         ));
 
-        $tempDir = RiseupPathUtils::join(RiseupPathUtils::getTempDir(), 'import_' . uniqid());
-        $isDirCreationFailed = !RiseupPathUtils::ensureDir($tempDir, false);
+        $tempDir = PathUtils::join(PathUtils::getTempDir(), 'import_' . uniqid());
+        $isDirCreationFailed = !PathUtils::ensureDir($tempDir, false);
         if ($isDirCreationFailed) {
             return array('success' => false, 'error' => 'Failed to create temp directory');
         }
@@ -50,7 +51,7 @@ trait ManagerImportTrait {
             $this->deleteDirectory($tempDir);
             return $result;
         } catch (Throwable $e) {
-            if (RiseupPathUtils::dirExists($tempDir)) {
+            if (PathUtils::dirExists($tempDir)) {
                 $this->deleteDirectory($tempDir);
             }
 
@@ -77,7 +78,7 @@ trait ManagerImportTrait {
     }
 
     private function loadAndValidateManifest(string $tempDir): array {
-        $manifestPath = RiseupPathUtils::join($tempDir, 'manifest.json');
+        $manifestPath = PathUtils::join($tempDir, 'manifest.json');
         if (BooleanHelpers::isFileMissing($manifestPath)) {
             throw new Exception('Invalid snapshot archive: manifest.json not found');
         }
@@ -97,7 +98,7 @@ trait ManagerImportTrait {
 
     private function validateSnapshotSqlite(array $manifest, string $tempDir): string {
         $sqliteFilename = $manifest['snapshot']['filename'];
-        $sqlitePath = RiseupPathUtils::join($tempDir, $sqliteFilename);
+        $sqlitePath = PathUtils::join($tempDir, $sqliteFilename);
 
         if (BooleanHelpers::isFileMissing($sqlitePath)) {
             throw new Exception('SQLite file not found in archive: ' . $sqliteFilename);
@@ -112,15 +113,15 @@ trait ManagerImportTrait {
     }
 
     private function moveAndRecordSnapshot(array $manifest, string $sqlitePath, string $tempDir): array {
-        $snapshotsDir = RiseupPathUtils::getSnapshotsDir();
-        $isDirCreationFailed = !RiseupPathUtils::ensureDir($snapshotsDir, true);
+        $snapshotsDir = PathUtils::getSnapshotsDir();
+        $isDirCreationFailed = !PathUtils::ensureDir($snapshotsDir, true);
         if ($isDirCreationFailed) {
             throw new Exception('Failed to ensure snapshots directory');
         }
 
         $sequence = $this->getNextImportSequence();
         $newFilename = sprintf('%03d_%s', $sequence, date('Y-m-d_His')) . '.sqlite';
-        $destPath = RiseupPathUtils::join($snapshotsDir, $newFilename);
+        $destPath = PathUtils::join($snapshotsDir, $newFilename);
 
         if (BooleanHelpers::isCopyFailed($sqlitePath, $destPath)) {
             throw new Exception('Failed to copy snapshot file to destination');
@@ -128,7 +129,7 @@ trait ManagerImportTrait {
 
         $snapshotId = $this->createImportedSnapshotRecord($manifest, $sequence, $newFilename, $destPath);
         if (!$snapshotId) {
-            RiseupPathUtils::deleteFile($destPath);
+            PathUtils::deleteFile($destPath);
             throw new Exception('Failed to create snapshot record');
         }
 

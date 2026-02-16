@@ -16,6 +16,7 @@ use WP_REST_Response;
 use PDO;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait ErrorSessionHandlerTrait {
 
@@ -29,7 +30,7 @@ trait ErrorSessionHandlerTrait {
                 return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::ServerError->value);
             }
             if (!$this->isTableExists($pdo, 'error_sessions')) {
-                return \RiseupEnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
+                return EnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
                     ->autoDetectRequestedAt()->setResults(array())->toResponse();
             }
 
@@ -38,7 +39,7 @@ trait ErrorSessionHandlerTrait {
             $rows    = $this->fetchErrorSessions($pdo, $query);
             $entries = $this->enrichErrorEntries($rows);
 
-            return \RiseupEnvelopeBuilder::success()
+            return EnvelopeBuilder::success()
                 ->autoDetectRequestedAt()->setResults($entries)
                 ->setPagination($total, $query['limit'], $query['limit'] > 0 ? (int) floor($query['offset'] / $query['limit']) + 1 : 1)
                 ->toResponse();

@@ -15,6 +15,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Helpers\EnvelopeBuilder;
 
 trait ErrorLogHandlerTrait {
 
@@ -35,7 +36,7 @@ trait ErrorLogHandlerTrait {
                 $result['stacktrace_log'] = $this->readLogTail($this->fileLogger->getStacktraceFile(), $settings['max_lines']);
             }
 
-            return \RiseupEnvelopeBuilder::success()->autoDetectRequestedAt()->setSingleResult($result)->toResponse();
+            return EnvelopeBuilder::success()->autoDetectRequestedAt()->setSingleResult($result)->toResponse();
         }, 'error_logs');
     }
 
