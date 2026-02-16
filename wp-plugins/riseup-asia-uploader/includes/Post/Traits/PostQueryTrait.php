@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use RiseupAsia\Enums\PaginationConfigType;
+use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait PostQueryTrait {
@@ -59,7 +60,7 @@ trait PostQueryTrait {
                 'limit' => $args['posts_per_page'], 'offset' => $args['offset'],
                 'posts' => $posts,
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List posts exception');
         }
     }

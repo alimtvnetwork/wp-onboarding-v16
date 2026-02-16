@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RetentionType;
 use RiseupAsia\Snapshot\Traits\CleanerRetentionTrait;
@@ -92,7 +93,11 @@ class SnapshotCleaner {
         );
     }
 
-    private function executeRetentionPhase(array $settings, bool $dryRun, array $results): array {
+    private function executeRetentionPhase(
+        array $settings,
+        bool $dryRun,
+        array $results,
+    ): array {
         try {
             if ($settings['retention_type'] === RetentionType::None->value) {
                 $this->log(LogLevelType::Debug->value, 'Retention policy is "none" - skipping policy cleanup');
@@ -101,10 +106,11 @@ class SnapshotCleaner {
                 $results['retention'] = $retention;
                 $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
             }
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $results['errors'][] = 'Retention cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Retention cleanup failed', array('error' => $e->getMessage()));
         }
+
         return $results;
     }
 
@@ -113,10 +119,11 @@ class SnapshotCleaner {
             $orphans = $this->cleanupOrphanFiles($dryRun);
             $results['orphans'] = $orphans;
             $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $results['errors'][] = 'Orphan cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Orphan cleanup failed', array('error' => $e->getMessage()));
         }
+
         return $results;
     }
 
@@ -124,10 +131,11 @@ class SnapshotCleaner {
         try {
             $stuck = $this->cleanupStuckSnapshots($dryRun);
             $results['stuck'] = $stuck;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();
             $this->log(LogLevelType::Error->value, 'Stuck snapshot cleanup failed', array('error' => $e->getMessage()));
         }
+
         return $results;
     }
 }

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PaginationConfigType;
 use RiseupAsia\Enums\StatusType;
+use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait CategoryTrait {
@@ -51,7 +52,7 @@ trait CategoryTrait {
 
             $this->fileLogger->info('Category created', array('term_id' => $result['term_id']));
             return array('success' => true, 'category' => $this->formatCategory(get_term($result['term_id'], 'category')));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'Category creation exception');
         }
     }
@@ -86,7 +87,7 @@ trait CategoryTrait {
                 'limit' => $args['number'], 'offset' => $args['offset'],
                 'categories' => $categories,
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ErrorResponse::logAndReturn($this->fileLogger, $e, 'List categories exception');
         }
     }

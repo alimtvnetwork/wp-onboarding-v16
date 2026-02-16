@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Logging\FileLogger;
 
 trait InitStartupTrait {
@@ -23,7 +24,7 @@ trait InitStartupTrait {
 
         try {
             $result = $initFn();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $error = $e->getMessage();
         }
 

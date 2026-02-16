@@ -10,6 +10,7 @@ use RiseupAsia\Snapshot\Traits\SchedulerTimingTrait;
 use RiseupAsia\Snapshot\Traits\SchedulerTriggerTrait;
 use RiseupAsia\Snapshot\Traits\SchedulerConfigTrait;
 use RiseupAsia\Database\Database;
+use Throwable;
 use RiseupAsia\Logging\FileLogger;
 
 class SnapshotScheduler {
@@ -54,7 +55,7 @@ class SnapshotScheduler {
         try {
             $worker = SnapshotFactory::worker($this->logger, $this->db);
             $worker->processWorkerBatch($args);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->error('[SCHEDULER] Worker batch exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
         }
     }

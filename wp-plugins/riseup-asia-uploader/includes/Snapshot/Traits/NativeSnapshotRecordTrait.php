@@ -26,14 +26,16 @@ trait NativeSnapshotRecordTrait {
 
     private function createSqliteDatabase(string $filepath): ?PDO {
         $snapshotsDir = $this->getSnapshotsDir();
-        if (!PathHelper::isSafePath($filepath, $snapshotsDir)) {
+        if (PathHelper::isPathMissing($filepath, $snapshotsDir)) {
             $this->log(LogLevelType::Error->value, 'Unsafe path detected for SQLite database', array('filepath' => $filepath, 'base' => $snapshotsDir));
+
             return null;
         }
 
         $parentDir = dirname($filepath);
         if (!PathHelper::ensureDir($parentDir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to ensure parent directory for SQLite', array('parent' => $parentDir));
+
             return null;
         }
 
@@ -46,9 +48,11 @@ trait NativeSnapshotRecordTrait {
             $pdo->exec('CREATE TABLE IF NOT EXISTS _snapshot_meta (key TEXT PRIMARY KEY, value TEXT)');
 
             $this->insertSnapshotMeta($pdo);
+
             return $pdo;
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to create SQLite database', array('filepath' => $filepath, 'error' => $e->getMessage()));
+
             return null;
         }
     }
@@ -65,16 +69,28 @@ trait NativeSnapshotRecordTrait {
         }
     }
 
-    private function createSnapshotRecord(int $sequence, string $filename, string $filepath, string $scope, array $tables, string $trigger): int|false {
+    private function createSnapshotRecord(
+        int $sequence,
+        string $filename,
+        string $filepath,
+        string $scope,
+        array $tables,
+        string $trigger,
+    ): int|false {
         $result = $this->db->insert(TableType::Snapshots->value, array(
             'sequence' => $sequence, 'filename' => $filename . '.sqlite', 'filepath' => $filepath,
             'provider' => $this->provider_id, 'scope' => $scope, 'tables_json' => json_encode($tables),
             'trigger_source' => $trigger, 'status' => SnapshotStatusType::Pending->value, 'created_at' => date('c'),
         ));
+
         return $result ? $this->db->lastInsertId() : false;
     }
 
-    private function updateSnapshotStatus(int $snapshotId, string $status, ?string $error = null): void {
+    private function updateSnapshotStatus(
+        int $snapshotId,
+        string $status,
+        ?string $error = null,
+    ): void {
         $data = array('status' => $status, 'updated_at' => date('c'));
         if ($error) {
             $data['error_message'] = $error;
