@@ -45,7 +45,6 @@ require_once __DIR__ . '/includes/ErrorHandling/FatalErrorHandler.php';
 // Enums are now autoloaded via PSR-4 (includes/Autoloader.php).
 // Only non-autoloaded legacy files need explicit requires.
 require_once __DIR__ . '/includes/Helpers/ErrorChecker.php';
-require_once __DIR__ . '/includes/constants.php';
 
 require_once __DIR__ . '/includes/Helpers/BooleanHelpers.php';
 require_once __DIR__ . '/includes/Helpers/InitHelpers.php';
