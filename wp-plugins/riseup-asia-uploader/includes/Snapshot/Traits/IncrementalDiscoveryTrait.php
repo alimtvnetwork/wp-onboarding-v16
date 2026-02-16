@@ -53,7 +53,7 @@ trait IncrementalDiscoveryTrait {
 
     private function findMasterFromFilesystem(): ?string {
         $baseDir = $this->getSnapshotsBaseDir();
-        if (RiseupBooleanHelpers::isDirMissing($baseDir)) {
+        if (BooleanHelpers::isDirMissing($baseDir)) {
             return null;
         }
 

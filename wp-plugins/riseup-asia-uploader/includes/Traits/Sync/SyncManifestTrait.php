@@ -17,6 +17,7 @@ use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SyncManifestTrait
 {
@@ -39,12 +40,12 @@ trait SyncManifestTrait
 
     /** Generate a sync manifest for a plugin. */
     private function generateSyncManifest(string $slug): WP_REST_Response {
-        if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+        if (BooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (\RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
+        if (BooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 

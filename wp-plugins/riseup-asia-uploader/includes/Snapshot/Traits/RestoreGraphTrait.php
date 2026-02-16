@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 use PDO;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreGraphTrait {
 
@@ -104,7 +105,7 @@ trait RestoreGraphTrait {
         }
 
         foreach ($allTables as $t) {
-            if (RiseupBooleanHelpers::isNotInList($t, $sorted)) {
+            if (BooleanHelpers::isNotInList($t, $sorted)) {
                 $sorted[] = $t;
             }
         }

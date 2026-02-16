@@ -17,6 +17,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreModeType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreIncrementalTrait {
 
@@ -59,7 +60,7 @@ trait RestoreIncrementalTrait {
 
     private function applySingleIncremental(array $inc, string $snapshotDir, array $restoreOrder): array {
         $inc_dir = $snapshotDir . '/' . rtrim($inc['relative_path'], '/');
-        if (RiseupBooleanHelpers::isDirMissing($inc_dir)) {
+        if (BooleanHelpers::isDirMissing($inc_dir)) {
             $this->log(LogLevelType::Warn->value, 'Incremental directory missing', array('folder' => $inc['folder_name']));
             return array('rows' => 0, 'errors' => array('Incremental directory missing: ' . $inc['folder_name']));
         }
@@ -72,7 +73,7 @@ trait RestoreIncrementalTrait {
 
         foreach ($sqlite_files as $sqlite_file) {
             $table = basename($sqlite_file, '.sqlite');
-            if (RiseupBooleanHelpers::isNotInList($table, $restoreOrder)) {
+            if (BooleanHelpers::isNotInList($table, $restoreOrder)) {
                 continue;
             }
 

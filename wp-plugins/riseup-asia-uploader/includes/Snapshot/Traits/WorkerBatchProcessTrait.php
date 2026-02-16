@@ -16,6 +16,7 @@ use PDO;
 use Throwable;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotJobStatusType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait WorkerBatchProcessTrait {
 
@@ -81,7 +82,7 @@ trait WorkerBatchProcessTrait {
 
     private function openRootDbForBatch(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
-        if (RiseupBooleanHelpers::isFileMissing($root_path)) {
+        if (BooleanHelpers::isFileMissing($root_path)) {
             return null;
         }
 

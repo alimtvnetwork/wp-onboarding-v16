@@ -51,7 +51,7 @@ trait CleanerDeletionTrait {
 
     private function cascadeDeleteIncrementalDir(string $filepath, int $parentId): int {
         $incremental_dir = $filepath . '/incremental';
-        if (RiseupBooleanHelpers::isDirMissing($incremental_dir)) {
+        if (BooleanHelpers::isDirMissing($incremental_dir)) {
             return 0;
         }
 

@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use Throwable;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait FileSystemPluginTrait {
 
@@ -37,7 +38,7 @@ trait FileSystemPluginTrait {
 
     private function ensurePluginFunctionsLoaded(): void {
         try {
-            if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+            if (BooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
         } catch (Throwable $e) {
@@ -108,7 +109,7 @@ trait FileSystemPluginTrait {
     private function findDirPlugin(string $slug): ?string {
         $pluginDir = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (RiseupBooleanHelpers::isDirMissing($pluginDir)) {
+        if (BooleanHelpers::isDirMissing($pluginDir)) {
             return null;
         }
 

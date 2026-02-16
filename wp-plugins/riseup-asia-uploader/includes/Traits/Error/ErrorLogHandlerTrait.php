@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_REST_Response;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait ErrorLogHandlerTrait {
 
@@ -69,7 +70,7 @@ trait ErrorLogHandlerTrait {
             'content' => '', 'lines' => 0, 'total_size' => 0, 'truncated' => false,
         );
 
-        $isFileUnreadable = \RiseupBooleanHelpers::isFileUnreadable($filePath);
+        $isFileUnreadable = BooleanHelpers::isFileUnreadable($filePath);
         if ($isFileUnreadable) {
             return $result;
         }

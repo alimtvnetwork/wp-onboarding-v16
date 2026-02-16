@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use ZipArchive;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait FileSystemDirTrait {
 
@@ -36,7 +37,7 @@ trait FileSystemDirTrait {
     }
 
     private function deleteDirectory(string $dir): bool {
-        if (\RiseupBooleanHelpers::isDirMissing($dir)) {
+        if (BooleanHelpers::isDirMissing($dir)) {
             return false;
         }
 
@@ -54,11 +55,11 @@ trait FileSystemDirTrait {
     }
 
     private function copyDirectory(string $src, string $dst): bool {
-        if (\RiseupBooleanHelpers::isDirMissing($src)) {
+        if (BooleanHelpers::isDirMissing($src)) {
             return false;
         }
 
-        if (\RiseupBooleanHelpers::isDirMissing($dst)) {
+        if (BooleanHelpers::isDirMissing($dst)) {
             wp_mkdir_p($dst);
         }
 

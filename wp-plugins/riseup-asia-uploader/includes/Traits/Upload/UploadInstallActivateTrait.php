@@ -17,6 +17,7 @@ use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UploadInstallActivateTrait
 {
@@ -99,7 +100,7 @@ trait UploadInstallActivateTrait
         $full_path = WP_PLUGIN_DIR . '/' . $plugin_file;
         clearstatcache(true, $full_path);
 
-        if (\RiseupBooleanHelpers::isFileMissing($full_path)) {
+        if (BooleanHelpers::isFileMissing($full_path)) {
             return '';
         }
 

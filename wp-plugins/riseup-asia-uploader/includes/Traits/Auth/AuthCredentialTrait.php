@@ -19,6 +19,7 @@ use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AuthCredentialTrait
 {
@@ -38,7 +39,7 @@ trait AuthCredentialTrait
     }
 
     private function resolveFromGetallheaders(): ?string {
-        if (\RiseupBooleanHelpers::isFuncMissing('getallheaders')) {
+        if (BooleanHelpers::isFuncMissing('getallheaders')) {
             return null;
         }
 

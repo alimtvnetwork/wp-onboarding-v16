@@ -21,6 +21,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\PluginSelectionType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait OrchestratorPluginTrait {
 
@@ -53,7 +54,7 @@ trait OrchestratorPluginTrait {
     }
 
     private function collectPluginsToSnapshot(string $selection): array {
-        if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+        if (BooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
@@ -84,7 +85,7 @@ trait OrchestratorPluginTrait {
         $slug = $info['slug'];
         $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
 
-        if (RiseupBooleanHelpers::isDirMissing($plugin_path)) {
+        if (BooleanHelpers::isDirMissing($plugin_path)) {
             $this->log(LogLevelType::Info->value, 'Skipping single-file plugin: ' . $slug);
             return null;
         }
@@ -150,7 +151,7 @@ trait OrchestratorPluginTrait {
 
     private function openRootDbForPlugins(string $snapshotDir): ?PDO {
         $root_path = $snapshotDir . '/a-root.db';
-        if (RiseupBooleanHelpers::isFileMissing($root_path)) {
+        if (BooleanHelpers::isFileMissing($root_path)) {
             return null;
         }
 
