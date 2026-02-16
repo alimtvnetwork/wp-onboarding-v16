@@ -47,23 +47,30 @@ trait ManagerRestoreTrait {
 
     private function guardRestorePreConditions(int $snapshotId, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
+
             return array('success' => false, 'error' => 'Restore requires explicit confirmation (confirm=true)', 'code' => SnapshotErrorType::RestoreNoConfirm->value);
         }
 
         $provider = $this->getProvider();
         if (!$provider) {
+
             return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 
         $snapshot = $provider->getSnapshot($snapshotId);
         if (!$snapshot) {
+
             return array('success' => false, 'error' => 'Snapshot not found', 'code' => SnapshotErrorType::NotFound->value);
         }
 
         return $this->validateIncrementalParent($snapshot, $snapshotId);
     }
 
-    private function finalizeRestoreResult(array $result, int $snapshotId, int|null $backupId): array {
+    private function finalizeRestoreResult(
+        array $result,
+        int $snapshotId,
+        int|null $backupId,
+    ): array {
         if ($result['success']) {
             $result['backup_id'] = $backupId;
             $this->log(LogLevelType::Info->value, 'Snapshot restored successfully', array(
@@ -81,6 +88,7 @@ trait ManagerRestoreTrait {
         $filepath = $snapshot['filepath'];
 
         if (!PathHelper::fileExists($filepath)) {
+
             return array('success' => false, 'error' => 'Snapshot file not found: ' . basename($filepath));
         }
 
@@ -90,6 +98,7 @@ trait ManagerRestoreTrait {
 
             $tables = $this->getRestoreTables($snapshot, $options);
             if (empty($tables)) {
+
                 return array('success' => false, 'error' => 'No tables to restore');
             }
 
@@ -99,11 +108,16 @@ trait ManagerRestoreTrait {
             return array('success' => true, 'tables' => $counts['tables'], 'rows' => $counts['rows'], 'duration' => microtime(true) - $startTime);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Restore exception', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));
+
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
 
-    private function restoreAllTables(PDO $sqlite, array $tables, array $options): array {
+    private function restoreAllTables(
+        PDO $sqlite,
+        array $tables,
+        array $options,
+    ): array {
         $totalRows = 0;
         $restoredTables = 0;
 
@@ -118,6 +132,7 @@ trait ManagerRestoreTrait {
 
             $this->log(LogLevelType::Error->value, 'Failed to restore table: ' . $table, array('error' => $result['error']));
             if (!empty($options['strict'])) {
+
                 throw new Exception('Table restore failed: ' . $table);
             }
         }

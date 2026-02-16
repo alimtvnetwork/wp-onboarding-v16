@@ -21,7 +21,11 @@ use RiseupAsia\Enums\TableType;
 
 trait WorkerJobLifecycleTrait {
 
-    private function createJob(string $snapshotDir, array $tables, array $config): int|false {
+    private function createJob(
+        string $snapshotDir,
+        array $tables,
+        array $config,
+    ): int|false {
         $pdo = $this->db->getPdo();
         if (!$pdo) return false;
 
@@ -55,6 +59,7 @@ trait WorkerJobLifecycleTrait {
             return (int) $pdo->lastInsertId();
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to create snapshot job', array('error' => $e->getMessage()));
+
             return false;
         }
     }
@@ -63,10 +68,16 @@ trait WorkerJobLifecycleTrait {
         $stmt = $pdo->prepare("SELECT * FROM " . TableType::SnapshotJobs->value . " WHERE id = ?");
         $stmt->execute(array($jobId));
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
         return $row ?: null;
     }
 
-    private function updateJobStatus(PDO $pdo, int $jobId, string $status, ?string $error = null): void {
+    private function updateJobStatus(
+        PDO $pdo,
+        int $jobId,
+        string $status,
+        ?string $error = null,
+    ): void {
         $now = gmdate('c');
         $completed = ($status === SnapshotJobStatusType::Complete->value || $status === SnapshotJobStatusType::Failed->value) ? $now : null;
 
@@ -83,7 +94,14 @@ trait WorkerJobLifecycleTrait {
         }
     }
 
-    private function updateJobBatchProgress(PDO $pdo, int $jobId, int $nextBatch, int $batchExported, int $batchRows, array $batchErrors): void {
+    private function updateJobBatchProgress(
+        PDO $pdo,
+        int $jobId,
+        int $nextBatch,
+        int $batchExported,
+        int $batchRows,
+        array $batchErrors,
+    ): void {
         $now = gmdate('c');
         $job = $this->getJob($pdo, $jobId);
         $all_errors = array_merge(json_decode($job['errors_json'] ?? '[]', true), $batchErrors);
@@ -96,7 +114,11 @@ trait WorkerJobLifecycleTrait {
         $stmt->execute(array($nextBatch, $batchExported, $batchRows, json_encode($all_errors), $now, $jobId));
     }
 
-    private function finalizeJob(PDO $pdo, int $jobId, string $snapshotDir): void {
+    private function finalizeJob(
+        PDO $pdo,
+        int $jobId,
+        string $snapshotDir,
+    ): void {
         $job = $this->getJob($pdo, $jobId);
 
         $root_path = $snapshotDir . '/a-root.db';

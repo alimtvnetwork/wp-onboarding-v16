@@ -23,10 +23,15 @@ trait NativeTableExportTrait {
 
     use NativeTableExportConvertTrait;
 
-    private function exportTable(PDO $sqlite, string $table, int $snapshotId): array {
+    private function exportTable(
+        PDO $sqlite,
+        string $table,
+        int $snapshotId,
+    ): array {
         try {
             $create_sql = $this->getCreateTableSql($table);
             if (!$create_sql) {
+
                 throw new Exception('Failed to get table structure');
             }
 
@@ -35,6 +40,7 @@ trait NativeTableExportTrait {
 
             $count = (int) $this->wpdb->get_var("SELECT COUNT(*) FROM `{$table}`");
             if ($count === 0) {
+
                 return array('success' => true, 'rows' => 0, 'bytes' => 0);
             }
 
@@ -43,11 +49,16 @@ trait NativeTableExportTrait {
             if ($sqlite->inTransaction()) {
                 $sqlite->rollBack();
             }
+
             return array('success' => false, 'error' => $e->getMessage(), 'rows' => 0, 'bytes' => 0);
         }
     }
 
-    private function exportTableRows(PDO $sqlite, string $table, int $count): array {
+    private function exportTableRows(
+        PDO $sqlite,
+        string $table,
+        int $count,
+    ): array {
         $insert = $this->prepareInsertStatement($sqlite, $table);
 
         $sqlite->beginTransaction();
@@ -68,7 +79,11 @@ trait NativeTableExportTrait {
         return array('stmt' => $stmt);
     }
 
-    private function executeBatchExport(PDOStatement $stmt, string $table, int $count): array {
+    private function executeBatchExport(
+        PDOStatement $stmt,
+        string $table,
+        int $count,
+    ): array {
         $batch_size = SnapshotConfigType::BatchSize->value;
         $offset = 0;
         $exported = 0;
@@ -93,7 +108,12 @@ trait NativeTableExportTrait {
         return array('exported' => $exported, 'bytes' => $bytes);
     }
 
-    private function logExportProgress(string $table, int $offset, int $count, int $batchSize): void {
+    private function logExportProgress(
+        string $table,
+        int $offset,
+        int $count,
+        int $batchSize,
+    ): void {
         $progress = ($offset / $count) * 100;
         $prev = (($offset - $batch_size) / $count) * 100;
 
@@ -108,6 +128,7 @@ trait NativeTableExportTrait {
 
     private function getCreateTableSql(string $table): ?string {
         $result = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
+
         return $result ? $result[1] : null;
     }
 }

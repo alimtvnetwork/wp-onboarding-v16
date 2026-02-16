@@ -30,6 +30,7 @@ trait OrchestratorPluginTrait {
         $plugins_dir = $snapshotDir . '/plugins';
         if (!PathHelper::ensureDir($plugins_dir, true)) {
             $this->log(LogLevelType::Error->value, 'Failed to create plugins directory');
+
             return array('count' => 0, 'total_size' => 0, 'plugins' => array());
         }
 
@@ -51,6 +52,7 @@ trait OrchestratorPluginTrait {
         }
 
         $rootPdo = null;
+
         return array('count' => $count, 'total_size' => $total_size, 'plugins' => $plugin_list);
     }
 
@@ -60,7 +62,7 @@ trait OrchestratorPluginTrait {
         }
 
         $all_plugins = get_plugins();
-        $active_plugins = get_option(\RiseupAsia\Enums\OptionNameType::ActivePlugins->value, array());
+        $active_plugins = get_option(OptionNameType::ActivePlugins->value, array());
         $plugins_to_snapshot = array();
 
         foreach ($all_plugins as $plugin_file => $plugin_data) {
@@ -68,9 +70,9 @@ trait OrchestratorPluginTrait {
             if ($slug === '.') {
                 $slug = basename($plugin_file, '.php');
             }
-            if ($slug === \RiseupAsia\Enums\PluginConfigType::Slug->value) continue;
+            if ($slug === PluginConfigType::Slug->value) continue;
 
-            $isEligible = ($selection === \RiseupAsia\Enums\PluginSelectionType::All->value || in_array($plugin_file, $active_plugins));
+            $isEligible = ($selection === PluginSelectionType::All->value || in_array($plugin_file, $active_plugins));
             if (!$isEligible) continue;
 
             $plugins_to_snapshot[$plugin_file] = array(
@@ -79,15 +81,21 @@ trait OrchestratorPluginTrait {
         }
 
         $this->log(LogLevelType::Info->value, 'Snapshotting plugins', array('total' => count($all_plugins), 'selected' => count($plugins_to_snapshot), 'selection' => $selection));
+
         return $plugins_to_snapshot;
     }
 
-    private function archiveSinglePlugin(array $info, string $pluginsDir, ?PDO $rootPdo): ?array {
+    private function archiveSinglePlugin(
+        array $info,
+        string $pluginsDir,
+        ?PDO $rootPdo,
+    ): ?array {
         $slug = $info['slug'];
         $plugin_path = WP_PLUGIN_DIR . '/' . $slug;
 
         if (PathHelper::isDirMissing($plugin_path)) {
             $this->log(LogLevelType::Info->value, 'Skipping single-file plugin: ' . $slug);
+
             return null;
         }
 
@@ -97,6 +105,7 @@ trait OrchestratorPluginTrait {
 
         if (!$zip_result['success']) {
             $this->log(LogLevelType::Warn->value, 'Failed to archive plugin: ' . $slug, array('error' => $zip_result['error']));
+
             return array('success' => false);
         }
 
@@ -110,17 +119,23 @@ trait OrchestratorPluginTrait {
         }
 
         $this->log(LogLevelType::Info->value, sprintf('Plugin archived: %s (%s)', $info['name'], $this->formatBytes($entry['size'])));
+
         return array('success' => true, 'size' => $entry['size'], 'entry' => $entry);
     }
 
-    private function createPluginZip(string $sourceDir, string $zipPath, string $slug): array {
+    private function createPluginZip(
+        string $sourceDir,
+        string $zipPath,
+        string $slug,
+    ): array {
         try {
             $zip = new ZipArchive();
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+
                 return array('success' => false, 'error' => 'Failed to create ZIP');
             }
 
-            $sourceDir = rtrim($sourceDir, '/\\\\');
+            $sourceDir = rtrim($sourceDir, '/\\');
             $iterator = new RecursiveIteratorIterator(
                 new RecursiveDirectoryIterator($sourceDir, RecursiveDirectoryIterator::SKIP_DOTS),
                 RecursiveIteratorIterator::SELF_FIRST
@@ -141,11 +156,13 @@ trait OrchestratorPluginTrait {
             $size = filesize($zipPath);
             if ($size === 0) {
                 @unlink($zipPath);
+
                 return array('success' => false, 'error' => 'ZIP file is empty');
             }
 
             return array('success' => true);
         } catch (Throwable $e) {
+
             return array('success' => false, 'error' => $e->getMessage());
         }
     }
@@ -159,9 +176,11 @@ trait OrchestratorPluginTrait {
         try {
             $pdo = new PDO('sqlite:' . $root_path);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
             return $pdo;
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Could not open a-root.db for plugin registration', array('error' => $e->getMessage()));
+
             return null;
         }
     }

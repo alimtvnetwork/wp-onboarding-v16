@@ -21,6 +21,7 @@ trait CleanerRetentionTrait {
     private function cleanByRetention(array $settings, bool $dryRun = false): array {
         $resolved = $this->resolveRetentionSnapshots($settings);
         if (empty($resolved['snapshots'])) {
+
             return array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
         }
 
@@ -29,6 +30,7 @@ trait CleanerRetentionTrait {
 
     private function resolveRetentionSnapshots(array $settings): array {
         if ($settings['retention_type'] === RetentionType::Days->value && !empty($settings['retention_days'])) {
+
             return array(
                 'snapshots' => $this->getSnapshotsOlderThan((int) $settings['retention_days']),
                 'reason'    => "older than {$settings['retention_days']} days",
@@ -36,6 +38,7 @@ trait CleanerRetentionTrait {
         }
 
         if ($settings['retention_type'] === RetentionType::Count->value && !empty($settings['retention_count'])) {
+
             return array(
                 'snapshots' => $this->getSnapshotsBeyondCount((int) $settings['retention_count']),
                 'reason'    => "exceeds max count of {$settings['retention_count']}",
@@ -45,7 +48,11 @@ trait CleanerRetentionTrait {
         return array('snapshots' => array(), 'reason' => '');
     }
 
-    private function processRetentionDeletions(array $snapshots, string $reason, bool $dryRun): array {
+    private function processRetentionDeletions(
+        array $snapshots,
+        string $reason,
+        bool $dryRun,
+    ): array {
         $result = array('deleted' => 0, 'skipped_master' => 0, 'bytes_freed' => 0, 'details' => array());
 
         foreach ($snapshots as $snapshot) {
@@ -64,10 +71,15 @@ trait CleanerRetentionTrait {
         return $result;
     }
 
-    private function applyRetentionDelete(array $snapshot, bool $dryRun, array &$result): void {
+    private function applyRetentionDelete(
+        array $snapshot,
+        bool $dryRun,
+        array &$result,
+    ): void {
         if ($dryRun) {
             $result['deleted']++;
             $result['bytes_freed'] += $snapshot['size'] ?? 0;
+
             return;
         }
 
@@ -82,6 +94,7 @@ trait CleanerRetentionTrait {
         if (isset($snap['scope']) && $snap['scope'] === 'full') return true;
         if (isset($snap['type']) && $snap['type'] === 'full') return true;
         if (isset($snap['filename']) && strpos($snap['filename'], '_full_') !== false) return true;
+
         return false;
     }
 

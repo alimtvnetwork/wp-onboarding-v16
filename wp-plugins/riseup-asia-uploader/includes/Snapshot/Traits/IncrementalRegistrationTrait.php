@@ -26,7 +26,15 @@ use RiseupAsia\Helpers\PathHelper;
 
 trait IncrementalRegistrationTrait {
 
-    private function registerIncrementalSnapshot(string $title, string $masterDir, string $folderName, int $sequence, int $tablesChanged, int $totalNewRows, string $incrementalDir): int|false {
+    private function registerIncrementalSnapshot(
+        string $title,
+        string $masterDir,
+        string $folderName,
+        int $sequence,
+        int $tablesChanged,
+        int $totalNewRows,
+        string $incrementalDir,
+    ): int|false {
         $pdo = $this->db->getPdo();
         if (!$pdo) {
             return false;
@@ -40,16 +48,25 @@ trait IncrementalRegistrationTrait {
             return $this->insertIncrementalRecord($pdo, $snap_sequence, $folderName, $incrementalDir, $tables_json, $totalNewRows, $dir_size);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Failed to register incremental snapshot', array('error' => $e->getMessage()));
+
             return false;
         }
     }
 
     private function getNextTrackingSequence(PDO $pdo): int {
         $row = $pdo->query("SELECT MAX(sequence) as max_seq FROM " . TableType::Snapshots->value)->fetch(PDO::FETCH_ASSOC);
+
         return ($row && $row['max_seq']) ? (int)$row['max_seq'] + 1 : 1;
     }
 
-    private function buildIncrementalMetaJson(string $masterDir, string $folderName, int $sequence, int $tablesChanged, int $totalNewRows): string {
+    private function buildIncrementalMetaJson(
+        string $masterDir,
+        string $folderName,
+        int $sequence,
+        int $tablesChanged,
+        int $totalNewRows,
+    ): string {
+
         return json_encode(array(
             'type' => 'incremental', 'master' => basename($masterDir), 'sequence' => $sequence,
             'folder' => $folderName, 'tables_changed' => $tablesChanged, 'total_new_rows' => $totalNewRows,
@@ -68,10 +85,19 @@ trait IncrementalRegistrationTrait {
                 $size += $file->getSize();
             }
         }
+
         return $size;
     }
 
-    private function insertIncrementalRecord(PDO $pdo, int $sequence, string $filename, string $filepath, string $tablesJson, int $totalRows, int $dirSize): int {
+    private function insertIncrementalRecord(
+        PDO $pdo,
+        int $sequence,
+        string $filename,
+        string $filepath,
+        string $tablesJson,
+        int $totalRows,
+        int $dirSize,
+    ): int {
         $now = gmdate('c');
         $stmt = $pdo->prepare("INSERT INTO " . TableType::Snapshots->value . "
             (sequence, filename, filepath, provider, scope, tables_json, total_rows,
@@ -111,6 +137,7 @@ trait IncrementalRegistrationTrait {
 
         if (!$parent) {
             $this->log(LogLevelType::Debug->value, 'No parent snapshot found for ZIP invalidation', array('master_dir' => basename($masterDir)));
+
             return null;
         }
 

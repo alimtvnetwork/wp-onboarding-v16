@@ -30,6 +30,7 @@ trait WorkerTableExportTrait {
 
             if ($count === 0) {
                 $sqlite = null;
+
                 return $this->buildExportResult($filename, $filepath, 0);
             }
 
@@ -38,6 +39,7 @@ trait WorkerTableExportTrait {
 
             return $this->buildExportResult($filename, $filepath, $exported);
         } catch (Throwable $e) {
+
             return array(
                 'success' => false, 'error' => $e->getMessage(),
                 'rows' => 0, 'filename' => $filename, 'file_size' => 0, 'checksum' => '',
@@ -53,6 +55,7 @@ trait WorkerTableExportTrait {
 
         $create_sql = $this->getCreateTableSql($table);
         if (!$create_sql) {
+
             throw new Exception('Failed to get table structure for ' . $table);
         }
 
@@ -61,7 +64,11 @@ trait WorkerTableExportTrait {
         return $sqlite;
     }
 
-    private function batchExportRows(PDO $sqlite, string $table, int $count): int {
+    private function batchExportRows(
+        PDO $sqlite,
+        string $table,
+        int $count,
+    ): int {
         $columns = $this->wpdb->get_results("DESCRIBE `{$table}`", ARRAY_A);
         $column_names = array_column($columns, 'Field');
         $stmt = $this->prepareExportInsert($sqlite, $table, $column_names);
@@ -73,13 +80,22 @@ trait WorkerTableExportTrait {
         return $exported;
     }
 
-    private function prepareExportInsert(PDO $sqlite, string $table, array $columnNames): PDOStatement {
+    private function prepareExportInsert(
+        PDO $sqlite,
+        string $table,
+        array $columnNames,
+    ): PDOStatement {
         $placeholders = implode(', ', array_fill(0, count($columnNames), '?'));
         $columnList = implode(', ', array_map(function($c) { return "`{$c}`"; }, $columnNames));
+
         return $sqlite->prepare("INSERT INTO `{$table}` ({$columnList}) VALUES ({$placeholders})");
     }
 
-    private function exportRowsInBatches(PDOStatement $stmt, string $table, int $count): int {
+    private function exportRowsInBatches(
+        PDOStatement $stmt,
+        string $table,
+        int $count,
+    ): int {
         $offset = 0;
         $exported = 0;
 
@@ -98,7 +114,12 @@ trait WorkerTableExportTrait {
         return $exported;
     }
 
-    private function buildExportResult(string $filename, string $filepath, int $rows): array {
+    private function buildExportResult(
+        string $filename,
+        string $filepath,
+        int $rows,
+    ): array {
+
         return array(
             'success'   => true,
             'rows'      => $rows,
@@ -110,6 +131,7 @@ trait WorkerTableExportTrait {
 
     private function getCreateTableSql(string $table): ?string {
         $result = $this->wpdb->get_row("SHOW CREATE TABLE `{$table}`", ARRAY_N);
+
         return $result ? $result[1] : null;
     }
 }

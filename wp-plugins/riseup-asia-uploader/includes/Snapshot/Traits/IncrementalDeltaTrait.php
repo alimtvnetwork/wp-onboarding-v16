@@ -15,11 +15,18 @@ use Throwable;
 
 trait IncrementalDeltaTrait {
 
-    private function exportTableDelta(string $tableName, array $info, string $incDir, PDO $rootPdo, int $sequence): ?array {
+    private function exportTableDelta(
+        string $tableName,
+        array $info,
+        string $incDir,
+        PDO $rootPdo,
+        int $sequence,
+    ): ?array {
         $lastMaxId = $this->getLastMaxId($tableName, $info, $rootPdo, $sequence);
 
         if ($lastMaxId === null) {
             $this->log(LogLevelType::Info->value, 'Skipping table (no auto-increment PK): ' . $tableName);
+
             return null;
         }
 
@@ -43,21 +50,33 @@ trait IncrementalDeltaTrait {
         return $result;
     }
 
-    private function getLastMaxId(string $tableName, array $info, PDO $rootPdo, int $sequence): ?int {
+    private function getLastMaxId(
+        string $tableName,
+        array $info,
+        PDO $rootPdo,
+        int $sequence,
+    ): ?int {
         if ($info['pk_column'] === null) {
             return null;
         }
 
         if ($sequence === 1) {
+
             return $this->getMaxIdFromMasterSqlite($rootPdo, $tableName, $info['pk_column'], $info);
         }
 
         return $this->getMaxIdFromPreviousIncremental($rootPdo, $tableName, $info['pk_column'], $sequence, $info);
     }
 
-    private function getMaxIdFromMasterSqlite(PDO $rootPdo, string $tableName, string $pk, array $info): int {
+    private function getMaxIdFromMasterSqlite(
+        PDO $rootPdo,
+        string $tableName,
+        string $pk,
+        array $info,
+    ): int {
         $sqliteFile = $this->findMasterSqliteFile($rootPdo, $tableName);
         if (!$sqliteFile) {
+
             return (int) $info['row_count'];
         }
 
@@ -66,14 +85,22 @@ trait IncrementalDeltaTrait {
             $tablePdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $maxId = $tablePdo->query("SELECT MAX(`{$pk}`) FROM `{$tableName}`")->fetchColumn();
             $tablePdo = null;
+
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : 0;
         } catch (Throwable $e) {
             $this->log(LogLevelType::Warn->value, 'Could not read master SQLite for max ID', array('table' => $tableName, 'error' => $e->getMessage()));
+
             return (int) $info['row_count'];
         }
     }
 
-    private function getMaxIdFromPreviousIncremental(PDO $rootPdo, string $tableName, string $pk, int $sequence, array $info): int {
+    private function getMaxIdFromPreviousIncremental(
+        PDO $rootPdo,
+        string $tableName,
+        string $pk,
+        int $sequence,
+        array $info,
+    ): int {
         $prevSeq = $sequence - 1;
         $prevFolder = $rootPdo->query("SELECT folder_name FROM incremental_backups WHERE sequence_num = {$prevSeq}")->fetchColumn();
 
@@ -82,6 +109,7 @@ trait IncrementalDeltaTrait {
             $prevSqlite = $rootDir . '/incremental/' . $prevFolder . '/' . $tableName . '.sqlite';
             $maxId = $this->readMaxIdFromSqlite($prevSqlite, $tableName, $pk);
             if ($maxId !== null) {
+
                 return $maxId;
             }
         }
@@ -89,7 +117,11 @@ trait IncrementalDeltaTrait {
         return $this->getMaxIdFromMasterSqlite($rootPdo, $tableName, $pk, $info);
     }
 
-    private function readMaxIdFromSqlite(string $sqlitePath, string $tableName, string $pk): ?int {
+    private function readMaxIdFromSqlite(
+        string $sqlitePath,
+        string $tableName,
+        string $pk,
+    ): ?int {
         if (PathHelper::isFileMissing($sqlitePath)) {
             return null;
         }
@@ -99,6 +131,7 @@ trait IncrementalDeltaTrait {
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $maxId = $pdo->query("SELECT MAX(`{$pk}`) FROM `{$tableName}`")->fetchColumn();
             $pdo = null;
+
             return ($maxId !== false && $maxId !== null) ? (int) $maxId : null;
         } catch (Throwable $e) {
             return null;
@@ -116,19 +149,23 @@ trait IncrementalDeltaTrait {
 
         $rootDir = $this->getRootDirFromPdo($rootPdo);
         $fullPath = $rootDir . '/' . $filename;
+
         return file_exists($fullPath) ? $fullPath : null;
     }
 
     private function getRootDirFromPdo(PDO $rootPdo): string {
         $result = $rootPdo->query("PRAGMA database_list")->fetch(PDO::FETCH_ASSOC);
         if ($result && isset($result['file'])) {
+
             return dirname($result['file']);
         }
+
         return '';
     }
 
     private function getNextSequence(PDO $rootPdo): int {
         $max = $rootPdo->query("SELECT MAX(sequence_num) FROM incremental_backups")->fetchColumn();
+
         return ($max !== false && $max !== null) ? (int) $max + 1 : 1;
     }
 }

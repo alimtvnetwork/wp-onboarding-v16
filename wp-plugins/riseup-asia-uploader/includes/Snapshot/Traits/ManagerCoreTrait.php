@@ -20,12 +20,14 @@ trait ManagerCoreTrait {
 
     public function getProvider(): ?\RiseupSnapshotProviderInterface {
         $providerId = $this->detector->getActiveProvider();
+
         return $this->detector->getProviderInstance($providerId, $this->logger, $this->db);
     }
 
     public function createSnapshot(array $options = array()): array {
         $provider = $this->getProvider();
         if (!$provider) {
+
             return array('success' => false, 'error' => 'No snapshot provider available', 'code' => SnapshotErrorType::ProviderNotAvail->value);
         }
 
@@ -40,6 +42,7 @@ trait ManagerCoreTrait {
     public function deleteSnapshot(int $snapshotId): array {
         $provider = $this->getProvider();
         if (!$provider) {
+
             return array('success' => false, 'error' => 'No provider available');
         }
 
@@ -86,7 +89,11 @@ trait ManagerCoreTrait {
         return $provider->getAvailableTables();
     }
 
-    private function log(string $level, string $message, array $context = array()): void {
+    private function log(
+        string $level,
+        string $message,
+        array $context = array(),
+    ): void {
         $full = '[SNAPSHOT] [MANAGER] ' . $message;
         if (!empty($context)) {
             $full .= ' ' . json_encode($context);
