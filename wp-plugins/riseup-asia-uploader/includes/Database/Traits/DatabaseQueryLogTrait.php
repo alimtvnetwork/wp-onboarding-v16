@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 use RiseupAsia\Database\Orm;
 
@@ -35,10 +36,11 @@ trait DatabaseQueryLogTrait {
         array $details = array(),
         string $status = 'success',
         ?string $errorMsg = null,
-        array $enhanced = array()
+        array $enhanced = array(),
     ): int|false {
         if (!$this->isReady()) {
             $this->fileLogger->warn('Database not ready, cannot log transaction');
+
             return false;
         }
 
@@ -47,7 +49,17 @@ trait DatabaseQueryLogTrait {
                 'action' => $action, 'status' => $status, 'enhanced' => $enhanced,
             ));
 
-            $record = $this->buildTransactionRecord($action, $pluginSlug, $postId, $userLogin, $userId, $ipAddress, $details, $status, $errorMsg);
+            $record = $this->buildTransactionRecord(
+                $action,
+                $pluginSlug,
+                $postId,
+                $userLogin,
+                $userId,
+                $ipAddress,
+                $details,
+                $status,
+                $errorMsg,
+            );
             $this->applyEnhancedFields($record, $enhanced);
 
             $result = $record->save();
@@ -59,7 +71,17 @@ trait DatabaseQueryLogTrait {
         }
     }
 
-    private function buildTransactionRecord(string $action, ?string $pluginSlug, ?int $postId, string $userLogin, ?int $userId, string $ipAddress, array $details, string $status, ?string $errorMsg) {
+    private function buildTransactionRecord(
+        string $action,
+        ?string $pluginSlug,
+        ?int $postId,
+        string $userLogin,
+        ?int $userId,
+        string $ipAddress,
+        array $details,
+        string $status,
+        ?string $errorMsg,
+    ) {
         return Orm::forTable(TableType::Transactions->value)
             ->create()
             ->set('action', $action)
@@ -129,6 +151,7 @@ trait DatabaseQueryLogTrait {
             return $log;
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get transaction');
+
             return null;
         }
     }

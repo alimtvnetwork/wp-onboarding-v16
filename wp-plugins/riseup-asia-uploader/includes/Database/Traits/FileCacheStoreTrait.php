@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
 
@@ -38,6 +39,7 @@ trait FileCacheStoreTrait {
                 'slug'  => $pluginSlug,
                 'error' => $e->getMessage(),
             ));
+
             return 0;
         }
     }
@@ -52,17 +54,25 @@ trait FileCacheStoreTrait {
             foreach ($rows as $row) {
                 $entries[$row['relative_path']] = $row;
             }
+
             return $entries;
         } catch (Throwable $e) {
             $this->logger->error('FileCache: Failed to load cache', array(
                 'slug'  => $pluginSlug,
                 'error' => $e->getMessage(),
             ));
+
             return array();
         }
     }
 
-    private function upsertCacheEntry(string $pluginSlug, string $path, string $hash, string $modifiedAt, int $size): void {
+    private function upsertCacheEntry(
+        string $pluginSlug,
+        string $path,
+        string $hash,
+        string $modifiedAt,
+        int $size,
+    ): void {
         try {
             $pdo = $this->db->getPdo();
             if (!$pdo) {

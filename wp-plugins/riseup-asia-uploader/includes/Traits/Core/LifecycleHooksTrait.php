@@ -54,7 +54,12 @@ trait LifecycleHooksTrait
     /**
      * Log a plugin lifecycle event with trigger source detection.
      */
-    private function logLifecycleEvent(string $action, string $plugin, string $hookSource, array $extra) {
+    private function logLifecycleEvent(
+        string $action,
+        string $plugin,
+        string $hookSource,
+        array $extra,
+    ) {
         if ($this->isRestRequest()) {
             return;
         }
@@ -122,6 +127,7 @@ trait LifecycleHooksTrait
     private function extractPluginSlug(string $pluginFile): string {
         if (strpos($pluginFile, '/') !== false) {
             $parts = explode('/', $pluginFile);
+
             return $parts[0];
         }
 

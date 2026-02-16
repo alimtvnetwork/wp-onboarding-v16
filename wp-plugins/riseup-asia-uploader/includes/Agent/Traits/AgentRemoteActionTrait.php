@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_Error;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -21,7 +22,7 @@ use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentRemoteActionTrait {
 
-    private function resolveRedirectUrl(array $agent): string|\WP_Error {
+    private function resolveRedirectUrl(array $agent): string|WP_Error {
         if ($this->isRedirectCacheValid($agent)) {
             return $agent['redirect_resolved'];
         }
@@ -50,7 +51,7 @@ trait AgentRemoteActionTrait {
         return (time() < $resolvedAt + ($cacheDays * DAY_IN_SECONDS));
     }
 
-    private function followRedirectChain(string $url, int $maxRedirects = 5): string|\WP_Error {
+    private function followRedirectChain(string $url, int $maxRedirects = 5): string|WP_Error {
         for ($i = 0; $i < $maxRedirects; $i++) {
             $response = wp_remote_head($url, array(
                 'timeout' => 15, 'redirection' => 0, 'sslverify' => true,
@@ -86,7 +87,7 @@ trait AgentRemoteActionTrait {
         return $this->handleTestConnectionSuccess($agentId, $result);
     }
 
-    private function handleTestConnectionFailure(int $agentId, \WP_Error $error): array {
+    private function handleTestConnectionFailure(int $agentId, WP_Error $error): array {
         $this->updateAgent($agentId, array(
             'status'     => 'error',
             'last_error' => $error->get_error_message(),
@@ -107,13 +108,14 @@ trait AgentRemoteActionTrait {
         return array('success' => true, 'message' => 'Connection successful', 'data' => $result);
     }
 
-    public function syncPlugins(int $agentId): array|\WP_Error {
+    public function syncPlugins(int $agentId): array|WP_Error {
         $this->fileLogger->info('Syncing plugins from agent', array('id' => $agentId));
 
         $result = $this->apiRequest($agentId, HttpMethodType::Get->value, PluginConfigType::apiFullNamespace() . '/plugins');
 
         if (is_wp_error($result)) {
             $this->logAction($agentId, ActionType::AgentSync->value, null, StatusType::Failed->value, null, $result->get_error_message());
+
             return $result;
         }
 
@@ -128,7 +130,11 @@ trait AgentRemoteActionTrait {
         return $plugins;
     }
 
-    public function executePluginAction(int $agentId, string $action, string $slug): array|\WP_Error {
+    public function executePluginAction(
+        int $agentId,
+        string $action,
+        string $slug,
+    ): array|WP_Error {
         $this->fileLogger->info('Executing plugin action on agent', array(
             'agent_id' => $agentId, 'action' => $action, 'slug' => $slug,
         ));
@@ -138,6 +144,7 @@ trait AgentRemoteActionTrait {
 
         if (is_wp_error($result)) {
             $this->logAction($agentId, 'plugin_' . $action, $slug, StatusType::Failed->value, null, $result->get_error_message());
+
             return $result;
         }
 

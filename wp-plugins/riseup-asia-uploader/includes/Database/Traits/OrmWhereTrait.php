@@ -22,6 +22,7 @@ trait OrmWhereTrait {
     private function generateParamName(string $column): string {
         self::$paramCounter++;
         $safeColumn = preg_replace('/[^a-zA-Z0-9_]/', '', $column);
+
         return ':' . $safeColumn . '_' . self::$paramCounter;
     }
 
@@ -39,10 +40,15 @@ trait OrmWhereTrait {
      *
      * @return $this
      */
-    public function whereOperator(string $column, string $operator, $value) {
+    public function whereOperator(
+        string $column,
+        string $operator,
+        $value,
+    ) {
         $paramName = $this->generateParamName($column);
         $this->whereClauses[] = "{$column} {$operator} {$paramName}";
         $this->whereParams[$paramName] = $value;
+
         return $this;
     }
 
@@ -84,12 +90,14 @@ trait OrmWhereTrait {
     /** WHERE column IS NULL. */
     public function whereNull(string $column) {
         $this->whereClauses[] = "{$column} IS NULL";
+
         return $this;
     }
 
     /** WHERE column IS NOT NULL. */
     public function whereNotNull(string $column) {
         $this->whereClauses[] = "{$column} IS NOT NULL";
+
         return $this;
     }
 
@@ -101,6 +109,7 @@ trait OrmWhereTrait {
     public function whereIn(string $column, array $values) {
         if (empty($values)) {
             $this->whereClauses[] = '1 = 0';
+
             return $this;
         }
 
@@ -112,6 +121,7 @@ trait OrmWhereTrait {
         }
 
         $this->whereClauses[] = "{$column} IN (" . implode(', ', $placeholders) . ")";
+
         return $this;
     }
 
@@ -133,6 +143,7 @@ trait OrmWhereTrait {
         }
 
         $this->whereClauses[] = "{$column} NOT IN (" . implode(', ', $placeholders) . ")";
+
         return $this;
     }
 
@@ -144,6 +155,7 @@ trait OrmWhereTrait {
     public function whereRaw(string $clause, array $params = array()) {
         $this->whereClauses[] = $clause;
         $this->whereParams = array_merge($this->whereParams, $params);
+
         return $this;
     }
 }

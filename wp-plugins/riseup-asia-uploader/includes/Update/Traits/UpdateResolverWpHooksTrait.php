@@ -63,7 +63,11 @@ trait UpdateResolverWpHooksTrait {
         );
     }
 
-    public function pluginInfo(false|object|array $result, string $action, object $args): false|object {
+    public function pluginInfo(
+        false|object|array $result,
+        string $action,
+        object $args,
+    ): false|object {
         if ($action !== 'plugin_information') {
             return $result;
         }

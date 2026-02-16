@@ -48,6 +48,7 @@ trait SnapshotCrudCreateTrait {
                 : $this->executeLegacySnapshot($body, $scope, $manager);
 
             $this->logSnapshotResult(ActionType::SnapshotCreate->value, $scope, $isPerTable ? 'per_table' : 'legacy', $result);
+
             return new WP_REST_Response($result, $result['success'] ? 201 : 500);
         }, 'create_snapshot');
     }
@@ -55,8 +56,13 @@ trait SnapshotCrudCreateTrait {
     /**
      * Execute a per-table snapshot via the orchestrator.
      */
-    private function executePerTableSnapshot(array $body, string $scope, $manager): array {
+    private function executePerTableSnapshot(
+        array $body,
+        string $scope,
+        $manager,
+    ): array {
         $orchestrator = SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
+
         return $orchestrator->executeFullBackup(array(
             'title'            => $body['title'] ?? null,
             'scope'            => $scope,
@@ -69,8 +75,13 @@ trait SnapshotCrudCreateTrait {
     /**
      * Execute a legacy single-db snapshot via the manager.
      */
-    private function executeLegacySnapshot(array $body, string $scope, $manager): array {
+    private function executeLegacySnapshot(
+        array $body,
+        string $scope,
+        $manager,
+    ): array {
         $this->fileLogger->info('Creating snapshot via API (legacy mode)', array('scope' => $scope));
+
         return $manager->createSnapshot(array(
             'scope'   => $scope,
             'trigger' => SnapshotTriggerType::Api->value,
@@ -81,7 +92,12 @@ trait SnapshotCrudCreateTrait {
     /**
      * Log a snapshot operation result to the audit trail.
      */
-    private function logSnapshotResult(string $action, string $scope, string $mode, array $result) {
+    private function logSnapshotResult(
+        string $action,
+        string $scope,
+        string $mode,
+        array $result,
+    ) {
         $this->logger->logPluginAction(
             $action, 'snapshot',
             $result['success'] ? StatusType::Success->value : StatusType::Failed->value,

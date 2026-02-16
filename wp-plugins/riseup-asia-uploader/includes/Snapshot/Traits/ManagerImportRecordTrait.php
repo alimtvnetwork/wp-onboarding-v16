@@ -20,16 +20,29 @@ trait ManagerImportRecordTrait {
 
     private function getNextImportSequence(): int {
         $result = $this->db->querySingle('SELECT MAX(sequence) as max_seq FROM ' . TableType::Snapshots->value);
+
         return ($result && isset($result['max_seq'])) ? (int)$result['max_seq'] + 1 : 1;
     }
 
-    private function createImportedSnapshotRecord(array $manifest, int $sequence, string $filename, string $filepath): int|false {
+    private function createImportedSnapshotRecord(
+        array $manifest,
+        int $sequence,
+        string $filename,
+        string $filepath,
+    ): int|false {
         $data = $this->buildImportRecord($manifest['snapshot'], $manifest, $sequence, $filename, $filepath);
         $result = $this->db->insert(TableType::Snapshots->value, $data);
+
         return $result ? $this->db->lastInsertId() : false;
     }
 
-    private function buildImportRecord(array $snapshotData, array $manifest, int $sequence, string $filename, string $filepath): array {
+    private function buildImportRecord(
+        array $snapshotData,
+        array $manifest,
+        int $sequence,
+        string $filename,
+        string $filepath,
+    ): array {
         return array(
             'sequence' => $sequence, 'filename' => $filename, 'filepath' => $filepath,
             'provider' => SnapshotProviderType::Native->value, 'scope' => $snapshotData['scope'],

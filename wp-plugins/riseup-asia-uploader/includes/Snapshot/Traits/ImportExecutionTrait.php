@@ -67,7 +67,12 @@ trait ImportExecutionTrait {
     }
 
     /** Build the final import result array. */
-    private function buildImportResult(int $snapshotId, string $destDir, array $metadata, array $inventories): array {
+    private function buildImportResult(
+        int $snapshotId,
+        string $destDir,
+        array $metadata,
+        array $inventories,
+    ): array {
         $this->log(LogLevelType::Info->value, 'Per-table snapshot imported successfully', array(
             'snapshotId' => $snapshotId, 'tables' => count($inventories['tables']),
             'incrementals' => count($inventories['incrementals']), 'plugins' => count($inventories['plugins']),
@@ -93,21 +98,33 @@ trait ImportExecutionTrait {
         $destDir = $this->resolveUniqueDest(PathHelper::join($snapshotsDir, $folderName), $snapshotsDir, $folderName);
 
         $this->copyDirectory($snapshotRoot, $destDir);
+
         return $destDir;
     }
 
     /** Resolve a unique destination directory path. */
-    private function resolveUniqueDest(string $destDir, string $snapshotsDir, string $folderName): string {
+    private function resolveUniqueDest(
+        string $destDir,
+        string $snapshotsDir,
+        string $folderName,
+    ): string {
         $counter = 1;
         while (PathHelper::dirExists($destDir)) {
             $destDir = PathHelper::join($snapshotsDir, $folderName . '_' . $counter);
             $counter++;
         }
+
         return $destDir;
     }
 
     /** Register the imported snapshot in the database. */
-    private function registerImportedSnapshot(array $metadata, array $tables, array $incrementals, array $plugins, string $destDir): int {
+    private function registerImportedSnapshot(
+        array $metadata,
+        array $tables,
+        array $incrementals,
+        array $plugins,
+        string $destDir,
+    ): int {
         $tableNames = array_map(function($t) { return $t['table_name']; }, $tables);
         $record = $this->buildSnapshotRecord($metadata, $tables, $incrementals, $plugins, $destDir, $tableNames);
 
@@ -115,11 +132,19 @@ trait ImportExecutionTrait {
         if ($result) {
             return $this->db->lastInsertId();
         }
+
         throw new Exception('Failed to create snapshot record in database');
     }
 
     /** Build the snapshot database record for import. */
-    private function buildSnapshotRecord(array $metadata, array $tables, array $incrementals, array $plugins, string $destDir, array $tableNames): array {
+    private function buildSnapshotRecord(
+        array $metadata,
+        array $tables,
+        array $incrementals,
+        array $plugins,
+        string $destDir,
+        array $tableNames,
+    ): array {
         return array(
             'sequence' => $this->manager->getNextSequence(), 'filename' => basename($destDir),
             'filepath' => $destDir, 'provider' => SnapshotProviderType::Native->value,
@@ -132,7 +157,12 @@ trait ImportExecutionTrait {
     }
 
     /** Build the import_source metadata. */
-    private function buildImportSourceMeta(array $metadata, array $tables, array $incrementals, array $plugins): array {
+    private function buildImportSourceMeta(
+        array $metadata,
+        array $tables,
+        array $incrementals,
+        array $plugins,
+    ): array {
         return array(
             'original_title' => $metadata['title'] ?? null, 'original_type' => $metadata['type'] ?? null,
             'original_created_at' => $metadata['created_at'] ?? null,

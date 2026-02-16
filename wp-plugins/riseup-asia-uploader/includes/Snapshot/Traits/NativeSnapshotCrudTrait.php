@@ -31,6 +31,7 @@ trait NativeSnapshotCrudTrait {
         if (PathHelper::fileExists($filepath)) {
             if (!PathHelper::deleteFile($filepath)) {
                 $this->log(LogLevelType::Error->value, 'Failed to delete snapshot file', array('filepath' => $filepath));
+
                 return array('success' => false, 'error' => 'Failed to delete snapshot file');
             }
         }
@@ -42,6 +43,7 @@ trait NativeSnapshotCrudTrait {
 
         $this->db->delete(TableType::Snapshots->value, array('id' => $snapshotId));
         $this->log(LogLevelType::Info->value, 'Snapshot deleted', array('snapshot_id' => $snapshotId, 'filename' => $snapshot['filename']));
+
         return array('success' => true);
     }
 
@@ -59,7 +61,11 @@ trait NativeSnapshotCrudTrait {
         return $this->createExportZip($snapshotId, $filepath, $snapshot);
     }
 
-    private function createExportZip(int $snapshotId, string $filepath, array $snapshot): array {
+    private function createExportZip(
+        int $snapshotId,
+        string $filepath,
+        array $snapshot,
+    ): array {
         $zip_path = str_replace('.sqlite', '.zip', $filepath);
 
         $zip = new ZipArchive();
@@ -85,11 +91,13 @@ trait NativeSnapshotCrudTrait {
 
     public function importSnapshot(string $filepath): array {
         $manager = SnapshotManager::getInstance($this->logger, $this->db);
+
         return $manager->importSnapshot($filepath);
     }
 
     public function restoreSnapshot(int $snapshotId, array $options): array {
         $manager = SnapshotManager::getInstance($this->logger, $this->db);
+
         return $manager->restoreSnapshot($snapshotId, $options);
     }
 
@@ -103,6 +111,7 @@ trait NativeSnapshotCrudTrait {
             array($this->provider_id, $limit, $offset)
         );
         $total = $this->db->querySingle('SELECT COUNT(*) as count FROM ' . TableType::Snapshots->value . ' WHERE provider = ?', array($this->provider_id));
+
         return array('snapshots' => $snapshots ?: array(), 'total' => $total ? (int)$total['count'] : 0);
     }
 
@@ -116,6 +125,7 @@ trait NativeSnapshotCrudTrait {
                 'is_core' => strpos($table_info['Name'], $this->wpdb->prefix) === 0,
             );
         }
+
         return $tables;
     }
 }

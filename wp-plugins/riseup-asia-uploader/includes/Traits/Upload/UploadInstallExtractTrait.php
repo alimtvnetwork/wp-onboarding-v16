@@ -21,13 +21,12 @@ trait UploadInstallExtractTrait
 {
     /**
      * Deactivate plugin and remove old directory if this is an update.
-     *
-     * @param string $slug       Plugin slug.
-     * @param bool   $is_update  Whether this is an update.
-     * @param string $target_dir Absolute path to plugin directory.
-     * @return bool Whether the plugin was previously active.
      */
-    private function deactivateIfUpdating($slug, $is_update, $target_dir) {
+    private function deactivateIfUpdating(
+        $slug,
+        $is_update,
+        $target_dir,
+    ) {
         $this->fileLogger->info($is_update ? 'Updating existing plugin' : 'Installing new plugin', array('slug' => $slug));
 
         if (!$is_update) {
@@ -45,15 +44,12 @@ trait UploadInstallExtractTrait
         }
 
         $this->deleteDirectory($target_dir);
+
         return $was_active;
     }
 
     /**
      * Process the extraction, activation, and version detection phases.
-     *
-     * @param array $input      Parsed upload input.
-     * @param array $zip_result Validated ZIP result.
-     * @return array|WP_REST_Response Result array or error response.
      */
     private function processUploadExtraction(array $input, array $zip_result) {
         $context = $this->prepareExtractionContext($input, $zip_result);
@@ -89,7 +85,11 @@ trait UploadInstallExtractTrait
     }
 
     /** Execute extraction, opcache reset, activation, and version detection. */
-    private function executeExtractionSteps(array $ctx, bool $was_active, array $input) {
+    private function executeExtractionSteps(
+        array $ctx,
+        bool $was_active,
+        array $input,
+    ) {
         $extract_result = $this->extractToPluginsDir($ctx['temp_file'], $ctx['slug'], $ctx['target_dir']);
         if ($extract_result instanceof WP_REST_Response) {
             return $extract_result;
@@ -116,7 +116,11 @@ trait UploadInstallExtractTrait
     /**
      * Extract ZIP to a temp directory, then move to the correct plugin location.
      */
-    private function extractToPluginsDir($temp_file, $slug, $target_dir) {
+    private function extractToPluginsDir(
+        $temp_file,
+        $slug,
+        $target_dir,
+    ) {
         $temp_extract_dir = $this->getTempDir() . '/extract_' . uniqid();
         wp_mkdir_p($temp_extract_dir);
 

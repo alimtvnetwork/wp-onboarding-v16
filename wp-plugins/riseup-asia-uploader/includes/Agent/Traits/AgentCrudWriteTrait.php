@@ -12,11 +12,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use PDOException;
+use WP_Error;
 use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait AgentCrudWriteTrait {
 
-    public function addAgent(array $data): int|\WP_Error {
+    public function addAgent(array $data): int|WP_Error {
         $this->fileLogger->info('Adding agent site', array('name' => $data['name'], 'url' => $data['url']));
 
         $validationError = $this->validateAgentData($data);
@@ -27,25 +30,25 @@ trait AgentCrudWriteTrait {
         try {
             $pdo = $this->db->getPdo();
             if (!$pdo) {
-                return new \WP_Error('db_error', 'Database not available');
+                return new WP_Error('db_error', 'Database not available');
             }
 
             return $this->insertAgentRecord($pdo, $data);
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             return ErrorResponse::logAndReturnWpError($this->fileLogger, $e, 'Failed to add agent site', 'db_error');
         }
     }
 
-    private function validateAgentData(array $data): ?\WP_Error {
+    private function validateAgentData(array $data): ?WP_Error {
         $hasAllFields = !empty($data['name']) && !empty($data['url']) && !empty($data['username']) && !empty($data['app_password']);
         if ($hasAllFields) {
             return null;
         }
 
-        return new \WP_Error('missing_fields', 'Name, URL, username, and application password are required');
+        return new WP_Error('missing_fields', 'Name, URL, username, and application password are required');
     }
 
-    private function insertAgentRecord(\PDO $pdo, array $data): int {
+    private function insertAgentRecord(PDO $pdo, array $data): int {
         $stmt = $pdo->prepare(
             "INSERT INTO agent_sites (name, url, username, app_password_encrypted, redirect_url, status, created_at) VALUES (?, ?, ?, ?, ?, 'pending', ?)"
         );
@@ -65,25 +68,29 @@ trait AgentCrudWriteTrait {
         return $agentId;
     }
 
-    public function updateAgent(int $id, array $data): bool|\WP_Error {
+    public function updateAgent(int $id, array $data): bool|WP_Error {
         $this->fileLogger->info('Updating agent site', array('id' => $id));
 
         try {
             $pdo = $this->db->getPdo();
             if (!$pdo) {
-                return new \WP_Error('db_error', 'Database not available');
+                return new WP_Error('db_error', 'Database not available');
             }
 
             return $this->executeAgentUpdate($pdo, $id, $data);
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             return ErrorResponse::logAndReturnWpError($this->fileLogger, $e, 'Failed to update agent site', 'db_error');
         }
     }
 
-    private function executeAgentUpdate(\PDO $pdo, int $id, array $data): bool|\WP_Error {
+    private function executeAgentUpdate(
+        PDO $pdo,
+        int $id,
+        array $data,
+    ): bool|WP_Error {
         $update = $this->buildUpdateSets($data);
         if (empty($update['sets'])) {
-            return new \WP_Error('no_data', 'No fields to update');
+            return new WP_Error('no_data', 'No fields to update');
         }
 
         $update['sets'][] = 'updated_at = ?';
@@ -109,7 +116,11 @@ trait AgentCrudWriteTrait {
         return array('sets' => $sets, 'params' => $params);
     }
 
-    private function applyFieldMap(array $data, array &$sets, array &$params): void {
+    private function applyFieldMap(
+        array $data,
+        array &$sets,
+        array &$params,
+    ): void {
         $fieldMap = array(
             'name'         => fn($v) => array('name = ?', sanitize_text_field($v)),
             'url'          => fn($v) => array('url = ?', esc_url_raw($this->normalizeUrl($v))),
@@ -131,7 +142,11 @@ trait AgentCrudWriteTrait {
         }
     }
 
-    private function applyPasswordField(array $data, array &$sets, array &$params): void {
+    private function applyPasswordField(
+        array $data,
+        array &$sets,
+        array &$params,
+    ): void {
         $hasPassword = isset($data['app_password']) && !empty($data['app_password']);
         if (!$hasPassword) {
             return;
@@ -141,21 +156,22 @@ trait AgentCrudWriteTrait {
         $params[] = $this->encrypt($data['app_password']);
     }
 
-    public function removeAgent(int $id): bool|\WP_Error {
+    public function removeAgent(int $id): bool|WP_Error {
         $this->fileLogger->info('Removing agent site', array('id' => $id));
 
         try {
             $pdo = $this->db->getPdo();
             if (!$pdo) {
-                return new \WP_Error('db_error', 'Database not available');
+                return new WP_Error('db_error', 'Database not available');
             }
 
             $stmt = $pdo->prepare("DELETE FROM agent_sites WHERE id = ?");
             $stmt->execute(array($id));
 
             $this->fileLogger->info('Agent site removed', array('id' => $id));
+
             return true;
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             return ErrorResponse::logAndReturnWpError($this->fileLogger, $e, 'Failed to remove agent site', 'db_error');
         }
     }

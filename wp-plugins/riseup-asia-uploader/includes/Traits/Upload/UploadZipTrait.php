@@ -37,6 +37,7 @@ trait UploadZipTrait
 
         $final_slug = !empty($slug) ? $slug : $detected_slug;
         $this->fileLogger->info('Plugin slug determined', array('slug' => $final_slug));
+
         return array('temp_file' => $temp_file, 'slug' => $final_slug);
     }
 
@@ -49,6 +50,7 @@ trait UploadZipTrait
         if (file_put_contents($temp_file, $zip_content) === false) {
             $this->fileLogger->error('Failed to write temp file');
             $this->logger->logUploadFailed($slug, 'Failed to write temp file');
+
             return $this->errorResponse(ResponseMessageType::UploadFailed->value, HttpStatusType::ServerError->value);
         }
 
@@ -63,6 +65,7 @@ trait UploadZipTrait
             @unlink($temp_file);
             $this->fileLogger->error('Invalid ZIP archive');
             $this->logger->logUploadFailed($slug, 'Invalid ZIP archive');
+
             return $this->errorResponse('Invalid ZIP archive', HttpStatusType::BadRequest->value);
         }
 
@@ -73,6 +76,7 @@ trait UploadZipTrait
             @unlink($temp_file);
             $this->fileLogger->error('Could not detect plugin in ZIP');
             $this->logger->logUploadFailed($slug, 'Could not detect plugin in ZIP');
+
             return $this->errorResponse('Could not detect plugin in ZIP', HttpStatusType::BadRequest->value);
         }
 
@@ -101,7 +105,12 @@ trait UploadZipTrait
     }
 
     /** Check and remove a single duplicate plugin. Returns true if removed. */
-    private function removeSingleDuplicate(string $pfile, array $pdata, string $slug, string $plugins_dir): bool {
+    private function removeSingleDuplicate(
+        string $pfile,
+        array $pdata,
+        string $slug,
+        string $plugins_dir,
+    ): bool {
         $pdir = dirname($pfile);
         if ($pdir === '.' || $pdir === $slug) {
             return false;
@@ -120,6 +129,7 @@ trait UploadZipTrait
 
         if (is_dir($dup_dir)) {
             $this->deleteDirectory($dup_dir);
+
             return true;
         }
 
@@ -127,14 +137,24 @@ trait UploadZipTrait
     }
 
     /** Check if a plugin entry is a duplicate of the target slug. */
-    private function isDuplicatePlugin(array $pdata, string $pfile, string $slug): bool {
+    private function isDuplicatePlugin(
+        array $pdata,
+        string $pfile,
+        string $slug,
+    ): bool {
         $hasMatchingTextDomain = (isset($pdata['TextDomain']) && $pdata['TextDomain'] === $slug);
         $hasMatchingSlugInPath = (isset($pdata['Name']) && strpos(strtolower($pfile), $slug) !== false);
+
         return $hasMatchingTextDomain || $hasMatchingSlugInPath;
     }
 
     /** Pre-log self-update activity before files are replaced. */
-    private function preLogSelfUpdate($slug, $upload_source, $client_version, $file_size) {
+    private function preLogSelfUpdate(
+        $slug,
+        $upload_source,
+        $client_version,
+        $file_size,
+    ) {
         $old_version = PluginConfigType::Version->value;
         $this->fileLogger->info('Self-update detected, pre-logging activity', array('old_version' => $old_version));
 

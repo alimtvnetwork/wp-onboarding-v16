@@ -14,11 +14,16 @@ if (!defined('ABSPATH')) {
 
 trait FileCacheScanTrait {
 
-    public function getManifest(string $pluginSlug, string $pluginDir, RiseupUploadIgnore $ignore): array {
+    public function getManifest(
+        string $pluginSlug,
+        string $pluginDir,
+        RiseupUploadIgnore $ignore,
+    ): array {
         $this->logger->debug('FileCache: Building manifest', array('slug' => $pluginSlug));
 
         if (!$this->db->isReady()) {
             $this->logger->warn('FileCache: Database not ready, falling back to full scan');
+
             return $this->fullScan($pluginDir, $ignore);
         }
 
@@ -39,7 +44,12 @@ trait FileCacheScanTrait {
         return $result;
     }
 
-    private function reconcileManifest(string $pluginSlug, string $pluginDir, array $diskFiles, array $cachedEntries): array {
+    private function reconcileManifest(
+        string $pluginSlug,
+        string $pluginDir,
+        array $diskFiles,
+        array $cachedEntries,
+    ): array {
         $files = array();
         $cachedCount = 0;
         $computedCount = 0;
@@ -57,7 +67,12 @@ trait FileCacheScanTrait {
         return array('files' => $files, 'cached' => $cachedCount, 'computed' => $computedCount, 'removed' => $removedCount);
     }
 
-    private function resolveFileEntry(string $pluginSlug, string $pluginDir, array $fileInfo, array $cachedEntries): array {
+    private function resolveFileEntry(
+        string $pluginSlug,
+        string $pluginDir,
+        array $fileInfo,
+        array $cachedEntries,
+    ): array {
         $path = $fileInfo['path'];
         $mtimeStr = gmdate('c', $fileInfo['mtime']);
 
@@ -82,7 +97,11 @@ trait FileCacheScanTrait {
         );
     }
 
-    private function pruneStaleEntries(string $pluginSlug, array $cachedEntries, array $activePaths): int {
+    private function pruneStaleEntries(
+        string $pluginSlug,
+        array $cachedEntries,
+        array $activePaths,
+    ): int {
         $removed = 0;
         foreach ($cachedEntries as $path => $entry) {
             if (!isset($activePaths[$path])) {
@@ -90,10 +109,16 @@ trait FileCacheScanTrait {
                 $removed++;
             }
         }
+
         return $removed;
     }
 
-    private function scanDirectory(string $baseDir, string $dir, RiseupUploadIgnore $ignore, array &$files): void {
+    private function scanDirectory(
+        string $baseDir,
+        string $dir,
+        RiseupUploadIgnore $ignore,
+        array &$files,
+    ): void {
         $items = @scandir($dir);
         if ($items === false) {
             return;
@@ -113,6 +138,7 @@ trait FileCacheScanTrait {
 
             if (is_dir($fullPath)) {
                 $this->scanDirectory($baseDir, $fullPath, $ignore, $files);
+
                 continue;
             }
 

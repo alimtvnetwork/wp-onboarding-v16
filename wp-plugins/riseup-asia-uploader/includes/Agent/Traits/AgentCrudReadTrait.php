@@ -12,6 +12,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use PDOException;
+
 trait AgentCrudReadTrait {
 
     public function getAgent(int $id, bool $includePassword = false): ?array {
@@ -23,7 +26,7 @@ trait AgentCrudReadTrait {
 
             $stmt = $pdo->prepare("SELECT * FROM agent_sites WHERE id = ?");
             $stmt->execute(array($id));
-            $agent = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $agent = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($agent && $includePassword) {
                 $agent['app_password'] = $this->decrypt($agent['app_password_encrypted']);
@@ -34,13 +37,18 @@ trait AgentCrudReadTrait {
             }
 
             return $agent;
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             $this->fileLogger->logException($e, 'Failed to get agent site');
+
             return null;
         }
     }
 
-    public function listAgents(array $filters = array(), int $limit = 100, int $offset = 0): array {
+    public function listAgents(
+        array $filters = array(),
+        int $limit = 100,
+        int $offset = 0,
+    ): array {
         try {
             $pdo = $this->db->getPdo();
             if (!$pdo) {
@@ -52,8 +60,9 @@ trait AgentCrudReadTrait {
             $agents = $this->fetchAgents($pdo, $query, $limit, $offset);
 
             return array('total' => $total, 'agents' => $agents);
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             $this->fileLogger->logException($e, 'Failed to list agent sites');
+
             return array('total' => 0, 'agents' => array());
         }
     }
@@ -73,14 +82,19 @@ trait AgentCrudReadTrait {
         );
     }
 
-    private function countAgents(\PDO $pdo, array $query): int {
+    private function countAgents(PDO $pdo, array $query): int {
         $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM agent_sites {$query['where_sql']}");
         $stmt->execute($query['params']);
 
-        return (int) $stmt->fetch(\PDO::FETCH_ASSOC)['total'];
+        return (int) $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     }
 
-    private function fetchAgents(\PDO $pdo, array $query, int $limit, int $offset): array {
+    private function fetchAgents(
+        PDO $pdo,
+        array $query,
+        int $limit,
+        int $offset,
+    ): array {
         $params = array_merge($query['params'], array($limit, $offset));
         $sql = "SELECT id, name, url, username, redirect_url, status, last_sync, last_error, created_at, updated_at 
                 FROM agent_sites {$query['where_sql']} 
@@ -89,6 +103,6 @@ trait AgentCrudReadTrait {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
 
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
