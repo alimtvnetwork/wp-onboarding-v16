@@ -133,7 +133,4 @@ class FatalErrorHandler
     }
 }
 
-// Backward compatibility alias for global namespace consumers
-\class_alias(FatalErrorHandler::class, 'RiseupFatalErrorHandler');
-
 register_shutdown_function([FatalErrorHandler::class, 'handle']);

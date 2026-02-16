@@ -85,5 +85,3 @@ class AgentManager {
         );
     }
 }
-
-class_alias(AgentManager::class, 'RiseupAgentManager');

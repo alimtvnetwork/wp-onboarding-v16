@@ -113,5 +113,3 @@ class Orm {
     private function __construct() {
     }
 }
-
-class_alias(Orm::class, 'RiseupORM');

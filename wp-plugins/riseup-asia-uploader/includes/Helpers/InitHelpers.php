@@ -84,5 +84,3 @@ class InitHelpers {
         self::$pdo_unavailable_warned = false;
     }
 }
-
-class_alias(InitHelpers::class, 'RiseupInitHelpers');

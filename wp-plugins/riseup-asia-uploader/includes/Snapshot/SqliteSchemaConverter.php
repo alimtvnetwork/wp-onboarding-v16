@@ -58,5 +58,3 @@ class SqliteSchemaConverter {
     private static function removeIndexDefinitions(string $sql): string { $sql = preg_replace('/,\s*KEY\s+[^,]+(?=,|\))/i', '', $sql); $sql = preg_replace('/,\s*UNIQUE\s+KEY\s+[^,]+(?=,|\))/i', '', $sql); $sql = preg_replace('/,\s*FULLTEXT\s+KEY\s+[^,]+(?=,|\))/i', '', $sql); $sql = preg_replace('/,\s*SPATIAL\s+KEY\s+[^,]+(?=,|\))/i', '', $sql); return $sql; }
     private static function cleanTrailingCommas(string $sql): string { return preg_replace('/,\s*\)/', ')', $sql); }
 }
-
-class_alias(SqliteSchemaConverter::class, 'RiseupSqliteSchemaConverter');

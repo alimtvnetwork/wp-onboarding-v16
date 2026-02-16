@@ -65,5 +65,3 @@ class SnapshotProviderWPReset extends SnapshotProviderInterface {
         return $tables;
     }
 }
-
-class_alias(SnapshotProviderWPReset::class, 'RiseupSnapshotProviderWPReset');

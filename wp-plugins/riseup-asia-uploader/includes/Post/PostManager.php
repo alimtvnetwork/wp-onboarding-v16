@@ -49,5 +49,3 @@ class PostManager {
         return in_array($status, $validStatuses, true) ? $status : PostStatusType::Draft->value;
     }
 }
-
-class_alias(PostManager::class, 'RiseupPostManager');

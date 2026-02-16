@@ -36,5 +36,3 @@ class SnapshotDetector {
         $this->db = $db;
     }
 }
-
-class_alias(SnapshotDetector::class, 'RiseupSnapshotDetector');

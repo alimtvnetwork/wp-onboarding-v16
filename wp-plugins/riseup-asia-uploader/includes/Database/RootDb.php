@@ -83,5 +83,3 @@ class RootDb {
         }
     }
 }
-
-class_alias(RootDb::class, 'RiseupRootDb');

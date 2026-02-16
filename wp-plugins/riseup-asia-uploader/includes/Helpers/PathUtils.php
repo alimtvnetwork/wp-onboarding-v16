@@ -22,5 +22,3 @@ class PathUtils {
     use PathUtilsDirTrait;
     use PathUtilsFileTrait;
 }
-
-class_alias(PathUtils::class, 'RiseupPathUtils');

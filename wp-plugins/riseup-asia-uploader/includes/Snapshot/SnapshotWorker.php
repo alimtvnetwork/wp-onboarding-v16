@@ -55,5 +55,3 @@ class SnapshotWorker {
 
     public function getPoolSize(): int { return $this->poolSize; }
 }
-
-class_alias(SnapshotWorker::class, 'RiseupSnapshotWorker');

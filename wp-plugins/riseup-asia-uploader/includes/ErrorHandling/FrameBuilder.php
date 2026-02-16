@@ -142,6 +142,3 @@ class FrameBuilder
         );
     }
 }
-
-// Backward compatibility alias for global namespace consumers
-\class_alias(FrameBuilder::class, 'RiseupFrameBuilder');

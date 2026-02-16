@@ -68,5 +68,3 @@ class UpdateResolver {
         return update_option(self::OPTION_NAME, $merged);
     }
 }
-
-class_alias(UpdateResolver::class, 'RiseupUpdateResolver');

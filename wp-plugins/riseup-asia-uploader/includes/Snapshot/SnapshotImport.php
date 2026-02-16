@@ -132,5 +132,3 @@ class SnapshotImport {
         return array('success' => false, 'error' => $message);
     }
 }
-
-class_alias(SnapshotImport::class, 'RiseupSnapshotImport');

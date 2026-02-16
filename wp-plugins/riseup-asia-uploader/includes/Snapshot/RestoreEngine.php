@@ -122,5 +122,3 @@ class RestoreEngine {
         return array('success' => false, 'error' => $e->getMessage(), 'phase' => 'restore');
     }
 }
-
-class_alias(RestoreEngine::class, 'RiseupRestoreEngine');

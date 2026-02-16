@@ -46,5 +46,3 @@ class SnapshotOrchestrator {
         $this->worker = SnapshotWorker::getInstance($logger, $db, $this->rootDb, $this->analyzer);
     }
 }
-
-class_alias(SnapshotOrchestrator::class, 'RiseupSnapshotOrchestrator');

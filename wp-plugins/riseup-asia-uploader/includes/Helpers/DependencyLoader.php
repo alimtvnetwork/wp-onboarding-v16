@@ -81,5 +81,3 @@ class DependencyLoader {
 
     public static function reset(): void { self::$results = array(); }
 }
-
-class_alias(DependencyLoader::class, 'RiseupDependencyLoader');

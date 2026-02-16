@@ -30,5 +30,3 @@ class SnapshotExporter {
         $this->db     = $db;
     }
 }
-
-class_alias(SnapshotExporter::class, 'RiseupSnapshotExporter');

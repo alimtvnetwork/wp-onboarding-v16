@@ -132,5 +132,3 @@ class IncrementalBackup {
         }
     }
 }
-
-class_alias(IncrementalBackup::class, 'RiseupIncrementalBackup');
