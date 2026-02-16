@@ -2,13 +2,17 @@
 /**
  * ErrorLogHandlerTrait — error log retrieval and log tail reading.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Error
  */
+
+namespace RiseupAsia\Traits\Error;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
 use RiseupAsia\Enums\PluginConfigType;
 
 trait ErrorLogHandlerTrait {
@@ -30,13 +34,13 @@ trait ErrorLogHandlerTrait {
                 $result['stacktrace_log'] = $this->readLogTail($this->fileLogger->getStacktraceFile(), $settings['max_lines']);
             }
 
-            return RiseupEnvelopeBuilder::success()->autoDetectRequestedAt()->setSingleResult($result)->toResponse();
+            return \RiseupEnvelopeBuilder::success()->autoDetectRequestedAt()->setSingleResult($result)->toResponse();
         }, 'error_logs');
     }
 
     /** Resolve log retrieval settings from admin defaults and query param overrides. */
     private function resolveLogSettings(WP_REST_Request $request): array {
-        $settings     = RiseupAdmin::get_settings();
+        $settings     = \RiseupAdmin::get_settings();
         $logSettings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
 
         $resolved = array(
@@ -65,7 +69,7 @@ trait ErrorLogHandlerTrait {
             'content' => '', 'lines' => 0, 'total_size' => 0, 'truncated' => false,
         );
 
-        $isFileUnreadable = RiseupBooleanHelpers::isFileUnreadable($filePath);
+        $isFileUnreadable = \RiseupBooleanHelpers::isFileUnreadable($filePath);
         if ($isFileUnreadable) {
             return $result;
         }

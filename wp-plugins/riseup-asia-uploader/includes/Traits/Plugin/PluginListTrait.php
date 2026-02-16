@@ -2,17 +2,24 @@
 /**
  * PluginListTrait — Plugin listing, file scanning, and file content retrieval.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Plugin
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Enums\OptionNameType;
 
 trait PluginListTrait
 {
@@ -26,14 +33,14 @@ trait PluginListTrait
         $this->fileLogger->info('List plugins endpoint called');
 
         try {
-            if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+            if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
                 require_once ABSPATH . 'wp-admin/includes/plugin.php';
             }
 
             $plugins = $this->collectPluginList();
 
-            return RiseupEnvelopeBuilder::success()
-                ->setRequestedAt('/' . API_FULL_NAMESPACE . EndpointType::Plugins->route())
+            return \RiseupEnvelopeBuilder::success()
+                ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::Plugins->route())
                 ->setResults($plugins)
                 ->toResponse();
         } catch (Throwable $e) {
@@ -50,7 +57,7 @@ trait PluginListTrait
      */
     private function collectPluginList(): array {
         $all_plugins    = get_plugins();
-        $active_plugins = get_option(\RiseupAsia\Enums\OptionNameType::ActivePlugins->value, array());
+        $active_plugins = get_option(OptionNameType::ActivePlugins->value, array());
         $plugins        = array();
 
         foreach ($all_plugins as $plugin_file => $plugin_data) {
@@ -100,12 +107,12 @@ trait PluginListTrait
      * @return WP_REST_Response
      */
     private function scanPluginFilesWithCache(string $slug) {
-        if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+        if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
+        if (\RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
@@ -166,7 +173,7 @@ trait PluginListTrait
         }
 
         $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-        if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
+        if (\RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
@@ -177,7 +184,7 @@ trait PluginListTrait
             return $this->errorResponse('File not found or invalid path', HttpStatusType::NotFound->value);
         }
 
-        if (RiseupBooleanHelpers::isNotRegularFile($real_file_path)) {
+        if (\RiseupBooleanHelpers::isNotRegularFile($real_file_path)) {
             return $this->errorResponse('File not found', HttpStatusType::NotFound->value);
         }
 

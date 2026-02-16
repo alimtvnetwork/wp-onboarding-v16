@@ -4,12 +4,14 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\FileSystem
  */
 
-// Load sub-traits
-require_once __DIR__ . '/FileSystemPluginTrait.php';
-require_once __DIR__ . '/FileSystemDirTrait.php';
+namespace RiseupAsia\Traits\FileSystem;
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 trait FileSystemTrait {
     use FileSystemPluginTrait;

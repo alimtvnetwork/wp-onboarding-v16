@@ -2,17 +2,23 @@
 /**
  * PluginLifecycleDeleteTrait — Delete plugin REST handler.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Plugin
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\StatusType;
 
@@ -62,8 +68,8 @@ trait PluginLifecycleDeleteTrait {
         }
 
         $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Success->value);
-        return RiseupEnvelopeBuilder::success()
-            ->setRequestedAt('/' . API_FULL_NAMESPACE . EndpointType::PluginDelete->route())
+        return \RiseupEnvelopeBuilder::success()
+            ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . EndpointType::PluginDelete->route())
             ->setSingleResult(array('plugin_slug' => $slug, 'deleted' => true))
             ->toResponse();
     }

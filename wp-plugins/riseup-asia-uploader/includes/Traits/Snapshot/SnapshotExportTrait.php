@@ -4,15 +4,14 @@
  *
  * Shell trait delegating to SnapshotExportHandlerTrait and SnapshotImportStreamTrait.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Snapshot
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/SnapshotExportHandlerTrait.php';
-require_once __DIR__ . '/SnapshotImportStreamTrait.php';
 
 trait SnapshotExportTrait {
     use SnapshotExportHandlerTrait;

@@ -2,14 +2,18 @@
 /**
  * StatusOpsTrait — OpenAPI and OPcache reset handlers.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Status
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Status;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -38,7 +42,7 @@ trait StatusOpsTrait {
     private function loadOpenApiSpec(): array|WP_REST_Response {
         $spec_file = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value . '/data/openapi.json';
 
-        if (RiseupBooleanHelpers::isFileMissing($spec_file)) {
+        if (\RiseupBooleanHelpers::isFileMissing($spec_file)) {
             return $this->buildSpecError('OpenAPI specification file not found', $spec_file);
         }
 
@@ -79,7 +83,7 @@ trait StatusOpsTrait {
         $result['files_invalidated'] = $this->invalidatePluginFiles();
         wp_cache_delete('plugins', 'plugins');
 
-        return RiseupEnvelopeBuilder::success('OPcache reset complete')
+        return \RiseupEnvelopeBuilder::success('OPcache reset complete')
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::OpcacheReset->value)
             ->setSingleResult($result)
             ->toResponse();
@@ -107,7 +111,7 @@ trait StatusOpsTrait {
      * Invalidate OPcache for critical plugin files.
      */
     private function invalidatePluginFiles(): int {
-        if (RiseupBooleanHelpers::isFuncMissing('opcache_invalidate')) {
+        if (\RiseupBooleanHelpers::isFuncMissing('opcache_invalidate')) {
             return 0;
         }
 

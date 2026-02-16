@@ -5,14 +5,17 @@
  * Handles activated_plugin, deactivated_plugin, and deleted_plugin hooks
  * with source detection and audit logging.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Core
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Core;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\TriggerSourceType;

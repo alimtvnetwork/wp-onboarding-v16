@@ -2,14 +2,18 @@
 /**
  * SnapshotBackupExecTrait — Full and incremental backup REST handlers.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Snapshot
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 
@@ -55,9 +59,9 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Create the orchestrator for full backup. */
-    private function createFullBackupOrchestrator(): RiseupSnapshotOrchestrator {
-        $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
-        return RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
+    private function createFullBackupOrchestrator(): \RiseupSnapshotOrchestrator {
+        $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+        return \RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
     }
 
     /** Extract full backup options from request body. */
@@ -99,7 +103,7 @@ trait SnapshotBackupExecTrait {
             $master_dir = $incremental->findLatestMasterSnapshot();
         }
 
-        if (!$master_dir || RiseupBooleanHelpers::isDirMissing($master_dir)) {
+        if (!$master_dir || \RiseupBooleanHelpers::isDirMissing($master_dir)) {
             return new WP_REST_Response(array(
                 'success' => false, 'error' => 'No master (full) snapshot found. Create a full backup first.',
             ), 400);
@@ -109,9 +113,9 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Create an IncrementalBackup instance. */
-    private function createIncrementalBackup(): RiseupIncrementalBackup {
-        $rootDb = RiseupRootDb::getInstance($this->fileLogger, RiseupDependencyAnalyzer::getInstance($this->fileLogger));
-        return RiseupIncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
+    private function createIncrementalBackup(): \RiseupIncrementalBackup {
+        $rootDb = \RiseupRootDb::getInstance($this->fileLogger, \RiseupDependencyAnalyzer::getInstance($this->fileLogger));
+        return \RiseupIncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
     }
 
     /** Log incremental backup completion. */

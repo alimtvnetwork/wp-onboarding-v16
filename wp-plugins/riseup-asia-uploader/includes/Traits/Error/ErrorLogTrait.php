@@ -4,15 +4,14 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Error
  */
+
+namespace RiseupAsia\Traits\Error;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once dirname(__FILE__) . '/ErrorLogHandlerTrait.php';
-require_once dirname(__FILE__) . '/ErrorSessionHandlerTrait.php';
 
 trait ErrorLogTrait {
     use ErrorLogHandlerTrait;

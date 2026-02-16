@@ -4,16 +4,15 @@
  *
  * Shell trait — logic delegated to sub-traits.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Auth
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Auth;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once dirname(__FILE__) . '/AuthPermissionTrait.php';
-require_once dirname(__FILE__) . '/AuthCredentialTrait.php';
 
 trait AuthTrait
 {

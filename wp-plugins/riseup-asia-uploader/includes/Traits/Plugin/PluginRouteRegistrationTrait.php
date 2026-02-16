@@ -2,14 +2,17 @@
 /**
  * PluginRouteRegistrationTrait — plugin and agent route registration.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Plugin
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\HttpMethodType;
 use RiseupAsia\Enums\EndpointType;
 

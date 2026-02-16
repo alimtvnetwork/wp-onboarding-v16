@@ -2,13 +2,19 @@
 /**
  * ErrorSessionHandlerTrait — error session retrieval, parsing, and enrichment.
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Error
  */
+
+namespace RiseupAsia\Traits\Error;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use PDO;
+use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 
 trait ErrorSessionHandlerTrait {
@@ -18,12 +24,12 @@ trait ErrorSessionHandlerTrait {
         return $this->safeExecute(function() use ($request) {
             $this->fileLogger->info('Error sessions endpoint called');
 
-            $pdo = RiseupDatabase::getInstance()->getPdo();
+            $pdo = \RiseupDatabase::getInstance()->getPdo();
             if (!$pdo) {
                 return $this->errorResponse('Database not available (PDO/pdo_sqlite extension may not be installed)', HttpStatusType::ServerError->value);
             }
             if (!$this->isTableExists($pdo, 'error_sessions')) {
-                return RiseupEnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
+                return \RiseupEnvelopeBuilder::success('error_sessions table does not exist yet (migration v9 not applied)')
                     ->autoDetectRequestedAt()->setResults(array())->toResponse();
             }
 
@@ -32,7 +38,7 @@ trait ErrorSessionHandlerTrait {
             $rows    = $this->fetchErrorSessions($pdo, $query);
             $entries = $this->enrichErrorEntries($rows);
 
-            return RiseupEnvelopeBuilder::success()
+            return \RiseupEnvelopeBuilder::success()
                 ->autoDetectRequestedAt()->setResults($entries)
                 ->setPagination($total, $query['limit'], $query['limit'] > 0 ? (int) floor($query['offset'] / $query['limit']) + 1 : 1)
                 ->toResponse();

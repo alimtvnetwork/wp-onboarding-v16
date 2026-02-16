@@ -2,13 +2,18 @@
 /**
  * SnapshotCrudListTrait — snapshot list, get, and info handlers.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Snapshot
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Snapshot;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use WP_REST_Request;
+use WP_REST_Response;
 
 trait SnapshotCrudListTrait {
 
@@ -20,7 +25,7 @@ trait SnapshotCrudListTrait {
             $limit = (int) ($request->get_param('limit') ?: 50);
             $offset = (int) ($request->get_param('offset') ?: 0);
 
-            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $snapshots = $manager->listSnapshots($limit, $offset);
 
             return new WP_REST_Response(array(
@@ -39,7 +44,7 @@ trait SnapshotCrudListTrait {
             $body = $request->get_json_params();
             $id = isset($body['id']) ? (int) $body['id'] : (int) $request->get_param('id');
 
-            $manager = RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
             $provider = $manager->getProvider();
             if (!$provider) {
                 return $this->errorResponse('No snapshot provider available', 500);

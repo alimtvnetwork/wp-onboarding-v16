@@ -2,16 +2,23 @@
 /**
  * AuthCredentialTrait — header resolution, Basic auth parsing, capability verification.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Auth
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Auth;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_User;
+use WP_Error;
+use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\ErrorHandling\ErrorResponse;
 
 trait AuthCredentialTrait
 {
@@ -31,7 +38,7 @@ trait AuthCredentialTrait
     }
 
     private function resolveFromGetallheaders(): ?string {
-        if (RiseupBooleanHelpers::isFuncMissing('getallheaders')) {
+        if (\RiseupBooleanHelpers::isFuncMissing('getallheaders')) {
             return null;
         }
 
@@ -42,7 +49,7 @@ trait AuthCredentialTrait
         return null;
     }
 
-    private function authenticateUser(string $authHeader): WP_User|\WP_Error {
+    private function authenticateUser(string $authHeader): WP_User|WP_Error {
         $formatError = $this->validateAuthFormat($authHeader);
         if ($formatError) {
             return $formatError;
@@ -65,7 +72,7 @@ trait AuthCredentialTrait
         return $user;
     }
 
-    private function validateAuthFormat(string $authHeader): ?\WP_Error {
+    private function validateAuthFormat(string $authHeader): ?WP_Error {
         if (strpos($authHeader, 'Basic ') === 0) {
             return null;
         }
@@ -73,14 +80,14 @@ trait AuthCredentialTrait
         return $this->buildAuthError('Invalid Authorization header format');
     }
 
-    private function buildAuthError(string $reason, array $context = array()): \WP_Error {
+    private function buildAuthError(string $reason, array $context = array()): WP_Error {
         $this->fileLogger->warn($reason, $context);
         $this->logger->logAuthFailure($reason, $context);
 
         return new WP_Error('rest_forbidden', ResponseMessageType::Unauthorized->value, array('status' => HttpStatusType::Unauthorized->value));
     }
 
-    private function buildMissingAuthError(WP_REST_Request $request): \WP_Error {
+    private function buildMissingAuthError(WP_REST_Request $request): WP_Error {
         $this->fileLogger->warn('Missing Authorization header', array(
             'reason' => 'Missing Authorization header', 'method' => $request->get_method(), 'endpoint' => $request->get_route(),
         ));
@@ -92,7 +99,7 @@ trait AuthCredentialTrait
         ));
     }
 
-    private function checkAuthenticatedOnly(WP_REST_Request $request): true|\WP_Error {
+    private function checkAuthenticatedOnly(WP_REST_Request $request): true|WP_Error {
         try {
             return $this->resolveAndAuthenticate($request);
         } catch (Throwable $e) {
@@ -100,7 +107,7 @@ trait AuthCredentialTrait
         }
     }
 
-    private function checkAuthenticatedCapability(WP_REST_Request $request, string $capability): true|\WP_Error {
+    private function checkAuthenticatedCapability(WP_REST_Request $request, string $capability): true|WP_Error {
         try {
             $authResult = $this->resolveAndAuthenticate($request);
             if (is_wp_error($authResult) || $authResult === true) {
@@ -113,7 +120,7 @@ trait AuthCredentialTrait
         }
     }
 
-    private function resolveAndAuthenticate(WP_REST_Request $request): WP_User|\WP_Error {
+    private function resolveAndAuthenticate(WP_REST_Request $request): WP_User|WP_Error {
         $authHeader = $this->resolveAuthHeader($request);
         if (empty($authHeader)) {
             return $this->buildMissingAuthError($request);
@@ -122,7 +129,7 @@ trait AuthCredentialTrait
         return $this->authenticateUser($authHeader);
     }
 
-    private function verifyCapability(WP_User $user, string $capability): true|\WP_Error {
+    private function verifyCapability(WP_User $user, string $capability): true|WP_Error {
         if (current_user_can($capability)) {
             return true;
         }

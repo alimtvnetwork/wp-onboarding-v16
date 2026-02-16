@@ -2,17 +2,24 @@
 /**
  * InvalidRouteTrait — Invalid route handling and error response enrichment.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Route
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Route;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\ErrorHandling\FrameBuilder;
+
+trait InvalidRouteTrait
 {
     public function handleInvalidRoute(WP_REST_Request $request): WP_REST_Response {
         $invalidPath = $request->get_param('invalid_path');
@@ -23,7 +30,7 @@ use RiseupAsia\ErrorHandling\FrameBuilder;
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 10);
         $trace = $this->buildInvalidRouteTrace($method, $invalidPath, $backtrace);
 
-        return RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HttpStatusType::NotFound->value)
+        return \RiseupEnvelopeBuilder::error("No endpoint found for: {$method} /{$invalidPath}", HttpStatusType::NotFound->value)
             ->setRequestedAt($_SERVER['REQUEST_URI'] ?? '')
             ->setErrors($trace)
             ->toResponse();

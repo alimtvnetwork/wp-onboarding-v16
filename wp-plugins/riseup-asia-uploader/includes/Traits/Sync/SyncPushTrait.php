@@ -2,14 +2,19 @@
 /**
  * SyncPushTrait — sync push execution, file processing, and helpers.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Sync
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Sync;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\ResponseMessageType;
@@ -34,7 +39,7 @@ trait SyncPushTrait
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . $slug;
-            if (RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
+            if (\RiseupBooleanHelpers::isDirMissing($plugin_dir)) {
                 return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
             }
             $result = $this->executeSyncPush($slug, $files, $plugin_dir);
@@ -46,7 +51,7 @@ trait SyncPushTrait
 
     /** Execute the sync push operation across all files. */
     private function executeSyncPush(string $slug, array $files, string $plugin_dir): array {
-        $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $ignore = \RiseupUploadIgnore::fromDirectory($plugin_dir);
         $counters = array('files_updated' => 0, 'files_deleted' => 0, 'files_ignored' => 0);
         $results = array();
         $ignored_files = array();
@@ -58,13 +63,13 @@ trait SyncPushTrait
         }
 
         $this->logSyncCompletion($slug, $counters);
-        RiseupFileCache::getInstance($this->fileLogger, $this->db)->invalidate($slug);
+        \RiseupFileCache::getInstance($this->fileLogger, $this->db)->invalidate($slug);
 
         return array('success' => true) + $counters + array('ignored_files' => $ignored_files, 'results' => $results);
     }
 
     /** Process a single file in the sync push operation. */
-    private function processSyncFile(array $file, string $plugin_dir, string $slug, ?RiseupUploadIgnore $ignore): array {
+    private function processSyncFile(array $file, string $plugin_dir, string $slug, ?\RiseupUploadIgnore $ignore): array {
         $path   = isset($file['path']) ? $file['path'] : '';
         $action = isset($file['action']) ? $file['action'] : '';
 
@@ -78,7 +83,7 @@ trait SyncPushTrait
     }
 
     /** Validate sync file prerequisites. */
-    private function guardSyncFile(string $path, string $action, string $plugin_dir, ?RiseupUploadIgnore $ignore): ?array {
+    private function guardSyncFile(string $path, string $action, string $plugin_dir, ?\RiseupUploadIgnore $ignore): ?array {
         if (empty($path) || empty($action)) {
             return array('path' => $path, 'action' => $action, 'status' => 'skipped', 'reason' => 'Missing path or action');
         }
@@ -124,8 +129,8 @@ trait SyncPushTrait
         }
 
         $dir = dirname($full_path);
-        if (RiseupBooleanHelpers::isDirMissing($dir)) {
-            RiseupPathUtils::ensureDir($dir);
+        if (\RiseupBooleanHelpers::isDirMissing($dir)) {
+            \RiseupPathUtils::ensureDir($dir);
         }
 
         $written = file_put_contents($full_path, $decoded) !== false;
@@ -138,7 +143,7 @@ trait SyncPushTrait
 
     /** Delete a file during sync with audit trail. */
     private function syncDeleteFile(string $path, string $action, string $full_path, string $plugin_dir, string $slug): array {
-        if (RiseupBooleanHelpers::isFileMissing($full_path)) {
+        if (\RiseupBooleanHelpers::isFileMissing($full_path)) {
             return array('path' => $path, 'action' => $action, 'status' => 'success', 'reason' => 'Already absent');
         }
 

@@ -4,16 +4,15 @@
  *
  * Shell trait delegating to PluginRouteRegistrationTrait and SnapshotRouteRegistrationTrait.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Plugin
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
-
-require_once __DIR__ . '/PluginRouteRegistrationTrait.php';
-require_once __DIR__ . '/SnapshotRouteRegistrationTrait.php';
 
 trait PluginRoutesTrait
 {

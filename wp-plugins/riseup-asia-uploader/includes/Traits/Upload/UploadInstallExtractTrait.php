@@ -2,15 +2,20 @@
 /**
  * UploadInstallExtractTrait — Deactivation, extraction, and ZIP processing.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Upload
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Upload;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Response;
+use ZipArchive;
 use RiseupAsia\Enums\HttpStatusType;
+use RiseupAsia\Enums\PluginConfigType;
 
 trait UploadInstallExtractTrait
 {
@@ -71,7 +76,7 @@ trait UploadInstallExtractTrait
 
         $this->removeDuplicatePlugins($slug, WP_PLUGIN_DIR);
 
-        $is_self_update = ($slug === PLUGIN_SLUG && $is_update);
+        $is_self_update = ($slug === PluginConfigType::Slug->value && $is_update);
         if ($is_self_update) {
             $this->preLogSelfUpdate($slug, $input['upload_source'], $input['client_plugin_version'], strlen($input['zip_content']));
         }

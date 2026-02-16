@@ -2,13 +2,17 @@
 /**
  * FileSystemPluginTrait — plugin file detection and filesystem fallback.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\FileSystem
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\FileSystem;
 
 if (!defined('ABSPATH')) {
     exit;
 }
+
+use Throwable;
 
 trait FileSystemPluginTrait {
 

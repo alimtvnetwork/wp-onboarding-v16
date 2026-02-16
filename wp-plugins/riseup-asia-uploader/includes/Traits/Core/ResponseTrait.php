@@ -4,13 +4,18 @@
  *
  * Extracted from riseup-asia-uploader.php (lines 3607–4046).
  *
- * @package RiseupAsiaUploader
+ * @package RiseupAsia\Traits\Core
  */
+
+namespace RiseupAsia\Traits\Core;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\HttpStatusType;
 
 trait ResponseTrait {
@@ -47,7 +52,7 @@ trait ResponseTrait {
 
         $requestedAt = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
-        return RiseupEnvelopeBuilder::error($message, $status, $exception)
+        return \RiseupEnvelopeBuilder::error($message, $status, $exception)
             ->setRequestedAt($requestedAt)
             ->setDelegatedAt(home_url())
             ->toResponse();

@@ -2,14 +2,18 @@
 /**
  * UploadZipTrait — ZIP validation, duplicate removal, and pre-logging.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Upload
  * @since   1.57.0
  */
+
+namespace RiseupAsia\Traits\Upload;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use ZipArchive;
+use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
@@ -76,7 +80,7 @@ trait UploadZipTrait
 
     /** Remove duplicate plugin folders that share the same slug or TextDomain. */
     private function removeDuplicatePlugins($slug, $plugins_dir) {
-        if (RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
+        if (\RiseupBooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
