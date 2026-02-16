@@ -17,6 +17,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathUtils;
+use RiseupAsia\Snapshot\SnapshotManager;
 
 trait NativeSnapshotCrudTrait {
 
@@ -83,12 +84,12 @@ trait NativeSnapshotCrudTrait {
     }
 
     public function importSnapshot(string $filepath): array {
-        $manager = RiseupSnapshotManager::getInstance($this->logger, $this->db);
+        $manager = SnapshotManager::getInstance($this->logger, $this->db);
         return $manager->importSnapshot($filepath);
     }
 
     public function restoreSnapshot(int $snapshotId, array $options): array {
-        $manager = RiseupSnapshotManager::getInstance($this->logger, $this->db);
+        $manager = SnapshotManager::getInstance($this->logger, $this->db);
         return $manager->restoreSnapshot($snapshotId, $options);
     }
 

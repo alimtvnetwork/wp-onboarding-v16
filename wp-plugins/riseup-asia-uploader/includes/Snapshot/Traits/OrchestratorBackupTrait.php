@@ -17,6 +17,7 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotConfigType;
 use RiseupAsia\Enums\SnapshotScopeType;
 use RiseupAsia\Enums\TableType;
+use RiseupAsia\Snapshot\IncrementalBackup;
 
 trait OrchestratorBackupTrait {
 
@@ -120,7 +121,7 @@ trait OrchestratorBackupTrait {
     public function executeIncrementalBackup(array $options = array()): array {
         $this->log(LogLevelType::Info->value, 'Starting incremental backup orchestration', $options);
         try {
-            $incremental = RiseupIncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
+            $incremental = IncrementalBackup::getInstance($this->logger, $this->db, $this->rootDb);
             $master_dir = $this->resolveMasterDir($options, $incremental);
 
             if (!$master_dir) {

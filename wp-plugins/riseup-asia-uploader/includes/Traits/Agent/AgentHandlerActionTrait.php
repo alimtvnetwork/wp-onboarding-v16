@@ -16,6 +16,7 @@ use WP_REST_Request;
 use WP_REST_Response;
 use Throwable;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Agent\AgentManager;
 
 trait AgentHandlerActionTrait {
 
@@ -24,7 +25,7 @@ trait AgentHandlerActionTrait {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Testing agent connection', array('id' => $id));
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $result = $manager->testConnection($id);
             $status_code = $result['success'] ? 200 : 400;
             return new WP_REST_Response($result, $status_code);
@@ -36,7 +37,7 @@ trait AgentHandlerActionTrait {
         return $this->safeExecute(function() use ($request) {
             $id = (int) $request->get_param('id');
             $this->fileLogger->info('Syncing plugins from agent', array('id' => $id));
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $result = $manager->syncPlugins($id);
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);
@@ -59,7 +60,7 @@ trait AgentHandlerActionTrait {
             if (empty($slug)) {
                 return $this->errorResponse('Plugin slug is required', 400);
             }
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $result = $manager->executePluginAction($id, $action, $slug);
             if (is_wp_error($result)) {
                 return $this->errorResponse($result->get_error_message(), 400);
@@ -75,7 +76,7 @@ trait AgentHandlerActionTrait {
             $limit = $request->get_param('limit') ?: 50;
             $offset = $request->get_param('offset') ?: 0;
             $this->fileLogger->info('Getting agent action history', array('id' => $id));
-            $manager = \RiseupAgentManager::getInstance();
+            $manager = AgentManager::getInstance();
             $result = $manager->getActionHistory($id, $limit, $offset);
             return new WP_REST_Response(array('success' => true, 'total' => $result['total'], 'actions' => $result['actions']), 200);
         }, 'agent_history');

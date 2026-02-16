@@ -17,6 +17,8 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
+use RiseupAsia\Snapshot\SnapshotManager;
+use RiseupAsia\Snapshot\SnapshotOrchestrator;
 
 trait SnapshotCrudCreateTrait {
 
@@ -38,7 +40,7 @@ trait SnapshotCrudCreateTrait {
             $this->logger->logPluginAction(ActionType::SnapshotCreate->value, 'snapshot', StatusType::Success->value,
                 array('scope' => $scope, 'trigger' => 'api', 'phase' => 'initiated'));
 
-            $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
+            $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
             $isPerTable = (($manager->getSettings()['mode'] ?? 'per_table') === 'per_table');
 
             $result = $isPerTable
@@ -54,7 +56,7 @@ trait SnapshotCrudCreateTrait {
      * Execute a per-table snapshot via the orchestrator.
      */
     private function executePerTableSnapshot(array $body, string $scope, $manager): array {
-        $orchestrator = \RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
+        $orchestrator = SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
         return $orchestrator->executeFullBackup(array(
             'title'            => $body['title'] ?? null,
             'scope'            => $scope,

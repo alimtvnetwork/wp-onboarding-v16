@@ -15,17 +15,18 @@ if (!defined('ABSPATH')) {
 use WP_REST_Request;
 use WP_Error;
 use RiseupAsia\Enums\CapabilityType;
+use RiseupAsia\Admin\Admin;
 
 trait AuthPermissionTrait
 {
     /** Check if an endpoint is enabled via settings. */
     private function isEndpointEnabled(string $endpoint): bool {
-        return \RiseupAdmin::is_endpoint_enabled($endpoint);
+        return Admin::is_endpoint_enabled($endpoint);
     }
 
     /** Check if an endpoint requires authentication via settings. */
     private function isAuthRequired(string $endpoint): bool {
-        return \RiseupAdmin::is_auth_required($endpoint);
+        return Admin::is_auth_required($endpoint);
     }
 
     /** Build permission callback with optional auth bypass. */

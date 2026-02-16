@@ -16,6 +16,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Admin\Admin;
 
 trait ErrorLogHandlerTrait {
 
@@ -42,7 +43,7 @@ trait ErrorLogHandlerTrait {
 
     /** Resolve log retrieval settings from admin defaults and query param overrides. */
     private function resolveLogSettings(WP_REST_Request $request): array {
-        $settings     = \RiseupAdmin::get_settings();
+        $settings     = Admin::get_settings();
         $logSettings = isset($settings['log_retrieval']) ? $settings['log_retrieval'] : array();
 
         $resolved = array(

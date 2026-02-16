@@ -18,6 +18,7 @@ use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\SnapshotProviderType;
+use RiseupAsia\Snapshot\SnapshotExporter;
 use RiseupAsia\Enums\SnapshotStatusType;
 use RiseupAsia\Enums\SnapshotTriggerType;
 use RiseupAsia\Enums\TableType;
@@ -117,7 +118,7 @@ trait IncrementalRegistrationTrait {
     }
 
     private function doInvalidateZip(array $parent, string $masterDir): void {
-        $exporter = \RiseupSnapshotExporter::getInstance($this->logger, $this->db);
+        $exporter = SnapshotExporter::getInstance($this->logger, $this->db);
         if (!$exporter) {
             return;
         }

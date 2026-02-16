@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_REST_Request;
+use RiseupAsia\Upload\UploadIgnore;
 use WP_REST_Response;
 use Throwable;
 use ZipArchive;
@@ -30,7 +31,7 @@ trait PluginExportTrait
 
         try {
             $plugin_dir = WP_PLUGIN_DIR . '/' . PluginConfigType::Slug->value;
-            $ignore = \RiseupUploadIgnore::fromDirectory($plugin_dir);
+            $ignore = UploadIgnore::fromDirectory($plugin_dir);
             $zip_content = $this->createPluginZip($plugin_dir, PluginConfigType::Slug->value, $ignore);
 
             if ($zip_content === null) {
@@ -103,7 +104,7 @@ trait PluginExportTrait
             return $this->errorResponse('Invalid plugin slug', HttpStatusType::BadRequest->value);
         }
 
-        $ignore = \RiseupUploadIgnore::fromDirectory($plugin_dir);
+        $ignore = UploadIgnore::fromDirectory($plugin_dir);
         $zip_content = $this->createPluginZip($plugin_dir, $slug . '-backup', $ignore);
 
         if ($zip_content === null) {

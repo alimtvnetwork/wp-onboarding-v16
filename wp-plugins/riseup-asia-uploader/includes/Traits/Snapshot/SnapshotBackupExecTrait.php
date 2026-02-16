@@ -17,6 +17,11 @@ use WP_REST_Response;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Helpers\BooleanHelpers;
+use RiseupAsia\Snapshot\SnapshotManager;
+use RiseupAsia\Snapshot\SnapshotOrchestrator;
+use RiseupAsia\Snapshot\DependencyAnalyzer;
+use RiseupAsia\Snapshot\IncrementalBackup;
+use RiseupAsia\Database\RootDb;
 
 trait SnapshotBackupExecTrait {
 
@@ -60,9 +65,9 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Create the orchestrator for full backup. */
-    private function createFullBackupOrchestrator(): \RiseupSnapshotOrchestrator {
-        $manager = \RiseupSnapshotManager::getInstance($this->fileLogger, $this->db);
-        return \RiseupSnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
+    private function createFullBackupOrchestrator(): SnapshotOrchestrator {
+        $manager = SnapshotManager::getInstance($this->fileLogger, $this->db);
+        return SnapshotOrchestrator::getInstance($this->fileLogger, $this->db, $manager);
     }
 
     /** Extract full backup options from request body. */
@@ -114,9 +119,9 @@ trait SnapshotBackupExecTrait {
     }
 
     /** Create an IncrementalBackup instance. */
-    private function createIncrementalBackup(): \RiseupIncrementalBackup {
-        $rootDb = \RiseupRootDb::getInstance($this->fileLogger, \RiseupDependencyAnalyzer::getInstance($this->fileLogger));
-        return \RiseupIncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
+    private function createIncrementalBackup(): IncrementalBackup {
+        $rootDb = RootDb::getInstance($this->fileLogger, DependencyAnalyzer::getInstance($this->fileLogger));
+        return IncrementalBackup::getInstance($this->fileLogger, $this->db, $rootDb);
     }
 
     /** Log incremental backup completion. */

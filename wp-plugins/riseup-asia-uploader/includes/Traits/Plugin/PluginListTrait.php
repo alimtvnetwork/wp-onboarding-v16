@@ -18,6 +18,8 @@ use Throwable;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
+use RiseupAsia\Upload\UploadIgnore;
+use RiseupAsia\Database\FileCache;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Enums\OptionNameType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -118,8 +120,8 @@ trait PluginListTrait
             return $this->errorResponse(ResponseMessageType::PluginNotFound->value . ': ' . $slug, HttpStatusType::NotFound->value);
         }
 
-        $ignore = RiseupUploadIgnore::fromDirectory($plugin_dir);
-        $fileCache = RiseupFileCache::getInstance($this->fileLogger, $this->db);
+        $ignore = UploadIgnore::fromDirectory($plugin_dir);
+        $fileCache = FileCache::getInstance($this->fileLogger, $this->db);
         $result = $fileCache->getManifest($slug, $plugin_dir, $ignore);
 
         return new WP_REST_Response(array(

@@ -18,23 +18,24 @@ use Throwable;
 use RiseupAsia\Enums\HookType;
 use RiseupAsia\Enums\SnapshotModeType;
 use RiseupAsia\Enums\SnapshotScopeType;
+use RiseupAsia\Snapshot\SnapshotFactory;
 
 trait SchedulerTriggerTrait {
 
     public function getStorageStats(): array {
-        $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
+        $cleaner = SnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->getStorageStats();
     }
 
     public function estimateCleanup(): array {
         $settings = $this->detector->getSettings();
-        $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
+        $cleaner = SnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->estimateCleanup($settings);
     }
 
     public function runManualCleanup(): array {
         $settings = $this->detector->getSettings();
-        $cleaner = RiseupSnapshotFactory::cleaner($this->logger, $this->db);
+        $cleaner = SnapshotFactory::cleaner($this->logger, $this->db);
         return $cleaner->runCleanup($settings);
     }
 
