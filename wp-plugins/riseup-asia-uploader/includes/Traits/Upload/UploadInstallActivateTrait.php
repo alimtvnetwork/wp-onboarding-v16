@@ -35,6 +35,7 @@ trait UploadInstallActivateTrait
 
         if (!$plugin_file) {
             $this->logger->logUploadFailed($slug, 'Could not find plugin file after extraction');
+
             return $this->errorResponse('Could not find plugin file after extraction', HttpStatusType::ServerError->value);
         }
 
@@ -58,7 +59,13 @@ trait UploadInstallActivateTrait
     }
 
     /** Activate the plugin if requested or if it was previously active. */
-    private function activateIfNeeded(string $pluginFile, string $slug, bool $activate, bool $wasActive, bool $isUpdate): array|WP_REST_Response {
+    private function activateIfNeeded(
+        string $pluginFile,
+        string $slug,
+        bool $activate,
+        bool $wasActive,
+        bool $isUpdate,
+    ): array|WP_REST_Response {
         if (!$activate && !$wasActive) {
             return array('activated' => false);
         }
@@ -72,8 +79,13 @@ trait UploadInstallActivateTrait
     }
 
     /** Build response for failed activation after upload. */
-    private function buildActivationFailureResponse(string $slug, bool $is_update, string $error_msg): WP_REST_Response {
+    private function buildActivationFailureResponse(
+        string $slug,
+        bool $is_update,
+        string $error_msg,
+    ): WP_REST_Response {
         $this->logger->logUploadFailed($slug, ResponseMessageType::ActivationFailed->value . ': ' . $error_msg);
+
         return EnvelopeBuilder::success('Plugin uploaded but activation failed', HttpStatusType::Ok->value)
             ->setRequestedAt('/' . PluginConfigType::apiFullNamespace() . '/' . EndpointType::Upload->value)
             ->setSingleResult(array(
@@ -84,7 +96,12 @@ trait UploadInstallActivateTrait
     }
 
     /** Detect the installed plugin version from disk. */
-    private function detectInstalledVersion(string $pluginFile, string $slug, bool $isSelfUpdate, string $clientVersion): array {
+    private function detectInstalledVersion(
+        string $pluginFile,
+        string $slug,
+        bool $isSelfUpdate,
+        string $clientVersion,
+    ): array {
         $installed_version = $this->readVersionFromFile($pluginFile);
 
         if (empty($installed_version)) {
@@ -93,6 +110,7 @@ trait UploadInstallActivateTrait
         }
 
         $version = $this->resolveEffectiveVersion($installed_version, $clientVersion, $isSelfUpdate);
+
         return array('version' => $version);
     }
 
@@ -114,10 +132,15 @@ trait UploadInstallActivateTrait
     }
 
     /** Resolve the effective version based on self-update status and available sources. */
-    private function resolveEffectiveVersion(string $installed, string $client, bool $is_self_update): string {
+    private function resolveEffectiveVersion(
+        string $installed,
+        string $client,
+        bool $is_self_update,
+    ): string {
         if ($is_self_update) {
             return $client ?: ($installed ?: PluginConfigType::Version->value);
         }
+
         return $installed ?: ($client ?: PluginConfigType::Version->value);
     }
 }

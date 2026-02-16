@@ -42,7 +42,12 @@ trait WorkerProgressTrait {
         }
     }
 
-    private function updateProgress(string $table, string $status, int $rows = 0, ?string $error = null): void {
+    private function updateProgress(
+        string $table,
+        string $status,
+        int $rows = 0,
+        ?string $error = null,
+    ): void {
         $pdo = $this->db->getPdo();
         if (!$pdo) return;
 

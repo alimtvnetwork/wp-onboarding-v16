@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_Error;
 use RiseupAsia\Enums\HttpMethodType;
 
 trait AgentRemoteCoreTrait {
@@ -35,14 +36,20 @@ trait AgentRemoteCoreTrait {
 
     private function buildAuthHeader(array $agent): string {
         $credentials = $agent['username'] . ':' . $agent['app_password'];
+
         return 'Basic ' . base64_encode($credentials);
     }
 
     /** Make an API request to an agent site. */
-    public function apiRequest(int $agentId, string $method, string $endpoint, array $body = array()): array|\WP_Error {
+    public function apiRequest(
+        int $agentId,
+        string $method,
+        string $endpoint,
+        array $body = array(),
+    ): array|WP_Error {
         $agent = $this->getAgent($agentId, true);
         if (!$agent) {
-            return new \WP_Error('not_found', 'Agent site not found');
+            return new WP_Error('not_found', 'Agent site not found');
         }
 
         $url = $this->resolveAgentBaseUrl($agent, $endpoint);
@@ -69,7 +76,11 @@ trait AgentRemoteCoreTrait {
         return trailingslashit($baseUrl) . 'wp-json/' . ltrim($endpoint, '/');
     }
 
-    private function buildAgentRequestArgs(array $agent, string $method, array $body): array {
+    private function buildAgentRequestArgs(
+        array $agent,
+        string $method,
+        array $body,
+    ): array {
         $args = array(
             'method'    => strtoupper($method),
             'timeout'   => 30,
@@ -87,9 +98,10 @@ trait AgentRemoteCoreTrait {
         return $args;
     }
 
-    private function parseAgentResponse(array|\WP_Error $response, int $agentId): array|\WP_Error {
+    private function parseAgentResponse(array|WP_Error $response, int $agentId): array|WP_Error {
         if (is_wp_error($response)) {
             $this->logAction($agentId, 'api_error', null, 'failed', null, $response->get_error_message());
+
             return $response;
         }
 
@@ -98,7 +110,8 @@ trait AgentRemoteCoreTrait {
 
         if ($statusCode >= 400) {
             $errorMsg = isset($bodyJson['error']['message']) ? $bodyJson['error']['message'] : "HTTP {$statusCode}";
-            return new \WP_Error('api_error', $errorMsg, array('status' => $statusCode, 'response' => $bodyJson));
+
+            return new WP_Error('api_error', $errorMsg, array('status' => $statusCode, 'response' => $bodyJson));
         }
 
         return $bodyJson;

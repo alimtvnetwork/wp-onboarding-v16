@@ -12,14 +12,20 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use Throwable;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
 
 trait DatabaseQuerySearchTrait {
 
-    public function queryTransactions(array $filters = array(), int $limit = self::DEFAULT_LIMIT, int $offset = 0): array {
+    public function queryTransactions(
+        array $filters = array(),
+        int $limit = self::DEFAULT_LIMIT,
+        int $offset = 0,
+    ): array {
         if (!$this->isReady()) {
             $this->fileLogger->warn('Database not ready for query');
+
             return array('total' => 0, 'logs' => array());
         }
 
@@ -30,11 +36,16 @@ trait DatabaseQuerySearchTrait {
             return $this->executeTransactionQuery($filters, $limit, $offset);
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to query transactions');
+
             return array('total' => 0, 'logs' => array());
         }
     }
 
-    private function executeTransactionQuery(array $filters, int $limit, int $offset): array {
+    private function executeTransactionQuery(
+        array $filters,
+        int $limit,
+        int $offset,
+    ): array {
         $this->fileLogger->debug('Querying transactions', array('filters' => $filters));
 
         $countQuery = Orm::forTable(TableType::Transactions->value);
@@ -123,6 +134,7 @@ trait DatabaseQuerySearchTrait {
             );
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to get stats');
+
             return array();
         }
     }
@@ -135,6 +147,7 @@ trait DatabaseQuerySearchTrait {
         foreach ($rows as $row) {
             $result[$row[$column]] = (int) $row['count'];
         }
+
         return $result;
     }
 
@@ -151,9 +164,11 @@ trait DatabaseQuerySearchTrait {
                 ->delete();
 
             $this->fileLogger->info('Cleanup complete', array('deleted' => $deleted));
+
             return $deleted;
         } catch (Throwable $e) {
             $this->fileLogger->logException($e, 'Failed to cleanup transactions');
+
             return 0;
         }
     }

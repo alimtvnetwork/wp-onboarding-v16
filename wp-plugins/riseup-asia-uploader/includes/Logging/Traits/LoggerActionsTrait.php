@@ -14,7 +14,14 @@ use RiseupAsia\Enums\StatusType;
 trait LoggerActionsTrait {
 
     /** Log a plugin operation. */
-    public function logPluginAction(string $action, string $pluginSlug, string $status = '', array $details = array(), ?string $errorMsg = null, array $extraEnhanced = array()) {
+    public function logPluginAction(
+        string $action,
+        string $pluginSlug,
+        string $status = '',
+        array $details = array(),
+        ?string $errorMsg = null,
+        array $extraEnhanced = array(),
+    ) {
         $status = $status ?: StatusType::Success->value;
         $this->fileLogger->info('Logging plugin action', array(
             'action' => $action, 'plugin' => $pluginSlug, 'status' => $status,
@@ -30,7 +37,13 @@ trait LoggerActionsTrait {
     }
 
     /** Log a post operation. */
-    public function logPostAction(string $action, int $postId, string $status = '', array $details = array(), ?string $errorMsg = null) {
+    public function logPostAction(
+        string $action,
+        int $postId,
+        string $status = '',
+        array $details = array(),
+        ?string $errorMsg = null,
+    ) {
         $status = $status ?: StatusType::Success->value;
         $this->fileLogger->info('Logging post action', array(
             'action' => $action, 'post_id' => $postId, 'status' => $status,
@@ -58,17 +71,29 @@ trait LoggerActionsTrait {
     }
 
     /** Log upload initiated. */
-    public function logUploadInitiated(string $pluginSlug, array $details = array(), array $extraEnhanced = array()) {
+    public function logUploadInitiated(
+        string $pluginSlug,
+        array $details = array(),
+        array $extraEnhanced = array(),
+    ) {
         return $this->logPluginAction(ActionType::UploadInitiated->value, $pluginSlug, StatusType::Success->value, $details, null, $extraEnhanced);
     }
 
     /** Log upload success. */
-    public function logUpload(string $pluginSlug, array $details = array(), array $extraEnhanced = array()) {
+    public function logUpload(
+        string $pluginSlug,
+        array $details = array(),
+        array $extraEnhanced = array(),
+    ) {
         return $this->logPluginAction(ActionType::Upload->value, $pluginSlug, StatusType::Success->value, $details, null, $extraEnhanced);
     }
 
     /** Log upload failure. */
-    public function logUploadFailed(string $pluginSlug, string $error, array $details = array()) {
+    public function logUploadFailed(
+        string $pluginSlug,
+        string $error,
+        array $details = array(),
+    ) {
         $this->fileLogger->error('Upload failed', array('plugin' => $pluginSlug, 'error' => $error));
 
         return $this->logPluginAction(ActionType::Upload->value, $pluginSlug, StatusType::Failed->value, $details, $error);
@@ -90,14 +115,22 @@ trait LoggerActionsTrait {
     }
 
     /** Log file replace. */
-    public function logFileReplace(string $pluginSlug, string $filePath, array $details = array()) {
+    public function logFileReplace(
+        string $pluginSlug,
+        string $filePath,
+        array $details = array(),
+    ) {
         $details['file_path'] = $filePath;
 
         return $this->logPluginAction(ActionType::FileReplace->value, $pluginSlug, StatusType::Success->value, $details);
     }
 
     /** Log file delete. */
-    public function logFileDelete(string $pluginSlug, string $filePath, array $details = array()) {
+    public function logFileDelete(
+        string $pluginSlug,
+        string $filePath,
+        array $details = array(),
+    ) {
         $details['file_path'] = $filePath;
 
         return $this->logPluginAction(ActionType::FileDelete->value, $pluginSlug, StatusType::Success->value, $details);
