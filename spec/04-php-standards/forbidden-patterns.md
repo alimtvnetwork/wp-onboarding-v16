@@ -77,6 +77,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | 4.7 | `!class_exists('X')` | `BooleanHelpers::isClassMissing('X')` | Raw negation; use positive guard |
 | 4.8 | `!function_exists('f')` | `BooleanHelpers::isFuncMissing('f')` | Raw negation; use positive guard |
 | 4.9 | `!extension_loaded('e')` | `BooleanHelpers::isExtensionMissing('e')` | Raw negation; use positive guard |
+| 4.10 | `$isX && !$isY` in `if` | `$isConflict = $isX && !$isY` (extracted) | Mixed polarity; extract to named boolean |
 
 ---
 
