@@ -7,6 +7,8 @@
  * @updated 1.9.0 - Added source machine and triggered_by columns
  */
 
+use RiseupAsia\Helpers\BooleanHelpers;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -188,6 +190,20 @@ $upload_source_classes = array(
                     $trigger_label = isset($trigger_labels[$triggered_by]) ? $trigger_labels[$triggered_by] : ($triggered_by ?: '—');
                     $upload_source_class = isset($upload_source_classes[$upload_source]) ? $upload_source_classes[$upload_source] : 'source-unknown';
                     $upload_source_label = isset($upload_source_labels[$upload_source]) ? $upload_source_labels[$upload_source] : ($upload_source ?: '—');
+
+                    // Extract named booleans for P3 compliance
+                    $hasLogDetails = BooleanHelpers::hasValue($log['details'] ?? null);
+                    $hasErrorMsg = BooleanHelpers::hasValue($log['error_msg'] ?? null);
+                    $hasDetailsOrError = $hasLogDetails || $hasErrorMsg;
+                    $hasPluginSlug = BooleanHelpers::hasValue($log['plugin_slug'] ?? null);
+                    $hasPluginFile = BooleanHelpers::hasValue($log['plugin_file'] ?? null) && ($log['plugin_file'] ?? '') !== ($log['plugin_slug'] ?? '');
+                    $hasPostId = BooleanHelpers::hasValue($log['post_id'] ?? null);
+                    $hasPluginVersion = BooleanHelpers::hasValue($plugin_version);
+                    $hasTriggeredBy = BooleanHelpers::hasValue($triggered_by);
+                    $hasUploadSource = BooleanHelpers::hasValue($upload_source);
+                    $hasSourceMachine = BooleanHelpers::hasValue($source_machine);
+                    $hasIpAddress = BooleanHelpers::hasValue($log['ip_address'] ?? null) && ($log['ip_address'] ?? '') !== '0.0.0.0';
+                    $hasUserId = BooleanHelpers::hasValue($log['user_id'] ?? null);
                     
                     // Date grouping
                     $log_timestamp = strtotime($log['created_at']);
@@ -215,10 +231,10 @@ $upload_source_classes = array(
                         </td>
                     </tr>
                 <?php endif; ?>
-                    <tr class="riseup-log-row <?php echo (!empty($log['details']) || !empty($log['error_msg'])) ? 'has-details' : ''; ?>" 
-                        <?php if (!empty($log['details'])): ?>
+                    <tr class="riseup-log-row <?php echo $hasDetailsOrError ? 'has-details' : ''; ?>" 
+                        <?php if ($hasLogDetails): ?>
                             data-details="<?php echo esc_attr(json_encode($log['details'])); ?>"
-                        <?php elseif (!empty($log['error_msg'])): ?>
+                        <?php elseif ($hasErrorMsg): ?>
                             data-details="<?php echo esc_attr(json_encode(array('error' => $log['error_msg']))); ?>"
                         <?php endif; ?>>
                         <td class="column-id"><?php echo esc_html($log['id']); ?></td>
@@ -233,19 +249,19 @@ $upload_source_classes = array(
                             </span>
                         </td>
                         <td class="column-plugin">
-                            <?php if (!empty($log['plugin_slug'])): ?>
+                            <?php if ($hasPluginSlug): ?>
                                 <span class="plugin-target-badge"><?php echo esc_html($log['plugin_slug']); ?></span>
-                                <?php if (!empty($log['plugin_file']) && $log['plugin_file'] !== $log['plugin_slug']): ?>
+                                <?php if ($hasPluginFile): ?>
                                     <br><small class="plugin-file" title="<?php echo esc_attr($log['plugin_file']); ?>"><?php echo esc_html($log['plugin_file']); ?></small>
                                 <?php endif; ?>
-                            <?php elseif (!empty($log['post_id'])): ?>
+                            <?php elseif ($hasPostId): ?>
                                 <span class="plugin-target-badge target-post"><?php esc_html_e('Post', 'riseup-asia-uploader'); ?> #<?php echo esc_html($log['post_id']); ?></span>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
                         </td>
                         <td class="column-version">
-                            <?php if (!empty($plugin_version)): ?>
+                            <?php if ($hasPluginVersion): ?>
                                 <?php if ($plugin_version === PLUGIN_VERSION): ?>
                                     <code class="version-badge version-current">v<?php echo esc_html($plugin_version); ?></code>
                                 <?php else: ?>
@@ -256,7 +272,7 @@ $upload_source_classes = array(
                             <?php endif; ?>
                         </td>
                         <td class="column-trigger">
-                            <?php if (!empty($triggered_by)): ?>
+                            <?php if ($hasTriggeredBy): ?>
                                 <span class="trigger-badge <?php echo esc_attr($trigger_class); ?>" title="<?php echo esc_attr($triggered_by); ?>">
                                     <?php echo esc_html($trigger_label); ?>
                                 </span>
@@ -265,7 +281,7 @@ $upload_source_classes = array(
                             <?php endif; ?>
                         </td>
                         <td class="column-upload-source">
-                            <?php if (!empty($upload_source)): ?>
+                            <?php if ($hasUploadSource): ?>
                                 <span class="upload-source-badge <?php echo esc_attr($upload_source_class); ?>" title="<?php echo esc_attr($upload_source); ?>">
                                     <?php echo esc_html($upload_source_label); ?>
                                 </span>
@@ -274,21 +290,21 @@ $upload_source_classes = array(
                             <?php endif; ?>
                         </td>
                         <td class="column-source">
-                            <?php if (!empty($source_machine)): ?>
+                            <?php if ($hasSourceMachine): ?>
                                 <span class="source-badge" title="<?php esc_attr_e('Management Server Hostname', 'riseup-asia-uploader'); ?>">
                                     <?php echo esc_html($source_machine); ?>
                                 </span>
                             <?php else: ?>
                                 <span class="na">—</span>
                             <?php endif; ?>
-                            <?php if (!empty($log['ip_address']) && $log['ip_address'] !== '0.0.0.0'): ?>
+                            <?php if ($hasIpAddress): ?>
                                 <br><small class="ip-address"><?php echo esc_html($log['ip_address']); ?></small>
                             <?php endif; ?>
                         </td>
                         <td class="column-user">
                             <span class="user-info">
                                 <?php echo esc_html($log['user_login']); ?>
-                                <?php if (!empty($log['user_id'])): ?>
+                                <?php if ($hasUserId): ?>
                                     <small>(#<?php echo esc_html($log['user_id']); ?>)</small>
                                 <?php endif; ?>
                             </span>
@@ -299,11 +315,11 @@ $upload_source_classes = array(
                             </span>
                         </td>
                         <td class="column-details">
-                            <?php if (!empty($log['error_msg'])): ?>
+                            <?php if ($hasErrorMsg): ?>
                                 <span class="error-msg" title="<?php echo esc_attr($log['error_msg']); ?>">
                                     <?php echo esc_html(wp_trim_words($log['error_msg'], 10)); ?>
                                 </span>
-                            <?php elseif (!empty($log['details'])): ?>
+                            <?php elseif ($hasLogDetails): ?>
                                 <button type="button" class="button button-small toggle-details" data-details="<?php echo esc_attr(json_encode($log['details'])); ?>">
                                     <?php esc_html_e('View', 'riseup-asia-uploader'); ?>
                                 </button>
