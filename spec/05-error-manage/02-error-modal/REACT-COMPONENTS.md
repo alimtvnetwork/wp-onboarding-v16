@@ -1,7 +1,7 @@
 # Error Modal — Reusable React Components
 
-**Version:** 2.0.0  
-**Updated:** 2026-02-11  
+**Version:** 2.1.0  
+**Updated:** 2026-02-17  
 **Purpose:** Portable React code for rebuilding the Global Error Modal in any project.
 
 ---
@@ -395,13 +395,14 @@ src/components/errors/
 ├── SessionLogsTab.tsx         # Session sub-tabs (Logs, Request, Response, Stack Trace)
 ├── RequestDetails.tsx         # 3-hop request chain visualization
 ├── TraversalDetails.tsx       # Endpoint flow + methods stack + delegated error stack
-├── ErrorModalActions.tsx      # Download & Copy dropdown menus
+├── ErrorModalActions.tsx      # Download & Copy dropdown menus (reused by both modals)
 ├── ErrorModalTypes.ts         # Shared types (PHPStackFrame, AppInfo, SectionCommonProps)
 ├── ErrorQueueBadge.tsx        # Floating badge showing error count
-├── ErrorDetailModal.tsx       # Simplified detail modal (for error history drawer)
+├── ErrorDetailModal.tsx       # Standalone detail modal (error history / E2E tests page)
 ├── ErrorHistoryDrawer.tsx     # Side drawer listing recent errors
 ├── AppErrorBoundary.tsx       # React error boundary wrapper
-└── errorReportGenerator.ts    # Pure function: CapturedError → Markdown report
+├── errorReportGenerator.ts    # Pure function: CapturedError → Markdown report (compact + full)
+└── errorLogAdapter.ts         # Maps backend ErrorLog → CapturedError for ErrorDetailModal
 
 src/stores/
 └── errorStore.ts              # Zustand store for error state management
@@ -422,6 +423,7 @@ src/hooks/
 | `TraversalDetails` | `error`, `copySection` |
 | `DownloadDropdown` | `error`, `appName`, `appVersion`, `gitCommit`, `buildTime` |
 | `CopyDropdown` | `error`, `appName`, `appVersion`, `gitCommit`, `buildTime`, `copyFullError` |
+| `ErrorDetailModal` | `open`, `onOpenChange`, `error` (receives `ErrorLog`, adapts internally) |
 
 ---
 
@@ -543,7 +545,7 @@ Shows the full traversal data from the envelope:
 
 ### 7.6 ErrorModalActions
 
-Two dropdown menus:
+Two dropdown menus, reused by both `GlobalErrorModal` and `ErrorDetailModal`:
 
 **DownloadDropdown:**
 - Full Bundle (ZIP) — POST to `/api/v1/errors/bundle`
@@ -551,11 +553,50 @@ Two dropdown menus:
 - log.txt (Full) — download
 - Report (.md) — generated client-side
 
-**CopyDropdown:**
+**CopyDropdown (Split Button pattern):**
+- **Main click** → Compact Report (instant, from memory via `generateCompactReport`)
+- Copy Compact Report (same as main click)
 - Copy Full Report
 - Copy with Backend Logs (fetches error.log.txt and appends)
 - Copy error.log.txt
 - Copy log.txt
+
+### 7.7 ErrorDetailModal
+
+Standalone modal used on the Error History and E2E Tests pages. Receives backend `ErrorLog` objects (not `CapturedError`).
+
+**Adapter pattern:** On render, converts the `ErrorLog` via `errorLogToCapturedError()` from `errorLogAdapter.ts` so that `generateCompactReport` and `generateErrorReport` can be called with the same interface as `GlobalErrorModal`.
+
+```typescript
+// src/components/errors/errorLogAdapter.ts
+export function errorLogToCapturedError(error: ErrorLog): CapturedError {
+  return {
+    id: String(error.id),
+    code: error.code,
+    level: error.level as CapturedError["level"],
+    message: error.message,
+    details: error.details,
+    createdAt: error.createdAt,
+    context: error.context as CapturedError["context"],
+    backendStackTrace: error.stackTrace,
+    parsedFrames: error.file
+      ? [{ file: error.file, line: error.line ?? 0, function: error.function ?? "" }]
+      : undefined,
+  } as CapturedError;
+}
+```
+
+**Footer layout (matches GlobalErrorModal):**
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  [▼ Download]   [Close]   [📋 Copy │ ▼]                     │
+│                                                              │
+│  DownloadDropdown          Split Button:                     │
+│  (reused component)        Main = Compact Report             │
+│                            Dropdown = Compact / Full         │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ---
 
