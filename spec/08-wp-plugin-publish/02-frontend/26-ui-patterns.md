@@ -286,12 +286,19 @@ type CreateInput struct {
 }
 
 func (s *Service) Create(ctx context.Context, input CreateInput) {
-  if !input.ForceCreate {
-    if err := s.Validate(input); err != nil {
-      return nil, err
-    }
+  if err := s.validateIfRequired(input); err != nil {
+    return nil, err
   }
+
   // Proceed with creation
+}
+
+func (s *Service) validateIfRequired(input CreateInput) error {
+  if input.ForceCreate {
+    return nil
+  }
+
+  return s.Validate(input)
 }
 ```
 
@@ -346,7 +353,8 @@ if (isApiClientError(error)) {
   });
   
   // Auto-open for connectivity errors
-  if (error.apiError.code === "E9005") {
+  const isConnectivityError = error.apiError.code === "E9005";
+  if (isConnectivityError) {
     openErrorModal(captured);
   }
 }
