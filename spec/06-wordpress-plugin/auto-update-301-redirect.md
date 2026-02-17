@@ -18,8 +18,8 @@ The Riseup Asia Uploader plugin supports automatic updates via a configurable ma
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| Update Resolver | `class-update-resolver.php` | URL resolution, caching, WordPress hook integration |
-| Admin Class | `class-admin.php` | AJAX handlers for settings UI |
+| Update Resolver | `UpdateResolver.php` | URL resolution, caching, WordPress hook integration |
+| Admin Class | `Admin.php` | AJAX handlers for settings UI |
 | Settings Template | `admin-settings.php` | UI for configuration |
 | Constants | `constants.php` | Default values and action constants |
 

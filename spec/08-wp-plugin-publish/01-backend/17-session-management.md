@@ -185,7 +185,7 @@ sessionService.SetMetadata(sessionID, key string, value interface{})
   },
   "stackTrace": {
     "golang": [{ "function": "DisableRemotePlugin", "file": "site_handlers.go", "line": 350 }],
-    "php": [{ "function": "handle_disable", "file": "class-plugin-manager.php", "line": 120, "class": "RiseupPluginManager" }]
+    "php": [{ "function": "handleDisable", "file": "PluginManager.php", "line": 120, "class": "PluginManager" }]
   },
   "phpStackTraceLog": "Full stacktrace.txt content..."
 }

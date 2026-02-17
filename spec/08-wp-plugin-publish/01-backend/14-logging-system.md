@@ -248,8 +248,8 @@ Each error entry is appended to `error.log.txt` with the following structure:
   RequestDelegatedAt: 2026-02-09T01:25:31Z
   Backend Error: [E3004] Plugin operation failed
   Delegated Service Error Stack (PHP):
-    #0 RiseupUploader::disable() at /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/class-plugin-manager.php:145
-    #1 RestController::handle_disable() at /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/class-rest-controller.php:89
+    #0 RiseupUploader::disable() at /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/PluginManager.php:145
+    #1 RestController::handleDisable() at /var/www/html/wp-content/plugins/riseup-asia-uploader/includes/RestController.php:89
   Go Backend Stack:
     at executeRemotePluginAction service.go:1245
     at DisablePlugin service.go:1180
