@@ -98,7 +98,7 @@ class FileWatcher {
 
 ```php
 private function hashFile(string $path): string {
-    if (!file_exists($path)) {
+    if (PathHelper::isFileMissing($path)) {
         return '';
     }
     

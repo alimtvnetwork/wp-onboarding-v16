@@ -647,9 +647,10 @@ private function writeErrorEntry(Throwable $e, string $context): void {
 ### 1. Missing Directory Permissions
 
 ```php
+use RiseupAsia\Helpers\PathHelper;
 use RuntimeException;
 
-if (!is_writable($dir)) {
+if (PathHelper::isDirReadonly($dir)) {
     $this->fileLogger->error(sprintf('Directory not writable: %s', $dir), __FILE__, __LINE__);
 
     throw new RuntimeException("Cannot write to directory: {$dir}");

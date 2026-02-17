@@ -152,7 +152,7 @@ $path = PathHelper::pluginDir() . 'includes/Core/Plugin.php';
 During plugin initialization, prefer native PHP over WordPress wrappers:
 
 ```php
-if (!is_dir($path)) {
+if (PathHelper::isDirMissing($path)) {
     @mkdir($path, 0755, true);
 }
 
