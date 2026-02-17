@@ -32,33 +32,51 @@ package sync
 
 import "time"
 
+// SyncStatusType represents the sync check result status
+type SyncStatusType string
+
+const (
+	SyncStatusSynced  SyncStatusType = "synced"
+	SyncStatusPending SyncStatusType = "pending"
+	SyncStatusError   SyncStatusType = "error"
+)
+
+// ChangeType represents the type of file change detected
+type ChangeType string
+
+const (
+	ChangeTypeAdded    ChangeType = "added"
+	ChangeTypeModified ChangeType = "modified"
+	ChangeTypeDeleted  ChangeType = "deleted"
+)
+
 // SyncResult represents the result of a sync check
 type SyncResult struct {
-	PluginID      int64        `json:"pluginId"`
-	SiteID        int64        `json:"siteId"`
-	PluginName    string       `json:"pluginName"`
-	SiteName      string       `json:"siteName"`
-	Status        string       `json:"status"` // synced, pending, error
-	TotalFiles    int          `json:"totalFiles"`
-	ChangedFiles  int          `json:"changedFiles"`
-	AddedFiles    int          `json:"addedFiles"`
-	ModifiedFiles int          `json:"modifiedFiles"`
-	DeletedFiles  int          `json:"deletedFiles"`
-	Changes       []FileChange `json:"changes"`
-	CheckedAt     time.Time    `json:"checkedAt"`
-	Error         string       `json:"error,omitempty"`
+	PluginID      int64          `json:"pluginId"`
+	SiteID        int64          `json:"siteId"`
+	PluginName    string         `json:"pluginName"`
+	SiteName      string         `json:"siteName"`
+	Status        SyncStatusType `json:"status"`
+	TotalFiles    int            `json:"totalFiles"`
+	ChangedFiles  int            `json:"changedFiles"`
+	AddedFiles    int            `json:"addedFiles"`
+	ModifiedFiles int            `json:"modifiedFiles"`
+	DeletedFiles  int            `json:"deletedFiles"`
+	Changes       []FileChange   `json:"changes"`
+	CheckedAt     time.Time      `json:"checkedAt"`
+	Error         string         `json:"error,omitempty"`
 }
 
 // FileChange represents a detected file difference
 type FileChange struct {
-	Path        string    `json:"path"`
-	ChangeType  string    `json:"type"` // added, modified, deleted
-	LocalHash   string    `json:"localHash,omitempty"`
-	RemoteHash  string    `json:"remoteHash,omitempty"`
-	LocalSize   int64     `json:"localSize,omitempty"`
-	RemoteSize  int64     `json:"remoteSize,omitempty"`
-	LocalMTime  time.Time `json:"localMTime,omitempty"`
-	RemoteMTime time.Time `json:"remoteMTime,omitempty"`
+	Path        string     `json:"path"`
+	ChangeType  ChangeType `json:"type"`
+	LocalHash   string     `json:"localHash,omitempty"`
+	RemoteHash  string     `json:"remoteHash,omitempty"`
+	LocalSize   int64      `json:"localSize,omitempty"`
+	RemoteSize  int64      `json:"remoteSize,omitempty"`
+	LocalMTime  time.Time  `json:"localMTime,omitempty"`
+	RemoteMTime time.Time  `json:"remoteMTime,omitempty"`
 }
 
 // SyncOptions configures sync behavior
@@ -196,7 +214,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	// Get plugin details
 	plugin, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
-		result.Status = "error"
+		result.Status = SyncStatusError
 		result.Error = err.Error()
 		return result, err
 	}
@@ -209,7 +227,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 		FROM Sites WHERE Id = ?
 	`, siteID).Scan(&site.ID, &site.Name, &site.URL, &site.Username, &site.PasswordEncrypted)
 	if err != nil {
-		result.Status = "error"
+		result.Status = SyncStatusError
 		result.Error = "site not found"
 		return result, apperror.New(apperror.ErrNotFound, "site not found")
 	}
@@ -222,7 +240,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 		WHERE PluginId = ? AND SiteId = ?
 	`, pluginID, siteID).Scan(&remoteSlug)
 	if err != nil {
-		result.Status = "error"
+		result.Status = SyncStatusError
 		result.Error = "plugin not mapped to site"
 		return result, apperror.New(apperror.ErrNotFound, "mapping not found")
 	}
@@ -230,7 +248,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 	// Scan local plugin directory
 	localScan, err := s.pluginService.ScanDirectory(ctx, plugin.Path)
 	if err != nil {
-		result.Status = "error"
+		result.Status = SyncStatusError
 		result.Error = err.Error()
 		return result, err
 	}
@@ -246,7 +264,7 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 			if !f.IsDirectory {
 				result.Changes = append(result.Changes, FileChange{
 					Path:       f.Path,
-					ChangeType: "added",
+				ChangeType: ChangeTypeAdded,
 					LocalHash:  f.Hash,
 					LocalSize:  f.Size,
 					LocalMTime: f.ModifiedAt,
@@ -255,26 +273,26 @@ func (s *serviceImpl) CheckSync(ctx context.Context, pluginID, siteID int64) (*S
 			}
 		}
 		result.ChangedFiles = result.AddedFiles
-		result.Status = "pending"
+		result.Status = SyncStatusPending
 	} else {
 		// Compare local and remote files
 		result.Changes = s.compareFiles(localScan.Files, remoteFiles)
 		for _, c := range result.Changes {
 			switch c.ChangeType {
-			case "added":
+			case ChangeTypeAdded:
 				result.AddedFiles++
-			case "modified":
+			case ChangeTypeModified:
 				result.ModifiedFiles++
-			case "deleted":
+			case ChangeTypeDeleted:
 				result.DeletedFiles++
 			}
 		}
 		result.ChangedFiles = len(result.Changes)
 
 		if result.ChangedFiles == 0 {
-			result.Status = "synced"
+			result.Status = SyncStatusSynced
 		} else {
-			result.Status = "pending"
+			result.Status = SyncStatusPending
 		}
 	}
 
@@ -317,9 +335,9 @@ func (s *serviceImpl) CheckAllSites(ctx context.Context, pluginID int64) (*Batch
 			batch.Summary.ErrorSites++
 		} else {
 			switch result.Status {
-			case "synced":
+			case SyncStatusSynced:
 				batch.Summary.SyncedSites++
-			case "pending":
+			case SyncStatusPending:
 				batch.Summary.PendingSites++
 			default:
 				batch.Summary.ErrorSites++
@@ -394,7 +412,7 @@ func (s *serviceImpl) compareFiles(local []plugin.FileInfo, remote []wordpress.R
 			if lf.Hash != rf.Hash {
 				changes = append(changes, FileChange{
 					Path:        lf.Path,
-					ChangeType:  "modified",
+					ChangeType:  ChangeTypeModified,
 					LocalHash:   lf.Hash,
 					RemoteHash:  rf.Hash,
 					LocalSize:   lf.Size,
@@ -407,7 +425,7 @@ func (s *serviceImpl) compareFiles(local []plugin.FileInfo, remote []wordpress.R
 			// File only exists locally - needs to be added
 			changes = append(changes, FileChange{
 				Path:       lf.Path,
-				ChangeType: "added",
+				ChangeType: ChangeTypeAdded,
 				LocalHash:  lf.Hash,
 				LocalSize:  lf.Size,
 				LocalMTime: lf.ModifiedAt,
@@ -420,7 +438,7 @@ func (s *serviceImpl) compareFiles(local []plugin.FileInfo, remote []wordpress.R
 		if !localPaths[rf.Path] {
 			changes = append(changes, FileChange{
 				Path:        rf.Path,
-				ChangeType:  "deleted",
+				ChangeType:  ChangeTypeDeleted,
 				RemoteHash:  rf.Hash,
 				RemoteSize:  rf.Size,
 				RemoteMTime: rf.ModifiedAt,

@@ -71,14 +71,24 @@ package watcher
 
 import "time"
 
+// WatcherChangeType represents the type of file change detected by the watcher
+type WatcherChangeType string
+
+const (
+	WatcherChangeCreated  WatcherChangeType = "created"
+	WatcherChangeModified WatcherChangeType = "modified"
+	WatcherChangeDeleted  WatcherChangeType = "deleted"
+	WatcherChangeRenamed  WatcherChangeType = "renamed"
+)
+
 // FileChange represents a detected file modification
 type FileChange struct {
-	Path       string    `json:"path"`
-	ChangeType string    `json:"type"` // created, modified, deleted, renamed
-	OldPath    string    `json:"oldPath,omitempty"`
-	Hash       string    `json:"hash,omitempty"`
-	Size       int64     `json:"size,omitempty"`
-	ModTime    time.Time `json:"modTime,omitempty"`
+	Path       string            `json:"path"`
+	ChangeType WatcherChangeType `json:"type"`
+	OldPath    string            `json:"oldPath,omitempty"`
+	Hash       string            `json:"hash,omitempty"`
+	Size       int64             `json:"size,omitempty"`
+	ModTime    time.Time         `json:"modTime,omitempty"`
 }
 
 // ScanResult contains the outcome of a directory scan
@@ -365,11 +375,11 @@ func (s *serviceImpl) broadcastChanges(pluginID int64, changes []FileChange) {
 	var created, modified, deleted int
 	for _, c := range changes {
 		switch c.ChangeType {
-		case "created":
+		case WatcherChangeCreated:
 			created++
-		case "modified":
+		case WatcherChangeModified:
 			modified++
-		case "deleted":
+		case WatcherChangeDeleted:
 			deleted++
 		}
 	}
@@ -502,7 +512,7 @@ func (s *serviceImpl) scanDirectory(w *pluginWatcher) []FileChange {
 			if lastInfo.Hash != fi.Hash {
 				changes = append(changes, FileChange{
 					Path:       relPath,
-					ChangeType: "modified",
+					ChangeType: WatcherChangeModified,
 					Hash:       fi.Hash,
 					Size:       fi.Size,
 					ModTime:    info.ModTime(),
@@ -512,7 +522,7 @@ func (s *serviceImpl) scanDirectory(w *pluginWatcher) []FileChange {
 			// New file
 			changes = append(changes, FileChange{
 				Path:       relPath,
-				ChangeType: "created",
+				ChangeType: WatcherChangeCreated,
 				Hash:       fi.Hash,
 				Size:       fi.Size,
 				ModTime:    info.ModTime(),
@@ -532,7 +542,7 @@ func (s *serviceImpl) scanDirectory(w *pluginWatcher) []FileChange {
 		if _, exists := currentFiles[path]; !exists {
 			changes = append(changes, FileChange{
 				Path:       path,
-				ChangeType: "deleted",
+				ChangeType: WatcherChangeDeleted,
 			})
 		}
 	}

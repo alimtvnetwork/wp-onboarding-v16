@@ -32,6 +32,26 @@ package publish
 
 import "time"
 
+// StageStatusType represents the status of a pipeline stage
+type StageStatusType string
+
+const (
+	StageStatusPending StageStatusType = "pending"
+	StageStatusRunning StageStatusType = "running"
+	StageStatusSuccess StageStatusType = "success"
+	StageStatusFailed  StageStatusType = "failed"
+	StageStatusSkipped StageStatusType = "skipped"
+)
+
+// ActivationStatusType represents plugin activation state after publish
+type ActivationStatusType string
+
+const (
+	ActivationActive   ActivationStatusType = "active"
+	ActivationInactive ActivationStatusType = "inactive"
+	ActivationError    ActivationStatusType = "error"
+)
+
 // PublishOptions configures the publish operation
 type PublishOptions struct {
 	Mode         string   `json:"mode"`         // "full" or "selected"
@@ -43,25 +63,25 @@ type PublishOptions struct {
 
 // PublishResult represents the outcome of a publish operation
 type PublishResult struct {
-	PublishID        string       `json:"publishId"`
-	Success          bool         `json:"success"`
-	PluginID         int64        `json:"pluginId"`
-	SiteID           int64        `json:"siteId"`
-	FilesUploaded    int          `json:"filesUploaded"`
-	BytesTransferred int64        `json:"bytesTransferred"`
-	BackupID         *int64       `json:"backupId,omitempty"`
-	ActivationStatus string       `json:"activationStatus"` // active, inactive, error
-	Duration         int64        `json:"duration"`         // milliseconds
-	Stages           []StageResult `json:"stages"`
-	Error            string       `json:"error,omitempty"`
+	PublishID        string               `json:"publishId"`
+	Success          bool                 `json:"success"`
+	PluginID         int64                `json:"pluginId"`
+	SiteID           int64                `json:"siteId"`
+	FilesUploaded    int                  `json:"filesUploaded"`
+	BytesTransferred int64                `json:"bytesTransferred"`
+	BackupID         *int64               `json:"backupId,omitempty"`
+	ActivationStatus ActivationStatusType `json:"activationStatus"`
+	Duration         int64                `json:"duration"`
+	Stages           []StageResult        `json:"stages"`
+	Error            string               `json:"error,omitempty"`
 }
 
 // StageResult tracks individual pipeline stage outcomes
 type StageResult struct {
-	Name     string `json:"name"`
-	Status   string `json:"status"` // pending, running, success, failed, skipped
-	Duration int64  `json:"duration"`
-	Error    string `json:"error,omitempty"`
+	Name     string          `json:"name"`
+	Status   StageStatusType `json:"status"`
+	Duration int64           `json:"duration"`
+	Error    string          `json:"error,omitempty"`
 }
 
 // PackageInfo describes a created plugin package
@@ -94,9 +114,9 @@ type PublishCompleteEvent struct {
 
 // PublishProgressEvent is broadcast during publish stage transitions
 type PublishProgressEvent struct {
-	Stage    string `json:"stage"`
-	Status   string `json:"status"`
-	Duration int64  `json:"duration,omitempty"`
+	Stage    string          `json:"stage"`
+	Status   StageStatusType `json:"status"`
+	Duration int64           `json:"duration,omitempty"`
 }
 
 // PublishFailedEvent is broadcast when a publish operation fails
@@ -250,7 +270,7 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 	result.Stages = append(result.Stages, s.runStage("validate", func() error {
 		return s.pluginService.ValidatePath(ctx, plugin.Path)
 	}))
-	if result.Stages[0].Status == "failed" {
+	if result.Stages[0].Status == StageStatusFailed {
 		return s.failPublish(result, "validate", fmt.Errorf(result.Stages[0].Error), startTime)
 	}
 
@@ -264,7 +284,7 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 			result.BackupID = &backup.ID
 			return nil
 		}))
-		if result.Stages[len(result.Stages)-1].Status == "failed" {
+		if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
 			s.log.Warn("Backup failed, continuing publish", "error", result.Stages[len(result.Stages)-1].Error)
 		}
 	}
@@ -276,7 +296,7 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 		pkg, err = s.CreatePackage(ctx, pluginID, opts.Files)
 		return err
 	}))
-	if result.Stages[len(result.Stages)-1].Status == "failed" {
+	if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
 		return s.failPublish(result, "package", fmt.Errorf(result.Stages[len(result.Stages)-1].Error), startTime)
 	}
 
@@ -292,7 +312,7 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 	result.Stages = append(result.Stages, s.runStage("upload", func() error {
 		return s.uploadPackage(ctx, wpClient, pkg.Path, remoteSlug)
 	}))
-	if result.Stages[len(result.Stages)-1].Status == "failed" {
+	if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
 		return s.failPublish(result, "upload", fmt.Errorf(result.Stages[len(result.Stages)-1].Error), startTime)
 	}
 	result.FilesUploaded = pkg.FileCount
@@ -303,13 +323,13 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 		result.Stages = append(result.Stages, s.runStage("activate", func() error {
 			return wpClient.ActivatePlugin(ctx, remoteSlug)
 		}))
-		if result.Stages[len(result.Stages)-1].Status == "failed" {
-			result.ActivationStatus = "error"
+		if result.Stages[len(result.Stages)-1].Status == StageStatusFailed {
+			result.ActivationStatus = ActivationError
 		} else {
-			result.ActivationStatus = "active"
+			result.ActivationStatus = ActivationActive
 		}
 	} else {
-		result.ActivationStatus = "inactive"
+		result.ActivationStatus = ActivationInactive
 	}
 
 	// Mark files as synced
@@ -320,9 +340,9 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 	// Update publish timestamp
 	s.db.ExecContext(ctx, `
 		UPDATE PluginMappings
-		SET LastSyncAt = datetime('now'), SyncStatus = 'synced', UpdatedAt = datetime('now')
+		SET LastSyncAt = datetime('now'), SyncStatus = ?, UpdatedAt = datetime('now')
 		WHERE PluginId = ? AND SiteId = ?
-	`, pluginID, siteID)
+	`, string(sync.SyncStatusSynced), pluginID, siteID)
 
 	result.Success = true
 	result.Duration = time.Since(startTime).Milliseconds()
@@ -342,21 +362,21 @@ func (s *serviceImpl) Publish(ctx context.Context, pluginID, siteID int64, opts 
 
 func (s *serviceImpl) runStage(name string, fn func() error) StageResult {
 	start := time.Now()
-	stage := StageResult{Name: name, Status: "running"}
+	stage := StageResult{Name: name, Status: StageStatusRunning}
 
 	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
 		Stage:  name,
-		Status: "running",
+		Status: StageStatusRunning,
 	})
 
 	err := fn()
 	stage.Duration = time.Since(start).Milliseconds()
 
 	if err != nil {
-		stage.Status = "failed"
+		stage.Status = StageStatusFailed
 		stage.Error = err.Error()
 	} else {
-		stage.Status = "success"
+		stage.Status = StageStatusSuccess
 	}
 
 	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
