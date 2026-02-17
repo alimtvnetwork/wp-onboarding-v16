@@ -49,7 +49,7 @@ wp-content/plugins/riseup-asia-uploader/
 
 | File | Description |
 |------|-------------|
-| [README.md](./README.md) | This overview |
+| [readme.md](./readme.md) | This overview |
 | [01-upload-plugin-v1.md](./01-upload-plugin-v1.md) | V1 script specification |
 | [02-upload-plugin-v2.md](./02-upload-plugin-v2.md) | V2 script specification (v2.1.0) |
 | [03-upload-plugin-v3.md](./03-upload-plugin-v3.md) | V3 script specification |

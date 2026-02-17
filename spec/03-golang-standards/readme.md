@@ -284,7 +284,7 @@ if IsMissingSubstring(s, substr) { ... }
 - [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
 - [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
-- [TypeScript Standards](../02-typescript-standards/README.md)
+- [TypeScript Standards](../02-typescript-standards/readme.md)
 
 ---
 
