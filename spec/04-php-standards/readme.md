@@ -298,14 +298,14 @@ class MyPlugin {
 use RiseupAsia\Enums\HookType;
 
 class MyPlugin {
-    private $initialized = false;
+    private bool $isInitialized = false;
     
     public function initialize() {
-        if ($this->initialized) {
+        if ($this->isInitialized) {
             return;
         }
 
-        $this->initialized = true;
+        $this->isInitialized = true;
         add_action(HookType::Init->value, [$this, 'setup']);
     }
 }
