@@ -63,24 +63,30 @@ class IpWhitelist {
         ];
 
         foreach ($headers as $header) {
-            if (empty($_SERVER[$header])) {
-                continue;
-            }
+            $ip = $this->extractIpFromHeader($header);
 
-            $ip = $_SERVER[$header];
-
-            if (str_contains($ip, ',')) {
-                $ip = trim(explode(',', $ip)[0]);
-            }
-
-            $validated = filter_var($ip, FILTER_VALIDATE_IP);
-
-            if ($validated !== false) {
-                return $validated;
+            if ($ip !== '') {
+                return $ip;
             }
         }
 
         return '';
+    }
+
+    private function extractIpFromHeader(string $header): string {
+        if (empty($_SERVER[$header])) {
+            return '';
+        }
+
+        $ip = $_SERVER[$header];
+
+        if (str_contains($ip, ',')) {
+            $ip = trim(explode(',', $ip)[0]);
+        }
+
+        $validated = filter_var($ip, FILTER_VALIDATE_IP);
+
+        return $validated !== false ? $validated : '';
     }
 }
 ```
