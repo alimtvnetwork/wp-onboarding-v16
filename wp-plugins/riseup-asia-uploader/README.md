@@ -1,6 +1,6 @@
 # Riseup Asia Uploader
 
-A lightweight WordPress plugin providing a secure REST API for remote plugin management, delta file synchronization, blog post publishing, and comprehensive audit logging.
+A WordPress plugin providing a secure REST API for remote plugin management, database snapshots, delta file synchronization, blog post publishing, and comprehensive audit logging.
 
 ## Plugin Information
 
@@ -8,31 +8,62 @@ A lightweight WordPress plugin providing a secure REST API for remote plugin man
 |----------|-------|
 | **Plugin Name** | Riseup Asia Uploader |
 | **Plugin URI** | https://rasia.pro/alim-r-profile-v1 |
-| **Version** | 1.3.0 |
 | **Author** | MD ALIM UL KARIM |
 | **Author URI** | https://rasia.pro/alim-r-profile-v1 |
 | **License** | GPL v2 or later |
-| **Requires PHP** | 7.4+ |
+| **Requires PHP** | 8.2+ |
 | **Requires WordPress** | 5.6+ |
+
+> **Note:** Version is managed via `PluginConfigType::Current->value` in `includes/Enums/PluginConfigType.php` and the plugin header in `riseup-asia-uploader.php`. Both must be bumped on every change.
+
+---
+
+## Architecture
+
+The plugin follows a fully **PSR-4 namespaced** architecture under the `RiseupAsia\` namespace.
+
+| Aspect | Detail |
+|--------|--------|
+| **Namespace** | `RiseupAsia\` → `includes/` |
+| **Autoloader** | `includes/Autoloader.php` (self-contained, zero dependencies) |
+| **Entry point** | `riseup-asia-uploader.php` — registers autoloader + activation hook + `Plugin` class only |
+| **Main class** | `RiseupAsia\Core\Plugin` (singleton) |
+| **Global classes** | 0 |
+| **Legacy aliases** | 0 (`class_alias()` shims fully removed) |
+| **Enums** | 39 backed enums in `RiseupAsia\Enums\` (PascalCase, `Type` suffix) |
+| **Total files** | ~252 namespaced (38 classes, 175 traits, 39 enums) |
+
+### Key Namespaces
+
+| Namespace | Purpose |
+|-----------|---------|
+| `RiseupAsia\Core` | Plugin shell (singleton) |
+| `RiseupAsia\Activation` | Plugin activation hook handler |
+| `RiseupAsia\Admin` | Admin UI and AJAX handlers |
+| `RiseupAsia\Agent` | Agent connection management |
+| `RiseupAsia\Database` | SQLite ORM, file cache, root DB |
+| `RiseupAsia\Enums` | All 39 backed enums |
+| `RiseupAsia\ErrorHandling` | ErrorResponse, FatalErrorHandler, FrameBuilder |
+| `RiseupAsia\Helpers` | BooleanHelpers, PathHelper, InitHelpers, EnvelopeBuilder |
+| `RiseupAsia\Logging` | FileLogger, Logger |
+| `RiseupAsia\Post` | Blog post management |
+| `RiseupAsia\Snapshot` | Database snapshot system (18 classes + 66 traits) |
+| `RiseupAsia\Update` | Auto-update and version detection |
+| `RiseupAsia\Upload` | Upload handling and `.uploadignore` |
+
+---
 
 ## Features
 
-- **Upload plugins** via ZIP file (multipart or base64-encoded)
-- **Enable/Disable plugins** remotely
-- **Delete plugins** via REST API
-- **Replace single files** within a plugin directory
-- **List files** with hashes for sync comparison
-- **Delta sync** with `.uploadignore` support
-- **Blog post management** - Create and update posts
-- **Category management** - Create categories remotely
-- **Media uploads** - Upload to WordPress Media Library
-- **Transaction logging** - SQLite-based audit trail
+- **Plugin management** — Upload (ZIP multipart/base64), enable, disable, delete plugins remotely
+- **Delta sync** — File-level synchronization with `.uploadignore` support
+- **Database snapshots** — Full and incremental backups with async worker pool, restore, export as ZIP
+- **Blog post management** — Create and update posts, categories, media uploads
+- **Audit logging** — SQLite-based transaction log for all administrative actions
+- **Error handling** — `Throwable` catch with structured stack traces, fatal error handler
+- **Self-export** — Download the plugin itself as a ZIP for redeployment
 
-## Installation
-
-1. Copy the `riseup-asia-uploader` folder to your WordPress `wp-content/plugins/` directory
-2. Activate the plugin in WordPress Admin → Plugins
-3. Configure an Application Password for your WordPress user (Users → Profile → Application Passwords)
+---
 
 ## REST API Endpoints
 
@@ -64,12 +95,13 @@ All endpoints require Basic Authentication using WordPress Application Passwords
 | GET | `/posts/{id}` | Get single post |
 | PUT | `/posts/{id}` | Update post |
 
-### Categories
+### Categories & Media
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/categories` | List categories |
 | POST | `/categories` | Create category |
+| POST | `/media` | Upload to Media Library |
 
 ### Transaction Logs
 
@@ -79,59 +111,62 @@ All endpoints require Basic Authentication using WordPress Application Passwords
 | GET | `/logs/stats` | Get log statistics |
 | GET | `/logs/{id}` | Get single log entry |
 
-## Upload Methods
+### Snapshots
 
-### Method 1: Base64-encoded JSON (Recommended)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/snapshots/backup` | Create database snapshot |
+| GET | `/snapshots` | List snapshots |
+| POST | `/snapshots/restore` | Restore from snapshot |
+| GET | `/snapshots/{id}/export` | Export snapshot as ZIP |
+| DELETE | `/snapshots/{id}` | Delete snapshot |
 
-```json
-POST /wp-json/riseup-asia-uploader/v1/upload
-Content-Type: application/json
-Authorization: Basic <base64(username:app_password)>
+---
 
-{
-  "plugin_zip": "<base64_encoded_zip>",
-  "slug": "my-plugin",
-  "activate": true
-}
-```
+## Storage Layout
 
-### Method 2: Multipart Form Data
-
-```http
-POST /wp-json/riseup-asia-uploader/v1/upload
-Content-Type: multipart/form-data
-Authorization: Basic <base64(username:app_password)>
-
-plugin=<zip_file>
-activate=true
-```
-
-## Delta Sync
-
-The plugin supports `.uploadignore` files (gitignore-style syntax) to exclude files from synchronization:
+All persistent data lives under `wp-content/uploads/riseup-asia-uploader/`:
 
 ```
-# .uploadignore example
-node_modules/
-*.log
-.git/
-vendor/
+riseup-asia-uploader/
+├── riseup-asia-uploader.db   (SQLite database)
+├── logs/
+│   ├── log.txt               (general activity)
+│   └── error.txt             (error logs)
+├── snapshots/                 (backup snapshots)
+│   └── incremental/           (incremental backups)
+├── exports/                   (cached ZIP exports)
+└── temp/                      (temporary files)
 ```
+
+Each directory is secured with `.htaccess` (`Deny from all`) and `index.php` (silence) files.
+
+---
 
 ## Required Capabilities
 
-- `activate_plugins` - Plugin management endpoints
-- `publish_posts` - Post management endpoints
-- `upload_files` - Media upload endpoints
-- `manage_options` - Log viewing endpoints
+| Capability | Endpoints |
+|------------|-----------|
+| `activate_plugins` | Plugin management |
+| `publish_posts` | Post management |
+| `upload_files` | Media uploads |
+| `manage_options` | Logs, snapshots, settings |
 
-## Security
+---
 
-- All endpoints require authentication via WordPress Application Passwords
-- Path traversal attacks are blocked (files must stay within plugin directory)
-- File type validation for uploads (only .zip allowed)
-- Proper WordPress capability checks on all endpoints
-- Transaction logging for all operations
+## Documentation
+
+Full development standards, coding guidelines, and architectural specifications are maintained in the project's `spec/` directory:
+
+| Document | Path |
+|----------|------|
+| **Coding Guidelines** | [`spec/07-wordpress-plugin-development/11-coding-guidelines.md`](../../spec/07-wordpress-plugin-development/11-coding-guidelines.md) |
+| **Phase 7 Completion Report** | [`spec/07-wordpress-plugin-development/12-phase-7-completion-report.md`](../../spec/07-wordpress-plugin-development/12-phase-7-completion-report.md) |
+| **Plugin Development Spec** | [`spec/07-wordpress-plugin-development/00-overview.md`](../../spec/07-wordpress-plugin-development/00-overview.md) |
+| **PHP Standards** | [`spec/04-php-standards/readme.md`](../../spec/04-php-standards/readme.md) |
+| **Error Handling** | [`spec/05-error-manage/01-error-handling/readme.md`](../../spec/05-error-manage/01-error-handling/readme.md) |
+
+---
 
 ## Author
 
