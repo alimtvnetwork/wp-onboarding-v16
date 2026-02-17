@@ -62,7 +62,7 @@ type Session struct {
     StartedAt   time.Time              `json:"startedAt"`
     EndedAt     *time.Time             `json:"endedAt,omitempty"`
     ErrorMsg    string                 `json:"errorMessage,omitempty"`
-    Metadata    map[string]interface{} `json:"metadata,omitempty"`
+    Metadata    json.RawMessage        `json:"metadata,omitempty"`
 }
 ```
 
@@ -74,7 +74,7 @@ type LogEntry struct {
     Level     string                 `json:"level"`    // debug, info, warn, error
     Step      string                 `json:"step"`     // backup, package, upload, activate
     Message   string                 `json:"message"`
-    Details   map[string]interface{} `json:"details,omitempty"`
+    Details   json.RawMessage        `json:"details,omitempty"`
 }
 ```
 
@@ -116,7 +116,7 @@ sessionService.Log(
     level string,      // debug, info, warn, error
     step string,       // backup, package, upload, activate
     message string,
-    details map[string]interface{},
+    details json.RawMessage,
 )
 
 // Log stage boundaries
@@ -143,7 +143,7 @@ sessions, err := sessionService.ListSessions(limit int) ([]*SessionSummary, erro
 err := sessionService.DeleteSession(sessionID string) error
 
 // Set metadata
-sessionService.SetMetadata(sessionID, key string, value interface{})
+sessionService.SetMetadata(sessionID, key string, value any)
 ```
 
 ---

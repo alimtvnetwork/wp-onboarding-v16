@@ -336,11 +336,19 @@ The publish pipeline requires granular context for upload and activate stages:
 
 ```go
 type StageContext struct {
-    What      string                 // What is being processed
-    Why       string                 // Why this operation is happening
-    Where     string                 // Target URL/path
-    Result    string                 // Outcome summary
-    InnerData map[string]interface{} // HTTP status, response bodies, etc.
+    What      string           // What is being processed
+    Why       string           // Why this operation is happening
+    Where     string           // Target URL/path
+    Result    string           // Outcome summary
+    InnerData json.RawMessage  // HTTP status, response bodies, etc.
+}
+
+// StageInnerData holds the typed fields for StageContext.InnerData
+type StageInnerData struct {
+    ZipPath    string `json:"zipPath,omitempty"`
+    FileCount  int    `json:"fileCount,omitempty"`
+    HTTPStatus int    `json:"httpStatus,omitempty"`
+    RemoteSlug string `json:"remoteSlug,omitempty"`
 }
 ```
 
