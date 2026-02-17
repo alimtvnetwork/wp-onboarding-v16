@@ -43,10 +43,10 @@ The Backup Service creates and manages point-in-time snapshots of plugins for ro
 <?php
 namespace PluginsOnboard\Services;
 
-class Backup_Service {
+class BackupService {
     
-    /** @var Storage_Backend */
-    private Storage_Backend $storage;
+    /** @var StorageBackend */
+    private StorageBackend $storage;
     
     /** @var Compression */
     private Compression $compression;
@@ -55,56 +55,56 @@ class Backup_Service {
      * Create a backup of a plugin
      */
     public function create(
-        string $plugin_slug,
+        string $pluginSlug,
         array $options = []
-    ): Backup_Result;
+    ): BackupResult;
     
     /**
      * Create a remote backup (from WordPress site)
      */
-    public function create_remote(
-        string $plugin_slug,
-        int $site_id
-    ): Backup_Result;
+    public function createRemote(
+        string $pluginSlug,
+        int $siteId
+    ): BackupResult;
     
     /**
      * Restore a plugin from backup
      */
     public function restore(
-        string $backup_id,
+        string $backupId,
         array $options = []
-    ): Restore_Result;
+    ): RestoreResult;
     
     /**
      * Restore to a remote site
      */
-    public function restore_to_site(
-        string $backup_id,
-        int $site_id
-    ): Restore_Result;
+    public function restoreToSite(
+        string $backupId,
+        int $siteId
+    ): RestoreResult;
     
     /**
      * List available backups
      */
     public function list(
-        ?string $plugin_slug = null,
-        ?int $site_id = null
+        ?string $pluginSlug = null,
+        ?int $siteId = null
     ): array;
     
     /**
      * Delete a backup
      */
-    public function delete(string $backup_id): bool;
+    public function delete(string $backupId): bool;
     
     /**
      * Apply retention policy
      */
-    public function prune(): Prune_Result;
+    public function prune(): PruneResult;
     
     /**
      * Verify backup integrity
      */
-    public function verify(string $backup_id): Verify_Result;
+    public function verify(string $backupId): VerifyResult;
 }
 ```
 
@@ -293,30 +293,30 @@ class S3Storage implements StorageBackend {
 
 ## Result Structures
 
-### Backup_Result
+### BackupResult
 
 ```php
-class Backup_Result {
-    public string $backup_id;
+class BackupResult {
+    public string $backupId;
     public string $status;           // 'success' | 'failed'
     public string $path;
-    public int $original_size;
-    public int $compressed_size;
-    public int $files_count;
-    public float $duration_seconds;
+    public int $originalSize;
+    public int $compressedSize;
+    public int $filesCount;
+    public float $durationSeconds;
     public ?string $error;
 }
 ```
 
-### Restore_Result
+### RestoreResult
 
 ```php
-class Restore_Result {
-    public string $backup_id;
+class RestoreResult {
+    public string $backupId;
     public string $status;           // 'success' | 'failed'
-    public ?string $safety_backup_id;
-    public int $files_restored;
-    public float $duration_seconds;
+    public ?string $safetyBackupId;
+    public int $filesRestored;
+    public float $durationSeconds;
     public ?string $error;
     public array $warnings;
 }
@@ -328,19 +328,19 @@ class Restore_Result {
 
 ```php
 // Backup events
-'backup:started'    => ['backup_id', 'plugin_slug', 'type']
-'backup:progress'   => ['backup_id', 'progress', 'current_file']
-'backup:complete'   => ['backup_id', 'result']
-'backup:failed'     => ['backup_id', 'error']
+'backup:started'    => ['backupId', 'pluginSlug', 'type']
+'backup:progress'   => ['backupId', 'progress', 'currentFile']
+'backup:complete'   => ['backupId', 'result']
+'backup:failed'     => ['backupId', 'error']
 
 // Restore events
-'restore:started'   => ['backup_id', 'target']
-'restore:progress'  => ['backup_id', 'progress']
-'restore:complete'  => ['backup_id', 'result']
-'restore:failed'    => ['backup_id', 'error']
+'restore:started'   => ['backupId', 'target']
+'restore:progress'  => ['backupId', 'progress']
+'restore:complete'  => ['backupId', 'result']
+'restore:failed'    => ['backupId', 'error']
 
 // Maintenance events
-'backup:pruned'     => ['deleted_ids', 'freed_bytes']
+'backup:pruned'     => ['deletedIds', 'freedBytes']
 ```
 
 ---
@@ -363,16 +363,16 @@ class Restore_Result {
 ```php
 // WP-Cron integration
 add_action('plugins_onboard_scheduled_backup', function() {
-    $backup_service = new Backup_Service();
+    $backupService = new BackupService();
     
-    foreach (get_watched_plugins() as $slug) {
-        $backup_service->create($slug, [
+    foreach (getWatchedPlugins() as $slug) {
+        $backupService->create($slug, [
             'type' => 'SCHEDULED',
             'retention_days' => 7
         ]);
     }
     
-    $backup_service->prune();
+    $backupService->prune();
 });
 
 // Schedule: daily at 3 AM

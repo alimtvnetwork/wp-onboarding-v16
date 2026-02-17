@@ -148,11 +148,11 @@ if ($request !== null && $request->has_param('file') && $request->get_param('fil
 }
 
 // ✅ REQUIRED: Named boolean for clarity
-$has_file_param = $request !== null
-    && $request->has_param('file')
-    && $request->get_param('file') !== '';
+$hasFileParam = $request !== null
+    && $request->hasParam('file')
+    && $request->getParam('file') !== '';
 
-if ($has_file_param) {
+if ($hasFileParam) {
     $this->process($request);
 }
 ```

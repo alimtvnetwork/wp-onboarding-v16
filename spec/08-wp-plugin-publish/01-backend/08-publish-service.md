@@ -38,32 +38,32 @@ The Publish Service manages the complete plugin publishing workflow, from prepar
 <?php
 namespace PluginsOnboard\Services;
 
-class Publish_Service {
+class PublishService {
     
-    /** @var Sync_Service */
-    private Sync_Service $sync;
+    /** @var SyncService */
+    private SyncService $sync;
     
-    /** @var Backup_Service */
-    private Backup_Service $backup;
+    /** @var BackupService */
+    private BackupService $backup;
     
-    /** @var Plugin_Validator */
-    private Plugin_Validator $validator;
+    /** @var PluginValidator */
+    private PluginValidator $validator;
     
     /**
      * Publish a plugin to a specific site
      */
     public function publish(
-        string $plugin_slug,
-        int $site_id,
+        string $pluginSlug,
+        int $siteId,
         array $options = []
-    ): Publish_Result;
+    ): PublishResult;
     
     /**
      * Publish to multiple sites
      */
-    public function publish_to_all(
-        string $plugin_slug,
-        array $site_ids = [],
+    public function publishToAll(
+        string $pluginSlug,
+        array $siteIds = [],
         array $options = []
     ): array;
     
@@ -71,30 +71,30 @@ class Publish_Service {
      * Create a release package
      */
     public function package(
-        string $plugin_slug,
+        string $pluginSlug,
         string $version
-    ): Package_Result;
+    ): PackageResult;
     
     /**
      * Validate plugin before publish
      */
-    public function validate(string $plugin_slug): Validation_Result;
+    public function validate(string $pluginSlug): ValidationResult;
     
     /**
      * Rollback to previous version
      */
     public function rollback(
-        string $plugin_slug,
-        int $site_id,
+        string $pluginSlug,
+        int $siteId,
         ?string $version = null
-    ): Rollback_Result;
+    ): RollbackResult;
     
     /**
      * Get publish history
      */
-    public function get_history(
-        string $plugin_slug,
-        ?int $site_id = null
+    public function getHistory(
+        string $pluginSlug,
+        ?int $siteId = null
     ): array;
 }
 ```
@@ -106,7 +106,7 @@ class Publish_Service {
 ### Stage 1: Validation
 
 ```php
-$validation = $this->validate($plugin_slug);
+$validation = $this->validate($pluginSlug);
 
 // Checks performed:
 // - Plugin header validity
@@ -120,7 +120,7 @@ $validation = $this->validate($plugin_slug);
 
 ```php
 // Optional build steps
-$build_steps = [
+$buildSteps = [
     'compile_assets' => true,    // Sass, TypeScript, etc.
     'minify_js' => true,
     'minify_css' => true,
@@ -132,7 +132,7 @@ $build_steps = [
 ### Stage 3: Package
 
 ```php
-$package = $this->package($plugin_slug, $version);
+$package = $this->package($pluginSlug, $version);
 
 // Creates ZIP with:
 // - All plugin files
@@ -145,7 +145,7 @@ $package = $this->package($plugin_slug, $version);
 
 ```php
 // Upload package to remote site
-$transfer = $this->transfer($package, $site_id);
+$transfer = $this->transfer($package, $siteId);
 
 // Options:
 // - Chunked upload for large files
@@ -278,16 +278,16 @@ my-plugin-1.2.0.zip
 ## Publish Result Structure
 
 ```php
-class Publish_Result {
-    public string $publish_id;
+class PublishResult {
+    public string $publishId;
     public string $status;          // 'success' | 'failed' | 'rolled_back'
-    public string $plugin_slug;
+    public string $pluginSlug;
     public string $version;
-    public int $site_id;
+    public int $siteId;
     public array $stages;           // Status per stage
-    public float $duration_seconds;
+    public float $durationSeconds;
     public ?string $error;
-    public ?string $rollback_id;
+    public ?string $rollbackId;
     public array $warnings;
 }
 ```
@@ -311,13 +311,13 @@ class Publish_Result {
 
 ```php
 // Publish lifecycle
-'publish:started'       => ['publish_id', 'plugin_slug', 'site_id', 'version']
-'publish:stage_start'   => ['publish_id', 'stage']
-'publish:stage_complete'=> ['publish_id', 'stage', 'result']
-'publish:progress'      => ['publish_id', 'stage', 'progress']
-'publish:complete'      => ['publish_id', 'result']
-'publish:failed'        => ['publish_id', 'stage', 'error']
-'publish:rollback'      => ['publish_id', 'reason']
+'publish:started'       => ['publishId', 'pluginSlug', 'siteId', 'version']
+'publish:stage_start'   => ['publishId', 'stage']
+'publish:stage_complete'=> ['publishId', 'stage', 'result']
+'publish:progress'      => ['publishId', 'stage', 'progress']
+'publish:complete'      => ['publishId', 'result']
+'publish:failed'        => ['publishId', 'stage', 'error']
+'publish:rollback'      => ['publishId', 'reason']
 ```
 
 ---
@@ -350,7 +350,7 @@ class Publish_Result {
 
 ## Partial Publish Failure Recovery (Multi-Site)
 
-When publishing a plugin to multiple sites via `publish_to_all`, some sites may succeed while others fail. This creates a **partial deployment state** that requires careful recovery.
+When publishing a plugin to multiple sites via `publishToAll`, some sites may succeed while others fail. This creates a **partial deployment state** that requires careful recovery.
 
 ### Failure Scenarios
 
@@ -365,19 +365,19 @@ When publishing a plugin to multiple sites via `publish_to_all`, some sites may 
 ### Recovery Architecture
 
 ```
-publish_to_all(plugin, [site_a, site_b, site_c])
+publishToAll(plugin, [siteA, siteB, siteC])
     │
-    ├── site_a: ✅ SUCCESS (v1.36.1 active)
-    ├── site_b: ❌ FAILED  (PUB_TRANSFER_FAILED - network timeout)
-    └── site_c: ❌ FAILED  (PUB_ACTIVATION_FAILED - rolled back to v1.36.0)
+    ├── siteA: ✅ SUCCESS (v1.36.1 active)
+    ├── siteB: ❌ FAILED  (PUB_TRANSFER_FAILED - network timeout)
+    └── siteC: ❌ FAILED  (PUB_ACTIVATION_FAILED - rolled back to v1.36.0)
     │
     ▼
 BulkPublishResult {
     total: 3,
-    succeeded: [site_a],
+    succeeded: [siteA],
     failed: [
-        { siteId: site_b, stage: "transfer", error: "timeout", canRetry: true },
-        { siteId: site_c, stage: "activate", error: "fatal PHP error", canRetry: false, rolledBack: true }
+        { siteId: siteB, stage: "transfer", error: "timeout", canRetry: true },
+        { siteId: siteC, stage: "activate", error: "fatal PHP error", canRetry: false, rolledBack: true }
     ],
     partialFailure: true
 }
@@ -408,8 +408,8 @@ The UI presents failed sites with a "Retry Failed" button that re-runs the pipel
 ```
 User Action: "Retry Failed Sites"
     │
-    ├── Re-runs publish pipeline ONLY for site_b, site_c
-    ├── Skips site_a (already succeeded)
+    ├── Re-runs publish pipeline ONLY for siteB, siteC
+    ├── Skips siteA (already succeeded)
     └── Uses same publish options (version, activate flag, etc.)
 ```
 
@@ -494,7 +494,7 @@ All partial failure states are persisted to the `publish_history` SQLite table:
 
 ```php
 // Get publish history
-$history = $publish->get_history('my-plugin', $site_id);
+$history = $publish->getHistory('my-plugin', $siteId);
 
 // Returns:
 [
