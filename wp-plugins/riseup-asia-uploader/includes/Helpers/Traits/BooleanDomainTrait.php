@@ -20,10 +20,10 @@ trait BooleanDomainTrait {
     public static function isFuncMissing(string $functionName): bool { return !function_exists($functionName); }
     public static function isClassExists(string $className): bool { return class_exists($className); }
     public static function isClassMissing(string $className): bool { return !class_exists($className); }
-    public static function isClassNotLoaded(string $className): bool { return !class_exists($className, false); }
+    public static function isClassUnregistered(string $className): bool { return !class_exists($className, false); }
     public static function isExtensionLoaded(string $extensionName): bool { return extension_loaded($extensionName); }
     public static function isExtensionMissing(string $extensionName): bool { return !extension_loaded($extensionName); }
-    public static function isNotInList($needle, array $haystack): bool { return !in_array($needle, $haystack); }
+    public static function isAbsentFromList($needle, array $haystack): bool { return !in_array($needle, $haystack); }
     public static function isDbConnected($db): bool { return $db !== null && method_exists($db, 'isReady') && $db->isReady(); }
     public static function isDbDisconnected($db): bool { return $db === null || !method_exists($db, 'isReady') || !$db->isReady(); }
 }

@@ -191,8 +191,8 @@ const processOrder = (order: Order | null) => {
         return;
     }
 
-    const isNotReady = order.status !== 'ready';
-    if (isNotReady) {
+    const isPending = order.status !== 'ready';
+    if (isPending) {
         throw new Error(`Order ${order.id} is not ready`);
     }
 
@@ -235,8 +235,8 @@ func ProcessOrder(order *Order) error {
         return apperror.New("E4004", "order exceeds item limit")
     }
 
-    isNotReady := order.Status.IsDifferent(StatusReadyToProcess)
-    if isNotReady {
+    isPending := order.Status.IsDifferent(StatusReadyToProcess)
+    if isPending {
         return apperror.New("E4005", "order is not ready to process")
     }
 

@@ -38,7 +38,7 @@ trait DetectorValidationTrait {
         $defaults = array('preferred_provider' => SnapshotProviderType::Auto->value, 'schedule_frequency' => SnapshotFrequencyType::Daily->value, 'default_scope' => SnapshotScopeType::WordPress->value, 'retention_type' => 'days');
 
         foreach ($rules as $key => $valid) {
-            if (BooleanHelpers::isNotInList($settings[$key], $valid)) {
+            if (BooleanHelpers::isAbsentFromList($settings[$key], $valid)) {
                 $settings[$key] = $defaults[$key];
             }
         }
@@ -61,7 +61,7 @@ trait DetectorValidationTrait {
 
     private function validateMiscFields(array &$settings): void {
         $valid_storage = array('single', 'per-table');
-        if (BooleanHelpers::isNotInList($settings['storage_mode'] ?? 'per-table', $valid_storage)) {
+        if (BooleanHelpers::isAbsentFromList($settings['storage_mode'] ?? 'per-table', $valid_storage)) {
             $settings['storage_mode'] = 'per-table';
         }
 

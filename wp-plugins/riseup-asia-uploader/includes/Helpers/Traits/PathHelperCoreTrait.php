@@ -28,7 +28,7 @@ trait PathHelperCoreTrait {
     private static function getLogger(): ?FileLogger {
         if (self::$isBootstrapping) { return null; }
         if (self::$logger !== null) { return self::$logger; }
-        if (BooleanHelpers::isClassNotLoaded(FileLogger::class)) { return null; }
+        if (BooleanHelpers::isClassUnregistered(FileLogger::class)) { return null; }
 
         return self::initializeLogger();
     }

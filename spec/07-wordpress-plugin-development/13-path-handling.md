@@ -66,7 +66,7 @@ class PathHelper {
     public static function isFileExists(string $filePath): bool;
     public static function isFileMissing(string $filePath): bool;
     public static function isFileUnreadable(string $filePath): bool;
-    public static function isNotRegularFile(string $filePath): bool;
+    public static function isIrregularPath(string $filePath): bool;
     public static function isCopyFailed(string $source, string $dest): bool;
 }
 ```

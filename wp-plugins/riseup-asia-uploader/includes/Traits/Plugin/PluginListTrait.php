@@ -189,7 +189,7 @@ trait PluginListTrait
             return $this->errorResponse('File not found or invalid path', HttpStatusType::NotFound->value);
         }
 
-        if (BooleanHelpers::isNotRegularFile($real_file_path)) {
+        if (BooleanHelpers::isIrregularPath($real_file_path)) {
             return $this->errorResponse('File not found', HttpStatusType::NotFound->value);
         }
 

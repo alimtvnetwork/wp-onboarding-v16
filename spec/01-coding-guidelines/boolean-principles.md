@@ -1,6 +1,6 @@
 # Cross-Language Boolean Principles
 
-> **Version:** 2.0.0  
+> **Version:** 2.1.0  
 > **Updated:** 2026-02-17  
 > **Applies to:** PHP, TypeScript, Go, C#, and any delegated language
 
@@ -74,28 +74,49 @@ This mirrors industry best practices. For example, .NET's `char` type exposes `I
 
 ---
 
-## Principle 2: Never Use Double Negatives
+## Principle 2: Never Use Negative Words in Boolean Names
 
-Double negatives (`!isNot...`, `!isNotBlocked`) are **extremely hard to process** and must never appear in code. The reader has to mentally invert twice to understand the actual meaning.
+The words **`not`**, **`no`**, and **`non`** are **absolutely banned** from boolean variable names, function names, and method names. These words create cognitive overhead — the reader must mentally invert the meaning. Instead, always use a **positive semantic synonym** that describes what the state actually **is**.
+
+Double negatives (`!isNot...`, `!isNotBlocked`) are the worst form and must never appear.
+
+### Naming Strategy: Describe What It IS, Not What It ISN'T
+
+| ❌ Forbidden Name | ✅ Required Name | Semantic Meaning |
+|---|---|---|
+| `isNotReady` | `isPending` | The order is waiting |
+| `isNotInList` | `isAbsentFromList` | The item is absent |
+| `isNoRecentErrors` | `isErrorListClear` | The error list is clean |
+| `isNotDirectory` | `isDirAbsent` | The directory doesn't exist |
+| `isNotRegularFile` | `isIrregularPath` | The path is irregular |
+| `isNotPHP` | `isSkippableEntry` | The entry should be skipped |
+| `isNotBlocked` | `isActive` | The entity is active |
+| `isClassNotLoaded` | `isClassUnregistered` | The class is unregistered |
+| `hasNoPermission` | `isUnauthorized` | The user lacks access |
 
 ```typescript
-// ❌ FORBIDDEN — Very hard to process. What does this mean?
-if (!isNotBlocked) {
-    // active???
+// ❌ FORBIDDEN — "not" in the variable name
+const isNotReady = order.status !== 'ready';
+if (isNotReady) {
+    throw new Error('Order is not ready');
 }
 
-// ❌ FORBIDDEN — Hard to read, confuses everyone
-if (isNotBlocked) {
-    // active
-}
-
-// ✅ REQUIRED — Always positive, always clear
-if (isBlocked) {
-    // blocked
+// ✅ REQUIRED — Positive semantic synonym
+const isPending = order.status !== 'ready';
+if (isPending) {
+    throw new Error('Order is not ready');
 }
 ```
 
-### Rule: Name booleans for the **positive** case, then negate only once if needed
+```php
+// ❌ FORBIDDEN — "No" in the variable name
+$isNoRecentErrors = empty($errors) || !$hasUnseen;
+
+// ✅ REQUIRED — Describes the positive state
+$isErrorListClear = empty($errors) || !$hasUnseen;
+```
+
+### Rule: Name booleans for the **positive semantic state**, then negate only once if needed
 
 ```typescript
 // ❌ AVOID — Raw negation at call site
@@ -321,8 +342,9 @@ if (isUnauthorized) {
 |-------------|------------|-----------|
 | `$active` | `$isActive` | P1: `is`/`has` prefix |
 | `$loaded` | `$isLoaded` | P1: `is`/`has` prefix |
-| `!isNotBlocked` | `isBlocked` | P2: No double negatives |
-| `isNotBlocked` | `isActive` (inverted) | P2: No double negatives |
+| `!isNotBlocked` | `isBlocked` | P2: No negative words |
+| `isNotBlocked` | `isActive` (synonym) | P2: No negative words |
+| `isNotReady` | `isPending` (synonym) | P2: No negative words |
 | `!$obj->isValid()` | `$obj->isInvalid()` | P3: Named guards |
 | `if (a && b \|\| c)` | `if (isValid(x))` | P4: Extract expressions |
 | `fn(true)` | `fnWithOption()` | P5: Explicit params |
