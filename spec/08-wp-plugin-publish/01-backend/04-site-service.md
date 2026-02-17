@@ -217,21 +217,28 @@ func (s *serviceImpl) scanSiteRows(rows *sql.Rows) ([]models.Site, error) {
 
 func (s *serviceImpl) scanSingleSite(rows *sql.Rows) (models.Site, error) {
     var site models.Site
-    var encryptedPassword string
-    var lastSyncAt sql.NullString
-
-    if err := rows.Scan(
-        &site.ID, &site.Name, &site.URL, &site.Username,
-        &encryptedPassword, &site.IsActive, &lastSyncAt,
-        &site.CreatedAt, &site.UpdatedAt,
-    ); err != nil {
+    encryptedPassword, lastSyncAt, err := s.scanSiteColumns(rows, &site)
+    if err != nil {
         return site, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to scan site row")
     }
-    
+
     site.AppPassword, _ = DecryptPassword(encryptedPassword, s.encKey)
     s.parseSiteLastSync(&site, lastSyncAt)
 
     return site, nil
+}
+
+func (s *serviceImpl) scanSiteColumns(rows *sql.Rows, site *models.Site) (string, sql.NullString, error) {
+    var encryptedPassword string
+    var lastSyncAt sql.NullString
+
+    err := rows.Scan(
+        &site.ID, &site.Name, &site.URL, &site.Username,
+        &encryptedPassword, &site.IsActive, &lastSyncAt,
+        &site.CreatedAt, &site.UpdatedAt,
+    )
+
+    return encryptedPassword, lastSyncAt, err
 }
 
 func (s *serviceImpl) parseSiteLastSync(site *models.Site, lastSyncAt sql.NullString) {
@@ -250,6 +257,21 @@ func (s *serviceImpl) GetByID(ctx context.Context, id int64) (*models.Site, erro
 }
 
 func (s *serviceImpl) querySiteByID(ctx context.Context, id int64) (*models.Site, error) {
+    site, encPwd, lastSync, err := s.scanSiteByID(ctx, id)
+    if err == sql.ErrNoRows {
+        return nil, apperror.New(apperror.ErrNotFound, "site not found").WithContext("site_id", id)
+    }
+    if err != nil {
+        return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site")
+    }
+
+    site.AppPassword, _ = DecryptPassword(encPwd, s.encKey)
+    s.parseSiteLastSync(&site, lastSync)
+
+    return &site, nil
+}
+
+func (s *serviceImpl) scanSiteByID(ctx context.Context, id int64) (models.Site, string, sql.NullString, error) {
     var site models.Site
     var encryptedPassword string
     var lastSyncAt sql.NullString
@@ -260,23 +282,24 @@ func (s *serviceImpl) querySiteByID(ctx context.Context, id int64) (*models.Site
         &site.CreatedAt, &site.UpdatedAt,
     )
 
-    if err == sql.ErrNoRows {
-        return nil, apperror.New(apperror.ErrNotFound, "site not found").WithContext("site_id", id)
-    }
-
-    if err != nil {
-        return nil, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get site")
-    }
-
-    site.AppPassword, _ = DecryptPassword(encryptedPassword, s.encKey)
-    s.parseSiteLastSync(&site, lastSyncAt)
-
-    return &site, nil
+    return site, encryptedPassword, lastSyncAt, err
 }
 
 // --- GetByURL ---
 
 func (s *serviceImpl) GetByURL(ctx context.Context, url string) (*models.Site, error) {
+    site, encPwd, lastSync, err := s.scanSiteByURL(ctx, url)
+    if err != nil {
+        return nil, err
+    }
+
+    site.AppPassword, _ = DecryptPassword(encPwd, s.encKey)
+    s.parseSiteLastSync(&site, lastSync)
+
+    return &site, nil
+}
+
+func (s *serviceImpl) scanSiteByURL(ctx context.Context, url string) (models.Site, string, sql.NullString, error) {
     var site models.Site
     var encryptedPassword string
     var lastSyncAt sql.NullString
@@ -287,14 +310,7 @@ func (s *serviceImpl) GetByURL(ctx context.Context, url string) (*models.Site, e
         &site.CreatedAt, &site.UpdatedAt,
     )
 
-    if err != nil {
-        return nil, err
-    }
-
-    site.AppPassword, _ = DecryptPassword(encryptedPassword, s.encKey)
-    s.parseSiteLastSync(&site, lastSyncAt)
-
-    return &site, nil
+    return site, encryptedPassword, lastSyncAt, err
 }
 
 // --- Create ---
@@ -653,16 +669,22 @@ func (s *serviceImpl) validateSiteURL(rawURL string) error {
     if strings.TrimSpace(rawURL) == "" {
         return apperror.New(apperror.ErrValidationEmpty, "site URL is required")
     }
+    if err := validateURLScheme(rawURL); err != nil {
+        return err
+    }
+    if len(rawURL) > 2048 {
+        return apperror.New(apperror.ErrValidationLength, "site URL must be 2048 characters or less")
+    }
 
+    return nil
+}
+
+func validateURLScheme(rawURL string) error {
     parsedURL, err := url.Parse(rawURL)
     isInvalidScheme := err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https")
 
     if isInvalidScheme {
         return apperror.New(apperror.ErrValidationURL, "invalid site URL format")
-    }
-
-    if len(rawURL) > 2048 {
-        return apperror.New(apperror.ErrValidationLength, "site URL must be 2048 characters or less")
     }
 
     return nil
