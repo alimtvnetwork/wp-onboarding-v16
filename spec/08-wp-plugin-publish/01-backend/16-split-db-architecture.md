@@ -302,21 +302,30 @@ func (m *DBManager) BackupProject(projectSlug, backupDir string) error {
     if err != nil {
         return err
     }
-    
+
+    projectBackupDir := createBackupDir(backupDir, projectSlug)
+
+    return m.backupAllDBs(dbs, projectBackupDir)
+}
+
+func createBackupDir(backupDir, projectSlug string) string {
     timestamp := time.Now().Format("20060102-150405")
-    projectBackupDir := filepath.Join(backupDir, projectSlug, timestamp)
-    os.MkdirAll(projectBackupDir, 0755)
-    
+    dir := filepath.Join(backupDir, projectSlug, timestamp)
+    os.MkdirAll(dir, 0755)
+
+    return dir
+}
+
+func (m *DBManager) backupAllDBs(dbs []Database, destDir string) error {
     for _, db := range dbs {
         srcPath := filepath.Join(m.dataDir, db.Path)
-        dstPath := filepath.Join(projectBackupDir, filepath.Base(db.Path))
-        
-        // Use SQLite backup API for consistency
+        dstPath := filepath.Join(destDir, filepath.Base(db.Path))
+
         if err := m.backupDB(srcPath, dstPath); err != nil {
             return fmt.Errorf("backup failed for %s: %w", db.Path, err)
         }
     }
-    
+
     return nil
 }
 ```
@@ -476,6 +485,16 @@ func (m *DBManager) openAndCache(dbRecord *Database, cacheKey string) (*sql.DB, 
 
 // ListDatabases returns all databases for a project
 func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
+    rows, err := m.queryActiveDBs(projectSlug)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    return scanDatabases(rows)
+}
+
+func (m *DBManager) queryActiveDBs(projectSlug string) (*sql.Rows, error) {
     query := `
         SELECT d.id, d.project_id, d.type, d.entity_id, d.path, 
                d.size_bytes, d.record_count, d.status, d.created_at, d.updated_at
@@ -483,13 +502,11 @@ func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
         JOIN projects p ON d.project_id = p.id
         WHERE p.slug = ? AND d.status = 'active'
     `
-    
-    rows, err := m.rootDB.Query(query, projectSlug)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-    
+
+    return m.rootDB.Query(query, projectSlug)
+}
+
+func scanDatabases(rows *sql.Rows) ([]Database, error) {
     var dbs []Database
     for rows.Next() {
         var db Database
@@ -501,7 +518,7 @@ func (m *DBManager) ListDatabases(projectSlug string) ([]Database, error) {
         }
         dbs = append(dbs, db)
     }
-    
+
     return dbs, nil
 }
 
@@ -620,26 +637,36 @@ func (m *DBManager) ArchiveStale(maxAge time.Duration) error {
 // Delete archived databases older than retention period
 func (m *DBManager) PurgeArchived(retention time.Duration) error {
     cutoff := time.Now().Add(-retention)
-    
-    // Get databases to delete
+
+    if err := m.deleteArchivedFiles(cutoff); err != nil {
+        return err
+    }
+
+    return m.deleteArchivedRecords(cutoff)
+}
+
+func (m *DBManager) deleteArchivedFiles(cutoff time.Time) error {
     rows, _ := m.rootDB.Query(`
         SELECT path FROM databases 
         WHERE status = 'archived' AND updated_at < ?
     `, cutoff)
     defer rows.Close()
-    
+
     for rows.Next() {
         var path string
         rows.Scan(&path)
         os.Remove(filepath.Join(m.dataDir, path))
     }
-    
-    // Remove records
+
+    return nil
+}
+
+func (m *DBManager) deleteArchivedRecords(cutoff time.Time) error {
     _, err := m.rootDB.Exec(`
         DELETE FROM databases 
         WHERE status = 'archived' AND updated_at < ?
     `, cutoff)
-    
+
     return err
 }
 ```
@@ -654,61 +681,70 @@ func (m *DBManager) PurgeArchived(retention time.Duration) error {
 // ExportProjectToZip creates a zip file of all project databases
 func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) error {
     m.logger.Info("Starting export", "project", projectSlug, "output", outputPath)
-    
+
     projectDir := filepath.Join(m.dataDir, projectSlug)
     if _, err := os.Stat(projectDir); os.IsNotExist(err) {
         return fmt.Errorf("project not found: %s", projectSlug)
     }
-    
-    // Create zip file
+
+    err := m.writeProjectZip(projectDir, outputPath)
+    if err != nil {
+        return fmt.Errorf("export failed: %w", err)
+    }
+
+    m.logger.Info("Export complete", "project", projectSlug, "output", outputPath)
+
+    return nil
+}
+
+func (m *DBManager) writeProjectZip(projectDir, outputPath string) error {
     zipFile, err := os.Create(outputPath)
     if err != nil {
         return fmt.Errorf("failed to create zip file: %w", err)
     }
     defer zipFile.Close()
-    
+
     zipWriter := zip.NewWriter(zipFile)
     defer zipWriter.Close()
-    
-    // Walk project directory and add all .db files
-    err = filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
-        if err != nil {
-            m.logger.Warn("Skip file due to error", "path", path, "error", err)
-            return nil // Continue walking
-        }
-        
-        if info.IsDir() || !strings.HasSuffix(path, ".db") {
-            return nil
-        }
-        
-        // Get relative path within project
-        relPath, _ := filepath.Rel(projectDir, path)
-        
-        m.logger.Debug("Adding to zip", "file", relPath, "size", info.Size())
-        
-        // Create zip entry
-        writer, err := zipWriter.Create(relPath)
-        if err != nil {
-            return err
-        }
-        
-        // Copy file content
-        file, err := os.Open(path)
-        if err != nil {
-            return err
-        }
-        defer file.Close()
-        
-        _, err = io.Copy(writer, file)
-        return err
+
+    return filepath.Walk(projectDir, func(path string, info os.FileInfo, err error) error {
+        return m.addDBFileToZip(zipWriter, projectDir, path, info, err)
     })
-    
-    if err != nil {
-        return fmt.Errorf("export failed: %w", err)
+}
+
+func (m *DBManager) addDBFileToZip(zipWriter *zip.Writer, projectDir, path string, info os.FileInfo, walkErr error) error {
+    if walkErr != nil {
+        m.logger.Warn("Skip file due to error", "path", path, "error", walkErr)
+
+        return nil
     }
-    
-    m.logger.Info("Export complete", "project", projectSlug, "output", outputPath)
-    return nil
+
+    isSkippable := info.IsDir() || !strings.HasSuffix(path, ".db")
+    if isSkippable {
+        return nil
+    }
+
+    relPath, _ := filepath.Rel(projectDir, path)
+    m.logger.Debug("Adding to zip", "file", relPath, "size", info.Size())
+
+    return m.copyFileToZip(zipWriter, relPath, path)
+}
+
+func (m *DBManager) copyFileToZip(zipWriter *zip.Writer, relPath, srcPath string) error {
+    writer, err := zipWriter.Create(relPath)
+    if err != nil {
+        return err
+    }
+
+    file, err := os.Open(srcPath)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    _, err = io.Copy(writer, file)
+
+    return err
 }
 ```
 
@@ -718,57 +754,70 @@ func (m *DBManager) ExportProjectToZip(projectSlug, outputPath string) error {
 // ImportProjectFromZip imports databases from a zip file
 func (m *DBManager) ImportProjectFromZip(zipPath, projectSlug string, overwrite bool) error {
     m.logger.Info("Starting import", "zip", zipPath, "project", projectSlug, "overwrite", overwrite)
-    
-    // Open zip file
+
     reader, err := zip.OpenReader(zipPath)
     if err != nil {
         return fmt.Errorf("failed to open zip: %w", err)
     }
     defer reader.Close()
-    
-    projectDir := filepath.Join(m.dataDir, projectSlug)
-    
-    // Check if project exists
-    if _, err := os.Stat(projectDir); err == nil && !overwrite {
-        return fmt.Errorf("project exists, use overwrite=true to replace")
-    }
-    
-    // Close any open databases for this project
-    m.closeProjectDBs(projectSlug)
-    
-    // Create project directory
-    if err := os.MkdirAll(projectDir, 0755); err != nil {
+
+    if err := m.prepareImportDir(projectSlug, overwrite); err != nil {
         return err
     }
-    
-    // Extract files
+
+    return m.extractAndRegister(reader, projectSlug)
+}
+
+func (m *DBManager) prepareImportDir(projectSlug string, overwrite bool) error {
+    projectDir := filepath.Join(m.dataDir, projectSlug)
+    projectExists := !os.IsNotExist(statErr(projectDir))
+
+    if projectExists && !overwrite {
+        return fmt.Errorf("project exists, use overwrite=true to replace")
+    }
+
+    m.closeProjectDBs(projectSlug)
+
+    return os.MkdirAll(projectDir, 0755)
+}
+
+func statErr(path string) error {
+    _, err := os.Stat(path)
+
+    return err
+}
+
+func (m *DBManager) extractAndRegister(reader *zip.ReadCloser, projectSlug string) error {
+    projectDir := filepath.Join(m.dataDir, projectSlug)
+
     for _, file := range reader.File {
         if file.FileInfo().IsDir() {
             continue
         }
-        
-        destPath := filepath.Join(projectDir, file.Name)
-        
-        m.logger.Debug("Extracting", "file", file.Name, "size", file.UncompressedSize64)
-        
-        // Create directory structure
-        if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+
+        if err := m.extractSingleFile(file, projectDir); err != nil {
             return err
         }
-        
-        // Extract file
-        if err := m.extractZipFile(file, destPath); err != nil {
-            return fmt.Errorf("failed to extract %s: %w", file.Name, err)
-        }
     }
-    
-    // Register databases in root.db
+
     if err := m.registerImportedDatabases(projectSlug); err != nil {
         m.logger.Warn("Failed to register databases", "error", err)
     }
-    
+
     m.logger.Info("Import complete", "project", projectSlug, "files", len(reader.File))
+
     return nil
+}
+
+func (m *DBManager) extractSingleFile(file *zip.File, projectDir string) error {
+    destPath := filepath.Join(projectDir, file.Name)
+    m.logger.Debug("Extracting", "file", file.Name, "size", file.UncompressedSize64)
+
+    if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+        return err
+    }
+
+    return m.extractZipFile(file, destPath)
 }
 
 func (m *DBManager) extractZipFile(file *zip.File, destPath string) error {
@@ -795,44 +844,55 @@ func (m *DBManager) extractZipFile(file *zip.File, destPath string) error {
 // ExportByType exports only specific database types
 func (m *DBManager) ExportByType(projectSlug string, dbTypes []string, outputPath string) error {
     m.logger.Info("Selective export", "project", projectSlug, "types", dbTypes)
-    
-    // Filter databases by type
+
     dbs, err := m.ListDatabases(projectSlug)
     if err != nil {
         return err
     }
-    
-    typeSet := make(map[string]bool)
-    for _, t := range dbTypes {
-        typeSet[t] = true
+
+    typeSet := toStringSet(dbTypes)
+    filtered := filterDBsByType(dbs, typeSet)
+
+    return m.writeFilteredZip(filtered, projectSlug, outputPath)
+}
+
+func toStringSet(items []string) map[string]bool {
+    set := make(map[string]bool, len(items))
+    for _, item := range items {
+        set[item] = true
     }
-    
-    // Create zip with only matching types
+
+    return set
+}
+
+func filterDBsByType(dbs []Database, typeSet map[string]bool) []Database {
+    var filtered []Database
+    for _, db := range dbs {
+        if typeSet[db.Type] {
+            filtered = append(filtered, db)
+        }
+    }
+
+    return filtered
+}
+
+func (m *DBManager) writeFilteredZip(dbs []Database, projectSlug, outputPath string) error {
     zipFile, err := os.Create(outputPath)
     if err != nil {
         return err
     }
     defer zipFile.Close()
-    
+
     zipWriter := zip.NewWriter(zipFile)
     defer zipWriter.Close()
-    
+
     for _, db := range dbs {
-        if !typeSet[db.Type] {
-            continue
-        }
-        
         m.logger.Debug("Including", "type", db.Type, "path", db.Path)
-        
-        fullPath := filepath.Join(m.dataDir, db.Path)
         relPath := strings.TrimPrefix(db.Path, projectSlug+"/")
-        
-        writer, _ := zipWriter.Create(relPath)
-        file, _ := os.Open(fullPath)
-        io.Copy(writer, file)
-        file.Close()
+        fullPath := filepath.Join(m.dataDir, db.Path)
+        m.copyFileToZip(zipWriter, relPath, fullPath)
     }
-    
+
     return nil
 }
 ```
@@ -880,38 +940,35 @@ func (l *DBLogger) Error(msg string, args ...any) {
 ```go
 // GetOrCreateDB with logging
 func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB, error) {
+    m.logger.Debug("GetOrCreateDB called", "project", projectSlug, "type", dbType, "entity", entityID)
     startTime := time.Now()
-    
-    m.logger.Debug("GetOrCreateDB called",
-        "project", projectSlug,
-        "type", dbType,
-        "entity", entityID,
-    )
-    
+
     db, err := m.doGetOrCreateDB(projectSlug, dbType, entityID)
-    
     duration := time.Since(startTime)
-    
+
     if err != nil {
-        m.logger.Error("GetOrCreateDB failed",
-            "project", projectSlug,
-            "type", dbType,
-            "entity", entityID,
-            "error", err,
-            "duration_ms", duration.Milliseconds(),
-        )
+        m.logDBError(projectSlug, dbType, entityID, err, duration)
+
         return nil, err
     }
-    
-    m.logger.Info("Database ready",
-        "project", projectSlug,
-        "type", dbType,
-        "entity", entityID,
-        "duration_ms", duration.Milliseconds(),
-        "cached", cached,
-    )
-    
+
+    m.logDBReady(projectSlug, dbType, entityID, duration)
+
     return db, nil
+}
+
+func (m *DBManager) logDBError(project, dbType, entity string, err error, d time.Duration) {
+    m.logger.Error("GetOrCreateDB failed",
+        "project", project, "type", dbType, "entity", entity,
+        "error", err, "duration_ms", d.Milliseconds(),
+    )
+}
+
+func (m *DBManager) logDBReady(project, dbType, entity string, d time.Duration) {
+    m.logger.Info("Database ready",
+        "project", project, "type", dbType, "entity", entity,
+        "duration_ms", d.Milliseconds(),
+    )
 }
 ```
 

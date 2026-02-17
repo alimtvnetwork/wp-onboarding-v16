@@ -256,18 +256,25 @@ The `SessionId` field connects session logs to the error envelope:
 ```go
 // In respondErrorWithSession helper:
 func respondErrorWithSession(w http.ResponseWriter, r *http.Request, appErr *apperror.AppError) {
-    sessionId := ""
-    if sid, ok := appErr.Context["sessionId"]; ok {
-        sessionId = sid.(string)
-    } else if sid := r.Context().Value("sessionId"); sid != nil {
-        sessionId = sid.(string)
-    }
-    
+    sessionId := extractSessionID(appErr, r)
     envelope := buildErrorEnvelope(appErr)
+
     if sessionId != "" {
         envelope.Attributes.SessionId = sessionId
     }
     // ... write response
+}
+
+func extractSessionID(appErr *apperror.AppError, r *http.Request) string {
+    if sid, ok := appErr.Context["sessionId"]; ok {
+        return sid.(string)
+    }
+
+    if sid := r.Context().Value("sessionId"); sid != nil {
+        return sid.(string)
+    }
+
+    return ""
 }
 ```
 
