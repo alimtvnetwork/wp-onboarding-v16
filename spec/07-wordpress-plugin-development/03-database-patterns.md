@@ -111,7 +111,9 @@ class Database {
             __LINE__,
         );
 
-        if (PathHelper::isDirMissing($dataDir) && !@mkdir($dataDir, 0755, true) && !is_dir($dataDir)) {
+        $isCreateFailed = PathHelper::isDirMissing($dataDir) && !@mkdir($dataDir, 0755, true) && !is_dir($dataDir);
+
+        if ($isCreateFailed) {
             throw new RuntimeException("Failed to create data directory: {$dataDir}");
         }
 

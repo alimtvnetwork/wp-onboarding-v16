@@ -102,7 +102,11 @@ class FileLogger {
         return gmdate(self::TIMESTAMP_FORMAT, $seconds) . sprintf('.%03dZ', $milliseconds);
     }
 
-    private function formatEntry(string $message, string $file = '', int $line = 0): string {
+    private function formatEntry(
+        string $message,
+        string $file = '',
+        int $line = 0,
+    ): string {
         $timestamp = $this->getTimestamp();
         $context = '';
 
@@ -116,7 +120,11 @@ class FileLogger {
         return "[{$timestamp}] {$message}{$context}\n";
     }
 
-    public function log(string $message, string $file = '', int $line = 0): bool {
+    public function log(
+        string $message,
+        string $file = '',
+        int $line = 0,
+    ): bool {
         $this->ensurePaths();
 
         $entry = $this->formatEntry($message, $file, $line);
@@ -125,7 +133,11 @@ class FileLogger {
         return true;
     }
 
-    public function error(string $message, string $file = '', int $line = 0): bool {
+    public function error(
+        string $message,
+        string $file = '',
+        int $line = 0,
+    ): bool {
         $this->ensurePaths();
 
         $entry = $this->formatEntry('[ERROR] ' . $message, $file, $line);
@@ -228,7 +240,11 @@ private function cleanupOldLogs(string $dir, int $keepCount): void {
 Optionally also write to WordPress debug log:
 
 ```php
-public function log(string $message, string $file = '', int $line = 0): bool {
+public function log(
+    string $message,
+    string $file = '',
+    int $line = 0,
+): bool {
     $this->ensurePaths();
 
     $entry = $this->formatEntry($message, $file, $line);
@@ -249,7 +265,11 @@ public function log(string $message, string $file = '', int $line = 0): bool {
 ### 1. Enable Verbose Logging During Development
 
 ```php
-public function debug(string $message, string $file = '', int $line = 0): void {
+public function debug(
+    string $message,
+    string $file = '',
+    int $line = 0,
+): void {
     $isDebugMode = defined('RISEUP_DEBUG') && RISEUP_DEBUG;
 
     if ($isDebugMode) {
