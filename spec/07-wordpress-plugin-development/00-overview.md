@@ -15,7 +15,7 @@
 | [06-file-structure.md](./06-file-structure.md) | Directory layout and file organization standards |
 | [07-error-handling.md](./07-error-handling.md) | Try-catch patterns, error logging, and graceful degradation |
 | [08-compatibility.md](./08-compatibility.md) | PHP 8.2+ requirements and WordPress version requirements |
-| [08-path-handling.md](./08-path-handling.md) | Path resolution, security, and PathHelper usage |
+| [13-path-handling.md](./13-path-handling.md) | Path resolution, security, and PathHelper usage |
 | [09-security.md](./09-security.md) | Authentication, sanitization, and security best practices |
 | [10-testing.md](./10-testing.md) | Manual and automated testing strategies |
 | [11-coding-guidelines.md](./11-coding-guidelines.md) | Mandatory development standards for the WordPress companion plugin |
