@@ -235,13 +235,7 @@ type pluginScanRow struct {
 
 func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*pluginScanRow, error) {
     row := &pluginScanRow{}
-
-    err := s.db.QueryRowContext(ctx, pluginSelectQuery+" WHERE p.Id = ?", id).Scan(
-        &row.plugin.ID, &row.plugin.Name, &row.plugin.LocalPath, &row.plugin.RemoteSlug,
-        &row.plugin.SiteID, &row.plugin.IsActive, &row.plugin.IsWatching,
-        &row.lastPublished, &row.lastHash, &row.plugin.CreatedAt, &row.plugin.UpdatedAt,
-        &row.site.ID, &row.site.Name, &row.site.URL,
-    )
+    err := s.scanPluginRow(ctx, row, id)
 
     if err == sql.ErrNoRows {
         return nil, apperror.New(apperror.ErrNotFound, "plugin not found").WithContext("plugin_id", id)
@@ -251,6 +245,15 @@ func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*pluginSca
     }
 
     return row, nil
+}
+
+func (s *serviceImpl) scanPluginRow(ctx context.Context, row *pluginScanRow, id int64) error {
+    return s.db.QueryRowContext(ctx, pluginSelectQuery+" WHERE p.Id = ?", id).Scan(
+        &row.plugin.ID, &row.plugin.Name, &row.plugin.LocalPath, &row.plugin.RemoteSlug,
+        &row.plugin.SiteID, &row.plugin.IsActive, &row.plugin.IsWatching,
+        &row.lastPublished, &row.lastHash, &row.plugin.CreatedAt, &row.plugin.UpdatedAt,
+        &row.site.ID, &row.site.Name, &row.site.URL,
+    )
 }
 
 func (s *serviceImpl) finalizePlugin(raw *pluginScanRow) (*models.Plugin, error) {
@@ -437,17 +440,20 @@ func (s *serviceImpl) processWalkEntry(
     if relPath == "." {
         return nil
     }
-
     if shouldSkipEntry(filepath.Base(filePath), info.IsDir()) {
         return skipOrContinue(info.IsDir())
     }
 
-    scan.Files = append(scan.Files, buildFileInfo(filePath, relPath, info))
+    appendFileEntry(scan, filePath, relPath, info)
+
+    return nil
+}
+
+func appendFileEntry(scan *DirectoryScan, fullPath string, relPath string, info os.FileInfo) {
+    scan.Files = append(scan.Files, buildFileInfo(fullPath, relPath, info))
     if !info.IsDir() {
         scan.TotalSize += info.Size()
     }
-
-    return nil
 }
 
 func shouldSkipEntry(base string, isDir bool) bool {

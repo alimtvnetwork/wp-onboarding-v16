@@ -143,84 +143,129 @@ type PluginSeed struct {
 }
 
 func SeedIfNeeded(db *sql.DB, configPath string) error {
-    // Load config file
-    data, err := os.ReadFile(configPath)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return nil  // No config file, skip seeding
-        }
-        return apperror.Wrap(err, apperror.ErrConfigLoad, "failed to read config file")
+    cfg, err := loadSeedConfig(configPath)
+    if cfg == nil || err != nil {
+        return err
     }
-    
-    var cfg SeedConfig
-    if err := json.Unmarshal(data, &cfg); err != nil {
-        return apperror.Wrap(err, apperror.ErrConfigParse, "failed to parse config file")
-    }
-    
-    // Get current seed version from DB
-    var dbVersion int
-    err = db.QueryRow("SELECT Value FROM AppConfig WHERE Key = 'seed_version'").Scan(&dbVersion)
-    if err == sql.ErrNoRows {
-        dbVersion = 0
-    } else if err != nil {
-        return apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to get seed version")
-    }
-    
-    // Skip if already seeded with this version
+
+    dbVersion := currentSeedVersion(db)
     if cfg.Version <= dbVersion {
         return nil
     }
-    
-    // Seed settings
+
+    return applySeed(db, cfg)
+}
+
+func loadSeedConfig(configPath string) (*SeedConfig, error) {
+    data, err := os.ReadFile(configPath)
+    if os.IsNotExist(err) {
+        return nil, nil
+    }
+    if err != nil {
+        return nil, apperror.Wrap(err, apperror.ErrConfigLoad, "failed to read config file")
+    }
+
+    var cfg SeedConfig
+    if err := json.Unmarshal(data, &cfg); err != nil {
+        return nil, apperror.Wrap(err, apperror.ErrConfigParse, "failed to parse config file")
+    }
+
+    return &cfg, nil
+}
+
+func currentSeedVersion(db *sql.DB) int {
+    var dbVersion int
+    err := db.QueryRow("SELECT Value FROM AppConfig WHERE Key = 'seed_version'").Scan(&dbVersion)
+    if err != nil {
+        return 0
+    }
+
+    return dbVersion
+}
+
+func applySeed(db *sql.DB, cfg *SeedConfig) error {
     if err := seedSettings(db, cfg.Settings); err != nil {
         return err
     }
-    
-    // Seed sites (skip existing by URL)
-    siteMap := make(map[string]int64)  // name -> id
-    for _, site := range cfg.Sites {
+
+    siteMap, err := seedAllSites(db, cfg.Sites)
+    if err != nil {
+        return err
+    }
+
+    if err := seedAllPlugins(db, cfg.Plugins, siteMap); err != nil {
+        return err
+    }
+
+    return updateSeedVersion(db, cfg.Version)
+}
+
+func seedAllSites(db *sql.DB, sites []SiteSeed) (map[string]int64, error) {
+    siteMap := make(map[string]int64)
+
+    for _, site := range sites {
         id, err := seedSite(db, site)
         if err != nil {
-            return err
+            return nil, err
         }
         siteMap[site.Name] = id
     }
-    
-    // Seed plugins (skip existing by LocalPath + SiteId)
-    for _, plugin := range cfg.Plugins {
+
+    return siteMap, nil
+}
+
+func seedAllPlugins(db *sql.DB, plugins []PluginSeed, siteMap map[string]int64) error {
+    for _, plugin := range plugins {
         siteID, ok := siteMap[plugin.SiteName]
         if !ok {
-            continue  // Site not found, skip
+            continue
         }
         if err := seedPlugin(db, plugin, siteID); err != nil {
             return err
         }
     }
-    
-    // Update seed version
-    _, err = db.Exec(
+
+    return nil
+}
+
+func updateSeedVersion(db *sql.DB, version int) error {
+    _, err := db.Exec(
         "INSERT OR REPLACE INTO AppConfig (Key, Value, UpdatedAt) VALUES ('seed_version', ?, datetime('now'))",
-        cfg.Version,
+        version,
     )
     if err != nil {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to update seed version")
     }
-    
+
     return nil
 }
 
 func seedSite(db *sql.DB, site SiteSeed) (int64, error) {
-    // Check if exists
-    var existingID int64
-    err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", site.URL).Scan(&existingID)
+    existingID, err := findExistingSite(db, site.URL)
+    if existingID > 0 {
+        return existingID, nil
+    }
+    if err != nil {
+        return 0, err
+    }
+
+    return insertSite(db, site)
+}
+
+func findExistingSite(db *sql.DB, url string) (int64, error) {
+    var id int64
+    err := db.QueryRow("SELECT Id FROM Sites WHERE Url = ?", url).Scan(&id)
     if err == nil {
-        return existingID, nil  // Already exists
+        return id, nil
     }
     if err != sql.ErrNoRows {
         return 0, apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to check site existence")
     }
-    
-    // Insert new site
+
+    return 0, nil
+}
+
+func insertSite(db *sql.DB, site SiteSeed) (int64, error) {
     result, err := db.Exec(
         `INSERT INTO Sites (Name, Url, Username, AppPassword, IsActive) 
          VALUES (?, ?, ?, ?, 1)`,
@@ -229,7 +274,7 @@ func seedSite(db *sql.DB, site SiteSeed) (int64, error) {
     if err != nil {
         return 0, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to insert site")
     }
-    
+
     return result.LastInsertId()
 }
 
@@ -238,21 +283,26 @@ func seedPlugin(
 	plugin PluginSeed,
 	siteID int64,
 ) error {
-    // Check if exists
-    var exists bool
+    exists := pluginExists(db, plugin.LocalPath, siteID)
+    if exists {
+        return nil
+    }
+
+    return insertPlugin(db, plugin, siteID)
+}
+
+func pluginExists(db *sql.DB, localPath string, siteID int64) bool {
+    var dummy bool
     err := db.QueryRow(
         "SELECT 1 FROM Plugins WHERE LocalPath = ? AND SiteId = ?",
-        plugin.LocalPath, siteID,
-    ).Scan(&exists)
-    if err == nil {
-        return nil  // Already exists
-    }
-    if err != sql.ErrNoRows {
-        return apperror.Wrap(err, apperror.ErrDatabaseQuery, "failed to check plugin existence")
-    }
-    
-    // Insert new plugin
-    _, err = db.Exec(
+        localPath, siteID,
+    ).Scan(&dummy)
+
+    return err == nil
+}
+
+func insertPlugin(db *sql.DB, plugin PluginSeed, siteID int64) error {
+    _, err := db.Exec(
         `INSERT INTO Plugins (Name, LocalPath, RemoteSlug, SiteId, IsActive) 
          VALUES (?, ?, ?, ?, 1)`,
         plugin.Name, plugin.LocalPath, plugin.RemoteSlug, siteID,
@@ -260,7 +310,7 @@ func seedPlugin(
     if err != nil {
         return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to insert plugin")
     }
-    
+
     return nil
 }
 ```
@@ -274,7 +324,19 @@ Settings are stored in AppConfig table as key-value pairs:
 ```go
 // internal/config/settings.go
 func seedSettings(db *sql.DB, settings Settings) error {
-    pairs := []struct{ key, value string }{
+    pairs := buildSettingPairs(settings)
+
+    for _, p := range pairs {
+        if err := insertSettingIfNew(db, p.key, p.value); err != nil {
+            return err
+        }
+    }
+
+    return nil
+}
+
+func buildSettingPairs(settings Settings) []struct{ key, value string } {
+    return []struct{ key, value string }{
         {"port", fmt.Sprintf("%d", settings.Port)},
         {"watch_debounce_ms", fmt.Sprintf("%d", settings.WatchDebounceMs)},
         {"backup_retention_days", fmt.Sprintf("%d", settings.BackupRetentionDays)},
@@ -283,19 +345,18 @@ func seedSettings(db *sql.DB, settings Settings) error {
         {"backup_directory", settings.BackupDirectory},
         {"log_level", settings.LogLevel},
     }
-    
-    for _, p := range pairs {
-        // Only insert if not exists (don't overwrite user changes)
-        _, err := db.Exec(
-            `INSERT OR IGNORE INTO AppConfig (Key, Value, UpdatedAt) 
-             VALUES (?, ?, datetime('now'))`,
-            p.key, p.value,
-        )
-        if err != nil {
-            return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to seed setting: "+p.key)
-        }
+}
+
+func insertSettingIfNew(db *sql.DB, key string, value string) error {
+    _, err := db.Exec(
+        `INSERT OR IGNORE INTO AppConfig (Key, Value, UpdatedAt) 
+         VALUES (?, ?, datetime('now'))`,
+        key, value,
+    )
+    if err != nil {
+        return apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to seed setting: "+key)
     }
-    
+
     return nil
 }
 

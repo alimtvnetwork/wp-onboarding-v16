@@ -165,52 +165,56 @@ import (
 )
 
 func main() {
-    // Initialize logger
     log := logger.New()
-    
-    // Load configuration
+
+    cfg, db := initInfrastructure(log)
+    defer db.Close()
+
+    services := initServices(db, log)
+
+    startBackgroundServices(services, log)
+
+    awaitShutdown(services, log)
+}
+
+func initInfrastructure(log *logger.Logger) (*config.Config, *database.DB) {
     cfg, err := config.Load("config.json")
     if err != nil {
         log.Fatal("Failed to load config", "error", err)
     }
-    
-    // Initialize database
+
     db, err := database.New(cfg.DatabasePath)
     if err != nil {
         log.Fatal("Failed to connect to database", "error", err)
     }
-    defer db.Close()
-    
-    // Run migrations
+
     if err := database.Migrate(db); err != nil {
         log.Fatal("Failed to run migrations", "error", err)
     }
-    
-    // Seed from config if needed
+
     if err := config.SeedIfNeeded(db, cfg); err != nil {
         log.Fatal("Failed to seed database", "error", err)
     }
-    
-    // Initialize services
-    services := initServices(db, log)
-    
-    // Start file watcher
-    watcher := watcher.New(services.Plugin, services.Sync, log)
-    go watcher.Start()
-    
-    // Start HTTP server
+
+    return cfg, db
+}
+
+func startBackgroundServices(services *Services, log *logger.Logger) {
+    w := watcher.New(services.Plugin, services.Sync, log)
+    go w.Start()
+
     server := api.NewServer(services, log)
-    go server.Start(cfg.Port)
-    
-    // Wait for shutdown signal
+    go server.Start(services.Config.Port)
+}
+
+func awaitShutdown(services *Services, log *logger.Logger) {
     quit := make(chan os.Signal, 1)
     signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
     <-quit
-    
-    // Graceful shutdown
+
     log.Info("Shutting down...")
-    watcher.Stop()
-    server.Shutdown(context.Background())
+    services.Watcher.Stop()
+    services.Server.Shutdown(context.Background())
 }
 ```
 

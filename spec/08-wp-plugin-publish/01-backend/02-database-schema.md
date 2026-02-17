@@ -280,23 +280,35 @@ Application passwords are encrypted using AES-256-GCM:
 ```go
 // internal/services/site/encryption.go
 func EncryptPassword(plaintext string, key []byte) (string, error) {
+    gcm, err := createGCM(key)
+    if err != nil {
+        return "", err
+    }
+
+    nonce, err := generateNonce(gcm.NonceSize())
+    if err != nil {
+        return "", err
+    }
+
+    ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
+
+    return base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+func createGCM(key []byte) (cipher.AEAD, error) {
     block, err := aes.NewCipher(key)
     if err != nil {
-        return "", err
+        return nil, err
     }
-    
-    gcm, err := cipher.NewGCM(block)
-    if err != nil {
-        return "", err
-    }
-    
-    nonce := make([]byte, gcm.NonceSize())
-    if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-        return "", err
-    }
-    
-    ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
-    return base64.StdEncoding.EncodeToString(ciphertext), nil
+
+    return cipher.NewGCM(block)
+}
+
+func generateNonce(size int) ([]byte, error) {
+    nonce := make([]byte, size)
+    _, err := io.ReadFull(rand.Reader, nonce)
+
+    return nonce, err
 }
 ```
 
