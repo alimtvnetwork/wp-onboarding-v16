@@ -250,20 +250,32 @@ All databases use Write-Ahead Logging for concurrent access:
 
 ```go
 func (m *DBManager) configureDB(db *sql.DB) error {
-    // Enable WAL mode for concurrent reads
+    if err := m.enableWALMode(db); err != nil {
+        return err
+    }
+
+    if err := m.setBusyTimeout(db); err != nil {
+        return err
+    }
+
+    return m.enableForeignKeys(db)
+}
+
+func (m *DBManager) enableWALMode(db *sql.DB) error {
     _, err := db.Exec("PRAGMA journal_mode=WAL")
-    if err != nil {
-        return err
-    }
-    
-    // Set busy timeout to avoid SQLITE_BUSY errors
-    _, err = db.Exec("PRAGMA busy_timeout=5000")
-    if err != nil {
-        return err
-    }
-    
-    // Enable foreign keys
-    _, err = db.Exec("PRAGMA foreign_keys=ON")
+
+    return err
+}
+
+func (m *DBManager) setBusyTimeout(db *sql.DB) error {
+    _, err := db.Exec("PRAGMA busy_timeout=5000")
+
+    return err
+}
+
+func (m *DBManager) enableForeignKeys(db *sql.DB) error {
+    _, err := db.Exec("PRAGMA foreign_keys=ON")
+
     return err
 }
 ```
@@ -284,7 +296,9 @@ type DBManager struct {
 func (m *DBManager) getDB(key string) (*sql.DB, bool) {
     m.mu.RLock()
     defer m.mu.RUnlock()
+
     db, ok := m.openDBs[key]
+
     return db, ok
 }
 ```
@@ -605,12 +619,10 @@ _, err = cacheDB.Exec(`
 
 ```go
 func GenerateSlug(name string) string {
-    // Convert to lowercase
     slug := strings.ToLower(name)
-    // Replace spaces and special chars with hyphens
     slug = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(slug, "-")
-    // Remove leading/trailing hyphens
     slug = strings.Trim(slug, "-")
+
     return slug
 }
 ```
@@ -861,14 +873,15 @@ func (m *DBManager) extractZipFile(file *zip.File, destPath string) error {
         return err
     }
     defer src.Close()
-    
+
     dst, err := os.Create(destPath)
     if err != nil {
         return err
     }
     defer dst.Close()
-    
+
     _, err = io.Copy(dst, src)
+
     return err
 }
 ```
