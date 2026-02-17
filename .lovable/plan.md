@@ -75,13 +75,11 @@ Swept all `spec/` files for stale legacy references (2026-02-17):
 - **F2**: `interface{}` struct fields → `json.RawMessage` in Go delegation/logging specs (`spec/05-error-manage/`)
 - **F3**: Legacy `extractPHPStackTrace`/`extractLogHint` helpers → concrete `DelegatedResponseBody` struct
 
-### Remaining stale references (not yet fixed):
-- `RiseupSnapshotFactory` → `SnapshotFactory` in `spec/01-coding-guidelines/dry-principles.md`, `spec/dry-refactoring-summary.md`
-- `RiseupEnvelopeBuilder` → `EnvelopeBuilder` in `spec/04-php-standards/readme.md`, `spec/05-error-manage/05-response-envelope/adr.md`
-- Legacy `class-*.php` file paths in specs (should be PSR-4 PascalCase paths)
+- **F4**: `RiseupSnapshotFactory` → `SnapshotFactory` in `dry-principles.md`, `dry-refactoring-summary.md`, `changelog.md`
+- **F5**: `RiseupEnvelopeBuilder` → `EnvelopeBuilder` in `readme.md`, `adr.md`, `changelog.md`
+- **F6**: Legacy `class-*.php` file paths → PSR-4 PascalCase paths across all 5 spec files
+- **F7**: Updated `spec/04-php-standards/readme.md` naming table and file naming convention to PSR-4
 
 ## 🔵 Next Priority
 
-- Fix remaining `Riseup`-prefixed class names in specs (SnapshotFactory, EnvelopeBuilder)
-- Update legacy `class-kebab-case.php` file paths to PSR-4 format in specs
 - Audit remaining Traits/ subdirectories (Agent, Sync, Status, FileSystem) for C3

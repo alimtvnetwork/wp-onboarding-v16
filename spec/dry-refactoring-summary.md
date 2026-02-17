@@ -90,15 +90,15 @@ The 10-phase DRY (Don't Repeat Yourself) refactoring initiative modernized the f
 
 ---
 
-### Phase 7: PHP `RiseupSnapshotFactory`
+### Phase 7: PHP `SnapshotFactory`
 
 **Goal:** Deduplicate snapshot creation logic in the WordPress plugin.
 
-- Extracted snapshot creation patterns into `RiseupSnapshotFactory` class
+- Extracted snapshot creation patterns into `SnapshotFactory` class (`RiseupAsia\Snapshot\SnapshotFactory`)
 - Unified native SQLite, WP Reset, and UpdraftPlus snapshot strategies
 - Standardized progress tracking and error handling across all snapshot types
 
-**Files affected:** `wp-plugins/riseup-asia-uploader/includes/class-snapshot-factory.php`
+**Files affected:** `wp-plugins/riseup-asia-uploader/includes/Snapshot/SnapshotFactory.php`
 
 ---
 
@@ -110,7 +110,7 @@ The 10-phase DRY (Don't Repeat Yourself) refactoring initiative modernized the f
 - All `error()` and `log_exception()` calls automatically receive 6-frame backtrace + request context
 - Eliminated manual context construction scattered across endpoint handlers
 
-**Files affected:** `wp-plugins/riseup-asia-uploader/includes/class-logger.php`
+**Files affected:** `wp-plugins/riseup-asia-uploader/includes/Logging/FileLogger.php`
 
 ---
 
@@ -135,7 +135,7 @@ The 10-phase DRY (Don't Repeat Yourself) refactoring initiative modernized the f
 **Goal:** Establish a machine-readable contract for the Universal Response Envelope.
 
 - Created `spec/response-envelope/envelope.schema.json` (JSON Schema Draft 2020-12, v1.0.0)
-- Pinned Go (`envelope.go`), TypeScript (`types.ts`), and PHP (`class-envelope-builder.php`) to schema v1.0.0
+- Pinned Go (`envelope.go`), TypeScript (`types.ts`), and PHP (`EnvelopeBuilder.php`) to schema v1.0.0
 - Added `@schema` reference comments to all three implementations
 - Validated all reference samples against the schema
 - Documented decision in ADR #7
@@ -153,7 +153,7 @@ The 10-phase DRY (Don't Repeat Yourself) refactoring initiative modernized the f
 | Error modal components | 1 (800+ lines) | 6 sub-components |
 | Data fetching patterns | Ad-hoc per hook | `useApiQuery` factory |
 | Cross-stack type contract | Prose README | Machine-readable JSON Schema |
-| PHP snapshot patterns | Inline per handler | `RiseupSnapshotFactory` |
+| PHP snapshot patterns | Inline per handler | `SnapshotFactory` |
 | PHP logger context | Manual per call | Auto-enriched centrally |
 
 ---

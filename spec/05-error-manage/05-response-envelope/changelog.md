@@ -33,7 +33,7 @@ All notable milestones in the design, migration, and adoption of the Universal R
 - Added `@schema` / version comments referencing the schema in all three implementations:
   - Go: `backend/internal/wordpress/envelope.go`
   - TypeScript: `src/lib/api/types.ts`
-  - PHP: `wp-plugins/riseup-asia-uploader/includes/class-envelope-builder.php`
+  - PHP: `wp-plugins/riseup-asia-uploader/includes/Helpers/EnvelopeBuilder.php`
 - **Completed all 10 DRY refactoring phases:**
   1. Go uploader lifecycle method dedup + stdlib usage
   2. Envelope unwrap helper + PHP stack extraction
@@ -41,7 +41,7 @@ All notable milestones in the design, migration, and adoption of the Universal R
   4. Error store capture dedup (`buildCapturedError`)
   5. `api.ts` split into `src/lib/api/` modules
   6. `useApiQuery` factory hook
-  7. PHP `RiseupSnapshotFactory` for snapshot class construction
+  7. PHP `SnapshotFactory` for snapshot class construction
   8. PHP logger context consolidation (`prepare_context`)
   9. `GlobalErrorModal.tsx` decomposition (2,164 → 195 lines, 7 sub-components)
   10. Cross-stack envelope JSON schema alignment (this entry)
@@ -88,7 +88,7 @@ All notable milestones in the design, migration, and adoption of the Universal R
 
 ## v1.1.0 — 2026-01-22 · PHP Envelope Builder
 
-- Introduced `RiseupEnvelopeBuilder` class in the WordPress companion plugin (v1.34.0).
+- Introduced `EnvelopeBuilder` class (formerly `RiseupEnvelopeBuilder`) in the WordPress companion plugin (v1.34.0).
 - Fluent API with PHPStan/Psalm `@template T of array` annotations for static analysis.
 - Migrated all PHP endpoints (status, lifecycle, diagnostics) to the builder.
 
