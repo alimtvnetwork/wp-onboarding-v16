@@ -34,18 +34,18 @@ trait UploadInstallExtractTrait
         }
 
         $plugin_file = $this->findPluginFile($slug);
-        $was_active = false;
+        $isPreviouslyActive = false;
 
         if ($plugin_file) {
-            $was_active = is_plugin_active($plugin_file);
-            if ($was_active) {
+            $isPreviouslyActive = is_plugin_active($plugin_file);
+            if ($isPreviouslyActive) {
                 deactivate_plugins($plugin_file);
             }
         }
 
         $this->deleteDirectory($target_dir);
 
-        return $was_active;
+        return $isPreviouslyActive;
     }
 
     /**
@@ -54,9 +54,9 @@ trait UploadInstallExtractTrait
     private function processUploadExtraction(array $input, array $zip_result) {
         $context = $this->prepareExtractionContext($input, $zip_result);
 
-        $was_active = $this->deactivateIfUpdating($context['slug'], $context['is_update'], $context['target_dir']);
+        $isPreviouslyActive = $this->deactivateIfUpdating($context['slug'], $context['is_update'], $context['target_dir']);
 
-        $stepResult = $this->executeExtractionSteps($context, $was_active, $input);
+        $stepResult = $this->executeExtractionSteps($context, $isPreviouslyActive, $input);
         if ($stepResult instanceof WP_REST_Response) {
             return $stepResult;
         }
@@ -87,7 +87,7 @@ trait UploadInstallExtractTrait
     /** Execute extraction, opcache reset, activation, and version detection. */
     private function executeExtractionSteps(
         array $ctx,
-        bool $was_active,
+        bool $isPreviouslyActive,
         array $input,
     ) {
         $extract_result = $this->extractToPluginsDir($ctx['temp_file'], $ctx['slug'], $ctx['target_dir']);
@@ -100,7 +100,7 @@ trait UploadInstallExtractTrait
             return $plugin_file;
         }
 
-        $activation = $this->activateIfNeeded($plugin_file, $ctx['slug'], $input['activate'], $was_active, $ctx['is_update']);
+        $activation = $this->activateIfNeeded($plugin_file, $ctx['slug'], $input['activate'], $isPreviouslyActive, $ctx['is_update']);
         if ($activation instanceof WP_REST_Response) {
             return $activation;
         }

@@ -25,7 +25,7 @@ class InitHelpers {
 
     /** @var array<string, bool> */
     private static $ensured_dirs = array();
-    private static $pdo_unavailable_warned = false;
+    private static $isPdoWarningLogged = false;
     private static $startup_results = array();
 
     public static function initSqliteConnection(string $dbPath, FileLogger $logger): ?PDO {
@@ -52,9 +52,9 @@ class InitHelpers {
     }
 
     private static function warnPdoUnavailable(FileLogger $logger, string $message): void {
-        if (self::$pdo_unavailable_warned) { return; }
+        if (self::$isPdoWarningLogged) { return; }
         $logger->warn('[INIT] ' . $message . ' Database features will be skipped.');
-        self::$pdo_unavailable_warned = true;
+        self::$isPdoWarningLogged = true;
     }
 
     private static function createPdoConnection(string $dbPath, FileLogger $logger): ?PDO {
@@ -85,6 +85,6 @@ class InitHelpers {
     public static function reset(): void {
         self::$ensured_dirs = array();
         self::$startup_results = array();
-        self::$pdo_unavailable_warned = false;
+        self::$isPdoWarningLogged = false;
     }
 }

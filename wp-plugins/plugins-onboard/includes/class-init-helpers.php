@@ -23,7 +23,7 @@ class OnboardInitHelpers {
      *
      * @var bool
      */
-    private static $directories_ready = false;
+    private static $is_directories_ready = false;
 
     /**
      * REUSABLE: Ensure all plugin directories exist and are protected.
@@ -33,7 +33,7 @@ class OnboardInitHelpers {
      */
     public static function ensure_directories_exist() {
         // If already initialized, return success immediately.
-        if (self::$directories_ready) {
+        if (self::$is_directories_ready) {
             OnboardLogger::debug('[Directories] Already initialized, skipping');
             return true;
         }
@@ -50,9 +50,9 @@ class OnboardInitHelpers {
 
             // STEP 2: Create all required plugin directories.
             OnboardLogger::debug('[Directories] Creating all required directories...');
-            $success = OnboardPaths::create_all_directories();
+            $is_created = OnboardPaths::create_all_directories();
 
-            if (empty($success)) {
+            if (empty($is_created)) {
                 OnboardLogger::error('[Directories] Failed to create some directories');
                 return false;
             }
@@ -102,7 +102,7 @@ class OnboardInitHelpers {
             }
 
             // Mark as initialized.
-            self::$directories_ready = true;
+            self::$is_directories_ready = true;
             OnboardLogger::debug('=== ALL DIRECTORIES READY ===');
             return true;
 
@@ -154,11 +154,11 @@ class OnboardInitHelpers {
 
             // STEP 5: Create tables if needed.
             OnboardLogger::debug('[Database] Step 5: Ensuring tables exist...');
-            $tables_created = $db->create_tables();
-            if (empty($tables_created)) {
+            $is_tables_created = $db->create_tables();
+            if (empty($is_tables_created)) {
                 OnboardLogger::error('[Database] Failed to create tables');
             }
-            if (!empty($tables_created)) {
+            if ($is_tables_created) {
                 OnboardLogger::debug('[Database] ✓ Tables ready');
             }
 
@@ -204,7 +204,7 @@ class OnboardInitHelpers {
      * Reset initialization state (for testing purposes).
      */
     public static function reset() {
-        self::$directories_ready = false;
+        self::$is_directories_ready = false;
         OnboardLogger::debug('[InitHelpers] State reset');
     }
 }

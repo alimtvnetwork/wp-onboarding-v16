@@ -52,23 +52,23 @@ trait InitDirTrait {
     }
 
     public static function addSecurityFiles(string $path): bool {
-        $success = true;
+        $isSecured = true;
 
         $htaccess = $path . '/.htaccess';
         if (PathHelper::isFileMissing($htaccess)) {
             if (@file_put_contents($htaccess, "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n") === false) {
-                $success = false;
+                $isSecured = false;
             }
         }
 
         $index = $path . '/index.php';
         if (PathHelper::isFileMissing($index)) {
             if (@file_put_contents($index, "<?php\n// Silence is golden.\n") === false) {
-                $success = false;
+                $isSecured = false;
             }
         }
 
-        return $success;
+        return $isSecured;
     }
 
     public static function makeSubDirectory(
