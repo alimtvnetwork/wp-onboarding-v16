@@ -211,8 +211,8 @@ Error: [E3001] failed to fetch snapshot settings: get snapshot settings (GET htt
     Method: "GET"
     Status: 403
     Stacktrace:
-        #0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()
-        #1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()
+        #0 riseup-asia-uploader.php(1098): FileLogger->error()
+        #1 class-wp-hook.php(341): RiseupAsia->enrichErrorResponse()
         #2 plugin.php(205): WP_Hook->apply_filters()
         #3 class-wp-rest-server.php(462): apply_filters()
         #4 rest-api.php(467): WP_REST_Server->serve_request()
@@ -462,8 +462,8 @@ This is the Full Report (above) with `error.log.txt` content appended at the bot
     Method: "GET"
     Status: 403
     Stacktrace:
-        #0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()
-        #1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()
+        #0 riseup-asia-uploader.php(1098): FileLogger->error()
+        #1 class-wp-hook.php(341): RiseupAsia->enrichErrorResponse()
         #2 plugin.php(205): WP_Hook->apply_filters()
         #3 class-wp-rest-server.php(462): apply_filters()
         #4 rest-api.php(467): WP_REST_Server->serve_request()
@@ -599,8 +599,8 @@ This is the **enhanced** error.log.txt format that includes the `Delegated Serve
     Method: "GET"
     Status: 403
     Stacktrace:
-        #0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()
-        #1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()
+        #0 riseup-asia-uploader.php(1098): FileLogger->error()
+        #1 class-wp-hook.php(341): RiseupAsia->enrichErrorResponse()
         #2 plugin.php(205): WP_Hook->apply_filters()
         #3 class-wp-rest-server.php(462): apply_filters()
         #4 rest-api.php(467): WP_REST_Server->serve_request()
@@ -648,8 +648,8 @@ This is the **enhanced** error.log.txt format that includes the `Delegated Serve
         }
       },
       "StackTrace": [
-        "#0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()",
-        "#1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()",
+        "#0 riseup-asia-uploader.php(1098): FileLogger->error()",
+        "#1 class-wp-hook.php(341): RiseupAsia->enrichErrorResponse()",
         "#2 plugin.php(205): WP_Hook->apply_filters()",
         "#3 class-wp-rest-server.php(462): apply_filters()",
         "#4 rest-api.php(467): WP_REST_Server->serve_request()"

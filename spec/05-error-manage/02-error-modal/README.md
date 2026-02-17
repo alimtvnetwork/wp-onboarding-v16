@@ -325,8 +325,8 @@ The Universal Response Envelope provides six top-level blocks. The error modal c
         "data": { "status": 403, "plugin_version": "1.54.0" }
       },
       "StackTrace": [
-        "#0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()",
-        "#1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()"
+        "#0 riseup-asia-uploader.php(1098): FileLogger->error()",
+        "#1 class-wp-hook.php(341): RiseupAsia->enrichErrorResponse()"
       ],
       "AdditionalMessages": "Endpoint 'snapshots' is not enabled in plugin settings."
     }

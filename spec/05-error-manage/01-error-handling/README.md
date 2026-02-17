@@ -103,16 +103,19 @@ The project implements a **three-tier error handling architecture** spanning the
 
 ---
 
-## Tier 1: PHP Error Handling (WordPress Plugin)
+## Tier 1: Delegated Server Error Handling
 
-### Safe Execution Pattern
+> The delegated server can be **any downstream service** the Go backend proxies to — a WordPress/PHP plugin, a Node.js microservice, a Chrome extension, a Python API, etc. For the sake of example, this spec uses **PHP (WordPress plugin)** as the delegated language. When implementing in another language, follow that language's best practices for structured error responses, stack traces, and naming conventions.
 
-Every REST endpoint handler is wrapped in `safe_execute`:
+### Safe Execution Pattern (PHP Example)
+
+Every REST endpoint handler is wrapped in `safeExecute`:
 
 ```php
-public function handle_request($request) {
-    return $this->safe_execute(function() use ($request) {
+public function handleRequest(WP_REST_Request $request): WP_REST_Response {
+    return $this->safeExecute(function() use ($request) {
         // Business logic
+
         return $this->envelope->success($result);
     });
 }
@@ -132,9 +135,9 @@ The wrapper catches `Throwable` (not just `Exception`) to capture PHP 7+ Errors 
 }
 ```
 
-### REST API Error Enrichment
+### REST API Error Enrichment (PHP Example)
 
-The plugin uses a `rest_post_dispatch` filter to inject metadata into all error responses:
+The plugin uses a `rest_post_dispatch` filter to inject metadata into all error responses. Other delegated languages should implement equivalent response enrichment using their framework's middleware or interceptor pattern.
 
 ```php
 add_filter('rest_post_dispatch', function($response, $server, $request) {
@@ -142,14 +145,15 @@ add_filter('rest_post_dispatch', function($response, $server, $request) {
         $data = $response->get_data();
         $data['plugin_version'] = RISEUP_VERSION;
         $data['timestamp'] = gmdate('c');
-        $data['log_hint'] = $this->get_log_hint($response->get_status());
+        $data['log_hint'] = $this->getLogHint($response->get_status());
         $response->set_data($data);
     }
+
     return $response;
 }, 10, 3);
 ```
 
-This ensures the Go backend always receives structured metadata when a delegated request fails.
+This ensures the Go backend always receives structured metadata when a delegated request fails. **Any delegated language** should return equivalent structured JSON on failure.
 
 ### Logging Outputs
 
@@ -160,14 +164,14 @@ This ensures the Go backend always receives structured metadata when a delegated
 | `stacktrace.txt` | Raw PHP backtraces (`debug_backtrace(0, 0)`) | Unlimited |
 | `fatal-errors.log` | Fatal errors caught by shutdown handler | With memory usage |
 
-### Global Shutdown Handler
+### Global Shutdown Handler (PHP Example)
 
-Use `ErrorChecker::is_fatal_error()` to centralize fatal error detection. `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` (see [PHP Enum Spec](../../04-php-standards/enums.md) for full implementation):
+Use `ErrorChecker::isFatalError()` to centralize fatal error detection. `ErrorChecker` delegates to `ErrorTypeEnum::FATAL_TYPES` (see [PHP Enum Spec](../../04-php-standards/enums.md) for full implementation). Other delegated languages should implement equivalent uncaught-exception handlers (e.g., Node.js `process.on('uncaughtException')`, Python `sys.excepthook`).
 
 ```php
 register_shutdown_function(function() {
     $error = error_get_last();
-    if (ErrorChecker::is_fatal_error($error)) {
+    if (ErrorChecker::isFatalError($error)) {
         // Log to fatal-errors.log via PathHelper::getFatalErrorLog()
         // Include memory_get_peak_usage() for diagnostics
         // Send JSON response before process terminates (if REST_REQUEST)
@@ -177,7 +181,7 @@ register_shutdown_function(function() {
 
 ### Context Enrichment
 
-Every `error()` and `log_exception()` call automatically captures:
+Every `error()` and `logException()` call automatically captures:
 - 6-frame backtrace
 - HTTP method and endpoint
 - User-agent and IP
@@ -297,8 +301,8 @@ When `DelegatedRequestServer` is present, the error log includes a `Delegated Se
     Method: "GET"
     Status: 403
     Stacktrace:
-        #0 riseup-asia-uploader.php(1098): Riseup_File_Logger->error()
-        #1 class-wp-hook.php(341): Riseup_Asia->enrich_error_response()
+        #0 riseup-asia-uploader.php(1098): FileLogger->error()
+        #1 class-wp-hook.php(341): RiseupAsia->enrichErrorResponse()
         ...
     RequestBody:
         (none — GET request)
@@ -336,7 +340,7 @@ Every failure log entry follows this structure:
 1. **Site Request URL** — Full compiled endpoint on the target WordPress site
 2. **Site Identification** — Site name and URL
 3. **Backend Endpoint** — The Go endpoint hit by the frontend
-4. **Delegated Request** — Method, PHP endpoint, full JSON request body
+4. **Delegated Request** — Method, delegated server endpoint, full JSON request body
 5. **Delegated Response** — Status code and body
 6. **Delegated Server Info** — Endpoint, method, status, stack trace, request body, additional messages (NEW v2.0.0)
 7. **Error Summary** — Concise error description
@@ -402,7 +406,7 @@ interface CapturedError {
 // EnvelopeErrors contains DelegatedRequestServer (NEW v2.0.0)
 interface EnvelopeErrors {
   BackendMessage: string;
-  DelegatedServiceErrorStack?: string[];  // Legacy PHP stack lines
+  DelegatedServiceErrorStack?: string[];  // Legacy delegated server stack lines
   Backend?: string[];
   Frontend?: string[];
   DelegatedRequestServer?: {              // NEW v2.0.0 — structured delegated error
@@ -423,7 +427,7 @@ interface EnvelopeErrors {
 
 The API client's `parseEnvelope` detects failed responses and extracts:
 - `Errors.BackendMessage` — Primary error text
-- `Errors.DelegatedServiceErrorStack` — PHP stack trace lines (legacy)
+- `Errors.DelegatedServiceErrorStack` — Delegated server stack trace lines (legacy)
 - `Errors.DelegatedRequestServer` — Full delegated server error details (NEW v2.0.0)
 - `Errors.Backend` — Go stack trace lines
 - `MethodsStack.Backend` — Go call chain with file:line
@@ -451,7 +455,7 @@ if (envelope.Errors) {
 | **Overview** | Error message, component context, suggested fixes |
 | **Log** | error.log.txt content |
 | **Execution** | Go call chain table + session logs |
-| **Stack** | Backend (Go) + Delegated Server stack traces + PHP frames |
+| **Stack** | Backend (Go) + Delegated Server stack traces + delegated language frames |
 | **Session** | Session diagnostics: logs, request, response, stack trace |
 | **Request** | HTTP request/response chain (3-hop: React → Go → Delegated) |
 | **Traversal** | Endpoint flow + methods stack + delegated error stack |
@@ -467,7 +471,7 @@ if (envelope.Errors) {
 
 ### Session Diagnostics Auto-Fetch
 
-When `sessionId` is present, the modal automatically fetches session-level diagnostics from `GET /api/v1/sessions/{id}/diagnostics`, merging deep Go/PHP/delegated stack traces into the Stack and Execution tabs.
+When `sessionId` is present, the modal automatically fetches session-level diagnostics from `GET /api/v1/sessions/{id}/diagnostics`, merging deep Go and delegated server stack traces into the Stack and Execution tabs.
 
 ### Error Reporting Bundle
 
