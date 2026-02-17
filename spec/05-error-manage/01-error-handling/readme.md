@@ -143,7 +143,7 @@ The plugin uses a `rest_post_dispatch` filter to inject metadata into all error 
 add_filter('rest_post_dispatch', function($response, $server, $request) {
     if ($response->is_error()) {
         $data = $response->get_data();
-        $data['plugin_version'] = RISEUP_VERSION;
+        $data['plugin_version'] = PluginConfigType::Version->value;
         $data['timestamp'] = gmdate('c');
         $data['log_hint'] = $this->getLogHint($response->get_status());
         $response->set_data($data);
