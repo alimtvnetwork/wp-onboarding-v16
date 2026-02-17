@@ -61,10 +61,12 @@ trait PluginLifecycleDeleteTrait {
             $error = $this->checkDeleteResult($result);
             if ($error) {
                 $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, array('error' => $error));
+
                 return $this->errorResponse(ResponseMessageType::DeleteFailed->value . ': ' . $error, HttpStatusType::ServerError->value);
             }
         } catch (Throwable $e) {
             $this->logPluginLifecycle(ActionType::Delete->value, $slug, StatusType::Failed->value, array('exception' => $e->getMessage()));
+
             return $this->errorResponse('Exception during deletion: ' . $e->getMessage(), HttpStatusType::ServerError->value, $e);
         }
 
@@ -82,6 +84,7 @@ trait PluginLifecycleDeleteTrait {
         if ($result === false) {
             return 'delete_plugins returned false';
         }
+
         return null;
     }
 }

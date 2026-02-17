@@ -63,12 +63,14 @@ trait StatusOpsTrait {
         $spec_content = file_get_contents($spec_file);
         if ($spec_content === false) {
             $this->fileLogger->error('Failed to read OpenAPI spec file');
+
             return new WP_REST_Response(array('success' => false, 'error' => 'Failed to read OpenAPI specification'), HttpStatusType::ServerError->value);
         }
 
         $spec = json_decode($spec_content, true);
         if ($spec === null) {
             $this->fileLogger->error('Invalid JSON in OpenAPI spec file');
+
             return new WP_REST_Response(array('success' => false, 'error' => 'Invalid OpenAPI specification format'), HttpStatusType::ServerError->value);
         }
 
