@@ -1279,13 +1279,13 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 ## Cross-References
 
-- [Error Handling Cross-Stack Spec](../error-handling/README.md) — PHP, Go, frontend error chain + DelegatedRequestServer flow
-- [Copy Format Samples](./COPY-FORMATS.md) — Complete samples for all copy/export formats
-- [Response Envelope Schema](../response-envelope/envelope.schema.json) — JSON Schema for envelope (incl. DelegatedRequestServer)
-- [Envelope Configurability](../response-envelope/CONFIGURABILITY.md) — DelegatedRequestServer presence rules
-- [Session-Based Logging](../logging-and-diagnostics/session-based-logging.md) — Backend session system
-- [React Execution Logger](../logging-and-diagnostics/react-execution-logger.md) — Frontend debug logger
-- [TypeScript Standards](../typescript-standards/README.md) — Type safety rules
+- [Error Handling Cross-Stack Spec](../01-error-handling/readme.md) — PHP, Go, frontend error chain + DelegatedRequestServer flow
+- [Copy Format Samples](./copy-formats.md) — Complete samples for all copy/export formats
+- [Response Envelope Schema](../05-response-envelope/envelope.schema.json) — JSON Schema for envelope (incl. DelegatedRequestServer)
+- [Envelope Configurability](../05-response-envelope/configurability.md) — DelegatedRequestServer presence rules
+- [Session-Based Logging](../04-logging-and-diagnostics/session-based-logging.md) — Backend session system
+- [React Execution Logger](../04-logging-and-diagnostics/react-execution-logger.md) — Frontend debug logger
+- [TypeScript Standards](../../02-typescript-standards/readme.md) — Type safety rules
 
 ---
 

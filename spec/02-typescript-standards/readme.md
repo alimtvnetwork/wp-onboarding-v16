@@ -341,7 +341,7 @@ if (isFileMissing(path)) { throw new Error('Missing'); }
 - [Function Naming](../01-coding-guidelines/function-naming.md) — No boolean flag parameters (all languages)
 - [Strict Typing](../01-coding-guidelines/strict-typing.md) — Type declarations & docblock rules (all languages)
 - [DRY Principles](../01-coding-guidelines/dry-principles.md)
-- [Golang Standards](../03-golang-standards/README.md)
+- [Golang Standards](../03-golang-standards/readme.md)
 - [Response Envelope Spec](../05-error-manage/05-response-envelope/envelope.schema.json)
 
 ---

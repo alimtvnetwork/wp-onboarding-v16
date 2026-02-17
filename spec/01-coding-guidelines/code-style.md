@@ -601,7 +601,7 @@ func BuildRecord(
 - [No Raw Negations](./no-negatives.md) — Positive guard functions instead of `!` (all languages)
 - [Function Naming](./function-naming.md) — No boolean flag parameters (all languages)
 - [Strict Typing](./strict-typing.md) — Type declarations & docblock rules (all languages)
-- [PHP Coding Standards](../04-php-standards/README.md) — PHP-specific rules that reference this spec
+- [PHP Coding Standards](../04-php-standards/readme.md) — PHP-specific rules that reference this spec
 - [PHP Forbidden Patterns](../04-php-standards/forbidden-patterns.md) — PHP checklist
 - [PHP Enum Classes](../04-php-standards/enums.md) — `ErrorChecker` examples
 

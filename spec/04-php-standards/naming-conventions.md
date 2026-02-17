@@ -250,4 +250,4 @@ These are exceptions and should be minimal in modern architecture.
 
 ---
 
-> **Reminder:** This is the PSR-12 baseline. Project-level specs (e.g., WordPress plugin conventions in this same folder's [README.md](./README.md)) may override specific rules — those overrides take precedence.
+> **Reminder:** This is the PSR-12 baseline. Project-level specs (e.g., WordPress plugin conventions in this same folder's [readme.md](./readme.md)) may override specific rules — those overrides take precedence.

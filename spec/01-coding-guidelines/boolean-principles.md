@@ -270,7 +270,7 @@ See also: [function-naming.md](./function-naming.md)
 - [No Raw Negations](./no-negatives.md) — Full guard function inventory
 - [Code Style — Rule 3](./code-style.md) — Complex condition extraction
 - [Function Naming](./function-naming.md) — No boolean flag parameters
-- [PHP Boolean Guard Inventory](../04-php-standards/README.md) — PHP-specific helpers
+- [PHP Boolean Guard Inventory](../04-php-standards/readme.md) — PHP-specific helpers
 - [Strict Typing](./strict-typing.md) — Type-safe boolean handling
 
 ---

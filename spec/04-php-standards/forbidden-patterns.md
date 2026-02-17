@@ -2,7 +2,7 @@
 
 > **Version:** 3.0.0  
 > **Updated:** 2026-02-14  
-> **Consolidates:** [README.md](./README.md), [enums.md](./enums.md), [WP Error Handling](../07-wordpress-plugin-development/07-error-handling.md)
+> **Consolidates:** [readme.md](./readme.md), [enums.md](./enums.md), [WP Error Handling](../07-wordpress-plugin-development/07-error-handling.md)
 
 ---
 
@@ -150,7 +150,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 ## Cross-References
 
-- [PHP Coding Standards](./README.md) — Full spec with examples
+- [PHP Coding Standards](./readme.md) — Full spec with examples
 - [PHP Enum Classes](./enums.md) — `HookType`, `CapabilityType`, `HttpMethodType`, Path enums, `ErrorType`, `ErrorChecker`
 - [Cross-Language Code Style](../01-coding-guidelines/code-style.md) — Rules 1-9 (braces, nesting, spacing, function size, Throwable, multi-line params)
 - [WordPress Error Handling](../07-wordpress-plugin-development/07-error-handling.md) — Complete error handling patterns
