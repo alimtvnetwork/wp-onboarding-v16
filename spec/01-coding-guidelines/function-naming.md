@@ -94,14 +94,14 @@ final class ErrorResponse
 {
     // Standard: uses exception's native file/line
     public static function logAndReturn(
-        RiseupFileLogger $logger,
+        FileLogger $logger,
         Throwable $e,
         string $context = ''
     ): array { ... }
 
     // With trace: uses debug_backtrace() with frame skipping
     public static function logAndReturnWithTrace(
-        RiseupFileLogger $logger,
+        FileLogger $logger,
         Throwable $e,
         string $context = '',
         int $skipFrames = 1
