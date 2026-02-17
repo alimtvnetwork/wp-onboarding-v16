@@ -299,7 +299,11 @@ func (s *serviceImpl) populateSyncContext(
 	return s.loadSyncRemoteSlug(ctx, result, pluginID, siteID)
 }
 
-func (s *serviceImpl) loadSyncPlugin(ctx context.Context, result *SyncResult, pluginID int64) error {
+func (s *serviceImpl) loadSyncPlugin(
+	ctx context.Context,
+	result *SyncResult,
+	pluginID int64,
+) error {
 	p, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		return s.setSyncError(result, err.Error(), err)
@@ -311,7 +315,11 @@ func (s *serviceImpl) loadSyncPlugin(ctx context.Context, result *SyncResult, pl
 	return nil
 }
 
-func (s *serviceImpl) loadSyncSite(ctx context.Context, result *SyncResult, siteID int64) error {
+func (s *serviceImpl) loadSyncSite(
+	ctx context.Context,
+	result *SyncResult,
+	siteID int64,
+) error {
 	var site models.Site
 	err := s.db.QueryRowContext(ctx, siteSelectForSync, siteID).Scan(
 		&site.ID, &site.Name, &site.URL, &site.Username, &site.PasswordEncrypted,
@@ -345,7 +353,11 @@ func (s *serviceImpl) loadSyncRemoteSlug(
 	return nil
 }
 
-func (s *serviceImpl) setSyncError(result *SyncResult, msg string, err error) error {
+func (s *serviceImpl) setSyncError(
+	result *SyncResult,
+	msg string,
+	err error,
+) error {
 	result.Status = SyncStatusError
 	result.Error = msg
 
@@ -428,7 +440,11 @@ func (s *serviceImpl) tallySyncChanges(result *SyncResult) {
 	}
 }
 
-func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, status string, pluginID, siteID int64) {
+func (s *serviceImpl) updateMappingSyncStatus(
+	ctx context.Context,
+	status string,
+	pluginID, siteID int64,
+) {
 	s.db.ExecContext(ctx, updateSyncStatusQuery, status, pluginID, siteID)
 }
 
@@ -475,7 +491,11 @@ func (s *serviceImpl) checkMappings(
 	return batch
 }
 
-func (s *serviceImpl) checkSingleMapping(ctx context.Context, batch *BatchSyncResult, pluginID, siteID int64) {
+func (s *serviceImpl) checkSingleMapping(
+	ctx context.Context,
+	batch *BatchSyncResult,
+	pluginID, siteID int64,
+) {
 	result, err := s.CheckSync(ctx, pluginID, siteID)
 	if err != nil {
 		batch.Summary.ErrorSites++
@@ -755,7 +775,10 @@ func (s *serviceImpl) scanSingleFileChange(rows *sql.Rows) (models.FileChange, e
 	return c, nil
 }
 
-func (s *serviceImpl) parseFileChangeDates(c *models.FileChange, localModAt, syncedAt sql.NullString) {
+func (s *serviceImpl) parseFileChangeDates(
+	c *models.FileChange,
+	localModAt, syncedAt sql.NullString,
+) {
 	if localModAt.Valid {
 		t, _ := time.Parse(time.RFC3339, localModAt.String)
 		c.LocalModifiedAt = &t
@@ -792,7 +815,11 @@ func (s *serviceImpl) insertFileChange(ctx context.Context, change *models.FileC
 	return err
 }
 
-func (s *serviceImpl) updateFileChange(ctx context.Context, change *models.FileChange, existingID int64) error {
+func (s *serviceImpl) updateFileChange(
+	ctx context.Context,
+	change *models.FileChange,
+	existingID int64,
+) error {
 	_, err := s.db.ExecContext(ctx, updateFileChangeQuery,
 		change.ChangeType, change.LocalHash, change.LocalModifiedAt, existingID,
 	)
@@ -817,7 +844,11 @@ func (s *serviceImpl) MarkSynced(
 	return s.updateMappingAfterSync(ctx, pluginID, siteID)
 }
 
-func (s *serviceImpl) markFilesAsSynced(ctx context.Context, pluginID int64, files []string) error {
+func (s *serviceImpl) markFilesAsSynced(
+	ctx context.Context,
+	pluginID int64,
+	files []string,
+) error {
 	for _, path := range files {
 		_, err := s.db.ExecContext(ctx, markSyncedQuery, pluginID, path)
 		if err != nil {
@@ -828,7 +859,10 @@ func (s *serviceImpl) markFilesAsSynced(ctx context.Context, pluginID int64, fil
 	return nil
 }
 
-func (s *serviceImpl) updateMappingAfterSync(ctx context.Context, pluginID, siteID int64) error {
+func (s *serviceImpl) updateMappingAfterSync(
+	ctx context.Context,
+	pluginID, siteID int64,
+) error {
 	_, err := s.db.ExecContext(ctx, updateMappingAfterSyncQuery, pluginID, siteID)
 
 	return err

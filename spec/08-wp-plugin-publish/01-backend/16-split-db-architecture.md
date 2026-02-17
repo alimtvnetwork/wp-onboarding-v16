@@ -946,7 +946,11 @@ func (m *DBManager) writeFilteredZip(
     return m.addFilteredDBsToZip(zipWriter, dbs, projectSlug)
 }
 
-func (m *DBManager) addFilteredDBsToZip(zipWriter *zip.Writer, dbs []Database, projectSlug string) error {
+func (m *DBManager) addFilteredDBsToZip(
+    zipWriter *zip.Writer,
+    dbs []Database,
+    projectSlug string,
+) error {
     for _, db := range dbs {
         m.logger.Debug("Including", "type", db.Type, "path", db.Path)
         relPath := strings.TrimPrefix(db.Path, projectSlug+"/")

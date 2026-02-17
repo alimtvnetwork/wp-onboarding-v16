@@ -402,7 +402,11 @@ func (s *serviceImpl) runOptionalBackup(
 	}
 }
 
-func (s *serviceImpl) captureBackup(ctx context.Context, pctx *publishContext, result *PublishResult) error {
+func (s *serviceImpl) captureBackup(
+	ctx context.Context,
+	pctx *publishContext,
+	result *PublishResult,
+) error {
 	backup, err := s.backupService.CreateFromRemote(ctx, pctx.plugin.ID, result.SiteID)
 	if err != nil {
 		return err
@@ -552,7 +556,11 @@ func (s *serviceImpl) runStage(name string, fn func() error) StageResult {
 	return stage
 }
 
-func (s *serviceImpl) buildStageResult(name string, err error, duration int64) StageResult {
+func (s *serviceImpl) buildStageResult(
+	name string,
+	err error,
+	duration int64,
+) StageResult {
 	if err != nil {
 		return StageResult{Name: name, Status: StageStatusFailed, Error: err.Error(), Duration: duration}
 	}
@@ -560,7 +568,11 @@ func (s *serviceImpl) buildStageResult(name string, err error, duration int64) S
 	return StageResult{Name: name, Status: StageStatusSuccess, Duration: duration}
 }
 
-func (s *serviceImpl) broadcastStageProgress(stage string, status StageStatusType, duration int64) {
+func (s *serviceImpl) broadcastStageProgress(
+	stage string,
+	status StageStatusType,
+	duration int64,
+) {
 	s.wsHub.Broadcast(ws.EventPublishProgress, PublishProgressEvent{
 		Stage:    stage,
 		Status:   status,
@@ -815,7 +827,11 @@ func (s *serviceImpl) writeFilesToZip(
 	return s.addFilesToZip(zipWriter, hash, pluginPath, pluginDirName, filesToPackage)
 }
 
-func (s *serviceImpl) buildPackageInfo(zipPath string, stats zipStats, hash *md5.Hash) (*PackageInfo, error) {
+func (s *serviceImpl) buildPackageInfo(
+	zipPath string,
+	stats zipStats,
+	hash *md5.Hash,
+) (*PackageInfo, error) {
 	zipInfo, _ := os.Stat(zipPath)
 
 	pkg := &PackageInfo{
@@ -876,7 +892,9 @@ func (s *serviceImpl) addSingleFileToZip(
 	return s.copyFileToZip(filepath.Join(pluginPath, relPath), writer, hash)
 }
 
-func (s *serviceImpl) createZipHeader(pluginPath, pluginDirName, relPath string) (*zip.FileHeader, error) {
+func (s *serviceImpl) createZipHeader(
+	pluginPath, pluginDirName, relPath string,
+) (*zip.FileHeader, error) {
 	fullPath := filepath.Join(pluginPath, relPath)
 
 	header, err := s.fileInfoHeader(fullPath)
@@ -899,7 +917,11 @@ func (s *serviceImpl) fileInfoHeader(fullPath string) (*zip.FileHeader, error) {
 	return zip.FileInfoHeader(info)
 }
 
-func (s *serviceImpl) copyFileToZip(fullPath string, writer io.Writer, hash io.Writer) int64 {
+func (s *serviceImpl) copyFileToZip(
+	fullPath string,
+	writer io.Writer,
+	hash io.Writer,
+) int64 {
 	file, err := os.Open(fullPath)
 	if err != nil {
 		return -1
