@@ -345,18 +345,20 @@ import { useErrorStore } from "@/stores/errorStore";
 const { captureError, openErrorModal } = useErrorStore();
 
 // On API error (structured ApiClientError)
-if (isApiClientError(error)) {
-  const captured = captureError(error.apiError, {
-    endpoint: error.meta.requestUrl,  // <-- full resolved URL
-    method: error.meta.method,
-    requestBody: error.meta.requestBody,
-  });
-  
-  // Auto-open for connectivity errors
-  const isConnectivityError = error.apiError.code === "E9005";
-  if (isConnectivityError) {
-    openErrorModal(captured);
-  }
+if (!isApiClientError(error)) {
+  return;
+}
+
+const captured = captureError(error.apiError, {
+  endpoint: error.meta.requestUrl,  // <-- full resolved URL
+  method: error.meta.method,
+  requestBody: error.meta.requestBody,
+});
+
+// Auto-open for connectivity errors
+const isConnectivityError = error.apiError.code === "E9005";
+if (isConnectivityError) {
+  openErrorModal(captured);
 }
 ```
 
