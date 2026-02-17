@@ -159,14 +159,15 @@ class OnboardPaths {
         }
 
         // Attempt to create directory.
-        $success = false;
+        $is_created = false;
         if (function_exists('wp_mkdir_p')) {
-            $success = wp_mkdir_p($path);
+            $is_created = wp_mkdir_p($path);
         } else {
-            $success = @mkdir($path, 0755, true);
+            $is_created = @mkdir($path, 0755, true);
         }
 
-        if (!$success) {
+        $isCreationFailed = empty($is_created);
+        if ($isCreationFailed) {
             throw new Exception("Failed to create directory: {$path}. Check parent directory permissions.");
         }
 

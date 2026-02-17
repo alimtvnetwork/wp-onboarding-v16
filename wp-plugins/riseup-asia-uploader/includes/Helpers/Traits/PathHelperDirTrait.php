@@ -112,14 +112,14 @@ trait PathHelperDirTrait {
     }
 
     public static function addSecurityFiles(string $path): bool {
-        $success = true;
+        $isSecured = true;
 
         $htaccessPath = self::join($path, '.htaccess');
         if (self::isFileMissing($htaccessPath)) {
             $content = "# Riseup Asia Uploader - Security\nOrder Deny,Allow\nDeny from all\n";
             if (@file_put_contents($htaccessPath, $content) === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create .htaccess', array('path' => $htaccessPath));
-                $success = false;
+                $isSecured = false;
             }
         }
 
@@ -127,11 +127,11 @@ trait PathHelperDirTrait {
         if (self::isFileMissing($indexPath)) {
             if (@file_put_contents($indexPath, "<?php\n// Silence is golden.\n") === false) {
                 self::safeLog(LogLevelType::Warn->value, '[PATH] Failed to create index.php', array('path' => $indexPath));
-                $success = false;
+                $isSecured = false;
             }
         }
 
-        return $success;
+        return $isSecured;
     }
 
     public static function makePath(bool $secure, string ...$segments) {
