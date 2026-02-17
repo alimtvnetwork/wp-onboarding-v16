@@ -50,12 +50,12 @@ All conditional sections use pointer types with `json:",omitempty"`:
 
 ```go
 type Response struct {
-    Status      Status       `json:"Status"`
-    Attributes  Attributes   `json:"Attributes"`
-    Results     interface{}  `json:"Results"`
-    Navigation  *Navigation  `json:"Navigation,omitempty"`
-    Errors      *Errors      `json:"Errors,omitempty"`
-    MethodsStack *MethodsStack `json:"MethodsStack,omitempty"`
+    Status      Status           `json:"Status"`
+    Attributes  Attributes       `json:"Attributes"`
+    Results     json.RawMessage  `json:"Results"`
+    Navigation  *Navigation      `json:"Navigation,omitempty"`
+    Errors      *Errors          `json:"Errors,omitempty"`
+    MethodsStack *MethodsStack   `json:"MethodsStack,omitempty"`
 }
 
 type Errors struct {
@@ -67,13 +67,13 @@ type Errors struct {
 }
 
 type DelegatedRequestServer struct {
-    DelegatedEndpoint  string      `json:"DelegatedEndpoint"`
-    Method             string      `json:"Method"`
-    StatusCode         int         `json:"StatusCode"`
-    RequestBody        interface{} `json:"RequestBody,omitempty"`
-    Response           interface{} `json:"Response,omitempty"`
-    StackTrace         []string    `json:"StackTrace,omitempty"`
-    AdditionalMessages string      `json:"AdditionalMessages,omitempty"`
+    DelegatedEndpoint  string          `json:"DelegatedEndpoint"`
+    Method             string          `json:"Method"`
+    StatusCode         int             `json:"StatusCode"`
+    RequestBody        json.RawMessage `json:"RequestBody,omitempty"`
+    Response           json.RawMessage `json:"Response,omitempty"`
+    StackTrace         []string        `json:"StackTrace,omitempty"`
+    AdditionalMessages string          `json:"AdditionalMessages,omitempty"`
 }
 ```
 

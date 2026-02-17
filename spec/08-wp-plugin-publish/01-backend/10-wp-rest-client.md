@@ -187,7 +187,7 @@ func (c *clientImpl) doRequest(
     return resp, nil
 }
 
-func (c *clientImpl) parseResponse(resp *http.Response, target interface{}) error {
+func (c *clientImpl) parseResponse(resp *http.Response, target any) error {
     defer resp.Body.Close()
     
     body, err := io.ReadAll(resp.Body)

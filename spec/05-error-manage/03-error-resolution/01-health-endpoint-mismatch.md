@@ -60,10 +60,15 @@ func Health(w http.ResponseWriter, r *http.Request) {
 }
 
 // After (standard envelope)
+type HealthStatus struct {
+    Status    string `json:"status"`
+    Timestamp string `json:"timestamp"`
+}
+
 func Health(w http.ResponseWriter, r *http.Request) {
-    respondSuccess(w, map[string]interface{}{
-        "status":    "ok",
-        "timestamp": time.Now().Format(time.RFC3339),
+    respondSuccess(w, HealthStatus{
+        Status:    "ok",
+        Timestamp: time.Now().Format(time.RFC3339),
     })
 }
 // Returns: {"success":true,"data":{"status":"ok","timestamp":"..."}}
