@@ -354,7 +354,8 @@ func (m *DBManager) RestoreProject(projectSlug, backupPath string) error {
     
     // Restore from backup
     return filepath.Walk(backupPath, func(path string, info os.FileInfo, err error) error {
-        if err != nil || info.IsDir() || !strings.HasSuffix(path, ".db") {
+        isSkippable := err != nil || info.IsDir() || !strings.HasSuffix(path, ".db")
+        if isSkippable {
             return err
         }
         

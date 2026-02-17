@@ -749,7 +749,8 @@ func (s *serviceImpl) filterPluginFile(
 	err error,
 	filesToPackage *[]string,
 ) error {
-	if err != nil || info.IsDir() {
+	isSkippable := err != nil || info.IsDir()
+	if isSkippable {
 		return nil
 	}
 

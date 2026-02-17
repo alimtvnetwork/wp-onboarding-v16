@@ -144,7 +144,8 @@ type PluginSeed struct {
 
 func SeedIfNeeded(db *sql.DB, configPath string) error {
     cfg, err := loadSeedConfig(configPath)
-    if cfg == nil || err != nil {
+    isSeedUnavailable := cfg == nil || err != nil
+    if isSeedUnavailable {
         return err
     }
 

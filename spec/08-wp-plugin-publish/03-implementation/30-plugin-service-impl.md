@@ -673,7 +673,8 @@ func (s *serviceImpl) findMainPluginFile(path string) (string, string, string, e
 
 func (s *serviceImpl) searchPHPHeaders(dir string, entries []os.DirEntry) (string, string, string, error) {
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php") {
+		isNotPHP := entry.IsDir() || !strings.HasSuffix(entry.Name(), ".php")
+		if isNotPHP {
 			continue
 		}
 
