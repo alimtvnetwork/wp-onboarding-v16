@@ -2,14 +2,19 @@
 /**
  * PluginLifecycleEnableTrait — Enable and disable plugin REST handlers.
  *
- * @package RiseupAsia\Traits
+ * @package RiseupAsia\Traits\Plugin
  * @since   2.0.0
  */
+
+namespace RiseupAsia\Traits\Plugin;
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_REST_Request;
+use WP_REST_Response;
+use Throwable;
 use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\EndpointType;
 use RiseupAsia\Enums\HttpStatusType;
