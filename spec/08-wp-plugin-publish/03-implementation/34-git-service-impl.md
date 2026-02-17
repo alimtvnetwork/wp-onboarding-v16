@@ -512,20 +512,51 @@ func (s *serviceImpl) parseGitOutput(output string, result *PullResult) {
 	// Parse "X files changed, Y insertions(+), Z deletions(-)"
 	re := regexp.MustCompile(`(\d+) files? changed(?:, (\d+) insertions?\(\+\))?(?:, (\d+) deletions?\(-\))?`)
 	matches := re.FindStringSubmatch(output)
-	if len(matches) >= 2 {
-		result.FilesChanged, _ = strconv.Atoi(matches[1])
-		if len(matches) >= 3 {
-			result.Insertions, _ = strconv.Atoi(matches[2])
-		}
-		if len(matches) >= 4 {
-			result.Deletions, _ = strconv.Atoi(matches[3])
-		}
+
+	if len(matches) < 2 {
+		return
+	}
+
+	result.FilesChanged, _ = strconv.Atoi(matches[1])
+	s.parseOptionalGitStats(matches, result)
+}
+
+func (s *serviceImpl) parseOptionalGitStats(matches []string, result *PullResult) {
+	if len(matches) >= 3 {
+		result.Insertions, _ = strconv.Atoi(matches[2])
+	}
+
+	if len(matches) >= 4 {
+		result.Deletions, _ = strconv.Atoi(matches[3])
 	}
 }
 
 func dirExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
+}
+
+func (s *serviceImpl) handleBuildFailure(result *BuildResult, err error, stderrOutput string, pluginID int64) (*BuildResult, error) {
+	result.Success = false
+	result.Error = stderrOutput
+	result.ExitCode = extractExitCode(err)
+
+	s.wsHub.Broadcast(ws.EventBuildFailed, BuildFailedEvent{
+		PluginID: pluginID,
+		Error:    result.Error,
+		ExitCode: result.ExitCode,
+	})
+
+	return result, apperror.Wrap(err, apperror.ErrBuildFailed, result.Error)
+}
+
+func extractExitCode(err error) int {
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		return -1
+	}
+
+	return exitErr.ExitCode()
 }
 ```
 
@@ -598,19 +629,7 @@ func (s *serviceImpl) Build(ctx context.Context, pluginID int64) (*BuildResult, 
 	result.Output = stdout.String()
 
 	if err != nil {
-		result.Success = false
-		result.Error = stderr.String()
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			result.ExitCode = exitErr.ExitCode()
-		}
-
-		s.wsHub.Broadcast(ws.EventBuildFailed, BuildFailedEvent{
-			PluginID: pluginID,
-			Error:    result.Error,
-			ExitCode: result.ExitCode,
-		})
-
-		return result, apperror.Wrap(err, apperror.ErrBuildFailed, result.Error)
+		return s.handleBuildFailure(result, err, stderr.String(), pluginID)
 	}
 
 	result.Success = true
