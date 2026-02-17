@@ -76,14 +76,14 @@ wp-content/uploads/riseup-asia-uploader/
 ### 3.3 Detection Class
 
 ```php
-class Snapshot_Provider_Detector {
+class SnapshotProviderDetector {
     const PROVIDER_WP_RESET = 'wp_reset';
     const PROVIDER_UPDRAFT = 'updraft';
     const PROVIDER_NATIVE = 'native';
     
-    public function detect_available_providers(): array;
-    public function get_preferred_provider(): string;
-    public function get_provider_instance(): Snapshot_Provider_Interface;
+    public function detectAvailableProviders(): array;
+    public function getPreferredProvider(): string;
+    public function getProviderInstance(): SnapshotProviderInterface;
 }
 ```
 
