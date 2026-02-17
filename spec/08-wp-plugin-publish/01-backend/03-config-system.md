@@ -215,7 +215,11 @@ func seedAllSites(db *sql.DB, sites []SiteSeed) (map[string]int64, error) {
     return siteMap, nil
 }
 
-func seedAllPlugins(db *sql.DB, plugins []PluginSeed, siteMap map[string]int64) error {
+func seedAllPlugins(
+    db *sql.DB,
+    plugins []PluginSeed,
+    siteMap map[string]int64,
+) error {
     for _, plugin := range plugins {
         siteID, ok := siteMap[plugin.SiteName]
         if !ok {
@@ -292,7 +296,11 @@ func seedPlugin(
     return insertPlugin(db, plugin, siteID)
 }
 
-func pluginExists(db *sql.DB, localPath string, siteID int64) bool {
+func pluginExists(
+    db *sql.DB,
+    localPath string,
+    siteID int64,
+) bool {
     var dummy bool
     err := db.QueryRow(
         "SELECT 1 FROM Plugins WHERE LocalPath = ? AND SiteId = ?",
@@ -302,7 +310,11 @@ func pluginExists(db *sql.DB, localPath string, siteID int64) bool {
     return err == nil
 }
 
-func insertPlugin(db *sql.DB, plugin PluginSeed, siteID int64) error {
+func insertPlugin(
+    db *sql.DB,
+    plugin PluginSeed,
+    siteID int64,
+) error {
     _, err := db.Exec(
         `INSERT INTO Plugins (Name, LocalPath, RemoteSlug, SiteId, IsActive) 
          VALUES (?, ?, ?, ?, 1)`,
@@ -348,7 +360,11 @@ func buildSettingPairs(settings Settings) []struct{ key, value string } {
     }
 }
 
-func insertSettingIfNew(db *sql.DB, key string, value string) error {
+func insertSettingIfNew(
+    db *sql.DB,
+    key string,
+    value string,
+) error {
     _, err := db.Exec(
         `INSERT OR IGNORE INTO AppConfig (Key, Value, UpdatedAt) 
          VALUES (?, ?, datetime('now'))`,

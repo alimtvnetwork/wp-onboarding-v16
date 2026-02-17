@@ -228,7 +228,11 @@ func (s *serviceImpl) scanPluginColumns(rows *sql.Rows) (models.Plugin, string, 
 	return p, excludeJSON, lastScannedAt, err
 }
 
-func (s *serviceImpl) parsePluginFields(p *models.Plugin, excludeJSON string, lastScannedAt sql.NullString) {
+func (s *serviceImpl) parsePluginFields(
+	p *models.Plugin,
+	excludeJSON string,
+	lastScannedAt sql.NullString,
+) {
 	if excludeJSON != "" {
 		json.Unmarshal([]byte(excludeJSON), &p.ExcludePatterns)
 	}
@@ -335,7 +339,12 @@ func (s *serviceImpl) countFiles(ctx context.Context, path string) int {
 	return 0
 }
 
-func (s *serviceImpl) insertPlugin(ctx context.Context, input CreateInput, excludeJSON string, fileCount int) (int64, error) {
+func (s *serviceImpl) insertPlugin(
+	ctx context.Context,
+	input CreateInput,
+	excludeJSON string,
+	fileCount int,
+) (int64, error) {
 	result, err := s.db.ExecContext(ctx, pluginInsertQuery,
 		input.Name, input.Path, input.WatchEnabled, excludeJSON, fileCount,
 	)
@@ -383,7 +392,11 @@ func (s *serviceImpl) buildUpdateFields(ctx context.Context, input UpdateInput) 
 	return updates, args
 }
 
-func (s *serviceImpl) appendNameUpdate(input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendNameUpdate(
+	input UpdateInput,
+	updates *[]string,
+	args *[]any,
+) {
 	if input.Name == nil {
 		return
 	}
@@ -392,7 +405,12 @@ func (s *serviceImpl) appendNameUpdate(input UpdateInput, updates *[]string, arg
 	*args = append(*args, *input.Name)
 }
 
-func (s *serviceImpl) appendPathUpdate(ctx context.Context, input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendPathUpdate(
+	ctx context.Context,
+	input UpdateInput,
+	updates *[]string,
+	args *[]any,
+) {
 	if input.Path == nil {
 		return
 	}
@@ -405,7 +423,11 @@ func (s *serviceImpl) appendPathUpdate(ctx context.Context, input UpdateInput, u
 	*args = append(*args, *input.Path)
 }
 
-func (s *serviceImpl) appendWatchUpdate(input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendWatchUpdate(
+	input UpdateInput,
+	updates *[]string,
+	args *[]any,
+) {
 	if input.WatchEnabled == nil {
 		return
 	}
@@ -414,7 +436,11 @@ func (s *serviceImpl) appendWatchUpdate(input UpdateInput, updates *[]string, ar
 	*args = append(*args, *input.WatchEnabled)
 }
 
-func (s *serviceImpl) appendExcludeUpdate(input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendExcludeUpdate(
+	input UpdateInput,
+	updates *[]string,
+	args *[]any,
+) {
 	if input.ExcludePatterns == nil {
 		return
 	}
@@ -424,7 +450,12 @@ func (s *serviceImpl) appendExcludeUpdate(input UpdateInput, updates *[]string, 
 	*args = append(*args, string(excludeJSON))
 }
 
-func (s *serviceImpl) executeUpdate(ctx context.Context, id int64, updates []string, args []any) (*models.Plugin, error) {
+func (s *serviceImpl) executeUpdate(
+	ctx context.Context,
+	id int64,
+	updates []string,
+	args []any,
+) (*models.Plugin, error) {
 	updates = append(updates, "UpdatedAt = datetime('now')")
 	args = append(args, id)
 
@@ -535,7 +566,11 @@ func (s *serviceImpl) validateDirectory(path string, scan *ScanResult) error {
 	return s.validateIsDir(info, path, scan)
 }
 
-func (s *serviceImpl) validateIsDir(info os.FileInfo, path string, scan *ScanResult) error {
+func (s *serviceImpl) validateIsDir(
+	info os.FileInfo,
+	path string,
+	scan *ScanResult,
+) error {
 	if !info.IsDir() {
 		scan.Error = "path is not a directory"
 
@@ -573,7 +608,12 @@ func (s *serviceImpl) collectFiles(path string, scan *ScanResult) error {
 	return nil
 }
 
-func (s *serviceImpl) processWalkEntry(basePath, filePath string, info os.FileInfo, err error, scan *ScanResult) error {
+func (s *serviceImpl) processWalkEntry(
+	basePath, filePath string,
+	info os.FileInfo,
+	err error,
+	scan *ScanResult,
+) error {
 	if err != nil {
 		return nil
 	}
@@ -589,7 +629,11 @@ func (s *serviceImpl) processWalkEntry(basePath, filePath string, info os.FileIn
 	return s.appendScannedFile(relPath, filePath, info, scan)
 }
 
-func (s *serviceImpl) appendScannedFile(relPath, filePath string, info os.FileInfo, scan *ScanResult) error {
+func (s *serviceImpl) appendScannedFile(
+	relPath, filePath string,
+	info os.FileInfo,
+	scan *ScanResult,
+) error {
 	scan.Files = append(scan.Files, s.buildFileInfo(relPath, filePath, info, scan))
 
 	return nil
@@ -602,7 +646,11 @@ func (s *serviceImpl) shouldSkipEntry(filePath string, info os.FileInfo) bool {
 	return isHiddenOrIgnored && info.IsDir()
 }
 
-func (s *serviceImpl) buildFileInfo(relPath, filePath string, info os.FileInfo, scan *ScanResult) FileInfo {
+func (s *serviceImpl) buildFileInfo(
+	relPath, filePath string,
+	info os.FileInfo,
+	scan *ScanResult,
+) FileInfo {
 	fileInfo := FileInfo{
 		Path:        relPath,
 		Size:        info.Size(),
@@ -650,7 +698,11 @@ func (s *serviceImpl) RefreshFileCount(ctx context.Context, id int64) error {
 	return s.updateFileCount(ctx, id, scan.FileCount)
 }
 
-func (s *serviceImpl) updateFileCount(ctx context.Context, id int64, fileCount int) error {
+func (s *serviceImpl) updateFileCount(
+	ctx context.Context,
+	id int64,
+	fileCount int,
+) error {
 	_, err := s.db.ExecContext(ctx, `
 		UPDATE Plugins
 		SET FileCount = ?, LastScannedAt = datetime('now'), UpdatedAt = datetime('now')
@@ -712,7 +764,10 @@ func (s *serviceImpl) scanHeaderLines(file *os.File) (string, string) {
 	return pluginName, version
 }
 
-func extractMatch(re *regexp.Regexp, line, current string) string {
+func extractMatch(
+	re *regexp.Regexp,
+	line, current string,
+) string {
 	if matches := re.FindStringSubmatch(line); len(matches) > 1 {
 		return strings.TrimSpace(matches[1])
 	}
@@ -839,7 +894,10 @@ func (s *serviceImpl) scanMappingSiteColumns(rows *sql.Rows) (models.PluginMappi
 	return m, lastSyncAt, lastBackupAt, err
 }
 
-func (s *serviceImpl) parseMappingDates(m *models.PluginMapping, lastSyncAt, lastBackupAt sql.NullString) {
+func (s *serviceImpl) parseMappingDates(
+	m *models.PluginMapping,
+	lastSyncAt, lastBackupAt sql.NullString,
+) {
 	if lastSyncAt.Valid {
 		t, _ := time.Parse(time.RFC3339, lastSyncAt.String)
 		m.LastSyncAt = &t
@@ -920,7 +978,10 @@ func (s *serviceImpl) CreateMapping(ctx context.Context, input CreateMappingInpu
 	return s.getMappingByID(ctx, id)
 }
 
-func (s *serviceImpl) checkDuplicateMapping(ctx context.Context, pluginID, siteID int64) error {
+func (s *serviceImpl) checkDuplicateMapping(
+	ctx context.Context,
+	pluginID, siteID int64,
+) error {
 	var exists int
 	err := s.db.QueryRowContext(ctx,
 		"SELECT 1 FROM PluginMappings WHERE PluginId = ? AND SiteId = ?",

@@ -247,7 +247,11 @@ func (s *serviceImpl) queryPluginByID(ctx context.Context, id int64) (*pluginSca
     return row, nil
 }
 
-func (s *serviceImpl) scanPluginRow(ctx context.Context, row *pluginScanRow, id int64) error {
+func (s *serviceImpl) scanPluginRow(
+    ctx context.Context,
+    row *pluginScanRow,
+    id int64,
+) error {
     return s.db.QueryRowContext(ctx, pluginSelectQuery+" WHERE p.Id = ?", id).Scan(
         &row.plugin.ID, &row.plugin.Name, &row.plugin.LocalPath, &row.plugin.RemoteSlug,
         &row.plugin.SiteID, &row.plugin.IsActive, &row.plugin.IsWatching,
@@ -449,7 +453,12 @@ func (s *serviceImpl) processWalkEntry(
     return nil
 }
 
-func appendFileEntry(scan *DirectoryScan, fullPath string, relPath string, info os.FileInfo) {
+func appendFileEntry(
+    scan *DirectoryScan,
+    fullPath string,
+    relPath string,
+    info os.FileInfo,
+) {
     scan.Files = append(scan.Files, buildFileInfo(fullPath, relPath, info))
     if !info.IsDir() {
         scan.TotalSize += info.Size()
@@ -468,7 +477,11 @@ func skipOrContinue(isDir bool) error {
     return nil
 }
 
-func buildFileInfo(fullPath string, relPath string, info os.FileInfo) FileInfo {
+func buildFileInfo(
+    fullPath string,
+    relPath string,
+    info os.FileInfo,
+) FileInfo {
     fi := FileInfo{
         Path: relPath, Size: info.Size(),
         ModifiedAt: info.ModTime(), IsDirectory: info.IsDir(),
@@ -536,7 +549,11 @@ func parsePluginHeader(filePath string) (string, string) {
     return pluginName, version
 }
 
-func extractMatch(re *regexp.Regexp, line string, current string) string {
+func extractMatch(
+    re *regexp.Regexp,
+    line string,
+    current string,
+) string {
     if matches := re.FindStringSubmatch(line); len(matches) > 1 {
         return strings.TrimSpace(matches[1])
     }
@@ -610,7 +627,13 @@ func collectFileHashes(path string) ([]string, error) {
     return hashes, err
 }
 
-func appendFileHash(basePath string, fp string, info os.FileInfo, walkErr error, hashes *[]string) error {
+func appendFileHash(
+    basePath string,
+    fp string,
+    info os.FileInfo,
+    walkErr error,
+    hashes *[]string,
+) error {
     isSkippable := walkErr != nil || info.IsDir() || strings.HasPrefix(filepath.Base(fp), ".")
     if isSkippable {
         return nil

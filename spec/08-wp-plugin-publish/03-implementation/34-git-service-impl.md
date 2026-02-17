@@ -570,7 +570,12 @@ func dirExists(path string) bool {
 	return err == nil && info.IsDir()
 }
 
-func (s *serviceImpl) handleBuildFailure(result *BuildResult, err error, stderrOutput string, pluginID int64) (*BuildResult, error) {
+func (s *serviceImpl) handleBuildFailure(
+	result *BuildResult,
+	err error,
+	stderrOutput string,
+	pluginID int64,
+) (*BuildResult, error) {
 	result.Success = false
 	result.Error = stderrOutput
 	result.ExitCode = extractExitCode(err)
@@ -643,7 +648,10 @@ func (s *serviceImpl) loadBuildContext(ctx context.Context, pluginID int64) (*Pl
 	return plugin, config, nil
 }
 
-func (s *serviceImpl) newBuildResult(pluginID int64, pluginName, command string) *BuildResult {
+func (s *serviceImpl) newBuildResult(
+	pluginID int64,
+	pluginName, command string,
+) *BuildResult {
 	return &BuildResult{
 		PluginID:   pluginID,
 		PluginName: pluginName,
@@ -652,7 +660,10 @@ func (s *serviceImpl) newBuildResult(pluginID int64, pluginName, command string)
 	}
 }
 
-func (s *serviceImpl) broadcastBuildStarted(pluginID int64, pluginName, command string) {
+func (s *serviceImpl) broadcastBuildStarted(
+	pluginID int64,
+	pluginName, command string,
+) {
 	s.wsHub.Broadcast(ws.EventBuildStarted, BuildStartedEvent{
 		PluginID:   pluginID,
 		PluginName: pluginName,
@@ -689,7 +700,11 @@ func (s *serviceImpl) createBuildCommand(ctx context.Context, command string) *e
 	return exec.CommandContext(ctx, "bash", "-c", command)
 }
 
-func (s *serviceImpl) runBuildCommand(cmd *exec.Cmd, result *BuildResult, startTime time.Time) (string, string) {
+func (s *serviceImpl) runBuildCommand(
+	cmd *exec.Cmd,
+	result *BuildResult,
+	startTime time.Time,
+) (string, string) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

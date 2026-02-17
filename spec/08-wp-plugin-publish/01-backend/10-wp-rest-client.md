@@ -196,7 +196,10 @@ func (c *clientImpl) setCommonHeaders(req *http.Request, contentType string) {
     req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
 }
 
-func (c *clientImpl) executeRequest(req *http.Request, method, url string) (*http.Response, error) {
+func (c *clientImpl) executeRequest(
+    req *http.Request,
+    method, url string,
+) (*http.Response, error) {
     c.log.Debug("Making WP API request", "method", method, "url", url)
 
     resp, err := c.httpClient.Do(req)
@@ -721,7 +724,11 @@ func (c *clientImpl) buildMultipartUpload(file *os.File, zipPath string) (*bytes
     return &body, writer.FormDataContentType(), nil
 }
 
-func (c *clientImpl) writeFormFile(writer *multipart.Writer, file *os.File, zipPath string) error {
+func (c *clientImpl) writeFormFile(
+    writer *multipart.Writer,
+    file *os.File,
+    zipPath string,
+) error {
     part, err := writer.CreateFormFile("pluginzip", filepath.Base(zipPath))
     if err != nil {
         return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file")
@@ -847,7 +854,9 @@ func (c *clientImpl) UploadPluginFile(
     return c.parseResponse(resp, nil)
 }
 
-func (c *clientImpl) companionEndpoint(url, slug, suffix string) string {
+func (c *clientImpl) companionEndpoint(
+    url, slug, suffix string,
+) string {
     return strings.TrimSuffix(url, "/") + "/wp-json/wp-plugin-publish/v1/plugins/" + slug + suffix
 }
 
@@ -866,7 +875,11 @@ func (c *clientImpl) buildFileUploadForm(filePath string, content []byte) (*byte
     return &body, writer.FormDataContentType(), nil
 }
 
-func (c *clientImpl) writeFileContent(writer *multipart.Writer, filePath string, content []byte) error {
+func (c *clientImpl) writeFileContent(
+    writer *multipart.Writer,
+    filePath string,
+    content []byte,
+) error {
     part, err := writer.CreateFormFile("file", filepath.Base(filePath))
     if err != nil {
         return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file")

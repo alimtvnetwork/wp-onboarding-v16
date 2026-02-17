@@ -556,7 +556,11 @@ func (s *serviceImpl) detectDeleted(w *pluginWatcher, currentFiles map[string]fi
 	return changes
 }
 
-func (s *serviceImpl) classifyFileChange(w *pluginWatcher, relPath string, fi fileInfo) *FileChange {
+func (s *serviceImpl) classifyFileChange(
+	w *pluginWatcher,
+	relPath string,
+	fi fileInfo,
+) *FileChange {
 	lastInfo, exists := w.lastScan[relPath]
 	if !exists {
 		return s.newFileChange(relPath, WatcherChangeCreated, fi)
@@ -569,7 +573,11 @@ func (s *serviceImpl) classifyFileChange(w *pluginWatcher, relPath string, fi fi
 	return s.newFileChange(relPath, WatcherChangeModified, fi)
 }
 
-func (s *serviceImpl) newFileChange(relPath string, changeType WatcherChangeType, fi fileInfo) *FileChange {
+func (s *serviceImpl) newFileChange(
+	relPath string,
+	changeType WatcherChangeType,
+	fi fileInfo,
+) *FileChange {
 	return &FileChange{
 		Path:       relPath,
 		ChangeType: changeType,

@@ -348,7 +348,11 @@ func (s *serviceImpl) checkDuplicateURL(ctx context.Context, url string) error {
     return nil
 }
 
-func (s *serviceImpl) insertSite(ctx context.Context, input CreateInput, url string) (int64, error) {
+func (s *serviceImpl) insertSite(
+    ctx context.Context,
+    input CreateInput,
+    url string,
+) (int64, error) {
     encryptedPassword, err := EncryptPassword(input.AppPassword, s.encKey)
     if err != nil {
         return 0, apperror.Wrap(err, apperror.ErrInternal, "failed to encrypt password")
@@ -357,7 +361,11 @@ func (s *serviceImpl) insertSite(ctx context.Context, input CreateInput, url str
     return s.executeSiteInsert(ctx, input, url, encryptedPassword)
 }
 
-func (s *serviceImpl) executeSiteInsert(ctx context.Context, input CreateInput, url, encryptedPassword string) (int64, error) {
+func (s *serviceImpl) executeSiteInsert(
+    ctx context.Context,
+    input CreateInput,
+    url, encryptedPassword string,
+) (int64, error) {
     result, err := s.db.ExecContext(ctx, siteInsertQuery, input.Name, url, input.Username, encryptedPassword)
     if err != nil {
         return 0, apperror.Wrap(err, apperror.ErrDatabaseExec, "failed to create site")
@@ -411,7 +419,11 @@ func (s *serviceImpl) buildSiteUpdateFields(input UpdateInput) ([]string, []any,
     return updates, args, nil
 }
 
-func (s *serviceImpl) appendSiteNameUpdate(input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendSiteNameUpdate(
+    input UpdateInput,
+    updates *[]string,
+    args *[]any,
+) {
     if input.Name == nil {
         return
     }
@@ -420,7 +432,11 @@ func (s *serviceImpl) appendSiteNameUpdate(input UpdateInput, updates *[]string,
     *args = append(*args, *input.Name)
 }
 
-func (s *serviceImpl) appendSiteURLUpdate(input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendSiteURLUpdate(
+    input UpdateInput,
+    updates *[]string,
+    args *[]any,
+) {
     if input.URL == nil {
         return
     }
@@ -430,7 +446,11 @@ func (s *serviceImpl) appendSiteURLUpdate(input UpdateInput, updates *[]string, 
     *args = append(*args, url)
 }
 
-func (s *serviceImpl) appendSiteUsernameUpdate(input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendSiteUsernameUpdate(
+    input UpdateInput,
+    updates *[]string,
+    args *[]any,
+) {
     if input.Username == nil {
         return
     }
@@ -439,7 +459,11 @@ func (s *serviceImpl) appendSiteUsernameUpdate(input UpdateInput, updates *[]str
     *args = append(*args, *input.Username)
 }
 
-func (s *serviceImpl) appendSitePasswordUpdate(input UpdateInput, updates *[]string, args *[]any) error {
+func (s *serviceImpl) appendSitePasswordUpdate(
+    input UpdateInput,
+    updates *[]string,
+    args *[]any,
+) error {
     if input.AppPassword == nil {
         return nil
     }
@@ -455,7 +479,11 @@ func (s *serviceImpl) appendSitePasswordUpdate(input UpdateInput, updates *[]str
     return nil
 }
 
-func (s *serviceImpl) appendSiteActiveUpdate(input UpdateInput, updates *[]string, args *[]any) {
+func (s *serviceImpl) appendSiteActiveUpdate(
+    input UpdateInput,
+    updates *[]string,
+    args *[]any,
+) {
     if input.IsActive == nil {
         return
     }
@@ -469,7 +497,12 @@ func (s *serviceImpl) appendSiteActiveUpdate(input UpdateInput, updates *[]strin
     *args = append(*args, active)
 }
 
-func (s *serviceImpl) executeSiteUpdate(ctx context.Context, id int64, updates []string, args []any) (*models.Site, error) {
+func (s *serviceImpl) executeSiteUpdate(
+    ctx context.Context,
+    id int64,
+    updates []string,
+    args []any,
+) (*models.Site, error) {
     updates = append(updates, "UpdatedAt = datetime('now')")
     args = append(args, id)
     
