@@ -158,32 +158,52 @@ func (c *clientImpl) doRequest(
 	body io.Reader,
 	contentType string,
 ) (*http.Response, error) {
+    req, err := c.buildAuthenticatedRequest(ctx, method, url, username, password, body)
+    if err != nil {
+        return nil, err
+    }
+
+    c.setCommonHeaders(req, contentType)
+
+    return c.executeRequest(req, method, url)
+}
+
+func (c *clientImpl) buildAuthenticatedRequest(
+	ctx context.Context,
+	method string,
+	url string,
+	username string,
+	password string,
+	body io.Reader,
+) (*http.Request, error) {
     req, err := http.NewRequestWithContext(ctx, method, url, body)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrWPConnect, "failed to create request")
     }
-    
-    // Set Application Password authentication
+
     auth := base64.StdEncoding.EncodeToString([]byte(username + ":" + password))
     req.Header.Set("Authorization", "Basic "+auth)
-    
+
+    return req, nil
+}
+
+func (c *clientImpl) setCommonHeaders(req *http.Request, contentType string) {
     if contentType != "" {
         req.Header.Set("Content-Type", contentType)
     }
-    
+
     req.Header.Set("Accept", "application/json")
     req.Header.Set("User-Agent", "WP-Plugin-Publish/1.0")
-    
-    c.log.Debug("Making WP API request",
-        "method", method,
-        "url", url,
-    )
-    
+}
+
+func (c *clientImpl) executeRequest(req *http.Request, method, url string) (*http.Response, error) {
+    c.log.Debug("Making WP API request", "method", method, "url", url)
+
     resp, err := c.httpClient.Do(req)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrWPConnect, "request failed")
     }
-    
+
     return resp, nil
 }
 
@@ -199,35 +219,46 @@ func (c *clientImpl) parseResponse(resp *http.Response, target any) error {
         return err
     }
     
-    if target != nil {
-        if err := json.Unmarshal(body, target); err != nil {
-            return apperror.Wrap(err, apperror.ErrWPAPI, "failed to parse response")
-        }
+    return c.unmarshalIfNeeded(body, target)
+}
+
+func (c *clientImpl) unmarshalIfNeeded(body []byte, target any) error {
+    if target == nil {
+        return nil
+    }
+
+    if err := json.Unmarshal(body, target); err != nil {
+        return apperror.Wrap(err, apperror.ErrWPAPI, "failed to parse response")
+    }
+
+    return nil
+}
+
+func (c *clientImpl) checkStatusCode(statusCode int, body []byte) error {
+    if err := c.checkKnownStatusError(statusCode); err != nil {
+        return err
+    }
+
+    if statusCode >= 400 {
+        return c.parseWPError(statusCode, body)
     }
     
     return nil
 }
 
-func (c *clientImpl) checkStatusCode(statusCode int, body []byte) error {
-    if statusCode == 401 {
+func (c *clientImpl) checkKnownStatusError(statusCode int) error {
+    switch statusCode {
+    case 401:
         return apperror.New(apperror.ErrWPAuth, "authentication failed - check username and application password").
             WithContext("status", statusCode)
-    }
-    
-    if statusCode == 403 {
+    case 403:
         return apperror.New(apperror.ErrWPAuth, "access forbidden - user may lack required permissions").
             WithContext("status", statusCode)
-    }
-    
-    if statusCode == 404 {
+    case 404:
         return apperror.New(apperror.ErrNotFound, "endpoint not found").
             WithContext("status", statusCode)
     }
-    
-    if statusCode >= 400 {
-        return c.parseWPError(statusCode, body)
-    }
-    
+
     return nil
 }
 
@@ -236,6 +267,7 @@ func (c *clientImpl) parseWPError(statusCode int, body []byte) error {
         Code    string `json:"code"`
         Message string `json:"message"`
     }
+
     if json.Unmarshal(body, &wpErr) == nil && wpErr.Message != "" {
         return apperror.New(apperror.ErrWPAPI, wpErr.Message).
             WithContext("wp_code", wpErr.Code).
@@ -398,32 +430,48 @@ func (c *clientImpl) ListPlugins(
 	password string,
 ) ([]Plugin, error) {
     c.log.Debug("Listing plugins", "url", url)
-    
+
+    plugins, err := c.fetchPlugins(ctx, url, username, password)
+    if err != nil {
+        return nil, err
+    }
+
+    c.extractPluginSlugs(plugins)
+    c.log.Info("Listed plugins", "url", url, "count", len(plugins))
+
+    return plugins, nil
+}
+
+func (c *clientImpl) fetchPlugins(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+) ([]Plugin, error) {
     url = strings.TrimSuffix(url, "/")
-    
+
     resp, err := c.doRequest(ctx, "GET", url+"/wp-json/wp/v2/plugins", username, password, nil, "")
     if err != nil {
         return nil, err
     }
-    
+
     var plugins []Plugin
     if err := c.parseResponse(resp, &plugins); err != nil {
         return nil, err
     }
-    
-    c.extractPluginSlugs(plugins)
-    
-    c.log.Info("Listed plugins", "url", url, "count", len(plugins))
+
     return plugins, nil
 }
 
 func (c *clientImpl) extractPluginSlugs(plugins []Plugin) {
     for i := range plugins {
-        if plugins[i].Plugin != "" {
-            parts := strings.Split(plugins[i].Plugin, "/")
-            if len(parts) > 0 {
-                plugins[i].Slug = parts[0]
-            }
+        if plugins[i].Plugin == "" {
+            continue
+        }
+
+        parts := strings.Split(plugins[i].Plugin, "/")
+        if len(parts) > 0 {
+            plugins[i].Slug = parts[0]
         }
     }
 }
@@ -442,12 +490,16 @@ func (c *clientImpl) GetPlugin(
         return nil, err
     }
     
+    return c.findPluginBySlug(plugins, slug)
+}
+
+func (c *clientImpl) findPluginBySlug(plugins []Plugin, slug string) (*Plugin, error) {
     for _, p := range plugins {
         if p.Slug == slug || strings.HasPrefix(p.Plugin, slug+"/") {
             return &p, nil
         }
     }
-    
+
     return nil, apperror.New(apperror.ErrNotFound, "plugin not found on remote site").
         WithContext("slug", slug)
 }
@@ -468,6 +520,7 @@ func (c *clientImpl) ActivatePlugin(
     
     if plugin.Status == WPPluginStatusActive {
         c.log.Debug("Plugin already active", "slug", slug)
+
         return nil
     }
     
@@ -484,21 +537,20 @@ func (c *clientImpl) setPluginStatus(
     errCode string,
     action string,
 ) error {
-    url = strings.TrimSuffix(url, "/")
-    endpoint := url + "/wp-json/wp/v2/plugins/" + pluginPath
-    
+    endpoint := strings.TrimSuffix(url, "/") + "/wp-json/wp/v2/plugins/" + pluginPath
     body, _ := json.Marshal(map[string]WPPluginStatusType{"status": status})
-    
+
     resp, err := c.doRequest(ctx, "PUT", endpoint, username, password, bytes.NewReader(body), "application/json")
     if err != nil {
         return apperror.Wrap(err, errCode, "failed to "+action+" plugin")
     }
-    
+
     if err := c.parseResponse(resp, nil); err != nil {
         return apperror.Wrap(err, errCode, "plugin "+action+" failed")
     }
-    
+
     c.log.Info("Plugin "+action+"d", "plugin", pluginPath)
+
     return nil
 }
 
@@ -518,6 +570,7 @@ func (c *clientImpl) DeactivatePlugin(
     
     if plugin.Status == WPPluginStatusInactive {
         c.log.Debug("Plugin already inactive", "slug", slug)
+
         return nil
     }
     
@@ -532,32 +585,53 @@ func (c *clientImpl) DeletePlugin(
 	slug string,
 ) error {
     c.log.Info("Deleting plugin", "url", url, "slug", slug)
-    
+
     plugin, err := c.GetPlugin(ctx, url, username, password, slug)
     if err != nil {
         return err
     }
-    
-    // Must deactivate first
-    if plugin.Status == WPPluginStatusActive {
-        if err := c.DeactivatePlugin(ctx, url, username, password, slug); err != nil {
-            return err
-        }
+
+    if err := c.ensurePluginDeactivated(ctx, url, username, password, plugin); err != nil {
+        return err
     }
-    
-    url = strings.TrimSuffix(url, "/")
-    endpoint := url + "/wp-json/wp/v2/plugins/" + plugin.Plugin
-    
+
+    return c.executeDeletePlugin(ctx, url, username, password, plugin.Plugin)
+}
+
+func (c *clientImpl) ensurePluginDeactivated(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	plugin *Plugin,
+) error {
+    if plugin.Status != WPPluginStatusActive {
+        return nil
+    }
+
+    return c.DeactivatePlugin(ctx, url, username, password, plugin.Slug)
+}
+
+func (c *clientImpl) executeDeletePlugin(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	pluginPath string,
+) error {
+    endpoint := strings.TrimSuffix(url, "/") + "/wp-json/wp/v2/plugins/" + pluginPath
+
     resp, err := c.doRequest(ctx, "DELETE", endpoint, username, password, nil, "")
     if err != nil {
         return apperror.Wrap(err, apperror.ErrWPPlugin, "failed to delete plugin")
     }
-    
+
     if err := c.parseResponse(resp, nil); err != nil {
         return apperror.Wrap(err, apperror.ErrWPPlugin, "plugin deletion failed")
     }
-    
-    c.log.Info("Plugin deleted", "slug", slug)
+
+    c.log.Info("Plugin deleted", "plugin", pluginPath)
+
     return nil
 }
 ```
@@ -588,20 +662,31 @@ func (c *clientImpl) UploadPlugin(
 	zipPath string,
 ) (*UploadResult, error) {
     c.log.Info("Uploading plugin", "url", url, "zip", zipPath)
-    
+
     file, stat, err := c.openZipFile(zipPath)
     if err != nil {
         return nil, err
     }
     defer file.Close()
-    
+
     c.log.Debug("Uploading plugin zip", "size", stat.Size(), "filename", filepath.Base(zipPath))
-    
+
+    return c.uploadZipFile(ctx, url, username, password, file, zipPath)
+}
+
+func (c *clientImpl) uploadZipFile(
+	ctx context.Context,
+	url string,
+	username string,
+	password string,
+	file *os.File,
+	zipPath string,
+) (*UploadResult, error) {
     body, contentType, err := c.buildMultipartUpload(file, zipPath)
     if err != nil {
         return nil, err
     }
-    
+
     return c.executeUpload(ctx, url, username, password, body, contentType)
 }
 
@@ -624,20 +709,28 @@ func (c *clientImpl) openZipFile(zipPath string) (*os.File, os.FileInfo, error) 
 func (c *clientImpl) buildMultipartUpload(file *os.File, zipPath string) (*bytes.Buffer, string, error) {
     var body bytes.Buffer
     writer := multipart.NewWriter(&body)
-    
+
+    if err := c.writeFormFile(writer, file, zipPath); err != nil {
+        return nil, "", err
+    }
+
+    writer.WriteField("overwrite", "true")
+    writer.Close()
+
+    return &body, writer.FormDataContentType(), nil
+}
+
+func (c *clientImpl) writeFormFile(writer *multipart.Writer, file *os.File, zipPath string) error {
     part, err := writer.CreateFormFile("pluginzip", filepath.Base(zipPath))
     if err != nil {
-        return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to create form file")
+        return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file")
     }
     
     if _, err := io.Copy(part, file); err != nil {
-        return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to copy file content")
+        return apperror.Wrap(err, apperror.ErrInternal, "failed to copy file content")
     }
-    
-    writer.WriteField("overwrite", "true")
-    writer.Close()
-    
-    return &body, writer.FormDataContentType(), nil
+
+    return nil
 }
 
 func (c *clientImpl) executeUpload(
@@ -648,14 +741,13 @@ func (c *clientImpl) executeUpload(
     body *bytes.Buffer,
     contentType string,
 ) (*UploadResult, error) {
-    url = strings.TrimSuffix(url, "/")
-    endpoint := url + "/wp-json/wp/v2/plugins"
-    
+    endpoint := strings.TrimSuffix(url, "/") + "/wp-json/wp/v2/plugins"
+
     resp, err := c.doRequest(ctx, "POST", endpoint, username, password, body, contentType)
     if err != nil {
         return nil, apperror.Wrap(err, apperror.ErrWPUpload, "failed to upload plugin")
     }
-    
+
     return c.parseUploadResponse(resp)
 }
 
@@ -666,37 +758,42 @@ func (c *clientImpl) parseUploadResponse(resp *http.Response) (*UploadResult, er
         Name    string `json:"name"`
         Version string `json:"version"`
     }
-    
+
     if err := c.parseResponse(resp, &uploadResp); err != nil {
         return &UploadResult{Success: false, Error: err.Error()}, nil
     }
-    
-    slug := extractSlugFromPath(uploadResp.Plugin)
-    
-    c.log.Info("Plugin uploaded successfully", "slug", slug, "version", uploadResp.Version)
-    
+
+    return c.buildUploadResult(uploadResp.Plugin, uploadResp.Version), nil
+}
+
+func (c *clientImpl) buildUploadResult(pluginPath, version string) *UploadResult {
+    slug := extractSlugFromPath(pluginPath)
+
+    c.log.Info("Plugin uploaded successfully", "slug", slug, "version", version)
+
     return &UploadResult{
         Success:    true,
         PluginSlug: slug,
-        Version:    uploadResp.Version,
+        Version:    version,
         WasUpdated: true,
-    }, nil
+    }
 }
 
 func extractSlugFromPath(pluginPath string) string {
     if pluginPath == "" {
         return ""
     }
-    
+
     parts := strings.Split(pluginPath, "/")
     if len(parts) > 0 {
         return parts[0]
     }
-    
+
     return ""
 }
 
-// GetPluginFiles requires a companion WP plugin to expose file information
+// --- Plugin Files (companion plugin endpoints) ---
+
 func (c *clientImpl) GetPluginFiles(
 	ctx context.Context,
 	url string,
@@ -705,26 +802,23 @@ func (c *clientImpl) GetPluginFiles(
 	slug string,
 ) ([]RemoteFile, error) {
     c.log.Debug("Getting plugin files", "url", url, "slug", slug)
-    
-    // This requires a custom endpoint - the standard WP REST API doesn't expose plugin files
-    url = strings.TrimSuffix(url, "/")
-    endpoint := url + "/wp-json/wp-plugin-publish/v1/plugins/" + slug + "/files"
-    
+
+    endpoint := c.companionEndpoint(url, slug, "/files")
+
     resp, err := c.doRequest(ctx, "GET", endpoint, username, password, nil, "")
     if err != nil {
-        return nil, apperror.Wrap(err, apperror.ErrWPAPI, 
+        return nil, apperror.Wrap(err, apperror.ErrWPAPI,
             "failed to get plugin files - wp-plugin-publish companion plugin may not be installed")
     }
-    
+
     var files []RemoteFile
     if err := c.parseResponse(resp, &files); err != nil {
         return nil, err
     }
-    
+
     return files, nil
 }
 
-// UploadPluginFile requires a companion WP plugin
 func (c *clientImpl) UploadPluginFile(
 	ctx context.Context,
 	url string,
@@ -735,42 +829,53 @@ func (c *clientImpl) UploadPluginFile(
 	content []byte,
 ) error {
     c.log.Debug("Uploading single file", "url", url, "slug", slug, "file", filePath)
-    
-    url = strings.TrimSuffix(url, "/")
-    endpoint := url + "/wp-json/wp-plugin-publish/v1/plugins/" + slug + "/files"
-    
+
+    endpoint := c.companionEndpoint(url, slug, "/files")
     body, contentType, err := c.buildFileUploadForm(filePath, content)
+
     if err != nil {
         return err
     }
-    
+
     resp, err := c.doRequest(ctx, "POST", endpoint, username, password, body, contentType)
     if err != nil {
-        return apperror.Wrap(err, apperror.ErrWPUpload, 
+        return apperror.Wrap(err, apperror.ErrWPUpload,
             "failed to upload file - wp-plugin-publish companion plugin may not be installed")
     }
-    
+
     return c.parseResponse(resp, nil)
+}
+
+func (c *clientImpl) companionEndpoint(url, slug, suffix string) string {
+    return strings.TrimSuffix(url, "/") + "/wp-json/wp-plugin-publish/v1/plugins/" + slug + suffix
 }
 
 func (c *clientImpl) buildFileUploadForm(filePath string, content []byte) (*bytes.Buffer, string, error) {
     var body bytes.Buffer
     writer := multipart.NewWriter(&body)
-    
+
     writer.WriteField("path", filePath)
-    
+
+    if err := c.writeFileContent(writer, filePath, content); err != nil {
+        return nil, "", err
+    }
+
+    writer.Close()
+
+    return &body, writer.FormDataContentType(), nil
+}
+
+func (c *clientImpl) writeFileContent(writer *multipart.Writer, filePath string, content []byte) error {
     part, err := writer.CreateFormFile("file", filepath.Base(filePath))
     if err != nil {
-        return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to create form file")
+        return apperror.Wrap(err, apperror.ErrInternal, "failed to create form file")
     }
-    
+
     if _, err := part.Write(content); err != nil {
-        return nil, "", apperror.Wrap(err, apperror.ErrInternal, "failed to write file content")
+        return apperror.Wrap(err, apperror.ErrInternal, "failed to write file content")
     }
-    
-    writer.Close()
-    
-    return &body, writer.FormDataContentType(), nil
+
+    return nil
 }
 ```
 
