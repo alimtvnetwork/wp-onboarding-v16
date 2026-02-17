@@ -26,13 +26,13 @@ Structured error details from the downstream server. **Required when `IsFailed=t
 
 ```go
 type DelegatedRequestServer struct {
-    DelegatedEndpoint  string      `json:"DelegatedEndpoint"`   // Full URL
-    Method             string      `json:"Method"`              // HTTP method used
-    StatusCode         int         `json:"StatusCode"`          // Response status code
-    RequestBody        interface{} `json:"RequestBody"`         // Request body sent (null for GET)
-    Response           interface{} `json:"Response"`            // Full response body (parsed JSON if possible)
-    StackTrace         []string    `json:"StackTrace"`          // PHP/Node/etc stack trace lines
-    AdditionalMessages string      `json:"AdditionalMessages"`  // Human-readable diagnostic hint
+    DelegatedEndpoint  string          `json:"DelegatedEndpoint"`   // Full URL
+    Method             string          `json:"Method"`              // HTTP method used
+    StatusCode         int             `json:"StatusCode"`          // Response status code
+    RequestBody        json.RawMessage `json:"RequestBody"`         // Request body sent (null for GET)
+    Response           json.RawMessage `json:"Response"`            // Full response body (parsed JSON if possible)
+    StackTrace         []string        `json:"StackTrace"`          // PHP/Node/etc stack trace lines
+    AdditionalMessages string          `json:"AdditionalMessages"`  // Human-readable diagnostic hint
 }
 ```
 
@@ -65,17 +65,18 @@ func (s *Service) fetchFromDelegatedServer(ctx context.Context, site *models.Sit
     envelope.Attributes.RequestDelegatedAt = delegatedURL
 
     if resp.StatusCode >= 400 {
-        // Parse response body as JSON if possible
-        var responseBody interface{}
-        if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
-            responseBody = map[string]string{"raw": string(bodyBytes)}
-        }
+        // Preserve raw JSON for the envelope (json.RawMessage)
+        responseBody := json.RawMessage(bodyBytes)
+
+        // Parse into typed struct for stack trace / hint extraction
+        var parsed DelegatedResponseBody
+        _ = json.Unmarshal(bodyBytes, &parsed)
 
         // Extract PHP stack trace if present in response
-        phpStack := extractPHPStackTrace(responseBody)
+        phpStack := parsed.Data.StackTrace
 
         // Extract additional messages / log hints
-        additionalMsg := extractLogHint(responseBody)
+        additionalMsg := parsed.Data.LogHint
 
         envelope.Errors = &EnvelopeErrors{
             BackendMessage: fmt.Sprintf("[E3001] failed to fetch %s: %s (GET %s): status %d",
@@ -102,55 +103,24 @@ func (s *Service) fetchFromDelegatedServer(ctx context.Context, site *models.Sit
 
 ---
 
-## Helper: Extract PHP Stack Trace
+## Typed Response Body for Delegation Parsing
+
+Instead of using `interface{}` and type assertions, define a concrete struct matching the WordPress REST API error format:
 
 ```go
-// extractPHPStackTrace attempts to pull stack trace lines from a WordPress-style error response.
-func extractPHPStackTrace(body interface{}) []string {
-    m, ok := body.(map[string]interface{})
-    if !ok {
-        return nil
-    }
+// DelegatedResponseBody represents the parsed JSON structure from a WordPress-style error response.
+type DelegatedResponseBody struct {
+    Data DelegatedResponseData `json:"data"`
+}
 
-    // WordPress REST API error format: { "data": { "stack_trace": [...] } }
-    data, _ := m["data"].(map[string]interface{})
-    if data == nil {
-        return nil
-    }
-
-    rawStack, _ := data["stack_trace"].([]interface{})
-    if len(rawStack) == 0 {
-        return nil
-    }
-
-    stack := make([]string, 0, len(rawStack))
-    for _, line := range rawStack {
-        if s, ok := line.(string); ok {
-            stack = append(stack, s)
-        }
-    }
-    return stack
+// DelegatedResponseData holds the structured error details from a delegated server.
+type DelegatedResponseData struct {
+    StackTrace []string `json:"stack_trace"` // PHP stack trace lines
+    LogHint    string   `json:"log_hint"`    // Human-readable diagnostic hint
 }
 ```
 
----
-
-## Helper: Extract Log Hint
-
-```go
-func extractLogHint(body interface{}) string {
-    m, ok := body.(map[string]interface{})
-    if !ok {
-        return ""
-    }
-    data, _ := m["data"].(map[string]interface{})
-    if data == nil {
-        return ""
-    }
-    hint, _ := data["log_hint"].(string)
-    return hint
-}
-```
+This replaces the legacy `extractPHPStackTrace(body interface{})` and `extractLogHint(body interface{})` helper functions with direct struct field access (`parsed.Data.StackTrace`, `parsed.Data.LogHint`), eliminating all `interface{}` type assertions.
 
 ---
 
