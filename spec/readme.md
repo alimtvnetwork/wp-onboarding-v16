@@ -1,6 +1,6 @@
 # Specifications Index
 
-> **Updated:** 2026-02-09  
+> **Updated:** 2026-02-17  
 > **Purpose:** Central index of all specification folders in this project.
 
 ---
@@ -9,20 +9,16 @@
 
 | Folder | Description | Key Files |
 |--------|-------------|-----------|
-| [coding-guidelines/](./coding-guidelines/) | DRY principles and general coding standards | `dry-principles.md` |
-| [error-handling/](./error-handling/) | Cross-stack error chain (PHP → Go → React) | `readme.md` |
-| [error-modal/](./error-modal/) | Frontend Global Error Modal specification with UI layout diagrams | `readme.md` |
-| [error-resolution/](./error-resolution/) | Specific resolved error patterns and fixes | Per-issue files |
-| [golang-standards/](./golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `readme.md` |
-| [logging-and-diagnostics/](./logging-and-diagnostics/) | Session-based logging, React execution logger | Per-feature files |
-| [php-standards/](./php-standards/) | PHP coding standards (`Throwable`, `safe_execute`, constants) | `readme.md` |
-| [powershell-integration/](./powershell-integration/) | PowerShell runner (`run.ps1`) for Go+React projects with pnpm PnP | `00-overview.md` |
-| [response-envelope/](./response-envelope/) | Universal Response Envelope JSON Schema (v1.0.0) and samples | `envelope.schema.json`, `adr.md` |
-| [typescript-standards/](./typescript-standards/) | TypeScript coding standards (no `any`/`unknown` in public APIs) | `readme.md` |
-| [upload-scripts/](./upload-scripts/) | PowerShell upload scripts (V1, V2, V3) for WordPress plugin deployment | `readme.md` |
-| [wordpress-plugin/](./wordpress-plugin/) | WordPress companion plugin architecture and API | Per-feature files |
-| [wordpress-plugin-development/](./wordpress-plugin-development/) | Plugin development workflow and conventions | Per-topic files |
-| [wp-plugin-publish/](./wp-plugin-publish/) | Publishing pipeline specification | Per-feature files |
+| [01-coding-guidelines/](./01-coding-guidelines/) | DRY principles and general coding standards | `dry-principles.md` |
+| [02-typescript-standards/](./02-typescript-standards/) | TypeScript coding standards (no `any`/`unknown` in public APIs) | `readme.md` |
+| [03-golang-standards/](./03-golang-standards/) | Go language coding standards (no `interface{}`, generics, error patterns) | `readme.md` |
+| [04-php-standards/](./04-php-standards/) | PHP coding standards (`Throwable`, `safe_execute`, constants) | `readme.md` |
+| [05-error-manage/](./05-error-manage/) | Error handling, modal, logging, response envelope | Per-feature files |
+| [07-wordpress-plugin-development/](./07-wordpress-plugin-development/) | Plugin development workflow and conventions | Per-topic files |
+| [08-wp-plugin-publish/](./08-wp-plugin-publish/) | Publishing pipeline specification | Per-feature files |
+| [09-upload-scripts/](./09-upload-scripts/) | PowerShell upload scripts (V1, V2, V3) for WordPress plugin deployment | `readme.md` |
+| [10-powershell-integration/](./10-powershell-integration/) | PowerShell runner (`run.ps1`) for Go+React projects with pnpm PnP | `00-overview.md` |
+| [12-generic-enforce/](./12-generic-enforce/) | Cross-language generic/type enforcement patterns | `readme.md` |
 
 ---
 
@@ -39,8 +35,8 @@
 1. **Project context:** `.lovable/memory/02-project-context.md`
 2. **Active plan:** `.lovable/plan/active.md`
 3. **This index** — then drill into relevant spec folders
-4. **Coding standards:** `golang-standards/`, `typescript-standards/`, `php-standards/`
-5. **Error system:** `error-modal/` → `error-handling/` → `response-envelope/`
+4. **Coding standards:** `03-golang-standards/`, `02-typescript-standards/`, `04-php-standards/`
+5. **Error system:** `05-error-manage/02-error-modal/` → `05-error-manage/01-error-handling/` → `05-error-manage/05-response-envelope/`
 
 ---
 

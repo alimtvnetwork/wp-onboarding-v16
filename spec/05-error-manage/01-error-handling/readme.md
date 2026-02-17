@@ -421,7 +421,7 @@ interface EnvelopeErrors {
 }
 ```
 
-> **Note:** `DelegatedRequestServer` is accessed via `error.envelopeErrors?.DelegatedRequestServer`, not as a top-level field on `CapturedError`. See `spec/error-modal/README.md` for the full interface.
+> **Note:** `DelegatedRequestServer` is accessed via `error.envelopeErrors?.DelegatedRequestServer`, not as a top-level field on `CapturedError`. See `spec/05-error-manage/02-error-modal/readme.md` for the full interface.
 
 ### Envelope Parsing
 
