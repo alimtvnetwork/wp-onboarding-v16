@@ -611,7 +611,8 @@ func collectFileHashes(path string) ([]string, error) {
 }
 
 func appendFileHash(basePath string, fp string, info os.FileInfo, walkErr error, hashes *[]string) error {
-    if walkErr != nil || info.IsDir() || strings.HasPrefix(filepath.Base(fp), ".") {
+    isSkippable := walkErr != nil || info.IsDir() || strings.HasPrefix(filepath.Base(fp), ".")
+    if isSkippable {
         return nil
     }
 

@@ -495,7 +495,8 @@ func (c *clientImpl) GetPlugin(
 
 func (c *clientImpl) findPluginBySlug(plugins []Plugin, slug string) (*Plugin, error) {
     for _, p := range plugins {
-        if p.Slug == slug || strings.HasPrefix(p.Plugin, slug+"/") {
+        isMatch := p.Slug == slug || strings.HasPrefix(p.Plugin, slug+"/")
+        if isMatch {
             return &p, nil
         }
     }
@@ -1082,7 +1083,8 @@ When WordPress fails catastrophically, the response may be plain HTML or an empt
 
 ```go
 // In parseResponse: detect HTML responses
-if strings.Contains(string(body), "<html") || strings.Contains(string(body), "<!DOCTYPE") {
+isHTMLResponse := strings.Contains(string(body), "<html") || strings.Contains(string(body), "<!DOCTYPE")
+if isHTMLResponse {
     return apperror.New(apperror.ErrWPAPI, "WordPress returned HTML instead of JSON - likely a fatal PHP error").
         WithContext("status", resp.StatusCode).
         WithContext("body_preview", string(body[:min(500, len(body))]))

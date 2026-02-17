@@ -266,7 +266,8 @@ func (s *serviceImpl) scanPlugins(ctx context.Context, pluginIDs []int64) []Scan
 	var results []ScanResult
 	for _, id := range pluginIDs {
 		result, err := s.TriggerScan(ctx, id)
-		if err != nil || result == nil {
+		isScanFailed := err != nil || result == nil
+		if isScanFailed {
 			continue
 		}
 		results = append(results, *result)
