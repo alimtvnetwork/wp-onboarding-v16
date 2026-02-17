@@ -39,7 +39,9 @@ trait IncrementalDiscoveryTrait {
                 ORDER BY created_at DESC LIMIT 1");
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($row && !empty($row['filepath']) && is_dir($row['filepath']) && file_exists($row['filepath'] . '/a-root.db')) {
+            $hasFilepath = $row && isset($row['filepath']) && $row['filepath'] !== '';
+            $isValidSnapshotDir = $hasFilepath && is_dir($row['filepath']) && file_exists($row['filepath'] . '/a-root.db');
+            if ($isValidSnapshotDir) {
                 return $row['filepath'];
             }
 

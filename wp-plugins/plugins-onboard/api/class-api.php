@@ -330,7 +330,8 @@ class OnboardAPI {
 		// Support WordPress Application Passwords (Basic Auth) for non-interactive clients.
 		// When the REST API authenticates the request via Basic Auth, WordPress sets the current user.
 		// We allow that path as an alternative to the companion OAuth bearer token.
-		if (is_user_logged_in() && (current_user_can('install_plugins') || current_user_can('activate_plugins'))) {
+		$isAuthorizedAdmin = is_user_logged_in() && (current_user_can('install_plugins') || current_user_can('activate_plugins'));
+		if ($isAuthorizedAdmin) {
 			$user = wp_get_current_user();
 			$request->set_param('_decoded_token', array(
 				'auth_type' => 'basic',

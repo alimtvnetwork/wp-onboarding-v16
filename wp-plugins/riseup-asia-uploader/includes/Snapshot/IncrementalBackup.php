@@ -48,7 +48,8 @@ class IncrementalBackup {
         ?Database $db = null,
         ?RootDb $rootDb = null,
     ): ?self {
-        if (self::$instance === null && $logger && $db && $rootDb) {
+        $isReadyToInit = self::$instance === null && $logger && $db && $rootDb;
+        if ($isReadyToInit) {
             self::$instance = new self($logger, $db, $rootDb);
         }
 
