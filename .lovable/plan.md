@@ -1,5 +1,4 @@
 
-
 # Plan: Doc Updates + Three New Code Style Rules + PHP Enforcement
 
 ## ✅ COMPLETED — Part A: Spec/Doc Files — Rename PathUtils to PathHelper
@@ -80,6 +79,33 @@ Swept all `spec/` files for stale legacy references (2026-02-17):
 - **F6**: Legacy `class-*.php` file paths → PSR-4 PascalCase paths across all 5 spec files
 - **F7**: Updated `spec/04-php-standards/readme.md` naming table and file naming convention to PSR-4
 
-## 🔵 Next Priority
+---
 
-- Audit remaining Traits/ subdirectories (Agent, Sync, Status, FileSystem) for C3
+## 🔴 CURRENT — Part G: Plugin Load Safety Audit (2026-02-17)
+
+### Phase 1 — 🔴 FATAL: Undefined `PLUGIN_VERSION` Constant
+**Will crash admin pages.** `PLUGIN_VERSION` is used in `templates/admin-logs.php` (L54, L265) and `templates/admin-snapshots.php` (L17) but was never defined — the legacy `constants.php` was removed during PSR-4 migration. Replace with `\RiseupAsia\Enums\PluginConfigType::Version->value`.
+
+### Phase 2 — 🟠 HIGH: Autoloader Silent Failures
+`Autoloader.php` L31-33 silently returns when a class file isn't found. No `error_log()`, no diagnostic. Add native `error_log()` when a `RiseupAsia\` class is requested but the file doesn't exist on disk.
+
+### Phase 3 — 🟠 HIGH: `SchedulerCronTrait` Raw `require_once`
+L105 does `require_once dirname(__FILE__) . '/../SnapshotFactory.php'` — bypasses the autoloader and uses fragile path resolution. Remove and rely on PSR-4 autoloading with a `use` import.
+
+### Phase 4 — 🟡 MEDIUM: P3 Violations (Raw Negation)
+| File | Lines | Pattern |
+|------|-------|---------|
+| `PluginLifecycleHelpersTrait.php` | L86, L90 | `!function_exists()` |
+| `InitDirTrait.php` | L43-44 | `!@mkdir()`, `!wp_mkdir_p()` |
+| `LoggerPathTrait.php` | L35, L41 | `!InitHelpers::makeDirectoryNative()` |
+
+### Phase 5 — 🟢 LOW: Boot-Time Logging Breadcrumbs
+Add logging to: `Admin::__construct()`, `ActivationHandler::activate()` (per-step), and autoloader miss events. Plugin.php already logs ✅.
+
+### Phase 6 — 🔵 INFO: Template `use` Statement Verification
+Verify `use RiseupAsia\Helpers\BooleanHelpers;` in template files works at runtime (global namespace context).
+
+### Execution Order
+```
+Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6
+```
