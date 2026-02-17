@@ -327,7 +327,7 @@ Boolean checks must be self-documenting through **semantic method names** on the
 
 ### Prohibited Trivial Wrappers (deprecated since 1.19.0)
 
-The following methods from the legacy `RiseupBooleanHelpers` class are **deprecated and must not be used**. Use native PHP instead:
+The following methods from the legacy `BooleanHelpers` class are **deprecated and must not be used**. Use native PHP instead:
 
 | ❌ Deprecated method | ✅ Native replacement |
 |----------------------|----------------------|

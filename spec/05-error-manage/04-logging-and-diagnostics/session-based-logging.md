@@ -163,14 +163,14 @@ type RequestSession struct {
 // DelegatedRequestInfo captures the full context of a proxied request
 // to an external service (WordPress PHP, Chrome extension, etc.)
 type DelegatedRequestInfo struct {
-    DelegatedEndpoint  string      `json:"delegatedEndpoint"`            // Full URL of the delegated server endpoint
-    Method             string      `json:"method"`                       // HTTP method used (GET, POST, etc.)
-    StatusCode         int         `json:"statusCode"`                   // HTTP status code from delegated server
-    RequestBody        interface{} `json:"requestBody,omitempty"`        // Request body sent to delegated server
-    Response           interface{} `json:"response,omitempty"`           // Response body from delegated server
-    StackTrace         []string    `json:"stackTrace,omitempty"`         // Delegated server stack trace (if error)
-    AdditionalMessages string      `json:"additionalMessages,omitempty"` // Extra context/messages
-    DurationMs         int64       `json:"durationMs,omitempty"`         // Time spent on delegated request
+    DelegatedEndpoint  string          `json:"delegatedEndpoint"`            // Full URL of the delegated server endpoint
+    Method             string          `json:"method"`                       // HTTP method used (GET, POST, etc.)
+    StatusCode         int             `json:"statusCode"`                   // HTTP status code from delegated server
+    RequestBody        json.RawMessage `json:"requestBody,omitempty"`        // Request body sent to delegated server
+    Response           json.RawMessage `json:"response,omitempty"`           // Response body from delegated server
+    StackTrace         []string        `json:"stackTrace,omitempty"`         // Delegated server stack trace (if error)
+    AdditionalMessages string          `json:"additionalMessages,omitempty"` // Extra context/messages
+    DurationMs         int64           `json:"durationMs,omitempty"`         // Time spent on delegated request
 }
 ```
 
