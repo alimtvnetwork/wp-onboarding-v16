@@ -91,7 +91,7 @@ trait RestoreIncrementalTrait {
 
         foreach ($sqlite_files as $sqlite_file) {
             $table = basename($sqlite_file, '.sqlite');
-            if (BooleanHelpers::isNotInList($table, $restoreOrder)) {
+            if (BooleanHelpers::isAbsentFromList($table, $restoreOrder)) {
                 continue;
             }
 

@@ -109,7 +109,7 @@ trait RestoreGraphTrait {
         }
 
         foreach ($allTables as $t) {
-            if (BooleanHelpers::isNotInList($t, $sorted)) {
+            if (BooleanHelpers::isAbsentFromList($t, $sorted)) {
                 $sorted[] = $t;
             }
         }

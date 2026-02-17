@@ -48,7 +48,7 @@ trait UpdateResolverUrlTrait {
         $status = wp_remote_retrieve_response_code($response);
         $this->fileLogger->debug('Redirect check', array('url' => $url, 'status' => $status));
 
-        if (BooleanHelpers::isNotInList($status, array(301, 302, 303, 307, 308))) {
+        if (BooleanHelpers::isAbsentFromList($status, array(301, 302, 303, 307, 308))) {
             return null;
         }
 

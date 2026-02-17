@@ -22,7 +22,7 @@ trait PathHelperDirTrait {
     public static function isDirMissing(string $dirPath): bool { return empty($dirPath) || !is_dir($dirPath); }
     public static function isDirWritable(string $dirPath): bool { return !empty($dirPath) && is_dir($dirPath) && is_writable($dirPath); }
     public static function isDirReadonly(string $dirPath): bool { return empty($dirPath) || !is_dir($dirPath) || !is_writable($dirPath); }
-    public static function isNotDirectory(string $path): bool { return !is_dir($path); }
+    public static function isDirAbsent(string $path): bool { return !is_dir($path); }
 
     // ── Path Safety ──
 

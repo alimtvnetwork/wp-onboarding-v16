@@ -62,7 +62,7 @@ trait AgentRemoteActionTrait {
             }
 
             $status = wp_remote_retrieve_response_code($response);
-            if (BooleanHelpers::isNotInList($status, array(301, 302, 303, 307, 308))) {
+            if (BooleanHelpers::isAbsentFromList($status, array(301, 302, 303, 307, 308))) {
                 break;
             }
 
