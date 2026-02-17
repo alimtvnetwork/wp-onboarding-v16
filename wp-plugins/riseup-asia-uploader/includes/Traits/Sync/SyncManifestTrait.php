@@ -71,7 +71,7 @@ trait SyncManifestTrait
     private function scanDirectoryForFiles(
         string $baseDir,
         string $dir,
-        \RiseupUploadIgnore $ignore,
+        UploadIgnore $ignore,
         array &$files,
     ): void {
         $items = @scandir($dir);

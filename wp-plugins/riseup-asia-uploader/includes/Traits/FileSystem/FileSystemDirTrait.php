@@ -56,9 +56,6 @@ trait FileSystemDirTrait {
     }
 
     private function copyDirectory(string $src, string $dst): bool {
-    }
-
-    private function copyDirectory(string $src, string $dst): bool {
         if (PathHelper::isDirMissing($src)) {
             return false;
         }
