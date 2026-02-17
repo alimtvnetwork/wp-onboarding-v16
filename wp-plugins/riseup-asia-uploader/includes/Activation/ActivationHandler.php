@@ -25,8 +25,10 @@ class ActivationHandler
     private const VERSION_UNKNOWN = 'unknown';
 
     public static function activate(): void {
+        error_log('[Riseup Asia] ActivationHandler::activate() — starting activation');
         try {
             self::loadDependencies();
+            error_log('[Riseup Asia] ActivationHandler::activate() — dependencies loaded');
             $dirs = self::resolveDirs();
 
             if ($dirs === null) {
@@ -34,8 +36,10 @@ class ActivationHandler
             }
 
             self::ensureDirs($dirs['base'], $dirs['logs']);
+            error_log('[Riseup Asia] ActivationHandler::activate() — directories ensured');
             self::writeLogFiles($dirs['logs']);
             self::ensureSecurity($dirs['base']);
+            error_log('[Riseup Asia] ActivationHandler::activate() — activation complete');
         } catch (Throwable $e) {
             error_log('[Riseup Asia] Activation hook failed: ' . $e->getMessage());
         }

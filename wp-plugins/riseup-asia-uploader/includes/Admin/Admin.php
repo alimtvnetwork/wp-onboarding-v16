@@ -81,6 +81,7 @@ class Admin {
 
     /** Constructor. */
     private function __construct() {
+        error_log('[Riseup Asia] Admin::__construct() — registering admin hooks');
         add_action(HookType::AdminMenu->value, array($this, 'addAdminMenu'));
         add_action(HookType::AdminInit->value, array($this, 'registerSettings'));
         add_action(HookType::AdminEnqueue->value, array($this, 'enqueueAdminAssets'));
