@@ -6,6 +6,8 @@
  * @since   1.9.0
  */
 
+use RiseupAsia\Enums\PluginConfigType;
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -14,7 +16,7 @@ if (!defined('ABSPATH')) {
     <h1>
         <span class="dashicons dashicons-database"></span>
         <?php esc_html_e('Database Snapshots', 'riseup-asia-uploader'); ?>
-        <span class="riseup-version-badge">v<?php echo esc_html(PLUGIN_VERSION); ?></span>
+        <span class="riseup-version-badge">v<?php echo esc_html(PluginConfigType::Version->value); ?></span>
     </h1>
 
     <p class="description">
