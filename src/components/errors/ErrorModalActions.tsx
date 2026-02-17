@@ -8,7 +8,7 @@ import { Copy, Download, FileCode2, FileDown, FileText, Server, Terminal, Chevro
 import { toast } from "sonner";
 import { toClipboardText } from "@/lib/logText";
 import { api } from "@/lib/api";
-import { generateErrorReport } from "./errorReportGenerator";
+import { generateErrorReport, generateCompactReport } from "./errorReportGenerator";
 import type { AppInfo } from "./ErrorModalTypes";
 
 interface DownloadDropdownProps extends AppInfo {
@@ -121,74 +121,101 @@ interface CopyDropdownProps extends AppInfo {
   copyFullError: () => void;
 }
 
+/**
+ * Split Copy Button — main click copies compact report instantly,
+ * chevron arrow opens dropdown with all copy options.
+ */
 export function CopyDropdown({ error, appName, appVersion, gitCommit, buildTime, copyFullError }: CopyDropdownProps) {
+  const copyCompact = () => {
+    const text = generateCompactReport(error, { appName, appVersion, gitCommit, buildTime });
+    navigator.clipboard.writeText(toClipboardText(text));
+    toast.success("Compact report copied to clipboard");
+  };
+
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button>
-          <Copy className="h-4 w-4 mr-2" />
-          Copy
-          <ChevronDown className="h-4 w-4 ml-1" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-popover">
-        <DropdownMenuItem onClick={copyFullError}>
-          <Copy className="h-4 w-4 mr-2" />
-          Copy Full Report
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={async () => {
-          try {
-            const resp = await api.getBackendErrorLog();
-            if (resp.success && resp.data) {
-              const report = generateErrorReport(error, { appName, appVersion, gitCommit, buildTime });
-              const fullReport = `${report}\n\n---\n\n## Backend Error Log (error.log.txt)\n\n\`\`\`\n${resp.data.content}\n\`\`\`\n`;
-              navigator.clipboard.writeText(toClipboardText(fullReport));
-              toast.success("Copied report with backend logs");
-            } else {
+    <div className="inline-flex rounded-md shadow-sm">
+      {/* Main button — copies compact report instantly */}
+      <Button
+        onClick={copyCompact}
+        className="rounded-r-none border-r-0"
+      >
+        <Copy className="h-4 w-4 mr-2" />
+        Copy
+      </Button>
+
+      {/* Arrow button — opens dropdown with all copy options */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            className="rounded-l-none px-2 border-l border-l-primary-foreground/20"
+            aria-label="More copy options"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-popover">
+          <DropdownMenuItem onClick={copyCompact}>
+            <Copy className="h-4 w-4 mr-2" />
+            Copy Compact Report
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={copyFullError}>
+            <FileText className="h-4 w-4 mr-2" />
+            Copy Full Report
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={async () => {
+            try {
+              const resp = await api.getBackendErrorLog();
+              if (resp.success && resp.data) {
+                const report = generateErrorReport(error, { appName, appVersion, gitCommit, buildTime });
+                const fullReport = `${report}\n\n---\n\n## Backend Error Log (error.log.txt)\n\n\`\`\`\n${resp.data.content}\n\`\`\`\n`;
+                navigator.clipboard.writeText(toClipboardText(fullReport));
+                toast.success("Copied report with backend logs");
+              } else {
+                copyFullError();
+                toast.info("Backend logs not available, copied standard report");
+              }
+            } catch {
               copyFullError();
-              toast.info("Backend logs not available, copied standard report");
             }
-          } catch {
-            copyFullError();
-          }
-        }}>
-          <Server className="h-4 w-4 mr-2" />
-          Copy with Backend Logs
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={async () => {
-          try {
-            const resp = await api.getBackendErrorLog();
-            if (resp.success && resp.data) {
-              navigator.clipboard.writeText(toClipboardText(resp.data.content));
-              toast.success("Copied error.log.txt to clipboard");
-            } else {
-              toast.error(resp.error?.message || "No error log available");
+          }}>
+            <Server className="h-4 w-4 mr-2" />
+            Copy with Backend Logs
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={async () => {
+            try {
+              const resp = await api.getBackendErrorLog();
+              if (resp.success && resp.data) {
+                navigator.clipboard.writeText(toClipboardText(resp.data.content));
+                toast.success("Copied error.log.txt to clipboard");
+              } else {
+                toast.error(resp.error?.message || "No error log available");
+              }
+            } catch {
+              toast.error("Failed to copy error log");
             }
-          } catch {
-            toast.error("Failed to copy error log");
-          }
-        }}>
-          <Terminal className="h-4 w-4 mr-2" />
-          Copy error.log.txt
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={async () => {
-          try {
-            const resp = await api.getBackendFullLog();
-            if (resp.success && resp.data) {
-              navigator.clipboard.writeText(toClipboardText(resp.data.content));
-              toast.success("Copied log.txt to clipboard");
-            } else {
-              toast.error(resp.error?.message || "No full log available");
+          }}>
+            <Terminal className="h-4 w-4 mr-2" />
+            Copy error.log.txt
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={async () => {
+            try {
+              const resp = await api.getBackendFullLog();
+              if (resp.success && resp.data) {
+                navigator.clipboard.writeText(toClipboardText(resp.data.content));
+                toast.success("Copied log.txt to clipboard");
+              } else {
+                toast.error(resp.error?.message || "No full log available");
+              }
+            } catch {
+              toast.error("Failed to copy full log");
             }
-          } catch {
-            toast.error("Failed to copy full log");
-          }
-        }}>
-          <FileText className="h-4 w-4 mr-2" />
-          Copy log.txt
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          }}>
+            <FileText className="h-4 w-4 mr-2" />
+            Copy log.txt
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
