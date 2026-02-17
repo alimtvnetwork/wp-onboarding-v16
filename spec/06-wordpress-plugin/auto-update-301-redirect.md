@@ -92,20 +92,18 @@ array(
 )
 ```
 
-### Constants
+### Configuration Enums
 
 ```php
-// Default cache duration in days
-RISEUP_UPDATE_CACHE_DAYS_DEFAULT = 7
+// Numeric defaults — UpdateConfigType (int-backed)
+UpdateConfigType::CacheDaysDefault  // 7
+UpdateConfigType::MaxRedirects      // 5
 
-// Maximum redirects to follow
-RISEUP_UPDATE_MAX_REDIRECTS = 5
-
-// Transaction log action types
-RISEUP_ACTION_UPDATE_CHECK    = 'update_check'
-RISEUP_ACTION_UPDATE_RESOLVE  = 'update_resolve'
-RISEUP_ACTION_UPDATE_DOWNLOAD = 'update_download'
-RISEUP_ACTION_UPDATE_INSTALL  = 'update_install'
+// Transaction log action types — ActionType (string-backed)
+ActionType::UpdateCheck     // 'update_check'
+ActionType::UpdateResolve   // 'update_resolve'
+ActionType::UpdateDownload  // 'update_download'
+ActionType::UpdateInstall   // 'update_install'
 ```
 
 ---
