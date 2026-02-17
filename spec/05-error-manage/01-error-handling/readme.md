@@ -302,7 +302,7 @@ When `DelegatedRequestServer` is present, the error log includes a `Delegated Se
     Status: 403
     Stacktrace:
         #0 riseup-asia-uploader.php(1098): FileLogger->error()
-        #1 class-wp-hook.php(341): RiseupAsia->enrichErrorResponse()
+        #1 class-wp-hook.php(341): Plugin->enrichErrorResponse()
         ...
     RequestBody:
         (none — GET request)

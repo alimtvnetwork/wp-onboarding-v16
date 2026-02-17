@@ -332,7 +332,7 @@ class Event_Hub {
     /**
      * Get subscribers matching event
      */
-    private function get_subscribers(string $event): array;
+    private function getSubscribers(string $event): array;
 }
 ```
 

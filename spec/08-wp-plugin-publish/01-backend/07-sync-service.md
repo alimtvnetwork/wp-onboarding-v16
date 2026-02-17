@@ -39,61 +39,61 @@ The Sync Service orchestrates file synchronization between the local development
 <?php
 namespace PluginsOnboard\Services;
 
-class Sync_Service {
+class SyncService {
     
     /** @var string Current sync status */
     private string $status = 'idle';
     
     /** @var array Active sync operations */
-    private array $active_syncs = [];
+    private array $activeSyncs = [];
     
-    /** @var Change_Queue */
-    private Change_Queue $queue;
+    /** @var ChangeQueue */
+    private ChangeQueue $queue;
     
-    /** @var WP_REST_Client */
-    private WP_REST_Client $client;
+    /** @var WpRestClient */
+    private WpRestClient $client;
     
     /**
      * Sync a plugin to a specific site
      */
-    public function sync_to_site(
-        string $plugin_slug,
-        int $site_id,
+    public function syncToSite(
+        string $pluginSlug,
+        int $siteId,
         array $options = []
-    ): Sync_Result;
+    ): SyncResult;
     
     /**
      * Sync a plugin to all connected sites
      */
-    public function sync_to_all(
-        string $plugin_slug,
+    public function syncToAll(
+        string $pluginSlug,
         array $options = []
     ): array;
     
     /**
      * Sync specific files only
      */
-    public function sync_files(
-        string $plugin_slug,
-        int $site_id,
+    public function syncFiles(
+        string $pluginSlug,
+        int $siteId,
         array $files
-    ): Sync_Result;
+    ): SyncResult;
     
     /**
      * Get current sync status
      */
-    public function get_status(string $plugin_slug): array;
+    public function getStatus(string $pluginSlug): array;
     
     /**
      * Cancel an active sync operation
      */
-    public function cancel(string $sync_id): bool;
+    public function cancel(string $syncId): bool;
     
     /**
      * Resolve a sync conflict
      */
-    public function resolve_conflict(
-        string $conflict_id,
+    public function resolveConflict(
+        string $conflictId,
         string $resolution
     ): bool;
 }
@@ -108,7 +108,7 @@ class Sync_Service {
 Complete plugin synchronization:
 
 ```php
-$result = $sync->sync_to_site('my-plugin', $site_id, [
+$result = $sync->syncToSite('my-plugin', $siteId, [
     'mode' => 'full',
     'verify_checksums' => true,
     'backup_first' => true
@@ -120,9 +120,9 @@ $result = $sync->sync_to_site('my-plugin', $site_id, [
 Only changed files since last sync:
 
 ```php
-$result = $sync->sync_to_site('my-plugin', $site_id, [
+$result = $sync->syncToSite('my-plugin', $siteId, [
     'mode' => 'incremental',
-    'since' => $last_sync_timestamp
+    'since' => $lastSyncTimestamp
 ]);
 ```
 
@@ -131,7 +131,7 @@ $result = $sync->sync_to_site('my-plugin', $site_id, [
 Specific files only:
 
 ```php
-$result = $sync->sync_files('my-plugin', $site_id, [
+$result = $sync->syncFiles('my-plugin', $siteId, [
     'includes/class-core.php',
     'assets/js/main.js'
 ]);
@@ -272,16 +272,16 @@ const CONFLICT_TYPES = [
 ## Sync Result Structure
 
 ```php
-class Sync_Result {
-    public string $sync_id;
+class SyncResult {
+    public string $syncId;
     public string $status;        // 'success' | 'partial' | 'failed'
-    public int $files_synced;
-    public int $files_failed;
-    public int $bytes_transferred;
-    public float $duration_seconds;
+    public int $filesSynced;
+    public int $filesFailed;
+    public int $bytesTransferred;
+    public float $durationSeconds;
     public array $errors;
     public array $conflicts;
-    public ?string $rollback_id;
+    public ?string $rollbackId;
 }
 ```
 
@@ -308,13 +308,13 @@ const SYNC_DEFAULTS = [
 
 ```php
 // Sync lifecycle events
-'sync:started'        => ['sync_id', 'plugin_slug', 'site_id']
-'sync:progress'       => ['sync_id', 'progress', 'current_file']
-'sync:file_complete'  => ['sync_id', 'file', 'status']
-'sync:conflict'       => ['sync_id', 'conflict']
-'sync:complete'       => ['sync_id', 'result']
-'sync:failed'         => ['sync_id', 'error']
-'sync:cancelled'      => ['sync_id', 'reason']
+'sync:started'        => ['syncId', 'pluginSlug', 'siteId']
+'sync:progress'       => ['syncId', 'progress', 'currentFile']
+'sync:file_complete'  => ['syncId', 'file', 'status']
+'sync:conflict'       => ['syncId', 'conflict']
+'sync:complete'       => ['syncId', 'result']
+'sync:failed'         => ['syncId', 'error']
+'sync:cancelled'      => ['syncId', 'reason']
 ```
 
 ---
@@ -337,12 +337,12 @@ If sync fails mid-way:
 
 ```php
 // Automatic rollback
-$sync->sync_to_site($slug, $site_id, [
+$sync->syncToSite($slug, $siteId, [
     'rollback_on_failure' => true
 ]);
 
 // Manual rollback
-$sync->rollback($sync_id);
+$sync->rollback($syncId);
 ```
 
 ---
