@@ -67,9 +67,21 @@ Deep manual audit of ~30 high-traffic PHP files (2026-02-17). Fixed **22 C3 viol
 - `DetectorProviderTrait` (2), `SchedulerExecutorTrait` (2), `NativeSnapshotCreateTrait` (1)
 - `InitHelpers` (2), `ResponseTrait` (1)
 
+## ✅ COMPLETED — Part F: Documentation Modernization (Stale References)
+
+Swept all `spec/` files for stale legacy references (2026-02-17):
+
+- **F1**: `RiseupBooleanHelpers` → `BooleanHelpers` in `spec/04-php-standards/readme.md`
+- **F2**: `interface{}` struct fields → `json.RawMessage` in Go delegation/logging specs (`spec/05-error-manage/`)
+- **F3**: Legacy `extractPHPStackTrace`/`extractLogHint` helpers → concrete `DelegatedResponseBody` struct
+
+### Remaining stale references (not yet fixed):
+- `RiseupSnapshotFactory` → `SnapshotFactory` in `spec/01-coding-guidelines/dry-principles.md`, `spec/dry-refactoring-summary.md`
+- `RiseupEnvelopeBuilder` → `EnvelopeBuilder` in `spec/04-php-standards/readme.md`, `spec/05-error-manage/05-response-envelope/adr.md`
+- Legacy `class-*.php` file paths in specs (should be PSR-4 PascalCase paths)
+
 ## 🔵 Next Priority
 
-All plan items (Parts A–E) are complete. Potential next steps:
-- Autoloader class refactored — verify plugin bootstrap works end-to-end
+- Fix remaining `Riseup`-prefixed class names in specs (SnapshotFactory, EnvelopeBuilder)
+- Update legacy `class-kebab-case.php` file paths to PSR-4 format in specs
 - Audit remaining Traits/ subdirectories (Agent, Sync, Status, FileSystem) for C3
-- Review `spec/07-wordpress-plugin-development/` specs for unenforced standards
