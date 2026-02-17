@@ -55,6 +55,7 @@ require_once __DIR__ . '/includes/Enums/PathSubdirType.php';
 require_once __DIR__ . '/includes/Enums/PathDatabaseType.php';
 require_once __DIR__ . '/includes/Enums/PathLogFileType.php';
 require_once __DIR__ . '/includes/Enums/PathConfigType.php';
+require_once __DIR__ . '/includes/Enums/WpErrorCodeType.php';
 require_once __DIR__ . '/includes/Enums/ErrorType.php';
 ```
 
@@ -599,6 +600,52 @@ $dbPath  = self::join(self::getBaseDir(), PathDatabaseType::Plugin->value);
 
 ---
 
+## WpErrorCodeType — WordPress REST API Error Codes
+
+`WpErrorCodeType` centralizes all `WP_Error` code strings used in REST API permission callbacks, validation, and error responses. Eliminates magic strings in `new WP_Error()` calls.
+
+```php
+namespace RiseupAsia\Enums;
+
+enum WpErrorCodeType: string
+{
+    // Auth & Permission
+    case RestForbidden          = 'rest_forbidden';
+    case NotAuthenticated       = 'not_authenticated';
+    case InsufficientPermissions = 'insufficient_permissions';
+    case NoToken                = 'no_token';
+    case InvalidToken           = 'invalid_token';
+    case RateLimited            = 'rate_limited';
+
+    // Validation
+    case ValidationFailed       = 'validation_failed';
+    case ValidationError        = 'validation_error';
+
+    // Operations
+    case UploadFailed           = 'upload_failed';
+    case AuthenticationFailed   = 'authentication_failed';
+    case FatalError             = 'fatal_error';
+
+    public function isEqual(self $other): bool {
+        return $this->value === $other->value;
+    }
+}
+```
+
+### Usage
+
+```php
+use RiseupAsia\Enums\WpErrorCodeType;
+
+// ❌ FORBIDDEN
+return new WP_Error('not_authenticated', 'Authentication required', ['status' => 401]);
+
+// ✅ REQUIRED
+return new WP_Error(WpErrorCodeType::NotAuthenticated->value, 'Authentication required', ['status' => 401]);
+```
+
+---
+
 ## ErrorType — PHP Error Type Constants (Non-Enum Class)
 
 `ErrorType` holds arrays/maps — not a backed enum. Does NOT get `isEqual()`.
@@ -633,6 +680,7 @@ final class ErrorType
 | `PathDatabaseType` | `enum`       | `Type` | ✅            | Discrete DB files — "which database?"            |
 | `PathLogFileType`  | `enum`       | `Type` | ✅            | Discrete log files — "which log?"                |
 | `PathConfigType`   | `enum`       | `Type` | ✅            | Discrete config files — "which config?"          |
+| `WpErrorCodeType`  | `enum`       | `Type` | ✅            | Discrete WP_Error codes — "which error code?"    |
 | `ErrorType`        | `final class`| —      | ❌            | Arrays of E_* constants and label maps           |
 
 ### Decision Rule
@@ -654,8 +702,9 @@ final class ErrorType
 8. **If HttpMethodType:** Update all `register_rest_route()` calls.
 9. **If EndpointType:** Add the case, then use `->route()` in route registration. Update all callers.
 10. **If ErrorType:** Add to the appropriate group array AND to `TYPE_LABELS`.
-11. **Never skip the enum** — even for "one-time" usage.
-12. **Use `isEqual()` for all comparisons** — never raw `===` at call sites.
+11. **If WpErrorCodeType:** Update all `new WP_Error()` calls and `$this->envelope->error()` code parameters.
+12. **Never skip the enum** — even for "one-time" usage.
+13. **Use `isEqual()` for all comparisons** — never raw `===` at call sites.
 
 ---
 
