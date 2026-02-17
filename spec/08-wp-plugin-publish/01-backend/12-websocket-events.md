@@ -291,7 +291,7 @@ ws.send(JSON.stringify({
 <?php
 namespace PluginsOnboard\WebSocket;
 
-class Event_Hub {
+class EventHub {
     
     /** @var array<string, callable[]> */
     private array $listeners = [];
