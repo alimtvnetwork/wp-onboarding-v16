@@ -52,7 +52,11 @@ class FileLogger {
         return $this->logPath;
     }
 
-    public function log(string $message, string $file = '', int $line = 0): void {
+    public function log(
+        string $message,
+        string $file = '',
+        int $line = 0,
+    ): void {
         $path = $this->getLogPath();
         // ... write log
     }

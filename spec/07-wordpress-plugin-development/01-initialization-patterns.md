@@ -145,7 +145,9 @@ class AssetLocator {
     }
 
     private function ensureDirectory(string $path): string {
-        if (PathHelper::isDirMissing($path) && !@mkdir($path, 0755, true) && !is_dir($path)) {
+        $isCreateFailed = PathHelper::isDirMissing($path) && !@mkdir($path, 0755, true) && !is_dir($path);
+
+        if ($isCreateFailed) {
             throw new RuntimeException("Failed to create directory: {$path}");
         }
 
@@ -222,7 +224,11 @@ class FileLogger {
         $this->isInitialized = true;
     }
 
-    public function log(string $message, string $file = '', int $line = 0): bool {
+    public function log(
+        string $message,
+        string $file = '',
+        int $line = 0,
+    ): bool {
         $this->ensurePaths();
 
         $entry = $this->formatEntry($message, $file, $line);

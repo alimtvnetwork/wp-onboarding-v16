@@ -316,7 +316,9 @@ public function checkTokenPermission(WP_REST_Request $request): bool|WP_Error {
 
     $storedToken = get_option(OptionNameType::ApiToken->value);
 
-    if (!hash_equals($storedToken, $token)) {
+    $isTokenMismatch = !hash_equals($storedToken, $token);
+
+    if ($isTokenMismatch) {
         return new WP_Error(WpErrorCodeType::InvalidToken->value, 'Invalid API token', ['status' => 403]);
     }
 
