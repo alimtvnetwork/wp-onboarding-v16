@@ -57,7 +57,7 @@ The project implements a **three-tier error handling architecture** spanning the
 ┌─────────────────────────────────────────────────────────────────────┐
 │              Delegated Server (PHP / Chrome Extension / Other)       │
 │  ┌─────────────────┐    ┌──────────────────┐    ┌───────────────┐   │
-│  │ safe_execute()  │───▸│ RiseupLogger      │───▸│ stacktrace.txt│   │
+│  │ safe_execute()  │───▸│ FileLogger        │───▸│ stacktrace.txt│   │
 │  │ catch Throwable │    │ (6-frame backtrace)│   │ fatal-errors  │   │
 │  │                 │    │                    │    │ error.txt     │   │
 │  │ OR any 3rd-party│    │ OR structured     │    │               │   │
