@@ -202,7 +202,6 @@ func (s *serviceImpl) CheckSync(
 ) (*SyncResult, error) {
 	s.log.Info("Checking sync status", "pluginId", pluginID, "siteId", siteID)
 
-	// Broadcast sync started event
 	s.wsHub.Broadcast(ws.EventSyncStarted, SyncStartedEvent{
 		PluginID: pluginID,
 		SiteID:   siteID,
@@ -215,16 +214,42 @@ func (s *serviceImpl) CheckSync(
 		Changes:   []FileChange{},
 	}
 
-	// Get plugin details
+	if err := s.populateSyncContext(ctx, result, pluginID, siteID); err != nil {
+		return result, err
+	}
+
+	localScan, err := s.pluginService.ScanDirectory(ctx, result.pluginPath)
+	if err != nil {
+		result.Status = SyncStatusError
+		result.Error = err.Error()
+
+		return result, err
+	}
+	result.TotalFiles = localScan.FileCount
+
+	s.analyzeSyncChanges(ctx, result, localScan, siteID)
+	s.updateMappingSyncStatus(ctx, result.Status, pluginID, siteID)
+	s.broadcastSyncComplete(result)
+
+	return result, nil
+}
+
+func (s *serviceImpl) populateSyncContext(
+	ctx context.Context,
+	result *SyncResult,
+	pluginID int64,
+	siteID int64,
+) error {
 	plugin, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		result.Status = SyncStatusError
 		result.Error = err.Error()
-		return result, err
+
+		return err
 	}
 	result.PluginName = plugin.Name
+	result.pluginPath = plugin.Path
 
-	// Get site details
 	var site models.Site
 	err = s.db.QueryRowContext(ctx, `
 		SELECT Id, Name, Url, Username, PasswordEncrypted
@@ -233,11 +258,12 @@ func (s *serviceImpl) CheckSync(
 	if err != nil {
 		result.Status = SyncStatusError
 		result.Error = "site not found"
-		return result, apperror.New(apperror.ErrNotFound, "site not found")
+
+		return apperror.New(apperror.ErrNotFound, "site not found")
 	}
 	result.SiteName = site.Name
+	result.site = site
 
-	// Get mapping to find remote slug
 	var remoteSlug string
 	err = s.db.QueryRowContext(ctx, `
 		SELECT RemoteSlug FROM PluginMappings
@@ -246,68 +272,80 @@ func (s *serviceImpl) CheckSync(
 	if err != nil {
 		result.Status = SyncStatusError
 		result.Error = "plugin not mapped to site"
-		return result, apperror.New(apperror.ErrNotFound, "mapping not found")
-	}
 
-	// Scan local plugin directory
-	localScan, err := s.pluginService.ScanDirectory(ctx, plugin.Path)
-	if err != nil {
-		result.Status = SyncStatusError
-		result.Error = err.Error()
-		return result, err
+		return apperror.New(apperror.ErrNotFound, "mapping not found")
 	}
-	result.TotalFiles = localScan.FileCount
+	result.remoteSlug = remoteSlug
 
-	// Create WordPress client and get remote files
-	wpClient := s.wpClientFactory(site.URL, site.Username, string(site.PasswordEncrypted))
-	remoteFiles, err := wpClient.GetPluginFiles(ctx, remoteSlug)
+	return nil
+}
+
+func (s *serviceImpl) analyzeSyncChanges(
+	ctx context.Context,
+	result *SyncResult,
+	localScan *plugin.ScanResult,
+	siteID int64,
+) {
+	wpClient := s.wpClientFactory(result.site.URL, result.site.Username, string(result.site.PasswordEncrypted))
+	remoteFiles, err := wpClient.GetPluginFiles(ctx, result.remoteSlug)
 	if err != nil {
-		// If remote plugin doesn't exist, all files are "added"
 		s.log.Warn("Could not fetch remote files", "error", err)
-		for _, f := range localScan.Files {
-			if !f.IsDirectory {
-				result.Changes = append(result.Changes, FileChange{
-					Path:       f.Path,
-				ChangeType: ChangeTypeAdded,
-					LocalHash:  f.Hash,
-					LocalSize:  f.Size,
-					LocalMTime: f.ModifiedAt,
-				})
-				result.AddedFiles++
-			}
-		}
-		result.ChangedFiles = result.AddedFiles
-		result.Status = SyncStatusPending
-	} else {
-		// Compare local and remote files
-		result.Changes = s.compareFiles(localScan.Files, remoteFiles)
-		for _, c := range result.Changes {
-			switch c.ChangeType {
-			case ChangeTypeAdded:
-				result.AddedFiles++
-			case ChangeTypeModified:
-				result.ModifiedFiles++
-			case ChangeTypeDeleted:
-				result.DeletedFiles++
-			}
-		}
-		result.ChangedFiles = len(result.Changes)
+		s.markAllFilesAsAdded(result, localScan.Files)
 
-		if result.ChangedFiles == 0 {
-			result.Status = SyncStatusSynced
-		} else {
-			result.Status = SyncStatusPending
-		}
+		return
 	}
 
-	// Update mapping sync status
+	result.Changes = s.compareFiles(localScan.Files, remoteFiles)
+	s.tallySyncChanges(result)
+	result.ChangedFiles = len(result.Changes)
+
+	result.Status = SyncStatusSynced
+	if result.ChangedFiles > 0 {
+		result.Status = SyncStatusPending
+	}
+}
+
+func (s *serviceImpl) markAllFilesAsAdded(result *SyncResult, files []plugin.FileInfo) {
+	for _, f := range files {
+		if f.IsDirectory {
+			continue
+		}
+
+		result.Changes = append(result.Changes, FileChange{
+			Path:       f.Path,
+			ChangeType: ChangeTypeAdded,
+			LocalHash:  f.Hash,
+			LocalSize:  f.Size,
+			LocalMTime: f.ModifiedAt,
+		})
+		result.AddedFiles++
+	}
+	result.ChangedFiles = result.AddedFiles
+	result.Status = SyncStatusPending
+}
+
+func (s *serviceImpl) tallySyncChanges(result *SyncResult) {
+	for _, c := range result.Changes {
+		switch c.ChangeType {
+		case ChangeTypeAdded:
+			result.AddedFiles++
+		case ChangeTypeModified:
+			result.ModifiedFiles++
+		case ChangeTypeDeleted:
+			result.DeletedFiles++
+		}
+	}
+}
+
+func (s *serviceImpl) updateMappingSyncStatus(ctx context.Context, status string, pluginID, siteID int64) {
 	s.db.ExecContext(ctx, `
 		UPDATE PluginMappings 
 		SET SyncStatus = ?, UpdatedAt = datetime('now')
 		WHERE PluginId = ? AND SiteId = ?
-	`, result.Status, pluginID, siteID)
+	`, status, pluginID, siteID)
+}
 
-	// Broadcast sync complete event
+func (s *serviceImpl) broadcastSyncComplete(result *SyncResult) {
 	s.wsHub.Broadcast(ws.EventSyncComplete, SyncCompleteEvent{
 		PluginID:     pluginID,
 		SiteID:       siteID,
@@ -340,21 +378,28 @@ func (s *serviceImpl) CheckAllSites(
 		result, err := s.CheckSync(ctx, pluginID, m.SiteID)
 		if err != nil {
 			batch.Summary.ErrorSites++
-		} else {
-			switch result.Status {
-			case SyncStatusSynced:
-				batch.Summary.SyncedSites++
-			case SyncStatusPending:
-				batch.Summary.PendingSites++
-			default:
-				batch.Summary.ErrorSites++
-			}
-			batch.Summary.TotalChanges += result.ChangedFiles
+			batch.Results = append(batch.Results, *result)
+
+			continue
 		}
+
+		s.classifyBatchResult(batch, result)
 		batch.Results = append(batch.Results, *result)
 	}
 
 	return batch, nil
+}
+
+func (s *serviceImpl) classifyBatchResult(batch *BatchSyncResult, result *SyncResult) {
+	switch result.Status {
+	case SyncStatusSynced:
+		batch.Summary.SyncedSites++
+	case SyncStatusPending:
+		batch.Summary.PendingSites++
+	default:
+		batch.Summary.ErrorSites++
+	}
+	batch.Summary.TotalChanges += result.ChangedFiles
 }
 
 func (s *serviceImpl) CheckAllPlugins(ctx context.Context) ([]SyncResult, error) {
@@ -398,59 +443,79 @@ import (
 
 // compareFiles compares local files with remote files and returns differences
 func (s *serviceImpl) compareFiles(local []plugin.FileInfo, remote []wordpress.RemoteFile) []FileChange {
+	remoteMap := buildRemoteMap(remote)
+	localPaths := make(map[string]bool)
 	var changes []FileChange
 
-	// Build map of remote files by path
-	remoteMap := make(map[string]wordpress.RemoteFile)
-	for _, f := range remote {
-		remoteMap[f.Path] = f
-	}
-
-	// Check local files against remote
-	localPaths := make(map[string]bool)
 	for _, lf := range local {
 		if lf.IsDirectory {
 			continue
 		}
 		localPaths[lf.Path] = true
 
-		if rf, exists := remoteMap[lf.Path]; exists {
-			// File exists on both - check if modified
-			if lf.Hash != rf.Hash {
-				changes = append(changes, FileChange{
-					Path:        lf.Path,
-					ChangeType:  ChangeTypeModified,
-					LocalHash:   lf.Hash,
-					RemoteHash:  rf.Hash,
-					LocalSize:   lf.Size,
-					RemoteSize:  rf.Size,
-					LocalMTime:  lf.ModifiedAt,
-					RemoteMTime: rf.ModifiedAt,
-				})
-			}
-		} else {
-			// File only exists locally - needs to be added
-			changes = append(changes, FileChange{
-				Path:       lf.Path,
-				ChangeType: ChangeTypeAdded,
-				LocalHash:  lf.Hash,
-				LocalSize:  lf.Size,
-				LocalMTime: lf.ModifiedAt,
-			})
+		change := s.compareLocalFile(lf, remoteMap)
+		if change != nil {
+			changes = append(changes, *change)
 		}
 	}
 
-	// Check for deleted files (exist on remote but not local)
-	for _, rf := range remote {
-		if !localPaths[rf.Path] {
-			changes = append(changes, FileChange{
-				Path:        rf.Path,
-				ChangeType:  ChangeTypeDeleted,
-				RemoteHash:  rf.Hash,
-				RemoteSize:  rf.Size,
-				RemoteMTime: rf.ModifiedAt,
-			})
+	deletions := s.findDeletedFiles(remote, localPaths)
+	changes = append(changes, deletions...)
+
+	return changes
+}
+
+func buildRemoteMap(remote []wordpress.RemoteFile) map[string]wordpress.RemoteFile {
+	m := make(map[string]wordpress.RemoteFile)
+	for _, f := range remote {
+		m[f.Path] = f
+	}
+
+	return m
+}
+
+func (s *serviceImpl) compareLocalFile(lf plugin.FileInfo, remoteMap map[string]wordpress.RemoteFile) *FileChange {
+	rf, exists := remoteMap[lf.Path]
+	if !exists {
+		return &FileChange{
+			Path:       lf.Path,
+			ChangeType: ChangeTypeAdded,
+			LocalHash:  lf.Hash,
+			LocalSize:  lf.Size,
+			LocalMTime: lf.ModifiedAt,
 		}
+	}
+
+	if lf.Hash == rf.Hash {
+		return nil
+	}
+
+	return &FileChange{
+		Path:        lf.Path,
+		ChangeType:  ChangeTypeModified,
+		LocalHash:   lf.Hash,
+		RemoteHash:  rf.Hash,
+		LocalSize:   lf.Size,
+		RemoteSize:  rf.Size,
+		LocalMTime:  lf.ModifiedAt,
+		RemoteMTime: rf.ModifiedAt,
+	}
+}
+
+func (s *serviceImpl) findDeletedFiles(remote []wordpress.RemoteFile, localPaths map[string]bool) []FileChange {
+	var changes []FileChange
+	for _, rf := range remote {
+		if localPaths[rf.Path] {
+			continue
+		}
+
+		changes = append(changes, FileChange{
+			Path:        rf.Path,
+			ChangeType:  ChangeTypeDeleted,
+			RemoteHash:  rf.Hash,
+			RemoteSize:  rf.Size,
+			RemoteMTime: rf.ModifiedAt,
+		})
 	}
 
 	return changes

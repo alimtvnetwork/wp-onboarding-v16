@@ -283,19 +283,31 @@ func (s *serviceImpl) performScan(
 
 	s.log.Info("Scanning plugin", "pluginId", pluginID, "trigger", triggerType)
 
-	// Get or create cache
+	cache, err := s.getOrInitCache(ctx, pluginID)
+	if err != nil {
+		return nil, err
+	}
+	_ = cache
+
+func (s *serviceImpl) getOrInitCache(ctx context.Context, pluginID int64) (*pluginCache, error) {
 	s.mu.Lock()
 	cache, exists := s.cache[pluginID]
-	if !exists {
-		// Initialize cache first
-		s.mu.Unlock()
-		if err := s.InitializeCache(ctx, pluginID); err != nil {
-			return nil, err
-		}
-		s.mu.Lock()
-		cache = s.cache[pluginID]
-	}
 	s.mu.Unlock()
+
+	if exists {
+		return cache, nil
+	}
+
+	if err := s.InitializeCache(ctx, pluginID); err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	cache = s.cache[pluginID]
+	s.mu.Unlock()
+
+	return cache, nil
+}
 
 	// Perform scan and detect changes
 	changes := s.scanAndCompare(cache)
@@ -418,23 +430,9 @@ func (s *serviceImpl) broadcastChanges(pluginID int64, changes []FileChange) {
 }
 
 func (s *serviceImpl) TriggerScan(pluginID int64) (*ScanResult, error) {
-	s.mu.RLock()
-	w, exists := s.watchers[pluginID]
-	s.mu.RUnlock()
-
-	if !exists {
-		// Plugin not being watched, get details and do one-time scan
-		plugin, err := s.pluginService.GetByID(nil, pluginID)
-		if err != nil {
-			return nil, err
-		}
-
-		w = &pluginWatcher{
-			pluginID: pluginID,
-			path:     plugin.Path,
-			excludes: plugin.ExcludePatterns,
-			lastScan: make(map[string]fileInfo),
-		}
+	w, err := s.getOrCreateWatcher(pluginID)
+	if err != nil {
+		return nil, err
 	}
 
 	startTime := time.Now()
@@ -447,6 +445,28 @@ func (s *serviceImpl) TriggerScan(pluginID int64) (*ScanResult, error) {
 		DurationMs:   time.Since(startTime).Milliseconds(),
 		FilesScanned: len(w.lastScan),
 		Changes:      changes,
+	}, nil
+}
+
+func (s *serviceImpl) getOrCreateWatcher(pluginID int64) (*pluginWatcher, error) {
+	s.mu.RLock()
+	w, exists := s.watchers[pluginID]
+	s.mu.RUnlock()
+
+	if exists {
+		return w, nil
+	}
+
+	plugin, err := s.pluginService.GetByID(nil, pluginID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pluginWatcher{
+		pluginID: pluginID,
+		path:     plugin.Path,
+		excludes: plugin.ExcludePatterns,
+		lastScan: make(map[string]fileInfo),
 	}, nil
 }
 ```
@@ -469,92 +489,111 @@ import (
 
 // scanDirectory scans a directory and returns detected changes
 func (s *serviceImpl) scanDirectory(w *pluginWatcher) []FileChange {
-	var changes []FileChange
 	currentFiles := make(map[string]fileInfo)
 
-	// Walk directory
 	err := filepath.Walk(w.path, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil // Skip inaccessible files
-		}
-
-		// Get relative path
-		relPath, _ := filepath.Rel(w.path, path)
-		if relPath == "." {
-			return nil
-		}
-
-		// Skip directories
-		if info.IsDir() {
-			// Check if should skip this directory
-			base := filepath.Base(path)
-			if s.isExcluded(base, w.excludes) {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// Skip excluded files
-		base := filepath.Base(path)
-		if s.isExcluded(base, w.excludes) {
-			return nil
-		}
-
-		// Calculate hash
-		hash, _ := s.calculateHash(path)
-
-		fi := fileInfo{
-			ModTime: info.ModTime().Unix(),
-			Size:    info.Size(),
-			Hash:    hash,
-		}
-		currentFiles[relPath] = fi
-
-		// Compare with last scan
-		if lastInfo, exists := w.lastScan[relPath]; exists {
-			// File existed before - check if modified
-			if lastInfo.Hash != fi.Hash {
-				changes = append(changes, FileChange{
-					Path:       relPath,
-					ChangeType: WatcherChangeModified,
-					Hash:       fi.Hash,
-					Size:       fi.Size,
-					ModTime:    info.ModTime(),
-				})
-			}
-		} else {
-			// New file
-			changes = append(changes, FileChange{
-				Path:       relPath,
-				ChangeType: WatcherChangeCreated,
-				Hash:       fi.Hash,
-				Size:       fi.Size,
-				ModTime:    info.ModTime(),
-			})
-		}
-
-		return nil
+		return s.processWatchEntry(w, path, info, err, currentFiles)
 	})
 
 	if err != nil {
 		s.log.Error("Error scanning directory", "path", w.path, "error", err)
-		return changes
 	}
 
-	// Check for deleted files
-	for path := range w.lastScan {
-		if _, exists := currentFiles[path]; !exists {
-			changes = append(changes, FileChange{
-				Path:       path,
-				ChangeType: WatcherChangeDeleted,
-			})
-		}
-	}
-
-	// Update last scan
+	changes := s.detectChanges(w, currentFiles)
 	w.lastScan = currentFiles
 
 	return changes
+}
+
+func (s *serviceImpl) processWatchEntry(
+	w *pluginWatcher,
+	path string,
+	info os.FileInfo,
+	err error,
+	currentFiles map[string]fileInfo,
+) error {
+	if err != nil {
+		return nil
+	}
+
+	relPath, _ := filepath.Rel(w.path, path)
+	if relPath == "." {
+		return nil
+	}
+
+	if info.IsDir() {
+		return s.handleWatchDir(path, w.excludes)
+	}
+
+	if s.isExcluded(filepath.Base(path), w.excludes) {
+		return nil
+	}
+
+	hash, _ := s.calculateHash(path)
+	currentFiles[relPath] = fileInfo{
+		ModTime: info.ModTime().Unix(),
+		Size:    info.Size(),
+		Hash:    hash,
+	}
+
+	return nil
+}
+
+func (s *serviceImpl) handleWatchDir(path string, excludes []string) error {
+	if s.isExcluded(filepath.Base(path), excludes) {
+		return filepath.SkipDir
+	}
+
+	return nil
+}
+
+func (s *serviceImpl) detectChanges(w *pluginWatcher, currentFiles map[string]fileInfo) []FileChange {
+	var changes []FileChange
+
+	for relPath, fi := range currentFiles {
+		change := s.classifyFileChange(w, relPath, fi)
+		if change != nil {
+			changes = append(changes, *change)
+		}
+	}
+
+	for path := range w.lastScan {
+		if _, exists := currentFiles[path]; exists {
+			continue
+		}
+
+		changes = append(changes, FileChange{
+			Path:       path,
+			ChangeType: WatcherChangeDeleted,
+		})
+	}
+
+	return changes
+}
+
+func (s *serviceImpl) classifyFileChange(w *pluginWatcher, relPath string, fi fileInfo) *FileChange {
+	lastInfo, exists := w.lastScan[relPath]
+	if !exists {
+		return &FileChange{
+			Path:       relPath,
+			ChangeType: WatcherChangeCreated,
+			Hash:       fi.Hash,
+			Size:       fi.Size,
+			ModTime:    time.Unix(fi.ModTime, 0),
+		}
+	}
+
+	if lastInfo.Hash == fi.Hash {
+		return nil
+	}
+
+	return &FileChange{
+		Path:       relPath,
+		ChangeType: WatcherChangeModified,
+		Hash:       fi.Hash,
+		Size:       fi.Size,
+		ModTime:    time.Unix(fi.ModTime, 0),
+	}
 }
 
 // isExcluded checks if a file/directory should be excluded

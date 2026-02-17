@@ -479,14 +479,81 @@ func (s *serviceImpl) CreatePackage(
 ) (*PackageInfo, error) {
 	s.log.Info("Creating package", "pluginId", pluginID, "files", len(files))
 
-	// Get plugin details
 	plugin, err := s.pluginService.GetByID(ctx, pluginID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create temp zip file
 	zipPath := filepath.Join(s.tempDir, fmt.Sprintf("plugin_%d_%d.zip", pluginID, time.Now().Unix()))
+
+	filesToPackage, err := s.resolveFilesToPackage(plugin, files)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.writeZipPackage(plugin, zipPath, filesToPackage)
+}
+
+func (s *serviceImpl) resolveFilesToPackage(plugin *models.Plugin, files []string) ([]string, error) {
+	if len(files) > 0 {
+		return files, nil
+	}
+
+	return s.collectPluginFiles(plugin)
+}
+
+func (s *serviceImpl) collectPluginFiles(plugin *models.Plugin) ([]string, error) {
+	var filesToPackage []string
+
+	err := filepath.Walk(plugin.Path, func(path string, info os.FileInfo, err error) error {
+		return s.filterPluginFile(plugin, path, info, err, &filesToPackage)
+	})
+
+	if err != nil {
+		return nil, apperror.Wrap(err, apperror.ErrDirRead, "failed to walk plugin directory")
+	}
+
+	return filesToPackage, nil
+}
+
+func (s *serviceImpl) filterPluginFile(
+	plugin *models.Plugin,
+	path string,
+	info os.FileInfo,
+	err error,
+	filesToPackage *[]string,
+) error {
+	if err != nil || info.IsDir() {
+		return nil
+	}
+
+	relPath, _ := filepath.Rel(plugin.Path, path)
+	base := filepath.Base(path)
+
+	if strings.HasPrefix(base, ".") {
+		return nil
+	}
+
+	if s.isFileExcluded(base, plugin.ExcludePatterns) {
+		return nil
+	}
+
+	*filesToPackage = append(*filesToPackage, relPath)
+
+	return nil
+}
+
+func (s *serviceImpl) isFileExcluded(base string, excludes []string) bool {
+	for _, exclude := range excludes {
+		if matched, _ := filepath.Match(exclude, base); matched {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *serviceImpl) writeZipPackage(plugin *models.Plugin, zipPath string, filesToPackage []string) (*PackageInfo, error) {
 	zipFile, err := os.Create(zipPath)
 	if err != nil {
 		return nil, apperror.Wrap(err, apperror.ErrFileWrite, "failed to create zip file")
@@ -497,95 +564,88 @@ func (s *serviceImpl) CreatePackage(
 	defer zipWriter.Close()
 
 	hash := md5.New()
-	var totalSize int64
-	var fileCount int
-
-	// Determine which files to include
-	var filesToPackage []string
-	if len(files) > 0 {
-		// Selected files only
-		filesToPackage = files
-	} else {
-		// All files in plugin directory
-		err = filepath.Walk(plugin.Path, func(path string, info os.FileInfo, err error) error {
-			if err != nil || info.IsDir() {
-				return nil
-			}
-
-			relPath, _ := filepath.Rel(plugin.Path, path)
-			base := filepath.Base(path)
-
-			// Skip hidden and excluded files
-			if strings.HasPrefix(base, ".") {
-				return nil
-			}
-			for _, exclude := range plugin.ExcludePatterns {
-				if matched, _ := filepath.Match(exclude, base); matched {
-					return nil
-				}
-			}
-
-			filesToPackage = append(filesToPackage, relPath)
-			return nil
-		})
-		if err != nil {
-			return nil, apperror.Wrap(err, apperror.ErrDirRead, "failed to walk plugin directory")
-		}
-	}
-
-	// Add files to zip
 	pluginDirName := filepath.Base(plugin.Path)
-	for _, relPath := range filesToPackage {
-		fullPath := filepath.Join(plugin.Path, relPath)
-		info, err := os.Stat(fullPath)
-		if err != nil {
-			continue
-		}
 
-		// Create zip entry with plugin directory prefix
-		zipPath := filepath.Join(pluginDirName, relPath)
-		header, err := zip.FileInfoHeader(info)
-		if err != nil {
-			continue
-		}
-		header.Name = zipPath
-		header.Method = zip.Deflate
-
-		writer, err := zipWriter.CreateHeader(header)
-		if err != nil {
-			continue
-		}
-
-		file, err := os.Open(fullPath)
-		if err != nil {
-			continue
-		}
-
-		// Write to both zip and hash
-		multiWriter := io.MultiWriter(writer, hash)
-		written, _ := io.Copy(multiWriter, file)
-		file.Close()
-
-		totalSize += written
-		fileCount++
-	}
+	stats := s.addFilesToZip(zipWriter, hash, plugin.Path, pluginDirName, filesToPackage)
 
 	zipWriter.Close()
 	zipFile.Close()
 
-	// Get final zip size
 	zipInfo, _ := os.Stat(zipPath)
 
 	pkg := &PackageInfo{
 		Path:      zipPath,
 		Size:      zipInfo.Size(),
-		FileCount: fileCount,
+		FileCount: stats.fileCount,
 		Checksum:  hex.EncodeToString(hash.Sum(nil)),
 		CreatedAt: time.Now(),
 	}
 
-	s.log.Info("Package created", "path", zipPath, "size", pkg.Size, "files", fileCount)
+	s.log.Info("Package created", "path", zipPath, "size", pkg.Size, "files", stats.fileCount)
+
 	return pkg, nil
+}
+
+type zipStats struct {
+	totalSize int64
+	fileCount int
+}
+
+func (s *serviceImpl) addFilesToZip(
+	zipWriter *zip.Writer,
+	hash io.Writer,
+	pluginPath string,
+	pluginDirName string,
+	filesToPackage []string,
+) zipStats {
+	var stats zipStats
+	for _, relPath := range filesToPackage {
+		written := s.addSingleFileToZip(zipWriter, hash, pluginPath, pluginDirName, relPath)
+		if written < 0 {
+			continue
+		}
+		stats.totalSize += written
+		stats.fileCount++
+	}
+
+	return stats
+}
+
+func (s *serviceImpl) addSingleFileToZip(
+	zipWriter *zip.Writer,
+	hash io.Writer,
+	pluginPath string,
+	pluginDirName string,
+	relPath string,
+) int64 {
+	fullPath := filepath.Join(pluginPath, relPath)
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		return -1
+	}
+
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		return -1
+	}
+	header.Name = filepath.Join(pluginDirName, relPath)
+	header.Method = zip.Deflate
+
+	writer, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		return -1
+	}
+
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return -1
+	}
+
+	multiWriter := io.MultiWriter(writer, hash)
+	written, _ := io.Copy(multiWriter, file)
+	file.Close()
+
+	return written
 }
 ```
 
