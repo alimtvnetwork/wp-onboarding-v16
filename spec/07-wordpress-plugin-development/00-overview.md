@@ -18,6 +18,8 @@
 | [08-path-handling.md](./08-path-handling.md) | Path resolution, security, and PathHelper usage |
 | [09-security.md](./09-security.md) | Authentication, sanitization, and security best practices |
 | [10-testing.md](./10-testing.md) | Manual and automated testing strategies |
+| [11-coding-guidelines.md](./11-coding-guidelines.md) | Mandatory development standards for the WordPress companion plugin |
+| [12-phase-7-completion-report.md](./12-phase-7-completion-report.md) | PSR-4 autoloading & namespace migration completion report |
 
 ## Critical Lessons Learned
 
