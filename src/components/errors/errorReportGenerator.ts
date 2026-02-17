@@ -10,6 +10,185 @@ interface AppInfo {
 }
 
 /**
+ * Strip base URL and timestamps from execution chain lines.
+ * Input:  "[12:58:22 AM] ⬡ GET http://localhost:8080/api/v1/sites/2/mappings"
+ * Output: "GET /sites/2/mappings"
+ */
+function stripExecutionChainLine(line: string): string {
+  // Remove timestamp prefix like "[12:58:22 AM] ⬡ "
+  let stripped = line.replace(/^\[.*?\]\s*⬡?\s*/, '');
+  // Remove base URL, keep only path after /api/v1 or /v1
+  stripped = stripped.replace(/https?:\/\/[^/]+\/api\/v1/g, '');
+  stripped = stripped.replace(/https?:\/\/[^/]+/g, '');
+
+  return stripped.trim();
+}
+
+/**
+ * Build a compact execution chain from executionLogsFormatted.
+ * Strips timestamps and base URLs, deduplicates consecutive identical lines.
+ */
+function buildCompactExecutionChain(formatted: string): string {
+  const lines = formatted
+    .split('\n')
+    .map(stripExecutionChainLine)
+    .filter(Boolean);
+
+  // Deduplicate consecutive identical lines
+  const deduped: string[] = [];
+  for (const line of lines) {
+    if (deduped[deduped.length - 1] !== line) {
+      deduped.push(line);
+    }
+  }
+
+  return deduped.join('\n');
+}
+
+/**
+ * Build the backend error.log.txt section from CapturedError data (no API call).
+ * Includes Go stack, delegated server info, and response body when available.
+ */
+function buildBackendErrorLogSection(error: CapturedError): string {
+  const parts: string[] = [];
+
+  // Go backend stack trace
+  if (error.backendStackTrace) {
+    parts.push(`  Go Backend Stack:\n${error.backendStackTrace.split('\n').map(l => `    ${l}`).join('\n')}`);
+  }
+
+  // Go methods stack from envelope
+  const methodsBackend = error.envelopeMethodsStack?.Backend;
+  if (methodsBackend && methodsBackend.length > 0) {
+    parts.push(`  Go Methods Stack:\n${methodsBackend.map((f, i) => `    #${i} ${f.Method} at ${f.File.split(/[/\\]/).pop()}:${f.LineNumber}`).join('\n')}`);
+  }
+
+  // Delegated server info
+  const delegated = error.envelopeErrors?.DelegatedRequestServer;
+  if (delegated) {
+    const delegatedLines = [
+      `  Delegated Server Info:`,
+      `    Endpoint: "${delegated.DelegatedEndpoint}"`,
+      `    Method: "${delegated.Method}"`,
+      `    Status: ${delegated.StatusCode}`,
+    ];
+    if (delegated.StackTrace && delegated.StackTrace.length > 0) {
+      delegatedLines.push(`    Stacktrace:`);
+      delegated.StackTrace.forEach(st => delegatedLines.push(`        ${st}`));
+    }
+    if (delegated.RequestBody) {
+      delegatedLines.push(`    RequestBody:`);
+      delegatedLines.push(`        ${typeof delegated.RequestBody === 'string' ? delegated.RequestBody : JSON.stringify(delegated.RequestBody, null, 2).split('\n').join('\n        ')}`);
+    }
+    if (delegated.AdditionalMessages) {
+      delegatedLines.push(`    Additional Message:`);
+      delegatedLines.push(`        ${delegated.AdditionalMessages}`);
+    }
+    parts.push(delegatedLines.join('\n'));
+  }
+
+  // Response body from delegated server
+  if (delegated?.Response) {
+    const responseStr = typeof delegated.Response === 'string'
+      ? delegated.Response
+      : JSON.stringify(delegated.Response, null, 2);
+    parts.push(`  Response Body:\n    ${responseStr.split('\n').join('\n    ')}`);
+  }
+
+  if (parts.length === 0) {
+    return '';
+  }
+
+  // Build header
+  const header = [
+    `[${formatDateTimeUtc(error.createdAt)}] HTTP ${error.responseStatus || 500} ${error.method || 'GET'} FAILED`,
+    `  Requested To: ${error.method || 'GET'} ${error.endpoint || 'unknown'}`,
+    `  Error Message: ${error.message}`,
+  ];
+  if (error.envelopeErrors?.BackendMessage) {
+    header.push(`  Backend Error: ${error.envelopeErrors.BackendMessage}`);
+  }
+
+  return [...header, ...parts].join('\n');
+}
+
+/**
+ * Generate a compact Markdown error report from a CapturedError.
+ * Designed for quick sharing — strips verbose sections, uses simplified paths.
+ * Backend data is built from CapturedError (no API call needed).
+ */
+export function generateCompactReport(
+  error: CapturedError,
+  app?: AppInfo,
+): string {
+  const sections: string[] = [];
+
+  // Header
+  sections.push(`## Compact Error Report`);
+  sections.push(`\n**App:** ${app?.appName || "WP Plugin Publish"} v${app?.appVersion || "0.0.0"}`);
+  sections.push(`\n**Code:** ${error.code}`);
+  sections.push(`\n**Level:** ${error.level}`);
+
+  // Page
+  const componentLabel = error.routeComponent || error.triggerComponent;
+  if (error.route) {
+    sections.push(`\n### Page\n\n\`${error.route}\`${componentLabel ? ` \`<${componentLabel}>\`` : ''}`);
+  }
+
+  // User Interaction (arrow)
+  if (error.uiClickPathArrow) {
+    sections.push(`\n### User Interaction\n\n\`\`\`\n${error.uiClickPathArrow}\n\`\`\``);
+  }
+
+  // Trigger Context
+  const triggerLines: string[] = [];
+  if (error.triggerComponent) triggerLines.push(`**Component:** ${error.triggerComponent}`);
+  if (error.triggerAction) triggerLines.push(`**Action:** ${error.triggerAction}`);
+  if (error.context?.source) triggerLines.push(`**Source:** ${error.context.source}`);
+  if (triggerLines.length > 0) {
+    sections.push(`\n### Trigger Context\n\n${triggerLines.join('\n\n')}`);
+  }
+
+  // Message
+  sections.push(`\n### Message\n\n${error.message}`);
+
+  // Request
+  if (error.endpoint) {
+    let reqLine = `\n### Request\n\n**${error.method || "GET"}** ${error.endpoint}`;
+    if (error.responseStatus) reqLine += `\n**Status:** ${error.responseStatus}`;
+    sections.push(reqLine);
+  }
+
+  // Frontend Execution Chain (compact: stripped paths)
+  if (error.executionLogsFormatted) {
+    const compact = buildCompactExecutionChain(error.executionLogsFormatted);
+    if (compact) {
+      sections.push(`\n### Frontend Execution Chain\n\n\`\`\`\n${compact}\n\`\`\``);
+    }
+  }
+
+  // Context
+  if (error.context && Object.keys(error.context).length > 0) {
+    sections.push(`\n### Context\n\n\`\`\`json\n${JSON.stringify(error.context, null, 2)}\n\`\`\``);
+  }
+
+  // Frontend Stack Trace
+  if (error.stackTrace) {
+    sections.push(`\n### Frontend Stack Trace\n\n\`\`\`\n${error.stackTrace}\n\`\`\``);
+  }
+
+  sections.push(`\n---\n\n*Generated by WP Plugin Publish Error Reporter*`);
+
+  // Backend error.log.txt section (built from CapturedError, no API call)
+  const backendLog = buildBackendErrorLogSection(error);
+  if (backendLog) {
+    sections.push(`\n### Backend error.log.txt\n\n\`\`\`\n${backendLog}\n\`\`\``);
+  }
+
+  return sections.join('\n');
+}
+
+/**
  * Generate a full Markdown error report from a CapturedError.
  * This is a pure function — no React components, no side effects.
  */
