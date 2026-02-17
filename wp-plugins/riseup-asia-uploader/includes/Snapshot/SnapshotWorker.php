@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use wpdb;
 use RiseupAsia\Snapshot\Traits\WorkerExecuteTrait;
 use RiseupAsia\Snapshot\Traits\WorkerSetupTrait;
 use RiseupAsia\Snapshot\Traits\WorkerBatchTrait;
@@ -26,7 +27,7 @@ class SnapshotWorker {
     private Database $db;
     private RootDb $rootDb;
     private DependencyAnalyzer $analyzer;
-    private \wpdb $wpdb;
+    private wpdb $wpdb;
     private int $batchSize;
     private int $poolSize;
     private static ?self $instance = null;

@@ -12,6 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
 use RiseupAsia\Database\Database;
 
 trait AdminErrorRenderTrait {
@@ -73,7 +74,7 @@ trait AdminErrorRenderTrait {
     }
 
     /** Query error sessions for page rendering. */
-    private function queryErrorPage(\PDO $pdo, array $defaults): array {
+    private function queryErrorPage(PDO $pdo, array $defaults): array {
         $page = isset($_GET['paged']) ? max(1, intval($_GET['paged'])) : 1;
         $perPage = 50;
         $offset = ($page - 1) * $perPage;
@@ -107,7 +108,7 @@ trait AdminErrorRenderTrait {
     }
 
     /** Count total filtered error sessions. */
-    private function countFilteredErrors(\PDO $pdo, array $filter): int {
+    private function countFilteredErrors(PDO $pdo, array $filter): int {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM error_sessions {$filter['where_sql']}");
         $stmt->execute($filter['params']);
 
@@ -116,7 +117,7 @@ trait AdminErrorRenderTrait {
 
     /** Fetch paginated filtered error sessions. */
     private function fetchFilteredErrors(
-        \PDO $pdo,
+        PDO $pdo,
         array $filter,
         int $perPage,
         int $offset,
@@ -124,7 +125,7 @@ trait AdminErrorRenderTrait {
         $stmt = $pdo->prepare("SELECT * FROM error_sessions {$filter['where_sql']} ORDER BY id DESC LIMIT ? OFFSET ?");
         $stmt->execute(array_merge($filter['params'], array($perPage, $offset)));
 
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /** Assemble the final error page result array. */

@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use wpdb;
 use RiseupAsia\Enums\SnapshotProviderType;
 use RiseupAsia\Snapshot\Traits\NativeSnapshotCreateTrait;
 use RiseupAsia\Snapshot\Traits\NativeTableExportTrait;
@@ -17,7 +18,7 @@ class SnapshotProviderNative extends SnapshotProviderInterface {
 
     protected string $provider_id = SnapshotProviderType::Native->value;
     protected string $provider_name = 'Native SQLite';
-    private \wpdb $wpdb;
+    private wpdb $wpdb;
 
     public function __construct(FileLogger $logger, Database $db) {
         parent::__construct($logger, $db);

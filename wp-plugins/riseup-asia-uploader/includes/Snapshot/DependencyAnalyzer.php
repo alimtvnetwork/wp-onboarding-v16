@@ -14,6 +14,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use wpdb;
 use RiseupAsia\Snapshot\Traits\AnalyzerQueryTrait;
 use RiseupAsia\Snapshot\Traits\AnalyzerGraphTrait;
 use RiseupAsia\Logging\FileLogger;
@@ -26,7 +27,7 @@ class DependencyAnalyzer {
     use AnalyzerQueryTrait;
     use AnalyzerGraphTrait;
 
-    private \wpdb $wpdb;
+    private wpdb $wpdb;
     private FileLogger $logger;
     private static ?self $instance = null;
 

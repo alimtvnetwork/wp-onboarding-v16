@@ -12,11 +12,12 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use WP_Error;
 use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UpdateResolverUrlTrait {
 
-    public function resolveUrl(string $url, int $maxRedirects = 5): string|\WP_Error {
+    public function resolveUrl(string $url, int $maxRedirects = 5): string|WP_Error {
         $this->fileLogger->info('Resolving URL through redirects', array('url' => $url));
 
         $currentUrl = $url;
@@ -33,10 +34,10 @@ trait UpdateResolverUrlTrait {
         }
 
         $this->fileLogger->error('Max redirects exceeded', array('url' => $url, 'redirects' => $maxRedirects));
-        return new \WP_Error('max_redirects', 'Maximum redirect limit exceeded');
+        return new WP_Error('max_redirects', 'Maximum redirect limit exceeded');
     }
 
-    private function followSingleRedirect(string $url): string|\WP_Error|null {
+    private function followSingleRedirect(string $url): string|WP_Error|null {
         $response = wp_remote_head($url, array('timeout' => 15, 'redirection' => 0, 'sslverify' => true));
 
         if (is_wp_error($response)) {
@@ -54,7 +55,7 @@ trait UpdateResolverUrlTrait {
         $location = wp_remote_retrieve_header($response, 'location');
         if (empty($location)) {
             $this->fileLogger->error('Redirect without Location header', array('url' => $url));
-            return new \WP_Error('no_location', 'Redirect response missing Location header');
+            return new WP_Error('no_location', 'Redirect response missing Location header');
         }
 
         if (strpos($location, 'http') !== 0) {
@@ -75,11 +76,11 @@ trait UpdateResolverUrlTrait {
         return $final;
     }
 
-    public function getUpdateUrl(bool $forceResolve = false): string|\WP_Error {
+    public function getUpdateUrl(bool $forceResolve = false): string|WP_Error {
         $settings = $this->getSettings();
 
         if (empty($settings['master_url'])) {
-            return new \WP_Error('no_master_url', 'No master update URL configured');
+            return new WP_Error('no_master_url', 'No master update URL configured');
         }
 
         if (!$forceResolve && $this->isCacheValid($settings)) {

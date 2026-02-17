@@ -11,6 +11,7 @@ namespace RiseupAsia\Helpers\Traits;
 if (!defined('ABSPATH')) {
     exit;
 }
+use WP_REST_Response;
 
 trait EnvelopeBuildTrait {
 
@@ -57,6 +58,6 @@ trait EnvelopeBuildTrait {
     }
 
     public function toResponse() {
-        return new \WP_REST_Response($this->build(), $this->code);
+        return new WP_REST_Response($this->build(), $this->code);
     }
 }

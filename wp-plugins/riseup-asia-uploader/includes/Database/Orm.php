@@ -15,6 +15,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+use PDO;
+use PDOException;
 use RiseupAsia\Database\Traits\OrmWhereTrait;
 use RiseupAsia\Database\Traits\OrmQueryTrait;
 use RiseupAsia\Database\Traits\OrmMutationTrait;
@@ -30,7 +32,7 @@ class Orm {
     use OrmQueryTrait;
     use OrmMutationTrait;
 
-    /** @var \PDO|null */
+    /** @var PDO|null */
     private static $pdo = null;
 
     /** @var string */
@@ -75,11 +77,11 @@ class Orm {
     /**
      * Configure the ORM with a PDO instance.
      */
-    public static function configure(\PDO $pdo): void {
+    public static function configure(PDO $pdo): void {
         self::$pdo = $pdo;
     }
 
-    public static function getPdo(): ?\PDO {
+    public static function getPdo(): ?PDO {
         return self::$pdo;
     }
 
@@ -103,8 +105,8 @@ class Orm {
         try {
             $stmt = self::$pdo->prepare($sql);
             $stmt->execute($params);
-            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
             return array();
         }
     }

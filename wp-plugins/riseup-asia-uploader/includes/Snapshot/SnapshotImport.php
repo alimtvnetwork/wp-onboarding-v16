@@ -3,7 +3,9 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use Exception;
 use Throwable;
+use ZipArchive;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Snapshot\Traits\ImportValidationTrait;
 use RiseupAsia\Snapshot\Traits\ImportExecutionTrait;
@@ -75,8 +77,8 @@ class SnapshotImport {
     }
 
     private function extractZipTo(string $zipPath, string $destDir): void {
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath) !== true) { throw new \Exception('Failed to open ZIP file'); }
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath) !== true) { throw new Exception('Failed to open ZIP file'); }
         $zip->extractTo($destDir);
         $zip->close();
     }

@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use wpdb;
 use RiseupAsia\Snapshot\Traits\ManagerCoreTrait;
 use RiseupAsia\Snapshot\Traits\ManagerRestoreTrait;
 use RiseupAsia\Snapshot\Traits\ManagerTableRestoreTrait;
@@ -23,7 +24,7 @@ class SnapshotManager {
     private FileLogger $logger;
     private Database $db;
     private SnapshotDetector $detector;
-    private \wpdb $wpdb;
+    private wpdb $wpdb;
     private static ?self $instance = null;
 
     public static function getInstance(?FileLogger $logger = null, ?Database $db = null): self {

@@ -8,6 +8,7 @@
 
 namespace RiseupAsia\Logging\Traits;
 
+use PDO;
 use Throwable;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Helpers\BooleanHelpers;
@@ -82,7 +83,7 @@ trait LoggerWriteTrait {
     }
 
     /** Get a PDO connection with error_sessions table available. */
-    private function getErrorSessionsPdo(): ?\PDO {
+    private function getErrorSessionsPdo(): ?PDO {
         if (BooleanHelpers::isClassMissing(Database::class)) {
             return null;
         }
@@ -101,7 +102,7 @@ trait LoggerWriteTrait {
 
     /** Insert an error session record and set unseen flag. */
     private function insertErrorSession(
-        \PDO $pdo,
+        PDO $pdo,
         string $level,
         string $message,
         string $file,

@@ -3,6 +3,7 @@ namespace RiseupAsia\Snapshot;
 
 if (!defined('ABSPATH')) { exit; }
 
+use wpdb;
 use RiseupAsia\Snapshot\Traits\OrchestratorBackupTrait;
 use RiseupAsia\Snapshot\Traits\OrchestratorHelpersTrait;
 use RiseupAsia\Snapshot\Traits\OrchestratorPluginTrait;
@@ -25,7 +26,7 @@ class SnapshotOrchestrator {
     private SnapshotWorker $worker;
     private RootDb $rootDb;
     private DependencyAnalyzer $analyzer;
-    private \wpdb $wpdb;
+    private wpdb $wpdb;
     private static ?self $instance = null;
 
     public static function getInstance(
