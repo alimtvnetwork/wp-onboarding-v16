@@ -684,16 +684,22 @@ const queryClient = new QueryClient({
 
 // Global error handler
 queryClient.getQueryCache().subscribe((event) => {
-  if (event.type === 'updated' && event.query.state.status === 'error') {
-    const error = event.query.state.error;
-    if (!event.query.meta?.suppressGlobalError) {
-      useErrorStore.getState().captureException(error, {
-        source: 'App.showGlobalError',
-        triggerComponent: 'QueryClient',
-        triggerAction: 'async_operation',
-      });
-    }
+  const isQueryError = event.type === 'updated' && event.query.state.status === 'error';
+  if (!isQueryError) {
+    return;
   }
+
+  const isSuppressed = event.query.meta?.suppressGlobalError === true;
+  if (isSuppressed) {
+    return;
+  }
+
+  const error = event.query.state.error;
+  useErrorStore.getState().captureException(error, {
+    source: 'App.showGlobalError',
+    triggerComponent: 'QueryClient',
+    triggerAction: 'async_operation',
+  });
 });
 ```
 

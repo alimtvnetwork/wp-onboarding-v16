@@ -399,23 +399,32 @@ func NewDBManager(dataDir string) (*DBManager, error) {
     if err := os.MkdirAll(dataDir, 0755); err != nil {
         return nil, fmt.Errorf("failed to create data dir: %w", err)
     }
-    
-    rootPath := filepath.Join(dataDir, "root.db")
-    rootDB, err := sql.Open("sqlite3", rootPath)
+
+    rootDB, err := openRootDB(dataDir)
     if err != nil {
-        return nil, fmt.Errorf("failed to open root db: %w", err)
+        return nil, err
     }
-    
+
+    return initManager(rootDB, dataDir)
+}
+
+func openRootDB(dataDir string) (*sql.DB, error) {
+    rootPath := filepath.Join(dataDir, "root.db")
+
+    return sql.Open("sqlite3", rootPath)
+}
+
+func initManager(rootDB *sql.DB, dataDir string) (*DBManager, error) {
     manager := &DBManager{
         rootDB:  rootDB,
         dataDir: dataDir,
         openDBs: make(map[string]*sql.DB),
     }
-    
+
     if err := manager.initRootSchema(); err != nil {
         return nil, err
     }
-    
+
     return manager, nil
 }
 
@@ -423,44 +432,45 @@ func NewDBManager(dataDir string) (*DBManager, error) {
 func (m *DBManager) GetOrCreateDB(projectSlug, dbType, entityID string) (*sql.DB, error) {
     m.mu.Lock()
     defer m.mu.Unlock()
-    
-    // Check if already open
+
     key := fmt.Sprintf("%s/%s/%s", projectSlug, dbType, entityID)
     if db, ok := m.openDBs[key]; ok {
         return db, nil
     }
-    
-    // Ensure project exists
+
+    return m.openNewDB(projectSlug, dbType, entityID, key)
+}
+
+func (m *DBManager) openNewDB(projectSlug, dbType, entityID, cacheKey string) (*sql.DB, error) {
     project, err := m.getOrCreateProject(projectSlug)
     if err != nil {
         return nil, err
     }
-    
-    // Get or create database record
+
     dbPath := m.buildDBPath(projectSlug, dbType, entityID)
     dbRecord, err := m.getOrCreateDatabase(project.ID, dbType, entityID, dbPath)
     if err != nil {
         return nil, err
     }
-    
-    // Ensure directory exists
+
+    return m.openAndCache(dbRecord, cacheKey)
+}
+
+func (m *DBManager) openAndCache(dbRecord *Database, cacheKey string) (*sql.DB, error) {
     dir := filepath.Dir(filepath.Join(m.dataDir, dbRecord.Path))
     if err := os.MkdirAll(dir, 0755); err != nil {
         return nil, fmt.Errorf("failed to create db dir: %w", err)
     }
-    
-    // Open the database
+
     fullPath := filepath.Join(m.dataDir, dbRecord.Path)
     db, err := sql.Open("sqlite3", fullPath)
     if err != nil {
         return nil, fmt.Errorf("failed to open db: %w", err)
     }
-    
-    m.openDBs[key] = db
-    
-    // Update last accessed
+
+    m.openDBs[cacheKey] = db
     m.updateLastAccessed(dbRecord.ID)
-    
+
     return db, nil
 }
 
