@@ -1,33 +1,34 @@
 # Path Handling Standards
 
-**Version:** 2.0.0  
-**Updated:** 2026-02-16  
+**Version:** 3.0.0
+**Updated:** 2026-02-17
 **Applies To:** PHP (WordPress Plugin), Go (Backend)
 
 ---
 
 ## 1. Core Principles
 
-### 1.1 Constants-Based Path Origins
+### 1.1 Enum-Based Path Origins
 
-All base paths MUST originate from constants. Never hardcode directory names inline.
+All base paths MUST originate from backed enums or `PathHelper` methods. Never hardcode directory names inline.
 
-**PHP Constants** (in `includes/constants.php`):
-- `RISEUP_UPLOADS_SUBDIR` - Plugin's uploads subfolder
-- `RISEUP_LOGS_SUBDIR` - Logs subfolder
-- `RISEUP_TEMP_SUBDIR` - Temporary files
-- `RISEUP_SNAPSHOTS_SUBDIR` - Database snapshots
+**PHP:** `RiseupAsia\Helpers\PathHelper` provides all path resolution methods.
 
-**Go Constants** (in `internal/wordpress/constants.go` or `internal/pathutil/`):
-- Data directories, temp paths, etc.
+**Go:** `internal/pathutil/` package with `ToAbsolute()`, `ForDisplay()`.
 
 ### 1.2 Centralized Path Joining
 
-Never use raw `path.join()` or string concatenation for paths. Always use a centralized path utility method that:
-1. Joins path segments safely
-2. Validates the result
-3. Optionally creates missing directories
-4. Logs any errors
+Never use raw string concatenation for paths. Always use `PathHelper`:
+
+```php
+use RiseupAsia\Helpers\PathHelper;
+
+// ✅ CORRECT
+$snapshotFile = PathHelper::join($snapshotsDir, $filename);
+
+// ❌ WRONG — raw concatenation
+$badPath = WP_CONTENT_DIR . '/uploads/riseup-asia-uploader/snapshots/' . $filename;
+```
 
 ### 1.3 Validate Before Use
 
@@ -40,10 +41,10 @@ Before any file operation (read, write, list), validate that:
 
 ## 2. PHP Implementation
 
-### 2.1 Path Utility Class
+### 2.1 PathHelper Class
 
 Located at: `wp-plugins/riseup-asia-uploader/includes/Helpers/PathHelper.php`
-Namespace: `RiseupAsia\Helpers\PathHelper`
+Namespace: `RiseupAsia\Helpers`
 
 ```php
 class PathHelper {
@@ -54,14 +55,14 @@ class PathHelper {
     public static function getBaseDir(): string;
     public static function isSafePath(string $path, string $basePath): bool;
 
-    // Directory guards (via PathHelperDirTrait)
+    // Semantic directory guards (via PathHelperDirTrait)
     public static function isDirExists(string $dirPath): bool;
     public static function isDirMissing(string $dirPath): bool;
     public static function isDirWritable(string $dirPath): bool;
     public static function isDirReadonly(string $dirPath): bool;
     public static function isDirEmpty(string $dirPath): bool;
 
-    // File guards (via PathHelperFileTrait)
+    // Semantic file guards (via PathHelperFileTrait)
     public static function isFileExists(string $filePath): bool;
     public static function isFileMissing(string $filePath): bool;
     public static function isFileUnreadable(string $filePath): bool;
@@ -101,12 +102,12 @@ Every path operation failure MUST log:
 ```php
 if (!@mkdir($path, 0755, true)) {
     $error = error_get_last();
-    $this->logger->error('Directory creation failed', array(
+    $this->logger->error('Directory creation failed', [
         'path' => $path,
         'error' => $error ? $error['message'] : 'Unknown error',
         'operation' => 'mkdir',
         'permissions' => decoct(fileperms(dirname($path)) & 0777),
-    ));
+    ]);
 
     return false;
 }
@@ -121,16 +122,11 @@ if (!@mkdir($path, 0755, true)) {
 Located at: `backend/internal/pathutil/pathutil.go`
 
 Already exists with:
-- `ToAbsolute()` - Resolve and normalize paths
-- `ForDisplay()` - Format for logging
+- `ToAbsolute()` — Resolve and normalize paths
+- `ForDisplay()` — Format for logging
 - Windows long path support (`\\?\` prefix)
 
 ### 3.2 Additional Requirements
-
-For Go, ensure:
-1. All paths go through `pathutil` package
-2. Use `os.MkdirAll()` with explicit permissions
-3. Log failures with structured context
 
 ```go
 func EnsureDir(path string, log *logger.Logger) error {
@@ -142,7 +138,7 @@ func EnsureDir(path string, log *logger.Logger) error {
 
         return err
     }
-    
+
     if err := os.MkdirAll(absPath, 0755); err != nil {
         log.Error("directory creation failed",
             "path", absPath,
@@ -150,7 +146,7 @@ func EnsureDir(path string, log *logger.Logger) error {
 
         return err
     }
-    
+
     log.Debug("directory ensured", "path", absPath)
 
     return nil
@@ -170,7 +166,6 @@ public static function isSafePath(string $path, string $basePath): bool {
     $realBase = realpath($basePath);
     $realPath = realpath($path);
 
-    // For non-existent paths, check the parent
     if ($realPath === false) {
         $realPath = realpath(dirname($path));
     }
@@ -179,7 +174,7 @@ public static function isSafePath(string $path, string $basePath): bool {
         return false;
     }
 
-    return strpos($realPath, $realBase) === 0;
+    return str_starts_with($realPath, $realBase);
 }
 ```
 
@@ -213,8 +208,8 @@ Examples:
 
 Before any path operation:
 
-- [ ] Base path comes from a constant
-- [ ] Path is joined using utility method
+- [ ] Base path comes from `PathHelper` or a backed enum
+- [ ] Path is joined using `PathHelper::join()`
 - [ ] Directory existence is validated
 - [ ] Directory is created if missing
 - [ ] Security files added (if sensitive)
@@ -223,5 +218,5 @@ Before any path operation:
 
 ---
 
-*Specification Version: 2.0.0*  
-*Last Updated: 2026-02-16*
+*Specification Version: 3.0.0*
+*Last Updated: 2026-02-17*

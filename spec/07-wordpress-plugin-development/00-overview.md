@@ -1,6 +1,7 @@
 # WordPress Plugin Development Specification
 
 > Comprehensive guidelines for building robust, production-ready WordPress plugins.
+> All examples target **PHP 8.2+** with PSR-4 namespacing under `RiseupAsia\`.
 
 ## Document Structure
 
@@ -10,10 +11,11 @@
 | [02-logging-standards.md](./02-logging-standards.md) | Logging infrastructure with file paths, line numbers, and error handling |
 | [03-database-patterns.md](./03-database-patterns.md) | SQLite/MySQL patterns, migrations, and schema versioning |
 | [04-api-design.md](./04-api-design.md) | REST API design, endpoint registration, and authentication |
-| [05-constants-and-configuration.md](./05-constants-and-configuration.md) | Centralized constants and configuration management |
+| [05-constants-and-configuration.md](./05-constants-and-configuration.md) | Backed enums and configuration management |
 | [06-file-structure.md](./06-file-structure.md) | Directory layout and file organization standards |
 | [07-error-handling.md](./07-error-handling.md) | Try-catch patterns, error logging, and graceful degradation |
-| [08-compatibility.md](./08-compatibility.md) | PHP version compatibility and WordPress version requirements |
+| [08-compatibility.md](./08-compatibility.md) | PHP 8.2+ requirements and WordPress version requirements |
+| [08-path-handling.md](./08-path-handling.md) | Path resolution, security, and PathHelper usage |
 | [09-security.md](./09-security.md) | Authentication, sanitization, and security best practices |
 | [10-testing.md](./10-testing.md) | Manual and automated testing strategies |
 
@@ -23,34 +25,33 @@
 
 **Problem**: Calling functions like `wp_upload_dir()`, `get_option()`, or database functions in class constructors or during file include causes fatal errors because WordPress core may not be fully initialized.
 
-**Solution**: Use lazy initialization patterns - resolve paths and dependencies only when first needed, not at class instantiation.
+**Solution**: Use lazy initialization patterns — resolve paths and dependencies only when first needed, not at class instantiation.
 
 ```php
-// ❌ WRONG - Causes crash during plugin load
-class My_Logger {
-    private $log_path;
-    
+namespace RiseupAsia\Logging;
+
+// ❌ WRONG — Causes crash during plugin load
+class FileLogger {
+    private ?string $logPath;
+
     public function __construct() {
-        $upload_dir = wp_upload_dir(); // FATAL: WordPress not ready!
-        $this->log_path = $upload_dir['basedir'] . '/my-plugin/logs/';
+        $uploadDir = wp_upload_dir(); // FATAL: WordPress not ready!
+        $this->logPath = $uploadDir['basedir'] . '/riseup-asia-uploader/logs/';
     }
 }
 
-// ✅ CORRECT - Lazy initialization
-class My_Logger {
-    private $log_path = null;
-    
-    private function get_log_path() {
-        if ($this->log_path === null) {
-            $upload_dir = wp_upload_dir();
-            $this->log_path = $upload_dir['basedir'] . '/my-plugin/logs/';
-        }
+// ✅ CORRECT — Lazy initialization
+class FileLogger {
+    private ?string $logPath = null;
 
-        return $this->log_path;
+    private function getLogPath(): string {
+        $this->logPath ??= PathHelper::logsDir() . '/log.txt';
+
+        return $this->logPath;
     }
-    
-    public function log($message) {
-        $path = $this->get_log_path(); // Safe: called during runtime
+
+    public function log(string $message, string $file = '', int $line = 0): void {
+        $path = $this->getLogPath();
         // ... write log
     }
 }
@@ -58,47 +59,49 @@ class My_Logger {
 
 ### 2. Avoid Circular Dependencies
 
-**Problem**: Class A requires Class B in constructor, and Class B requires Class A, causing infinite loop or undefined behavior.
+**Problem**: Class A requires Class B in constructor, and Class B requires Class A, causing infinite loop.
 
 **Solution**: Use lazy loading via getter methods instead of constructor injection.
 
 ```php
-// ❌ WRONG - Circular dependency
+namespace RiseupAsia\Logging;
+
+use RiseupAsia\Database\Database;
+
+// ❌ WRONG — Circular dependency
 class Logger {
-    private $db;
-    public function __construct(Database $db) {
-        $this->db = $db; // Database might need Logger!
-    }
+    public function __construct(private Database $db) {}
 }
 
-// ✅ CORRECT - Lazy loading
+// ✅ CORRECT — Lazy loading
 class Logger {
-    private $db = null;
-    
-    private function get_db() {
-        if ($this->db === null) {
-            $this->db = Riseup_Database::get_instance();
-        }
+    private ?Database $db = null;
+
+    private function getDb(): Database {
+        $this->db ??= Database::getInstance();
 
         return $this->db;
     }
 }
 ```
 
-### 3. Always Use Centralized Constants
+### 3. Always Use Backed Enums for Configuration
 
 **Problem**: Hardcoded strings scattered throughout code lead to typos, inconsistencies, and maintenance nightmares.
 
-**Solution**: Define ALL strings (endpoints, table names, option keys) as constants in a single file.
+**Solution**: Define ALL strings (endpoints, table names, option keys) as backed enum cases.
 
 ```php
-// includes/constants.php
-define('MYPLUGIN_API_NAMESPACE', 'myplugin/v1');
-define('MYPLUGIN_TABLE_TRANSACTIONS', 'myplugin_transactions');
-define('MYPLUGIN_ENDPOINT_UPLOAD', 'upload');
+use RiseupAsia\Enums\EndpointType;
+use RiseupAsia\Enums\PluginConfigType;
 
-// Usage throughout plugin
-$namespace = MYPLUGIN_API_NAMESPACE; // Never 'myplugin/v1' directly
+$namespace = PluginConfigType::ApiBase->value . '/' . PluginConfigType::ApiVersion->value;
+
+register_rest_route(
+    $namespace,
+    EndpointType::Upload->route(),
+    [...],
+);
 ```
 
 ### 4. Eager Database Migrations with Schema Versioning
@@ -108,20 +111,19 @@ $namespace = MYPLUGIN_API_NAMESPACE; // Never 'myplugin/v1' directly
 **Solution**: Run migrations immediately on plugin load with version tracking.
 
 ```php
-public function init() {
-    $this->file_logger->log('Database init starting', __FILE__, __LINE__);
-    $this->ensure_data_directory();
-    $this->create_tables();
+public function init(): void {
+    $this->fileLogger->log('Database init starting', __FILE__, __LINE__);
+    $this->ensureDataDirectory();
+    $this->createTables();
 }
 
-private function create_tables() {
-    $current_version = $this->get_schema_version();
-    
-    if ($current_version < 1) {
-        // Migration v1
-        $this->pdo->exec($create_table_sql);
-        $this->set_schema_version(1);
-        $this->file_logger->log('Migration v1 complete', __FILE__, __LINE__);
+private function createTables(): void {
+    $currentVersion = $this->getSchemaVersion();
+
+    if ($currentVersion < 1) {
+        $this->pdo->exec($createTableSql);
+        $this->setSchemaVersion(1);
+        $this->fileLogger->log('Migration v1 complete', __FILE__, __LINE__);
     }
 }
 ```
@@ -134,9 +136,9 @@ private function create_tables() {
 
 ```php
 $this->logger->log(
-    sprintf('Creating table %s', MYPLUGIN_TABLE_NAME),
+    sprintf('Creating table %s', $tableName),
     __FILE__,
-    __LINE__
+    __LINE__,
 );
 ```
 
@@ -144,9 +146,9 @@ $this->logger->log(
 
 ```
 1. WordPress core loads
-2. Plugin file included (constants.php loaded here)
-3. Main plugin class instantiated
-4. 'plugins_loaded' hook fires
+2. Plugin file included (PSR-4 autoloader registered)
+3. Activation hook registered
+4. 'plugins_loaded' hook fires → Plugin::getInstance()
 5. 'init' hook fires (safe to use most WP functions)
 6. 'rest_api_init' hook fires (register REST routes here)
 ```
@@ -155,15 +157,18 @@ $this->logger->log(
 
 ```
 my-plugin/
-├── my-plugin.php              # Main entry point
-├── includes/
-│   ├── constants.php          # ALL constants defined here
-│   ├── class-file-logger.php  # Low-level file logging
-│   ├── class-database.php     # Database management
-│   ├── class-logger.php       # Application logging (uses DB)
-│   └── class-*.php            # Other classes
-├── data/
-│   └── .gitkeep               # Runtime data (ignored in git)
+├── my-plugin.php              # Entry point (autoloader + hooks only)
+├── includes/                  # PSR-4 root (RiseupAsia\ namespace)
+│   ├── Autoloader.php         # PSR-4 autoloader — only manual require_once
+│   ├── Core/Plugin.php        # Main plugin class (singleton)
+│   ├── Enums/                 # Backed enums (HookType, EndpointType, etc.)
+│   ├── Helpers/PathHelper.php # Centralized path resolution
+│   ├── Logging/FileLogger.php # Low-level file logging
+│   ├── Database/Database.php  # Database management
+│   └── ...                    # Other namespaced subdirectories
+├── assets/
+│   ├── css/admin.css
+│   └── js/admin.js
 └── README.md
 ```
 
