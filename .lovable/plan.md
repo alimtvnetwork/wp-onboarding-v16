@@ -57,8 +57,19 @@ Full grep across all `spec/` files verified zero remaining legacy patterns (2026
 - `define('RISEUP_'` → 1 match, intentional `❌ WRONG` example
 - `function riseup_asia_init()` → 3 matches, correct (WP-registered global hooks stay snake_case)
 
+## ✅ COMPLETED — Part E: Manual C3 Audit
+
+Deep manual audit of ~30 high-traffic PHP files (2026-02-17). Fixed **22 C3 violations** (missing blank line before `return`/`throw`) across **12 files**:
+
+- `WorkerExecuteTrait` (1), `SnapshotExporter` (1), `SnapshotManager` (1)
+- `RestoreTableTrait` (1), `OrchestratorBackupTrait` (5), `CleanerHelperTrait` (1)
+- `ExporterPublicApiTrait` (4), `WorkerSetupTrait` (3), `WorkerBatchProcessTrait` (1)
+- `DetectorProviderTrait` (2), `SchedulerExecutorTrait` (2), `NativeSnapshotCreateTrait` (1)
+- `InitHelpers` (2), `ResponseTrait` (1)
+
 ## 🔵 Next Priority
 
-All plan items (Parts A–D) are complete. Potential next steps:
-- Manual C3 audit on high-traffic PHP files
+All plan items (Parts A–E) are complete. Potential next steps:
 - Autoloader class refactored — verify plugin bootstrap works end-to-end
+- Audit remaining Traits/ subdirectories (Agent, Sync, Status, FileSystem) for C3
+- Review `spec/07-wordpress-plugin-development/` specs for unenforced standards

@@ -47,18 +47,21 @@ trait WorkerSetupTrait {
         $this->rootDb->populateMetadata($rootPdo, array(
             'title' => $config['title'] ?? 'Snapshot', 'type' => $config['type'] ?? 'full', 'settings' => $config['settings'] ?? null,
         ));
+
         return $rootPdo;
     }
 
     private function populateAndGetSeedOrder(PDO $rootPdo, array $config): array {
         $analysis = $this->rootDb->populateDependencies($rootPdo, $config['scope'] ?? 'wordpress');
         $this->log(LogLevelType::Info->value, 'Export order determined', array('tables' => count($analysis['seed_order']), 'pool_size' => $this->poolSize));
+
         return $analysis['seed_order'];
     }
 
     private function getSnapshotsBaseDir(): string {
         $base = PathHelper::getSnapshotsDir();
         PathHelper::ensureDir($base, true);
+
         return $base;
     }
 

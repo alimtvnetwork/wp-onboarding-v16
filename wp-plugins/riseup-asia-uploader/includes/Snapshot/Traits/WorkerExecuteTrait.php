@@ -36,6 +36,7 @@ trait WorkerExecuteTrait {
             }
 
             $this->scheduleNextBatch($job_id);
+
             return $this->buildAsyncSnapshotResult($prepared, $seed_order, $job_id, $start_time);
         } catch (Throwable $e) {
             $this->log(LogLevelType::Error->value, 'Per-table snapshot failed', array('error' => $e->getMessage(), 'trace' => $e->getTraceAsString()));

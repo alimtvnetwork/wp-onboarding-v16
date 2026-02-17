@@ -58,6 +58,7 @@ trait SchedulerExecutorTrait {
         $result = $this->invokeBackup($orchestrator, $args);
 
         $action = ($snapshotType === SnapshotModeType::Incremental->value) ? ActionType::SnapshotIncremental->value : ActionType::SnapshotFullBackup->value;
+
         return $this->buildCronResult($result, $action, TriggerSourceType::Dashboard->value, array(
             'trigger' => 'manual', 'snapshot_id' => $result['snapshot_id'] ?? null, 'type' => $snapshotType,
         ));
@@ -128,6 +129,7 @@ trait SchedulerExecutorTrait {
             'space_freed'  => PathHelper::formatBytes($result['space_freed_bytes']),
             'errors_count' => count($result['errors']),
         );
+
         return $cronResult;
     }
 }

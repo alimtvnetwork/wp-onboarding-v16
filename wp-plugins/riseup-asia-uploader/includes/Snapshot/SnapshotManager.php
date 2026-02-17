@@ -31,6 +31,7 @@ class SnapshotManager {
         if (self::$instance === null && $logger && $db) {
             self::$instance = new self($logger, $db);
         }
+
         return self::$instance;
     }
 

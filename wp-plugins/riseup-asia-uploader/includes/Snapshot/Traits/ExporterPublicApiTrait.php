@@ -39,6 +39,7 @@ trait ExporterPublicApiTrait {
         $existing = $this->getValidExport($fullSnapshotId);
         if ($existing && file_exists($existing['zip_path'])) {
             $this->log(LogLevelType::Info->value, 'Returning cached ZIP export', array('export_id' => $existing['id'], 'filename' => $existing['zip_filename']));
+
             return array('success' => true, 'cached' => true, 'export' => $existing);
         }
 
@@ -78,6 +79,7 @@ trait ExporterPublicApiTrait {
         $stmt->execute(array(SnapshotExportStatusType::Expired->value, $export['id']));
 
         $this->log(LogLevelType::Info->value, 'Export marked as expired', array('export_id' => $export['id']));
+
         return true;
     }
 
@@ -122,6 +124,7 @@ trait ExporterPublicApiTrait {
         }
 
         $nonce = wp_create_nonce('riseup_snapshot_download_' . $exportId);
+
         return rest_url(PluginConfigType::apiFullNamespace() . '/' . EndpointType::SnapshotDownloadFile->value . '?token=' . $nonce . '&id=' . $exportId);
     }
 
@@ -172,6 +175,7 @@ trait ExporterPublicApiTrait {
 
         $stmt = $pdo->prepare('SELECT * FROM ' . TableType::SnapshotExports->value . ' WHERE snapshot_id = ? ORDER BY created_at DESC LIMIT 1');
         $stmt->execute(array($fullSnapshotId));
+
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 }

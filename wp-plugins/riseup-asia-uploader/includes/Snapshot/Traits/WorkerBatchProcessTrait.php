@@ -92,6 +92,7 @@ trait WorkerBatchProcessTrait {
 
         $rootPdo = new PDO('sqlite:' . $root_path);
         $rootPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
         return $rootPdo;
     }
 }
