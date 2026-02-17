@@ -40,8 +40,11 @@ trait InitDirTrait {
         if (empty($path)) { return false; }
 
         if (PathHelper::isDirMissing($path)) {
-            if (!@mkdir($path, 0755, true)) {
-                if (function_exists('wp_mkdir_p') && !wp_mkdir_p($path)) {
+            $isMkdirFailed = (@mkdir($path, 0755, true) === false);
+            if ($isMkdirFailed) {
+                $isWpFallbackAvailable = BooleanHelpers::isFuncExists('wp_mkdir_p');
+                $isWpFallbackFailed = $isWpFallbackAvailable && (wp_mkdir_p($path) === false);
+                if ($isWpFallbackFailed) {
                     return false;
                 }
             }
@@ -76,10 +79,12 @@ trait InitDirTrait {
         string $subDir,
         bool $secure = false,
     ): string|false {
-        if (!self::makeDirectory($baseDir, $secure)) { return false; }
+        $isBaseDirFailed = (self::makeDirectory($baseDir, $secure) === false);
+        if ($isBaseDirFailed) { return false; }
 
         $fullPath = rtrim($baseDir, '/') . '/' . ltrim($subDir, '/');
-        if (!self::makeDirectory($fullPath, false)) { return false; }
+        $isSubDirFailed = (self::makeDirectory($fullPath, false) === false);
+        if ($isSubDirFailed) { return false; }
 
         return $fullPath;
     }

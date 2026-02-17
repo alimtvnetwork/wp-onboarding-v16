@@ -20,6 +20,7 @@ use WP_REST_Response;
 use RiseupAsia\Enums\HttpStatusType;
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait PluginLifecycleHelpersTrait
 {
@@ -83,11 +84,12 @@ trait PluginLifecycleHelpersTrait
      */
     private function loadPluginFunctions(bool $includeFileSystem = false): ?WP_REST_Response
     {
-        if (!function_exists('get_plugins')) {
+        if (BooleanHelpers::isFuncMissing('get_plugins')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
 
-        if ($includeFileSystem && !function_exists('delete_plugins')) {
+        $isFileSystemNeeded = $includeFileSystem && BooleanHelpers::isFuncMissing('delete_plugins');
+        if ($isFileSystemNeeded) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
         }
 
