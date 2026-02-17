@@ -13,6 +13,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Admin\Admin;
 use RiseupAsia\Update\UpdateResolver;
+use RiseupAsia\Helpers\BooleanHelpers;
 ?>
 <style>
 .riseup-admin .button .dashicons {
@@ -81,7 +82,7 @@ use RiseupAsia\Update\UpdateResolver;
                                    id="update_enabled"
                                    name="<?php echo esc_attr(UpdateResolver::OPTION_NAME); ?>[enabled]" 
                                    value="1" 
-                                   <?php checked(!empty($update_settings['enabled'])); ?>>
+                                   <?php $isUpdateEnabled = BooleanHelpers::hasValue($update_settings['enabled'] ?? null); checked($isUpdateEnabled); ?>>
                             <span class="toggle-slider"></span>
                         </label>
                         <p class="description"><?php esc_html_e('Enable automatic update checking via the configured master URL.', 'riseup-asia-uploader'); ?></p>
@@ -118,12 +119,14 @@ use RiseupAsia\Update\UpdateResolver;
                 <tr>
                     <th scope="row"><?php esc_html_e('Resolved URL (Cached)', 'riseup-asia-uploader'); ?></th>
                     <td>
-                        <?php if (!empty($update_settings['resolved_url'])): ?>
+                        <?php $hasResolvedUrl = BooleanHelpers::hasValue($update_settings['resolved_url'] ?? null); ?>
+                        <?php if ($hasResolvedUrl): ?>
                             <code id="resolved_url_display"><?php echo esc_html($update_settings['resolved_url']); ?></code>
                             <br>
                             <small class="text-muted">
-                                <?php 
-                                if (!empty($update_settings['resolved_at'])) {
+                                <?php
+                                $hasResolvedAt = BooleanHelpers::hasValue($update_settings['resolved_at'] ?? null);
+                                if ($hasResolvedAt) {
                                     printf(
                                         esc_html__('Cached on: %s', 'riseup-asia-uploader'),
                                         esc_html($update_settings['resolved_at'])
@@ -139,14 +142,15 @@ use RiseupAsia\Update\UpdateResolver;
                 <tr>
                     <th scope="row"><?php esc_html_e('Last Check', 'riseup-asia-uploader'); ?></th>
                     <td>
-                        <?php if (!empty($update_settings['last_check'])): ?>
+                        <?php $hasLastCheck = BooleanHelpers::hasValue($update_settings['last_check'] ?? null); ?>
+                        <?php if ($hasLastCheck): ?>
                             <?php echo esc_html($update_settings['last_check']); ?>
                         <?php else: ?>
                             <em><?php esc_html_e('Never', 'riseup-asia-uploader'); ?></em>
                         <?php endif; ?>
                     </td>
                 </tr>
-                <?php if (!empty($update_settings['last_error'])): ?>
+                <?php $hasLastError = BooleanHelpers::hasValue($update_settings['last_error'] ?? null); if ($hasLastError): ?>
                 <tr>
                     <th scope="row"><?php esc_html_e('Last Error', 'riseup-asia-uploader'); ?></th>
                     <td>
@@ -154,7 +158,7 @@ use RiseupAsia\Update\UpdateResolver;
                     </td>
                 </tr>
                 <?php endif; ?>
-                <?php if (!empty($update_settings['new_version'])): ?>
+                <?php $hasNewVersion = BooleanHelpers::hasValue($update_settings['new_version'] ?? null); if ($hasNewVersion): ?>
                 <tr>
                     <th scope="row"><?php esc_html_e('Available Version', 'riseup-asia-uploader'); ?></th>
                     <td>
@@ -226,7 +230,7 @@ use RiseupAsia\Update\UpdateResolver;
                                         <input type="checkbox" 
                                                name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][enabled]" 
                                                value="1" 
-                                               <?php checked(!empty($settings['endpoints'][$endpoint]['enabled'])); ?>>
+                                               <?php $isEpEnabled = BooleanHelpers::hasValue($settings['endpoints'][$endpoint]['enabled'] ?? null); checked($isEpEnabled); ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </td>
@@ -235,7 +239,7 @@ use RiseupAsia\Update\UpdateResolver;
                                         <input type="checkbox" 
                                                name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[endpoints][<?php echo esc_attr($endpoint); ?>][auth_required]" 
                                                value="1" 
-                                               <?php checked(!empty($settings['endpoints'][$endpoint]['auth_required'])); ?>>
+                                               <?php $isAuthReq = BooleanHelpers::hasValue($settings['endpoints'][$endpoint]['auth_required'] ?? null); checked($isAuthReq); ?>>
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </td>
@@ -277,10 +281,10 @@ use RiseupAsia\Update\UpdateResolver;
                             <?php foreach ($snapshot_providers as $provider): ?>
                                 <option value="<?php echo esc_attr($provider['id']); ?>" 
                                         <?php selected($snapshot_settings['preferred_provider'], $provider['id']); ?>
-                                        <?php disabled(!$provider['available']); ?>>
+                                        <?php $isProviderUnavailable = ($provider['available'] === false); disabled($isProviderUnavailable); ?>>
                                     <?php echo esc_html($provider['name']); ?>
-                                    <?php if (!$provider['available']): ?>(<?php esc_html_e('not installed', 'riseup-asia-uploader'); ?>)<?php endif; ?>
-                                    <?php if ($provider['version']): ?>(v<?php echo esc_html($provider['version']); ?>)<?php endif; ?>
+                                    <?php if ($isProviderUnavailable): ?>(<?php esc_html_e('not installed', 'riseup-asia-uploader'); ?>)<?php endif; ?>
+                                    <?php $hasProviderVersion = BooleanHelpers::hasValue($provider['version'] ?? null); if ($hasProviderVersion): ?>(v<?php echo esc_html($provider['version']); ?>)<?php endif; ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -514,7 +518,7 @@ use RiseupAsia\Update\UpdateResolver;
                                    id="log_include_error"
                                    name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[log_retrieval][include_error_log]" 
                                    value="1" 
-                                   <?php checked(!empty($settings['log_retrieval']['include_error_log'])); ?>>
+                                   <?php $isIncludeErrorLog = BooleanHelpers::hasValue($settings['log_retrieval']['include_error_log'] ?? null); checked($isIncludeErrorLog); ?>>
                             <span class="toggle-slider"></span>
                         </label>
                         <p class="description">
@@ -532,7 +536,7 @@ use RiseupAsia\Update\UpdateResolver;
                                    id="log_include_full"
                                    name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[log_retrieval][include_full_log]" 
                                    value="1" 
-                                   <?php checked(!empty($settings['log_retrieval']['include_full_log'])); ?>>
+                                   <?php $isIncludeFullLog = BooleanHelpers::hasValue($settings['log_retrieval']['include_full_log'] ?? null); checked($isIncludeFullLog); ?>>
                             <span class="toggle-slider"></span>
                         </label>
                         <p class="description">
@@ -550,7 +554,7 @@ use RiseupAsia\Update\UpdateResolver;
                                    id="log_include_stacktrace"
                                    name="<?php echo esc_attr(Admin::OPTION_NAME); ?>[log_retrieval][include_stacktrace]" 
                                    value="1" 
-                                   <?php checked(!empty($settings['log_retrieval']['include_stacktrace'])); ?>>
+                                   <?php $isIncludeStacktrace = BooleanHelpers::hasValue($settings['log_retrieval']['include_stacktrace'] ?? null); checked($isIncludeStacktrace); ?>>
                             <span class="toggle-slider"></span>
                         </label>
                         <p class="description">
