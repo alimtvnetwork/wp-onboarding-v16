@@ -31,17 +31,27 @@ import (
     "strings"
 )
 
+// ErrorContext holds structured context data for an AppError
+type ErrorContext struct {
+    PluginID   int64  `json:"pluginId,omitempty"`
+    PluginName string `json:"pluginName,omitempty"`
+    SiteID     int64  `json:"siteId,omitempty"`
+    SiteName   string `json:"siteName,omitempty"`
+    Endpoint   string `json:"endpoint,omitempty"`
+    Action     string `json:"action,omitempty"`
+}
+
 // AppError is the standard error type for the application
 type AppError struct {
-    Code       string            // Error code (e.g., "E1001")
-    Message    string            // Human-readable message
-    Cause      error             // Underlying error (if any)
-    Context    map[string]any    // Additional context data
-    File       string            // Source file where error occurred
-    Line       int               // Line number
-    Function   string            // Function name
-    StackTrace string            // Full stack trace
-    Level      string            // "error", "warn", "info"
+    Code       string        // Error code (e.g., "E1001")
+    Message    string        // Human-readable message
+    Cause      error         // Underlying error (if any)
+    Context    ErrorContext   // Additional context data
+    File       string        // Source file where error occurred
+    Line       int           // Line number
+    Function   string        // Function name
+    StackTrace string        // Full stack trace
+    Level      string        // "error", "warn", "info"
 }
 
 // Error implements the error interface
@@ -67,12 +77,19 @@ func Wrap(err error, code string, message string) *AppError {
     return newWithSkip(code, message, err, 2)
 }
 
-// WithContext adds context data to the error
-func (e *AppError) WithContext(key string, value any) *AppError {
-    if e.Context == nil {
-        e.Context = make(map[string]any)
-    }
-    e.Context[key] = value
+// WithPluginContext adds plugin context to the error
+func (e *AppError) WithPluginContext(pluginID int64, pluginName string) *AppError {
+    e.Context.PluginID = pluginID
+    e.Context.PluginName = pluginName
+
+    return e
+}
+
+// WithSiteContext adds site context to the error
+func (e *AppError) WithSiteContext(siteID int64, siteName string) *AppError {
+    e.Context.SiteID = siteID
+    e.Context.SiteName = siteName
+
     return e
 }
 
@@ -316,15 +333,15 @@ type ErrorResponse struct {
 }
 
 type Error struct {
-    Code       string         `json:"code"`
-    Message    string         `json:"message"`
-    Details    string         `json:"details,omitempty"`
-    Context    map[string]any `json:"context,omitempty"`
-    File       string         `json:"file,omitempty"`
-    Line       int            `json:"line,omitempty"`
-    Function   string         `json:"function,omitempty"`
-    StackTrace string         `json:"stackTrace,omitempty"`
-    Timestamp  string         `json:"timestamp"`
+    Code       string        `json:"code"`
+    Message    string        `json:"message"`
+    Details    string        `json:"details,omitempty"`
+    Context    ErrorContext   `json:"context,omitempty"`
+    File       string        `json:"file,omitempty"`
+    Line       int           `json:"line,omitempty"`
+    Function   string        `json:"function,omitempty"`
+    StackTrace string        `json:"stackTrace,omitempty"`
+    Timestamp  string        `json:"timestamp"`
 }
 
 func WriteError(w http.ResponseWriter, err error) {

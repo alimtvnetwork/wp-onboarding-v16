@@ -77,6 +77,35 @@ type PluginGitConfig struct {
 	BuildEnabled bool   `json:"buildEnabled"`
 	BuildCommand string `json:"buildCommand"`
 }
+
+// --- Broadcast detail structs (broadcast_details.go) ---
+
+// GitPullStartedEvent is broadcast when a git pull begins
+type GitPullStartedEvent struct {
+	PluginID   int64  `json:"pluginId"`
+	PluginName string `json:"pluginName"`
+}
+
+// GitPullFailedEvent is broadcast when a git pull fails
+type GitPullFailedEvent struct {
+	PluginID int64  `json:"pluginId"`
+	Error    string `json:"error"`
+}
+
+// GitPullCompleteEvent is broadcast when a git pull succeeds
+type GitPullCompleteEvent struct {
+	PluginID     int64  `json:"pluginId"`
+	Success      bool   `json:"success"`
+	FilesChanged int    `json:"filesChanged"`
+	CommitHash   string `json:"commitHash"`
+}
+
+// GitPullAllCompleteEvent is broadcast when a batch pull finishes
+type GitPullAllCompleteEvent struct {
+	Succeeded int   `json:"succeeded"`
+	Failed    int   `json:"failed"`
+	Duration  int64 `json:"duration"`
+}
 ```
 
 ---
@@ -208,9 +237,9 @@ func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, er
 	}
 
 	// Broadcast pull started
-	s.wsHub.Broadcast(ws.EventGitPullStarted, map[string]interface{}{
-		"pluginId":   pluginID,
-		"pluginName": plugin.Name,
+	s.wsHub.Broadcast(ws.EventGitPullStarted, GitPullStartedEvent{
+		PluginID:   pluginID,
+		PluginName: plugin.Name,
 	})
 
 	// Check if directory is a git repo
@@ -241,9 +270,9 @@ func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, er
 		result.Success = false
 		result.Error = err.Error()
 
-		s.wsHub.Broadcast(ws.EventGitPullFailed, map[string]interface{}{
-			"pluginId": pluginID,
-			"error":    result.Error,
+		s.wsHub.Broadcast(ws.EventGitPullFailed, GitPullFailedEvent{
+			PluginID: pluginID,
+			Error:    result.Error,
 		})
 		return result, err
 	}
@@ -271,11 +300,11 @@ func (s *serviceImpl) Pull(ctx context.Context, pluginID int64) (*PullResult, er
 	}
 
 	// Broadcast pull complete
-	s.wsHub.Broadcast(ws.EventGitPullComplete, map[string]interface{}{
-		"pluginId":     pluginID,
-		"success":      true,
-		"filesChanged": result.FilesChanged,
-		"commitHash":   result.CommitHash,
+	s.wsHub.Broadcast(ws.EventGitPullComplete, GitPullCompleteEvent{
+		PluginID:     pluginID,
+		Success:      true,
+		FilesChanged: result.FilesChanged,
+		CommitHash:   result.CommitHash,
 	})
 
 	s.log.Info("Git pull complete",
@@ -322,10 +351,10 @@ func (s *serviceImpl) PullAll(ctx context.Context) (*BatchPullResult, error) {
 
 	batch.Duration = time.Since(startTime).Milliseconds()
 
-	s.wsHub.Broadcast(ws.EventGitPullAllComplete, map[string]interface{}{
-		"succeeded": batch.Succeeded,
-		"failed":    batch.Failed,
-		"duration":  batch.Duration,
+	s.wsHub.Broadcast(ws.EventGitPullAllComplete, GitPullAllCompleteEvent{
+		Succeeded: batch.Succeeded,
+		Failed:    batch.Failed,
+		Duration:  batch.Duration,
 	})
 
 	return batch, nil
