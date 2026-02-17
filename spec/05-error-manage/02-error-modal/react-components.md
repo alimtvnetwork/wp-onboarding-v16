@@ -727,4 +727,13 @@ The error modal is designed for a Go backend + WordPress PHP delegated server ar
 
 ---
 
-*Generated from WP Plugin Publish v1.19.4 codebase — 2026-02-11*
+## Cross-References
+
+- [Error Modal Spec](./readme.md) — Full modal structure, data model, and UX specification
+- [Copy Format Samples](./copy-formats.md) — Complete samples for all copy/export formats
+- [Error Handling Spec](../01-error-handling/readme.md) — Cross-stack error architecture
+- [Response Envelope Schema](../05-response-envelope/envelope.schema.json) — JSON Schema source of truth
+
+---
+
+*Generated from WP Plugin Publish codebase — updated: 2026-02-17*
