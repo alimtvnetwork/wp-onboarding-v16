@@ -327,22 +327,22 @@ Boolean checks must be self-documenting through **semantic method names** on the
 
 ### Prohibited Trivial Wrappers (deprecated since 1.19.0)
 
-The following `RiseupBooleanHelpers` methods are **deprecated and must not be used**. Use native PHP instead:
+The following methods from the legacy `RiseupBooleanHelpers` class are **deprecated and must not be used**. Use native PHP instead:
 
 | ❌ Deprecated method | ✅ Native replacement |
 |----------------------|----------------------|
-| `RiseupBooleanHelpers::is_falsy($x)` | `!$x` |
-| `RiseupBooleanHelpers::is_truthy($x)` | `(bool) $x` |
-| `RiseupBooleanHelpers::is_null($x)` | `$x === null` |
-| `RiseupBooleanHelpers::is_set($x)` | `$x !== null` |
-| `RiseupBooleanHelpers::is_empty($x)` | `empty($x)` |
-| `RiseupBooleanHelpers::has_content($x)` | `!empty($x)` |
+| `BooleanHelpers::isFalsy($x)` | `!$x` |
+| `BooleanHelpers::isTruthy($x)` | `(bool) $x` |
+| `BooleanHelpers::isNull($x)` | `$x === null` |
+| `BooleanHelpers::isSet($x)` | `$x !== null` |
+| `BooleanHelpers::isEmpty($x)` | `empty($x)` |
+| `BooleanHelpers::hasContent($x)` | `!empty($x)` |
 
 ```php
 // ❌ FORBIDDEN: Trivial wrappers — use native PHP
-if (RiseupBooleanHelpers::is_falsy($value)) { ... }
-if (RiseupBooleanHelpers::is_null($config)) { ... }
-if (RiseupBooleanHelpers::has_content($name)) { ... }
+if (BooleanHelpers::isFalsy($value)) { ... }
+if (BooleanHelpers::isNull($config)) { ... }
+if (BooleanHelpers::hasContent($name)) { ... }
 
 // ✅ REQUIRED: Native PHP operators
 if (!$value) { ... }
@@ -352,7 +352,7 @@ if (!empty($name)) { ... }
 
 ### Allowed Domain-Specific Helpers
 
-The following `RiseupBooleanHelpers` methods **are allowed** because they encapsulate multi-step checks with safety guards (e.g., `empty()` + native function) that would be error-prone inline:
+The following `BooleanHelpers` methods **are allowed** because they encapsulate multi-step checks with safety guards (e.g., `empty()` + native function) that would be error-prone inline:
 
 | Method | Semantics | Internal logic |
 |--------|-----------|----------------|
@@ -629,14 +629,14 @@ public function handleUpload($request) {
 | Manual path concatenation | Fragile paths | `PathHelper` fully-typed accessors |
 | `getDataDir() . '/file.db'` | Partial accessor, still magic | Add a typed accessor to `PathHelper` |
 | Constructor WordPress calls | Load order issues | Lazy initialization |
-| `error_log()` for diagnostics | No structure | Use `RiseupLogger` |
+| `error_log()` for diagnostics | No structure | Use `FileLogger` / `Logger` |
 | Inline `!class_exists('PDO')` checks | Duplicated logic | `ErrorChecker::isInvalidPdoExtension()` |
 | Nested `if` | **Zero tolerance** — absolute ban | Flatten with early returns or combined conditions |
 | Functions > 15 lines | Hard to read, test, review | Extract helpers |
 | `return` without blank line after statements | Poor readability | Blank line before `return` |
 | Single-line `if (...) return;` | Easy to miss, inconsistent | Always use braces `{ }` |
 | Inline multi-part `if` condition (2+ operators) | Hard to read, not reusable | Extract to named `$is_*` variable or method |
-| `RiseupBooleanHelpers::is_falsy/is_truthy/...` | Trivial wrappers (deprecated) | Native PHP operators |
+| `BooleanHelpers::isFalsy/isTruthy/...` | Trivial wrappers (deprecated) | Native PHP operators |
 | `!$obj->isActive()` | Easy to miss negation | `$obj->isDisabled()` |
 | `!file_exists()` / `!is_dir()` | Raw negation | `isFileMissing()` / `isDirMissing()` |
 | `current_user_can('manage_options')` | Magic string | `CapabilityType::ManageOptions->value` |

@@ -20,7 +20,7 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 | 1.2 | `$error && in_array($error['type'], [E_ERROR, ...])` | `ErrorChecker::isFatalError($error)` | Duplicated logic; central list in `ErrorType::FATAL_TYPES` |
 | 1.3 | Inline `E_*` → string mapping arrays | `ErrorChecker::getTypeLabel($type)` | Uses `ErrorType::TYPE_LABELS`; one place to update |
 | 1.4 | `wp_die()` in REST handlers | `wp_send_json_error()` or `$this->envelope->error()` | `wp_die()` breaks JSON response format |
-| 1.5 | `error_log()` for diagnostics | `RiseupLogger` / `$this->fileLogger` | No structure, no stack trace, no audit trail |
+| 1.5 | `error_log()` for diagnostics | `FileLogger` / `$this->fileLogger` | No structure, no stack trace, no audit trail |
 | 1.6 | `!class_exists('PDO') \|\| !extension_loaded(...)` inline | `ErrorChecker::isInvalidPdoExtension()` | Centralized; self-documenting |
 | 1.7 | Unchecked `new PDO()` without any guard | `ErrorChecker::isInvalidPdoExtension()` check first | Fatal error if extension missing |
 | 1.7 | REST handler without `safeExecute` wrapper | Wrap in `$this->safeExecute(fn() => ...)` | Unhandled exceptions crash the endpoint |
@@ -68,8 +68,8 @@ Every pattern below is **forbidden** in production code. The ✅ column shows th
 
 | # | ❌ Forbidden | ✅ Required | Why |
 |---|-------------|------------|-----|
-| 4.1 | `RiseupBooleanHelpers::isFalsy(...)` | `$plugin->isDisabled()` | Generic helper obscures intent |
-| 4.2 | `RiseupBooleanHelpers::isTruthy(...)` | `$isValue` | Unnecessary indirection |
+| 4.1 | `BooleanHelpers::isFalsy(...)` | `$plugin->isDisabled()` | Generic helper obscures intent |
+| 4.2 | `BooleanHelpers::isTruthy(...)` | `$isValue` | Unnecessary indirection |
 | 4.3 | `!$plugin->isActive()` | `$plugin->isDisabled()` | Negation is easy to miss; use semantic inverse |
 | 4.4 | `$value` for boolean variables | `$isValue`, `$hasPermission` | Ambiguous naming; must use `$is*` / `$has*` prefix |
 | 4.5 | `!file_exists($path)` | `PathHelper::isFileMissing($path)` | Raw negation; use positive guard |
