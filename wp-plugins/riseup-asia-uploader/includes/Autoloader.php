@@ -30,6 +30,8 @@ final class RiseupAsiaAutoloader {
 
         if (file_exists($file)) {
             require_once $file;
+        } else {
+            error_log('[Riseup Asia] Autoloader: class file not found for "' . $class . '" — expected at "' . $file . '"');
         }
     }
 }
