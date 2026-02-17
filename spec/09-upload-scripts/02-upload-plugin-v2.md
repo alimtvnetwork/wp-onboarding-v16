@@ -233,8 +233,8 @@ if (function_exists('opcache_reset')) {
     opcache_reset();
 }
 // Also invalidates specific files as belt-and-suspenders
-opcache_invalidate($full_plugin_path, true);
-opcache_invalidate($constants_file, true);
+opcache_invalidate($fullPluginPath, true);
+opcache_invalidate($constantsFile, true);
 wp_cache_delete('plugins', 'plugins');
 ```
 
