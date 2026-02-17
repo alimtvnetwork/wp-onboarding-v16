@@ -1264,9 +1264,10 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 | `src/components/errors/TraversalDetails.tsx` | 149 | Envelope traversal: endpoint flow, methods stack, delegated server details, error stacks |
 | `src/components/errors/SessionLogsTab.tsx` | 443 | Session diagnostics: logs, request, response, stack traces |
 | `src/components/errors/ErrorModalActions.tsx` | 194 | Download and Copy dropdown menus |
-| `src/components/errors/errorReportGenerator.ts` | 185 | Pure function: Markdown report generation + suggested fixes |
+| `src/components/errors/errorReportGenerator.ts` | 185 | Pure function: Markdown report generation (compact + full) + suggested fixes |
+| `src/components/errors/errorLogAdapter.ts` | 22 | Maps backend `ErrorLog` → `CapturedError` for ErrorDetailModal report generation |
 | `src/components/errors/ErrorModalTypes.ts` | 26 | Shared types: PHPStackFrame, AppInfo, SectionCommonProps, DelegatedRequestServer |
-| `src/components/errors/ErrorDetailModal.tsx` | — | Standalone error detail viewer |
+| `src/components/errors/ErrorDetailModal.tsx` | — | Standalone error detail viewer (Split Button copy + DownloadDropdown) |
 | `src/components/errors/ErrorHistoryDrawer.tsx` | — | Error history browser drawer |
 | `src/components/errors/ErrorQueueBadge.tsx` | — | Error queue indicator badge |
 | `src/components/errors/AppErrorBoundary.tsx` | — | React error boundary wrapping the app |
@@ -1281,6 +1282,7 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 - [Error Handling Cross-Stack Spec](../01-error-handling/readme.md) — PHP, Go, frontend error chain + DelegatedRequestServer flow
 - [Copy Format Samples](./copy-formats.md) — Complete samples for all copy/export formats
+- [React Components Reference](./react-components.md) — Portable React code for rebuilding the modal
 - [Response Envelope Schema](../05-response-envelope/envelope.schema.json) — JSON Schema for envelope (incl. DelegatedRequestServer)
 - [Envelope Configurability](../05-response-envelope/configurability.md) — DelegatedRequestServer presence rules
 - [Session-Based Logging](../04-logging-and-diagnostics/session-based-logging.md) — Backend session system
@@ -1289,4 +1291,4 @@ const phpStackFrames: PHPStackFrame[] = (() => {
 
 ---
 
-*Error Modal specification v2.0.0 — updated: 2026-02-11*
+*Error Modal specification v2.1.0 — updated: 2026-02-17*

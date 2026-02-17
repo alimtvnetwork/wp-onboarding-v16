@@ -695,7 +695,7 @@ This is the **enhanced** error.log.txt format that includes the `Delegated Serve
 
 ## 8. Envelope Error Response (JSON)
 
-This is the raw JSON response from the Go backend when an error occurs. See `spec/response-envelope/envelope-error.json` for the canonical sample.
+This is the raw JSON response from the Go backend when an error occurs. See `spec/05-error-manage/05-response-envelope/envelope-error.json` for the canonical sample.
 
 ### Key Fields for Error Display
 
@@ -845,7 +845,7 @@ To replicate this error reporting system in another project:
 
 1. **Copy `errorReportGenerator.ts`** — Pure function, no side effects
 2. **Copy `errorLogAdapter.ts`** — If you need to feed backend-stored errors into the generators
-3. **Implement `CapturedError` interface** — See Section 2 of `spec/error-modal/README.md`
+3. **Implement `CapturedError` interface** — See Section 2 of `spec/05-error-manage/02-error-modal/readme.md`
 4. **Implement `errorStore`** — Zustand store with `captureError()`, `buildCapturedError()`
 5. **Implement `parseEnvelope()`** — Extract `Errors`, `MethodsStack`, `Attributes` from API responses
 6. **Implement click path tracking** — DOM click listener that records interactive element clicks
@@ -857,6 +857,7 @@ To replicate this error reporting system in another project:
 ## Cross-References
 
 - [Error Modal Spec](./readme.md) — Full modal structure and component hierarchy
+- [React Components Reference](./react-components.md) — Portable React code and component props
 - [Envelope Schema](../05-response-envelope/envelope.schema.json) — JSON Schema source of truth
 - [Envelope Error Sample](../05-response-envelope/envelope-error.json) — Canonical error response
 - [Error Handling Spec](../01-error-handling/readme.md) — Cross-stack error architecture
@@ -865,4 +866,4 @@ To replicate this error reporting system in another project:
 
 ---
 
-*Copy format samples created: 2026-02-11*
+*Copy format samples — updated: 2026-02-17*
