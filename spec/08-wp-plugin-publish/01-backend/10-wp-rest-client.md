@@ -52,6 +52,14 @@ type Client interface {
 // internal/wordpress/types.go
 package wordpress
 
+// WPPluginStatusType represents the WordPress plugin status from the REST API
+type WPPluginStatusType string
+
+const (
+	WPPluginStatusActive   WPPluginStatusType = "active"
+	WPPluginStatusInactive WPPluginStatusType = "inactive"
+)
+
 type SiteInfo struct {
     Name        string `json:"name"`
     Description string `json:"description"`
@@ -59,13 +67,13 @@ type SiteInfo struct {
     Home        string `json:"home"`
     GMTOffset   int    `json:"gmt_offset"`
     Timezone    string `json:"timezone_string"`
-    Version     string `json:"version,omitempty"`  // From /wp-json
+    Version     string `json:"version,omitempty"`
 }
 
 type Plugin struct {
-    Slug        string            `json:"slug,omitempty"`  // Derived from plugin file
-    Plugin      string            `json:"plugin"`          // e.g., "my-plugin/my-plugin.php"
-    Status      string            `json:"status"`          // "active", "inactive"
+    Slug        string             `json:"slug,omitempty"`
+    Plugin      string             `json:"plugin"`
+    Status      WPPluginStatusType `json:"status"`
     Name        string            `json:"name"`
     PluginURI   string            `json:"plugin_uri"`
     Author      string            `json:"author"`
@@ -386,7 +394,7 @@ func (c *clientImpl) ActivatePlugin(ctx context.Context, url, username, password
         return err
     }
     
-    if plugin.Status == "active" {
+    if plugin.Status == WPPluginStatusActive {
         c.log.Debug("Plugin already active", "slug", slug)
         return nil
     }
@@ -394,7 +402,7 @@ func (c *clientImpl) ActivatePlugin(ctx context.Context, url, username, password
     url = strings.TrimSuffix(url, "/")
     endpoint := url + "/wp-json/wp/v2/plugins/" + plugin.Plugin
     
-    body, _ := json.Marshal(map[string]string{"status": "active"})
+    body, _ := json.Marshal(map[string]WPPluginStatusType{"status": WPPluginStatusActive})
     
     resp, err := c.doRequest(ctx, "PUT", endpoint, username, password, bytes.NewReader(body), "application/json")
     if err != nil {
@@ -417,7 +425,7 @@ func (c *clientImpl) DeactivatePlugin(ctx context.Context, url, username, passwo
         return err
     }
     
-    if plugin.Status == "inactive" {
+    if plugin.Status == WPPluginStatusInactive {
         c.log.Debug("Plugin already inactive", "slug", slug)
         return nil
     }
@@ -425,7 +433,7 @@ func (c *clientImpl) DeactivatePlugin(ctx context.Context, url, username, passwo
     url = strings.TrimSuffix(url, "/")
     endpoint := url + "/wp-json/wp/v2/plugins/" + plugin.Plugin
     
-    body, _ := json.Marshal(map[string]string{"status": "inactive"})
+    body, _ := json.Marshal(map[string]WPPluginStatusType{"status": WPPluginStatusInactive})
     
     resp, err := c.doRequest(ctx, "PUT", endpoint, username, password, bytes.NewReader(body), "application/json")
     if err != nil {
@@ -449,7 +457,7 @@ func (c *clientImpl) DeletePlugin(ctx context.Context, url, username, password, 
     }
     
     // Must deactivate first
-    if plugin.Status == "active" {
+    if plugin.Status == WPPluginStatusActive {
         if err := c.DeactivatePlugin(ctx, url, username, password, slug); err != nil {
             return err
         }
