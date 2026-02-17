@@ -61,13 +61,13 @@ Nested `if` blocks are **absolutely forbidden** — zero tolerance, no exception
 
 // ❌ FORBIDDEN: Nested if — redundant null guard
 if ($error !== null) {
-    if (ErrorChecker::is_fatal_error($error)) {
+    if (ErrorChecker::isFatalError($error)) {
         $this->logger->fatal($error);
     }
 }
 
-// ✅ REQUIRED: Flat — is_fatal_error() handles null internally
-if (ErrorChecker::is_fatal_error($error)) {
+// ✅ REQUIRED: Flat — isFatalError() handles null internally
+if (ErrorChecker::isFatalError($error)) {
     $this->logger->fatal($error);
 }
 
@@ -138,7 +138,7 @@ if ($error && in_array($error['type'], [E_ERROR, E_PARSE], true)) {
 }
 
 // ✅ REQUIRED: Extracted into a dedicated method
-if (ErrorChecker::is_fatal_error($error)) {
+if (ErrorChecker::isFatalError($error)) {
     $this->logger->fatal($error);
 }
 
@@ -204,8 +204,8 @@ if isUpstreamError {
 
 | Complexity | Extraction | Example |
 |------------|-----------|---------|
-| 2 conditions, used once | Named `$is_*` / `isX` variable | `$has_file = $req !== null && $req->has_param('file');` |
-| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::is_fatal_error($error)` |
+| 2 conditions, used once | Named `$is_*` / `isX` variable | `$hasFile = $req !== null && $req->hasParam('file');` |
+| 2+ conditions, used in multiple places | Dedicated method/function | `ErrorChecker::isFatalError($error)` |
 | Static flag combination | Named constant | `const EDITABLE = 'PUT, PATCH';` |
 
 ---
@@ -218,13 +218,13 @@ If a block contains statements before `return` or `throw`, insert **one blank li
 // ── PHP ──────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN: No blank line before return
-if (ErrorChecker::is_invalid_pdo_extension()) {
+if (ErrorChecker::isInvalidPdoExtension()) {
     $this->logger->error('PDO/SQLite not available');
     return $this->envelope->error('SQLite support not available', 500);
 }
 
 // ✅ REQUIRED: Blank line separates logic from exit
-if (ErrorChecker::is_invalid_pdo_extension()) {
+if (ErrorChecker::isInvalidPdoExtension()) {
     $this->logger->error('PDO/SQLite not available');
 
     return $this->envelope->error('SQLite support not available', 500);
@@ -370,7 +370,7 @@ result := compute()
 No blank line is needed when a `}` is immediately followed by another `}`, `else`, or `catch`:
 
 ```php
-if (ErrorChecker::is_fatal_error($error)) {
+if (ErrorChecker::isFatalError($error)) {
     $this->logger->fatal($error);
 }
 // ✅ No blank line — next line is another closing brace
@@ -402,7 +402,7 @@ Every function/method body must be **15 lines or fewer** (excluding blank lines,
 // ── PHP ──────────────────────────────────────────────────────
 
 // ❌ FORBIDDEN: 25+ line function
-public function handle_upload($request) {
+public function handleUpload($request) {
     $file = $request->get_param('file');
     $source = $request->get_param('source');
     // ... validation ...
@@ -412,11 +412,11 @@ public function handle_upload($request) {
 }
 
 // ✅ REQUIRED: Short top-level, helpers do the work
-public function handle_upload($request) {
-    $params = $this->extract_upload_params($request);
-    $this->validate_upload($params);
-    $result = $this->process_upload($params);
-    $this->log_upload($result);
+public function handleUpload($request) {
+    $params = $this->extractUploadParams($request);
+    $this->validateUpload($params);
+    $result = $this->processUpload($params);
+    $this->logUpload($result);
 
     return $this->envelope->success($result);
 }

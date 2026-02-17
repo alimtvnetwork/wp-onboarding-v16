@@ -568,7 +568,7 @@ GlobalErrorModal.tsx
 │  │  Method: GET │ Status: 403                                  │ │
 │  │  Stack Trace:                                                │ │
 │  │    #0 riseup-asia-uploader.php(1098): Logger->error()       │ │
-│  │    #1 class-wp-hook.php(341): enrich_error_response()       │ │
+│  │    #1 class-wp-hook.php(341): enrichErrorResponse()       │ │
 │  │  Additional: Endpoint not enabled in plugin settings        │ │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │

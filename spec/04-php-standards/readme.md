@@ -421,18 +421,18 @@ if ($error === null) {
 
 ### Rule 2: Zero nested `if` — absolute ban
 
-Nested `if` blocks are **absolutely forbidden** — zero tolerance, no exceptions. Flatten using early returns, combined conditions, or extracted helper functions. If a helper function already handles the null/empty check internally (e.g., `ErrorChecker::is_fatal_error()` already returns `false` for `null`), rely on it — don't wrap it in a redundant outer guard.
+Nested `if` blocks are **absolutely forbidden** — zero tolerance, no exceptions. Flatten using early returns, combined conditions, or extracted helper functions. If a helper function already handles the null/empty check internally (e.g., `ErrorChecker::isFatalError()` already returns `false` for `null`), rely on it — don't wrap it in a redundant outer guard.
 
 ```php
 // ❌ FORBIDDEN: Nested if — redundant null guard
 if ($error !== null) {
-    if (ErrorChecker::is_fatal_error($error)) {
+    if (ErrorChecker::isFatalError($error)) {
         $this->logger->fatal($error);
     }
 }
 
-// ✅ REQUIRED: Flat — is_fatal_error() handles null internally
-if (ErrorChecker::is_fatal_error($error)) {
+// ✅ REQUIRED: Flat — isFatalError() handles null internally
+if (ErrorChecker::isFatalError($error)) {
     $this->logger->fatal($error);
 }
 
@@ -551,13 +551,13 @@ If a block contains statements before `return`, insert **one blank line** before
 
 ```php
 // ❌ FORBIDDEN: No blank line before return
-if (ErrorChecker::is_invalid_pdo_extension()) {
+if (ErrorChecker::isInvalidPdoExtension()) {
     $this->logger->error('PDO/SQLite not available');
     return $this->envelope->error('SQLite support not available', 500);
 }
 
 // ✅ REQUIRED: Blank line separates logic from exit
-if (ErrorChecker::is_invalid_pdo_extension()) {
+if (ErrorChecker::isInvalidPdoExtension()) {
     $this->logger->error('PDO/SQLite not available');
 
     return $this->envelope->error('SQLite support not available', 500);

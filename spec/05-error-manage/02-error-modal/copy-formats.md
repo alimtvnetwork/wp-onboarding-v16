@@ -368,8 +368,8 @@ middleware.CORS.func1 at middleware.go:45
 
 | # | Function | File | Line |
 |---|----------|------|------|
-| 0 | Riseup_File_Logger::error() | riseup-asia-uploader.php | 1098 |
-| 1 | Riseup_Asia::enrich_error_response() | class-wp-hook.php | 341 |
+| 0 | FileLogger::error() | riseup-asia-uploader.php | 1098 |
+| 1 | Plugin::enrichErrorResponse() | class-wp-hook.php | 341 |
 | 2 | WP_Hook::apply_filters() | plugin.php | 205 |
 | 3 | apply_filters() | class-wp-rest-server.php | 462 |
 | 4 | WP_REST_Server::serve_request() | rest-api.php | 467 |
