@@ -23,6 +23,7 @@ use RiseupAsia\Snapshot\Traits\CleanerHelperTrait;
 use RiseupAsia\Database\Database;
 use RiseupAsia\Logging\FileLogger;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 class SnapshotCleaner {
 
@@ -42,7 +43,7 @@ class SnapshotCleaner {
 
     public function execute(array $options = array()): array {
         $start = microtime(true);
-        $dryRun = !empty($options['dry_run']);
+        $isDryRun = BooleanHelpers::hasValue($options['dry_run'] ?? null);
 
         $results = array(
             'success'           => true,
@@ -50,15 +51,15 @@ class SnapshotCleaner {
             'orphans'           => array('removed' => 0, 'files' => array()),
             'stuck'             => array('cleaned' => 0, 'ids' => array()),
             'errors'            => array(),
-            'dry_run'           => $dryRun,
+            'dry_run'           => $isDryRun,
             'space_freed_bytes' => 0,
         );
 
         $settings = $this->loadSettings($options);
 
-        $results = $this->executeRetentionPhase($settings, $dryRun, $results);
-        $results = $this->executeOrphanPhase($dryRun, $results);
-        $results = $this->executeStuckPhase($dryRun, $results);
+        $results = $this->executeRetentionPhase($settings, $isDryRun, $results);
+        $results = $this->executeOrphanPhase($isDryRun, $results);
+        $results = $this->executeStuckPhase($isDryRun, $results);
 
         $results['success']  = empty($results['errors']);
         $results['duration'] = round(microtime(true) - $start, 3);
@@ -71,10 +72,11 @@ class SnapshotCleaner {
             'deleted_total' => $totalDeleted,
             'space_freed'   => PathHelper::formatBytes($results['space_freed_bytes']),
             'duration'      => $results['duration'],
-            'dry_run'       => $dryRun,
+            'dry_run'       => $isDryRun,
         ));
 
-        if (!$dryRun && $totalDeleted > 0) {
+        $isLiveRunWithDeletions = ($isDryRun === false) && $totalDeleted > 0;
+        if ($isLiveRunWithDeletions) {
             $this->logCleanupAudit($results);
         }
 
@@ -95,14 +97,14 @@ class SnapshotCleaner {
 
     private function executeRetentionPhase(
         array $settings,
-        bool $dryRun,
+        bool $isDryRun,
         array $results,
     ): array {
         try {
             if ($settings['retention_type'] === RetentionType::None->value) {
                 $this->log(LogLevelType::Debug->value, 'Retention policy is "none" - skipping policy cleanup');
             } else {
-                $retention = $this->cleanByRetention($settings, $dryRun);
+                $retention = $this->cleanByRetention($settings, $isDryRun);
                 $results['retention'] = $retention;
                 $results['space_freed_bytes'] += $retention['bytes_freed'] ?? 0;
             }
@@ -114,9 +116,9 @@ class SnapshotCleaner {
         return $results;
     }
 
-    private function executeOrphanPhase(bool $dryRun, array $results): array {
+    private function executeOrphanPhase(bool $isDryRun, array $results): array {
         try {
-            $orphans = $this->cleanupOrphanFiles($dryRun);
+            $orphans = $this->cleanupOrphanFiles($isDryRun);
             $results['orphans'] = $orphans;
             $results['space_freed_bytes'] += $orphans['bytes_freed'] ?? 0;
         } catch (Throwable $e) {
@@ -127,9 +129,9 @@ class SnapshotCleaner {
         return $results;
     }
 
-    private function executeStuckPhase(bool $dryRun, array $results): array {
+    private function executeStuckPhase(bool $isDryRun, array $results): array {
         try {
-            $stuck = $this->cleanupStuckSnapshots($dryRun);
+            $stuck = $this->cleanupStuckSnapshots($isDryRun);
             $results['stuck'] = $stuck;
         } catch (Throwable $e) {
             $results['errors'][] = 'Stuck cleanup: ' . $e->getMessage();

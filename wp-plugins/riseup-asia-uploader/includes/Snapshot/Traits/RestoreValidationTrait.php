@@ -21,16 +21,10 @@ use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\RestoreModeType;
 use RiseupAsia\Enums\SnapshotErrorType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait RestoreValidationTrait {
 
-    /**
-     * Validate restore prerequisites (confirmation and root db existence).
-     *
-     * @param string $snapshotDir Snapshot directory.
-     * @param array  $options     Options.
-     * @return array|null Error result or null if valid.
-     */
     private function validateRestorePrereqs(string $snapshotDir, array $options): ?array {
         if (empty($options['confirm']) || $options['confirm'] !== true) {
             return array(
@@ -51,13 +45,6 @@ trait RestoreValidationTrait {
         return null;
     }
 
-    /**
-     * Prepare the restore order from inventory and dependency graph.
-     *
-     * @param PDO   $rootPdo Root DB connection.
-     * @param array $options Restore options.
-     * @return array Result with success, tables, inventory.
-     */
     private function prepareRestoreOrder(PDO $rootPdo, array $options): array {
         $mode = $options['mode'] ?? RestoreModeType::Full->value;
         $selected_tables = $options['tables'] ?? array();
@@ -65,7 +52,8 @@ trait RestoreValidationTrait {
         $table_inventory = $this->getTableInventory($rootPdo);
         $restore_order = $this->getRestoreOrder($rootPdo, $table_inventory);
 
-        if ($mode === RestoreModeType::Selective->value && !empty($selected_tables)) {
+        $isSelectiveWithTables = $mode === RestoreModeType::Selective->value && BooleanHelpers::hasValue($selected_tables);
+        if ($isSelectiveWithTables) {
             $restore_order = array_values(array_filter($restore_order, function($t) use ($selected_tables) {
                 return in_array($t, $selected_tables);
             }));
@@ -82,16 +70,11 @@ trait RestoreValidationTrait {
         return array('success' => true, 'tables' => $restore_order, 'inventory' => $table_inventory);
     }
 
-    /**
-     * Create a pre-restore safety backup if requested.
-     *
-     * @param array $options Restore options.
-     * @return int|null Backup ID or null.
-     */
     private function createSafetyBackup(array $options): ?int {
         $create_backup = $options['create_backup'] ?? true;
 
-        if (!$create_backup || !$this->orchestrator) {
+        $isBackupSkipped = ($create_backup === false) || ($this->orchestrator === null);
+        if ($isBackupSkipped) {
             return null;
         }
 
@@ -109,7 +92,8 @@ trait RestoreValidationTrait {
 
         $this->log(LogLevelType::Warn->value, 'Pre-restore backup failed (continuing)', array('error' => $result['error'] ?? 'Unknown'));
 
-        if (!empty($options['require_backup'])) {
+        $isBackupRequired = BooleanHelpers::hasValue($options['require_backup'] ?? null);
+        if ($isBackupRequired) {
             throw new Exception('Pre-restore backup failed: ' . ($result['error'] ?? 'Unknown'));
         }
 

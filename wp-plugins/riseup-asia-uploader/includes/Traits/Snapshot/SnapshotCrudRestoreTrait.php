@@ -19,6 +19,7 @@ use RiseupAsia\Enums\StatusType;
 use RiseupAsia\Snapshot\SnapshotManager;
 use RiseupAsia\Snapshot\SnapshotOrchestrator;
 use RiseupAsia\Snapshot\RestoreEngine;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SnapshotCrudRestoreTrait {
 
@@ -70,13 +71,17 @@ trait SnapshotCrudRestoreTrait {
     }
 
     private function parseRestoreOptions(array $body): array {
+        $hasConfirm = BooleanHelpers::hasValue($body['confirm'] ?? null);
+        $hasRequireBackup = BooleanHelpers::hasValue($body['requireBackup'] ?? null);
+        $hasStrict = BooleanHelpers::hasValue($body['strict'] ?? null);
+
         return array(
-            'confirm'            => !empty($body['confirm']),
+            'confirm'            => $hasConfirm,
             'create_backup'      => isset($body['createBackup']) ? (bool) $body['createBackup'] : true,
-            'require_backup'     => !empty($body['requireBackup']),
+            'require_backup'     => $hasRequireBackup,
             'mode'               => isset($body['mode']) ? sanitize_key($body['mode']) : 'full',
             'tables'             => isset($body['tables']) ? array_map('sanitize_text_field', (array) $body['tables']) : array(),
-            'strict'             => !empty($body['strict']),
+            'strict'             => $hasStrict,
             'apply_incrementals' => isset($body['applyIncrementals']) ? (bool) $body['applyIncrementals'] : true,
         );
     }
@@ -110,7 +115,8 @@ trait SnapshotCrudRestoreTrait {
             return file_exists($filepath . '/a-root.db');
         }
         $dir = $snapshot['directory'] ?? '';
-        if (!empty($dir) && is_dir($dir)) {
+        $hasDirWithRootDb = BooleanHelpers::hasValue($dir) && is_dir($dir);
+        if ($hasDirWithRootDb) {
             return file_exists($dir . '/a-root.db');
         }
         return false;
@@ -122,10 +128,12 @@ trait SnapshotCrudRestoreTrait {
             return $filepath;
         }
         $dir = $snapshot['directory'] ?? '';
-        if (!empty($dir) && is_dir($dir)) {
+        $hasValidDir = BooleanHelpers::hasValue($dir) && is_dir($dir);
+        if ($hasValidDir) {
             return $dir;
         }
-        if (!empty($filepath) && file_exists(dirname($filepath) . '/a-root.db')) {
+        $hasFilepathWithRootDb = BooleanHelpers::hasValue($filepath) && file_exists(dirname($filepath) . '/a-root.db');
+        if ($hasFilepathWithRootDb) {
             return dirname($filepath);
         }
         return null;

@@ -17,6 +17,7 @@ use RiseupAsia\Enums\ActionType;
 use RiseupAsia\Enums\PostStatusType;
 use RiseupAsia\Enums\StatusType;
 use RiseupAsia\ErrorHandling\ErrorResponse;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait PostCrudTrait {
 
@@ -62,7 +63,8 @@ trait PostCrudTrait {
 
         try {
             $post = get_post($postId);
-            if (!$post) {
+            $isPostMissing = ($post === null);
+            if ($isPostMissing) {
                 $this->fileLogger->warn('Post not found', array('post_id' => $postId));
 
                 return array('success' => false, 'error' => 'Post not found');
@@ -95,7 +97,8 @@ trait PostCrudTrait {
             'post_type'    => 'post',
         );
 
-        if (!empty($data['slug'])) {
+        $hasSlug = BooleanHelpers::hasValue($data['slug'] ?? null);
+        if ($hasSlug) {
             $postData['post_name'] = sanitize_title($data['slug']);
         }
 
@@ -125,14 +128,16 @@ trait PostCrudTrait {
         array $data = array(),
     ): array {
         $this->fileLogger->error('Post operation failed', array('error' => $errorMsg));
-        $details = !empty($title) ? array('title' => $title) : $data;
+        $hasTitle = BooleanHelpers::hasValue($title);
+        $details = $hasTitle ? array('title' => $title) : $data;
         $this->logger->logPostAction($action, $postId, StatusType::Failed->value, $details, $errorMsg);
 
         return array('success' => false, 'error' => $errorMsg);
     }
 
     private function assignCategories(int $postId, ?array $categories): void {
-        if (!empty($categories) && is_array($categories)) {
+        $hasCategories = BooleanHelpers::hasValue($categories) && is_array($categories);
+        if ($hasCategories) {
             wp_set_post_categories($postId, array_map('intval', $categories));
         }
     }

@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use PDO;
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait WorkerSetupTrait {
 
@@ -23,7 +24,8 @@ trait WorkerSetupTrait {
         $scope = $config['scope'] ?? 'wordpress';
         $type  = $config['type'] ?? 'full';
 
-        if (!empty($config['settings']['worker_pool_size'])) {
+        $hasPoolSize = BooleanHelpers::hasValue($config['settings']['worker_pool_size'] ?? null);
+        if ($hasPoolSize) {
             $this->setPoolSize($config['settings']['worker_pool_size']);
         }
 
@@ -35,7 +37,8 @@ trait WorkerSetupTrait {
         $dir_name = date('Y-m-d') . '_' . $type . '_' . sanitize_title($title);
         $snapshot_dir = $base_dir . '/' . $dir_name;
 
-        if (!PathHelper::makeDirectory($snapshot_dir, true)) {
+        $isDirCreateFailed = (PathHelper::makeDirectory($snapshot_dir, true) === false);
+        if ($isDirCreateFailed) {
             return array('success' => false, 'error' => 'Failed to create snapshot directory');
         }
 
@@ -71,11 +74,15 @@ trait WorkerSetupTrait {
         array $context = array(),
     ): void {
         $full = '[SNAPSHOT] [WORKER] ' . $message;
-        if (!empty($context)) {
+        $hasContext = BooleanHelpers::hasValue($context);
+        if ($hasContext) {
             $full .= ' ' . json_encode($context);
         }
 
-        if (!$this->logger) return;
+        $isLoggerMissing = ($this->logger === null);
+        if ($isLoggerMissing) {
+            return;
+        }
 
         switch ($level) {
             case LogLevelType::Warn->value:  $this->logger->warn($full); break;

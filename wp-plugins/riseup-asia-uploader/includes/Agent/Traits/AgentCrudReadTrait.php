@@ -14,13 +14,15 @@ if (!defined('ABSPATH')) {
 
 use PDO;
 use PDOException;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait AgentCrudReadTrait {
 
     public function getAgent(int $id, bool $includePassword = false): ?array {
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+            if ($isPdoMissing) {
                 return null;
             }
 
@@ -51,7 +53,8 @@ trait AgentCrudReadTrait {
     ): array {
         try {
             $pdo = $this->db->getPdo();
-            if (!$pdo) {
+            $isPdoMissing = ($pdo === null);
+            if ($isPdoMissing) {
                 return array('total' => 0, 'agents' => array());
             }
 
@@ -71,13 +74,16 @@ trait AgentCrudReadTrait {
         $where = array();
         $params = array();
 
-        if (!empty($filters['status'])) {
+        $hasStatusFilter = BooleanHelpers::hasValue($filters['status'] ?? null);
+        if ($hasStatusFilter) {
             $where[] = 'status = ?';
             $params[] = $filters['status'];
         }
 
+        $hasWhereClause = BooleanHelpers::hasValue($where);
+
         return array(
-            'where_sql' => !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '',
+            'where_sql' => $hasWhereClause ? 'WHERE ' . implode(' AND ', $where) : '',
             'params'    => $params,
         );
     }

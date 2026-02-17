@@ -30,7 +30,8 @@ trait OrchestratorRegistrationTrait {
         string $snapshotDir,
     ): int|false {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return false;
         }
 

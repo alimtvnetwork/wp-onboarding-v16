@@ -19,6 +19,7 @@ use RiseupAsia\Enums\PluginConfigType;
 use RiseupAsia\Enums\ResponseMessageType;
 use RiseupAsia\Helpers\PathHelper;
 use RiseupAsia\Helpers\EnvelopeBuilder;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UploadInstallActivateTrait
 {
@@ -29,11 +30,13 @@ trait UploadInstallActivateTrait
         }
 
         $plugin_file = $this->findPluginFile($slug);
-        if (!empty($plugin_file)) {
+        $hasPluginFile = BooleanHelpers::hasValue($plugin_file);
+        if ($hasPluginFile) {
             $this->invalidatePluginCache($plugin_file, $slug);
         }
 
-        if (!$plugin_file) {
+        $isPluginFileMissing = ($plugin_file === null || $plugin_file === '' || $plugin_file === false);
+        if ($isPluginFileMissing) {
             $this->logger->logUploadFailed($slug, 'Could not find plugin file after extraction');
 
             return $this->errorResponse('Could not find plugin file after extraction', HttpStatusType::ServerError->value);
@@ -66,7 +69,8 @@ trait UploadInstallActivateTrait
         bool $wasActive,
         bool $isUpdate,
     ): array|WP_REST_Response {
-        if (!$activate && !$wasActive) {
+        $isActivationSkipped = ($activate === false) && ($wasActive === false);
+        if ($isActivationSkipped) {
             return array('activated' => false);
         }
 

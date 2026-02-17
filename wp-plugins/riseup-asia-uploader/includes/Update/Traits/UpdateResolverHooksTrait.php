@@ -13,12 +13,14 @@ if (!defined('ABSPATH')) {
 }
 
 use WP_Error;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait UpdateResolverFetchTrait {
 
     public function fetchUpdateInfo(bool $forceCheck = false): array|WP_Error {
         $settings = $this->getSettings();
-        if (!$settings['enabled']) {
+        $isDisabled = ($settings['enabled'] === false);
+        if ($isDisabled) {
             return new WP_Error('disabled', 'Auto-update is disabled');
         }
 
@@ -67,7 +69,8 @@ trait UpdateResolverFetchTrait {
         bool $forceCheck,
         WP_Error $error,
     ) {
-        if (!$forceCheck && !empty($settings['resolved_url'])) {
+        $isRetryable = ($forceCheck === false) && BooleanHelpers::hasValue($settings['resolved_url'] ?? null);
+        if ($isRetryable) {
             $this->fileLogger->info('Cached URL failed, resolving fresh');
             $this->clearCache();
             return $this->fetchUpdateInfo(true);
@@ -85,7 +88,8 @@ trait UpdateResolverFetchTrait {
         $errorMsg = "HTTP $statusCode from update server";
         $this->fileLogger->error('Update server error', array('status' => $statusCode));
 
-        if (!$forceCheck && !empty($settings['resolved_url'])) {
+        $isRetryable = ($forceCheck === false) && BooleanHelpers::hasValue($settings['resolved_url'] ?? null);
+        if ($isRetryable) {
             $this->fileLogger->info('Cached URL returned error, resolving fresh');
             $this->clearCache();
             return $this->fetchUpdateInfo(true);

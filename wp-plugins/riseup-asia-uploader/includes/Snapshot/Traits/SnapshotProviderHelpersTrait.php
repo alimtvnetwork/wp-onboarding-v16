@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use RiseupAsia\Enums\LogLevelType;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Helpers\PathHelper;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait SnapshotProviderHelpersTrait {
 
@@ -26,7 +27,8 @@ trait SnapshotProviderHelpersTrait {
         $prefix = '[SNAPSHOT] [' . strtoupper($this->provider_id) . ']';
         $full_message = $prefix . ' ' . $message;
 
-        if (!empty($context)) {
+        $hasContext = BooleanHelpers::hasValue($context);
+        if ($hasContext) {
             $full_message .= ' ' . json_encode($context);
         }
 

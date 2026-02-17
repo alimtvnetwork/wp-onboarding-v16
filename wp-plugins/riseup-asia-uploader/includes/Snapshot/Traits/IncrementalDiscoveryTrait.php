@@ -29,7 +29,8 @@ trait IncrementalDiscoveryTrait {
 
     private function findMasterFromDb(): ?string {
         $pdo = $this->db->getPdo();
-        if (!$pdo) {
+        $isPdoMissing = ($pdo === null);
+        if ($isPdoMissing) {
             return null;
         }
 

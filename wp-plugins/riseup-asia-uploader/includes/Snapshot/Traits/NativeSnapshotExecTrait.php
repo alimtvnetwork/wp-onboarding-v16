@@ -24,12 +24,14 @@ trait NativeSnapshotExecTrait {
         $start_time = microtime(true);
 
         $snapshot = $this->getSnapshot($snapshotId);
-        if (!$snapshot) {
+        $isSnapshotMissing = ($snapshot === null);
+        if ($isSnapshotMissing) {
 
             return array('success' => false, 'error' => 'Snapshot record not found');
         }
 
-        if (!$this->acquireLock()) {
+        $isLockFailed = ($this->acquireLock() === false);
+        if ($isLockFailed) {
             $this->updateSnapshotStatus($snapshotId, SnapshotStatusType::Failed->value, 'Failed to acquire lock');
 
             return array('success' => false, 'error' => 'Failed to acquire lock');

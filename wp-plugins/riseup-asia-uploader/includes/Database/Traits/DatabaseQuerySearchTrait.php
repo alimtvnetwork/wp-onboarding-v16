@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 use Throwable;
 use RiseupAsia\Enums\TableType;
 use RiseupAsia\Database\Orm;
+use RiseupAsia\Helpers\BooleanHelpers;
 
 trait DatabaseQuerySearchTrait {
 
@@ -23,7 +24,8 @@ trait DatabaseQuerySearchTrait {
         int $limit = self::DEFAULT_LIMIT,
         int $offset = 0,
     ): array {
-        if (!$this->isReady()) {
+        $isDbUnready = ($this->isReady() === false);
+        if ($isDbUnready) {
             $this->fileLogger->warn('Database not ready for query');
 
             return array('total' => 0, 'logs' => array());
@@ -65,7 +67,8 @@ trait DatabaseQuerySearchTrait {
 
     private function decodeLogDetails(array &$logs): void {
         foreach ($logs as &$log) {
-            if (!empty($log['details'])) {
+            $hasDetails = BooleanHelpers::hasValue($log['details'] ?? null);
+            if ($hasDetails) {
                 $log['details'] = json_decode($log['details'], true);
             }
         }
@@ -78,10 +81,12 @@ trait DatabaseQuerySearchTrait {
     }
 
     private function applyEqualityFilters(RiseupORM $query, array $filters): void {
-        if (!empty($filters['plugin'])) {
+        $hasPlugin = BooleanHelpers::hasValue($filters['plugin'] ?? null);
+        if ($hasPlugin) {
             $query->where('plugin_slug', $filters['plugin']);
         }
-        if (!empty($filters['action'])) {
+        $hasAction = BooleanHelpers::hasValue($filters['action'] ?? null);
+        if ($hasAction) {
             $actions = array_map('trim', explode(',', $filters['action']));
             if (count($actions) === 1) {
                 $query->where('action', $actions[0]);
@@ -89,37 +94,45 @@ trait DatabaseQuerySearchTrait {
                 $query->whereIn('action', $actions);
             }
         }
-        if (!empty($filters['user'])) {
+        $hasUser = BooleanHelpers::hasValue($filters['user'] ?? null);
+        if ($hasUser) {
             $query->where('user_login', $filters['user']);
         }
-        if (!empty($filters['status'])) {
+        $hasStatus = BooleanHelpers::hasValue($filters['status'] ?? null);
+        if ($hasStatus) {
             $query->where('status', $filters['status']);
         }
-        if (!empty($filters['triggered_by'])) {
+        $hasTriggeredBy = BooleanHelpers::hasValue($filters['triggered_by'] ?? null);
+        if ($hasTriggeredBy) {
             $query->where('triggered_by', $filters['triggered_by']);
         }
-        if (!empty($filters['upload_source'])) {
+        $hasUploadSource = BooleanHelpers::hasValue($filters['upload_source'] ?? null);
+        if ($hasUploadSource) {
             $query->where('upload_source', $filters['upload_source']);
         }
     }
 
     private function applyDateRangeFilters(RiseupORM $query, array $filters): void {
-        if (!empty($filters['from'])) {
+        $hasFrom = BooleanHelpers::hasValue($filters['from'] ?? null);
+        if ($hasFrom) {
             $query->whereGte('created_at', $filters['from'] . 'T00:00:00Z');
         }
-        if (!empty($filters['to'])) {
+        $hasTo = BooleanHelpers::hasValue($filters['to'] ?? null);
+        if ($hasTo) {
             $query->whereLte('created_at', $filters['to'] . 'T23:59:59Z');
         }
     }
 
     private function applyTextFilters(RiseupORM $query, array $filters): void {
-        if (!empty($filters['source_machine'])) {
+        $hasSourceMachine = BooleanHelpers::hasValue($filters['source_machine'] ?? null);
+        if ($hasSourceMachine) {
             $query->whereLike('source_machine', '%' . $filters['source_machine'] . '%');
         }
     }
 
     public function getStats(): array {
-        if (!$this->isReady()) {
+        $isDbUnready = ($this->isReady() === false);
+        if ($isDbUnready) {
             return array();
         }
 
@@ -152,7 +165,8 @@ trait DatabaseQuerySearchTrait {
     }
 
     public function cleanupOldTransactions(int $daysToKeep = 365): int {
-        if (!$this->isReady()) {
+        $isDbUnready = ($this->isReady() === false);
+        if ($isDbUnready) {
             return 0;
         }
 

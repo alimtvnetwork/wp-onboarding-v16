@@ -37,7 +37,8 @@ class FatalErrorHandler
     public static function handle(): void {
         $error = error_get_last();
 
-        if (!self::isFatalRestError($error)) {
+        $isNonFatalRestError = (self::isFatalRestError($error) === false);
+        if ($isNonFatalRestError) {
             return;
         }
 
@@ -52,7 +53,8 @@ class FatalErrorHandler
         }
 
         $isFatalType = in_array($error['type'], self::FATAL_TYPES, true);
-        if (!$isFatalType) {
+        $isNonFatalType = ($isFatalType === false);
+        if ($isNonFatalType) {
             return false;
         }
 
@@ -102,7 +104,8 @@ class FatalErrorHandler
     }
 
     private static function emitJsonResponse(array $error): void {
-        if (!headers_sent()) {
+        $isHeadersUnsent = (headers_sent() === false);
+        if ($isHeadersUnsent) {
             header('Content-Type: application/json; charset=utf-8');
             http_response_code(500);
         }

@@ -20,7 +20,7 @@ trait SnapshotProviderLockTrait {
     protected function isLocked(): bool {
         $lock_file = PathHelper::join($this->getSnapshotsDir(), '.lock');
 
-        if (!PathHelper::fileExists($lock_file)) {
+        if (PathHelper::isFileMissing($lock_file)) {
             return false;
         }
 
@@ -45,7 +45,8 @@ trait SnapshotProviderLockTrait {
             return false;
         }
 
-        if (!$this->ensureSnapshotsDir()) {
+        $isDirEnsureFailed = ($this->ensureSnapshotsDir() === false);
+        if ($isDirEnsureFailed) {
             $this->log(LogLevelType::Error->value, 'Cannot acquire lock - directory creation failed');
             return false;
         }
