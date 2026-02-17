@@ -113,11 +113,19 @@ When the function signature already declares types, docblock `@param` and `@retu
  * @param string           $context Context message.
  * @return array Error response array.
  */
-public static function logAndReturn(RiseupFileLogger $logger, Throwable $e, string $context = ''): array {
+public static function logAndReturn(
+    RiseupFileLogger $logger,
+    Throwable $e,
+    string $context = '',
+): array {
 
 // ✅ REQUIRED: Brief summary only (types are in signature)
 /** Log exception and return standardized error array. */
-public static function logAndReturn(RiseupFileLogger $logger, Throwable $e, string $context = ''): array {
+public static function logAndReturn(
+    RiseupFileLogger $logger,
+    Throwable $e,
+    string $context = '',
+): array {
 ```
 
 ```typescript
