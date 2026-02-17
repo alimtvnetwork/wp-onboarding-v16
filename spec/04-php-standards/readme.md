@@ -13,17 +13,17 @@
 
 | Element | Convention | Example | Override reason |
 |---------|-----------|---------|-----------------|
-| Class names | PascalCase | `RiseupEnvelopeBuilder`, `RiseupSnapshotFactory` | _(matches PSR-12)_ |
+| Class names | PascalCase | `EnvelopeBuilder`, `SnapshotFactory` | _(matches PSR-12)_ |
 | Method names | camelCase | `buildResponse()`, `getPluginInfo()` | Internal consistency (overrides WordPress snake_case) |
 | Constants | UPPER_SNAKE_CASE (no `RISEUP_` prefix) | `REST_NAMESPACE`, `ACTION_UPLOAD` | _(matches PSR-12)_ |
-| File names (classes) | `class-{kebab-case}.php` | `class-envelope-builder.php` | WordPress convention |
+| File names (classes) | `{PascalCase}.php` (PSR-4) | `EnvelopeBuilder.php`, `SnapshotFactory.php` | PSR-4 autoloading |
 | File names (enums) | `{DefinitionName}Type.php` (PascalCase, PSR-4) | `UploadSourceType.php`, `CapabilityType.php` | PSR-4 in `includes/Enums/` |
 | Variables | camelCase | `$pluginSlug`, `$stackTraceFrames` | _(matches PSR-12)_ |
 | Enum types | PascalCase, **`Type` suffix required** | `UploadSourceType`, `CapabilityType`, `HttpMethodType` | PHP 8.1+ native backed enums |
 
-> **Dual file naming convention:**
-> - **`includes/`** (non-namespaced WordPress classes): `class-kebab-case.php` (e.g., `class-envelope-builder.php`)
-> - **`includes/Enums/`** (namespaced types under `RiseupAsia\Enums`): `{DefinitionName}Type.php` — file name = definition name, PascalCase with `Type` suffix, no prefix, no hyphens, no underscores (e.g., `UploadSourceType.php` contains `enum UploadSourceType: string`)
+> **PSR-4 file naming convention:**
+> - **All classes** under `includes/` use PascalCase filenames matching the class name (e.g., `EnvelopeBuilder.php`, `SnapshotFactory.php`)
+> - **Enums** in `includes/Enums/` use `{DefinitionName}Type.php` — PascalCase with `Type` suffix, no prefix, no hyphens, no underscores (e.g., `UploadSourceType.php` contains `enum UploadSourceType: string`)
 
 ---
 

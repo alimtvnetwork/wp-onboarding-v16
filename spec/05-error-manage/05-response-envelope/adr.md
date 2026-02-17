@@ -27,7 +27,7 @@ A unified response contract was needed to eliminate these problems without break
 
 **Rationale:**
 - Go's `encoding/json` natively marshals exported struct fields to PascalCase, making it the zero-config default for the primary backend.
-- PHP's `RiseupEnvelopeBuilder` explicitly constructs associative arrays with PascalCase keys, so no runtime transformation is required.
+- PHP's `EnvelopeBuilder` explicitly constructs associative arrays with PascalCase keys, so no runtime transformation is required.
 - A single, unambiguous casing convention eliminates the need for camelCase ↔ snake_case mapping layers that introduce bugs and cognitive overhead.
 - The frontend consumes PascalCase directly via `parseEnvelope<T>()`, keeping the contract transparent end-to-end.
 
@@ -121,7 +121,7 @@ A unified response contract was needed to eliminate these problems without break
 **Referenced by:**
 - Go: `backend/internal/wordpress/envelope.go`
 - TypeScript: `src/lib/api/types.ts`
-- PHP: `wp-plugins/riseup-asia-uploader/includes/class-envelope-builder.php`
+- PHP: `wp-plugins/riseup-asia-uploader/includes/Helpers/EnvelopeBuilder.php`
 
 ---
 

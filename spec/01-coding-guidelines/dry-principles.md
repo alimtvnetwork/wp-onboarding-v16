@@ -81,7 +81,7 @@ When multiple languages implement the same structure, use a **machine-readable s
 envelope.schema.json (JSON Schema Draft 2020-12)
     ├── Go:  envelope.go (structs with omitempty)
     ├── TS:  types.ts (interfaces with ? optionals)
-    └── PHP: class-envelope-builder.php (builder methods)
+    └── PHP: EnvelopeBuilder.php (builder methods)
 ```
 
 Each implementation references the schema version in a comment.
@@ -122,8 +122,8 @@ Ask these questions:
 | API data fetching | `useApiQuery` / `useApiQueryPaginated` | `src/hooks/useApiQuery.ts` |
 | Error reporting | Global error store | `src/stores/errorStore.ts` |
 | Envelope parsing | `parseEnvelope` utility | `src/lib/api/envelope.ts` |
-| PHP snapshot creation | `RiseupSnapshotFactory` | `includes/class-snapshot-factory.php` |
-| PHP logging context | Centralized enrichment in logger | `includes/class-logger.php` |
+| PHP snapshot creation | `SnapshotFactory` | `includes/Snapshot/SnapshotFactory.php` |
+| PHP logging context | Centralized enrichment in logger | `includes/Logging/FileLogger.php` |
 | Go namespace resolution | `resolveNamespace` helper | `internal/wordpress/namespace.go` |
 | Go PHP stack parsing | `php_stack.go` helper | `internal/wordpress/php_stack.go` |
 
